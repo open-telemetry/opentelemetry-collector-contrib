@@ -22,10 +22,10 @@ The percentage of lost packets.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | false |
-| net.peer.name | The hostname of the host being pinged. | Any Str | false |
+| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
+| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
 
 ### ping.rtt.avg
 
@@ -37,10 +37,10 @@ Average round-trip time in milliseconds.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | false |
-| net.peer.name | The hostname of the host being pinged. | Any Str | false |
+| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
+| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
 
 ### ping.rtt.max
 
@@ -52,10 +52,10 @@ Maximum round-trip time in milliseconds.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | false |
-| net.peer.name | The hostname of the host being pinged. | Any Str | false |
+| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
+| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
 
 ### ping.rtt.min
 
@@ -67,10 +67,10 @@ Minimum round-trip time in milliseconds.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | false |
-| net.peer.name | The hostname of the host being pinged. | Any Str | false |
+| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
+| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
 
 ### ping.rtt.stddev
 
@@ -82,7 +82,7 @@ Standard deviation of round-trip time in milliseconds.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | false |
-| net.peer.name | The hostname of the host being pinged. | Any Str | false |
+| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
+| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |

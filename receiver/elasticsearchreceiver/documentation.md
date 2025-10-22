@@ -22,9 +22,9 @@ Estimated memory used for the operation.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The name of circuit breaker. | Any Str | false |
+| name | The name of circuit breaker. | Any Str | Recommended |
 
 ### elasticsearch.breaker.memory.limit
 
@@ -36,9 +36,9 @@ Memory limit for the circuit breaker.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The name of circuit breaker. | Any Str | false |
+| name | The name of circuit breaker. | Any Str | Recommended |
 
 ### elasticsearch.breaker.tripped
 
@@ -50,9 +50,9 @@ Total number of times the circuit breaker has been triggered and prevented an ou
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The name of circuit breaker. | Any Str | false |
+| name | The name of circuit breaker. | Any Str | Recommended |
 
 ### elasticsearch.cluster.data_nodes
 
@@ -74,9 +74,9 @@ Health status is based on the state of its primary and replica shards. Green ind
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The health status of the cluster. | Str: ``green``, ``yellow``, ``red`` | false |
+| status | The health status of the cluster. | Str: ``green``, ``yellow``, ``red`` | Recommended |
 
 ### elasticsearch.cluster.in_flight_fetch
 
@@ -112,9 +112,9 @@ Number of differences between published cluster states.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | State of the published differences | Str: ``incompatible``, ``compatible`` | false |
+| state | State of the published differences | Str: ``incompatible``, ``compatible`` | Recommended |
 
 ### elasticsearch.cluster.published_states.full
 
@@ -134,9 +134,9 @@ The number of shards in the cluster.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of the shard. | Str: ``active``, ``active_primary``, ``relocating``, ``initializing``, ``unassigned``, ``unassigned_delayed`` | false |
+| state | The state of the shard. | Str: ``active``, ``active_primary``, ``relocating``, ``initializing``, ``unassigned``, ``unassigned_delayed`` | Recommended |
 
 ### elasticsearch.cluster.state_queue
 
@@ -148,9 +148,9 @@ Number of cluster states in queue.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | State of the published differences | Str: ``pending``, ``committed`` | false |
+| state | State of the published differences | Str: ``pending``, ``committed`` | Recommended |
 
 ### elasticsearch.cluster.state_update.count
 
@@ -162,9 +162,9 @@ The number of cluster state update attempts that changed the cluster state since
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | State of cluster state update | Any Str | false |
+| state | State of cluster state update | Any Str | Recommended |
 
 ### elasticsearch.cluster.state_update.time
 
@@ -176,10 +176,10 @@ The cumulative amount of time updating the cluster state since the node started.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | State of cluster state update | Any Str | false |
-| type | Type of cluster state update | Str: ``computation``, ``context_construction``, ``commit``, ``completion``, ``master_apply``, ``notification`` | false |
+| state | State of cluster state update | Any Str | Recommended |
+| type | Type of cluster state update | Str: ``computation``, ``context_construction``, ``commit``, ``completion``, ``master_apply``, ``notification`` | Recommended |
 
 ### elasticsearch.index.documents
 
@@ -191,10 +191,10 @@ The number of documents for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of the document. | Str: ``active``, ``deleted`` | false |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| state | The state of the document. | Str: ``active``, ``deleted`` | Recommended |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.operations.completed
 
@@ -206,10 +206,10 @@ The number of operations completed for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | false |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | Recommended |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.operations.merge.current
 
@@ -221,9 +221,9 @@ The number of currently active segment merges
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.operations.time
 
@@ -235,10 +235,10 @@ Time spent on operations for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | false |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | Recommended |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.segments.count
 
@@ -250,9 +250,9 @@ Number of segments of an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.shards.size
 
@@ -264,9 +264,9 @@ The size of the shards assigned to this index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.indexing_pressure.memory.limit
 
@@ -302,9 +302,9 @@ Memory consumed, in bytes, by indexing requests in the specified stage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| stage | Stage of the indexing pressure | Str: ``coordinating``, ``primary``, ``replica`` | false |
+| stage | Stage of the indexing pressure | Str: ``coordinating``, ``primary``, ``replica`` | Recommended |
 
 ### elasticsearch.node.cache.count
 
@@ -316,9 +316,9 @@ Total count of query cache misses across all shards assigned to selected nodes.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Type of query cache count | Str: ``hit``, ``miss`` | false |
+| type | Type of query cache count | Str: ``hit``, ``miss`` | Recommended |
 
 ### elasticsearch.node.cache.evictions
 
@@ -330,9 +330,9 @@ The number of evictions from the cache on a node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | false |
+| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | Recommended |
 
 ### elasticsearch.node.cache.memory.usage
 
@@ -344,9 +344,9 @@ The size in bytes of the cache on a node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | false |
+| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | Recommended |
 
 ### elasticsearch.node.cluster.connections
 
@@ -366,9 +366,9 @@ The number of bytes sent and received on the network for internal cluster commun
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of network data. | Str: ``received``, ``sent`` | false |
+| direction | The direction of network data. | Str: ``received``, ``sent`` | Recommended |
 
 ### elasticsearch.node.disk.io.read
 
@@ -400,9 +400,9 @@ The number of documents on the node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of the document. | Str: ``active``, ``deleted`` | false |
+| state | The state of the document. | Str: ``active``, ``deleted`` | Recommended |
 
 ### elasticsearch.node.fs.disk.available
 
@@ -478,9 +478,9 @@ The number of operations completed by a node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | false |
+| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | Recommended |
 
 ### elasticsearch.node.operations.time
 
@@ -492,9 +492,9 @@ Time spent on operations by a node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | false |
+| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | Recommended |
 
 ### elasticsearch.node.pipeline.ingest.documents.current
 
@@ -506,9 +506,9 @@ Total number of documents currently being ingested by a pipeline.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | Name of the ingest pipeline. | Any Str | false |
+| name | Name of the ingest pipeline. | Any Str | Recommended |
 
 ### elasticsearch.node.pipeline.ingest.documents.preprocessed
 
@@ -520,9 +520,9 @@ Number of documents preprocessed by the ingest pipeline.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | Name of the ingest pipeline. | Any Str | false |
+| name | Name of the ingest pipeline. | Any Str | Recommended |
 
 ### elasticsearch.node.pipeline.ingest.operations.failed
 
@@ -534,9 +534,9 @@ Total number of failed operations for the ingest pipeline.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | Name of the ingest pipeline. | Any Str | false |
+| name | Name of the ingest pipeline. | Any Str | Recommended |
 
 ### elasticsearch.node.script.cache_evictions
 
@@ -596,10 +596,10 @@ The number of tasks finished by the thread pool.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| thread_pool_name | The name of the thread pool. | Any Str | false |
-| state | The state of the task. | Str: ``rejected``, ``completed`` | false |
+| thread_pool_name | The name of the thread pool. | Any Str | Recommended |
+| state | The state of the task. | Str: ``rejected``, ``completed`` | Recommended |
 
 ### elasticsearch.node.thread_pool.tasks.queued
 
@@ -611,9 +611,9 @@ The number of queued tasks in the thread pool.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| thread_pool_name | The name of the thread pool. | Any Str | false |
+| thread_pool_name | The name of the thread pool. | Any Str | Recommended |
 
 ### elasticsearch.node.thread_pool.threads
 
@@ -625,10 +625,10 @@ The number of threads in the thread pool.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| thread_pool_name | The name of the thread pool. | Any Str | false |
-| state | The state of the thread. | Str: ``active``, ``idle`` | false |
+| thread_pool_name | The name of the thread pool. | Any Str | Recommended |
+| state | The state of the thread. | Str: ``active``, ``idle`` | Recommended |
 
 ### elasticsearch.node.translog.operations
 
@@ -696,9 +696,9 @@ Amount of physical memory.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | State of the memory | Str: ``free``, ``used`` | false |
+| state | State of the memory | Str: ``free``, ``used`` | Recommended |
 
 ### jvm.classes.loaded
 
@@ -718,9 +718,9 @@ The total number of garbage collections that have occurred
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The name of the garbage collector. | Any Str | false |
+| name | The name of the garbage collector. | Any Str | Recommended |
 
 ### jvm.gc.collections.elapsed
 
@@ -732,9 +732,9 @@ The approximate accumulated collection elapsed time
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The name of the garbage collector. | Any Str | false |
+| name | The name of the garbage collector. | Any Str | Recommended |
 
 ### jvm.memory.heap.committed
 
@@ -786,9 +786,9 @@ The maximum amount of memory can be used for the memory pool
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The name of the JVM memory pool. | Any Str | false |
+| name | The name of the JVM memory pool. | Any Str | Recommended |
 
 ### jvm.memory.pool.used
 
@@ -800,9 +800,9 @@ The current memory pool memory usage
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The name of the JVM memory pool. | Any Str | false |
+| name | The name of the JVM memory pool. | Any Str | Recommended |
 
 ### jvm.threads.count
 
@@ -832,9 +832,9 @@ The number of evictions from the cache for indices in cluster.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | false |
+| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | Recommended |
 
 ### elasticsearch.index.cache.evictions
 
@@ -846,10 +846,10 @@ The number of evictions from the cache for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | false |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | Recommended |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.cache.memory.usage
 
@@ -861,10 +861,10 @@ The size in bytes of the cache for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | false |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| cache_name | The name of cache. | Str: ``fielddata``, ``query`` | Recommended |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.cache.size
 
@@ -876,9 +876,9 @@ The number of elements of the query cache for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.operations.merge.docs_count
 
@@ -890,9 +890,9 @@ The total number of documents in merge operations for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.operations.merge.size
 
@@ -904,9 +904,9 @@ The total size of merged segments for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.segments.memory
 
@@ -918,10 +918,10 @@ Size of memory for segment object of an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
-| object | Type of object in segment | Str: ``term``, ``doc_value``, ``index_writer``, ``fixed_bit_set`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
+| object | Type of object in segment | Str: ``term``, ``doc_value``, ``index_writer``, ``fixed_bit_set`` | Recommended |
 
 ### elasticsearch.index.segments.size
 
@@ -933,9 +933,9 @@ Size of segments of an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.translog.operations
 
@@ -947,9 +947,9 @@ Number of transaction log operations for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.index.translog.size
 
@@ -961,9 +961,9 @@ Size of the transaction log for an index.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | false |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` | Recommended |
 
 ### elasticsearch.node.cache.size
 
@@ -983,9 +983,9 @@ Number of query operations currently running.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | false |
+| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` | Recommended |
 
 ### elasticsearch.node.operations.get.completed
 
@@ -997,9 +997,9 @@ The number of hits and misses resulting from GET operations.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| result | Result of get operation | Str: ``hit``, ``miss`` | false |
+| result | Result of get operation | Str: ``hit``, ``miss`` | Recommended |
 
 ### elasticsearch.node.operations.get.time
 
@@ -1011,9 +1011,9 @@ The time spent on hits and misses resulting from GET operations.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| result | Result of get operation | Str: ``hit``, ``miss`` | false |
+| result | Result of get operation | Str: ``hit``, ``miss`` | Recommended |
 
 ### elasticsearch.node.segments.memory
 
@@ -1025,9 +1025,9 @@ Size of memory for segment object of a node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| object | Type of object in segment | Str: ``term``, ``doc_value``, ``index_writer``, ``fixed_bit_set`` | false |
+| object | Type of object in segment | Str: ``term``, ``doc_value``, ``index_writer``, ``fixed_bit_set`` | Recommended |
 
 ### elasticsearch.process.cpu.time
 

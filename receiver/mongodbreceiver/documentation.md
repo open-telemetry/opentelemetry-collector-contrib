@@ -22,9 +22,9 @@ The number of cache operations of the instance.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The result of a cache request. | Str: ``hit``, ``miss`` | false |
+| type | The result of a cache request. | Str: ``hit``, ``miss`` | Recommended |
 
 ### mongodb.collection.count
 
@@ -44,9 +44,9 @@ The number of connections.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The status of the connection. | Str: ``active``, ``available``, ``current`` | false |
+| type | The status of the connection. | Str: ``active``, ``available``, ``current`` | Recommended |
 
 ### mongodb.cursor.count
 
@@ -90,9 +90,9 @@ The number of document operations executed.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | false |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
 
 ### mongodb.extent.count
 
@@ -120,9 +120,9 @@ The number of times an index has been accessed.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| collection | The name of a collection. | Any Str | false |
+| collection | The name of a collection. | Any Str | Recommended |
 
 ### mongodb.index.count
 
@@ -150,9 +150,9 @@ The amount of memory used.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of memory used. | Str: ``resident``, ``virtual`` | false |
+| type | The type of memory used. | Str: ``resident``, ``virtual`` | Recommended |
 
 ### mongodb.network.io.receive
 
@@ -196,9 +196,9 @@ The number of operations executed.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | false |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
 
 ### mongodb.operation.time
 
@@ -210,9 +210,9 @@ The total time spent performing operations.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | false |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
 
 ### mongodb.session.count
 
@@ -318,10 +318,10 @@ Number of times the lock was acquired in the specified mode.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | false |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | false |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
 
 ### mongodb.lock.acquire.time
 
@@ -333,10 +333,10 @@ Cumulative wait time for the lock acquisitions.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | false |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | false |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
 
 ### mongodb.lock.acquire.wait_count
 
@@ -348,10 +348,10 @@ Number of times the lock acquisitions encountered waits because the locks were h
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | false |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | false |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
 
 ### mongodb.lock.deadlock.count
 
@@ -363,10 +363,10 @@ Number of times the lock acquisitions encountered deadlocks.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | false |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | false |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
 
 ### mongodb.operation.latency.time
 
@@ -378,9 +378,9 @@ The latency of operations.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | false |
+| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | Recommended |
 
 ### mongodb.operation.repl.count
 
@@ -392,9 +392,9 @@ The number of replicated operations executed.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | false |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
 
 ### mongodb.page_faults
 

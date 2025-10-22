@@ -278,9 +278,9 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| resource | the name of the resource on which the quota is applied | Any Str | false |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
 
 ### k8s.resource_quota.used
 
@@ -292,9 +292,9 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| resource | the name of the resource on which the quota is applied | Any Str | false |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
 
 ### k8s.statefulset.current_pods
 
@@ -338,10 +338,10 @@ The upper limit for a particular resource in a specific namespace.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| k8s.namespace.name | The k8s namespace name. | Any Str | false |
-| resource | the name of the resource on which the quota is applied | Any Str | false |
+| k8s.namespace.name | The k8s namespace name. | Any Str | Recommended |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
 
 ### openshift.appliedclusterquota.used
 
@@ -353,10 +353,10 @@ The usage for a particular resource in a specific namespace.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| k8s.namespace.name | The k8s namespace name. | Any Str | false |
-| resource | the name of the resource on which the quota is applied | Any Str | false |
+| k8s.namespace.name | The k8s namespace name. | Any Str | Recommended |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
 
 ### openshift.clusterquota.limit
 
@@ -368,9 +368,9 @@ The configured upper limit for a particular resource.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| resource | the name of the resource on which the quota is applied | Any Str | false |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
 
 ### openshift.clusterquota.used
 
@@ -382,9 +382,9 @@ The usage for a particular resource with a configured limit.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| resource | the name of the resource on which the quota is applied | Any Str | false |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
 
 ## Optional Metrics
 
@@ -406,9 +406,9 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| k8s.container.status.reason | The reason of the current container status. | Str: ``ContainerCreating``, ``CrashLoopBackOff``, ``CreateContainerConfigError``, ``ErrImagePull``, ``ImagePullBackOff``, ``OOMKilled``, ``Completed``, ``Error``, ``ContainerCannotRun`` | false |
+| k8s.container.status.reason | The reason of the current container status. | Str: ``ContainerCreating``, ``CrashLoopBackOff``, ``CreateContainerConfigError``, ``ErrImagePull``, ``ImagePullBackOff``, ``OOMKilled``, ``Completed``, ``Error``, ``ContainerCannotRun`` | Recommended |
 
 ### k8s.container.status.state
 
@@ -420,9 +420,9 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | false |
+| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | Recommended |
 
 ### k8s.node.condition
 
@@ -434,9 +434,9 @@ The condition of a particular Node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | false |
+| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | Recommended |
 
 ### k8s.pod.status_reason
 

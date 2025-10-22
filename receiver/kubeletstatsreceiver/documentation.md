@@ -198,10 +198,10 @@ Node network errors
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | false |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
+| interface | Name of the network interface. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
 
 ### k8s.node.network.io
 
@@ -213,10 +213,10 @@ Node network IO
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | false |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
+| interface | Name of the network interface. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
 
 ### k8s.pod.cpu.time
 
@@ -316,10 +316,10 @@ Pod network errors
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | false |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
+| interface | Name of the network interface. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
 
 ### k8s.pod.network.io
 
@@ -331,10 +331,10 @@ Pod network IO
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | false |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
+| interface | Name of the network interface. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
 
 ### k8s.volume.available
 

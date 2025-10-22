@@ -22,15 +22,15 @@ Average bytes scanned in a database over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.database.query.count
 
@@ -42,15 +42,15 @@ Total query count for database over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.query.blocked
 
@@ -62,9 +62,9 @@ Blocked query count for warehouse over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
 
 ### snowflake.query.bytes_deleted.avg
 
@@ -76,15 +76,15 @@ Average bytes deleted in database over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.query.bytes_written.avg
 
@@ -96,15 +96,15 @@ Average bytes written by database over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.query.compilation_time.avg
 
@@ -116,15 +116,15 @@ Average time taken to compile query over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.query.executed
 
@@ -136,9 +136,9 @@ Executed query count for warehouse over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
 
 ### snowflake.query.execution_time.avg
 
@@ -150,15 +150,15 @@ Average time spent executing queries in database over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.query.queued_overload
 
@@ -170,9 +170,9 @@ Overloaded query count for warehouse over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
 
 ### snowflake.query.queued_provision
 
@@ -184,9 +184,9 @@ Number of compute resources queued for provisioning over the last 24 hour window
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
 
 ### snowflake.queued_overload_time.avg
 
@@ -198,15 +198,15 @@ Average time spent in warehouse queue due to warehouse being overloaded over the
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.queued_provisioning_time.avg
 
@@ -218,15 +218,15 @@ Average time spent in warehouse queue waiting for resources to provision over th
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.queued_repair_time.avg
 
@@ -238,15 +238,15 @@ Average time spent in warehouse queue waiting for compute resources to be repair
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.storage.stage_bytes.total
 
@@ -274,15 +274,15 @@ Average elapsed time over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ## Optional Metrics
 
@@ -304,9 +304,9 @@ Reported total credits used in the cloud service over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service_type | Service type associated with metric query. | Any Str | false |
+| service_type | Service type associated with metric query. | Any Str | Recommended |
 
 ### snowflake.billing.total_credit.total
 
@@ -318,9 +318,9 @@ Reported total credits used across account over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service_type | Service type associated with metric query. | Any Str | false |
+| service_type | Service type associated with metric query. | Any Str | Recommended |
 
 ### snowflake.billing.virtual_warehouse.total
 
@@ -332,9 +332,9 @@ Reported total credits used by virtual warehouse service over the last 24 hour w
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service_type | Service type associated with metric query. | Any Str | false |
+| service_type | Service type associated with metric query. | Any Str | Recommended |
 
 ### snowflake.billing.warehouse.cloud_service.total
 
@@ -346,9 +346,9 @@ Credits used across cloud service for given warehouse over the last 24 hour wind
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
 
 ### snowflake.billing.warehouse.total_credit.total
 
@@ -360,9 +360,9 @@ Total credits used associated with given warehouse over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
 
 ### snowflake.billing.warehouse.virtual_warehouse.total
 
@@ -374,9 +374,9 @@ Total credits used by virtual warehouse service for given warehouse over the las
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
 
 ### snowflake.logins.total
 
@@ -388,11 +388,11 @@ Total login attempts for account over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| error_message | Error message reported by query if present. | Any Str | false |
-| reported_client_type | Client type used for attempt. | Any Str | false |
-| is_success | Login status (success or failure). | Any Str | false |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| reported_client_type | Client type used for attempt. | Any Str | Recommended |
+| is_success | Login status (success or failure). | Any Str | Recommended |
 
 ### snowflake.pipe.credits_used.total
 
@@ -404,9 +404,9 @@ Snow pipe credits contotaled over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| pipe_name | Name of snowpipe. | Any Str | false |
+| pipe_name | Name of snowpipe. | Any Str | Recommended |
 
 ### snowflake.query.bytes_spilled.local.avg
 
@@ -418,15 +418,15 @@ Average bytes spilled (intermediate results do not fit in memory) by local stora
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.query.bytes_spilled.remote.avg
 
@@ -438,15 +438,15 @@ Average bytes spilled (intermediate results do not fit in memory) by remote stor
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.query.data_scanned_cache.avg
 
@@ -458,15 +458,15 @@ Average percentage of data scanned from cache over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.query.partitions_scanned.avg
 
@@ -478,15 +478,15 @@ Number of partitions scanned during query so far over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.rows_deleted.avg
 
@@ -498,15 +498,15 @@ Number of rows deleted from a table (or tables) over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.rows_inserted.avg
 
@@ -518,15 +518,15 @@ Number of rows inserted into a table (or tables) over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.rows_produced.avg
 
@@ -538,15 +538,15 @@ Average number of rows produced by statement over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.rows_unloaded.avg
 
@@ -558,15 +558,15 @@ Average number of rows unloaded during data export over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.rows_updated.avg
 
@@ -578,15 +578,15 @@ Average number of rows updated in a table over the last 24 hour window.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema_name | Name of schema associated with query result. | Any Str | false |
-| execution_status | Execution status of query being reported. | Any Str | false |
-| error_message | Error message reported by query if present. | Any Str | false |
-| query_type | Type of query performed. | Any Str | false |
-| warehouse_name | Name of warehouse in query being reported on. | Any Str | false |
-| database_name | Name of database being queried (default is snowflake). | Any Str | false |
-| warehouse_size | Size of warehouse being reported on. | Any Str | false |
+| schema_name | Name of schema associated with query result. | Any Str | Recommended |
+| execution_status | Execution status of query being reported. | Any Str | Recommended |
+| error_message | Error message reported by query if present. | Any Str | Recommended |
+| query_type | Type of query performed. | Any Str | Recommended |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str | Recommended |
+| database_name | Name of database being queried (default is snowflake). | Any Str | Recommended |
+| warehouse_size | Size of warehouse being reported on. | Any Str | Recommended |
 
 ### snowflake.session_id.count
 
@@ -598,9 +598,9 @@ Distinct session id's associated with snowflake username over the last 24 hour w
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| user_name | Username in query being reported. | Any Str | false |
+| user_name | Username in query being reported. | Any Str | Recommended |
 
 ### snowflake.storage.failsafe_bytes.total
 

@@ -30,9 +30,9 @@ Commands executed.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| command | The type of command. | Str: ``get``, ``set``, ``flush``, ``touch`` | false |
+| command | The type of command. | Str: ``get``, ``set``, ``flush``, ``touch`` | Recommended |
 
 ### memcached.connections.current
 
@@ -60,9 +60,9 @@ Accumulated user and system time.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The type of CPU usage. | Str: ``system``, ``user`` | false |
+| state | The type of CPU usage. | Str: ``system``, ``user`` | Recommended |
 
 ### memcached.current_items
 
@@ -90,9 +90,9 @@ Bytes transferred over the network.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Direction of data flow. | Str: ``sent``, ``received`` | false |
+| direction | Direction of data flow. | Str: ``sent``, ``received`` | Recommended |
 
 ### memcached.operation_hit_ratio
 
@@ -104,9 +104,9 @@ Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The type of operation. | Str: ``increment``, ``decrement``, ``get`` | false |
+| operation | The type of operation. | Str: ``increment``, ``decrement``, ``get`` | Recommended |
 
 ### memcached.operations
 
@@ -118,10 +118,10 @@ Operation counts.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Result of cache request. | Str: ``hit``, ``miss`` | false |
-| operation | The type of operation. | Str: ``increment``, ``decrement``, ``get`` | false |
+| type | Result of cache request. | Str: ``hit``, ``miss`` | Recommended |
+| operation | The type of operation. | Str: ``increment``, ``decrement``, ``get`` | Recommended |
 
 ### memcached.threads
 

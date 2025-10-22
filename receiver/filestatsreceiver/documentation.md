@@ -64,9 +64,9 @@ Elapsed time since the last change of the file or folder, in seconds since Epoch
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| file.permissions | the permissions associated with the file, using an octal format. | Any Str | false |
+| file.permissions | the permissions associated with the file, using an octal format. | Any Str | Recommended |
 
 ## Resource Attributes
 

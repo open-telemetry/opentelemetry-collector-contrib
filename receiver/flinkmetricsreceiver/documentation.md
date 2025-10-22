@@ -22,9 +22,9 @@ The number of checkpoints completed or failed.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| checkpoint | The number of checkpoints completed or that failed. | Str: ``completed``, ``failed`` | false |
+| checkpoint | The number of checkpoints completed or that failed. | Str: ``completed``, ``failed`` | Recommended |
 
 ### flink.job.checkpoint.in_progress
 
@@ -92,9 +92,9 @@ The total number of collections that have occurred.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | false |
+| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Recommended |
 
 ### flink.jvm.gc.collections.time
 
@@ -106,9 +106,9 @@ The total time spent performing garbage collection.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | false |
+| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Recommended |
 
 ### flink.jvm.memory.direct.total_capacity
 
@@ -248,10 +248,10 @@ The number of records an operator has.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The operator name. | Any Str | false |
-| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | false |
+| name | The operator name. | Any Str | Recommended |
+| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Recommended |
 
 ### flink.operator.watermark.output
 
@@ -263,9 +263,9 @@ The last watermark this operator has emitted.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The operator name. | Any Str | false |
+| name | The operator name. | Any Str | Recommended |
 
 ### flink.task.record.count
 
@@ -277,9 +277,9 @@ The number of records a task has.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | false |
+| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Recommended |
 
 ## Resource Attributes
 
