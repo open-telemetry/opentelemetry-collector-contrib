@@ -4,7 +4,6 @@
 package loadbalancingexporter
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -104,18 +103,12 @@ func TestBuildExporterSettings(t *testing.T) {
 	testEndpoint := "the-endpoint"
 	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
 	creationParams.Logger = zap.New(observedZapCore)
-	typ := component.MustNewType("type")
 
 	// test
-	exporterParams := buildExporterSettings(typ, creationParams, testEndpoint)
+	exporterParams := buildExporterSettings(creationParams, testEndpoint)
 	exporterParams.Logger.Info("test")
 
-	// verify
-	expectedID := component.NewIDWithName(
-		typ,
-		fmt.Sprintf("%s_%s", creationParams.ID, testEndpoint),
-	)
-	assert.Equal(t, expectedID, exporterParams.ID)
+	assert.Equal(t, creationParams.ID, exporterParams.ID)
 
 	allLogs := observedLogs.All()
 	require.Equal(t, 1, observedLogs.Len())
@@ -123,6 +116,34 @@ func TestBuildExporterSettings(t *testing.T) {
 		allLogs[0].Context,
 		zap.String(zapEndpointKey, testEndpoint),
 	)
+}
+
+func TestWrappedExporterHasEndpointAttribute(t *testing.T) {
+	// This test verifies that the endpoint is available as an attribute for metrics
+	// rather than being part of the exporter ID (which would cause high cardinality)
+	testEndpoint := "10.11.68.62:4317"
+
+	mockComponent := &struct{ component.Component }{}
+
+	wrappedExp := newWrappedExporter(mockComponent, testEndpoint)
+
+	endpointValue, found := wrappedExp.endpointAttr.Value("endpoint")
+	require.True(t, found, "endpoint attribute should exist")
+	assert.Equal(t, testEndpoint, endpointValue.AsString(), "endpoint attribute should have correct value")
+
+	endpointValue, found = wrappedExp.successAttr.Value("endpoint")
+	require.True(t, found, "success attr should have endpoint")
+	assert.Equal(t, testEndpoint, endpointValue.AsString())
+	successValue, found := wrappedExp.successAttr.Value("success")
+	require.True(t, found, "success attr should have success field")
+	assert.True(t, successValue.AsBool())
+
+	endpointValue, found = wrappedExp.failureAttr.Value("endpoint")
+	require.True(t, found, "failure attr should have endpoint")
+	assert.Equal(t, testEndpoint, endpointValue.AsString())
+	successValue, found = wrappedExp.failureAttr.Value("success")
+	require.True(t, found, "failure attr should have success field")
+	assert.False(t, successValue.AsBool())
 }
 
 func TestBuildExporterResilienceOptions(t *testing.T) {
