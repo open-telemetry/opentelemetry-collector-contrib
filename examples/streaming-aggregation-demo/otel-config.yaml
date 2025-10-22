@@ -6,7 +6,7 @@ receivers:
 
 processors:
   streamingaggregation:
-    window_size: 10s # Aggregate over 30-second windows
+    window_size: 30s # Aggregate over 30-second windows
     max_memory_mb: 100 # Memory limit
     stale_data_threshold: 2m # Reset cumulative state after 2 minutes of no data
     metrics:
@@ -74,6 +74,14 @@ processors:
         aggregate_type: "sum" # Sum histogram buckets
         labels:
           type: "drop_all" # Global histogram across all endpoints and instances
+
+      # Enhanced Exponential Histogram Features - Testing Implementation
+      # Enhanced exponential histogram with sum aggregation and remove method+status_code
+      - match: "^request_duration_seconds$"
+        aggregate_type: "sum"
+        labels:
+          type: "remove"
+          names: ["method", "status_code"] # Remove method and status_code, keep endpoint
 
   metricstransform:
     transforms:

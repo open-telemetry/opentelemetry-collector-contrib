@@ -404,20 +404,33 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 				)
 			}
 
-			// Emit exponential histogram metrics (following native-histogram-otel pattern)
+			// Emit exponential histogram metrics with varied endpoints and methods
 			for i := int64(0); i < requests; i++ {
 				latency := generateLatencySeconds()
 
+				// Generate varied endpoints, methods, and status codes for testing label handling
+				endpoints := []string{"/api/data", "/api/users", "/api/orders", "/api/products", "/api/payments"}
+				methods := []string{"GET", "POST", "PUT", "DELETE", "PATCH"}
+				statusCodes := []string{"200", "201", "400", "404", "500"}
+
+				endpoint := endpoints[i%int64(len(endpoints))]
+				method := methods[i%int64(len(methods))]
+				// Use random status codes so each endpoint gets multiple status codes
+				// This creates realistic cardinality for testing label grouping
+				statusCode := statusCodes[rand.Intn(len(statusCodes))]
+
 				rawRequestDuration.Record(ctx, latency,
 					metric.WithAttributes(
-						attribute.String("endpoint", "/api/data"),
-						attribute.String("method", "GET"),
+						attribute.String("endpoint", endpoint),
+						attribute.String("method", method),
+						attribute.String("status_code", statusCode),
 					),
 				)
 				aggRequestDuration.Record(ctx, latency,
 					metric.WithAttributes(
-						attribute.String("endpoint", "/api/data"),
-						attribute.String("method", "GET"),
+						attribute.String("endpoint", endpoint),
+						attribute.String("method", method),
+						attribute.String("status_code", statusCode),
 					),
 				)
 			}

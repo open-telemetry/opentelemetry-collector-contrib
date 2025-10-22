@@ -1031,6 +1031,8 @@ func (p *streamingAggregationProcessor) aggregateMetricWithGrouping(
 		p.groupSumDataPoints(metric.Sum(), metricConfig, groups, metric.Name())
 	case pmetric.MetricTypeHistogram:
 		p.groupHistogramDataPoints(metric.Histogram(), metricConfig, groups, metric.Name())
+	case pmetric.MetricTypeExponentialHistogram:
+		p.groupExponentialHistogramDataPoints(metric.ExponentialHistogram(), metricConfig, groups, metric.Name())
 	default:
 		// For other types, fall back to default behavior
 		return p.aggregateMetricDefault(metric, metricConfig)
@@ -1162,6 +1164,36 @@ func (p *streamingAggregationProcessor) groupHistogramDataPoints(
 	}
 }
 
+// groupExponentialHistogramDataPoints groups exponential histogram data points by filtered labels
+func (p *streamingAggregationProcessor) groupExponentialHistogramDataPoints(
+	exponentialHistogram pmetric.ExponentialHistogram,
+	metricConfig *MetricConfig,
+	groups map[string][]dataPointInfo,
+	metricName string,
+) {
+	dps := exponentialHistogram.DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+
+		// Apply label filtering to get the filtered attributes
+		filteredAttrs := getLabelFilteredAttributes(dp.Attributes(), metricConfig.Labels)
+
+		// Generate series key from filtered attributes
+		seriesKey := p.generateSeriesKeyFromAttributes(metricName, filteredAttrs)
+
+		// For exponential histograms, use the sum as the placeholder value for grouping
+		// The actual exponential histogram processing will happen later
+		value := dp.Sum()
+
+		// Add to group
+		groups[seriesKey] = append(groups[seriesKey], dataPointInfo{
+			value:      value,
+			timestamp:  dp.Timestamp(),
+			attributes: filteredAttrs,
+		})
+	}
+}
+
 // generateSeriesKeyFromAttributes generates a series key from filtered attributes
 func (p *streamingAggregationProcessor) generateSeriesKeyFromAttributes(metricName string, attrs pcommon.Map) string {
 	if attrs.Len() == 0 {
@@ -1210,6 +1242,13 @@ func (p *streamingAggregationProcessor) processDataPointGroup(
 	// Handle histogram metrics with custom aggregation (sum and quantile strategies)
 	if originalMetric.Type() == pmetric.MetricTypeHistogram && metricConfig != nil {
 		return p.processHistogramMetricWithStrategy(originalMetric, aggregator, metricConfig, seriesKey)
+	}
+
+	// Handle exponential histogram metrics with custom aggregation (sum and quantile strategies)
+	if originalMetric.Type() == pmetric.MetricTypeExponentialHistogram && metricConfig != nil {
+		// Use exponential histogram aggregator for all cases (same as classic histograms)
+		// For quantiles, we'll aggregate first, then calculate quantile, then store as gauge
+		return p.processExponentialHistogramMetricWithStrategy(originalMetric, aggregator, metricConfig, seriesKey)
 	}
 
 	// Handle sum metrics with custom aggregation (separate logic for counters vs up-down counters)
@@ -1611,6 +1650,100 @@ func (p *streamingAggregationProcessor) processHistogramDataPointsGrouped(
 ) error {
 	// For grouped processing, we directly process the entire histogram
 	return p.processHistogramDataPoints(originalHistogram, aggregator, metricConfig)
+}
+
+// processExponentialHistogramMetricWithStrategy processes exponential histogram metrics with custom aggregation strategies
+func (p *streamingAggregationProcessor) processExponentialHistogramMetricWithStrategy(
+	originalMetric pmetric.Metric,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+	seriesKey string,
+) error {
+	if originalMetric.Type() != pmetric.MetricTypeExponentialHistogram {
+		return fmt.Errorf("expected exponential histogram metric, got %s", originalMetric.Type())
+	}
+
+	// Create a filtered exponential histogram containing only data points for this series key
+	exponentialHistogram := originalMetric.ExponentialHistogram()
+	filteredExpHistogram := p.createFilteredExponentialHistogram(exponentialHistogram, metricConfig, seriesKey, originalMetric.Name())
+
+	return p.processExponentialHistogramDataPoints(originalMetric, filteredExpHistogram, aggregator, metricConfig)
+}
+
+// createFilteredExponentialHistogram creates an exponential histogram containing only data points matching the series key
+func (p *streamingAggregationProcessor) createFilteredExponentialHistogram(
+	originalExpHistogram pmetric.ExponentialHistogram,
+	metricConfig *MetricConfig,
+	targetSeriesKey string,
+	metricName string,
+) pmetric.ExponentialHistogram {
+	// Create a new exponential histogram with only matching data points
+	filteredExpHistogram := pmetric.NewExponentialHistogram()
+
+	originalDPs := originalExpHistogram.DataPoints()
+	for i := 0; i < originalDPs.Len(); i++ {
+		dp := originalDPs.At(i)
+
+		// Apply label filtering to get the filtered attributes
+		filteredAttrs := getLabelFilteredAttributes(dp.Attributes(), metricConfig.Labels)
+
+		// Generate series key from filtered attributes
+		seriesKey := p.generateSeriesKeyFromAttributes(metricName, filteredAttrs)
+
+		// Only include data points that match this series key
+		if seriesKey == targetSeriesKey {
+			// Copy this data point to the filtered exponential histogram
+			newDP := filteredExpHistogram.DataPoints().AppendEmpty()
+			dp.CopyTo(newDP)
+
+			// Replace the attributes with filtered ones (this is the key fix!)
+			newDP.Attributes().Clear()
+			filteredAttrs.CopyTo(newDP.Attributes())
+		}
+	}
+
+	return filteredExpHistogram
+}
+
+// processExponentialHistogramDataPoints processes exponential histogram data points for aggregation
+func (p *streamingAggregationProcessor) processExponentialHistogramDataPoints(
+	originalMetric pmetric.Metric,
+	exponentialHistogram pmetric.ExponentialHistogram,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+) error {
+	// Set the aggregation strategy on the aggregator
+	aggregator.SetAggregateType(string(metricConfig.AggregateType))
+
+	// Apply exponential histogram-specific aggregation strategies
+	switch metricConfig.AggregateType {
+	case Sum:
+		// Sum: Aggregate exponential histogram data points (maintains current behavior)
+		return p.aggregateExponentialHistogramSum(originalMetric, exponentialHistogram, aggregator)
+	default:
+		return fmt.Errorf("unsupported aggregation type %q for exponential histogram metrics, only 'sum' is supported", metricConfig.AggregateType)
+	}
+}
+
+// aggregateExponentialHistogramSum aggregates exponential histogram using the proven accumulator approach
+func (p *streamingAggregationProcessor) aggregateExponentialHistogramSum(
+	originalMetric pmetric.Metric,
+	exponentialHistogram pmetric.ExponentialHistogram,
+	aggregator *Aggregator,
+) error {
+	// Process each data point in the exponential histogram
+	dataPoints := exponentialHistogram.DataPoints()
+	for i := 0; i < dataPoints.Len(); i++ {
+		dp := dataPoints.At(i)
+
+		// Use the proven MergeExponentialHistogram method from aggregator
+		// Pass the original metric so accumulator can capture name/description/unit properly
+		err := aggregator.MergeExponentialHistogram(originalMetric, dp)
+		if err != nil {
+			return fmt.Errorf("failed to merge exponential histogram: %w", err)
+		}
+	}
+	return nil
 }
 
 // aggregateMetricDefault provides the original aggregation logic for backward compatibility
