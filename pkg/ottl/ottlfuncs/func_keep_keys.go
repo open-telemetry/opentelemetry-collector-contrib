@@ -14,7 +14,7 @@ import (
 
 type KeepKeysArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
-	Keys   []string
+	Keys   []ottl.StringGetter[K]
 }
 
 func NewKeepKeysFactory[K any]() ottl.Factory[K] {
@@ -31,17 +31,22 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return keepKeys(args.Target, args.Keys), nil
 }
 
-func keepKeys[K any](target ottl.PMapGetSetter[K], keys []string) ottl.ExprFunc[K] {
-	keySet := make(map[string]struct{}, len(keys))
-	for _, key := range keys {
-		keySet[key] = struct{}{}
-	}
-
+func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
+
+		keySet := make(map[string]struct{}, len(keys))
+		for _, key := range keys {
+			k, err := key.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			keySet[k] = struct{}{}
+		}
+
 		val.RemoveIf(func(key string, _ pcommon.Value) bool {
 			_, ok := keySet[key]
 			return !ok
