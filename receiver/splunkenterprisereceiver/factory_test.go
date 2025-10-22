@@ -24,7 +24,7 @@ func TestFactoryCreate(t *testing.T) {
 
 func TestDefaultConfig(t *testing.T) {
 	cfg := confighttp.NewDefaultClientConfig()
-	cfg.Headers = &configopaque.MapList{
+	cfg.Headers = configopaque.MapList{
 		{Name: "Content-Type", Value: "application/x-www-form-urlencoded"},
 	}
 	cfg.Timeout = 60 * time.Second

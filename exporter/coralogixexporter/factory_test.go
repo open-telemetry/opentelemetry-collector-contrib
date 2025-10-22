@@ -166,7 +166,7 @@ func TestCreateTraces(t *testing.T) {
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
 						Endpoint: endpoint,
-						Headers: &configopaque.MapList{
+						Headers: configopaque.MapList{
 							{Name: "hdr1", Value: "val1"},
 							{Name: "hdr2", Value: "val2"},
 						},

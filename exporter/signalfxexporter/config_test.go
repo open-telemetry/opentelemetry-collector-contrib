@@ -55,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 				Realm:       "ap0",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:              10 * time.Second,
-					Headers:              configopaque.NewMapList(),
 					MaxIdleConns:         hundred,
 					MaxIdleConnsPerHost:  hundred,
 					MaxConnsPerHost:      defaultMaxConnsPerHost,
@@ -94,7 +93,6 @@ func TestLoadConfig(t *testing.T) {
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint:            "",
 						Timeout:             5 * time.Second,
-						Headers:             configopaque.NewMapList(),
 						MaxIdleConns:        defaultMaxIdleConns,
 						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 						MaxConnsPerHost:     defaultMaxConnsPerHost,
@@ -126,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 				Realm:       "us1",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 2 * time.Second,
-					Headers: &configopaque.MapList{
+					Headers: configopaque.MapList{
 						{Name: "added-entry", Value: "added value"},
 						{Name: "dot.test", Value: "test"},
 					},
@@ -231,7 +229,6 @@ func TestLoadConfig(t *testing.T) {
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint:            "",
 						Timeout:             5 * time.Second,
-						Headers:             configopaque.NewMapList(),
 						MaxIdleConns:        defaultMaxIdleConns,
 						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 						MaxConnsPerHost:     defaultMaxConnsPerHost,

@@ -26,7 +26,7 @@ const (
 func createDefaultConfig() component.Config {
 	// Default HttpClient settings
 	httpCfg := confighttp.NewDefaultClientConfig()
-	httpCfg.Headers = &configopaque.MapList{
+	httpCfg.Headers = configopaque.MapList{
 		{Name: "Content-Type", Value: "application/x-www-form-urlencoded"},
 	}
 	httpCfg.Timeout = defaultMaxSearchWaitTime

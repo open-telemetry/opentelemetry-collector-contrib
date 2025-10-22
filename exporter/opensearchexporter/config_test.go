@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig: withDefaultHTTPClientConfig(func(config *confighttp.ClientConfig) {
 					config.Endpoint = sampleEndpoint
 					config.Timeout = 2 * time.Minute
-					config.Headers = &configopaque.MapList{
+					config.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
 					config.MaxIdleConns = maxIdleConns

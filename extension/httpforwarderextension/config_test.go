@@ -26,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 
 	egressCfg := confighttp.NewDefaultClientConfig()
 	egressCfg.Endpoint = "http://target/"
-	egressCfg.Headers = &configopaque.MapList{
+	egressCfg.Headers = configopaque.MapList{
 		{Name: "otel_http_forwarder", Value: "dev"},
 	}
 	egressCfg.MaxIdleConns = maxIdleConns

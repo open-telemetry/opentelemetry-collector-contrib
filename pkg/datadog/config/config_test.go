@@ -182,7 +182,7 @@ func TestValidate(t *testing.T) {
 					Endpoint:    "endpoint",
 					Compression: "gzip",
 					Auth:        someAuth,
-					Headers: &configopaque.MapList{
+					Headers: configopaque.MapList{
 						{Name: "key", Value: "val"},
 					},
 					HTTP2ReadIdleTimeout: 250,

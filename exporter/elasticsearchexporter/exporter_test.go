@@ -288,7 +288,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = &configopaque.MapList{
+			cfg.Headers = configopaque.MapList{
 				{Name: "foo", Value: "bah"},
 			}
 		})
@@ -311,7 +311,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = &configopaque.MapList{
+			cfg.Headers = configopaque.MapList{
 				{Name: "User-Agent", Value: "overridden"},
 			}
 		})

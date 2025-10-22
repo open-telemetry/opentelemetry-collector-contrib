@@ -169,11 +169,6 @@ func TestSignalExporter_AuthorizationHeader(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: configopaque.String(privateKey),
-		Logs: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Headers: configopaque.NewMapList(),
-			},
-		},
 	}
 
 	exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
@@ -203,7 +198,7 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 		{
 			name: "logs",
 			config: configgrpc.ClientConfig{
-				Headers: &configopaque.MapList{
+				Headers: configopaque.MapList{
 					{Name: "Custom-Header", Value: "custom-value"},
 					{Name: "X-Test", Value: "test-value"},
 				},
@@ -212,7 +207,7 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 		{
 			name: "traces",
 			config: configgrpc.ClientConfig{
-				Headers: &configopaque.MapList{
+				Headers: configopaque.MapList{
 					{Name: "Custom-Header", Value: "custom-value"},
 					{Name: "X-Test", Value: "test-value"},
 				},
@@ -221,7 +216,7 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 		{
 			name: "metrics",
 			config: configgrpc.ClientConfig{
-				Headers: &configopaque.MapList{
+				Headers: configopaque.MapList{
 					{Name: "Custom-Header", Value: "custom-value"},
 					{Name: "X-Test", Value: "test-value"},
 				},
@@ -230,7 +225,7 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 		{
 			name: "profiles",
 			config: configgrpc.ClientConfig{
-				Headers: &configopaque.MapList{
+				Headers: configopaque.MapList{
 					{Name: "Custom-Header", Value: "custom-value"},
 					{Name: "X-Test", Value: "test-value"},
 				},
@@ -269,7 +264,7 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 			}()
 
 			headers := wrapper.config.Headers
-			require.Equal(t, 3, headers.Len())
+			require.Len(t, headers, 3)
 
 			authHeader, ok := headers.Get("Authorization")
 			require.True(t, ok)

@@ -19,7 +19,7 @@ import (
 )
 
 type grpcRemoteStrategyStore struct {
-	headerAdditions *configopaque.MapList
+	headerAdditions configopaque.MapList
 	delegate        *ConfigManagerProxy
 	cache           serviceStrategyCache
 }

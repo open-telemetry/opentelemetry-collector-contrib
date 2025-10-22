@@ -83,11 +83,6 @@ func TestTracesExporter_Start(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Traces: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Headers: configopaque.NewMapList(),
-			},
-		},
 	}
 
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -110,7 +105,7 @@ func TestTracesExporter_EnhanceContext(t *testing.T) {
 		PrivateKey: "test-key",
 		Traces: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: &configopaque.MapList{
+				Headers: configopaque.MapList{
 					{Name: "test-header", Value: "test-value"},
 				},
 			},
@@ -129,11 +124,6 @@ func TestTracesExporter_PushTraces(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Traces: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Headers: configopaque.NewMapList(),
-			},
-		},
 	}
 
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -177,11 +167,6 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
-				Traces: TransportConfig{
-					ClientConfig: configgrpc.ClientConfig{
-						Headers: configopaque.NewMapList(),
-					},
-				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.configEnabled,
 					Threshold: 1,
@@ -288,7 +273,6 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: configopaque.NewMapList(),
 			},
 		},
 		PrivateKey: "test-key",
@@ -379,7 +363,6 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: configopaque.NewMapList(),
 			},
 		},
 		PrivateKey: "test-key",
@@ -442,7 +425,6 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: configopaque.NewMapList(),
 			},
 		},
 		PrivateKey: "test-key",
@@ -576,7 +558,6 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: configopaque.NewMapList(),
 			},
 		},
 		PrivateKey: "test-key",
