@@ -12,20 +12,6 @@ metrics:
     enabled: false
 ```
 
-### cisco.collector.duration.seconds
-
-Duration of all collector scrapes for one target (total collection time)
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| target | The target network device hostname/IP | Any Str | false |
-
 ### cisco.device.up
 
 Device availability (1 = up, 0 = down)
@@ -40,26 +26,30 @@ Device availability (1 = up, 0 = down)
 | ---- | ----------- | ------ | -------- |
 | target | The target network device hostname/IP | Any Str | false |
 
-### cisco.system.cpu.utilization
+### system.cpu.utilization
 
-CPU utilization as a fraction
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### cisco.system.memory.utilization
-
-Memory utilization as a fraction
+Percentage of CPU time in use.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-## Resource Attributes
+#### Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cisco.device.ip | IP address of the Cisco device | Any Str | true |
-| cisco.device.model | Model of the Cisco device | Any Str | true |
-| cisco.device.name | Name of the Cisco device | Any Str | true |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |
+
+### system.memory.utilization
+
+Percentage of memory bytes in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |

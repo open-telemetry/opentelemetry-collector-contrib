@@ -34,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 1*time.Minute, config.CollectionInterval)
 	assert.Equal(t, 10*time.Second, config.Timeout)
-	assert.Empty(t, config.Devices)
+	assert.Empty(t, config.Device.Device.Host.IP)
 	assert.Empty(t, config.Scrapers)
 }
 
@@ -44,19 +44,17 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	// Add a device and scraper to make config valid
 	config := cfg.(*Config)
-	config.Devices = []DeviceConfig{
-		{
-			Device: DeviceInfo{
-				Host: HostInfo{
-					Name: "test-device",
-					IP:   "192.168.1.1",
-					Port: 22,
-				},
+	config.Device = DeviceConfig{
+		Device: DeviceInfo{
+			Host: HostInfo{
+				Name: "test-device",
+				IP:   "192.168.1.1",
+				Port: 22,
 			},
-			Auth: AuthConfig{
-				Username: "admin",
-				Password: configopaque.String("password"),
-			},
+		},
+		Auth: AuthConfig{
+			Username: "admin",
+			Password: configopaque.String("password"),
 		},
 	}
 	// Add system scraper with default config

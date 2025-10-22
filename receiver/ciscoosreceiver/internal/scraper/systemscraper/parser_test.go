@@ -208,7 +208,7 @@ Memory usage:   0K total,   0K used,   0K free`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			memUtil, err := parseMemoryUtilizationNXOS(tt.output)
+			memUtil, err := parseMemoryUtilization(tt.output, "NX-OS")
 
 			if tt.expectedErr {
 				require.Error(t, err, tt.errDescription)
@@ -273,7 +273,7 @@ func TestParseMemoryUtilizationIOS(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			memUtil, err := parseMemoryUtilizationIOS(tt.output)
+			memUtil, err := parseMemoryUtilization(tt.output, "IOS")
 
 			if tt.expectedErr {
 				require.Error(t, err, tt.errDescription)

@@ -30,7 +30,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	// Verify default metrics are enabled
 	assert.True(t, config.Metrics.CiscoDeviceUp.Enabled)
-	assert.True(t, config.Metrics.CiscoCollectorDurationSeconds.Enabled)
 }
 
 func TestFactory_CreateScraperMethod(t *testing.T) {
@@ -38,23 +37,20 @@ func TestFactory_CreateScraperMethod(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Add device configuration
-	cfg.Devices = []DeviceConfig{
-		{
-			Host: HostInfo{
-				IP:   "192.168.1.1",
-				Port: 22,
-			},
-			Auth: AuthConfig{
-				Username: "admin",
-				Password: "password",
-			},
+	cfg.Device = DeviceConfig{
+		Host: HostInfo{
+			IP:   "192.168.1.1",
+			Port: 22,
+		},
+		Auth: AuthConfig{
+			Username: "admin",
+			Password: "password",
 		},
 	}
 
 	// Verify config structure is correct for scraper creation
 	assert.NotNil(t, cfg)
-	assert.Len(t, cfg.Devices, 1)
-	assert.Equal(t, "192.168.1.1", cfg.Devices[0].Host.IP)
+	assert.Equal(t, "192.168.1.1", cfg.Device.Host.IP)
 }
 
 func TestConfig_Validate(t *testing.T) {
@@ -67,22 +63,20 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid_config",
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-				Devices: []DeviceConfig{
-					{
-						Host: HostInfo{IP: "192.168.1.1", Port: 22},
-						Auth: AuthConfig{Username: "admin", Password: "password"},
-					},
+				Device: DeviceConfig{
+					Host: HostInfo{IP: "192.168.1.1", Port: 22},
+					Auth: AuthConfig{Username: "admin", Password: "password"},
 				},
 			},
 			expectError: false,
 		},
 		{
-			name: "empty_devices",
+			name: "empty_device",
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-				Devices:              []DeviceConfig{},
+				Device:               DeviceConfig{},
 			},
-			expectError: false, // Empty devices is allowed at config level
+			expectError: false, // Empty device is allowed at config level
 		},
 	}
 
@@ -104,7 +98,6 @@ func TestConfig_MetricsConfiguration(t *testing.T) {
 
 	// Verify metrics are configurable
 	assert.True(t, config.Metrics.CiscoDeviceUp.Enabled)
-	assert.True(t, config.Metrics.CiscoCollectorDurationSeconds.Enabled)
 
 	// Test disabling metrics
 	config.Metrics.CiscoDeviceUp.Enabled = false
@@ -131,25 +124,6 @@ func TestDeviceConfig_Structure(t *testing.T) {
 	assert.Equal(t, "admin", device.Auth.Username)
 	assert.Equal(t, "secret", device.Auth.Password)
 	assert.Equal(t, "/path/to/key", device.Auth.KeyFile)
-}
-
-func TestConfig_MultipleDevices(t *testing.T) {
-	config := &Config{
-		Devices: []DeviceConfig{
-			{
-				Host: HostInfo{IP: "10.0.0.1", Port: 22},
-				Auth: AuthConfig{Username: "admin1", Password: "pass1"},
-			},
-			{
-				Host: HostInfo{IP: "10.0.0.2", Port: 22},
-				Auth: AuthConfig{Username: "admin2", Password: "pass2"},
-			},
-		},
-	}
-
-	assert.Len(t, config.Devices, 2)
-	assert.Equal(t, "10.0.0.1", config.Devices[0].Host.IP)
-	assert.Equal(t, "10.0.0.2", config.Devices[1].Host.IP)
 }
 
 func TestHostInfo_DefaultPort(t *testing.T) {
@@ -200,5 +174,4 @@ func TestCreateDefaultConfig_MetricsEnabled(t *testing.T) {
 	// Verify all default metrics are enabled
 	metrics := cfg.Metrics
 	assert.True(t, metrics.CiscoDeviceUp.Enabled)
-	assert.True(t, metrics.CiscoCollectorDurationSeconds.Enabled)
 }

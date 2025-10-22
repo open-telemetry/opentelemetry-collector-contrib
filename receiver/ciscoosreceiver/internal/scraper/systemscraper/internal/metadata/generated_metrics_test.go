@@ -61,10 +61,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCiscoCollectorDurationSecondsDataPoint(ts, 1, "target-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordCiscoDeviceUpDataPoint(ts, 1, "target-val")
 
 			defaultMetricsCount++
@@ -97,21 +93,6 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "cisco.collector.duration.seconds":
-					assert.False(t, validatedMetrics["cisco.collector.duration.seconds"], "Found a duplicate in the metrics slice: cisco.collector.duration.seconds")
-					validatedMetrics["cisco.collector.duration.seconds"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Duration of all collector scrapes for one target (total collection time)", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("target")
-					assert.True(t, ok)
-					assert.Equal(t, "target-val", attrVal.Str())
 				case "cisco.device.up":
 					assert.False(t, validatedMetrics["cisco.device.up"], "Found a duplicate in the metrics slice: cisco.device.up")
 					validatedMetrics["cisco.device.up"] = true

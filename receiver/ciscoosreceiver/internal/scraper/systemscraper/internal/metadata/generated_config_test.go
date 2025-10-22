@@ -27,10 +27,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoCollectorDurationSeconds: MetricConfig{Enabled: true},
-					CiscoDeviceUp:                 MetricConfig{Enabled: true},
-					SystemCPUUtilization:          MetricConfig{Enabled: true},
-					SystemMemoryUtilization:       MetricConfig{Enabled: true},
+					CiscoDeviceUp:           MetricConfig{Enabled: true},
+					SystemCPUUtilization:    MetricConfig{Enabled: true},
+					SystemMemoryUtilization: MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -38,10 +37,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoCollectorDurationSeconds: MetricConfig{Enabled: false},
-					CiscoDeviceUp:                 MetricConfig{Enabled: false},
-					SystemCPUUtilization:          MetricConfig{Enabled: false},
-					SystemMemoryUtilization:       MetricConfig{Enabled: false},
+					CiscoDeviceUp:           MetricConfig{Enabled: false},
+					SystemCPUUtilization:    MetricConfig{Enabled: false},
+					SystemMemoryUtilization: MetricConfig{Enabled: false},
 				},
 			},
 		},

@@ -10,8 +10,8 @@ import (
 // Config holds configuration for the system scraper.
 type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	// Devices is passed from the main receiver config (not from YAML)
-	Devices []DeviceConfig `mapstructure:"-"`
+	// Device is passed from the main receiver config (not from YAML)
+	Device DeviceConfig `mapstructure:"-"`
 }
 
 // DeviceConfig represents a single device configuration (flattened structure for scraper use)

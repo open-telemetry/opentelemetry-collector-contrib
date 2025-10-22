@@ -12,20 +12,6 @@ metrics:
     enabled: false
 ```
 
-### cisco.collector.duration.seconds
-
-Duration of all collector scrapes for one target (total collection time)
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |
-
 ### cisco.device.up
 
 Device availability (1 = up, 0 = down)

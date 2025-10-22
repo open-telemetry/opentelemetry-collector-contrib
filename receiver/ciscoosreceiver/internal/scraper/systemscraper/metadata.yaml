@@ -14,14 +14,6 @@ attributes:
     type: string
 
 metrics:
-  cisco.collector.duration.seconds:
-    enabled: true
-    description: Duration of all collector scrapes for one target (total collection time)
-    unit: s
-    gauge:
-      value_type: double
-    attributes: [target]
-
   cisco.device.up:
     enabled: true
     description: Device availability (1 = up, 0 = down)

@@ -18,7 +18,7 @@ import (
 // Config defines configuration for Cisco OS receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Devices                        []DeviceConfig                      `mapstructure:"devices"`
+	Device                         DeviceConfig                        `mapstructure:"device"`
 	Scrapers                       map[component.Type]component.Config `mapstructure:"-"`
 }
 
@@ -59,23 +59,17 @@ var (
 func (cfg *Config) Validate() error {
 	var err error
 
-	if len(cfg.Devices) == 0 {
-		err = errors.New("at least one device must be configured")
+	if cfg.Device.Device.Host.IP == "" {
+		err = multierr.Append(err, errors.New("device.host.ip cannot be empty"))
 	}
-
-	for i, device := range cfg.Devices {
-		if device.Device.Host.IP == "" {
-			err = multierr.Append(err, fmt.Errorf("device[%d]: host.ip cannot be empty", i))
-		}
-		if device.Device.Host.Port == 0 {
-			err = multierr.Append(err, fmt.Errorf("device[%d]: host.port cannot be empty", i))
-		}
-		if device.Auth.Username == "" {
-			err = multierr.Append(err, fmt.Errorf("device[%d]: auth.username cannot be empty", i))
-		}
-		if device.Auth.Password == "" && device.Auth.KeyFile == "" {
-			err = multierr.Append(err, fmt.Errorf("device[%d]: auth.password or auth.key_file must be provided", i))
-		}
+	if cfg.Device.Device.Host.Port == 0 {
+		err = multierr.Append(err, errors.New("device.host.port cannot be empty"))
+	}
+	if cfg.Device.Auth.Username == "" {
+		err = multierr.Append(err, errors.New("device.auth.username cannot be empty"))
+	}
+	if cfg.Device.Auth.Password == "" && cfg.Device.Auth.KeyFile == "" {
+		err = multierr.Append(err, errors.New("device.auth.password or device.auth.key_file must be provided"))
 	}
 
 	if len(cfg.Scrapers) == 0 {

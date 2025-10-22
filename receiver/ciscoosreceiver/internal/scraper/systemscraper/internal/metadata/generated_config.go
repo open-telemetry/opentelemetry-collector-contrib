@@ -27,17 +27,13 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for system metrics.
 type MetricsConfig struct {
-	CiscoCollectorDurationSeconds MetricConfig `mapstructure:"cisco.collector.duration.seconds"`
-	CiscoDeviceUp                 MetricConfig `mapstructure:"cisco.device.up"`
-	SystemCPUUtilization          MetricConfig `mapstructure:"system.cpu.utilization"`
-	SystemMemoryUtilization       MetricConfig `mapstructure:"system.memory.utilization"`
+	CiscoDeviceUp           MetricConfig `mapstructure:"cisco.device.up"`
+	SystemCPUUtilization    MetricConfig `mapstructure:"system.cpu.utilization"`
+	SystemMemoryUtilization MetricConfig `mapstructure:"system.memory.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		CiscoCollectorDurationSeconds: MetricConfig{
-			Enabled: true,
-		},
 		CiscoDeviceUp: MetricConfig{
 			Enabled: true,
 		},
