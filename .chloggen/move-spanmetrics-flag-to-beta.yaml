@@ -15,7 +15,10 @@ issues: [43713]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: more detail information please see https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.137.0.
+subtext: |
+  More detail information please see https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.137.0.
+  Existing users who want to retain resource attributes in the generated metrics can use the `add_resource_attributes` configuration option,
+  see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43394 for more detail.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
