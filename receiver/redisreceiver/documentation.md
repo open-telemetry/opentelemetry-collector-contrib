@@ -433,9 +433,9 @@ Redis server mode
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | false |
+| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Recommended |
 
 ### redis.replication.replica_offset
 
