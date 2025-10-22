@@ -241,8 +241,12 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerAvgExecLatencySearch`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -275,8 +279,13 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -319,8 +328,12 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIndexerAvgRate`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -353,10 +366,14 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
-
 		if sr.Return == 200 {
 			break
 		}
@@ -400,8 +417,12 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkPipelineQueues`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -435,8 +456,13 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 200 {
@@ -512,8 +538,12 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkBucketsSearchableStatus`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -547,8 +577,13 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 200 {
@@ -600,8 +635,12 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIndexesData`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -634,13 +673,13 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
-		}
-
-		if sr.Return == 200 {
-			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -713,8 +752,12 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerCompletionRatio`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -747,8 +790,13 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -791,8 +839,12 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIndexerRawWriteSeconds`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -825,8 +877,13 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -869,8 +926,12 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIndexerCpuSeconds`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -903,8 +964,13 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -947,8 +1013,12 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIoAvgIops`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -981,8 +1051,13 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -1025,8 +1100,12 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerAvgRunTime`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -1059,8 +1138,13 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -1917,8 +2001,12 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 		return
 	}
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkSearch`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -1969,9 +2057,16 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == http.StatusCreated && sr.Jobid != nil {
+		if (sr.Return == http.StatusCreated && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
-		} else if sr.Return == http.StatusCreated && sr.Jobid == nil {
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
+		}
+
+		if sr.Return == http.StatusAccepted && sr.Jobid == nil {
 			time.Sleep(2 * time.Second)
 		}
 
