@@ -40,7 +40,7 @@ type podClient interface {
 type informerFilter struct {
 	node         string
 	namespace    string
-	LabelFilters []labelFilter
+	labelFilters []labelFilter
 }
 
 type labelFilter struct {
@@ -55,7 +55,7 @@ func toInformerFilter(cfg AttributesFilterConfig) informerFilter {
 		namespace: cfg.Namespace,
 	}
 	for _, label := range cfg.Labels {
-		f.LabelFilters = append(f.LabelFilters, labelFilter{
+		f.labelFilters = append(f.labelFilters, labelFilter{
 			Key:   label.Key,
 			Value: label.Value,
 			Op:    selection.Operator(label.Op),

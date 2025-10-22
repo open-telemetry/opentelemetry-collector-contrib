@@ -17,22 +17,25 @@ import (
 )
 
 type k8sPodClient struct {
-	clientset      k8s.Interface
-	informerStop   chan struct{}
-	informer       cache.SharedIndexInformer
-	mu             sync.RWMutex
-	startTimeCache map[string]time.Time
+	useContainerReadiness bool
+	clientset             k8s.Interface
+	informerStop          chan struct{}
+	informer              cache.SharedIndexInformer
+	mu                    sync.RWMutex
+	startTimeCache        map[string]time.Time
 }
 
-func newK8sPodClient(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter) (podClient, error) {
+const defaultCacheSyncDuration = 10 * time.Minute
+
+func newK8sPodClient(_ context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
 	clientset, err := k8sconfig.MakeClient(apiConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create k8s client: %w", err)
 	}
 
 	labelSelector := labels.Everything()
-	if len(filter.LabelFilters) > 0 {
-		for _, lf := range filter.LabelFilters {
+	if len(filter.labelFilters) > 0 {
+		for _, lf := range filter.labelFilters {
 			requirement, err := labels.NewRequirement(lf.Key, lf.Op, []string{lf.Value})
 			if err != nil {
 				return nil, fmt.Errorf("failed to create label requirement: %w", err)
@@ -46,57 +49,68 @@ func newK8sPodClient(ctx context.Context, apiConfig k8sconfig.APIConfig, filter 
 		fieldSelectors = append(fieldSelectors, fields.OneTermEqualSelector("spec.nodeName", filter.node))
 	}
 	fieldSelector := fields.AndSelectors(fieldSelectors...)
-	options := informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
+	options := []informers.SharedInformerOption{informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
 		opts.LabelSelector = labelSelector.String()
 		opts.FieldSelector = fieldSelector.String()
-	})
-
-	var factory informers.SharedInformerFactory
+	})}
 	if filter.namespace != "" {
-		factory = informers.NewSharedInformerFactoryWithOptions(
-			clientset,
-			time.Hour,
-			informers.WithNamespace(filter.namespace),
-			options,
-		)
-	} else {
-		factory = informers.NewSharedInformerFactoryWithOptions(
-			clientset,
-			time.Hour,
-			options,
-		)
+		options = append(options, informers.WithNamespace(filter.namespace))
 	}
+
+	factory := informers.NewSharedInformerFactoryWithOptions(
+		clientset,
+		defaultCacheSyncDuration,
+		options...,
+	)
 
 	podInformer := factory.Core().V1().Pods().Informer()
-
 	client := &k8sPodClient{
-		clientset:      clientset,
-		informerStop:   make(chan struct{}),
-		informer:       podInformer,
-		startTimeCache: make(map[string]time.Time),
+		clientset:             clientset,
+		informerStop:          make(chan struct{}),
+		informer:              podInformer,
+		startTimeCache:        make(map[string]time.Time),
+		useContainerReadiness: useContainerReadiness,
 	}
 
-	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			if pod, ok := obj.(*corev1.Pod); ok {
-				client.addPod(pod)
+			pod, ok := obj.(*corev1.Pod)
+			if !ok {
+				return
 			}
+			client.mu.Lock()
+			defer client.mu.Unlock()
+			client.addPod(pod)
+
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			if oldPod, ok := oldObj.(*corev1.Pod); ok {
-				client.deletePod(oldPod)
+			oldPod, ok := oldObj.(*corev1.Pod)
+			if !ok {
+				return
 			}
-			if newPod, ok := newObj.(*corev1.Pod); ok {
-				client.addPod(newPod)
+			newPod, ok := newObj.(*corev1.Pod)
+			if !ok {
+				return
 			}
+			client.mu.Lock()
+			defer client.mu.Unlock()
+
+			client.deletePod(oldPod)
+			client.addPod(newPod)
 		},
 		DeleteFunc: func(obj interface{}) {
-			if pod, ok := obj.(*corev1.Pod); ok {
-				client.deletePod(pod)
+			pod, ok := obj.(*corev1.Pod)
+			if !ok {
+				return
 			}
+			client.mu.Lock()
+			defer client.mu.Unlock()
+			client.deletePod(pod)
 		},
 	})
-
+	if err != nil {
+		return nil, err
+	}
 	factory.Start(client.informerStop)
 	factory.WaitForCacheSync(client.informerStop)
 
@@ -104,24 +118,53 @@ func newK8sPodClient(ctx context.Context, apiConfig k8sconfig.APIConfig, filter 
 }
 
 func (c *k8sPodClient) addPod(pod *corev1.Pod) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	podName := fmt.Sprintf("%s/%s", pod.Namespace, pod.Name)
-	if pod.Status.StartTime != nil {
-		startTime := pod.Status.StartTime.Time
-		if pod.Status.PodIP != "" {
-			c.startTimeCache[fmt.Sprintf("ip:%s", pod.Status.PodIP)] = startTime
+	podStatus := pod.Status
+	var startTime time.Time
+	if c.useContainerReadiness {
+		ready, readyTime := c.containerReadinessTime(pod)
+		if ready {
+			startTime = readyTime
 		}
-		c.startTimeCache[fmt.Sprintf("name:%s", podName)] = startTime
-		c.startTimeCache[fmt.Sprintf("uid:%s", pod.UID)] = startTime
+	} else {
+		if podStatus.StartTime != nil {
+			startTime = podStatus.StartTime.Time
+		}
 	}
+	if startTime.IsZero() {
+		return
+	}
+	if podStatus.PodIP != "" {
+		c.startTimeCache[fmt.Sprintf("ip:%s", podStatus.PodIP)] = startTime
+	}
+	c.startTimeCache[fmt.Sprintf("name:%s", podName)] = startTime
+	c.startTimeCache[fmt.Sprintf("uid:%s", pod.UID)] = startTime
+}
+
+func (c *k8sPodClient) containerReadinessTime(pod *corev1.Pod) (bool, time.Time) {
+	var containerReadyTime time.Time
+	var podReady, containersReady bool
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == corev1.PodReady {
+			if condition.Status == corev1.ConditionTrue {
+				podReady = true
+			} else {
+				return false, containerReadyTime
+			}
+		}
+		if condition.Type == corev1.ContainersReady {
+			if condition.Status == corev1.ConditionTrue {
+				containersReady = true
+				containerReadyTime = condition.LastTransitionTime.Time
+			} else {
+				return false, containerReadyTime
+			}
+		}
+	}
+	return podReady && containersReady, containerReadyTime
 }
 
 func (c *k8sPodClient) deletePod(pod *corev1.Pod) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if pod.Status.PodIP != "" {
 		delete(c.startTimeCache, fmt.Sprintf("ip:%s", pod.Status.PodIP))
 	}

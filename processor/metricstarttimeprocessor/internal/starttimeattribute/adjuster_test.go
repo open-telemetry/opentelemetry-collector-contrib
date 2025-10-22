@@ -7,7 +7,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/filter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/testhelper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +34,11 @@ const testMetricName = "test_metric"
 
 func TestAdjustMetrics(t *testing.T) {
 	testStartTime := time.Now().Add(-1 * time.Hour)
+	testStartTimestamp := pcommon.NewTimestampFromTime(testStartTime)
+	currentTime := time.Now()
+	currentTimestamp := pcommon.NewTimestampFromTime(currentTime)
+	nonZeroStartTime := time.Now().Add(-30 * time.Minute)
+	nonZeroStartTimestamp := pcommon.NewTimestampFromTime(nonZeroStartTime)
 
 	mockClient := &mockPodClient{
 		startTimes: map[string]time.Time{
@@ -41,98 +48,440 @@ func TestAdjustMetrics(t *testing.T) {
 		},
 	}
 
-	tests := []struct {
-		name             string
-		attrs            map[string]string
-		expectAdjusted   bool
-		isCumulative     bool
-		startTimeUnixSec int64
-		filter           filterset.FilterSet
-	}{
+	// Test case 1: cumulative metric with pod IP
+
+	script1 := []*testhelper.MetricsAdjusterTest{
 		{
-			name: "cumulative metric with pod IP",
-			attrs: map[string]string{
-				"k8s.pod.ip": "10.0.0.1",
-			},
-			expectAdjusted: true,
-			isCumulative:   true,
-		},
-		{
-			name: "cumulative metric with pod name",
-			attrs: map[string]string{
-				"k8s.pod.name":       "my-pod",
-				"k8s.namespace.name": "default",
-			},
-			expectAdjusted: true,
-			isCumulative:   true,
-		},
-		{
-			name: "cumulative metric with pod UID",
-			attrs: map[string]string{
-				"k8s.pod.uid": "uid-12345",
-			},
-			expectAdjusted: true,
-			isCumulative:   true,
-		},
-		{
-			name:           "delta metric should not be adjusted",
-			attrs:          map[string]string{"k8s.pod.ip": "10.0.0.1"},
-			expectAdjusted: false,
-			isCumulative:   false,
-		},
-		{
-			name:           "metric without pod identifier",
-			attrs:          map[string]string{"other": "value"},
-			expectAdjusted: false,
-			isCumulative:   true,
-		},
-		{
-			name: "metric excluded by filter",
-			attrs: map[string]string{
-				"k8s.pod.ip": "10.0.0.1",
-			},
-			expectAdjusted: false,
-			isCumulative:   true,
-			filter:         filter.NoOpFilter{NoMatch: true},
-		},
-		{
-			name: "metric excluded because it has a non-zero start time",
-			attrs: map[string]string{
-				"k8s.pod.ip": "10.0.0.1",
-			},
-			expectAdjusted:   false,
-			isCumulative:     true,
-			startTimeUnixSec: time.Now().Unix(),
+			Description: "Cumulative metric with pod IP - start time should be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(testStartTimestamp)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			metrics := createTestMetrics(testMetricName, tt.attrs, tt.isCumulative, tt.startTimeUnixSec)
-			originalStartTime := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp()
-			metricNameFilter := tt.filter
-			if metricNameFilter == nil {
-				metricNameFilter = filter.NoOpFilter{}
-			}
-			adjuster, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
-				func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter) (podClient, error) {
-					return mockClient, nil
-				}, metricNameFilter, AttributesFilterConfig{}, true, 5*time.Minute)
-			require.NoError(t, err)
-			adjustedMetrics, err := adjuster.AdjustMetrics(context.Background(), metrics)
-			require.NoError(t, err)
-
-			adjustedStartTime := adjustedMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp()
-
-			if tt.expectAdjusted {
-				expectedTime := pcommon.NewTimestampFromTime(testStartTime)
-				assert.Equal(t, expectedTime, adjustedStartTime)
-				assert.NotEqual(t, originalStartTime, adjustedStartTime)
-			} else {
-				assert.Equal(t, originalStartTime, adjustedStartTime)
-			}
+	adjuster1, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter: filter.NoOpFilter{},
 		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster1, script1)
+
+	// Test case 2: cumulative metric with pod name and namespace
+	script2 := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Cumulative metric with pod name and namespace - start time should be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.name", "my-pod")
+				rm.Resource().Attributes().PutStr("k8s.namespace.name", "default")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.name", "my-pod")
+				rm.Resource().Attributes().PutStr("k8s.namespace.name", "default")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(testStartTimestamp)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+		},
 	}
+
+	adjuster2, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter: filter.NoOpFilter{},
+		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster2, script2)
+
+	// Test case 3: cumulative metric with pod UID
+	script3 := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Cumulative metric with pod UID - start time should be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.uid", "uid-12345")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.uid", "uid-12345")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(testStartTimestamp)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+		},
+	}
+
+	adjuster3, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter: filter.NoOpFilter{},
+		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster3, script3)
+
+	// Test case 4: delta metric should not be adjusted
+	script4 := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Delta metric with pod IP - start time should NOT be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+		},
+	}
+
+	adjuster4, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter: filter.NoOpFilter{},
+		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster4, script4)
+
+	// Test case 5: metric without pod identifier
+	script5 := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Metric without pod identifier - start time should NOT be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("other", "value")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("other", "value")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+		},
+	}
+
+	adjuster5, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter: filter.NoOpFilter{},
+		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster5, script5)
+
+	// Test case 6: metric excluded by NoOp filter
+	script6 := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Metric excluded by NoOp filter - start time should NOT be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+		},
+	}
+
+	adjuster6, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter: filter.NoOpFilter{NoMatch: true},
+		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster6, script6)
+
+	// Test case 7: metric included by filter
+	script7 := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Metric included by filter - start time should be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(testStartTimestamp)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+		},
+	}
+
+	filterSet7, err := filter.NewFilter(filter.FilterConfig{
+		Metrics: []string{testMetricName},
+		Config: filterset.Config{
+			MatchType: filterset.Strict,
+		},
+	}, filter.FilterConfig{})
+	require.NoError(t, err)
+
+	adjuster7, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter: filterSet7,
+		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster7, script7)
+
+	// Test case 8: metric excluded by filter
+	script8 := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Metric excluded by filter - start time should NOT be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(0)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+		},
+	}
+
+	filterSet8, err := filter.NewFilter(filter.FilterConfig{},
+		filter.FilterConfig{
+			Metrics: []string{testMetricName},
+			Config: filterset.Config{
+				MatchType: filterset.Strict,
+			},
+		})
+	require.NoError(t, err)
+
+	adjuster8, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter: filterSet8,
+		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster8, script8)
+
+	// Test case 9: metric with non-zero start time should not be adjusted
+	script9 := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Metric with non-zero start time - start time should NOT be adjusted",
+			Metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(nonZeroStartTimestamp)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+			Adjusted: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("k8s.pod.ip", "10.0.0.1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(testMetricName)
+				sum := metric.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(nonZeroStartTimestamp)
+				dp.SetTimestamp(currentTimestamp)
+				dp.SetDoubleValue(100.0)
+				return m
+			}(),
+		},
+	}
+
+	adjuster9, err := NewAdjusterWithFactory(component.TelemetrySettings{Logger: componenttest.NewNopTelemetrySettings().Logger},
+		func(ctx context.Context, apiConfig k8sconfig.APIConfig, filter informerFilter, useContainerReadiness bool) (podClient, error) {
+			return mockClient, nil
+		}, AttributesFilterConfig{}, false, common.AdjustmentOptions{
+			Filter:         filter.NoOpFilter{},
+			SkipIfCTExists: true,
+		})
+	require.NoError(t, err)
+	testhelper.RunScript(t, adjuster9, script9)
 }
 
 func createTestMetrics(name string, attrs map[string]string, cumulative bool, startTime int64) pmetric.Metrics {

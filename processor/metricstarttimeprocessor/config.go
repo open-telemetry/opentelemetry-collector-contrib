@@ -29,6 +29,8 @@ type Config struct {
 	// AttributesFilters only applies to the start_time_attribute strategy to construct specific k8s api informer filters
 	AttributesFilters starttimeattribute.AttributesFilterConfig `mapstructure:"attributes_filters"`
 	SkipIfCTExists    bool                                      `mapstructure:"skip_if_ct_exists"`
+
+	UseContainerReadinessTime bool `mapstructure:"use_container_readiness_time"`
 }
 
 var _ component.Config = (*Config)(nil)

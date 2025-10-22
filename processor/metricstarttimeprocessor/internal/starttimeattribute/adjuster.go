@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/datapointstorage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,32 +21,31 @@ const (
 )
 
 type Adjuster struct {
+	set       component.TelemetrySettings
 	apiConfig k8sconfig.APIConfig
 	podClient podClient
-	logger    *zap.Logger
 
-	filter         filterset.FilterSet
 	referenceCache *datapointstorage.Cache
 
-	skipIfCTExists bool
+	opts common.AdjustmentOptions
 }
 
-type podClientFactory func(context.Context, k8sconfig.APIConfig, informerFilter) (podClient, error)
+type podClientFactory func(context.Context, k8sconfig.APIConfig, informerFilter, bool) (podClient, error)
 
 // NewAdjuster returns a new Adjuster which adjust metrics' start times based on the initial received points.
-func NewAdjuster(set component.TelemetrySettings, filter filterset.FilterSet, attributeFilterConfig AttributesFilterConfig, skipIfCTExists bool, gcInterval time.Duration) (*Adjuster, error) {
-	return NewAdjusterWithFactory(set, newK8sPodClient, filter, attributeFilterConfig, skipIfCTExists, gcInterval)
+func NewAdjuster(set component.TelemetrySettings, attributeFilterConfig AttributesFilterConfig, useContainerReadiness bool, opts common.AdjustmentOptions) (*Adjuster, error) {
+	return NewAdjusterWithFactory(set, newK8sPodClient, attributeFilterConfig, useContainerReadiness, opts)
 }
 
 // NewAdjusterWithFactory returns a new Adjuster with a custom pod client factory
-func NewAdjusterWithFactory(set component.TelemetrySettings, factory podClientFactory, filter filterset.FilterSet, attributeFilterConfig AttributesFilterConfig, skipIfCTExists bool, gcInterval time.Duration) (*Adjuster, error) {
+func NewAdjusterWithFactory(set component.TelemetrySettings, factory podClientFactory, attributeFilterConfig AttributesFilterConfig, useContainerReadiness bool, opts common.AdjustmentOptions) (*Adjuster, error) {
 	apiConfig := k8sconfig.APIConfig{
 		AuthType: k8sconfig.AuthTypeServiceAccount,
 	}
 
 	ctx := context.Background()
 	k8sInformerFilter := toInformerFilter(attributeFilterConfig)
-	client, err := factory(ctx, apiConfig, k8sInformerFilter)
+	client, err := factory(ctx, apiConfig, k8sInformerFilter, useContainerReadiness)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pod client: %w", err)
 	}
@@ -54,10 +53,9 @@ func NewAdjusterWithFactory(set component.TelemetrySettings, factory podClientFa
 	return &Adjuster{
 		apiConfig:      apiConfig,
 		podClient:      client,
-		logger:         set.Logger,
-		filter:         filter,
-		skipIfCTExists: skipIfCTExists,
-		referenceCache: datapointstorage.NewCache(gcInterval),
+		set:            set,
+		opts:           opts,
+		referenceCache: datapointstorage.NewCache(opts.GCInterval),
 	}, nil
 }
 
@@ -85,29 +83,27 @@ func (a *Adjuster) AdjustMetrics(ctx context.Context, metrics pmetric.Metrics) (
 				metricName := metric.Name()
 				// Only process cumulative metrics
 				if !a.isCumulativeMetric(metric) {
-					a.logger.Debug("metric is not cumulative, skipping",
+					a.set.Logger.Debug("metric is not cumulative, skipping",
 						zap.String("metricName", metricName))
 					continue
 				}
-				if !a.filter.Matches(metricName) {
-					a.logger.Debug("metric not included by filter, skipper",
+				if a.opts.Filter != nil && !a.opts.Filter.Matches(metricName) {
+					a.set.Logger.Debug("metric not included by filter, skipping",
 						zap.String("metricName", metricName))
 					continue
 				}
-				if a.skipIfCTExists && a.hasStartTimeSet(metric) {
+				if a.opts.SkipIfCTExists && common.HasStartTimeSet(metric) {
 					continue
 				}
-				// Get pod start time
 				startTime := a.podClient.GetPodStartTime(ctx, *podID)
 				if startTime.IsZero() {
-					a.logger.Debug("no known start time for pod",
+					a.set.Logger.Debug("no known start time for pod",
 						zap.Stringer("podIDTypee", podID.Type),
 						zap.String("podID", podID.Value),
 						zap.String("metricName", metricName),
 					)
 					continue
 				}
-				// Set start time for all data points
 				a.setStartTimeForMetric(tsm, metric, startTime)
 			}
 		}
@@ -117,30 +113,7 @@ func (a *Adjuster) AdjustMetrics(ctx context.Context, metrics pmetric.Metrics) (
 	return metrics, nil
 }
 
-// only look at the first datapoint
-func (a *Adjuster) hasStartTimeSet(metric pmetric.Metric) bool {
-	switch metric.Type() {
-	case pmetric.MetricTypeSum:
-		dataPoints := metric.Sum().DataPoints()
-		if dataPoints.Len() > 0 {
-			return dataPoints.At(0).StartTimestamp() != 0
-		}
-	case pmetric.MetricTypeHistogram:
-		dataPoints := metric.Histogram().DataPoints()
-		if dataPoints.Len() > 0 {
-			return dataPoints.At(0).StartTimestamp() != 0
-		}
-	case pmetric.MetricTypeExponentialHistogram:
-		dataPoints := metric.ExponentialHistogram().DataPoints()
-		if dataPoints.Len() > 0 {
-			return dataPoints.At(0).StartTimestamp() != 0
-		}
-	}
-	return false
-}
-
 func (a *Adjuster) extractPodIdentifier(attrs pcommon.Map) *podIdentifier {
-	// Check for pod name with namespace
 	podNameVal, nameOk := attrs.Get("k8s.pod.name")
 	namespaceVal, nsOk := attrs.Get("k8s.namespace.name")
 	if nameOk && nsOk {
@@ -149,18 +122,12 @@ func (a *Adjuster) extractPodIdentifier(attrs pcommon.Map) *podIdentifier {
 			Type:  podName,
 		}
 	}
-
-	// Check for pod UID
 	if uidVal, ok := attrs.Get("k8s.pod.uid"); ok {
 		return &podIdentifier{
 			Value: uidVal.AsString(),
 			Type:  podUID,
 		}
 	}
-
-	// Check for pod IP
-	// Note: pod IP is not a unique identifier i.e for host-networked pods or ds pods
-	// so this is a fallback option
 	if ipVal, ok := attrs.Get("k8s.pod.ip"); ok {
 		return &podIdentifier{
 			Value: ipVal.AsString(),

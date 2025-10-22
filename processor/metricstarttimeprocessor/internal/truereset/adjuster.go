@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -33,13 +34,15 @@ const Type = "true_reset_point"
 type Adjuster struct {
 	startTimeCache *datapointstorage.Cache
 	set            component.TelemetrySettings
+	opts           common.AdjustmentOptions
 }
 
 // NewAdjuster returns a new Adjuster which adjust metrics' start times based on the initial received points.
-func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adjuster {
+func NewAdjuster(set component.TelemetrySettings, opts common.AdjustmentOptions) *Adjuster {
 	return &Adjuster{
-		startTimeCache: datapointstorage.NewCache(gcInterval),
+		startTimeCache: datapointstorage.NewCache(opts.GCInterval),
 		set:            set,
+		opts:           opts,
 	}
 }
 
@@ -58,6 +61,15 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
+				metricName := metric.Name()
+				if a.opts.Filter != nil && !a.opts.Filter.Matches(metricName) {
+					a.set.Logger.Debug("metric not included by filter, skipping",
+						zap.String("metricName", metricName))
+					continue
+				}
+				if a.opts.SkipIfCTExists && common.HasStartTimeSet(metric) {
+					continue
+				}
 				switch dataType := metric.Type(); dataType {
 				case pmetric.MetricTypeGauge:
 					// gauges don't need to be adjusted so no additional processing is necessary

@@ -7,6 +7,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/filter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimeattribute"
 	"go.opentelemetry.io/collector/component"
@@ -40,14 +41,19 @@ func createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
+	opts := common.AdjustmentOptions{
+		GCInterval:     rCfg.GCInterval,
+		SkipIfCTExists: rCfg.SkipIfCTExists,
+		Filter:         filter,
+	}
 	var adjustMetrics processorhelper.ProcessMetricsFunc
 
 	switch rCfg.Strategy {
 	case truereset.Type:
-		adjuster := truereset.NewAdjuster(set.TelemetrySettings, rCfg.GCInterval)
+		adjuster := truereset.NewAdjuster(set.TelemetrySettings, opts)
 		adjustMetrics = adjuster.AdjustMetrics
 	case subtractinitial.Type:
-		adjuster := subtractinitial.NewAdjuster(set.TelemetrySettings, rCfg.GCInterval)
+		adjuster := subtractinitial.NewAdjuster(set.TelemetrySettings, opts)
 		adjustMetrics = adjuster.AdjustMetrics
 	case starttimemetric.Type:
 		var startTimeMetricRegex *regexp.Regexp
@@ -58,10 +64,10 @@ func createMetricsProcessor(
 				return nil, err
 			}
 		}
-		adjuster := starttimemetric.NewAdjuster(set.TelemetrySettings, startTimeMetricRegex, rCfg.GCInterval)
+		adjuster := starttimemetric.NewAdjuster(set.TelemetrySettings, startTimeMetricRegex, opts)
 		adjustMetrics = adjuster.AdjustMetrics
 	case starttimeattribute.Type:
-		adjuster, err := starttimeattribute.NewAdjuster(set.TelemetrySettings, filter, rCfg.AttributesFilters, rCfg.SkipIfCTExists, rCfg.GCInterval)
+		adjuster, err := starttimeattribute.NewAdjuster(set.TelemetrySettings, rCfg.AttributesFilters, rCfg.UseContainerReadinessTime, opts)
 		if err != nil {
 			return nil, err
 		}
