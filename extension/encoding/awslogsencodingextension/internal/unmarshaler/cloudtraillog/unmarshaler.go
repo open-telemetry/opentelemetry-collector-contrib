@@ -148,7 +148,7 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 
 	var cloudTrailLog CloudTrailLog
 	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as a CloudTrail logs: %w", err)
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as CloudTrail logs: %w", err)
 	}
 
 	if len(cloudTrailLog.Records) > 0 {

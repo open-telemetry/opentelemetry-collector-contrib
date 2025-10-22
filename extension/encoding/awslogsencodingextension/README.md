@@ -258,11 +258,18 @@ If you're using the old format values you should update the encoding extension c
 | `challengeResponse`           | _Currently not supported_                                                                        |
 | `oversizeFields`              | _Currently not supported_                                                                        |
 
-### CloudTrail log record fields
+### CloudTrail record fields
 
-[CloudTrail log record fields](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) are mapped this way in the resulting OpenTelemetry log:
+Processed CloudTrail records come in two formats,
 
-| CloudTrail field                                          | Attribute in OpenTelemetry log                                            |
+- CloudTrail event records
+- CloudTrail digest record
+
+#### CloudTrail event records
+
+[CloudTrail event records](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) get mapped with following attributes in the resulting OpenTelemetry log:
+
+| CloudTrail event field                                    | Attribute in OpenTelemetry log                                            |
 |-----------------------------------------------------------|---------------------------------------------------------------------------|
 | `apiVersion`                                              | `aws.cloudtrail.api_version`                                              |
 | `eventID`                                                 | `aws.cloudtrail.event_id`                                                 |
@@ -306,6 +313,24 @@ If you're using the old format values you should update the encoding extension c
 | `userIdentity.sessionContext.sessionIssuer.arn`           | `aws.user_identity.session_context.issuer.arn`                            |
 | `userIdentity.sessionContext.sessionIssuer.accountId`     | `aws.user_identity.session_context.issuer.account_id`                     |
 | `userIdentity.sessionContext.sessionIssuer.userName`      | `aws.user_identity.session_context.issuer.user_name`                      |
+
+#### CloudTrail digest record
+
+[CloudTrail digest record](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-digest-file-structure.html) get mapped with following attributes in the resulting OpenTelemetry log:
+
+| CloudTrail digest field  | Attribute in OpenTelemetry log                    |
+|--------------------------|---------------------------------------------------|
+| awsAccountId             | cloud.account.id                                  |
+| digestS3Bucket           | aws.cloudtrail.digest.s3_bucket                   |
+| digestS3Object           | aws.cloudtrail.digest.s3_object                   |
+| newestEventTime          | aws.cloudtrail.digest.newest_event                |
+| oldestEventTime          | aws.cloudtrail.digest.oldest_event                |
+| previousDigestS3Bucket   | aws.cloudtrail.digest.previous_s3_bucket          |
+| previousDigestS3Object   | aws.cloudtrail.digest.previous_s3_object          |
+| logFiles.s3Bucket        | aws.cloudtrail.digest.log_files.s3_bucket         |
+| logFiles.s3Object        | aws.cloudtrail.digest.log_files.s3_bucket         |
+| logFiles.newestEventTime | aws.cloudtrail.digest.log_files.newest_event_time |
+| logFiles.oldestEventTime | aws.cloudtrail.digest.log_files.oldest_event_time |
 
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
 
