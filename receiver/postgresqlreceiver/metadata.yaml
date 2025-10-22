@@ -477,7 +477,7 @@ metrics:
     stability:
       level: development
     enabled: true
-    unit: "{vacuums}"
+    unit: "{vacuum}"
     sum:
       aggregation_temporality: cumulative
       monotonic: true
