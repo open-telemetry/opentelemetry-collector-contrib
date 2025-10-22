@@ -45,7 +45,7 @@ type fn struct {
 	startLine  int64
 }
 
-// mm is a hleper struct to build pprofile.ProfilesDictionary.mapping_table.
+// mm is a helper struct to build pprofile.ProfilesDictionary.mapping_table.
 type mm struct {
 	memoryStart    uint64
 	memoryLimit    uint64
@@ -54,12 +54,21 @@ type mm struct {
 	attrIdxs       string // List of consecutive increasing indices separated by a semicolon.
 }
 
+// loc is a helper struct to build pprofile.ProfilesDictionary.location_table.
+type loc struct {
+	mappingIdx int32
+	address    uint64
+	lines      string // String representation of a sorted list of lines.
+	attrIdxs   string // List of consecutive increasing indices separated by a semicolon.
+}
+
 // lookupTables is a helper struct around pprofile.ProfilesDictionary.
 type lookupTables struct {
 	mappingTable        map[mm]int32
 	lastMappingTableIdx int32
 
-	// TODO locationTable
+	locationTable        map[loc]int32
+	lastLocationTableIdx int32
 
 	functionTable        map[fn]int32
 	lastFunctionTableIdx int32
@@ -82,10 +91,6 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		return nil, fmt.Errorf("%w: %w", err, errInvalPprof)
 	}
 	dst := pprofile.NewProfiles()
-
-	// location_table[0] must always be zero value (Location{}) and present.
-	dst.Dictionary().LocationTable().AppendEmpty()
-	lastLocationTableIdx := int32(0)
 
 	// Initialize remaining lookup tables of pprofile.ProfilesDictionary in initLookupTables.
 	lts := initLookupTables()
@@ -110,57 +115,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 			s := p.Sample().AppendEmpty()
 
 			// pprof.Sample.location_id
-			var locTableIDs []int32
-			for _, loc := range sample.Location {
-				l := dst.Dictionary().LocationTable().AppendEmpty()
-				lastLocationTableIdx++
-
-				locTableIDs = append(locTableIDs, lastLocationTableIdx)
-
-				// pprof.Location.mapping_id
-				if loc.Mapping != nil {
-					mmAttrIDs := lts.getIdxForMMAttributes(loc.Mapping)
-					mmIdx := lts.getIdxForMapping(
-						loc.Mapping.Start,
-						loc.Mapping.Limit,
-						loc.Mapping.Offset,
-						lts.getIdxForString(loc.Mapping.File),
-						mmAttrIDs,
-					)
-					l.SetMappingIndex(mmIdx)
-				}
-
-				// pprof.Location.address
-				l.SetAddress(loc.Address)
-
-				// pprof.Location.line
-				for _, line := range loc.Line {
-					ln := l.Line().AppendEmpty()
-
-					// pprof.Line.function_id
-					if line.Function != nil {
-						ln.SetFunctionIndex(lts.getIdxForFunction(
-							line.Function.Name,
-							line.Function.SystemName,
-							line.Function.Filename,
-							line.Function.StartLine))
-					}
-
-					// pprof.Line.line
-					ln.SetLine(line.Line)
-
-					// pprof.Line.column
-					ln.SetColumn(line.Column)
-				}
-
-				// pprof.Location.is_folded
-				if loc.IsFolded {
-					idx := lts.getIdxForAttribute("pprof.location.is_folded", true)
-					l.AttributeIndices().Append(idx)
-				}
-			}
-
-			stackIdx := lts.getIdxForStackLocations(locTableIDs)
+			stackIdx := lts.getIdxForStack(sample.Location)
 			s.SetStackIndex(stackIdx)
 
 			// pprof.Sample.value
@@ -378,16 +333,61 @@ func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
 	return ids
 }
 
-// getIdxForStackLocations returns the corresponding index for a stack and its location
+// getIdxForStack returns the corresponding index for a stack and its location
 // indices. If the mapping does not yet exist in the cache, it will be added.
-func (lts *lookupTables) getIdxForStackLocations(locIdxs []int32) int32 {
-	key := attrIdxToString(locIdxs)
+func (lts *lookupTables) getIdxForStack(locs []*profile.Location) int32 {
+	var locTableIDs []int32
+	for _, loc := range locs {
+		idx := lts.getIdxForLocation(loc)
+
+		locTableIDs = append(locTableIDs, idx)
+	}
+
+	key := attrIdxToString(locTableIDs)
 	if idx, exists := lts.stackTable[key]; exists {
 		return idx
 	}
 	lts.lastStackTableIdx++
 	lts.stackTable[key] = lts.lastStackTableIdx
 	return lts.lastStackTableIdx
+}
+
+// getIdxForLocation returns the corresponding index for a location.
+// If the location does not yet exist in the cache, it will be added.
+func (lts *lookupTables) getIdxForLocation(l *profile.Location) int32 {
+	var attrIdxs []int32
+	// pprof.Location.is_folded
+	if l.IsFolded {
+		idx := lts.getIdxForAttribute("pprof.location.is_folded", true)
+		attrIdxs = append(attrIdxs, idx)
+	}
+
+	key := loc{
+		// pprof.Location.address
+		address:  l.Address,
+		attrIdxs: attrIdxToString(attrIdxs),
+		// pprof.Location.line
+		lines: lts.linesToString(l.Line),
+	}
+
+	// pprof.Location.mapping_id
+	if l.Mapping != nil {
+		mmIdx := lts.getIdxForMapping(
+			l.Mapping.Start,
+			l.Mapping.Limit,
+			l.Mapping.Offset,
+			lts.getIdxForString(l.Mapping.File),
+			lts.getIdxForMMAttributes(l.Mapping),
+		)
+		key.mappingIdx = mmIdx
+	}
+
+	if idx, exists := lts.locationTable[key]; exists {
+		return idx
+	}
+	lts.lastLocationTableIdx++
+	lts.locationTable[key] = lts.lastLocationTableIdx
+	return lts.lastLocationTableIdx
 }
 
 func isEqualValue(a, b any) bool {
@@ -398,6 +398,7 @@ func isEqualValue(a, b any) bool {
 func initLookupTables() lookupTables {
 	lts := lookupTables{
 		mappingTable:   make(map[mm]int32),
+		locationTable:  make(map[loc]int32),
 		functionTable:  make(map[fn]int32),
 		stringTable:    make(map[string]int32),
 		attributeTable: make(map[attr]int32),
@@ -407,6 +408,10 @@ func initLookupTables() lookupTables {
 	// mapping_table[0] must always be zero value (Mapping{}) and present.
 	lts.lastMappingTableIdx = 0
 	lts.mappingTable[mm{}] = lts.lastMappingTableIdx
+
+	// location_table[0] must always be zero value (Location{}) and present.
+	lts.lastLocationTableIdx = 0
+	lts.locationTable[loc{}] = lts.lastLocationTableIdx
 
 	// function_table[0] must always be zero value (Function{}) and present.
 	lts.lastFunctionTableIdx = 0
@@ -452,6 +457,29 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 			return err
 		}
 		dic.MappingTable().At(int(id)).AttributeIndices().Append(attrIndices...)
+	}
+
+	for i := 0; i < len(lts.locationTable); i++ {
+		dic.LocationTable().AppendEmpty()
+	}
+	for l, id := range lts.locationTable {
+		dic.LocationTable().At(int(id)).SetAddress(l.address)
+		dic.LocationTable().At(int(id)).SetMappingIndex(l.mappingIdx)
+		lines, err := stringToLine(l.lines)
+		if err != nil {
+			return err
+		}
+		for _, ln := range lines {
+			newLine := dic.LocationTable().At(int(id)).Line().AppendEmpty()
+			newLine.SetLine(ln.Line())
+			newLine.SetColumn(ln.Column())
+			newLine.SetFunctionIndex(ln.FunctionIndex())
+		}
+		attrIdxs, err := stringToAttrIdx(l.attrIdxs)
+		if err != nil {
+			return err
+		}
+		dic.LocationTable().At(int(id)).AttributeIndices().Append(attrIdxs...)
 	}
 
 	for i := 0; i < len(lts.stackTable); i++ {
@@ -529,5 +557,85 @@ func stringToAttrIdx(indices string) ([]int32, error) {
 		return nil, fmt.Errorf("invalid order of indices '%s': %w", indices, errInalIdxFomrat)
 	}
 
+	return result, nil
+}
+
+// linesToString is a helper function to convert a list of lines into a string.
+func (lts *lookupTables) linesToString(lines []profile.Line) string {
+	if len(lines) == 0 {
+		return ""
+	}
+
+	slices.SortFunc(lines, func(a, b profile.Line) int {
+		if a.Line != b.Line {
+			return int(a.Line - b.Line)
+		}
+		if a.Column != b.Column {
+			return int(a.Column - b.Column)
+		}
+		if a.Function == nil && b.Function == nil {
+			return 0
+		}
+		if a.Function == nil {
+			return -1
+		}
+		if b.Function == nil {
+			return 1
+		}
+		return int(a.Function.ID - b.Function.ID)
+	})
+
+	var parts []string
+	for _, line := range lines {
+		funcID := int32(-1)
+		if line.Function != nil {
+			funcID = lts.getIdxForFunction(
+				line.Function.Name,
+				line.Function.SystemName,
+				line.Function.Filename,
+				line.Function.StartLine)
+		}
+		parts = append(parts, fmt.Sprintf("%d:%d:%d", funcID, line.Line, line.Column))
+	}
+	return strings.Join(parts, ";")
+}
+
+// stringToLine is a helper function to convert a string into a list of lines.
+func stringToLine(lines string) ([]pprofile.Line, error) {
+	if lines == "" {
+		return []pprofile.Line{}, nil
+	}
+
+	parts := strings.Split(lines, ";")
+	result := make([]pprofile.Line, 0, len(parts))
+
+	for _, part := range parts {
+		components := strings.Split(part, ":")
+		if len(components) != 3 {
+			return nil, fmt.Errorf("invalid line format '%s': %w", part, errInalIdxFomrat)
+		}
+
+		funcID, err := strconv.ParseInt(components[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse function ID '%s': %w", components[0], err)
+		}
+
+		lineNum, err := strconv.ParseInt(components[1], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse line number '%s': %w", components[1], err)
+		}
+
+		column, err := strconv.ParseInt(components[2], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse column '%s': %w", components[2], err)
+		}
+
+		line := pprofile.NewLine()
+		line.SetFunctionIndex(int32(funcID))
+		line.SetLine(lineNum)
+		line.SetColumn(column)
+
+		result = append(result, line)
+	}
 	return result, nil
 }
