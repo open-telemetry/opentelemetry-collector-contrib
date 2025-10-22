@@ -159,5 +159,5 @@ func (cfg *ArrowConfig) toArrowProducerOptions() (arrowOpts []config.Option) {
 	default:
 		// Should have failed in validate, nothing we can do.
 	}
-	return
+	return arrowOpts
 }

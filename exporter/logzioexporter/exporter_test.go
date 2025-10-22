@@ -211,15 +211,15 @@ func gUnzipData(data []byte) (resData []byte, err error) {
 	var r io.Reader
 	r, err = gzip.NewReader(b)
 	if err != nil {
-		return
+		return resData, err
 	}
 	var resB bytes.Buffer
 	_, err = resB.ReadFrom(r)
 	if err != nil {
-		return
+		return resData, err
 	}
 	resData = resB.Bytes()
-	return
+	return resData, err
 }
 
 func TestPushTraceData(tester *testing.T) {
