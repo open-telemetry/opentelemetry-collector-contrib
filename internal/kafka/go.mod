@@ -5,15 +5,15 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.46.2
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.137.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.138.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/stretchr/testify v1.11.1
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250729165834-29dc44e616cd
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251021233722-4ca18825d8c0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.1.2
-	go.opentelemetry.io/collector/config/configcompression v1.43.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/config/configopaque v1.43.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/config/configtls v1.43.1-0.20251013162618-a96eab114ea4
+	go.opentelemetry.io/collector/config/configcompression v1.44.1-0.20251021231522-c657d5d4e920
+	go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920
+	go.opentelemetry.io/collector/config/configtls v1.44.1-0.20251021231522-c657d5d4e920
 	go.uber.org/goleak v1.3.0
 )
 
@@ -57,14 +57,14 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	github.com/twmb/franz-go v1.19.5
-	github.com/twmb/franz-go/pkg/kadm v1.16.1
+	github.com/twmb/franz-go v1.20.1
+	github.com/twmb/franz-go/pkg/kadm v1.17.0
 	github.com/twmb/franz-go/pkg/kmsg v1.12.0
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/confmap v1.43.1-0.20251013162618-a96eab114ea4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.43.1-0.20251013162618-a96eab114ea4 // indirect
+	go.opentelemetry.io/collector/confmap v1.44.1-0.20251021231522-c657d5d4e920 // indirect
+	go.opentelemetry.io/collector/featuregate v1.44.1-0.20251021231522-c657d5d4e920 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
