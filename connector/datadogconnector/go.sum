@@ -2,8 +2,8 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 cloud.google.com/go/compute/metadata v0.9.0 h1:pDUj4QMoPejqq20dK0Pg2N4yG9zIkYGdBtwLoEkH9Zs=
 cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCBSM6qQI1yTBdEb3C10=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/DataDog/agent-payload/v5 v5.0.169 h1:fhUMUxOqAd/OhfewQ8Iq+WTV5peH4fpf2eUs6Q4W2sE=
-github.com/DataDog/agent-payload/v5 v5.0.169/go.mod h1:9PtvPKsgZVTTvqgYtcwB4bjXAkxYzC2wzSXSadPRHv8=
+github.com/DataDog/agent-payload/v5 v5.0.170 h1:1nASSa1tbteeCPpzPV4KMSgH9fkUUislmzdju014gBA=
+github.com/DataDog/agent-payload/v5 v5.0.170/go.mod h1:9PtvPKsgZVTTvqgYtcwB4bjXAkxYzC2wzSXSadPRHv8=
 github.com/DataDog/datadog-agent/comp/core/config v0.72.0-rc.8 h1:CTYwbeBTHVGwR2gDOFAs80FQg1ikb57cMQfL4oy3pNA=
 github.com/DataDog/datadog-agent/comp/core/config v0.72.0-rc.8/go.mod h1:VV4KdZszlWfsTeW1ym3pFpgS4H8qE95y7cKdRpl2IAM=
 github.com/DataDog/datadog-agent/comp/core/flare/builder v0.72.0-rc.8 h1:ZYKiMfArhEQ1+EZtj7wKs55tgdOIK3lRyhMAF2DZk1g=
