@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.25
+go 1.24.4
 
 require (
 	github.com/Khan/genqlient v0.8.1
@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/cmd/mdatagen v0.137.1-0.20251013162618-a96eab114ea4
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.38.0
-	golang.org/x/tools/gopls v0.0.0-20251015163430-59d52301c35c
+	golang.org/x/tools/gopls v0.20.0
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.13.0
 	mvdan.cc/gofumpt v0.8.0
