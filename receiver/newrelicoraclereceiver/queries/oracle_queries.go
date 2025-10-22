@@ -434,4 +434,24 @@ const (
 			SYS_CONTEXT('USERENV', 'CON_NAME') as CONTAINER_NAME,
 			SYS_CONTEXT('USERENV', 'CON_ID') as CONTAINER_ID
 		FROM DUAL`
+
+	// Database Version and Hosting Information Queries
+	// Following Oracle best practices for system information collection
+
+	// Enhanced database info query - combines version with hosting environment hints
+	// Includes hostname and platform information to assist cloud provider detection
+	// These values are cached to avoid repeated queries and used alongside environment detection
+	OptimizedDatabaseInfoSQL = `
+		SELECT 
+			i.INST_ID,
+			i.VERSION as VERSION_FULL,
+			i.HOST_NAME,
+			d.NAME as DATABASE_NAME,
+			d.PLATFORM_NAME
+		FROM 
+			GV$INSTANCE i,
+			V$DATABASE d
+		WHERE 
+			i.INST_ID = 1
+			AND ROWNUM = 1`
 )

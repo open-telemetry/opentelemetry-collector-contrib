@@ -214,6 +214,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbDatabaseInfoDataPoint(ts, 1, "db.instance.name-val", "db.version-val", "db.version.full-val", "db.edition-val", "db.compatible-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbDatafileAutoextensibleDataPoint(ts, 1, "db.instance.name-val", "con.id-val", "tablespace.name-val", "file.name-val", "container.status-val")
 
 			defaultMetricsCount++
@@ -255,6 +259,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbGlobalNameDataPoint(ts, 1, "db.instance.name-val", "instance.id-val", "global.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbHostingInfoDataPoint(ts, 1, "db.instance.name-val", "cloud.provider-val", "cloud.platform-val", "deployment.environment-val", "host.arch-val", "platform.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -2076,6 +2084,33 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("open.mode")
 					assert.True(t, ok)
 					assert.Equal(t, "open.mode-val", attrVal.Str())
+				case "newrelicoracledb.database.info":
+					assert.False(t, validatedMetrics["newrelicoracledb.database.info"], "Found a duplicate in the metrics slice: newrelicoracledb.database.info")
+					validatedMetrics["newrelicoracledb.database.info"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Database version and configuration information", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("db.instance.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.instance.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("db.version")
+					assert.True(t, ok)
+					assert.Equal(t, "db.version-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("db.version.full")
+					assert.True(t, ok)
+					assert.Equal(t, "db.version.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("db.edition")
+					assert.True(t, ok)
+					assert.Equal(t, "db.edition-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("db.compatible")
+					assert.True(t, ok)
+					assert.Equal(t, "db.compatible-val", attrVal.Str())
 				case "newrelicoracledb.datafile.autoextensible":
 					assert.False(t, validatedMetrics["newrelicoracledb.datafile.autoextensible"], "Found a duplicate in the metrics slice: newrelicoracledb.datafile.autoextensible")
 					validatedMetrics["newrelicoracledb.datafile.autoextensible"] = true
@@ -2301,6 +2336,36 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("global.name")
 					assert.True(t, ok)
 					assert.Equal(t, "global.name-val", attrVal.Str())
+				case "newrelicoracledb.hosting.info":
+					assert.False(t, validatedMetrics["newrelicoracledb.hosting.info"], "Found a duplicate in the metrics slice: newrelicoracledb.hosting.info")
+					validatedMetrics["newrelicoracledb.hosting.info"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Database hosting and platform information", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("db.instance.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.instance.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("cloud.provider")
+					assert.True(t, ok)
+					assert.Equal(t, "cloud.provider-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("cloud.platform")
+					assert.True(t, ok)
+					assert.Equal(t, "cloud.platform-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("deployment.environment")
+					assert.True(t, ok)
+					assert.Equal(t, "deployment.environment-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("host.arch")
+					assert.True(t, ok)
+					assert.Equal(t, "host.arch-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("platform.name")
+					assert.True(t, ok)
+					assert.Equal(t, "platform.name-val", attrVal.Str())
 				case "newrelicoracledb.locked_accounts":
 					assert.False(t, validatedMetrics["newrelicoracledb.locked_accounts"], "Found a duplicate in the metrics slice: newrelicoracledb.locked_accounts")
 					validatedMetrics["newrelicoracledb.locked_accounts"] = true

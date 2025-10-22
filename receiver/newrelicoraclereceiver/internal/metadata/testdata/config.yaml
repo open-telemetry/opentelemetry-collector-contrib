@@ -73,6 +73,8 @@ all_set:
       enabled: true
     newrelicoracledb.container.status:
       enabled: true
+    newrelicoracledb.database.info:
+      enabled: true
     newrelicoracledb.datafile.autoextensible:
       enabled: true
     newrelicoracledb.datafile.size_bytes:
@@ -94,6 +96,8 @@ all_set:
     newrelicoracledb.disk.writes:
       enabled: true
     newrelicoracledb.global_name:
+      enabled: true
+    newrelicoracledb.hosting.info:
       enabled: true
     newrelicoracledb.locked_accounts:
       enabled: true
@@ -708,6 +712,8 @@ none_set:
       enabled: false
     newrelicoracledb.container.status:
       enabled: false
+    newrelicoracledb.database.info:
+      enabled: false
     newrelicoracledb.datafile.autoextensible:
       enabled: false
     newrelicoracledb.datafile.size_bytes:
@@ -729,6 +735,8 @@ none_set:
     newrelicoracledb.disk.writes:
       enabled: false
     newrelicoracledb.global_name:
+      enabled: false
+    newrelicoracledb.hosting.info:
       enabled: false
     newrelicoracledb.locked_accounts:
       enabled: false

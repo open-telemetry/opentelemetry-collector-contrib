@@ -186,6 +186,39 @@ attributes:
     description: Oracle service connection load balancing goal
     type: string
 
+  # Database Version Attributes (OpenTelemetry semantic conventions)
+  db.version:
+    description: The version of the database management system (DBMS) product
+    type: string
+  db.version.full:
+    description: Full version string of the database including patch information
+    type: string
+  db.edition:
+    description: Oracle database edition (Enterprise, Standard, Express)
+    type: string
+  db.compatible:
+    description: Oracle database compatible parameter setting
+    type: string
+  
+  # Cloud and Hosting Attributes (OpenTelemetry semantic conventions)
+  cloud.provider:
+    description: Name of the cloud provider (aws, azure, gcp, oci)
+    type: string
+  cloud.platform:
+    description: Cloud platform service name (ec2, rds, azure_vm, azure_sql, gcp_compute_engine, oci_compute)
+    type: string
+  deployment.environment:
+    description: Name of the deployment environment (production, staging, development, on-premises)
+    type: string
+  
+  # Platform Attributes
+  host.arch:
+    description: The CPU architecture the host system is running on
+    type: string
+  platform.name:
+    description: Operating system platform name
+    type: string
+
 metrics:
   newrelicoracledb.sessions.count:
     description: Total number of active Oracle database sessions
@@ -3433,6 +3466,37 @@ metrics:
       - query_id
       - wait_event_name
       - wait_category
+
+  # Database Version and Configuration Information
+  newrelicoracledb.database.info:
+    description: Database version and configuration information
+    extended_documentation: Provides database version, edition, and configuration details following OpenTelemetry semantic conventions
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - db.instance.name
+      - db.version
+      - db.version.full
+      - db.edition
+      - db.compatible
+
+  # Database Hosting and Platform Information
+  newrelicoracledb.hosting.info:
+    description: Database hosting and platform information
+    extended_documentation: Provides information about the hosting environment including cloud provider, platform, and deployment type
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - db.instance.name
+      - cloud.provider
+      - cloud.platform
+      - deployment.environment
+      - host.arch
+      - platform.name
 
   newrelicoracledb.wait_events.waiting_tasks_count:
     description: Number of waiting tasks for wait events

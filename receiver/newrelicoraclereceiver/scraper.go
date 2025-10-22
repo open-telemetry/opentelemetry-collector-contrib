@@ -35,17 +35,18 @@ type dbProviderFunc func() (*sql.DB, error)
 
 type newRelicOracleScraper struct {
 	// Keep session scraper and add tablespace scraper and core scraper
-	sessionScraper     *scrapers.SessionScraper
-	tablespaceScraper  *scrapers.TablespaceScraper
-	coreScraper        *scrapers.CoreScraper
-	pdbScraper         *scrapers.PdbScraper
-	systemScraper      *scrapers.SystemScraper
-	slowQueriesScraper *scrapers.SlowQueriesScraper
-	blockingScraper    *scrapers.BlockingScraper
-	waitEventsScraper  *scrapers.WaitEventsScraper
-	connectionScraper  *scrapers.ConnectionScraper
-	containerScraper   *scrapers.ContainerScraper
-	racScraper         *scrapers.RacScraper
+	sessionScraper      *scrapers.SessionScraper
+	tablespaceScraper   *scrapers.TablespaceScraper
+	coreScraper         *scrapers.CoreScraper
+	pdbScraper          *scrapers.PdbScraper
+	systemScraper       *scrapers.SystemScraper
+	slowQueriesScraper  *scrapers.SlowQueriesScraper
+	blockingScraper     *scrapers.BlockingScraper
+	waitEventsScraper   *scrapers.WaitEventsScraper
+	connectionScraper   *scrapers.ConnectionScraper
+	containerScraper    *scrapers.ContainerScraper
+	racScraper          *scrapers.RacScraper
+	databaseInfoScraper *scrapers.DatabaseInfoScraper
 
 	db                   *sql.DB
 	mb                   *metadata.MetricsBuilder
@@ -122,6 +123,9 @@ func (s *newRelicOracleScraper) start(context.Context, component.Host) error {
 	// Initialize RAC scraper with direct DB connection
 	s.racScraper = scrapers.NewRacScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 
+	// Initialize database info scraper with direct DB connection
+	s.databaseInfoScraper = scrapers.NewDatabaseInfoScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+
 	return nil
 }
 
@@ -177,6 +181,8 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 		s.connectionScraper.ScrapeConnectionMetrics,
 		s.containerScraper.ScrapeContainerMetrics,
 		s.racScraper.ScrapeRacMetrics,
+		s.databaseInfoScraper.ScrapeDatabaseInfo,
+		s.databaseInfoScraper.ScrapeHostingInfo,
 	}
 
 	// Add QPM scrapers only if QPM is enabled

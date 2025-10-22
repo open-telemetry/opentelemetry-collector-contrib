@@ -571,6 +571,26 @@ Oracle container status (1=READ WRITE, 0=other)
 | container.name | Oracle container name | Any Str | false |
 | open.mode | Oracle container open mode (READ WRITE, READ ONLY, etc.) | Any Str | false |
 
+### newrelicoracledb.database.info
+
+Database version and configuration information
+
+Provides database version, edition, and configuration details following OpenTelemetry semantic conventions
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| db.instance.name | Oracle database instance name | Any Str | false |
+| db.version | The version of the database management system (DBMS) product | Any Str | false |
+| db.version.full | Full version string of the database including patch information | Any Str | false |
+| db.edition | Oracle database edition (Enterprise, Standard, Express) | Any Str | false |
+| db.compatible | Oracle database compatible parameter setting | Any Str | false |
+
 ### newrelicoracledb.datafile.autoextensible
 
 Data file autoextensible status (1=YES, 0=NO)
@@ -744,6 +764,27 @@ Oracle database global name information
 | db.instance.name | Oracle database instance name | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
 | global.name | Oracle database global name | Any Str | false |
+
+### newrelicoracledb.hosting.info
+
+Database hosting and platform information
+
+Provides information about the hosting environment including cloud provider, platform, and deployment type
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| db.instance.name | Oracle database instance name | Any Str | false |
+| cloud.provider | Name of the cloud provider (aws, azure, gcp, oci) | Any Str | false |
+| cloud.platform | Cloud platform service name (ec2, rds, azure_vm, azure_sql, gcp_compute_engine, oci_compute) | Any Str | false |
+| deployment.environment | Name of the deployment environment (production, staging, development, on-premises) | Any Str | false |
+| host.arch | The CPU architecture the host system is running on | Any Str | false |
+| platform.name | Operating system platform name | Any Str | false |
 
 ### newrelicoracledb.locked_accounts
 
