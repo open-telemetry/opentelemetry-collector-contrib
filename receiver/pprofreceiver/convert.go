@@ -59,14 +59,22 @@ type lookupTables struct {
 	mappingTable        map[mm]int32
 	lastMappingTableIdx int32
 
+	// TODO locationTable
+
+	functionTable        map[fn]int32
+	lastFunctionTableIdx int32
+
+	// The concept of profiles.Link does not exit in pprof.
+	// Therefore this helper table is skipped.
+
 	stringTable        map[string]int32
 	lastStringTableIdx int32
 
 	attributeTable        map[attr]int32
 	lastAttributeTableIdx int32
 
-	functionTable        map[fn]int32
-	lastFunctionTableIdx int32
+	stackTable        map[string]int32
+	lastStackTableIdx int32
 }
 
 func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
@@ -78,10 +86,6 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 	// location_table[0] must always be zero value (Location{}) and present.
 	dst.Dictionary().LocationTable().AppendEmpty()
 	lastLocationTableIdx := int32(0)
-
-	// stack_table[0] must always be zero value (Stack{}) and present.
-	dst.Dictionary().StackTable().AppendEmpty()
-	lastStackTableIdx := int32(0)
 
 	// Initialize remaining lookup tables of pprofile.ProfilesDictionary in initLookupTables.
 	lts := initLookupTables()
@@ -156,9 +160,8 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 				}
 			}
 
-			st := dst.Dictionary().StackTable().AppendEmpty()
-			lastStackTableIdx++
-			st.LocationIndices().FromRaw(locTableIDs)
+			stackIdx := lts.getIdxForStackLocations(locTableIDs)
+			s.SetStackIndex(stackIdx)
 
 			// pprof.Sample.value
 			s.Values().Append(sample.Value[stIdx])
@@ -375,6 +378,18 @@ func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
 	return ids
 }
 
+// getIdxForStackLocations returns the corresponding index for a stack and its location
+// indices. If the mapping does not yet exist in the cache, it will be added.
+func (lts *lookupTables) getIdxForStackLocations(locIdxs []int32) int32 {
+	key := attrIdxToString(locIdxs)
+	if idx, exists := lts.stackTable[key]; exists {
+		return idx
+	}
+	lts.lastStackTableIdx++
+	lts.stackTable[key] = lts.lastStackTableIdx
+	return lts.lastStackTableIdx
+}
+
 func isEqualValue(a, b any) bool {
 	return reflect.DeepEqual(a, b)
 }
@@ -383,14 +398,19 @@ func isEqualValue(a, b any) bool {
 func initLookupTables() lookupTables {
 	lts := lookupTables{
 		mappingTable:   make(map[mm]int32),
+		functionTable:  make(map[fn]int32),
 		stringTable:    make(map[string]int32),
 		attributeTable: make(map[attr]int32),
-		functionTable:  make(map[fn]int32),
+		stackTable:     make(map[string]int32),
 	}
 
 	// mapping_table[0] must always be zero value (Mapping{}) and present.
 	lts.lastMappingTableIdx = 0
 	lts.mappingTable[mm{}] = lts.lastMappingTableIdx
+
+	// function_table[0] must always be zero value (Function{}) and present.
+	lts.lastFunctionTableIdx = 0
+	lts.functionTable[fn{}] = lts.lastFunctionTableIdx
 
 	// string_table[0] must always be "" and present.
 	lts.lastStringTableIdx = 0
@@ -400,9 +420,9 @@ func initLookupTables() lookupTables {
 	lts.lastAttributeTableIdx = 0
 	lts.attributeTable[attr{}] = lts.lastAttributeTableIdx
 
-	// function_table[0] must always be zero value (Function{}) and present.
-	lts.lastFunctionTableIdx = 0
-	lts.functionTable[fn{}] = lts.lastFunctionTableIdx
+	// stack_table[0] must always be zero value (Stack{}) and present.
+	lts.lastStackTableIdx = 0
+	lts.stackTable[""] = lts.lastStackTableIdx
 	return lts
 }
 
@@ -432,6 +452,17 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 			return err
 		}
 		dic.MappingTable().At(int(id)).AttributeIndices().Append(attrIndices...)
+	}
+
+	for i := 0; i < len(lts.stackTable); i++ {
+		dic.StackTable().AppendEmpty()
+	}
+	for s, id := range lts.stackTable {
+		locIndices, err := stringToAttrIdx(s)
+		if err != nil {
+			return err
+		}
+		dic.StackTable().At(int(id)).LocationIndices().Append(locIndices...)
 	}
 
 	for i := 0; i < len(lts.stringTable); i++ {
