@@ -1,0 +1,65 @@
+receivers:
+  # OTLP receiver for traces and metrics
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Example: host metrics receiver
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      network:
+
+processors:
+  # Batch processor - recommended for performance
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+
+  # Add resource attributes
+  resource:
+    attributes:
+      - key: environment
+        value: dev
+        action: insert
+
+exporters:
+  # Your Hydrolix exporter
+  hydrolix:
+    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest
+    hdx_table: otel_data
+    hdx_transform: otel_transform
+    hdx_username: ${env:HYDROLIX_USERNAME}
+    hdx_password: ${env:HYDROLIX_PASSWORD}
+    timeout: 30s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 5000
+
+  # Debug exporter to see what's being sent
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [hydrolix, debug]
+
+    metrics:
+      receivers: [otlp, hostmetrics]
+      processors: [batch, resource]
+      exporters: [hydrolix, debug]
