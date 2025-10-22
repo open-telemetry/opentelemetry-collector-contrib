@@ -4,8 +4,10 @@
 package datadogconnector
 
 import (
+	"context"
 	"errors"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
@@ -431,17 +434,75 @@ func TestObfuscate(t *testing.T) {
 	}
 }
 
-func TestNoPanic(t *testing.T) {
-	c, _ := creteConnectorNative(t)
-	c.metricsConsumer = consumertest.NewErr(errors.New("error"))
-	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
-	trace1 := generateTrace()
+type errorSink struct {
+	consumertest.MetricsSink
+	mu         sync.Mutex
+	err        error
+	errorCount int
+}
 
-	err := c.ConsumeTraces(t.Context(), trace1)
+func (es *errorSink) setError(err error) {
+	es.mu.Lock()
+	es.err = err
+	es.mu.Unlock()
+}
+
+func (es *errorSink) getErrorCount() int {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+	return es.errorCount
+}
+
+func (es *errorSink) Reset() {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+	es.errorCount = 0
+	es.MetricsSink.Reset()
+}
+
+func (es *errorSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+	if err := es.err; err != nil {
+		es.errorCount++
+		return es.err
+	}
+	return es.MetricsSink.ConsumeMetrics(ctx, md)
+}
+
+func TestError(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Traces.BucketInterval = time.Millisecond * 100
+	metricsSink := &errorSink{}
+	conn, err := factory.CreateTracesToMetrics(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, metricsSink)
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+
+	// First payload will trigger a downstream error
+	metricsSink.setError(errors.New("error"))
+	err = conn.ConsumeTraces(t.Context(), generateTrace())
 	assert.NoError(t, err)
 
-	time.Sleep(2 * time.Second)
+	// Check that we registered an error and no panic occurred
+	require.Eventually(t, func() bool {
+		return metricsSink.getErrorCount() > 0
+	}, 300*time.Millisecond, 50*time.Millisecond)
+	assert.Zero(t, metricsSink.DataPointCount())
+	metricsSink.Reset()
 
-	err = c.Shutdown(t.Context())
+	// Second payload will be successfully accepted
+	metricsSink.setError(nil)
+	err = conn.ConsumeTraces(t.Context(), generateTrace())
+	assert.NoError(t, err)
+
+	// Check that metrics were received, and no error was registered
+	require.Eventually(t, func() bool {
+		return metricsSink.DataPointCount() > 0
+	}, 300*time.Millisecond, 50*time.Millisecond)
+	assert.Zero(t, metricsSink.getErrorCount())
+
+	err = conn.Shutdown(t.Context())
 	require.NoError(t, err)
 }

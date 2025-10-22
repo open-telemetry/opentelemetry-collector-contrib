@@ -201,7 +201,7 @@ func (c *traceToMetricConnectorNative) run() {
 			// send metrics to the consumer or next component in pipeline
 			if err := c.metricsConsumer.ConsumeMetrics(ctx, mx); err != nil {
 				c.logger.Error("Failed ConsumeMetrics", zap.Error(err))
-				return
+				continue
 			}
 		case <-c.exit:
 			return
