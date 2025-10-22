@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
@@ -96,6 +97,7 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 		factories otelcol.Factories
 		err       error
 	)
+	factories.Telemetry = otelconftelemetry.NewFactory()
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
