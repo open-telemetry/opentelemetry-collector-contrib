@@ -43,10 +43,8 @@ func xxh128HashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 		if err != nil {
 			return nil, err
 		}
-		b := make([]byte, 16)
-		binary.BigEndian.PutUint64(b[0:8], hash.Sum64())
-		binary.BigEndian.PutUint64(b[8:], hash.Sum64())
-		hashValue := hex.EncodeToString(b)
+		b := hash.Sum128().Bytes()
+		hashValue := hex.EncodeToString(b[:])
 		return hashValue, nil
 	}
 }

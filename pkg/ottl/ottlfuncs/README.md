@@ -2592,7 +2592,7 @@ Examples:
 
 `XXH128(value)`
 
-The `XXH128` Converter generates a 128-bit xxHash digest from the input `value` using the XXH3 hash algorithm.
+The `XXH128` Converter generates a 128-bit xxHash digest from the input `value` using the XXH128 hash algorithm.
 
 The returned type is string.
 
