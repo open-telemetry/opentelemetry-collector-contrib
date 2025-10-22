@@ -251,6 +251,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisSentinelTotalTiltDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSlavesConnectedDataPoint(ts, 1)
 

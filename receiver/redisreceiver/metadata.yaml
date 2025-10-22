@@ -597,7 +597,7 @@ metrics:
       aggregation_temporality: cumulative
 
   redis.slaves.connected:
-    enabled: false
+    enabled: true
     description: Number of connected replicas
     stability:
       level: development

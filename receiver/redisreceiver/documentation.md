@@ -252,6 +252,14 @@ The server's current replication offset
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | development |
 
+### redis.slaves.connected
+
+Number of connected replicas
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {replica} | Sum | Int | Cumulative | false | development |
+
 ### redis.uptime
 
 Number of seconds since Redis server start
@@ -506,14 +514,6 @@ Total TILT occurrences since start.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {event} | Sum | Int | Cumulative | true | development |
-
-### redis.slaves.connected
-
-Number of connected replicas
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {replica} | Sum | Int | Cumulative | false | development |
 
 ## Resource Attributes
 

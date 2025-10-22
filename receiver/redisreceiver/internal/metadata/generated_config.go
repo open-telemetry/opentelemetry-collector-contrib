@@ -243,7 +243,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		RedisSlavesConnected: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		RedisUptime: MetricConfig{
 			Enabled: true,
