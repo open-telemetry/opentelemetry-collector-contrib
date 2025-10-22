@@ -29,7 +29,7 @@ func TestTask_Tags(t *testing.T) {
 	})
 
 	t.Run("task", func(t *testing.T) {
-		task := taskAnnotated{Task: ecstypes.Task{}}
+		task := taskAnnotated{Task: &ecstypes.Task{}}
 		assert.Equal(t, map[string]string(nil), task.TaskTags())
 		task.Task.Tags = []ecstypes.Tag{
 			{
@@ -53,7 +53,7 @@ func TestTask_Tags(t *testing.T) {
 func TestTask_PrivateIP(t *testing.T) {
 	t.Run("awsvpc", func(t *testing.T) {
 		task := taskAnnotated{
-			Task: ecstypes.Task{
+			Task: &ecstypes.Task{
 				TaskArn:           aws.String("arn:task:t2"),
 				TaskDefinitionArn: aws.String("t2"),
 				Attachments: []ecstypes.Attachment{
@@ -77,7 +77,7 @@ func TestTask_PrivateIP(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		task := taskAnnotated{
-			Task:       ecstypes.Task{TaskArn: aws.String("arn:task:1")},
+			Task:       &ecstypes.Task{TaskArn: aws.String("arn:task:1")},
 			Definition: &ecstypes.TaskDefinition{},
 		}
 		modes := []ecstypes.NetworkMode{"", ecstypes.NetworkModeBridge, ecstypes.NetworkModeHost, ecstypes.NetworkModeAwsvpc, ecstypes.NetworkModeNone, "not even a network mode"}
@@ -93,7 +93,7 @@ func TestTask_PrivateIP(t *testing.T) {
 }
 
 func TestTask_MappedPort(t *testing.T) {
-	ec2BridgeTask := ecstypes.Task{
+	ec2BridgeTask := &ecstypes.Task{
 		TaskArn: aws.String("arn:task:1"),
 		Containers: []ecstypes.Container{
 			{
@@ -149,7 +149,7 @@ func TestTask_MappedPort(t *testing.T) {
 	}
 	t.Run("awsvpc", func(t *testing.T) {
 		task := taskAnnotated{
-			Task:       ecstypes.Task{TaskArn: aws.String("arn:task:1")},
+			Task:       &ecstypes.Task{TaskArn: aws.String("arn:task:1")},
 			Definition: vpcTaskDef,
 		}
 		p, err := task.MappedPort(vpcTaskDef.ContainerDefinitions[0], 2112)
@@ -161,7 +161,7 @@ func TestTask_MappedPort(t *testing.T) {
 		def := vpcTaskDef
 		def.NetworkMode = ecstypes.NetworkModeHost
 		task := taskAnnotated{
-			Task:       ecstypes.Task{TaskArn: aws.String("arn:task:1")},
+			Task:       &ecstypes.Task{TaskArn: aws.String("arn:task:1")},
 			Definition: def,
 		}
 		p, err := task.MappedPort(def.ContainerDefinitions[0], 2112)
@@ -171,7 +171,7 @@ func TestTask_MappedPort(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		task := taskAnnotated{
-			Task:       ecstypes.Task{TaskArn: aws.String("arn:task:1")},
+			Task:       &ecstypes.Task{TaskArn: aws.String("arn:task:1")},
 			Definition: &ecstypes.TaskDefinition{},
 		}
 		modes := []ecstypes.NetworkMode{"", ecstypes.NetworkModeBridge, ecstypes.NetworkModeHost, ecstypes.NetworkModeAwsvpc, ecstypes.NetworkModeNone, "not even a network mode"}

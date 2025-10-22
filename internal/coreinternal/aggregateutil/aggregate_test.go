@@ -4,6 +4,7 @@
 package aggregateutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -158,7 +159,7 @@ func Test_FilterAttributes(t *testing.T) {
 func Test_RangeDataPointAttributes(t *testing.T) {
 	fun := func(attrs pcommon.Map) bool {
 		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
-			return isNotPresent(k, []string{"attr1"})
+			return !slices.Contains([]string{"attr1"}, k)
 		})
 		return true
 	}

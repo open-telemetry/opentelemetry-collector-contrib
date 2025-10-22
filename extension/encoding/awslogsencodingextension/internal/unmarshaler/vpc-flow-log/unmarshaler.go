@@ -18,16 +18,12 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
-const (
-	fileFormatPlainText = "plain-text"
-	fileFormatParquet   = "parquet"
-)
-
-var supportedVPCFlowLogFileFormat = []string{fileFormatPlainText, fileFormatParquet}
+var supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 
 type vpcFlowLogUnmarshaler struct {
 	// VPC flow logs can be sent in plain text
@@ -38,18 +34,22 @@ type vpcFlowLogUnmarshaler struct {
 
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
+
+	// Whether VPC flow start field should use ISO-8601 format
+	vpcFlowStartISO8601FormatEnabled bool
 }
 
 func NewVPCFlowLogUnmarshaler(
 	format string,
 	buildInfo component.BuildInfo,
 	logger *zap.Logger,
+	vpcFlowStartISO8601FormatEnabled bool,
 ) (unmarshaler.AWSUnmarshaler, error) {
 	switch format {
-	case fileFormatParquet:
+	case constants.FileFormatParquet:
 		// TODO
 		return nil, errors.New("still needs to be implemented")
-	case fileFormatPlainText: // valid
+	case constants.FileFormatPlainText: // valid
 	default:
 		return nil, fmt.Errorf(
 			"unsupported file fileFormat %q for VPC flow log, expected one of %q",
@@ -58,17 +58,18 @@ func NewVPCFlowLogUnmarshaler(
 		)
 	}
 	return &vpcFlowLogUnmarshaler{
-		fileFormat: format,
-		buildInfo:  buildInfo,
-		logger:     logger,
+		fileFormat:                       format,
+		buildInfo:                        buildInfo,
+		logger:                           logger,
+		vpcFlowStartISO8601FormatEnabled: vpcFlowStartISO8601FormatEnabled,
 	}, nil
 }
 
 func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	switch v.fileFormat {
-	case fileFormatPlainText:
+	case constants.FileFormatPlainText:
 		return v.unmarshalPlainTextLogs(reader)
-	case fileFormatParquet:
+	case constants.FileFormatParquet:
 		// TODO
 		return plog.Logs{}, errors.New("still needs to be implemented")
 	default:
@@ -121,6 +122,7 @@ func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(v.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatVPCFlowLog)
 	return logs, resourceLogs, scopeLogs
 }
 
@@ -182,7 +184,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 			continue
 		}
 
-		found, err := handleField(field, value, record, addr, key)
+		found, err := v.handleField(field, value, record, addr, key)
 		if err != nil {
 			return err
 		}
@@ -245,7 +247,7 @@ func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRe
 // adds its value to the resourceKey or puts the
 // field and its value in the attributes map. If the
 // field is not recognized, it returns false.
-func handleField(
+func (v *vpcFlowLogUnmarshaler) handleField(
 	field string,
 	value string,
 	record plog.LogRecord,
@@ -343,8 +345,17 @@ func handleField(
 			return false, err
 		}
 	case "start":
-		if err := addNumber(field, value, "aws.vpc.flow.start"); err != nil {
-			return false, err
+		unixSeconds, err := getNumber(value)
+		if err != nil {
+			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
+		}
+		if v.vpcFlowStartISO8601FormatEnabled {
+			// New behavior: ISO-8601 format (RFC3339Nano)
+			timestamp := time.Unix(unixSeconds, 0).UTC()
+			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format(time.RFC3339Nano))
+		} else {
+			// Legacy behavior: Unix timestamp as integer
+			record.Attributes().PutInt("aws.vpc.flow.start", unixSeconds)
 		}
 	case "end":
 		unixSeconds, err := getNumber(value)

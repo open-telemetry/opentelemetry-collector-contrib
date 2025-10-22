@@ -34,12 +34,12 @@ func newLogsJSONExporter(logger *zap.Logger, cfg *Config) *logsJSONExporter {
 }
 
 func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
-	dsn, err := e.cfg.buildDSN()
+	opt, err := e.cfg.buildClickHouseOptions()
 	if err != nil {
 		return err
 	}
 
-	e.db, err = internal.NewClickhouseClient(dsn)
+	e.db, err = internal.NewClickhouseClientFromOptions(opt)
 	if err != nil {
 		return err
 	}
@@ -61,6 +61,7 @@ func (e *logsJSONExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
 		if err := e.db.Close(); err != nil {
 			e.logger.Warn("failed to close json logs db connection", zap.Error(err))
+			return err
 		}
 	}
 
@@ -84,7 +85,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 	var logCount int
 	rsLogs := ld.ResourceLogs()
 	rsLen := rsLogs.Len()
-	for i := 0; i < rsLen; i++ {
+	for i := range rsLen {
 		logs := rsLogs.At(i)
 		res := logs.Resource()
 		resURL := logs.SchemaUrl()
@@ -96,7 +97,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 		}
 
 		slLen := logs.ScopeLogs().Len()
-		for j := 0; j < slLen; j++ {
+		for j := range slLen {
 			scopeLog := logs.ScopeLogs().At(j)
 			scopeURL := scopeLog.SchemaUrl()
 			scopeLogScope := scopeLog.Scope()
@@ -109,7 +110,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 			}
 
 			slrLen := scopeLogRecords.Len()
-			for k := 0; k < slrLen; k++ {
+			for k := range slrLen {
 				r := scopeLogRecords.At(k)
 				logAttrBytes, logAttrErr := json.Marshal(r.Attributes().AsRaw())
 				if logAttrErr != nil {

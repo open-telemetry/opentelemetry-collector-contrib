@@ -240,7 +240,7 @@ func Test_Shutdown(t *testing.T) {
 	err := prwe.Shutdown(t.Context())
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -434,6 +434,8 @@ func Test_PushMetrics(t *testing.T) {
 	emptyCumulativeHistogramBatch := getMetricsFromMetricList(invalidMetrics[emptyCumulativeHistogram])
 
 	emptySummaryBatch := getMetricsFromMetricList(invalidMetrics[emptySummary])
+
+	metricWithInvalidTranslatedNameBatch := getMetricsFromMetricList(invalidMetrics[metricWithInvalidTranslatedName])
 
 	// partial success (or partial failure) cases
 
@@ -638,6 +640,13 @@ func Test_PushMetrics(t *testing.T) {
 			expectedFailedTranslations: 1,
 		},
 		{
+			name:                       "emptyMetricWithInvalidTranslatedName_case",
+			metrics:                    metricWithInvalidTranslatedNameBatch,
+			reqTestFunc:                checkFunc,
+			httpResponseCode:           http.StatusAccepted,
+			expectedFailedTranslations: 1,
+		},
+		{
 			name:                       "partialSuccess_case",
 			metrics:                    partialSuccess1,
 			reqTestFunc:                checkFunc,
@@ -758,7 +767,7 @@ func Test_PushMetrics(t *testing.T) {
 
 					if useWAL {
 						cfg.WAL = configoptional.Some(WALConfig{
-							Directory: t.TempDir(),
+							Directory: testutil.TempDir(t),
 						})
 					}
 
@@ -1242,7 +1251,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 
 	generateSamples := func(n int) []prompb.Sample {
 		samples := make([]prompb.Sample, 0, n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			samples = append(samples, prompb.Sample{
 				Timestamp: int64(i),
 				Value:     float64(i),
@@ -1253,7 +1262,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 
 	generateHistograms := func(n int) []prompb.Histogram {
 		histograms := make([]prompb.Histogram, 0, n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			histograms = append(histograms, prompb.Histogram{
 				Timestamp:      int64(i),
 				Count:          &prompb.Histogram_CountInt{CountInt: uint64(i)},
@@ -1265,7 +1274,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 
 	reqs := make([]*prompb.WriteRequest, 0, b.N)
 	const labelValue = "abcdefg'hijlmn234!@#$%^&*()_+~`\"{}[],./<>?hello0123hiOlá你好Dzieńdobry9Zd8ra765v4stvuyte"
-	for n := 0; n < b.N; n++ {
+	for n := 0; b.Loop(); n++ {
 		num := strings.Repeat(strconv.Itoa(n), 16)
 		req := &prompb.WriteRequest{
 			Metadata: []prompb.MetricMetadata{
@@ -1364,7 +1373,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	require.NoError(b, err)
 
 	var metrics []pmetric.Metrics
-	for n := 0; n < b.N; n++ {
+	for n := 0; b.Loop(); n++ {
 		actualNumMetrics := numMetrics
 		if numMetrics == -1 {
 			actualNumMetrics = int(math.Pow(10, float64(n%4+1)))

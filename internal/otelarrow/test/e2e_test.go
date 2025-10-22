@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -326,7 +324,9 @@ func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expe
 	rops = map[string]int{}
 	eops = map[string]int{}
 
-	for _, span := range testCon.expSpans.GetSpans() {
+	expSpans := testCon.expSpans.GetSpans()
+	for i := range expSpans {
+		span := &expSpans[i]
 		eops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
 
 		// This span has a recognized span error which we can't easily fix. See
@@ -338,7 +338,9 @@ func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expe
 		require.NotEqual(t, otelcodes.Error, span.Status.Code,
 			"Exporter span has error: %v: %v", span.Name, span.Status.Description)
 	}
-	for _, span := range testCon.recvSpans.GetSpans() {
+	recvSpans := testCon.recvSpans.GetSpans()
+	for i := range recvSpans {
+		span := &recvSpans[i]
 		rops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
 		// This span occasionally has a "transport is closing error"
 		if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
@@ -360,7 +362,9 @@ func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expe
 func logSigs(obs *observer.ObservedLogs) (map[string]int, []string) {
 	counts := map[string]int{}
 	var msgs []string
-	for _, rl := range obs.All() {
+	obsAll := obs.All()
+	for i := range obsAll {
+		rl := &obsAll[i]
 		var attrs []string
 		for _, f := range rl.Context {
 			attrs = append(attrs, f.Key)
@@ -393,7 +397,7 @@ func countMemoryLimitErrors(msgs []string) (cnt int) {
 			cnt++
 		}
 	}
-	return
+	return cnt
 }
 
 func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
@@ -419,7 +423,7 @@ func countAdmissionLimitErrors(msgs []string) (cnt int) {
 			cnt++
 		}
 	}
-	return
+	return cnt
 }
 
 func failureAdmissionLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
@@ -524,7 +528,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 						cnt++
 					}
 				}
-				return
+				return cnt
 			}
 			rcnt := cf(test.recvSpans.GetSpans())
 			ecnt := cf(test.expSpans.GetSpans())
@@ -543,87 +547,6 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 		ecfg.RetryConfig.MaxElapsedTime = 30 * time.Second
 		ecfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	}, bulkyGenFunc(), consumerFailure, failureMemoryLimitEnding)
-}
-
-func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][]ptrace.Traces) (_, _ map[string]int) {
-	recvOps, expOps := standardEnding(t, p, testCon, td)
-
-	const streamName = "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces"
-
-	total := int(testCon.sentSpans.Load())
-
-	// Exporter spans:
-	//
-	// This span is the Arrow gRPC client stream.  Should have no
-	// stream errors, > 1 streams.
-	expStreamsUnset := expOps[streamName+"/Unset"]
-	expStreamsError := expOps[streamName+"/Error"]
-	require.Less(t, 1, expStreamsUnset+expStreamsError)
-	require.Equal(t, 1, expStreamsError)
-
-	// Number of export requests: exact match.  This is the
-	// exporterhelper's base span.
-	require.Equal(t, total, expOps["exporter/otelarrow/traces/Unset"])
-
-	// Number of export requests: exact match.  This span covers
-	// handling one request in the Arrow exporter.
-	require.Equal(t, total, expOps["otel_arrow_stream_send/Unset"])
-
-	// Receiver spans
-	//
-	// This span is the Arrow gRPC server stream, instrumented by
-	// otelgrpc.  Because of
-	// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/2644
-	// we expect either an error or unset.  There should be > 1
-	// streams.
-	recvStreamsUnset := recvOps[streamName+"/Unset"]
-	recvStreamsError := recvOps[streamName+"/Error"]
-	require.Equal(t, 0, recvStreamsError)
-	require.Less(t, 1, recvStreamsUnset+recvStreamsError)
-
-	// For each stream, there is one Recv() span at the end that ends
-	// in cancelation (or EOF).  So we expect total to be less than
-	// this span count.
-	require.Equal(t, total+recvStreamsUnset+recvStreamsError, recvOps["otel_arrow_stream_inflight/Unset"])
-
-	// This is in request context, the Arrow stream handling one request.
-	require.Equal(t, total, recvOps["otel_arrow_stream_recv/Unset"])
-
-	// This is in request context, the receiverhelper's per-request span.
-	require.Equal(t, total, recvOps["receiver/otelarrow/TraceDataReceived/Unset"])
-
-	// Exporter and Receiver stream span counts match:
-	require.Equal(t, expStreamsUnset+expStreamsError, recvStreamsUnset+recvStreamsError)
-
-	return recvOps, expOps
-}
-
-func TestIntegrationSelfTracing(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	// until 2 Arrow stream spans are received from self instrumentation
-	params := testParams{
-		threadCount: 10,
-		requestWhileTrue: func(test *testConsumer) bool {
-			cnt := 0
-			for _, span := range test.expSpans.GetSpans() {
-				if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
-					cnt++
-				}
-			}
-			return cnt < 2
-		},
-	}
-
-	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
-		rcfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
-			ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
-				MaxConnectionAge:      time.Second,
-				MaxConnectionAgeGrace: 5 * time.Second,
-			}),
-		})
-	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }
 
 func nearLimitGenFunc() MkGen {

@@ -29,7 +29,7 @@ Example for Amazon CloudWatch Logs Subscription Filters:
 ```yaml
 extensions:
   awslogs_encoding/cloudwatch:
-    format: cloudwatch_logs_subscription_filter
+    format: cloudwatch
 
 receivers:
   awsfirehose:
@@ -40,9 +40,9 @@ receivers:
 Example for VPC flow logs:
 ```yaml
 extensions:
-  awslogs_encoding/vpc_flow_log:
-    format: vpc_flow_log
-    vpc_flow_log:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+    vpcflow:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
       file_format: plain-text 
@@ -51,25 +51,95 @@ extensions:
 Example for S3 access logs:
 ```yaml
 extensions:
-  awslogs_encoding/s3_access_log:
-    format: s3_access_log
+  awslogs_encoding/s3access:
+    format: s3access
 ```
 
 Example for CloudTrail logs:
 ```yaml
 extensions:
   awslogs_encoding/cloudtrail:
-    format: cloudtrail_log
+    format: cloudtrail
 ```
 
 Example for ELB access logs:
 ```yaml
 extensions:
-  awslogs_encoding/elb_access_log:
-    format: elb_access_log
+  awslogs_encoding/elbaccess:
+    format: elbaccess
 ```
 
-#### VPC flow log record fields
+## Log Format Identification
+
+All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their AWS service origin.
+
+The pattern used is `aws.<format_name>`.
+
+Examples:
+- VPC Flow Logs: `encoding.format:"aws.vpcflow"`
+- ELB Access Logs: `encoding.format:"aws.elbaccess"`
+
+## Format Values
+
+The following format values are supported in the `awslogsencodingextension` to identify different AWS log types:
+
+| **AWS Log Type** | **Format Value** | **Description** |
+|------------------|------------------|-----------------|
+| VPC Flow Logs | `vpcflow` | Virtual Private Cloud flow log records |
+| ELB Access Logs | `elbaccess` | Elastic Load Balancer access logs (ALB, NLB, CLB) |
+| S3 Access Logs | `s3access` | Amazon S3 server access logs |
+| CloudTrail Logs | `cloudtrail` | AWS CloudTrail API call logs |
+| WAF Logs | `waf` | AWS Web Application Firewall logs |
+| CloudWatch Logs | `cloudwatch` | CloudWatch Logs Subscription Filter events |
+
+### Breaking Change Notice
+
+**Format values have been simplified in v0.137.0**
+
+**The old format values are deprecated and will be unsupported in v0.138.0.**
+
+| **AWS Log Type** | **Old Format Value (Deprecated)** | **New Format Value** |
+|------------------|-----------------------------------|---------------------|
+| VPC Flow Logs | `vpc_flow_log` | `vpcflow` |
+| ELB Access Logs | `elb_access_log` | `elbaccess` |
+| S3 Access Logs | `s3_access_log` | `s3access` |
+| CloudTrail Logs | `cloudtrail_log` | `cloudtrail` |
+| WAF Logs | `waf_log` | `waf` |
+| CloudWatch Logs | `cloudwatch_logs_subscription_filter` | `cloudwatch` |
+
+#### Migration Path
+
+If you're using the old format values you should update the encoding extension configuration with the new format values.
+
+## Feature Gates
+
+### VPC Flow Log Start Field ISO-8601 Format
+
+**Feature Gate ID**: `extension.awslogsencoding.vpcflow.start.iso8601`
+
+**Stage**: Alpha
+
+**Description**: When enabled, the `aws.vpc.flow.start` field will be formatted as an ISO-8601 string instead of a Unix timestamp integer in seconds since epoch.
+
+**Default**: Disabled (legacy behavior)
+
+#### Behavior
+
+| **Feature Gate State** | **Field Type** | **Format** | **Example** |
+|------------------------|----------------|------------|-------------|
+| **Disabled (Default)** | `int64` | Unix seconds since epoch | `1609459200` |
+| **Enabled** | `string` | ISO-8601 with milliseconds | `"2021-01-01T00:00:00.000Z"` |
+
+#### Enabling the Feature Gate
+
+**Command Line:**
+```bash
+--feature-gates=extension.awslogsencoding.vpcflow.start.iso8601
+```
+
+## Produced Records per Format
+
+### VPC flow log record fields
 
 [VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
@@ -116,7 +186,7 @@ extensions:
 | `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
 | `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
 
-#### S3 access log record fields
+### S3 access log record fields
 
 [S3 access log record fields](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html) are mapped this way in the resulting OpenTelemetry log:
 
@@ -149,7 +219,7 @@ extensions:
 | TLS version         | `tls.protocol.version`                                                                                                                                                                                                                                                                                  |
 | Access point ARN    | `aws.s3.access_point.arn`                                                                                                                                                                                                                                                                               |
 | aclRequired         | `aws.s3.acl_required`                                                                                                                                                                                                                                                                                   |
-#### AWS WAF log record fields
+### AWS WAF log record fields
 
 [AWS WAF log record fields](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) are mapped this way in the resulting OpenTelemetry log:
 
@@ -188,76 +258,87 @@ extensions:
 | `challengeResponse`           | _Currently not supported_                                                                        |
 | `oversizeFields`              | _Currently not supported_                                                                        |
 
-#### CloudTrail log record fields
+### CloudTrail log record fields
 
 [CloudTrail log record fields](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) are mapped this way in the resulting OpenTelemetry log:
 
-| CloudTrail field                      | Attribute in OpenTelemetry log                                |
-|---------------------------------------|---------------------------------------------------------------|
-| `eventID`                             | `aws.cloudtrail.event_id`                                     |
-| `eventVersion`                        | `aws.cloudtrail.event_version`                                |
-| `eventCategory`                       | `aws.event.category`                                          |
-| `errorCode`                           | `aws.error.code`                                              |
-| `managementEvent`                     | `aws.event.management`                                        |
-| `errorMessage`                        | `aws.error.message`                                           |
-| `readOnly`                            | `aws.event.read_only`                                         |
-| `userIdentity.identityStoreArn`       | `aws.identity_store.arn`                                      |
-| `insightDetails`                      | `aws.insight_details` (as a map, if available)                |
-| `userIdentity.arn`                    | `aws.principal.arn`                                           |
-| `userIdentity.principalId`            | `aws.principal.id`                                            |
-| `userIdentity.type`                   | `aws.principal.type`                                          |
-| `userIdentity.accessKeyId`            | `aws.access_key.id`                                           |
-| `requestParameters`                   | `aws.request.parameters` (map of all request parameters)      |
-| `requestID`                           | `aws.request_id`                                              |
-| `resources`                           | `aws.resources` (as an array, if available)                   |
-| `responseElements`                    | `aws.response.elements` (map of all response elements)        |
-| `sessionCredentialFromConsole`        | `aws.session.console` (set to true if value is "true")        |
-| `sharedEventID`                       | `aws.shared_event_id`                                         |
-| `recipientAccountId`                  | `cloud.account.id`                                            |
-| `awsRegion`                           | `cloud.region`                                                |
-| `eventName`                           | `rpc.method`                                                  |
-| `eventSource`                         | `rpc.service`                                                 |
-| `eventType`                           | `rpc.system`                                                  |
-| `tlsDetails.clientProvidedHostHeader` | `server.address`                                              |
-| `sourceIPAddress`                     | `source.address`                                              |
-| `tlsDetails.cipherSuite`              | `tls.cipher`                                                  |
-| `tlsDetails.tlsVersion`               | `tls.protocol.version`                                        |
-| `userAgent`                           | `user_agent.original`                                         |
-| `userIdentity.userId`                 | `user.id`                                                     |
-| `userIdentity.userName`               | `user.name`                                                   |
+| CloudTrail field                                          | Attribute in OpenTelemetry log                                            |
+|-----------------------------------------------------------|---------------------------------------------------------------------------|
+| `apiVersion`                                              | `aws.cloudtrail.api_version`                                              |
+| `eventID`                                                 | `aws.cloudtrail.event_id`                                                 |
+| `eventVersion`                                            | `aws.cloudtrail.event_version`                                            |
+| `eventCategory`                                           | `aws.event.category`                                                      |
+| `errorCode`                                               | `aws.error.code`                                                          |
+| `managementEvent`                                         | `aws.event.management`                                                    |
+| `errorMessage`                                            | `aws.error.message`                                                       |
+| `readOnly`                                                | `aws.event.read_only`                                                     |
+| `insightDetails`                                          | `aws.insight_details` (as a map, if available)                            |
+| `requestParameters`                                       | `aws.request.parameters` (map of all request parameters)                  |
+| `requestID`                                               | `aws.request_id`                                                          |
+| `resources`                                               | `aws.resources` (as an array, if available)                               |
+| `responseElements`                                        | `aws.response.elements` (map of all response elements)                    |
+| `additionalEventData`                                     | `aws.cloudtrail.additional_event_data` (map of all additional event data) |
+| `sessionCredentialFromConsole`                            | `aws.session.console` (set to true if value is "true")                    |
+| `sharedEventID`                                           | `aws.shared_event_id`                                                     |
+| `recipientAccountId`                                      | `cloud.account.id`                                                        |
+| `awsRegion`                                               | `cloud.region`                                                            |
+| `eventName`                                               | `rpc.method`                                                              |
+| `eventSource`                                             | `rpc.service`                                                             |
+| `eventType`                                               | `rpc.system`                                                              |
+| `tlsDetails.clientProvidedHostHeader`                     | `server.address`                                                          |
+| `sourceIPAddress`                                         | `source.address`                                                          |
+| `tlsDetails.cipherSuite`                                  | `tls.cipher`                                                              |
+| `tlsDetails.tlsVersion`                                   | `tls.protocol.version`                                                    |
+| `userAgent`                                               | `user_agent.original`                                                     |
+| `userIdentity.type`                                       | `aws.principal.type`                                                      |
+| `userIdentity.principalId`                                | `aws.principal.id`                                                        |
+| `userIdentity.arn`                                        | `aws.principal.arn`                                                       |
+| `userIdentity.accessKeyId`                                | `aws.access_key.id`                                                       |
+| `userIdentity.userId`                                     | `user.id`                                                                 |
+| `userIdentity.userName`                                   | `user.name`                                                               |
+| `userIdentity.identityStoreArn`                           | `aws.identity_store.arn`                                                  |
+| `userIdentity.accountId`                                  | `aws.user_identity.account_id`                                            |
+| `userIdentity.invokedBy`                                  | `aws.user_identity.invoked_by`                                            |
+| `userIdentity.sessionContext.attributes.creationDate`     | `aws.user_identity.session_context.attributes.creation_date`              |
+| `userIdentity.sessionContext.attributes.mfaAuthenticated` | `aws.user_identity.session_context.attributes.mfa_authenticated`          |
+| `userIdentity.sessionContext.sessionIssuer.type`          | `aws.user_identity.session_context.issuer.type`                           |
+| `userIdentity.sessionContext.sessionIssuer.principalId`   | `aws.user_identity.session_context.issuer.principal_id`                   |
+| `userIdentity.sessionContext.sessionIssuer.arn`           | `aws.user_identity.session_context.issuer.arn`                            |
+| `userIdentity.sessionContext.sessionIssuer.accountId`     | `aws.user_identity.session_context.issuer.account_id`                     |
+| `userIdentity.sessionContext.sessionIssuer.userName`      | `aws.user_identity.session_context.issuer.user_name`                      |
 
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
 
-#### ELB Access Log Fields
+### ELB Access Log Fields
 
 ELB access log record fields are mapped this way in the resulting OpenTelemetry log:
 
-##### Application Load Balancer (ALB)
+#### Application Load Balancer (ALB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html).
 
 
-| **AWS Field**                | **OpenTelemetry Field(s)**                                      |
-|------------------------------|-----------------------------------------------------------------------|
-| type                         | `network.protocol.name`                                |
-| time                         | Log timestamp                                |
+| **AWS Field**                | **OpenTelemetry Field(s)**                                           |
+|------------------------------|----------------------------------------------------------------------|
+| type                         | `network.protocol.name`                                              |
+| time                         | Log timestamp                                                        |
 | elb                          | `cloud.resource_id`                                                  |
 | client:port                  | `client.address`, `client.port`                                      |
 | received_bytes               | `http.request.size`                                                  |
 | sent_bytes                   | `http.response.size`                                                 |
-| "request"                    | `url.full`, `http.request.method`, `network.protocol.version`                                    |
+| "request"                    | `url.full`, `http.request.method`, `network.protocol.version`        |
 | ssl_cipher                   | `tls.cipher`                                                         |
 | ssl_protocol                 | `tls.protocol.version`                                               |
 | elb_status_code              | `aws.elb.status.code`                                                |
+| user_agent                   | `user_agent.original`                                                |
+| domain_name                  | `url.domain`                                                         |
 | target:port                  | _Currently not supported_                                |
 | request_processing_time      | _Currently not supported_                                |
 | target_processing_time       | _Currently not supported_                                |
 | response_processing_time     | _Currently not supported_                                |
 | target_status_code           | _Currently not supported_                                |
-| "user_agent"                 | _Currently not supported_                                |
 | target_group_arn             | _Currently not supported_                                |
 | "trace_id"                   | _Currently not supported_                                |
-| "domain_name"                | _Currently not supported_                                |
 | "chosen_cert_arn"            | _Currently not supported_                                |
 | matched_rule_priority        | _Currently not supported_                                |
 | request_creation_time        | _Currently not supported_                                |
@@ -270,36 +351,36 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | "classification_reason"      | _Currently not supported_                                |
 | conn_trace_id                | _Currently not supported_                                |
 
-##### Network Load Balancer (NLB)
+#### Network Load Balancer (NLB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest//network/load-balancer-access-logs.html#access-log-entry-format).
 
-| **AWS Field**                | **OpenTelemetry Field(s)**                                      |
+| **AWS Field**                | **OpenTelemetry Field(s)**                                  |
 |------------------------------|-------------------------------------------------------------|
 | type                         | `network.protocol.name`                                     |
 | version                      | `network.protocol.version`                                  |
 | time                         | Log timestamp                                               |
 | elb                          | `cloud.resource_id`                                         |
-| listener                     | `aws.elb.tls.listener.resource_id`                                  |
+| listener                     | `aws.elb.tls.listener.resource_id`                          |
 | client:port                  | `client.address`, `client.port`                             |
+| destination:port             | `destination.address`, `destination.port`                   |
 | received_bytes               | `http.request.size`                                         |
 | sent_bytes                   | `http.response.size`                                        |
 | tls_cipher                   | `tls.cipher`                                                |
 | tls_protocol_version         | `tls.protocol.version`                                      |
-| destination:port             | _Currently not supported_                                   |
+| domain_name                  | `url.domain`                                                |
 | connection_time              | _Currently not supported_                                   |
 | tls_handshake_time           | _Currently not supported_                                   |
 | incoming_tls_alert           | _Currently not supported_                                   |
 | chosen_cert_arn              | _Currently not supported_                                   |
 | chosen_cert_serial           | _Currently not supported_                                   |
 | tls_named_group              | _Currently not supported_                                   |
-| domain_name                  | _Currently not supported_                                   |
 | alpn_fe_protocol             | _Currently not supported_                                   |
 | alpn_be_protocol             | _Currently not supported_                                   |
 | alpn_client_preference_list  | _Currently not supported_                                   |
 | tls_connection_creation_time | _Currently not supported_                                   |
 
-##### Classic Load Balancer (CLB)
+#### Classic Load Balancer (CLB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
 
@@ -307,7 +388,7 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 |-----------------------|--------------------------------------------------------------------------------------------|
 | time                  | Log timestamp                                                                              |
 | elb                   | `cloud.resource_id`                                                                        |
-| client:port                  | `client.address`, `client.port`                             |
+| client:port           | `client.address`, `client.port`                                                            |
 | elb_status_code       | `aws.elb.status.code`                                                                      |
 | backend_status_code   | `aws.elb.backend.status.code`                                                              |
 | received_bytes        | `http.request.size`                                                                        |
@@ -315,8 +396,8 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | "request"                    | `url.full`, `http.request.method`, `network.protocol.name`, `network.protocol.version`                                    |
 | ssl_cipher            | `tls.cipher`                                                                               |
 | ssl_protocol          | `tls.protocol.version`                                                                     |
-| backend:port                  | _Currently not supported_                                |
+| user_agent            | `user_agent.original`                                                                      |
+| backend:port          | _Currently not supported_                                                                  |
 | request_processing_time | _Currently not supported_                                                                |
 | backend_processing_time | _Currently not supported_                                                                |
 | response_processing_time | _Currently not supported_                                                               |
-| user_agent                            | _Currently not supported_            |

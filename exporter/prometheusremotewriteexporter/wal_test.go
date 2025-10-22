@@ -67,7 +67,8 @@ func orderByLabelValue(wreq *prompb.WriteRequest) {
 		sample *prompb.Sample
 	}
 
-	for _, timeSeries := range wreq.Timeseries {
+	for i := range wreq.Timeseries {
+		timeSeries := wreq.Timeseries[i]
 		bMsgs := make([]*byLabelMessage, 0, len(wreq.Timeseries)*10)
 		for i := range timeSeries.Labels {
 			bMsgs = append(bMsgs, &byLabelMessage{
@@ -108,7 +109,7 @@ func TestWALStopManyTimes(t *testing.T) {
 	// Ensure that invoking .stop() multiple times doesn't cause a panic, but actually
 	// First close should NOT return an error.
 	require.NoError(t, pwal.stop())
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		// Every invocation to .stop() should return an errAlreadyClosed.
 		require.ErrorIs(t, pwal.stop(), errAlreadyClosed)
 	}

@@ -41,8 +41,10 @@ func TestStartTimeCache_Get(t *testing.T) {
 	assert.True(t, ok2)
 }
 
-func TestStartTimeCache_MaybeGC(t *testing.T) {
-	stc := NewCache(time.Millisecond)
+func TestStartTimeCache_GC(t *testing.T) {
+	// Setting gcInterval to be very long so the test doesn't rely on timing.
+	// Instead, the test will call stc.gc() directly.
+	stc := NewCache(time.Hour)
 	resourceAttrs := pcommon.NewMap()
 	resourceAttrs.PutStr("k1", "v1")
 	resourceHash := pdatautil.MapHash(resourceAttrs)
@@ -68,23 +70,23 @@ func TestStartTimeCache_MaybeGC(t *testing.T) {
 	assert.False(t, found2)
 
 	// Expect no GC.
-	stc.MaybeGC()
 	assert.True(t, tsm.Mark)
 	assert.True(t, tsi.Mark)
 	assert.True(t, tsm2.Mark)
 	assert.True(t, tsi2.Mark)
 
-	// Sleep for the GC interval. Expect the next GC to unmark all timeseriesInfo and resourceMap entries.
-	time.Sleep(stc.gcInterval)
+	// Expect the next GC to unmark all timeseriesInfo and resourceMap entries.
+	// Manually edit time of lastGC to be before last gcInterval
+	stc.lastGC = time.Now().Add(-2 * stc.gcInterval)
 	stc.gc()
-
 	assert.False(t, tsm.Mark)
 	assert.False(t, tsi.Mark)
 	assert.False(t, tsm2.Mark)
 	assert.False(t, tsi2.Mark)
 
-	// Sleep for the GC interval. Expect the next GC to delete the resourceMap entries.
-	time.Sleep(stc.gcInterval)
+	// Expect the next GC to delete the resourceMap entries.
+	// Manually edit time of lastGC to be before last gcInterval
+	stc.lastGC = time.Now().Add(-2 * stc.gcInterval)
 	stc.gc()
 	assert.Empty(t, stc.resourceMap)
 

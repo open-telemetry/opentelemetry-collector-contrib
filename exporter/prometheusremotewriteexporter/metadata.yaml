@@ -18,71 +18,81 @@ tests:
 
 telemetry:
   metrics:
-    exporter_prometheusremotewrite_failed_translations:
-      enabled: true
-      description: Number of translation operations that failed to translate metrics from Otel to Prometheus
-      unit: "1"
-      sum:
-        value_type: int
-        monotonic: true
-    exporter_prometheusremotewrite_translated_time_series:
-      enabled: true
-      description: Number of Prometheus time series that were translated from OTel metrics
-      unit: "1"
-      sum:
-        value_type: int
-        monotonic: true
-    exporter_prometheusremotewrite_written_samples:
-      enabled: true
-      description: Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)
-      unit: "{sample}"
-      sum:
-        value_type: int
-        monotonic: true
-    exporter_prometheusremotewrite_written_histograms:
-      enabled: true
-      description: Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)
-      unit: "{histogram}"
-      sum:
-        value_type: int
-        monotonic: true
-    exporter_prometheusremotewrite_written_exemplars:
-      enabled: true
-      description: Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)
-      unit: "{exemplar}"
-      sum:
-        value_type: int
-        monotonic: true
     exporter_prometheusremotewrite_consumers:
       enabled: true
+      stability:
+        level: development
       description: Number of configured workers to use to fan out the outgoing requests
       unit: "{consumer}"
       sum:
         value_type: int
         monotonic: false
+    exporter_prometheusremotewrite_failed_translations:
+      enabled: true
+      stability:
+        level: development
+      description: Number of translation operations that failed to translate metrics from Otel to Prometheus
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
     exporter_prometheusremotewrite_sent_batches:
       enabled: true
+      stability:
+        level: development
       description: Number of remote write request batches sent to the remote write endpoint regardless of success or failure
       unit: "{batch}"
       sum:
         value_type: int
         monotonic: true
-    exporter_prometheusremotewrite_wal_writes:
+    exporter_prometheusremotewrite_translated_time_series:
       enabled: true
-      description: Number of WAL writes
+      stability:
+        level: development
+      description: Number of Prometheus time series that were translated from OTel metrics
       unit: "1"
       sum:
         value_type: int
         monotonic: true
-    exporter_prometheusremotewrite_wal_writes_failures:
+    exporter_prometheusremotewrite_wal_bytes_read:
       enabled: true
-      description: Number of WAL writes that failed
-      unit: "1"
+      stability:
+        level: development
+      description: Total number of bytes read from the WAL
+      unit: "By"
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_wal_bytes_written:
+      enabled: true
+      stability:
+        level: development
+      description: Total number of bytes written to the WAL
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_lag:
+      enabled: true
+      stability:
+        level: development
+      description: WAL lag
+      unit: "1"
+      gauge:
+        value_type: int
+    exporter_prometheusremotewrite_wal_read_latency:
+      enabled: true
+      stability:
+        level: development
+      description: Response latency in ms for the WAL reads.
+      unit: ms
+      histogram:
+        value_type: int
+        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
     exporter_prometheusremotewrite_wal_reads:
       enabled: true
+      stability:
+        level: development
       description: Number of WAL reads
       unit: "1"
       sum:
@@ -90,6 +100,8 @@ telemetry:
         monotonic: true
     exporter_prometheusremotewrite_wal_reads_failures:
       enabled: true
+      stability:
+        level: development
       description: Number of WAL reads that failed
       unit: "1"
       sum:
@@ -97,35 +109,55 @@ telemetry:
         monotonic: true
     exporter_prometheusremotewrite_wal_write_latency:
       enabled: true
+      stability:
+        level: development
       description: Response latency in ms for the WAL writes.
       unit: ms
       histogram:
         value_type: int
         bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
-    exporter_prometheusremotewrite_wal_read_latency:
+    exporter_prometheusremotewrite_wal_writes:
       enabled: true
-      description: Response latency in ms for the WAL reads.
-      unit: ms
-      histogram:
-        value_type: int
-        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
-    exporter_prometheusremotewrite_wal_bytes_written:
-      enabled: true
-      description: Total number of bytes written to the WAL
-      unit: "By"
-      sum:
-        value_type: int
-        monotonic: true
-    exporter_prometheusremotewrite_wal_bytes_read:
-      enabled: true
-      description: Total number of bytes read from the WAL
-      unit: "By"
-      sum:
-        value_type: int
-        monotonic: true
-    exporter_prometheusremotewrite_wal_lag:
-      enabled: true
-      description: WAL lag
+      stability:
+        level: development
+      description: Number of WAL writes
       unit: "1"
-      gauge:
+      sum:
         value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_writes_failures:
+      enabled: true
+      stability:
+        level: development
+      description: Number of WAL writes that failed
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_written_exemplars:
+      enabled: true
+      stability:
+        level: development
+      description: Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)
+      unit: "{exemplar}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_written_histograms:
+      enabled: true
+      stability:
+        level: development
+      description: Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)
+      unit: "{histogram}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_written_samples:
+      enabled: true
+      stability:
+        level: development
+      description: Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)
+      unit: "{sample}"
+      sum:
+        value_type: int
+        monotonic: true

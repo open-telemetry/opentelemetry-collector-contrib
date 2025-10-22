@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 const (
@@ -49,10 +48,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			Reason:   pod.Status.Reason,
 		},
 	}
-	for _, cs := range pod.Status.ContainerStatuses {
-		if cs.ContainerID == "" {
-			continue
-		}
+	for i := range pod.Status.ContainerStatuses {
+		cs := &pod.Status.ContainerStatuses[i]
 		newPod.Status.ContainerStatuses = append(newPod.Status.ContainerStatuses, corev1.ContainerStatus{
 			Name:                 cs.Name,
 			Image:                cs.Image,
@@ -63,7 +60,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			LastTerminationState: cs.LastTerminationState,
 		})
 	}
-	for _, c := range pod.Spec.Containers {
+	for i := range pod.Spec.Containers {
+		c := &pod.Spec.Containers[i]
 		newPod.Spec.Containers = append(newPod.Spec.Containers, corev1.Container{
 			Name: c.Name,
 			Resources: corev1.ResourceRequirements{
@@ -86,7 +84,8 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
-	for _, c := range pod.Spec.Containers {
+	for i := range pod.Spec.Containers {
+		c := pod.Spec.Containers[i]
 		container.RecordSpecMetrics(logger, mb, c, pod, ts)
 	}
 }
@@ -184,12 +183,12 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
 // on Job to see if it was created by a CronJob. Sync metadata accordingly.
 func collectPodJobProperties(pod *corev1.Pod, jobStores map[string]cache.Store, logger *zap.Logger) map[string]string {
-	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindJob)
+	jobRef := findOwnerWithKind(pod.OwnerReferences, constants.K8sKindJob)
 	if jobRef != nil {
 		var job any
 		var err error
 
-		job, err = utils.GetObjectFromStore(pod.Namespace, jobRef.Name, jobStores)
+		job, err = getObjectFromStore(pod.Namespace, jobRef.Name, jobStores)
 		if err != nil {
 			logError(err, jobRef, pod.UID, logger)
 			return nil
@@ -204,7 +203,7 @@ func collectPodJobProperties(pod *corev1.Pod, jobStores map[string]cache.Store, 
 			logError(fmt.Errorf("cannot cast %T to *batchv1.Job", job), jobRef, pod.UID, logger)
 			return nil
 		}
-		if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, constants.K8sKindCronJob); cronJobRef != nil {
+		if cronJobRef := findOwnerWithKind(jobObj.OwnerReferences, constants.K8sKindCronJob); cronJobRef != nil {
 			return getWorkloadProperties(cronJobRef, string(conventions.K8SCronJobNameKey))
 		}
 		return getWorkloadProperties(jobRef, string(conventions.K8SJobNameKey))
@@ -215,12 +214,12 @@ func collectPodJobProperties(pod *corev1.Pod, jobStores map[string]cache.Store, 
 // collectPodReplicaSetProperties checks if pod owner of type ReplicaSet is cached. Check owners reference
 // on ReplicaSet to see if it was created by a Deployment. Sync metadata accordingly.
 func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetStores map[string]cache.Store, logger *zap.Logger) map[string]string {
-	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindReplicaSet)
+	rsRef := findOwnerWithKind(pod.OwnerReferences, constants.K8sKindReplicaSet)
 	if rsRef != nil {
 		var replicaSet any
 		var err error
 
-		replicaSet, err = utils.GetObjectFromStore(pod.Namespace, rsRef.Name, replicaSetStores)
+		replicaSet, err = getObjectFromStore(pod.Namespace, rsRef.Name, replicaSetStores)
 		if err != nil {
 			logError(err, rsRef, pod.UID, logger)
 			return nil
@@ -235,7 +234,7 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetStores map[string
 			logError(fmt.Errorf("cannot cast %T to *appsv1.ReplicaSet", replicaSet), rsRef, pod.UID, logger)
 			return nil
 		}
-		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, constants.K8sKindDeployment); deployRef != nil {
+		if deployRef := findOwnerWithKind(replicaSetObj.OwnerReferences, constants.K8sKindDeployment); deployRef != nil {
 			return getWorkloadProperties(deployRef, string(conventions.K8SDeploymentNameKey))
 		}
 		return getWorkloadProperties(rsRef, string(conventions.K8SReplicaSetNameKey))
@@ -273,9 +272,45 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 
 func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
-	for _, cs := range pod.Status.ContainerStatuses {
+	for i := range pod.Status.ContainerStatuses {
+		cs := pod.Status.ContainerStatuses[i]
 		md := container.GetMetadata(pod, cs, logger)
 		km[md.ResourceID] = md
 	}
 	return km
+}
+
+// getIDForCache returns keys to lookup resources from the cache exposed
+// by shared informers.
+func getIDForCache(namespace, resourceName string) string {
+	return fmt.Sprintf("%s/%s", namespace, resourceName)
+}
+
+// getObjectFromStore retrieves the requested object from the given stores.
+// first, the object is attempted to be retrieved from the store for all namespaces,
+// and if it is not found there, the namespace-specific store is used
+func getObjectFromStore(namespace, objName string, stores map[string]cache.Store) (any, error) {
+	for _, storeKey := range [2]string{metadata.ClusterWideInformerKey, namespace} {
+		if store, ok := stores[storeKey]; ok {
+			obj, exists, err := store.GetByKey(getIDForCache(namespace, objName))
+			if err != nil {
+				return nil, err
+			}
+			if exists {
+				return obj, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+// findOwnerWithKind returns the OwnerReference of the matching kind from
+// the provided list of owner references.
+func findOwnerWithKind(ors []v1.OwnerReference, kind string) *v1.OwnerReference {
+	for _, or := range ors {
+		if or.Kind == kind {
+			return &or
+		}
+	}
+	return nil
 }

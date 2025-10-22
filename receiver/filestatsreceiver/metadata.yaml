@@ -26,18 +26,31 @@ attributes:
     type: string
 
 metrics:
-  file.mtime:
-    description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
-    enabled: true
+  file.atime:
+    description: Elapsed time since last access of the file or folder, in seconds since Epoch.
+    enabled: false
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
       
     unit: "s"
+  file.count:
+    description: The number of files matched
+    enabled: false
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      
+    unit: "{file}"
   file.ctime:
     description: Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
     enabled: false
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -46,9 +59,11 @@ metrics:
     unit: "s"
     attributes:
       - file.permissions
-  file.atime:
-    description: Elapsed time since last access of the file or folder, in seconds since Epoch.
-    enabled: false
+  file.mtime:
+    description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
+    enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -58,14 +73,9 @@ metrics:
   file.size:
     description: The size of the file or folder, in bytes.
     enabled: true
+    stability:
+      level: development
     gauge:
       value_type: int
       
     unit: "b"
-  file.count:
-    description: The number of files matched
-    enabled: false
-    gauge:
-      value_type: int
-      
-    unit: "{file}"

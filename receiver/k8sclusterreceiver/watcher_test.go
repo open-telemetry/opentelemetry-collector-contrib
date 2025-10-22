@@ -4,6 +4,7 @@
 package k8sclusterreceiver
 
 import (
+	maps0 "maps"
 	"testing"
 	"time"
 
@@ -634,9 +635,7 @@ func podWithAdditionalLabels(labels map[string]string, pod *corev1.Pod) any {
 		pod.Labels = make(map[string]string, len(labels))
 	}
 
-	for k, v := range labels {
-		pod.Labels[k] = v
-	}
+	maps0.Copy(pod.Labels, labels)
 
 	return pod
 }
