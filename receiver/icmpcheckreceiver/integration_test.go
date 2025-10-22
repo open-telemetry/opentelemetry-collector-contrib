@@ -8,6 +8,7 @@ package icmpcheckreceiver
 import (
 	"context"
 	"os"
+	"os/exec"
 	"runtime"
 	"sync/atomic"
 	"testing"
@@ -20,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func requireRootPrivileges(t *testing.T) {
+func setupTest(t *testing.T) {
 	t.Helper()
 
 	if runtime.GOOS != "linux" {
@@ -30,11 +31,17 @@ func requireRootPrivileges(t *testing.T) {
 
 	if os.Geteuid() != 0 {
 		t.Skip("skipping test on non-root user")
+		return
+	}
+
+	if err := exec.Command("sudo", "sysctl", "-w", "net.ipv4.ping_group_range=0 2147483647").Run(); err != nil {
+		t.Skip("skipping test as setting ping_group_range failed:", err)
 	}
 }
 
-func TestIntegration(t *testing.T) {
-	requireRootPrivileges(t)
+func TestIntegrationWithSudo(t *testing.T) {
+	setupTest(t)
+
 	var containerIP atomic.Value
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
