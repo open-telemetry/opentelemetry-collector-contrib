@@ -5,7 +5,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 

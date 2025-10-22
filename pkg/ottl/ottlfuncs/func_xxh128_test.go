@@ -22,12 +22,12 @@ func Test_XXH128(t *testing.T) {
 		{
 			name:     "string",
 			value:    "hello world",
-			expected: "d447b1ea40e6988bd447b1ea40e6988b",
+			expected: "df8d09e93f874900a99b8775cc15b6c7",
 		},
 		{
 			name:     "empty string",
 			value:    "",
-			expected: "2d06800538d394c22d06800538d394c2",
+			expected: "99aa06d3014798d86001c324468d497f",
 		},
 	}
 	for _, tt := range tests {
