@@ -40,24 +40,46 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
 }
 
-func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest_valid(t *testing.T) {
+func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 
-	content := readLogFile(t, filesDirectory, "cloudtrail_digest.json")
-	logs, err := unmarshaler.UnmarshalAWSLogs(content)
-	require.NoError(t, err)
-
-	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_digest_expected.yaml"))
-	require.NoError(t, err)
-
-	compareLogsOptions := []plogtest.CompareLogsOption{
-		plogtest.IgnoreResourceLogsOrder(),
-		plogtest.IgnoreScopeLogsOrder(),
-		plogtest.IgnoreLogRecordsOrder(),
+	tests := []struct {
+		name         string
+		logFile      string
+		expectedFile string
+	}{
+		{
+			name:         "Empty Digest",
+			logFile:      "cloudtrail_digest_empty.json",
+			expectedFile: "cloudtrail_digest_empty_expected.yaml",
+		},
+		{
+			name:         "Complete digest",
+			logFile:      "cloudtrail_digest.json",
+			expectedFile: "cloudtrail_digest_expected.yaml",
+		},
 	}
 
-	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareLogsOptions...))
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := readLogFile(t, filesDirectory, tt.logFile)
+			logs, err := unmarshaler.UnmarshalAWSLogs(content)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, tt.expectedFile))
+			require.NoError(t, err)
+
+			compareLogsOptions := []plogtest.CompareLogsOption{
+				plogtest.IgnoreResourceLogsOrder(),
+				plogtest.IgnoreScopeLogsOrder(),
+				plogtest.IgnoreLogRecordsOrder(),
+			}
+
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareLogsOptions...))
+		})
+	}
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
