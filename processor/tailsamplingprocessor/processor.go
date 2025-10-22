@@ -11,7 +11,6 @@ import (
 	"math"
 	"runtime"
 	"slices"
-	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -564,7 +563,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 			continue
 		}
 
-		metrics.addDecision(i, decision, trace.SpanCount.Load())
+		metrics.addDecision(i, decision, trace.SpanCount)
 
 		// We associate the first policy with the sampling decision to understand what policy sampled a span
 		if samplingDecisions[decision] == nil {
@@ -645,12 +644,9 @@ func (tsp *tailSamplingSpanProcessor) processTrace(resourceSpans ptrace.Resource
 
 	actualData, ok := tsp.idToTrace[id]
 	if !ok {
-		spanCount := &atomic.Int64{}
-		spanCount.Store(lenSpans)
-
 		actualData = &samplingpolicy.TraceData{
 			ArrivalTime:     currTime,
-			SpanCount:       spanCount,
+			SpanCount:       lenSpans,
 			ReceivedBatches: ptrace.NewTraces(),
 		}
 
@@ -663,7 +659,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(resourceSpans ptrace.Resource
 			tsp.deleteTraceQueue.PushBack(id)
 		}
 	} else {
-		actualData.SpanCount.Add(lenSpans)
+		actualData.SpanCount += lenSpans
 	}
 
 	finalDecision := actualData.FinalDecision

@@ -34,11 +34,11 @@ func NewSpanCount(settings component.TelemetrySettings, minSpans, maxSpans int32
 func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	c.logger.Debug("Evaluating spans counts in filter")
 
-	spanCount := int(traceData.SpanCount.Load())
+	spanCount := int32(traceData.SpanCount)
 	switch {
-	case c.maxSpans == 0 && spanCount >= int(c.minSpans):
+	case c.maxSpans == 0 && spanCount >= c.minSpans:
 		return samplingpolicy.Sampled, nil
-	case spanCount >= int(c.minSpans) && spanCount <= int(c.maxSpans):
+	case spanCount >= c.minSpans && spanCount <= c.maxSpans:
 		return samplingpolicy.Sampled, nil
 	default:
 		return samplingpolicy.NotSampled, nil
