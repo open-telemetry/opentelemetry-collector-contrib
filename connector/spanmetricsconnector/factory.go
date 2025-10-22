@@ -52,13 +52,13 @@ func init() {
 	)
 	useSecondAsDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
 		useSecondAsDefaultMetricsUnitFeatureGateID,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, connector use second as default unit for duration metrics."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42462"),
 	)
 	excludeResourceMetrics = featuregate.GlobalRegistry().MustRegister(
 		excludeResourceMetricsFeatureGate,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, connector will exclude all resource attributes."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
 	)
