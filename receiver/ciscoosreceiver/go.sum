@@ -101,6 +101,8 @@ go.opentelemetry.io/collector/scraper v0.138.1-0.20251021231522-c657d5d4e920 h1:
 go.opentelemetry.io/collector/scraper v0.138.1-0.20251021231522-c657d5d4e920/go.mod h1:9xp6yYvAeH8KGn8cJAtcRZ7IRN1r0k40yS5LfhHPzPg=
 go.opentelemetry.io/collector/scraper/scraperhelper v0.138.1-0.20251021231522-c657d5d4e920 h1:WHWzedETUo3nsAvZ6VhaC3KxeLEag7L2zjxqigYRsTw=
 go.opentelemetry.io/collector/scraper/scraperhelper v0.138.1-0.20251021231522-c657d5d4e920/go.mod h1:pMheZcc1qK6fXUYlHIj+Ik8fL1v2mL3n9CUmH9NVzaA=
+go.opentelemetry.io/collector/scraper/scrapertest v0.138.1-0.20251021231522-c657d5d4e920 h1:m9y6HyopAlF/5mYGcsJ8rpY+9X4xXz8FvT0XyJr9PIY=
+go.opentelemetry.io/collector/scraper/scrapertest v0.138.1-0.20251021231522-c657d5d4e920/go.mod h1:KeDlpTL2h4/KkwJ1gjVx1g7uRfS0zCPZlGbHQG36Ey0=
 go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 h1:aBKdhLVieqvwWe9A79UHI/0vgp2t/s2euY8X59pGRlw=
 go.opentelemetry.io/contrib/bridges/otelzap v0.13.0/go.mod h1:SYqtxLQE7iINgh6WFuVi2AI70148B8EI35DSk0Wr8m4=
 go.opentelemetry.io/otel v1.38.0 h1:RkfdswUDRimDg0m2Az18RKOsnI8UDzppJAtj01/Ymk8=
