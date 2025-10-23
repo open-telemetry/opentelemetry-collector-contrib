@@ -1710,8 +1710,6 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			funcs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
 			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 			funcs[isRootSpanFactory.Name()] = isRootSpanFactory
-			getSemconvSpanNameFactory := ottlfuncs.NewGetSemconvSpanNameFactory()
-			funcs[getSemconvSpanNameFactory.Name()] = getSemconvSpanNameFactory
 			spanParser, err := ottlspan.NewParser(funcs, settings)
 			assert.NoError(t, err)
 			spanStatements, err := spanParser.ParseStatement(tt.statement)

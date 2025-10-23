@@ -7,12 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func Test_HasAttrKeyOnDatapoint(t *testing.T) {
@@ -356,18 +354,5 @@ func Test_HasAttrOnDatapoint(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
-	}
-}
-
-func Test_StandardSpanFunctions(t *testing.T) {
-	expected := StandardSpanFuncs()
-	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
-	expected[isRootSpanFactory.Name()] = isRootSpanFactory
-	getSemconvSpanNameFactory := ottlfuncs.NewGetSemconvSpanNameFactory()
-	expected[getSemconvSpanNameFactory.Name()] = getSemconvSpanNameFactory
-	actual := StandardSpanFuncs()
-	require.Len(t, actual, len(expected))
-	for k := range actual {
-		assert.Contains(t, expected, k)
 	}
 }
