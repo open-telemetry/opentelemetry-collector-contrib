@@ -9,6 +9,7 @@ status:
     active: [atoulme]
     seeking_new: true
 
+
 resource_attributes:
   file.name:
     description: The name of the file
@@ -34,7 +35,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
-
+      
     unit: "s"
   file.count:
     description: The number of files matched
@@ -43,7 +44,7 @@ metrics:
       level: development
     gauge:
       value_type: int
-
+      
     unit: "{file}"
   file.ctime:
     description: Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
@@ -54,7 +55,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
-
+      
     unit: "s"
     attributes:
       - file.permissions
@@ -67,7 +68,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
-
+      
     unit: "s"
   file.size:
     description: The size of the file or folder, in bytes.
@@ -76,5 +77,5 @@ metrics:
       level: development
     gauge:
       value_type: int
-
+      
     unit: "b"

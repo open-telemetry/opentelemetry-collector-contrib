@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualFluentClosedConnections(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_closed_connections",
-		Description: "Number of connections closed to the fluentforward receiver",
+		Description: "Number of connections closed to the fluentforward receiver [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualFluentClosedConnections(t *testing.T, tt *componenttest.Telemetr
 func AssertEqualFluentEventsParsed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_events_parsed",
-		Description: "Number of Fluent events parsed successfully",
+		Description: "Number of Fluent events parsed successfully [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualFluentEventsParsed(t *testing.T, tt *componenttest.Telemetry, dp
 func AssertEqualFluentOpenedConnections(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_opened_connections",
-		Description: "Number of connections opened to the fluentforward receiver",
+		Description: "Number of connections opened to the fluentforward receiver [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -72,7 +72,7 @@ func AssertEqualFluentOpenedConnections(t *testing.T, tt *componenttest.Telemetr
 func AssertEqualFluentParseFailures(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_parse_failures",
-		Description: "Number of times Fluent messages failed to be decoded",
+		Description: "Number of times Fluent messages failed to be decoded [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -88,7 +88,7 @@ func AssertEqualFluentParseFailures(t *testing.T, tt *componenttest.Telemetry, d
 func AssertEqualFluentRecordsGenerated(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_records_generated",
-		Description: "Number of log records generated from Fluent forward input",
+		Description: "Number of log records generated from Fluent forward input [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
