@@ -600,7 +600,13 @@ This gives the exporter the opportunity to group all related metrics into the sa
 Symptom: bulk indexer logs an error that indicates "bulk indexer flush error" with bulk request returning HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
 
 ```
-error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error        {"otelcol.component.id": "elasticsearch", "otelcol.component.kind": "Exporter", "otelcol.signal": "logs", "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"}
+error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error
+{
+  "otelcol.component.id": "elasticsearch",
+  "otelcol.component.kind": "Exporter",
+  "otelcol.signal": "logs",
+  "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"
+}
 ```
 
 This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) sending to Elasticsearch version < 8.12.
