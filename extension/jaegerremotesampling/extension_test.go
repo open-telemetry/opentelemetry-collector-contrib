@@ -49,7 +49,7 @@ func TestStartAndShutdownLocalFile(t *testing.T) {
 func TestRemote(t *testing.T) {
 	for _, tc := range []struct {
 		name                          string
-		remoteClientHeaderConfig      *configopaque.MapList
+		remoteClientHeaderConfig      configopaque.MapList
 		performedClientCallCount      int
 		expectedOutboundGrpcCallCount int
 		reloadInterval                time.Duration
@@ -63,7 +63,7 @@ func TestRemote(t *testing.T) {
 			name:                          "configured header additions",
 			performedClientCallCount:      3,
 			expectedOutboundGrpcCallCount: 3,
-			remoteClientHeaderConfig: &configopaque.MapList{
+			remoteClientHeaderConfig: configopaque.MapList{
 				{Name: "testheadername", Value: "testheadervalue"},
 				{Name: "anotherheadername", Value: "anotherheadervalue"},
 			},
@@ -73,7 +73,7 @@ func TestRemote(t *testing.T) {
 			reloadInterval:                time.Minute * 5,
 			performedClientCallCount:      3,
 			expectedOutboundGrpcCallCount: 1,
-			remoteClientHeaderConfig: &configopaque.MapList{
+			remoteClientHeaderConfig: configopaque.MapList{
 				{Name: "somecoolheader", Value: "some-more-coverage-whynot"},
 			},
 		},
