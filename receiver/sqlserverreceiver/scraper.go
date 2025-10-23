@@ -643,7 +643,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("lookbackTime", -s.config.LookbackTime),
+		sql.Named("lookbackTime", -int(s.config.LookbackTime.Seconds())),
 		sql.Named("topNValue", s.config.TopQueryCount),
 	)
 	if err != nil {

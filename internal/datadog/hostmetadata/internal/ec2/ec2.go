@@ -50,7 +50,7 @@ func GetHostInfo(ctx context.Context, logger *zap.Logger) (hostInfo *HostInfo) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		logger.Warn("Failed to build AWS config", zap.Error(err))
-		return
+		return hostInfo
 	}
 
 	client := imds.NewFromConfig(cfg)
@@ -61,7 +61,7 @@ func GetHostInfo(ctx context.Context, logger *zap.Logger) (hostInfo *HostInfo) {
 	})
 	if err != nil {
 		logger.Debug("EC2 Metadata service is not available", zap.Error(err))
-		return
+		return hostInfo
 	}
 
 	idDoc, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
@@ -84,7 +84,7 @@ func GetHostInfo(ctx context.Context, logger *zap.Logger) (hostInfo *HostInfo) {
 		}
 	}
 
-	return
+	return hostInfo
 }
 
 func (hi *HostInfo) GetHostname(_ *zap.Logger) string {

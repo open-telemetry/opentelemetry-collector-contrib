@@ -30,9 +30,9 @@ The current number of nginx connections by state
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of a connection | Str: ``active``, ``reading``, ``writing``, ``waiting`` | false |
+| state | The state of a connection | Str: ``active``, ``reading``, ``writing``, ``waiting`` | Recommended |
 
 ### nginx.connections_handled
 
