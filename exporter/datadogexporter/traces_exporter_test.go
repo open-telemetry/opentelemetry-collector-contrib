@@ -17,10 +17,10 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -30,13 +30,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 	semconv "go.opentelemetry.io/otel/semconv/v1.6.1"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 )
 
 func setupTestMain(m *testing.M) {
@@ -118,7 +116,7 @@ func TestTracesSource(t *testing.T) {
 }
 
 func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	prevVal := featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
@@ -126,12 +124,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var expectedMetricEndpoint string
-		if isMetricExportV2Enabled() {
-			expectedMetricEndpoint = testutil.MetricV2Endpoint
-		} else {
-			expectedMetricEndpoint = testutil.MetricV1Endpoint
-		}
+		expectedMetricEndpoint := testutil.MetricV2Endpoint
 		if r.URL.Path != expectedMetricEndpoint {
 			// we only want to capture series payloads
 			return
@@ -174,21 +167,6 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	exporter, err := f.CreateTraces(ctx, params, &cfg)
 	assert.NoError(err)
 
-	// Payload specifies a sub-set of a Zorkian metrics series payload.
-	type Payload struct {
-		Series []struct {
-			Host string   `json:"host,omitempty"`
-			Tags []string `json:"tags,omitempty"`
-		} `json:"series"`
-	}
-	// getHostTags extracts the host and tags from the Zorkian metrics series payload
-	// body found in data.
-	getHostTags := func(data []byte) (host string, tags []string) {
-		var p Payload
-		assert.NoError(json.Unmarshal(data, &p))
-		assert.Len(p.Series, 1)
-		return p.Series[0].Host, p.Series[0].Tags
-	}
 	// getHostTagsV2 extracts the host and tags from the native DatadogV2 metrics series payload
 	// body found in data.
 	getHostTagsV2 := func(data []byte) (host string, tags []string) {
@@ -241,11 +219,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 			case data := <-reqs:
 				var host string
 				var tags []string
-				if isMetricExportV2Enabled() {
-					host, tags = getHostTagsV2(data)
-				} else {
-					host, tags = getHostTags(data)
-				}
+				host, tags = getHostTagsV2(data)
 				assert.Equal(tt.host, host)
 				assert.Equal(tt.tags, tags)
 			case <-timeout:
@@ -266,7 +240,7 @@ func TestTraceExporter(t *testing.T) {
 }
 
 func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	prevVal := featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
@@ -340,33 +314,6 @@ func TestNewTracesExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
-func TestNewTracesExporter_Zorkian(t *testing.T) {
-	resetZorkianWarningsForTesting()
-	require.NoError(t, enableZorkianMetricExport())
-	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
-	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
-
-	metricsServer := testutil.DatadogServerMock()
-	defer metricsServer.Close()
-
-	cfg := &datadogconfig.Config{}
-	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.Endpoint = metricsServer.URL
-
-	params := exportertest.NewNopSettings(metadata.Type)
-	f := NewFactory()
-	core, logs := observer.New(zap.WarnLevel)
-	params.Logger = zap.New(core)
-	ctx := t.Context()
-
-	// The client should have been created correctly
-	exp, err := f.CreateTraces(ctx, params, cfg)
-	require.NoError(t, err)
-	assert.NotNil(t, exp)
-
-	assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
-}
-
 func TestPushTraceData(t *testing.T) {
 	t.Run("ReceiveResourceSpansV1", func(t *testing.T) {
 		testPushTraceData(t, false)
@@ -378,7 +325,7 @@ func TestPushTraceData(t *testing.T) {
 }
 
 func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	prevVal := featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
@@ -429,7 +376,7 @@ func TestPushTraceDataNewEnvConvention(t *testing.T) {
 }
 
 func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	prevVal := featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
@@ -487,7 +434,7 @@ func TestPushTraceDataOperationAndResourceName(t *testing.T) {
 func subtestPushTraceDataOperationAndResourceName(t *testing.T, enableOperationAndResourceNameV2 bool) {
 	t.Helper()
 	if !enableOperationAndResourceNameV2 {
-		prevVal := pkgdatadog.OperationAndResourceNameV2FeatureGate.IsEnabled()
+		prevVal := featuregates.OperationAndResourceNameV2FeatureGate.IsEnabled()
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", false))
 		defer func() {
 			require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", prevVal))
@@ -538,7 +485,7 @@ func subtestPushTraceDataOperationAndResourceName(t *testing.T, enableOperationA
 }
 
 func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *testing.T) {
-	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	prevVal := featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))

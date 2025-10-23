@@ -67,9 +67,9 @@ func TestExtension(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, lease)
 		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
+		require.True(t, onStartLeadingInvoked.Load())
 	}, 10*time.Second, 100*time.Millisecond)
 
-	require.True(t, onStartLeadingInvoked.Load())
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }
 
@@ -103,6 +103,8 @@ func TestExtension_WithDelay(t *testing.T) {
 
 	// Simulate a delay of setting up callbacks after the leader has been elected.
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
+	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42460
+	time.Sleep(100 * time.Millisecond)
 	require.Eventually(t, func() bool {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
 		require.NoError(t, err)

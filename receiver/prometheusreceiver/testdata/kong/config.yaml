@@ -1,0 +1,7 @@
+config:
+  scrape_configs:
+    - job_name: 'kong'
+      scrape_interval: 1s
+      static_configs:
+        - targets:
+            - "localhost:18001"

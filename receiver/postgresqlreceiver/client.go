@@ -928,6 +928,15 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		}
 		newestQueryTimestamp = math.Max(newestQueryTimestamp, _queryStartTimestamp)
 
+		duration := float64(0)
+		if row["_query_start_timestamp"] != "" {
+			duration, err = strconv.ParseFloat(row["duration_ms"], 64)
+			if err != nil {
+				logger.Warn("failed to convert duration", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+
 		// TODO: check if the query is truncated.
 		obfuscated, err := obfuscateSQL(row["query"])
 		if err != nil {
@@ -936,10 +945,11 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		}
 		currentAttributes[dbPrefix+"pid"] = pid
 		currentAttributes["network.peer.port"] = clientPort
-		currentAttributes["network.peer.address"] = row["client_addrs"]
+		currentAttributes["network.peer.address"] = row["client_addr"]
 		currentAttributes["db.query.text"] = obfuscated
 		currentAttributes["db.namespace"] = row["datname"]
 		currentAttributes["user.name"] = row["usename"]
+		currentAttributes["duration"] = duration
 		currentAttributes["db.system.name"] = "postgresql"
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}

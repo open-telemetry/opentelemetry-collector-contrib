@@ -143,7 +143,7 @@ func matchDps(metric pmetric.Metric, f internalFilter) (matchedDps []bool, match
 		matchedDps = append(matchedDps, match)
 		return true
 	})
-	return
+	return matchedDps, matchedDpsCount
 }
 
 // extractMetricWithMatchingAttrs returns a metric with data points matching attrMatchers.
@@ -262,7 +262,7 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 				case Insert:
 					// Save len, so we don't iterate over the newly generated metrics that are appended at the end.
 					mLen := metrics.Len()
-					for i := 0; i < mLen; i++ {
+					for i := range mLen {
 						metric := metrics.At(i)
 						newMetric := transform.MetricIncludeFilter.extractMatchedMetric(metric)
 						if newMetric == (pmetric.Metric{}) {
@@ -545,7 +545,8 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 		}
 	}
 
-	for _, op := range transform.Operations {
+	for i := range transform.Operations {
+		op := &transform.Operations[i]
 		switch op.configOperation.Action {
 		case updateLabel:
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)

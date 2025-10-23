@@ -1,6 +1,6 @@
 name: Beta stability promotion
 description: Promote a component to beta stability
-labels: ["needs triage"]
+labels: ["needs triage", "promote-beta"]
 body:
   - type: markdown
     attributes:
@@ -35,6 +35,7 @@ body:
       - connector/routing
       - connector/servicegraph
       - connector/signaltometrics
+      - connector/slowsql
       - connector/spanmetrics
       - connector/sum
       - exporter/alertmanager
@@ -60,6 +61,7 @@ body:
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
+      - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
@@ -138,6 +140,7 @@ body:
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
@@ -168,6 +171,7 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/stanza/operator/input/journald
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
@@ -206,12 +210,21 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
+      - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
+      - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/openstack/nova
+      - processor/resourcedetection/internal/oraclecloud
+      - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/upcloud
+      - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
@@ -228,6 +241,7 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/ciscoos
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
@@ -262,6 +276,7 @@ body:
       - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces
+      - receiver/icmpcheck
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
@@ -299,10 +314,10 @@ body:
       - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
+      - receiver/redfish
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/sapm
       - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking

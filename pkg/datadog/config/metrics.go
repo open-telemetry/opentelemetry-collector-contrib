@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	otlpmetrics "github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"go.opentelemetry.io/collector/config/confignet"
 )
 
@@ -187,7 +187,7 @@ func (sm *SummaryMode) UnmarshalText(in []byte) error {
 
 // SummaryConfig customizes export of OTLP Summaries.
 type SummaryConfig struct {
-	// Mode is the the mode for exporting OTLP Summaries.
+	// Mode is the mode for exporting OTLP Summaries.
 	// Valid values are 'noquantiles' or 'gauges'.
 	//  - 'noquantiles' sends no `.quantile` metrics. `.sum` and `.count` metrics will still be sent.
 	//  - 'gauges' sends `.quantile` metrics as gauges tagged by the quantile.
@@ -195,6 +195,8 @@ type SummaryConfig struct {
 	// The default is 'gauges'.
 	// See https://docs.datadoghq.com/metrics/otlp/?tab=summary#mapping for details and examples.
 	Mode SummaryMode `mapstructure:"mode"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // MetricsExporterConfig provides options for a user to customize the behavior of the
@@ -207,6 +209,8 @@ type MetricsExporterConfig struct {
 	// InstrumentationScopeMetadataAsTags, if set to true, adds the name and version of the
 	// instrumentation scope that created a metric to the metric tags
 	InstrumentationScopeMetadataAsTags bool `mapstructure:"instrumentation_scope_metadata_as_tags"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ToTranslatorOpts returns a list of metrics translator options from the metrics config

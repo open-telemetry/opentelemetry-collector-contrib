@@ -6,7 +6,9 @@ exclude  = [
     "^http(s)?://localhost",
     "^http(s)?://example.com",
     "^https://dev.mysql.com",
-    "^https://bugs.mysql.com"
+    "^https://bugs.mysql.com",
+    "^https://techdocs.akamai.com",
+    "^https://www.vultr.com"
 ]
 
 # better to be safe and avoid failures

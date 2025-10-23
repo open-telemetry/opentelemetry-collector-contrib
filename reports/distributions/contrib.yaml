@@ -126,6 +126,7 @@ components:
         - sumologic
         - tail_sampling
         - transform
+        - unroll
     provider:
         - aes
         - googlesecretmanager
@@ -163,6 +164,7 @@ components:
         - flinkmetrics
         - fluentforward
         - github
+        - gitlab
         - googlecloudmonitoring
         - googlecloudpubsub
         - googlecloudspanner
@@ -207,7 +209,6 @@ components:
         - redis
         - riak
         - saphana
-        - sapm
         - signalfx
         - skywalking
         - snmp

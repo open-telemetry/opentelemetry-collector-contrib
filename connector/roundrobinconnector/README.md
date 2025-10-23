@@ -50,7 +50,6 @@ receivers:
   otlp:
 processors:
   resourcedetection:
-  batch:
 exporters:
   prometheusremotewrite/1:
   prometheusremotewrite/2:
@@ -60,7 +59,7 @@ service:
   pipelines:
     metrics:
       receivers: [otlp]
-      processors: [resourcedetection, batch]
+      processors: [resourcedetection]
       exporters: [roundrobin]
     metrics/1:
       receivers: [roundrobin]

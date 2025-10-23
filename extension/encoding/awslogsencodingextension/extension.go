@@ -13,12 +13,16 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
+	networkfirewall "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
@@ -30,6 +34,17 @@ const (
 	bytesEncoding   = "bytes"
 	parquetEncoding = "parquet"
 )
+
+var vpcFlowStartISO8601FormatFeatureGate *featuregate.Gate
+
+func init() {
+	vpcFlowStartISO8601FormatFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		constants.VPCFlowStartISO8601FormatID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, aws.vpc.flow.start field will be formatted as ISO-8601 string instead of seconds since epoch integer."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43390"),
+	)
+}
 
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
 
@@ -44,44 +59,90 @@ type encodingExtension struct {
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
-	case formatCloudWatchLogsSubscriptionFilter:
+	case constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudWatchLogsSubscriptionFilterV1:
+		if cfg.Format == constants.FormatCloudWatchLogsSubscriptionFilterV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatCloudWatchLogsSubscriptionFilterV1)),
+				zap.String("new_format", string(constants.FormatCloudWatchLogsSubscriptionFilter)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
-			format:      formatCloudWatchLogsSubscriptionFilter,
+			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
 		}, nil
-	case formatVPCFlowLog:
+	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
+		var fileFormat string
+		if cfg.Format == constants.FormatVPCFlowLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatVPCFlowLogV1)),
+				zap.String("new_format", string(constants.FormatVPCFlowLog)),
+			)
+			fileFormat = cfg.VPCFlowLogConfigV1.FileFormat
+		} else {
+			fileFormat = cfg.VPCFlowLogConfig.FileFormat
+		}
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
-			cfg.VPCFlowLogConfig.FileFormat,
+			fileFormat,
 			settings.BuildInfo,
 			settings.Logger,
+			vpcFlowStartISO8601FormatFeatureGate.IsEnabled(),
 		)
 		return &encodingExtension{
 			unmarshaler: unmarshaler,
-			vpcFormat:   cfg.VPCFlowLogConfig.FileFormat,
-			format:      formatVPCFlowLog,
+			vpcFormat:   fileFormat,
+			format:      constants.FormatVPCFlowLog,
 		}, err
-	case formatS3AccessLog:
+	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
+		if cfg.Format == constants.FormatS3AccessLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatS3AccessLogV1)),
+				zap.String("new_format", string(constants.FormatS3AccessLog)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
-			format:      formatS3AccessLog,
+			format:      constants.FormatS3AccessLog,
 		}, nil
-	case formatWAFLog:
+	case constants.FormatWAFLog, constants.FormatWAFLogV1:
+		if cfg.Format == constants.FormatWAFLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatWAFLogV1)),
+				zap.String("new_format", string(constants.FormatWAFLog)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
-			format:      formatWAFLog,
+			format:      constants.FormatWAFLog,
 		}, nil
-	case formatCloudTrailLog:
+	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
+		if cfg.Format == constants.FormatCloudTrailLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatCloudTrailLogV1)),
+				zap.String("new_format", string(constants.FormatCloudTrailLog)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
-			format:      formatCloudTrailLog,
+			format:      constants.FormatCloudTrailLog,
 		}, nil
-	case formatELBAccessLog:
+	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
+		if cfg.Format == constants.FormatELBAccessLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatELBAccessLogV1)),
+				zap.String("new_format", string(constants.FormatELBAccessLog)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
 				settings.BuildInfo,
 				settings.Logger,
 			),
-			format: formatELBAccessLog,
+			format: constants.FormatELBAccessLog,
+		}, nil
+	case constants.FormatNetworkFirewallLog:
+		return &encodingExtension{
+			unmarshaler: networkfirewall.NewNetworkFirewallLogUnmarshaler(settings.BuildInfo),
+			format:      constants.FormatNetworkFirewallLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
@@ -134,17 +195,17 @@ func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, err
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter, formatCloudTrailLog, formatELBAccessLog:
+	case constants.FormatWAFLog, constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudTrailLog, constants.FormatELBAccessLog, constants.FormatNetworkFirewallLog:
 		return e.getReaderForData(buf)
 
-	case formatS3AccessLog:
+	case constants.FormatS3AccessLog:
 		return bytesEncoding, bytes.NewReader(buf), nil
 
-	case formatVPCFlowLog:
+	case constants.FormatVPCFlowLog:
 		switch e.vpcFormat {
-		case fileFormatParquet:
+		case constants.FileFormatParquet:
 			return parquetEncoding, nil, fmt.Errorf("%q still needs to be implemented", e.vpcFormat)
-		case fileFormatPlainText:
+		case constants.FileFormatPlainText:
 			return e.getReaderForData(buf)
 		default:
 			// should not be possible

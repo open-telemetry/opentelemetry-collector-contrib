@@ -52,7 +52,8 @@ func TestClientConfig(t *testing.T) {
 						Backoff: 5 * time.Second,
 					},
 				},
-				RackID: "rack1",
+				RackID:         "rack1",
+				UseLeaderEpoch: true,
 			},
 		},
 		"sasl_aws_msk_iam_oauthbearer": {
@@ -111,6 +112,13 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"not_use_leader_epoch": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.UseLeaderEpoch = false
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"brokers_required": {
@@ -152,10 +160,11 @@ func TestConsumerConfig(t *testing.T) {
 					Enable:   false,
 					Interval: 10 * time.Minute,
 				},
-				MinFetchSize:     10,
-				DefaultFetchSize: 1024,
-				MaxFetchSize:     4096,
-				MaxFetchWait:     1 * time.Second,
+				MinFetchSize:          10,
+				DefaultFetchSize:      1024,
+				MaxFetchSize:          4096,
+				MaxFetchWait:          1 * time.Second,
+				MaxPartitionFetchSize: 4096,
 			},
 		},
 
@@ -182,7 +191,8 @@ func TestProducerConfig(t *testing.T) {
 				CompressionParams: configcompression.CompressionParams{
 					Level: 1,
 				},
-				FlushMaxMessages: 2,
+				FlushMaxMessages:       2,
+				AllowAutoTopicCreation: true,
 			},
 		},
 		"default_compression_level": {
@@ -194,14 +204,24 @@ func TestProducerConfig(t *testing.T) {
 					// zero is treated as the codec-specific default
 					Level: 0,
 				},
-				FlushMaxMessages: 2,
+				FlushMaxMessages:       2,
+				AllowAutoTopicCreation: true,
 			},
 		},
 		"snappy_compression": {
 			expected: ProducerConfig{
-				MaxMessageBytes: 1000000,
-				RequiredAcks:    1,
-				Compression:     "snappy",
+				MaxMessageBytes:        1000000,
+				RequiredAcks:           1,
+				Compression:            "snappy",
+				AllowAutoTopicCreation: true,
+			},
+		},
+		"disable_auto_topic_creation": {
+			expected: ProducerConfig{
+				MaxMessageBytes:        1000000,
+				RequiredAcks:           1,
+				Compression:            "none",
+				AllowAutoTopicCreation: false,
 			},
 		},
 		"invalid_compression_level": {

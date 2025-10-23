@@ -5,6 +5,8 @@ package libhoneyreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"bytes"
+	"compress/flate"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,8 +17,8 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -27,7 +29,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
@@ -137,6 +138,7 @@ func (r *libhoneyReceiver) registerLogConsumer(tc consumer.Logs) {
 }
 
 func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Request) {
+	r.settings.Logger.Debug("handling auth request", zap.String("auth_api", r.cfg.AuthAPI))
 	authURL := fmt.Sprintf("%s/1/auth", r.cfg.AuthAPI)
 	authReq, err := http.NewRequest(http.MethodGet, authURL, http.NoBody)
 	if err != nil {
@@ -171,6 +173,60 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
+// writeLibhoneyError writes a bad request error response in the appropriate format for libhoney clients
+func writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, errorMsg string) {
+	errorResponse := []response.ResponseInBatch{{
+		ErrorStr: errorMsg,
+		Status:   http.StatusBadRequest,
+	}}
+
+	var responseBody []byte
+	var err error
+	var contentType string
+
+	switch enc.ContentType() {
+	case encoder.MsgpackContentType:
+		responseBody, err = msgpack.Marshal(errorResponse)
+		contentType = encoder.MsgpackContentType
+	default:
+		responseBody, err = json.Marshal(errorResponse)
+		contentType = encoder.JSONContentType
+	}
+
+	if err != nil {
+		// Fallback to generic error if we can't marshal the response
+		errorutil.HTTPError(resp, err)
+		return
+	}
+	writeResponse(resp, contentType, http.StatusBadRequest, responseBody)
+}
+
+// decompressBody handles decompression based on Content-Encoding header
+// Returns an io.ReadCloser that must be closed by the caller
+func decompressBody(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
+	switch contentEncoding {
+	case "", "identity":
+		// No compression
+		return body, nil
+	case "gzip":
+		gzipReader, err := gzip.NewReader(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		return gzipReader, nil
+	case "deflate":
+		return flate.NewReader(body), nil
+	case "zstd":
+		zstdReader, err := zstd.NewReader(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create zstd reader: %w", err)
+		}
+		return zstdReader.IOReadCloser(), nil
+	default:
+		return nil, fmt.Errorf("unsupported content encoding: %s", contentEncoding)
+	}
+}
+
 func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Request) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
@@ -182,77 +238,210 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		r.settings.Logger.Info("No dataset found in URL", zap.String("req.RequestURI", req.RequestURI))
 	}
 
-	// handleEvent is only called if an HTTP config is set, so HTTP must have a value.
 	httpCfg := r.cfg.HTTP.Get()
 	for _, p := range httpCfg.TracesURLPaths {
 		dataset = strings.Replace(dataset, p, "", 1)
 		r.settings.Logger.Debug("dataset parsed", zap.String("dataset.parsed", dataset))
 	}
 
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		errorutil.HTTPError(resp, err)
+	apiKey := req.Header.Get("x-honeycomb-team")
+	maskedKey := ""
+	if len(apiKey) > 8 {
+		maskedKey = apiKey[:4] + "..." + apiKey[len(apiKey)-4:]
+	} else if apiKey != "" {
+		maskedKey = "***"
 	}
-	if err = req.Body.Close(); err != nil {
-		errorutil.HTTPError(resp, err)
+
+	// Buffer the compressed body first (like api.honeycomb.io does)
+	// This separates network issues from decompression issues
+	contentEncoding := req.Header.Get("Content-Encoding")
+	var compressedBody []byte
+	func() {
+		defer func() {
+			if panicVal := recover(); panicVal != nil {
+				r.settings.Logger.Error("Panic during network read",
+					zap.Any("panic", panicVal),
+					zap.String("content-encoding", contentEncoding))
+				err = errors.New("failed to read from network")
+			}
+		}()
+		compressedBody, err = io.ReadAll(req.Body)
+	}()
+
+	if err != nil {
+		r.settings.Logger.Error("Failed to read request body from network",
+			zap.Error(err),
+			zap.String("content-encoding", contentEncoding),
+			zap.String("content-type", req.Header.Get("Content-Type")),
+			zap.Int64("content-length", req.ContentLength),
+			zap.String("endpoint", req.RequestURI),
+			zap.String("api-key-masked", maskedKey))
+		writeLibhoneyError(resp, enc, "failed to read request body")
+		return
+	}
+
+	// Now decompress from the complete buffered data
+	bodyReader, err := decompressBody(io.NopCloser(bytes.NewReader(compressedBody)), contentEncoding)
+	if err != nil {
+		r.settings.Logger.Error("Failed to decompress request body",
+			zap.Error(err),
+			zap.String("content-encoding", contentEncoding),
+			zap.String("content-type", req.Header.Get("Content-Type")),
+			zap.Int("compressed-size", len(compressedBody)),
+			zap.String("endpoint", req.RequestURI),
+			zap.String("api-key-masked", maskedKey))
+		writeLibhoneyError(resp, enc, "failed to decompress request body")
+		return
+	}
+	defer func() {
+		if bodyReader != nil {
+			_ = bodyReader.Close()
+		}
+	}()
+
+	var body []byte
+	func() {
+		defer func() {
+			if panicVal := recover(); panicVal != nil {
+				// Log the panic but don't expose internal details to the client
+				r.settings.Logger.Error("Panic during decompression (likely malformed compressed data)",
+					zap.Any("panic", panicVal),
+					zap.String("content-encoding", contentEncoding),
+					zap.String("content-type", req.Header.Get("Content-Type")),
+					zap.Int("compressed-size", len(compressedBody)),
+					zap.String("endpoint", req.RequestURI),
+					zap.String("api-key-masked", maskedKey))
+				err = errors.New("failed to decompress: panic during decompression")
+			}
+		}()
+		body, err = io.ReadAll(bodyReader)
+	}()
+
+	if err != nil {
+		r.settings.Logger.Error("Failed to decompress buffered body",
+			zap.Error(err),
+			zap.String("content-encoding", contentEncoding),
+			zap.String("content-type", req.Header.Get("Content-Type")),
+			zap.Int("compressed-size", len(compressedBody)),
+			zap.String("endpoint", req.RequestURI),
+			zap.String("api-key-masked", maskedKey))
+		writeLibhoneyError(resp, enc, "failed to decompress request body")
+		return
+	}
+	func() {
+		defer func() {
+			if panicVal := recover(); panicVal != nil {
+				r.settings.Logger.Error("Panic during request body close",
+					zap.Any("panic", panicVal))
+				writeLibhoneyError(resp, enc, "failed to close request body")
+				err = errors.New("panic during body close")
+			}
+		}()
+		err = req.Body.Close()
+	}()
+	if err != nil {
+		if !strings.Contains(err.Error(), "panic during body close") {
+			r.settings.Logger.Error("Failed to close request body", zap.Error(err))
+			writeLibhoneyError(resp, enc, "failed to close request body")
+		}
+		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
 	switch req.Header.Get("Content-Type") {
 	case "application/x-msgpack", "application/msgpack":
+		// The custom UnmarshalMsgpack will handle timestamp normalization
 		decoder := msgpack.NewDecoder(bytes.NewReader(body))
 		decoder.UseLooseInterfaceDecoding(true)
 		err = decoder.Decode(&libhoneyevents)
 		if err != nil {
 			r.settings.Logger.Info("messagepack decoding failed")
-		}
-		// Post-process msgpack events to ensure timestamps are set
-		for i := range libhoneyevents {
-			if libhoneyevents[i].MsgPackTimestamp == nil {
-				if libhoneyevents[i].Time != "" {
-					// Parse the time string and set MsgPackTimestamp
-					propertime := eventtime.GetEventTime(libhoneyevents[i].Time)
-					libhoneyevents[i].MsgPackTimestamp = &propertime
-				} else {
-					// No time field, use current time
-					tnow := time.Now()
-					libhoneyevents[i].MsgPackTimestamp = &tnow
-					libhoneyevents[i].Time = eventtime.GetEventTimeDefaultString()
-				}
-			}
+			writeLibhoneyError(resp, enc, "failed to unmarshal msgpack")
+			return
 		}
 		if len(libhoneyevents) > 0 {
+			// MsgPackTimestamp is guaranteed to be non-nil after UnmarshalMsgpack
 			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
 	case encoder.JSONContentType:
 		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
-			errorutil.HTTPError(resp, err)
+			writeLibhoneyError(resp, enc, "failed to unmarshal JSON")
+			return
 		}
+
 		if len(libhoneyevents) > 0 {
-			r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			// Debug: Log the state of MsgPackTimestamp
+			r.settings.Logger.Debug("JSON event decoded", zap.Bool("has_msgpacktimestamp", libhoneyevents[0].MsgPackTimestamp != nil))
+			if libhoneyevents[0].MsgPackTimestamp != nil {
+				r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			} else {
+				r.settings.Logger.Debug("Decoding with json worked", zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			}
 		}
 	default:
 		r.settings.Logger.Info("unsupported content type", zap.String("content-type", req.Header.Get("Content-Type")))
 	}
 
-	otlpLogs, otlpTraces := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
+	// Parse events and track which original indices contributed to each OTLP entity
+	otlpLogs, otlpTraces, indexMapping, parsingResults := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
 
 	// Use the request context which already contains client metadata when IncludeMetadata is enabled
 	ctx := req.Context()
 
+	// Start with parsing results, then apply batch processing results for span events/links
+	results := parsingResults
+	hasFailures := false
+
+	// Check if any parsing failures occurred
+	for _, result := range results {
+		if result.Status != 0 && result.Status != http.StatusAccepted {
+			hasFailures = true
+		}
+	}
+
+	// Process logs - only override parsing results if consumer fails
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
-		ctx = r.obsreport.StartLogsOp(ctx)
-		err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
-		r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+		if r.nextLogs != nil {
+			ctx = r.obsreport.StartLogsOp(ctx)
+			err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
+			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+			// Only override parsing results if consumer failed
+			if err != nil {
+				applyConsumerResultsToSuccessfulEvents(results, indexMapping.LogIndices, err)
+				hasFailures = true
+			}
+		} else {
+			dropErr := errors.New("no log consumer configured")
+			r.settings.Logger.Warn("Dropping log records - no log consumer configured", zap.Int("dropped_logs", numLogs))
+			r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, dropErr)
+			// Override even successful parsing results since consumer is not configured
+			applyConsumerResultsToSuccessfulEvents(results, indexMapping.LogIndices, dropErr)
+			hasFailures = true
+		}
 	}
 
+	// Process traces - only override parsing results if consumer fails
 	numTraces := otlpTraces.SpanCount()
 	if numTraces > 0 {
-		ctx = r.obsreport.StartTracesOp(ctx)
-		err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
-		r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+		if r.nextTraces != nil {
+			ctx = r.obsreport.StartTracesOp(ctx)
+			err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
+			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
+			// Only override parsing results if consumer failed
+			if err != nil {
+				applyConsumerResultsToSuccessfulEvents(results, indexMapping.TraceIndices, err)
+				hasFailures = true
+			}
+		} else {
+			dropErr := errors.New("no trace consumer configured")
+			r.settings.Logger.Warn("Dropping trace spans - no trace consumer configured", zap.Int("dropped_spans", numTraces))
+			r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, dropErr)
+			// Override even successful parsing results since consumer is not configured
+			applyConsumerResultsToSuccessfulEvents(results, indexMapping.TraceIndices, dropErr)
+			hasFailures = true
+		}
 	}
 
 	if err != nil {
@@ -260,28 +449,12 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	// return clean response if no errors above
-	noErrors := response.MakeResponse([]int{})
-
-	var responseBody []byte
-	var contentType string
-
-	switch enc.ContentType() {
-	case encoder.MsgpackContentType:
-		// For msgpack requests, return msgpack response
-		responseBody, err = msgpack.Marshal(noErrors)
-		contentType = encoder.MsgpackContentType
-	default:
-		// For JSON requests, return JSON response
-		responseBody, err = json.Marshal(noErrors)
-		contentType = encoder.JSONContentType
+	// Write response
+	if hasFailures {
+		writePartialResponse(resp, enc, results)
+	} else {
+		writeSuccessResponse(resp, enc, len(libhoneyevents))
 	}
-
-	if err != nil {
-		errorutil.HTTPError(resp, err)
-		return
-	}
-	writeResponse(resp, contentType, http.StatusOK, responseBody)
 }
 
 func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {
@@ -317,10 +490,60 @@ func getMimeTypeFromContentType(contentType string) string {
 
 func handleUnmatchedMethod(resp http.ResponseWriter) {
 	status := http.StatusMethodNotAllowed
-	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v method not allowed, supported: [POST]", status)))
+	writeResponse(resp, "text/plain", status, fmt.Appendf(nil, "%v method not allowed, supported: [POST]", status))
 }
 
 func handleUnmatchedContentType(resp http.ResponseWriter) {
 	status := http.StatusUnsupportedMediaType
-	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, encoder.JSONContentType, encoder.PbContentType)))
+	writeResponse(resp, "text/plain", status, fmt.Appendf(nil, "%v unsupported media type, supported: [%s, %s]", status, encoder.JSONContentType, encoder.PbContentType))
+}
+
+// applyConsumerResultsToSuccessfulEvents applies consumer results only to events that succeeded parsing
+func applyConsumerResultsToSuccessfulEvents(results []response.ResponseInBatch, indices []int, err error) {
+	for _, idx := range indices {
+		// Only override if the event was successfully parsed (status == 202)
+		if results[idx].Status == http.StatusAccepted {
+			if err != nil {
+				results[idx] = response.ResponseInBatch{
+					Status:   http.StatusServiceUnavailable,
+					ErrorStr: err.Error(),
+				}
+			}
+			// If consumer succeeded, keep the existing success status
+		}
+	}
+}
+
+// writeSuccessResponse writes a success response for all events in the batch
+func writeSuccessResponse(resp http.ResponseWriter, enc encoder.Encoder, numEvents int) {
+	successResponse := response.MakeSuccessResponse(numEvents)
+	writeLibhoneyResponse(resp, enc, http.StatusOK, successResponse)
+}
+
+// writePartialResponse writes a response for mixed success/failure results
+func writePartialResponse(resp http.ResponseWriter, enc encoder.Encoder, results []response.ResponseInBatch) {
+	writeLibhoneyResponse(resp, enc, http.StatusOK, results)
+}
+
+// writeLibhoneyResponse marshals and writes a libhoney-format response
+func writeLibhoneyResponse(resp http.ResponseWriter, enc encoder.Encoder, statusCode int, batchResponse []response.ResponseInBatch) {
+	var responseBody []byte
+	var err error
+	var contentType string
+
+	switch enc.ContentType() {
+	case encoder.MsgpackContentType:
+		responseBody, err = msgpack.Marshal(batchResponse)
+		contentType = encoder.MsgpackContentType
+	default:
+		responseBody, err = json.Marshal(batchResponse)
+		contentType = encoder.JSONContentType
+	}
+
+	if err != nil {
+		// Fallback to generic error if we can't marshal the response
+		errorutil.HTTPError(resp, err)
+		return
+	}
+	writeResponse(resp, contentType, statusCode, responseBody)
 }

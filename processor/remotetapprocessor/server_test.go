@@ -46,8 +46,6 @@ func TestSocketConnectionLogs(t *testing.T) {
 	err = processor.ConsumeLogs(t.Context(), log)
 	require.NoError(t, err)
 	buf := make([]byte, 1024)
-	err = processor.ConsumeLogs(t.Context(), log)
-	require.NoError(t, err)
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		n, _ := wsConn.Read(buf)
 		assert.Equal(tt, 107, n)
