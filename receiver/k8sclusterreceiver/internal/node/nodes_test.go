@@ -65,9 +65,9 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 }
 
 func TestNodeAllocatableNamespaceMetrics(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(EnableStableMetrics.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(EnableStableMetrics.ID(), false))
 	}()
 	n := testutils.NewNode("1")
 
