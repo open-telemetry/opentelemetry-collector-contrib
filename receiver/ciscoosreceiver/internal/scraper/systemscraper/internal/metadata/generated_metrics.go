@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
@@ -45,10 +46,9 @@ func (m *metricCiscoDeviceUp) init() {
 	m.data.SetDescription("Device availability (1 = up, 0 = down)")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCiscoDeviceUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, targetAttributeValue string) {
+func (m *metricCiscoDeviceUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -56,7 +56,6 @@ func (m *metricCiscoDeviceUp) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("target", targetAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -96,10 +95,9 @@ func (m *metricSystemCPUUtilization) init() {
 	m.data.SetDescription("Percentage of CPU time in use.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, targetAttributeValue string) {
+func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -107,7 +105,6 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("target", targetAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -147,10 +144,9 @@ func (m *metricSystemMemoryUtilization) init() {
 	m.data.SetDescription("Percentage of memory bytes in use.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemMemoryUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, targetAttributeValue string) {
+func (m *metricSystemMemoryUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -158,7 +154,6 @@ func (m *metricSystemMemoryUtilization) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("target", targetAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -189,14 +184,16 @@ func newMetricSystemMemoryUtilization(cfg MetricConfig) metricSystemMemoryUtiliz
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                        MetricsBuilderConfig // config of the metrics builder.
-	startTime                     pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity               int                  // maximum observed number of metrics per resource.
-	metricsBuffer                 pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                     component.BuildInfo  // contains version information.
-	metricCiscoDeviceUp           metricCiscoDeviceUp
-	metricSystemCPUUtilization    metricSystemCPUUtilization
-	metricSystemMemoryUtilization metricSystemMemoryUtilization
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricCiscoDeviceUp            metricCiscoDeviceUp
+	metricSystemCPUUtilization     metricSystemCPUUtilization
+	metricSystemMemoryUtilization  metricSystemMemoryUtilization
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -218,19 +215,32 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                        mbc,
-		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                 pmetric.NewMetrics(),
-		buildInfo:                     settings.BuildInfo,
-		metricCiscoDeviceUp:           newMetricCiscoDeviceUp(mbc.Metrics.CiscoDeviceUp),
-		metricSystemCPUUtilization:    newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
-		metricSystemMemoryUtilization: newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricCiscoDeviceUp:            newMetricCiscoDeviceUp(mbc.Metrics.CiscoDeviceUp),
+		metricSystemCPUUtilization:     newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
+		metricSystemMemoryUtilization:  newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.CiscoDeviceIP.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["cisco.device.ip"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceIP.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.CiscoDeviceIP.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["cisco.device.ip"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceIP.MetricsExclude)
 	}
 
 	for _, op := range options {
 		op.apply(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -297,6 +307,16 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	for _, op := range options {
 		op.apply(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
 
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -315,18 +335,18 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordCiscoDeviceUpDataPoint adds a data point to cisco.device.up metric.
-func (mb *MetricsBuilder) RecordCiscoDeviceUpDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string) {
-	mb.metricCiscoDeviceUp.recordDataPoint(mb.startTime, ts, val, targetAttributeValue)
+func (mb *MetricsBuilder) RecordCiscoDeviceUpDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricCiscoDeviceUp.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, targetAttributeValue string) {
-	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, targetAttributeValue)
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryUtilizationDataPoint adds a data point to system.memory.utilization metric.
-func (mb *MetricsBuilder) RecordSystemMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64, targetAttributeValue string) {
-	mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, val, targetAttributeValue)
+func (mb *MetricsBuilder) RecordSystemMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

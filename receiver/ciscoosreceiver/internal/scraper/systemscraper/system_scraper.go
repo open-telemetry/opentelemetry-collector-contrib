@@ -99,12 +99,16 @@ func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, err
 				zap.Error(err))
 
 			s.rpcClient = nil
-			s.mb.RecordCiscoDeviceUpDataPoint(now, 0, s.deviceTarget)
+			s.mb.RecordCiscoDeviceUpDataPoint(now, 0)
 
 			s.logger.Info("Device down - recorded metrics",
 				zap.Float64("cisco.device.up", 0))
 
-			return s.mb.Emit(), nil
+			// Set resource attributes
+			rb := s.mb.NewResourceBuilder()
+			rb.SetCiscoDeviceIP(s.deviceTarget)
+
+			return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 		}
 
 		s.rpcClient = rpcClient
@@ -113,23 +117,27 @@ func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, err
 			zap.String("os_type", s.rpcClient.GetOSType()))
 	}
 
-	s.mb.RecordCiscoDeviceUpDataPoint(now, 1, s.deviceTarget)
+	s.mb.RecordCiscoDeviceUpDataPoint(now, 1)
 
 	if cpuUtil, err := s.collectCPUUtilization(ctx); err == nil {
-		s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtil, s.deviceTarget)
+		s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtil)
 	} else {
 		s.logger.Warn("Failed to collect CPU utilization, skipping metric",
 			zap.Error(err))
 	}
 
 	if memUtil, err := s.collectMemoryUtilization(ctx); err == nil {
-		s.mb.RecordSystemMemoryUtilizationDataPoint(now, memUtil, s.deviceTarget)
+		s.mb.RecordSystemMemoryUtilizationDataPoint(now, memUtil)
 	} else {
 		s.logger.Warn("Failed to collect memory utilization, skipping metric",
 			zap.Error(err))
 	}
 
-	return s.mb.Emit(), nil
+	// Set resource attributes
+	rb := s.mb.NewResourceBuilder()
+	rb.SetCiscoDeviceIP(s.deviceTarget)
+
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
 // establishDeviceConnection establishes SSH connection to Cisco device using shared connection factory

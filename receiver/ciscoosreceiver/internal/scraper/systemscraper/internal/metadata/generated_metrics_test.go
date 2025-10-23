@@ -42,6 +42,15 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -61,17 +70,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCiscoDeviceUpDataPoint(ts, 1, "target-val")
+			mb.RecordCiscoDeviceUpDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "target-val")
+			mb.RecordSystemCPUUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemMemoryUtilizationDataPoint(ts, 1, "target-val")
+			mb.RecordSystemMemoryUtilizationDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
+			rb := mb.NewResourceBuilder()
+			rb.SetCiscoDeviceIP("cisco.device.ip-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if tt.expectEmpty {
@@ -105,9 +116,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("target")
-					assert.True(t, ok)
-					assert.Equal(t, "target-val", attrVal.Str())
 				case "system.cpu.utilization":
 					assert.False(t, validatedMetrics["system.cpu.utilization"], "Found a duplicate in the metrics slice: system.cpu.utilization")
 					validatedMetrics["system.cpu.utilization"] = true
@@ -120,9 +128,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("target")
-					assert.True(t, ok)
-					assert.Equal(t, "target-val", attrVal.Str())
 				case "system.memory.utilization":
 					assert.False(t, validatedMetrics["system.memory.utilization"], "Found a duplicate in the metrics slice: system.memory.utilization")
 					validatedMetrics["system.memory.utilization"] = true
@@ -135,9 +140,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("target")
-					assert.True(t, ok)
-					assert.Equal(t, "target-val", attrVal.Str())
 				}
 			}
 		})
