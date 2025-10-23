@@ -1858,7 +1858,7 @@ func TestReceiverWithExpectedMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -2085,7 +2085,7 @@ func TestReceiverWithExpectedMetrics(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			consumer.clearAll()
-			require.Equal(t, len(tc.requests), len(tc.expectedMetrics))
+			require.Len(t, tc.requests, len(tc.expectedMetrics))
 
 			for _, req := range tc.requests {
 				pBuf := proto.NewBuffer(nil)
