@@ -38,6 +38,8 @@ The following settings can be optionally configured:
     - `issuer_url`:
     - `client_id`:
     - `audience`: 
+    - `scope`:
+    - `private_key`: Path to the private client credentials json file. Must contain `type`, `client_id`, `client_secret` and `issuer_url` fields.
   - `athenz`
     - `provider_domain`:
     - `tenant_domain`:
