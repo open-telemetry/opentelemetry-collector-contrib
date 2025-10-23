@@ -457,16 +457,24 @@ metrics:
   redis.memory.used_memory_overhead:
     enabled: false
     description: "The sum in bytes of all overheads that the server allocated for managing its internal data structures"
-    unit: bytes
-    gauge:
+    stability:
+      level: development
+    unit: By
+    sum:
       value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
 
   redis.memory.used_memory_startup:
     enabled: false
     description: "Initial amount of memory consumed by Redis at startup in bytes"
-    unit: bytes
-    gauge:
+    stability:
+      level: development
+    unit: By
+    sum:
       value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
 
   redis.net.input:
     enabled: true
@@ -555,9 +563,13 @@ metrics:
   redis.tracking_total_keys:
     enabled: false
     description: "Number of keys being tracked by the server"
+    stability:
+      level: development
     unit: "{key}"
-    gauge:
+    sum:
       value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
 
   redis.uptime:
     enabled: true

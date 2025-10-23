@@ -443,17 +443,17 @@ The value of the maxmemory configuration directive
 
 The sum in bytes of all overheads that the server allocated for managing its internal data structures
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| bytes | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### redis.memory.used_memory_startup
 
 Initial amount of memory consumed by Redis at startup in bytes
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| bytes | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### redis.replication.replica_offset
 
@@ -481,9 +481,9 @@ Redis node's role
 
 Number of keys being tracked by the server
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {key} | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {key} | Sum | Int | Cumulative | false | development |
 
 ## Resource Attributes
 
