@@ -232,23 +232,19 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig
 	return promconfig.RemoteWriteProtoMsgV1, nil
 }
 
-// getOrCreateRM returns the per-request ResourceMetrics for the given labels'
-// job/instance pair, creating and appending a new one to otelMetrics if needed.
+// getOrCreateRM returns or creates the ResourceMetrics for a job/instance pair within an HTTP request.
 //
-// It looks up an existing entry in reqRM using a hash of "job\instance". If
-// found, that already-appended instance is returned. Otherwise, a new
-// ResourceMetrics is appended to otelMetrics and its resource attributes are
-// seeded as follows:
-//   - If an attribute snapshot exists in the LRU cache, copy only resource
-//     attributes into the new ResourceMetrics (scopes/metrics are never reused).
-//   - Otherwise, derive attributes from job/instance and store an attribute-only
-//     snapshot in the cache for future requests.
+// Two-level cache:
 //
-// This function never returns a cached object; it only copies attributes from
-// the cache into a per-request instance to avoid cross-request mutation.
+//  1. reqRM (per-request): groups samples with the same job/instance into a single ResourceMetrics
+//     during current request processing, avoiding duplication in the output.
 //
-// Note: Attribute enrichment from target_info should update the cache snapshot
-// separately so subsequent HTTP requests start with enriched attributes.
+//  2. prw.rmCache (global LRU): stores snapshots of previously seen resource attributes,
+//     allowing future requests to reuse enriched attributes (e.g., via target_info).
+//
+// This function always creates new ResourceMetrics per request, only copying attributes
+// from the LRU cache when available. Never returns cached objects to avoid shared
+// mutation across concurrent requests.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
 	hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
@@ -258,10 +254,13 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 
 	rm := otelMetrics.ResourceMetrics().AppendEmpty()
 	if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
-		// Copy only resource attributes from cached snapshot to avoid sharing scopes/metrics.
+		// When the ResourceMetrics already exists in the global cache, we can reuse the previous snapshots and perpass the already seen attributes to the current request.
+		// This is important to not lose information and keep everything aggregated correctly.
+		//
 		existingRM.Resource().Attributes().CopyTo(rm.Resource().Attributes())
 	} else {
-		// Seed with job/instance derived attributes and snapshot to cache for future requests.
+		// When the ResourceMetrics does not exist in the global cache, we need to create a new one and add it to the request map.
+		// Saving the new ResourceMetrics in the global cache to avoid creating duplicates in the next requests.
 		parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
 		snapshot := pmetric.NewResourceMetrics()
 		rm.Resource().Attributes().CopyTo(snapshot.Resource().Attributes())
@@ -433,7 +432,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	scopeName, scopeVersion, metricName, unit, description string,
 	metricCache map[uint64]pmetric.Metric,
 	stats *promremote.WriteResponseStats,
-	reqRM map[uint64]pmetric.ResourceMetrics,
+	modifiedRM map[uint64]pmetric.ResourceMetrics,
 ) {
 	// Drop classic histogram series (those with samples)
 	if len(ts.Samples) != 0 {
@@ -470,7 +469,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 		// Create resource if needed (only for the first valid histogram)
 		if hashedLabels == 0 {
-			rm, _ = prw.getOrCreateRM(ls, otelMetrics, reqRM)
+			rm, _ = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
 			resourceID = identity.OfResource(rm.Resource())
 		}
 

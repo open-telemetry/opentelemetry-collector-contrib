@@ -1790,7 +1790,6 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 	prwReceiver := setupMetricsReceiver(t)
 	prwReceiver.nextConsumer = mockConsumer
 
-	// Create a test HTTP server
 	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
 	defer ts.Close()
 
@@ -1813,15 +1812,13 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 		}
 	}
 
-	// Prepare requests
 	requests := []*writev2.Request{}
 	for i := 0; i < 5; i++ {
 		requests = append(requests, createRequest("metric_"+strconv.Itoa(i+1), float64(i+1)*10, int64(i+1)*1000))
 	}
 
-	// Send requests concurrently
 	var wg sync.WaitGroup
-	var httpResults []int // Store HTTP status codes
+	var httpResults []int
 	var mu sync.Mutex
 
 	for i, req := range requests {
@@ -1851,9 +1848,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 	// Give some time for async processing
 	time.Sleep(100 * time.Millisecond)
 
-	// Analyze results
 	mockConsumer.mu.Lock()
-	receivedMetrics := len(mockConsumer.metrics)
 	totalDataPoints := mockConsumer.dataPoints
 	mockConsumer.mu.Unlock()
 
@@ -1869,33 +1864,6 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 	// - The cache should have a single resource attribute.
 	assert.Equal(t, 5, totalDataPoints)
 	assert.Equal(t, 1, prwReceiver.rmCache.Len())
-
-	// Additional debugging info
-	t.Logf("Metrics batches received: %d", receivedMetrics)
-	for i, metrics := range mockConsumer.metrics {
-		t.Logf("Batch %d: %d resource metrics, %d data points",
-			i+1, metrics.ResourceMetrics().Len(), metrics.DataPointCount())
-	}
-
-	// Additional analysis: Check if we're getting mixed data due to concurrent mutations
-
-	t.Logf("=== DETAILED ANALYSIS ===")
-	for i, metrics := range mockConsumer.metrics {
-		resourceMetrics := metrics.ResourceMetrics()
-		t.Logf("Batch %d:", i+1)
-		for j := 0; j < resourceMetrics.Len(); j++ {
-			rm := resourceMetrics.At(j)
-			scopeMetrics := rm.ScopeMetrics()
-			for k := 0; k < scopeMetrics.Len(); k++ {
-				scope := scopeMetrics.At(k)
-				metricsList := scope.Metrics()
-				for l := 0; l < metricsList.Len(); l++ {
-					metric := metricsList.At(l)
-					t.Logf("  - Metric: %s, DataPoints: %d", metric.Name(), metric.Gauge().DataPoints().Len())
-				}
-			}
-		}
-	}
 
 	// Verify thread safety: Check that metrics are properly consolidated without corruption
 	for i, metrics := range mockConsumer.metrics {
