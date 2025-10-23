@@ -1,0 +1,60 @@
+resourceMetrics:
+  - resource: { }
+    scopeMetrics:
+      - metrics:
+          - description: The percentage of lost packets.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: net.peer.ip
+                      value:
+                        stringValue: github.com
+                    - key: net.peer.name
+                      value:
+                        stringValue: 127.0.0.1
+            name: ping.loss.ratio
+            unit: '%'
+          - description: Average round-trip time in milliseconds.
+            gauge:
+              dataPoints:
+                - asInt: "44"
+                  attributes:
+                    - key: net.peer.ip
+                      value:
+                        stringValue: github.com
+                    - key: net.peer.name
+                      value:
+                        stringValue: 127.0.0.1
+            name: ping.rtt.avg
+            unit: ms
+          - description: Maximum round-trip time in milliseconds.
+            gauge:
+              dataPoints:
+                - asInt: "47"
+                  attributes:
+                    - key: net.peer.ip
+                      value:
+                        stringValue: docker.internal
+                    - key: net.peer.name
+                      value:
+                        stringValue: 140.82.121.3
+
+            name: ping.rtt.max
+            unit: ms
+          - description: Minimum round-trip time in milliseconds.
+            gauge:
+              dataPoints:
+                - asInt: "42"
+                  attributes:
+                    - key: net.peer.ip
+                      value:
+                        stringValue: docker.internal
+                    - key: net.peer.name
+                      value:
+                        stringValue: 140.82.121.3
+            name: ping.rtt.min
+            unit: ms
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icmpcheckreceiver
+          version: latest

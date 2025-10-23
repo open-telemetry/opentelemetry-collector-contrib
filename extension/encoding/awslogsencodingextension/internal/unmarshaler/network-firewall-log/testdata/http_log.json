@@ -1,0 +1,21 @@
+{
+    "firewall_name": "test-firewall",
+    "availability_zone": "us-east-1a",
+    "event_timestamp": "2025-10-20T10:30:45.123Z",
+    "event": {
+        "event_type": "http",
+        "flow_id": 1234567893,
+        "src_ip": "192.168.1.100",
+        "src_port": 54324,
+        "dest_ip": "10.0.1.53",
+        "dest_port": 80,
+        "proto": "TCP",
+        "http": {
+            "hostname": "example.com",
+            "url": "/api/v1/users",
+            "http_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "http_content_type": "application/json",
+            "cookie": "session_id=abc123; user_pref=dark_mode"
+        }
+    }
+}
