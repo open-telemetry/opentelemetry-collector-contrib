@@ -64,7 +64,8 @@ func (ex *ext) handleLogLine(logs plog.Logs, logLine []byte) error {
 	r := rl.Resource()
 
 	// Parse log name to extract log type and populate resource attributes
-	logType, errLogName := handleLogNameField(log.LogName, r.Attributes())
+	resourceAttrs := r.Attributes()
+	logType, errLogName := handleLogNameField(log.LogName, resourceAttrs)
 	if errLogName != nil {
 		return fmt.Errorf("failed to handle log name field: %w", errLogName)
 	}
