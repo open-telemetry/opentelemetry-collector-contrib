@@ -244,7 +244,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisSlavesConnectedDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisStatsTrackingTotalKeysDataPoint(ts, 1)
+			mb.RecordRedisTrackingTotalKeysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -934,9 +934,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.stats.tracking_total_keys":
-					assert.False(t, validatedMetrics["redis.stats.tracking_total_keys"], "Found a duplicate in the metrics slice: redis.stats.tracking_total_keys")
-					validatedMetrics["redis.stats.tracking_total_keys"] = true
+				case "redis.tracking_total_keys":
+					assert.False(t, validatedMetrics["redis.tracking_total_keys"], "Found a duplicate in the metrics slice: redis.tracking_total_keys")
+					validatedMetrics["redis.tracking_total_keys"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of keys being tracked by the server", ms.At(i).Description())

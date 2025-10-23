@@ -552,7 +552,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
 
-  redis.stats.tracking_total_keys:
+  redis.tracking_total_keys:
     enabled: false
     description: "Number of keys being tracked by the server"
     unit: "{key}"

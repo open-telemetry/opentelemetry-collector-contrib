@@ -99,7 +99,7 @@ all_set:
       enabled: true
     redis.slaves.connected:
       enabled: true
-    redis.stats.tracking_total_keys:
+    redis.tracking_total_keys:
       enabled: true
     redis.uptime:
       enabled: true
@@ -210,7 +210,7 @@ none_set:
       enabled: false
     redis.slaves.connected:
       enabled: false
-    redis.stats.tracking_total_keys:
+    redis.tracking_total_keys:
       enabled: false
     redis.uptime:
       enabled: false

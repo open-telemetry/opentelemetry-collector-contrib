@@ -284,8 +284,8 @@ var MetricsInfo = metricsInfo{
 	RedisSlavesConnected: metricInfo{
 		Name: "redis.slaves.connected",
 	},
-	RedisStatsTrackingTotalKeys: metricInfo{
-		Name: "redis.stats.tracking_total_keys",
+	RedisTrackingTotalKeys: metricInfo{
+		Name: "redis.tracking_total_keys",
 	},
 	RedisUptime: metricInfo{
 		Name: "redis.uptime",
@@ -342,7 +342,7 @@ type metricsInfo struct {
 	RedisReplicationReplicaOffset             metricInfo
 	RedisRole                                 metricInfo
 	RedisSlavesConnected                      metricInfo
-	RedisStatsTrackingTotalKeys               metricInfo
+	RedisTrackingTotalKeys                    metricInfo
 	RedisUptime                               metricInfo
 }
 
@@ -2810,21 +2810,21 @@ func newMetricRedisSlavesConnected(cfg MetricConfig) metricRedisSlavesConnected 
 	return m
 }
 
-type metricRedisStatsTrackingTotalKeys struct {
+type metricRedisTrackingTotalKeys struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills redis.stats.tracking_total_keys metric with initial data.
-func (m *metricRedisStatsTrackingTotalKeys) init() {
-	m.data.SetName("redis.stats.tracking_total_keys")
+// init fills redis.tracking_total_keys metric with initial data.
+func (m *metricRedisTrackingTotalKeys) init() {
+	m.data.SetName("redis.tracking_total_keys")
 	m.data.SetDescription("Number of keys being tracked by the server")
 	m.data.SetUnit("{key}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricRedisStatsTrackingTotalKeys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricRedisTrackingTotalKeys) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2835,14 +2835,14 @@ func (m *metricRedisStatsTrackingTotalKeys) recordDataPoint(start pcommon.Timest
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisStatsTrackingTotalKeys) updateCapacity() {
+func (m *metricRedisTrackingTotalKeys) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisStatsTrackingTotalKeys) emit(metrics pmetric.MetricSlice) {
+func (m *metricRedisTrackingTotalKeys) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -2850,8 +2850,8 @@ func (m *metricRedisStatsTrackingTotalKeys) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisStatsTrackingTotalKeys(cfg MetricConfig) metricRedisStatsTrackingTotalKeys {
-	m := metricRedisStatsTrackingTotalKeys{config: cfg}
+func newMetricRedisTrackingTotalKeys(cfg MetricConfig) metricRedisTrackingTotalKeys {
+	m := metricRedisTrackingTotalKeys{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2969,7 +2969,7 @@ type MetricsBuilder struct {
 	metricRedisReplicationReplicaOffset             metricRedisReplicationReplicaOffset
 	metricRedisRole                                 metricRedisRole
 	metricRedisSlavesConnected                      metricRedisSlavesConnected
-	metricRedisStatsTrackingTotalKeys               metricRedisStatsTrackingTotalKeys
+	metricRedisTrackingTotalKeys                    metricRedisTrackingTotalKeys
 	metricRedisUptime                               metricRedisUptime
 }
 
@@ -3045,7 +3045,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisReplicationReplicaOffset:             newMetricRedisReplicationReplicaOffset(mbc.Metrics.RedisReplicationReplicaOffset),
 		metricRedisRole:                                 newMetricRedisRole(mbc.Metrics.RedisRole),
 		metricRedisSlavesConnected:                      newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
-		metricRedisStatsTrackingTotalKeys:               newMetricRedisStatsTrackingTotalKeys(mbc.Metrics.RedisStatsTrackingTotalKeys),
+		metricRedisTrackingTotalKeys:                    newMetricRedisTrackingTotalKeys(mbc.Metrics.RedisTrackingTotalKeys),
 		metricRedisUptime:                               newMetricRedisUptime(mbc.Metrics.RedisUptime),
 		resourceAttributeIncludeFilter:                  make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                  make(map[string]filter.Filter),
@@ -3186,7 +3186,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisReplicationReplicaOffset.emit(ils.Metrics())
 	mb.metricRedisRole.emit(ils.Metrics())
 	mb.metricRedisSlavesConnected.emit(ils.Metrics())
-	mb.metricRedisStatsTrackingTotalKeys.emit(ils.Metrics())
+	mb.metricRedisTrackingTotalKeys.emit(ils.Metrics())
 	mb.metricRedisUptime.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -3464,9 +3464,9 @@ func (mb *MetricsBuilder) RecordRedisSlavesConnectedDataPoint(ts pcommon.Timesta
 	mb.metricRedisSlavesConnected.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordRedisStatsTrackingTotalKeysDataPoint adds a data point to redis.stats.tracking_total_keys metric.
-func (mb *MetricsBuilder) RecordRedisStatsTrackingTotalKeysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricRedisStatsTrackingTotalKeys.recordDataPoint(mb.startTime, ts, val)
+// RecordRedisTrackingTotalKeysDataPoint adds a data point to redis.tracking_total_keys metric.
+func (mb *MetricsBuilder) RecordRedisTrackingTotalKeysDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisTrackingTotalKeys.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisUptimeDataPoint adds a data point to redis.uptime metric.

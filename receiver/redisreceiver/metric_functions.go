@@ -36,7 +36,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"total_connections_received":        rs.mb.RecordRedisConnectionsReceivedDataPoint,
 		"total_net_input_bytes":             rs.mb.RecordRedisNetInputDataPoint,
 		"total_net_output_bytes":            rs.mb.RecordRedisNetOutputDataPoint,
-		"tracking_total_keys":               rs.mb.RecordRedisStatsTrackingTotalKeysDataPoint,
+		"tracking_total_keys":               rs.mb.RecordRedisTrackingTotalKeysDataPoint,
 		"uptime_in_seconds":                 rs.mb.RecordRedisUptimeDataPoint,
 		"used_cpu_sys":                      rs.recordUsedCPUSys,
 		"used_cpu_sys_children":             rs.recordUsedCPUSysChildren,

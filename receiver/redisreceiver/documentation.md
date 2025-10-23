@@ -477,7 +477,7 @@ Redis node's role
 | ---- | ----------- | ------ | -------- |
 | role | Redis node's role | Str: ``replica``, ``primary`` | false |
 
-### redis.stats.tracking_total_keys
+### redis.tracking_total_keys
 
 Number of keys being tracked by the server
 

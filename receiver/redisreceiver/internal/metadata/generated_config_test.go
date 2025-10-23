@@ -76,7 +76,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisReplicationReplicaOffset:             MetricConfig{Enabled: true},
 					RedisRole:                                 MetricConfig{Enabled: true},
 					RedisSlavesConnected:                      MetricConfig{Enabled: true},
-					RedisStatsTrackingTotalKeys:               MetricConfig{Enabled: true},
+					RedisTrackingTotalKeys:                    MetricConfig{Enabled: true},
 					RedisUptime:                               MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -139,7 +139,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisReplicationReplicaOffset:             MetricConfig{Enabled: false},
 					RedisRole:                                 MetricConfig{Enabled: false},
 					RedisSlavesConnected:                      MetricConfig{Enabled: false},
-					RedisStatsTrackingTotalKeys:               MetricConfig{Enabled: false},
+					RedisTrackingTotalKeys:                    MetricConfig{Enabled: false},
 					RedisUptime:                               MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{

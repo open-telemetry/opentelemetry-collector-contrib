@@ -77,7 +77,7 @@ type MetricsConfig struct {
 	RedisReplicationReplicaOffset             MetricConfig `mapstructure:"redis.replication.replica_offset"`
 	RedisRole                                 MetricConfig `mapstructure:"redis.role"`
 	RedisSlavesConnected                      MetricConfig `mapstructure:"redis.slaves.connected"`
-	RedisStatsTrackingTotalKeys               MetricConfig `mapstructure:"redis.stats.tracking_total_keys"`
+	RedisTrackingTotalKeys                    MetricConfig `mapstructure:"redis.tracking_total_keys"`
 	RedisUptime                               MetricConfig `mapstructure:"redis.uptime"`
 }
 
@@ -230,7 +230,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisSlavesConnected: MetricConfig{
 			Enabled: true,
 		},
-		RedisStatsTrackingTotalKeys: MetricConfig{
+		RedisTrackingTotalKeys: MetricConfig{
 			Enabled: false,
 		},
 		RedisUptime: MetricConfig{
