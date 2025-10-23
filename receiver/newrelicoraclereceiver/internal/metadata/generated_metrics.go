@@ -154,6 +154,9 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbDiskWrites: metricInfo{
 		Name: "newrelicoracledb.disk.writes",
 	},
+	NewrelicoracledbExecutionPlanInfo: metricInfo{
+		Name: "newrelicoracledb.execution_plan.info",
+	},
 	NewrelicoracledbGlobalName: metricInfo{
 		Name: "newrelicoracledb.global_name",
 	},
@@ -1011,6 +1014,7 @@ type metricsInfo struct {
 	NewrelicoracledbDiskReads                                          metricInfo
 	NewrelicoracledbDiskWriteTimeMilliseconds                          metricInfo
 	NewrelicoracledbDiskWrites                                         metricInfo
+	NewrelicoracledbExecutionPlanInfo                                  metricInfo
 	NewrelicoracledbGlobalName                                         metricInfo
 	NewrelicoracledbHostingInfo                                        metricInfo
 	NewrelicoracledbLockedAccounts                                     metricInfo
@@ -3775,6 +3779,60 @@ func (m *metricNewrelicoracledbDiskWrites) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNewrelicoracledbDiskWrites(cfg MetricConfig) metricNewrelicoracledbDiskWrites {
 	m := metricNewrelicoracledbDiskWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbExecutionPlanInfo struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.execution_plan.info metric with initial data.
+func (m *metricNewrelicoracledbExecutionPlanInfo) init() {
+	m.data.SetName("newrelicoracledb.execution_plan.info")
+	m.data.SetDescription("Comprehensive Oracle execution plan information in XML format")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbExecutionPlanInfo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseNameAttributeValue string, queryIDAttributeValue string, planHashValueAttributeValue string, executionPlanXMLAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	dp.Attributes().PutStr("query_id", queryIDAttributeValue)
+	dp.Attributes().PutStr("plan_hash_value", planHashValueAttributeValue)
+	dp.Attributes().PutStr("execution_plan_xml", executionPlanXMLAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbExecutionPlanInfo) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbExecutionPlanInfo) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbExecutionPlanInfo(cfg MetricConfig) metricNewrelicoracledbExecutionPlanInfo {
+	m := metricNewrelicoracledbExecutionPlanInfo{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -17893,6 +17951,7 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbDiskReads                                          metricNewrelicoracledbDiskReads
 	metricNewrelicoracledbDiskWriteTimeMilliseconds                          metricNewrelicoracledbDiskWriteTimeMilliseconds
 	metricNewrelicoracledbDiskWrites                                         metricNewrelicoracledbDiskWrites
+	metricNewrelicoracledbExecutionPlanInfo                                  metricNewrelicoracledbExecutionPlanInfo
 	metricNewrelicoracledbGlobalName                                         metricNewrelicoracledbGlobalName
 	metricNewrelicoracledbHostingInfo                                        metricNewrelicoracledbHostingInfo
 	metricNewrelicoracledbLockedAccounts                                     metricNewrelicoracledbLockedAccounts
@@ -18234,6 +18293,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbDiskReads:                                          newMetricNewrelicoracledbDiskReads(mbc.Metrics.NewrelicoracledbDiskReads),
 		metricNewrelicoracledbDiskWriteTimeMilliseconds:                          newMetricNewrelicoracledbDiskWriteTimeMilliseconds(mbc.Metrics.NewrelicoracledbDiskWriteTimeMilliseconds),
 		metricNewrelicoracledbDiskWrites:                                         newMetricNewrelicoracledbDiskWrites(mbc.Metrics.NewrelicoracledbDiskWrites),
+		metricNewrelicoracledbExecutionPlanInfo:                                  newMetricNewrelicoracledbExecutionPlanInfo(mbc.Metrics.NewrelicoracledbExecutionPlanInfo),
 		metricNewrelicoracledbGlobalName:                                         newMetricNewrelicoracledbGlobalName(mbc.Metrics.NewrelicoracledbGlobalName),
 		metricNewrelicoracledbHostingInfo:                                        newMetricNewrelicoracledbHostingInfo(mbc.Metrics.NewrelicoracledbHostingInfo),
 		metricNewrelicoracledbLockedAccounts:                                     newMetricNewrelicoracledbLockedAccounts(mbc.Metrics.NewrelicoracledbLockedAccounts),
@@ -18634,6 +18694,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbDiskReads.emit(ils.Metrics())
 	mb.metricNewrelicoracledbDiskWriteTimeMilliseconds.emit(ils.Metrics())
 	mb.metricNewrelicoracledbDiskWrites.emit(ils.Metrics())
+	mb.metricNewrelicoracledbExecutionPlanInfo.emit(ils.Metrics())
 	mb.metricNewrelicoracledbGlobalName.emit(ils.Metrics())
 	mb.metricNewrelicoracledbHostingInfo.emit(ils.Metrics())
 	mb.metricNewrelicoracledbLockedAccounts.emit(ils.Metrics())
@@ -19167,6 +19228,11 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbDiskWriteTimeMillisecondsDataPoi
 // RecordNewrelicoracledbDiskWritesDataPoint adds a data point to newrelicoracledb.disk.writes metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbDiskWritesDataPoint(ts pcommon.Timestamp, val int64, dbInstanceNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbDiskWrites.recordDataPoint(mb.startTime, ts, val, dbInstanceNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbExecutionPlanInfoDataPoint adds a data point to newrelicoracledb.execution_plan.info metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbExecutionPlanInfoDataPoint(ts pcommon.Timestamp, val int64, databaseNameAttributeValue string, queryIDAttributeValue string, planHashValueAttributeValue string, executionPlanXMLAttributeValue string) {
+	mb.metricNewrelicoracledbExecutionPlanInfo.recordDataPoint(mb.startTime, ts, val, databaseNameAttributeValue, queryIDAttributeValue, planHashValueAttributeValue, executionPlanXMLAttributeValue)
 }
 
 // RecordNewrelicoracledbGlobalNameDataPoint adds a data point to newrelicoracledb.global_name metric.

@@ -258,6 +258,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbExecutionPlanInfoDataPoint(ts, 1, "database_name-val", "query_id-val", "plan_hash_value-val", "execution_plan_xml-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbGlobalNameDataPoint(ts, 1, "db.instance.name-val", "instance.id-val", "global.name-val")
 
 			defaultMetricsCount++
@@ -2315,6 +2319,30 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("instance.id")
 					assert.True(t, ok)
 					assert.Equal(t, "instance.id-val", attrVal.Str())
+				case "newrelicoracledb.execution_plan.info":
+					assert.False(t, validatedMetrics["newrelicoracledb.execution_plan.info"], "Found a duplicate in the metrics slice: newrelicoracledb.execution_plan.info")
+					validatedMetrics["newrelicoracledb.execution_plan.info"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Comprehensive Oracle execution plan information in XML format", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("database_name")
+					assert.True(t, ok)
+					assert.Equal(t, "database_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("query_id")
+					assert.True(t, ok)
+					assert.Equal(t, "query_id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("plan_hash_value")
+					assert.True(t, ok)
+					assert.Equal(t, "plan_hash_value-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("execution_plan_xml")
+					assert.True(t, ok)
+					assert.Equal(t, "execution_plan_xml-val", attrVal.Str())
 				case "newrelicoracledb.global_name":
 					assert.False(t, validatedMetrics["newrelicoracledb.global_name"], "Found a duplicate in the metrics slice: newrelicoracledb.global_name")
 					validatedMetrics["newrelicoracledb.global_name"] = true

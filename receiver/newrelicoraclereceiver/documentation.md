@@ -749,6 +749,25 @@ Number of physical disk writes
 | db.instance.name | Oracle database instance name | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
 
+### newrelicoracledb.execution_plan.info
+
+Comprehensive Oracle execution plan information in XML format
+
+Contains detailed execution plan data including SQL text, statistics, memory usage, bind variables, and plan steps with costs and predicates
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+| plan_hash_value | Oracle execution plan hash value for grouping similar plans | Any Str | false |
+| execution_plan_xml | Comprehensive Oracle execution plan in XML format containing SQL text, statistics, memory usage, bind variables, and detailed plan steps | Any Str | false |
+
 ### newrelicoracledb.global_name
 
 Oracle database global name information

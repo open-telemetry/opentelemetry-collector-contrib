@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queries
+package commonutils
 
 // QPM (Query Performance Monitoring) configuration constants
 const (

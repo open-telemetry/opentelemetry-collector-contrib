@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/common-utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/queries"
 )
 
 const (
@@ -27,8 +27,8 @@ const (
 
 	// Query Performance Monitoring defaults
 	defaultEnableQueryMonitoring                = false
-	defaultQueryMonitoringResponseTimeThreshold = queries.DefaultQueryMonitoringResponseTimeThreshold
-	defaultQueryMonitoringCountThreshold        = queries.DefaultQueryMonitoringCountThreshold
+	defaultQueryMonitoringResponseTimeThreshold = commonutils.DefaultQueryMonitoringResponseTimeThreshold
+	defaultQueryMonitoringCountThreshold        = commonutils.DefaultQueryMonitoringCountThreshold
 
 	// Validation ranges
 	minCollectionInterval                   = 10 * time.Second
@@ -37,10 +37,10 @@ const (
 	maxMaxOpenConnections                   = 1000
 	maxUsernameLength                       = 128
 	maxServiceLength                        = 128
-	minQueryMonitoringResponseTimeThreshold = queries.MinQueryMonitoringResponseTimeThreshold
-	maxQueryMonitoringResponseTimeThreshold = queries.MaxQueryMonitoringResponseTimeThreshold
-	minQueryMonitoringCountThreshold        = queries.MinQueryMonitoringCountThreshold
-	maxQueryMonitoringCountThreshold        = queries.MaxQueryMonitoringCountThreshold
+	minQueryMonitoringResponseTimeThreshold = commonutils.MinQueryMonitoringResponseTimeThreshold
+	maxQueryMonitoringResponseTimeThreshold = commonutils.MaxQueryMonitoringResponseTimeThreshold
+	minQueryMonitoringCountThreshold        = commonutils.MinQueryMonitoringCountThreshold
+	maxQueryMonitoringCountThreshold        = commonutils.MaxQueryMonitoringCountThreshold
 )
 
 var (

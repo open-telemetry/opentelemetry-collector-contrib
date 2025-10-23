@@ -77,6 +77,13 @@ attributes:
     description: SQL query text of the blocked query
     type: string
 
+  plan_hash_value:
+    description: Oracle execution plan hash value for grouping similar plans
+    type: string
+  execution_plan_xml:
+    description: Comprehensive Oracle execution plan in XML format containing SQL text, statistics, memory usage, bind variables, and detailed plan steps
+    type: string
+
   db.instance.name:
     description: Oracle database instance name
     type: string
@@ -3521,6 +3528,19 @@ metrics:
         - query_id
         - wait_event_name
         - wait_category    
+
+  newrelicoracledb.execution_plan.info:
+    description: Comprehensive Oracle execution plan information in XML format
+    extended_documentation: Contains detailed execution plan data including SQL text, statistics, memory usage, bind variables, and plan steps with costs and predicates
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - database_name
+      - query_id
+      - plan_hash_value
+      - execution_plan_xml
 
 tests:
   config:

@@ -95,6 +95,8 @@ all_set:
       enabled: true
     newrelicoracledb.disk.writes:
       enabled: true
+    newrelicoracledb.execution_plan.info:
+      enabled: true
     newrelicoracledb.global_name:
       enabled: true
     newrelicoracledb.hosting.info:
@@ -733,6 +735,8 @@ none_set:
     newrelicoracledb.disk.write_time_milliseconds:
       enabled: false
     newrelicoracledb.disk.writes:
+      enabled: false
+    newrelicoracledb.execution_plan.info:
       enabled: false
     newrelicoracledb.global_name:
       enabled: false
