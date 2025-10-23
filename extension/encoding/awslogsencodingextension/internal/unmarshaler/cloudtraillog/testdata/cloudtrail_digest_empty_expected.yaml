@@ -6,6 +6,9 @@ resourceLogs:
               - key: cloud.account.id
                 value:
                   stringValue: "111122223333"
+              - key: aws.cloudtrail.digest.end_time
+                value:
+                  stringValue: "2015-08-20T18:01:31Z"
               - key: aws.cloudtrail.digest.s3_bucket
                 value:
                   stringValue: amzn-s3-demo-bucket
