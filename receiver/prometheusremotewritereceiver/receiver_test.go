@@ -2103,7 +2103,7 @@ func TestReceiverWithExpectedMetrics(t *testing.T) {
 				require.Equal(t, http.StatusNoContent, resp.StatusCode)
 			}
 
-			require.Equal(t, len(tc.expectedMetrics), len(consumer.metrics))
+			require.Len(t, consumer.metrics, len(tc.expectedMetrics))
 
 			for i := range tc.expectedMetrics {
 				actual := consumer.metrics[i]
