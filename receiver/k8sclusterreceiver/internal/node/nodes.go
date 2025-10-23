@@ -28,11 +28,18 @@ const (
 	k8sNodeConditionPrefix = "k8s.node.condition"
 )
 
-var allowAllocatableNamespace = featuregate.GlobalRegistry().MustRegister(
-	"receiver.k8scluster.allocatableNamespace.enabled",
+var EnableStableMetrics = featuregate.GlobalRegistry().MustRegister(
+	"semconv.k8s.enableStable",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allocatable metrics are reported under allocatable namespace: with '.' instead of '_'"),
-	featuregate.WithRegisterFromVersion("v0.136.0"),
+	featuregate.WithRegisterDescription("When enabled, semconv stable metrics are enabled."),
+	featuregate.WithRegisterFromVersion("v0.139.0"),
+)
+
+var DisableLegacyMetrics = featuregate.GlobalRegistry().MustRegister(
+	"semconv.k8s.disableLegacy",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, semconv legacy metrics are disabled."),
+	featuregate.WithRegisterFromVersion("v0.139.0"),
 )
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
@@ -68,7 +75,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 
-	if allowAllocatableNamespace.IsEnabled() {
+	if EnableStableMetrics.IsEnabled() {
 		if cpuVal, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
 			mb.RecordK8sNodeAllocatableCPUDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
 		}
@@ -109,7 +116,7 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 	}
 
 	// Adding 'node allocatable type' metrics
-	if !allowAllocatableNamespace.IsEnabled() {
+	if !DisableLegacyMetrics.IsEnabled() {
 		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
 			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
 			quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]

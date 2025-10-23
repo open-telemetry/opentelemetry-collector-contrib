@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 )
 
 type nopHost struct {
@@ -226,6 +228,30 @@ func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 		return slices.Equal(observedNamespaces, gotNamespaces)
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
+
+	require.NoError(t, r.Shutdown(ctx))
+}
+
+func TestReceiverFeatureGatesCombination(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(node.DisableLegacyMetrics.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(node.DisableLegacyMetrics.ID(), false))
+	}()
+
+	tt := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, tt.Shutdown(t.Context()))
+	}()
+
+	client := newFakeClientWithAllResources()
+	osQuotaClient := fakeQuota.NewSimpleClientset()
+	sink := new(consumertest.MetricsSink)
+
+	observedNamespaces := []string{"test-0", "test-1"}
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, observedNamespaces, component.MustNewID("foo"))
+
+	ctx := t.Context()
+	require.ErrorContains(t, r.Start(ctx, newNopHost()), "cannot disable legacy metrics without enabling stable metrics")
 
 	require.NoError(t, r.Shutdown(ctx))
 }

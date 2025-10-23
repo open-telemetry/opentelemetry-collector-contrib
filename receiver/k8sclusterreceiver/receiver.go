@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 )
 
 const (
@@ -103,6 +104,10 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
+
+	if node.DisableLegacyMetrics.IsEnabled() && !node.EnableStableMetrics.IsEnabled() {
+		return errors.New("cannot disable legacy metrics without enabling stable metrics")
+	}
 
 	// if extension is defined start with k8s leader elector
 	if kr.config.K8sLeaderElector != nil {
