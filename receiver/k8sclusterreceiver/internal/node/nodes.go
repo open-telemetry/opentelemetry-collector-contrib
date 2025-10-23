@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/iancoleman/strcase"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -20,19 +19,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 const (
 	// Keys for node metadata and entity attributes. These are NOT used by resource attributes.
 	nodeCreationTime       = "node.creation_timestamp"
 	k8sNodeConditionPrefix = "k8s.node.condition"
-)
-
-var allowAllocatableNamespace = featuregate.GlobalRegistry().MustRegister(
-	"receiver.k8scluster.allocatableNamespace.enabled",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allocatable metrics are reported under allocatable namespace: with '.' instead of '_'"),
-	featuregate.WithRegisterFromVersion("v0.136.0"),
 )
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
@@ -68,7 +61,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 
-	if allowAllocatableNamespace.IsEnabled() {
+	if utils.EnableStableMetrics.IsEnabled() {
 		if cpuVal, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
 			mb.RecordK8sNodeAllocatableCPUDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
 		}
@@ -109,7 +102,7 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 	}
 
 	// Adding 'node allocatable type' metrics
-	if !allowAllocatableNamespace.IsEnabled() {
+	if !utils.DisableLegacyMetrics.IsEnabled() {
 		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
 			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
 			quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]

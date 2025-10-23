@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
@@ -66,9 +67,9 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 }
 
 func TestNodeAllocatableNamespaceMetrics(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(utils.EnableStableMetrics.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(allowAllocatableNamespace.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(utils.EnableStableMetrics.ID(), false))
 	}()
 	n := testutils.NewNode("1")
 
