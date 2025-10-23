@@ -72,3 +72,30 @@ filter/bad_syntax_log:
   logs:
     log_record:
       - 'attributes[test] == "pass"'
+filter/bad_action:
+  metrics:
+    action: "invalid"
+  logs:
+    action: "invalid"
+  traces:
+    action: "invalid"
+  profiles:
+    action: "invalid"
+filter/keep_action:
+  metrics:
+    action: "keep"
+  logs:
+    action: "keep"
+  traces:
+    action: "keep"
+  profiles:
+    action: "keep"
+filter/drop_action:
+  metrics:
+    action: "drop"
+  logs:
+    action: "drop"
+  traces:
+    action: "drop"
+  profiles:
+    action: "drop"

@@ -705,13 +705,15 @@ var (
 func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name             string
+		action           Action
 		conditions       []string
 		filterEverything bool
 		want             func(ld plog.Logs)
 		errorMode        ottl.ErrorMode
 	}{
 		{
-			name: "drop logs",
+			name:   "drop logs",
+			action: dropAction,
 			conditions: []string{
 				`body == "operationA"`,
 			},
@@ -726,7 +728,24 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
-			name: "drop everything by dropping all logs",
+			name:   "keep logs",
+			action: keepAction,
+			conditions: []string{
+				`body == "operationA"`,
+			},
+			want: func(ld plog.Logs) {
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
+					return log.Body().AsString() != "operationA"
+				})
+				ld.ResourceLogs().At(0).ScopeLogs().At(1).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
+					return log.Body().AsString() != "operationA"
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
+			name:   "drop everything by dropping all logs",
+			action: dropAction,
 			conditions: []string{
 				`IsMatch(body, "operation.*")`,
 			},
@@ -734,7 +753,17 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
-			name: "multiple conditions",
+			name:   "keep everything",
+			action: keepAction,
+			conditions: []string{
+				`IsMatch(body, "operation.*")`,
+			},
+			want:      func(_ plog.Logs) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
+			name:   "multiple conditions",
+			action: dropAction,
 			conditions: []string{
 				`IsMatch(body, "wrong name")`,
 				`IsMatch(body, "operation.*")`,
@@ -743,17 +772,37 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
-			name: "with error conditions",
+			name:   "multiple conditions keep everything",
+			action: keepAction,
+			conditions: []string{
+				`IsMatch(body, "wrong name")`,
+				`IsMatch(body, "operation.*")`,
+			},
+			want:      func(_ plog.Logs) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
+			name:   "with error conditions",
+			action: dropAction,
 			conditions: []string{
 				`Substring("", 0, 100) == "test"`,
 			},
 			want:      func(_ plog.Logs) {},
 			errorMode: ottl.IgnoreError,
 		},
+		{
+			name:   "keep action with error conditions should not keep anything",
+			action: keepAction,
+			conditions: []string{
+				`Substring("", 0, 100) == "test"`,
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Logs: LogFilters{LogConditions: tt.conditions}, logFunctions: defaultLogFunctionsMap()}
+			cfg := &Config{Logs: LogFilters{Action: tt.action, LogConditions: tt.conditions}, logFunctions: defaultLogFunctionsMap()}
 			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 

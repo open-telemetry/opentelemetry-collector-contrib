@@ -39,6 +39,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.EqualExportedValues(t, &Config{
 		ErrorMode: ottl.PropagateError,
+		Metrics:   MetricFilters{Action: dropAction},
+		Logs:      LogFilters{Action: dropAction},
+		Traces:    TraceFilters{Action: dropAction},
+		Profiles:  ProfileFilters{Action: dropAction},
 	}, cfg)
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))

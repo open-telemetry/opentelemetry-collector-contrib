@@ -65,6 +65,11 @@ type MetricFilters struct {
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filterconfig.MetricMatchProperties `mapstructure:"exclude"`
 
+	// Action determines the behavior when conditions match.
+	// "drop" (default): logs matching any condition are dropped.
+	// "keep": logs matching any condition are kept, all others are dropped.
+	Action Action `mapstructure:"action"`
+
 	// RegexpConfig specifies options for the regexp match type
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 
@@ -81,6 +86,11 @@ type MetricFilters struct {
 
 // TraceFilters filters by OTTL conditions
 type TraceFilters struct {
+	// Action determines the behavior when conditions match.
+	// "drop" (default): logs matching any condition are dropped.
+	// "keep": logs matching any condition are kept, all others are dropped.
+	Action Action `mapstructure:"action"`
+
 	// SpanConditions is a list of OTTL conditions for an ottlspan context.
 	// If any condition resolves to true, the span will be dropped.
 	// Supports `and`, `or`, and `()`
@@ -102,6 +112,11 @@ type LogFilters struct {
 	// all other logs should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *LogMatchProperties `mapstructure:"exclude"`
+
+	// Action determines the behavior when conditions match.
+	// "drop" (default): logs matching any condition are dropped.
+	// "keep": logs matching any condition are kept, all others are dropped.
+	Action Action `mapstructure:"action"`
 
 	// LogConditions is a list of OTTL conditions for an ottllog context.
 	// If any condition resolves to true, the log event will be dropped.
@@ -281,10 +296,36 @@ func (lmp LogSeverityNumberMatchProperties) validate() error {
 type ProfileFilters struct {
 	_ struct{} // prevent unkeyed literals
 
+	// Action determines the behavior when conditions match.
+	// "drop" (default): logs matching any condition are dropped.
+	// "keep": logs matching any condition are kept, all others are dropped.
+	Action Action `mapstructure:"action"`
+
 	// ProfileConditions is a list of OTTL conditions for an ottlprofile context.
 	// If any condition resolves to true, the profile will be dropped.
 	// Supports `and`, `or`, and `()`
 	ProfileConditions []string `mapstructure:"profile"`
+}
+
+// Action specifies the action to take on logs that match the conditions.
+type Action string
+
+const (
+	// dropAction drops logs that match the conditions and retains all others.
+	dropAction = Action("drop")
+	// keepAction retains logs that match the conditions and drops all others.
+	keepAction = Action("keep")
+)
+
+func (a *Action) UnmarshalText(text []byte) error {
+	str := Action(strings.ToLower(string(text)))
+	switch str {
+	case dropAction, keepAction:
+		*a = str
+		return nil
+	default:
+		return fmt.Errorf("unknown action \"%s\". Valid options are: \"%s\", \"%s\"", str, dropAction, keepAction)
+	}
 }
 
 var _ component.Config = (*Config)(nil)

@@ -4,7 +4,9 @@
 package filterprocessor
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,42 +66,33 @@ func TestLoadingConfigStrict(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "empty"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Include: &filterconfig.MetricMatchProperties{
-						MatchType: filterconfig.MetricStrict,
-					},
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Include = &filterconfig.MetricMatchProperties{
+					MatchType: filterconfig.MetricStrict,
+				}
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Include: testDataMetricProperties,
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Include = testDataMetricProperties
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Exclude: testDataMetricProperties,
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Exclude = testDataMetricProperties
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "includeexclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Include: testDataMetricProperties,
-					Exclude: &filterconfig.MetricMatchProperties{
-						MatchType:   filterconfig.MetricStrict,
-						MetricNames: []string{"hello_world"},
-					},
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Include = testDataMetricProperties
+				cfg.Metrics.Exclude = &filterconfig.MetricMatchProperties{
+					MatchType:   filterconfig.MetricStrict,
+					MetricNames: []string{"hello_world"},
+				}
+			}),
 		},
 	}
 
@@ -150,39 +143,25 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "empty"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: &LogMatchProperties{
-						LogMatchType: strictType,
-					},
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = &LogMatchProperties{LogMatchType: strictType}
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		},
 	}
 
@@ -223,29 +202,22 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "includeexclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		},
 	}
 
@@ -286,29 +258,22 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "includeexclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		},
 	}
 
@@ -349,29 +314,22 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
-		}, {
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
+		},
+		{
 			id: component.MustNewIDWithName("filter", "includeexclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		},
 	}
 
@@ -412,29 +370,20 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		},
 	}
 
@@ -478,29 +427,20 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Logs: LogFilters{
-					Include: testDataLogPropertiesInclude,
-					Exclude: testDataLogPropertiesExclude,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Logs.Include = testDataLogPropertiesInclude
+				cfg.Logs.Exclude = testDataLogPropertiesExclude
+			}),
 		},
 	}
 
@@ -548,49 +488,37 @@ func TestLoadingConfigRegexp(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Include: testDataMetricProperties,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Include = testDataMetricProperties
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Exclude: testDataMetricProperties,
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Exclude = testDataMetricProperties
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "unlimitedcache"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Include: &filterconfig.MetricMatchProperties{
-						MatchType: filterconfig.MetricRegexp,
-						RegexpConfig: &fsregexp.Config{
-							CacheEnabled: true,
-						},
-						MetricNames: testDataFilters,
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Include = &filterconfig.MetricMatchProperties{
+					MatchType: filterconfig.MetricRegexp,
+					RegexpConfig: &fsregexp.Config{
+						CacheEnabled: true,
 					},
-				},
-			},
+					MetricNames: testDataFilters,
+				}
+			}),
 		}, {
 			id: component.MustNewIDWithName("filter", "limitedcache"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Exclude: &filterconfig.MetricMatchProperties{
-						MatchType: filterconfig.MetricRegexp,
-						RegexpConfig: &fsregexp.Config{
-							CacheEnabled:       true,
-							CacheMaxNumEntries: 10,
-						},
-						MetricNames: testDataFilters,
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Exclude = &filterconfig.MetricMatchProperties{
+					MatchType: filterconfig.MetricRegexp,
+					RegexpConfig: &fsregexp.Config{
+						CacheEnabled:       true,
+						CacheMaxNumEntries: 10,
 					},
-				},
-			},
+					MetricNames: testDataFilters,
+				}
+			}),
 		},
 	}
 
@@ -620,28 +548,25 @@ func TestLoadingSpans(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "spans"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Spans: filterconfig.MatchConfig{
-					Include: &filterconfig.MatchProperties{
-						Config: filterset.Config{
-							MatchType: filterset.Strict,
-						},
-						Services: []string{"test", "test2"},
-						Attributes: []filterconfig.Attribute{
-							{Key: "should_include", Value: "(true|probably_true)"},
-						},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Spans.Include = &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
 					},
-					Exclude: &filterconfig.MatchProperties{
-						Config: filterset.Config{
-							MatchType: filterset.Regexp,
-						},
-						Attributes: []filterconfig.Attribute{
-							{Key: "should_exclude", Value: "(probably_false|false)"},
-						},
+					Services: []string{"test", "test2"},
+					Attributes: []filterconfig.Attribute{
+						{Key: "should_include", Value: "(true|probably_true)"},
 					},
-				},
-			},
+				}
+				cfg.Spans.Exclude = &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Regexp,
+					},
+					Attributes: []filterconfig.Attribute{
+						{Key: "should_exclude", Value: "(probably_false|false)"},
+					},
+				}
+			}),
 		},
 	}
 
@@ -671,64 +596,52 @@ func TestLoadingConfigExpr(t *testing.T) {
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "empty"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Include: &filterconfig.MetricMatchProperties{
-						MatchType: filterconfig.MetricExpr,
-					},
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Include = &filterconfig.MetricMatchProperties{
+					MatchType: filterconfig.MetricExpr,
+				}
+			}),
 		},
 		{
 			id: component.MustNewIDWithName("filter", "include"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Include: &filterconfig.MetricMatchProperties{
-						MatchType: filterconfig.MetricExpr,
-						Expressions: []string{
-							`Label("foo") == "bar"`,
-							`HasLabel("baz")`,
-						},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Include = &filterconfig.MetricMatchProperties{
+					MatchType: filterconfig.MetricExpr,
+					Expressions: []string{
+						`Label("foo") == "bar"`,
+						`HasLabel("baz")`,
 					},
-				},
-			},
+				}
+			}),
 		},
 		{
 			id: component.MustNewIDWithName("filter", "exclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Exclude: &filterconfig.MetricMatchProperties{
-						MatchType: filterconfig.MetricExpr,
-						Expressions: []string{
-							`Label("foo") == "bar"`,
-							`HasLabel("baz")`,
-						},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Exclude = &filterconfig.MetricMatchProperties{
+					MatchType: filterconfig.MetricExpr,
+					Expressions: []string{
+						`Label("foo") == "bar"`,
+						`HasLabel("baz")`,
 					},
-				},
-			},
+				}
+			}),
 		},
 		{
 			id: component.MustNewIDWithName("filter", "includeexclude"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Metrics: MetricFilters{
-					Include: &filterconfig.MetricMatchProperties{
-						MatchType: filterconfig.MetricExpr,
-						Expressions: []string{
-							`HasLabel("foo")`,
-						},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Include = &filterconfig.MetricMatchProperties{
+					MatchType: filterconfig.MetricExpr,
+					Expressions: []string{
+						`HasLabel("foo")`,
 					},
-					Exclude: &filterconfig.MetricMatchProperties{
-						MatchType: filterconfig.MetricExpr,
-						Expressions: []string{
-							`HasLabel("bar")`,
-						},
+				}
+				cfg.Metrics.Exclude = &filterconfig.MetricMatchProperties{
+					MatchType: filterconfig.MetricExpr,
+					Expressions: []string{
+						`HasLabel("bar")`,
 					},
-				},
-			},
+				}
+			}),
 		},
 	}
 	for _, tt := range tests {
@@ -865,53 +778,43 @@ func TestLoadingConfigOTTL(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id           component.ID
-		expected     *Config
-		errorMessage string
+		id              component.ID
+		expected        *Config
+		errorMessage    string
+		unmarshalErrMsg string
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "ottl"),
-			expected: &Config{
-				ErrorMode: ottl.IgnoreError,
-				Traces: TraceFilters{
-					SpanConditions: []string{
-						`attributes["test"] == "pass"`,
-					},
-					SpanEventConditions: []string{
-						`attributes["test"] == "pass"`,
-					},
-				},
-				Metrics: MetricFilters{
-					MetricConditions: []string{
-						`name == "pass"`,
-					},
-					DataPointConditions: []string{
-						`attributes["test"] == "pass"`,
-					},
-				},
-				Logs: LogFilters{
-					LogConditions: []string{
-						`attributes["test"] == "pass"`,
-					},
-				},
-				Profiles: ProfileFilters{
-					ProfileConditions: []string{
-						`attributes["test"] == "pass"`,
-					},
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.ErrorMode = ottl.IgnoreError
+				cfg.Traces.SpanConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
+				cfg.Traces.SpanEventConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
+				cfg.Metrics.MetricConditions = []string{
+					`name == "pass"`,
+				}
+				cfg.Metrics.DataPointConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
+				cfg.Logs.LogConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
+				cfg.Profiles.ProfileConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
+			}),
 		},
 		{
 			id: component.MustNewIDWithName("filter", "multiline"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				Traces: TraceFilters{
-					SpanConditions: []string{
-						`attributes["test"] == "pass"`,
-						`attributes["test"] == "also pass"`,
-					},
-				},
-			},
+			expected: createConfig(func(cfg *Config) {
+				cfg.Traces.SpanConditions = []string{
+					`attributes["test"] == "pass"`,
+					`attributes["test"] == "also pass"`,
+				}
+			}),
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "spans_mix_config"),
@@ -940,6 +843,35 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_action"),
+			unmarshalErrMsg: func() string {
+				signals := []string{"metrics", "logs", "traces", "profiles"}
+				lines := make([]string, len(signals))
+				for i, signal := range signals {
+					lines[i] = fmt.Sprintf("'%s.action' unknown action \"invalid\". Valid options are: \"drop\", \"keep\"", signal)
+				}
+				return strings.Join(lines, "\n")
+			}(),
+		},
+		{
+			id: component.MustNewIDWithName("filter", "keep_action"),
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Action = keepAction
+				cfg.Logs.Action = keepAction
+				cfg.Traces.Action = keepAction
+				cfg.Profiles.Action = keepAction
+			}),
+		},
+		{
+			id: component.MustNewIDWithName("filter", "drop_action"),
+			expected: createConfig(func(cfg *Config) {
+				cfg.Metrics.Action = dropAction
+				cfg.Logs.Action = dropAction
+				cfg.Traces.Action = dropAction
+				cfg.Profiles.Action = dropAction
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -949,6 +881,11 @@ func TestLoadingConfigOTTL(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
+
+			if tt.unmarshalErrMsg != "" {
+				require.ErrorContains(t, sub.Unmarshal(cfg), tt.unmarshalErrMsg)
+				return
+			}
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
@@ -964,4 +901,65 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAction_UnmarshalText(t *testing.T) {
+	testCases := []struct {
+		name        string
+		input       string
+		expected    Action
+		expectedErr bool
+	}{
+		{
+			name:     "valid drop action lowercase",
+			input:    "drop",
+			expected: dropAction,
+		},
+		{
+			name:     "valid keep action lowercase",
+			input:    "keep",
+			expected: keepAction,
+		},
+		{
+			name:        "invalid action",
+			input:       "invalid",
+			expectedErr: true,
+		},
+		{
+			name:        "empty action",
+			input:       "",
+			expectedErr: true,
+		},
+		{
+			name:        "unknown action",
+			input:       "delete",
+			expectedErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var action Action
+			err := action.UnmarshalText([]byte(tc.input))
+
+			if tc.expectedErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "unknown action")
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expected, action)
+			}
+		})
+	}
+}
+
+func createConfig(modify func(cfg *Config)) *Config {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	if modify != nil {
+		modify(cfg)
+	}
+
+	return cfg
 }
