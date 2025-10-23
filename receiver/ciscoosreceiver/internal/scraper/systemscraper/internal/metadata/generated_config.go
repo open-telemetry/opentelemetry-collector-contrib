@@ -26,38 +26,22 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for ciscoosreceiver metrics.
+// MetricsConfig provides config for system metrics.
 type MetricsConfig struct {
-	CiscoInterfaceReceiveBytes   MetricConfig `mapstructure:"cisco.interface.receive.bytes"`
-	CiscoInterfaceReceiveErrors  MetricConfig `mapstructure:"cisco.interface.receive.errors"`
-	CiscoInterfaceTransmitBytes  MetricConfig `mapstructure:"cisco.interface.transmit.bytes"`
-	CiscoInterfaceTransmitErrors MetricConfig `mapstructure:"cisco.interface.transmit.errors"`
-	CiscoInterfaceUp             MetricConfig `mapstructure:"cisco.interface.up"`
-	CiscoSystemCPUUtilization    MetricConfig `mapstructure:"cisco.system.cpu.utilization"`
-	CiscoSystemMemoryUtilization MetricConfig `mapstructure:"cisco.system.memory.utilization"`
+	CiscoDeviceUp           MetricConfig `mapstructure:"cisco.device.up"`
+	SystemCPUUtilization    MetricConfig `mapstructure:"system.cpu.utilization"`
+	SystemMemoryUtilization MetricConfig `mapstructure:"system.memory.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		CiscoInterfaceReceiveBytes: MetricConfig{
+		CiscoDeviceUp: MetricConfig{
 			Enabled: true,
 		},
-		CiscoInterfaceReceiveErrors: MetricConfig{
+		SystemCPUUtilization: MetricConfig{
 			Enabled: true,
 		},
-		CiscoInterfaceTransmitBytes: MetricConfig{
-			Enabled: true,
-		},
-		CiscoInterfaceTransmitErrors: MetricConfig{
-			Enabled: true,
-		},
-		CiscoInterfaceUp: MetricConfig{
-			Enabled: true,
-		},
-		CiscoSystemCPUUtilization: MetricConfig{
-			Enabled: true,
-		},
-		CiscoSystemMemoryUtilization: MetricConfig{
+		SystemMemoryUtilization: MetricConfig{
 			Enabled: true,
 		},
 	}
@@ -89,11 +73,9 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for ciscoosreceiver resource attributes.
+// ResourceAttributesConfig provides config for system resource attributes.
 type ResourceAttributesConfig struct {
-	CiscoDeviceIP    ResourceAttributeConfig `mapstructure:"cisco.device.ip"`
-	CiscoDeviceModel ResourceAttributeConfig `mapstructure:"cisco.device.model"`
-	CiscoDeviceName  ResourceAttributeConfig `mapstructure:"cisco.device.name"`
+	CiscoDeviceIP ResourceAttributeConfig `mapstructure:"cisco.device.ip"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -101,16 +83,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		CiscoDeviceIP: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		CiscoDeviceModel: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		CiscoDeviceName: ResourceAttributeConfig{
-			Enabled: true,
-		},
 	}
 }
 
-// MetricsBuilderConfig is a configuration for ciscoosreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for system metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

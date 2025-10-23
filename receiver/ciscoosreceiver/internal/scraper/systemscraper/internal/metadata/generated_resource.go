@@ -28,20 +28,6 @@ func (rb *ResourceBuilder) SetCiscoDeviceIP(val string) {
 	}
 }
 
-// SetCiscoDeviceModel sets provided value as "cisco.device.model" attribute.
-func (rb *ResourceBuilder) SetCiscoDeviceModel(val string) {
-	if rb.config.CiscoDeviceModel.Enabled {
-		rb.res.Attributes().PutStr("cisco.device.model", val)
-	}
-}
-
-// SetCiscoDeviceName sets provided value as "cisco.device.name" attribute.
-func (rb *ResourceBuilder) SetCiscoDeviceName(val string) {
-	if rb.config.CiscoDeviceName.Enabled {
-		rb.res.Attributes().PutStr("cisco.device.name", val)
-	}
-}
-
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
