@@ -68,9 +68,12 @@ import (
     "go.opentelemetry.io/collector/pdata/pmetric"
     "go.uber.org/zap"
 
+    "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/helpers"
     "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/models"
     "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/queries"
 )
+
+
 
 // QueryPerformanceScraper handles SQL Server query performance monitoring metrics collection
 type QueryPerformanceScraper struct {
@@ -90,228 +93,189 @@ func NewQueryPerformanceScraper(conn SQLConnectionInterface, logger *zap.Logger,
     }
 }
 
-// ScrapeBlockingSessionMetrics collects blocking session metrics using engine-specific queries
-func (s *QueryPerformanceScraper) ScrapeBlockingSessionMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
-    s.logger.Debug("Scraping SQL Server blocking session metrics")
+// ScrapeSlowQueryMetrics collects slow query performance monitoring metrics
+func (s *QueryPerformanceScraper) ScrapeSlowQueryMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit int) error {
+    query := fmt.Sprintf(queries.SlowQuery, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit)
 
-    // Format the blocking sessions query with parameters
-    limit := 50          // Default limit for blocking sessions
-    textTruncateLimit := 1000 // Default text truncate limit
-    formattedQuery := fmt.Sprintf(queries.BlockingSessionsQuery, limit, textTruncateLimit)
+    s.logger.Debug("Executing slow query metrics collection",
+        zap.String("query", queries.TruncateQuery(query, 100)),
+        zap.Int("interval_seconds", intervalSeconds),
+        zap.Int("top_n", topN),
+        zap.Int("elapsed_time_threshold", elapsedTimeThreshold))
 
-    // Execute blocking sessions query
-    s.logger.Debug("Executing blocking sessions query",
-        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
-        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
+    var results []models.SlowQuery
+    if err := s.connection.Query(ctx, &results, query); err != nil {
+        return fmt.Errorf("failed to execute slow query metrics query: %w", err)
+    }
+
+    s.logger.Debug("Slow query metrics fetched", zap.Int("result_count", len(results)))
+
+    for i, result := range results {
+        if err := s.processSlowQueryMetrics(result, scopeMetrics, i); err != nil {
+            s.logger.Error("Failed to process slow query metric", zap.Error(err), zap.Int("index", i))
+        }
+    }
+
+    return nil
+}
+
+// ScrapeBlockingSessionMetrics collects blocking session metrics
+func (s *QueryPerformanceScraper) ScrapeBlockingSessionMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, limit int, textTruncateLimit int) error {
+    query := fmt.Sprintf(queries.BlockingSessionsQuery, limit, textTruncateLimit)
+    
+    s.logger.Debug("Executing blocking session metrics collection",
+        zap.String("query", queries.TruncateQuery(query, 100)),
         zap.Int("limit", limit),
         zap.Int("text_truncate_limit", textTruncateLimit))
 
     var results []models.BlockingSession
-    if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
-        s.logger.Error("Failed to execute blocking sessions query",
-            zap.Error(err),
-            zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
-            zap.Int("engine_edition", s.engineEdition))
-        return fmt.Errorf("failed to execute blocking sessions query: %w", err)
+    if err := s.connection.Query(ctx, &results, query); err != nil {
+        return fmt.Errorf("failed to execute blocking session metrics query: %w", err)
     }
 
-    s.logger.Debug("Query executed successfully", zap.Int("result_count", len(results)))
+    s.logger.Debug("Blocking session metrics fetched", zap.Int("result_count", len(results)))
 
-    // Process each blocking session result
     for i, result := range results {
         if err := s.processBlockingSessionMetrics(result, scopeMetrics, i); err != nil {
-            s.logger.Error("Failed to process blocking session metrics", 
-                zap.Error(err), 
-                zap.Int("result_index", i))
-            continue // Continue processing other results
+            s.logger.Error("Failed to process blocking session metric", zap.Error(err), zap.Int("index", i))
         }
     }
-
-    s.logger.Debug("Successfully scraped blocking session metrics",
-        zap.Int("blocking_session_count", len(results)))
 
     return nil
 }
 
-// ScrapeSlowQueryMetrics collects slow query metrics using engine-specific queries
-func (s *QueryPerformanceScraper) ScrapeSlowQueryMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit int) error {
-    s.logger.Debug("Scraping SQL Server slow query metrics")
+// ScrapeWaitTimeAnalysisMetrics collects wait time analysis metrics
+func (s *QueryPerformanceScraper) ScrapeWaitTimeAnalysisMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, topN int, maxQueryTextSize int) error {
+    query := fmt.Sprintf(queries.WaitQuery, topN, maxQueryTextSize)
 
-    // Format the slow query with parameters
-    formattedQuery := fmt.Sprintf(queries.SlowQuery, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit)
-
-    // Execute slow query
-    s.logger.Debug("Executing slow query",
-        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
-        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
-        zap.Int("interval_seconds", intervalSeconds),
+    s.logger.Debug("Executing wait time analysis metrics collection",
+        zap.String("query", queries.TruncateQuery(query, 100)),
         zap.Int("top_n", topN),
-        zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
-        zap.Int("text_truncate_limit", textTruncateLimit))
-
-    var results []models.SlowQuery
-    if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
-        s.logger.Error("Failed to execute slow query",
-            zap.Error(err),
-            zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
-            zap.Int("engine_edition", s.engineEdition))
-        return fmt.Errorf("failed to execute slow query: %w", err)
-    }
-
-    s.logger.Debug("Query executed successfully", zap.Int("result_count", len(results)))
-
-    // Process each slow query result
-    for i, result := range results {
-        if err := s.processSlowQueryMetrics(result, scopeMetrics, i); err != nil {
-            s.logger.Error("Failed to process slow query metrics", 
-                zap.Error(err), 
-                zap.Int("result_index", i))
-            continue // Continue processing other results
-        }
-    }
-
-    s.logger.Debug("Successfully scraped slow query metrics",
-        zap.Int("slow_query_count", len(results)))
-
-    return nil
-}
-
-// ScrapeWaitTimeAnalysisMetrics collects wait time analysis metrics using engine-specific queries
-func (s *QueryPerformanceScraper) ScrapeWaitTimeAnalysisMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, topN, textTruncateLimit int) error {
-    s.logger.Debug("Scraping SQL Server wait time analysis metrics")
-
-    // Format the wait query with parameters
-    formattedQuery := fmt.Sprintf(queries.WaitQuery, topN, textTruncateLimit)
-
-    // Execute wait time analysis query
-    s.logger.Debug("Executing wait time analysis query",
-        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
-        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
-        zap.Int("top_n", topN),
-        zap.Int("text_truncate_limit", textTruncateLimit))
+        zap.Int("max_query_text_size", maxQueryTextSize))
 
     var results []models.WaitTimeAnalysis
-    if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
-        s.logger.Warn("Failed to execute wait time analysis query - continuing with other metrics",
-            zap.Error(err),
-            zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
-            zap.Int("engine_edition", s.engineEdition))
-        // Don't return error - just log warning and continue
-        return nil
+    if err := s.connection.Query(ctx, &results, query); err != nil {
+        return fmt.Errorf("failed to execute wait time analysis metrics query: %w", err)
     }
 
-    s.logger.Debug("Wait query executed successfully", zap.Int("result_count", len(results)))
+    s.logger.Debug("Wait time analysis metrics fetched", zap.Int("result_count", len(results)))
 
-    // Process each wait time analysis result
     for i, result := range results {
         if err := s.processWaitTimeAnalysisMetrics(result, scopeMetrics, i); err != nil {
-            s.logger.Error("Failed to process wait time analysis metrics", 
-                zap.Error(err), 
-                zap.Int("result_index", i))
-            continue // Continue processing other results
+            s.logger.Error("Failed to process wait time analysis metric", zap.Error(err), zap.Int("index", i))
         }
     }
-
-    s.logger.Debug("Successfully scraped wait time analysis metrics",
-        zap.Int("wait_analysis_count", len(results)))
 
     return nil
 }
 
-// ScrapeQueryExecutionPlanMetrics collects execution plan analysis metrics for slow queries
-// This method dynamically fetches QueryIDs from slow query results and analyzes their execution plans
+// ScrapeQueryExecutionPlanMetrics collects query execution plan metrics with cardinality safety
 func (s *QueryPerformanceScraper) ScrapeQueryExecutionPlanMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit int) error {
-    s.logger.Debug("Scraping SQL Server query execution plan metrics with dynamic QueryID extraction")
+    s.logger.Debug("Starting query execution plan metrics collection",
+        zap.Int("interval_seconds", intervalSeconds),
+        zap.Int("top_n", topN),
+        zap.Int("elapsed_time_threshold", elapsedTimeThreshold))
 
-    // Step 1: First get slow queries to extract QueryIDs
-    slowQueryResults, err := s.getSlowQueryResults(ctx, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit)
+    // Step 1: Get slow queries to extract QueryIDs
+    slowQueries, err := s.getSlowQueryResults(ctx, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit)
     if err != nil {
-        s.logger.Error("Failed to fetch slow queries for execution plan analysis", zap.Error(err))
-        return fmt.Errorf("failed to fetch slow queries: %w", err)
+        return fmt.Errorf("failed to get slow queries for execution plan analysis: %w", err)
     }
 
-    if len(slowQueryResults) == 0 {
-        s.logger.Debug("No slow queries found, skipping execution plan analysis")
+    if len(slowQueries) == 0 {
+        s.logger.Debug("No slow queries found for execution plan analysis")
         return nil
     }
 
-    // Step 2: Extract QueryIDs from slow query results
-    queryIDs := s.extractQueryIDsFromSlowQueries(slowQueryResults)
+    // Step 2: Extract QueryIDs from slow queries
+    queryIDs := s.extractQueryIDsFromSlowQueries(slowQueries)
     if len(queryIDs) == 0 {
-        s.logger.Debug("No valid QueryIDs extracted from slow queries")
+        s.logger.Debug("No valid QueryIDs found for execution plan analysis")
         return nil
     }
 
-    s.logger.Debug("Extracted QueryIDs from slow queries",
-        zap.Int("slow_query_count", len(slowQueryResults)),
-        zap.Int("query_id_count", len(queryIDs)),
-        zap.Strings("query_ids", queryIDs))
-
-    // Step 3: Convert QueryIDs to comma-separated string for SQL query
+    // Step 3: Format QueryIDs for SQL query
     queryIDsString := s.formatQueryIDsForSQL(queryIDs)
 
-    // Step 4: Format and execute the query execution plan query
+    // Step 4: Execute execution plan query with extracted QueryIDs
     formattedQuery := fmt.Sprintf(queries.QueryExecutionPlan, topN, elapsedTimeThreshold, queryIDsString, intervalSeconds, textTruncateLimit)
 
-    s.logger.Debug("Executing query execution plan query",
-        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
-        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
-        zap.Int("top_n", topN),
-        zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
-        zap.String("query_ids", queryIDsString),
-        zap.Int("interval_seconds", intervalSeconds),
-        zap.Int("text_truncate_limit", textTruncateLimit))
+    s.logger.Debug("Executing query execution plan metrics collection",
+        zap.String("query", queries.TruncateQuery(formattedQuery, 200)),
+        zap.Int("query_id_count", len(queryIDs)))
 
     var results []models.QueryExecutionPlan
     if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
-        s.logger.Error("Failed to execute query execution plan query",
-            zap.Error(err),
-            zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
-            zap.Int("engine_edition", s.engineEdition))
-        return fmt.Errorf("failed to execute query execution plan query: %w", err)
+        return fmt.Errorf("failed to execute query execution plan metrics query: %w", err)
     }
 
-    s.logger.Debug("Query execution plan executed successfully", zap.Int("result_count", len(results)))
+    s.logger.Debug("Query execution plan metrics fetched", 
+        zap.Int("result_count", len(results)),
+        zap.Int("source_slow_queries", len(slowQueries)))
 
-    // Process each query execution plan result
+    // Step 5: Process the results with cardinality safety
     for i, result := range results {
         if err := s.processQueryExecutionPlanMetrics(result, scopeMetrics, i); err != nil {
-            s.logger.Error("Failed to process query execution plan metrics", 
-                zap.Error(err), 
-                zap.Int("result_index", i))
-            continue // Continue processing other results
+            s.logger.Error("Failed to process query execution plan metric", zap.Error(err), zap.Int("index", i))
         }
     }
-
-    s.logger.Debug("Successfully scraped query execution plan metrics",
-        zap.Int("execution_plan_count", len(results)))
 
     return nil
 }
 
 // processSlowQueryMetrics processes slow query metrics and creates separate OpenTelemetry metrics for each measurement
+// CARDINALITY-SAFE: Implements controlled attribute strategy to prevent metric explosion
 func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuery, scopeMetrics pmetric.ScopeMetrics, index int) error {
     timestamp := pcommon.NewTimestampFromTime(time.Now())
     
-    // Helper function to create common attributes for all metrics
-    createCommonAttributes := func() pcommon.Map {
+    // CARDINALITY-SAFE: Create limited common attributes (QueryID only as primary key)
+    // Avoids high-cardinality attributes like full query text, timestamps, and multiple identifiers
+    createSafeAttributes := func() pcommon.Map {
         attrs := pcommon.NewMap()
-        if result.DatabaseName != nil {
-            attrs.PutStr("DatabaseName", *result.DatabaseName)
-        }
         if result.QueryID != nil {
             attrs.PutStr("QueryID", result.QueryID.String())
+        }
+        if result.DatabaseName != nil {
+            attrs.PutStr("DatabaseName", *result.DatabaseName)
         }
         if result.StatementType != nil {
             attrs.PutStr("statement_type", *result.StatementType) 
         }
-        if result.CollectionTimestamp != nil {
-            attrs.PutStr("CollectionTimestamp", *result.CollectionTimestamp)
-        }
+        // NOTE: NOT including CollectionTimestamp, PlanHandle, QueryText as attributes to prevent cardinality explosion
+        // These can be logged separately for debugging/drill-down analysis
         return attrs
     }
+    
+    // Create detailed attributes for logging/debugging (not used in metrics)
+    logAttributes := func() []zap.Field {
+        var fields []zap.Field
+        if result.QueryID != nil {
+            fields = append(fields, zap.String("query_id", result.QueryID.String()))
+        }
+        if result.PlanHandle != nil {
+            fields = append(fields, zap.String("plan_handle", result.PlanHandle.String()))
+        }
+        if result.DatabaseName != nil {
+            fields = append(fields, zap.String("database_name", *result.DatabaseName))
+        }
+        if result.QueryText != nil {
+            // Anonymize and truncate query text for logging
+            anonymizedSQL := helpers.SafeAnonymizeQueryText(result.QueryText)
+            if len(anonymizedSQL) > 100 {
+                anonymizedSQL = anonymizedSQL[:100] + "..."
+            }
+            fields = append(fields, zap.String("query_text_preview", anonymizedSQL))
+        }
+        if result.CollectionTimestamp != nil {
+            fields = append(fields, zap.String("collection_timestamp", *result.CollectionTimestamp))
+        }
+        if result.LastExecutionTimestamp != nil {
+            fields = append(fields, zap.String("last_execution_timestamp", *result.LastExecutionTimestamp))
+        }
+        return fields
+    }
 
-    // Create avg_cpu_time_ms metric
+    // Create avg_cpu_time_ms metric - CARDINALITY SAFE
     if result.AvgCPUTimeMS != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
         metric.SetName("sqlserver.slowquery.avg_cpu_time_ms")
@@ -323,10 +287,10 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
         dataPoint.SetDoubleValue(*result.AvgCPUTimeMS)
-        createCommonAttributes().CopyTo(dataPoint.Attributes())
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    // Create avg_disk_reads metric
+    // Create avg_disk_reads metric - CARDINALITY SAFE
     if result.AvgDiskReads != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
         metric.SetName("sqlserver.slowquery.avg_disk_reads")
@@ -338,10 +302,10 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
         dataPoint.SetDoubleValue(*result.AvgDiskReads)
-        createCommonAttributes().CopyTo(dataPoint.Attributes())
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    // Create avg_disk_writes metric
+    // Create avg_disk_writes metric - CARDINALITY SAFE
     if result.AvgDiskWrites != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
         metric.SetName("sqlserver.slowquery.avg_disk_writes")
@@ -353,10 +317,10 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
         dataPoint.SetDoubleValue(*result.AvgDiskWrites)
-        createCommonAttributes().CopyTo(dataPoint.Attributes())
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    // Create avg_elapsed_time_ms metric
+    // Create avg_elapsed_time_ms metric - CARDINALITY SAFE
     if result.AvgElapsedTimeMS != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
         metric.SetName("sqlserver.slowquery.avg_elapsed_time_ms")
@@ -368,10 +332,10 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
         dataPoint.SetDoubleValue(*result.AvgElapsedTimeMS)
-        createCommonAttributes().CopyTo(dataPoint.Attributes())
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    // Create execution_count metric
+    // Create execution_count metric - CARDINALITY SAFE
     if result.ExecutionCount != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
         metric.SetName("sqlserver.slowquery.execution_count")
@@ -383,10 +347,47 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
         dataPoint.SetIntValue(*result.ExecutionCount)
-        createCommonAttributes().CopyTo(dataPoint.Attributes())
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    // Create query_text metric (as string attribute with dummy numeric value)
+    // Create query_id metric - CARDINALITY SAFE (QueryID as attribute)
+    if result.QueryID != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.query_id")
+        metric.SetDescription("Query ID for slow query identification")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(1) // Dummy value since this is primarily for the query ID attribute
+        
+        attrs := createSafeAttributes()
+        attrs.PutStr("query_id", result.QueryID.String())
+        attrs.CopyTo(dataPoint.Attributes())
+    }
+
+    // Create plan_handle metric - CARDINALITY SAFE (QueryID + PlanHandle as attribute)
+    if result.PlanHandle != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.plan_handle")
+        metric.SetDescription("Plan handle for slow query execution plan")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(1) // Dummy value since this is primarily for the plan handle attribute
+        
+        // Include PlanHandle as additional attribute (controlled cardinality)
+        attrs := createSafeAttributes()
+        attrs.PutStr("plan_handle", result.PlanHandle.String())
+        attrs.CopyTo(dataPoint.Attributes())
+    }
+
+    // Create query_text metric with cardinality control
     if result.QueryText != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
         metric.SetName("sqlserver.slowquery.query_text")
@@ -399,31 +400,71 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
         dataPoint.SetStartTimestamp(s.startTime)
         dataPoint.SetIntValue(1) // Dummy value since this is primarily for the string attribute
         
-        attrs := createCommonAttributes()
-        attrs.PutStr("query_text", *result.QueryText)
+        attrs := createSafeAttributes()
+        // Safely anonymize query text with size limits to control cardinality
+        anonymizedText := helpers.SafeAnonymizeQueryText(result.QueryText)
+        // Truncate to prevent attribute size issues
+        if len(anonymizedText) > 1000 {
+            anonymizedText = anonymizedText[:1000] + "...[truncated]"
+        }
+        attrs.PutStr("query_text", anonymizedText)
         attrs.CopyTo(dataPoint.Attributes())
     }
 
-    // Create query_id metric (separate metric for query ID)
-    if result.QueryID != nil {
+    // Create collection_timestamp metric - CARDINALITY SAFE (timestamp as Unix epoch seconds)
+    if result.CollectionTimestamp != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
-        metric.SetName("sqlserver.slowquery.query_id")
-        metric.SetDescription("Query ID for slow query")
-        metric.SetUnit("1")
+        metric.SetName("sqlserver.slowquery.collection_timestamp")
+        metric.SetDescription("Collection timestamp for slow query (Unix epoch seconds)")
+        metric.SetUnit("s")
         
         gauge := metric.SetEmptyGauge()
         dataPoint := gauge.DataPoints().AppendEmpty()
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
-        dataPoint.SetIntValue(1) // Dummy value since this is primarily for the ID attribute
-        createCommonAttributes().CopyTo(dataPoint.Attributes())
+        
+        // Parse the timestamp string and convert to Unix epoch seconds (cardinality-safe)
+        if parsedTime, err := time.Parse(time.RFC3339, *result.CollectionTimestamp); err == nil {
+            dataPoint.SetIntValue(parsedTime.Unix())
+        } else if parsedTime, err := time.Parse("2006-01-02T15:04:05", *result.CollectionTimestamp); err == nil {
+            dataPoint.SetIntValue(parsedTime.Unix())
+        } else if parsedTime, err := time.Parse("2006-01-02 15:04:05", *result.CollectionTimestamp); err == nil {
+            dataPoint.SetIntValue(parsedTime.Unix())
+        } else {
+            // Fallback: use current time if parsing fails
+            dataPoint.SetIntValue(time.Now().Unix())
+        }
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    s.logger.Debug("Processed slow query metrics as separate metrics",
-        zap.Any("query_id", result.QueryID),
-        zap.Any("database_name", result.DatabaseName),
-        zap.Any("avg_elapsed_time_ms", result.AvgElapsedTimeMS),
-        zap.Any("execution_count", result.ExecutionCount))
+    // Create last_execution_timestamp metric - CARDINALITY SAFE (timestamp as Unix epoch seconds)
+    if result.LastExecutionTimestamp != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.last_execution_timestamp")
+        metric.SetDescription("Last execution timestamp for slow query (Unix epoch seconds)")
+        metric.SetUnit("s")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        
+        // Parse the timestamp string and convert to Unix epoch seconds (cardinality-safe)
+        if parsedTime, err := time.Parse(time.RFC3339, *result.LastExecutionTimestamp); err == nil {
+            dataPoint.SetIntValue(parsedTime.Unix())
+        } else if parsedTime, err := time.Parse("2006-01-02T15:04:05", *result.LastExecutionTimestamp); err == nil {
+            dataPoint.SetIntValue(parsedTime.Unix())
+        } else if parsedTime, err := time.Parse("2006-01-02 15:04:05", *result.LastExecutionTimestamp); err == nil {
+            dataPoint.SetIntValue(parsedTime.Unix())
+        } else {
+            // Fallback: use current time if parsing fails
+            dataPoint.SetIntValue(time.Now().Unix())
+        }
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    // Use dedicated logging function with cardinality-safe approach
+    s.logger.Debug("Processed slow query metrics with cardinality safety", logAttributes()...)
 
     return nil
 }
@@ -460,8 +501,8 @@ func (s *QueryPerformanceScraper) processBlockingSessionMetrics(result models.Bl
         if result.CommandType != nil {
             attrs.PutStr("CommandType", *result.CommandType)
         }
-        if result.BlockingQueryText != nil {
-            attrs.PutStr("BlockingQueryText", *result.BlockingQueryText)
+        if result.BlockingQueryText != nil && *result.BlockingQueryText != "" {
+            attrs.PutStr("BlockingQueryText", helpers.AnonymizeQueryText(*result.BlockingQueryText))
         }
     }
 
@@ -494,7 +535,7 @@ func (s *QueryPerformanceScraper) processBlockingSessionMetrics(result models.Bl
             attrs.PutStr("CommandType", *result.CommandType)
         }
         if result.BlockedQueryText != nil {
-            attrs.PutStr("BlockedQueryText", *result.BlockedQueryText)
+            attrs.PutStr("BlockedQueryText", helpers.AnonymizeQueryText(*result.BlockedQueryText))
         }
         if result.BlockedQueryStartTime != nil {
             attrs.PutStr("BlockedQueryStartTime", *result.BlockedQueryStartTime)
@@ -547,7 +588,7 @@ func (s *QueryPerformanceScraper) processWaitTimeAnalysisMetrics(result models.W
         
         // Add query text as an attribute and also include it in common attributes
         attrs := createCommonAttributes()
-        attrs.PutStr("query_text", *result.QueryText)
+        attrs.PutStr("query_text", helpers.AnonymizeQueryText(*result.QueryText))
         attrs.CopyTo(dataPoint.Attributes())
     }
 
@@ -653,12 +694,12 @@ func (s *QueryPerformanceScraper) processQueryExecutionPlanMetrics(result models
             fields = append(fields, zap.String("query_plan_id", result.QueryPlanID.String()))
         }
         if result.SQLText != nil {
-            // Truncate SQL text for logging
-            sqlText := *result.SQLText
-            if len(sqlText) > 100 {
-                sqlText = sqlText[:100] + "..."
+            // Anonymize and truncate SQL text for logging
+            anonymizedSQL := helpers.AnonymizeQueryText(*result.SQLText)
+            if len(anonymizedSQL) > 100 {
+                anonymizedSQL = anonymizedSQL[:100] + "..."
             }
-            fields = append(fields, zap.String("sql_text_preview", sqlText))
+            fields = append(fields, zap.String("sql_text_preview", anonymizedSQL))
         }
         return fields
     }
@@ -697,7 +738,7 @@ func (s *QueryPerformanceScraper) processQueryExecutionPlanMetrics(result models
         createSafeAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    // Create execution plan info metric with full XML content
+    // Create execution plan info metric with anonymized XML content
     if result.ExecutionPlanXML != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
         metric.SetName("sqlserver.query_execution_plan.execution_plan_xml")
@@ -710,9 +751,14 @@ func (s *QueryPerformanceScraper) processQueryExecutionPlanMetrics(result models
         dataPoint.SetStartTimestamp(s.startTime)
         dataPoint.SetIntValue(1) // 1 = plan available, 0 = no plan
         
-        // Include full XML content and QueryID
+        // Include XML content with StatementText anonymized
         attrs := createSafeAttributes()
-        attrs.PutStr("execution_plan_xml", *result.ExecutionPlanXML)
+        xmlContent := helpers.AnonymizeExecutionPlanXML(*result.ExecutionPlanXML)
+        // Limit XML size to prevent attribute size issues
+        if len(xmlContent) > 8192 {
+            xmlContent = xmlContent[:8192] + "...[truncated]"
+        }
+        attrs.PutStr("execution_plan_xml", xmlContent)
         attrs.CopyTo(dataPoint.Attributes())
     }
 
@@ -790,4 +836,8 @@ func (s *QueryPerformanceScraper) formatQueryIDsForSQL(queryIDs []string) string
 
     return queryIDsString
 }
+
+
+
+
 

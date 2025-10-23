@@ -116,6 +116,7 @@ package models
 // This struct is modeled after nri-mssql's TopNSlowQueryDetails for compatibility
 type SlowQuery struct {
 	QueryID                *QueryID `db:"query_id" metric_name:"query_id" source_type:"attribute"`
+	PlanHandle             *QueryID `db:"plan_handle" metric_name:"plan_handle" source_type:"attribute"`
 	QueryText              *string  `db:"query_text" metric_name:"query_text" source_type:"attribute"`
 	DatabaseName           *string  `db:"database_name" metric_name:"database_name" source_type:"attribute"`
 	SchemaName             *string  `db:"schema_name" metric_name:"schema_name" source_type:"attribute"`

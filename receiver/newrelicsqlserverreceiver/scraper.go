@@ -324,13 +324,21 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
 
-		if err := s.queryPerformanceScraper.ScrapeBlockingSessionMetrics(scrapeCtx, scopeMetrics); err != nil {
+		// Use config values for blocking session parameters
+		limit := s.config.QueryMonitoringCountThreshold
+		textTruncateLimit := 4094 // Default text truncate limit from nri-mssql
+
+		if err := s.queryPerformanceScraper.ScrapeBlockingSessionMetrics(scrapeCtx, scopeMetrics, limit, textTruncateLimit); err != nil {
 			s.logger.Warn("Failed to scrape blocking session metrics - continuing with other metrics",
 				zap.Error(err),
-				zap.Duration("timeout", s.config.Timeout))
+				zap.Duration("timeout", s.config.Timeout),
+				zap.Int("limit", limit),
+				zap.Int("text_truncate_limit", textTruncateLimit))
 			// Don't add to scrapeErrors - just warn and continue
 		} else {
-			s.logger.Debug("Successfully scraped blocking session metrics")
+			s.logger.Debug("Successfully scraped blocking session metrics",
+				zap.Int("limit", limit),
+				zap.Int("text_truncate_limit", textTruncateLimit))
 		}
 	}
 
@@ -416,93 +424,9 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		}
 	}
 
-
+	// Continue with other SQL Server metrics collection
 	s.logger.Debug("Starting instance buffer pool hit percent metrics scraping")
 	scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
-	defer cancel()
-	if err := s.instanceScraper.ScrapeInstanceBufferPoolHitPercent(scrapeCtx, scopeMetrics); err != nil {
-		s.logger.Error("Failed to scrape instance buffer pool hit percent metrics",
-			zap.Error(err),
-			zap.Duration("timeout", s.config.Timeout))
-		scrapeErrors = append(scrapeErrors, err)
-		// Don't return here - continue with other metrics
-	} else {
-		s.logger.Debug("Successfully scraped instance buffer pool hit percent metrics")
-	}
-
-	// Scrape instance-level process counts metrics
-	s.logger.Debug("Starting instance process counts metrics scraping")
-	scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
-	defer cancel()
-	if err := s.instanceScraper.ScrapeInstanceProcessCounts(scrapeCtx, scopeMetrics); err != nil {
-		s.logger.Error("Failed to scrape instance process counts metrics",
-			zap.Error(err),
-			zap.Duration("timeout", s.config.Timeout))
-		scrapeErrors = append(scrapeErrors, err)
-		// Don't return here - continue with other metrics
-	} else {
-		s.logger.Debug("Successfully scraped instance process counts metrics")
-	}
-
-	// Scrape instance-level runnable tasks metrics
-	s.logger.Debug("Starting instance runnable tasks metrics scraping")
-	scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
-	defer cancel()
-	if err := s.instanceScraper.ScrapeInstanceRunnableTasks(scrapeCtx, scopeMetrics); err != nil {
-		s.logger.Error("Failed to scrape instance runnable tasks metrics",
-			zap.Error(err),
-			zap.Duration("timeout", s.config.Timeout))
-		scrapeErrors = append(scrapeErrors, err)
-		// Don't return here - continue with other metrics
-	} else {
-		s.logger.Debug("Successfully scraped instance runnable tasks metrics")
-	}
-
-	// Scrape instance-level active connections metrics
-	s.logger.Debug("Starting instance active connections metrics scraping")
-	scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
-	defer cancel()
-	if err := s.instanceScraper.ScrapeInstanceActiveConnections(scrapeCtx, scopeMetrics); err != nil {
-		s.logger.Error("Failed to scrape instance active connections metrics",
-			zap.Error(err),
-			zap.Duration("timeout", s.config.Timeout))
-		scrapeErrors = append(scrapeErrors, err)
-		// Don't return here - continue with other metrics
-	} else {
-		s.logger.Debug("Successfully scraped instance active connections metrics")
-	}
-
-	// Scrape instance-level disk metrics
-	s.logger.Debug("Starting instance disk metrics scraping")
-	scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
-	defer cancel()
-	if err := s.instanceScraper.ScrapeInstanceDiskMetrics(scrapeCtx, scopeMetrics); err != nil {
-		s.logger.Error("Failed to scrape instance disk metrics",
-			zap.Error(err),
-			zap.Duration("timeout", s.config.Timeout))
-		scrapeErrors = append(scrapeErrors, err)
-		// Don't return here - continue with other metrics
-	} else {
-		s.logger.Debug("Successfully scraped instance disk metrics")
-	}
-
-	// Scrape instance-level buffer pool size metrics
-	// s.logger.Debug("Starting instance buffer pool size metrics scraping")
-	// scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
-	// defer cancel()
-	// if err := s.instanceScraper.ScrapeInstanceBufferPoolSize(scrapeCtx, scopeMetrics); err != nil {
-	// 	s.logger.Error("Failed to scrape instance buffer pool size metrics",
-	// 		zap.Error(err),
-	// 		zap.Duration("timeout", s.config.Timeout))
-	// 	scrapeErrors = append(scrapeErrors, err)
-	// 	// Don't return here - continue with other metrics
-	// } else {
-	// 	s.logger.Debug("Successfully scraped instance buffer pool size metrics")
-	// }
-
-	// Scrape instance-level comprehensive statistics
-	s.logger.Debug("Starting instance comprehensive statistics scraping")
-	scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 	defer cancel()
 	if err := s.instanceScraper.ScrapeInstanceComprehensiveStats(scrapeCtx, scopeMetrics); err != nil {
 		s.logger.Error("Failed to scrape instance comprehensive statistics",
@@ -528,7 +452,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	// Scrape user connection status metrics if enabled
 	if s.config.IsUserConnectionStatusMetricsEnabled() {
 		s.logger.Debug("Starting user connection status metrics scraping")
-		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
 
 		if err := s.userConnectionScraper.ScrapeUserConnectionStatusMetrics(scrapeCtx, scopeMetrics); err != nil {
