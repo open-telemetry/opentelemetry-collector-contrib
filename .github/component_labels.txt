@@ -121,6 +121,7 @@ internal/collectd internal/collectd
 internal/common internal/common
 internal/coreinternal internal/core
 internal/datadog internal/datadog
+internal/datadog/e2e internal/datadog/e2e
 internal/docker internal/docker
 internal/exp/metrics internal/exp/metrics
 internal/filter internal/filter
