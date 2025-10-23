@@ -26,9 +26,9 @@ const (
 // By default k8s event has only two types of events (Normal, Warning), here are we allowing other types as well.
 // For more info: https://github.com/kubernetes/api/blob/release-1.34/events/v1/types_swagger_doc_generated.go#L42
 var severityMap = map[string]plog.SeverityNumber{
-	"normal":  plog.SeverityNumberInfo,
-	"warning": plog.SeverityNumberWarn,
-	"error": plog.SeverityNumberError,
+	"normal":   plog.SeverityNumberInfo,
+	"warning":  plog.SeverityNumberWarn,
+	"error":    plog.SeverityNumberError,
 	"critical": plog.SeverityNumberFatal,
 }
 
