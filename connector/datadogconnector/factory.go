@@ -9,7 +9,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/core/tagger/types"
+	"github.com/DataDog/datadog-agent/pkg/util/option"
+
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient"
+	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -30,14 +34,40 @@ var NativeIngestFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.143.0"),
 )
 
-// NewFactory creates a factory for tailtracer connector.
-func NewFactory() connector.Factory {
+type factory struct {
+	tagger       types.TaggerClient
+	concentrator *stats.Concentrator
+	hostname     option.Option[string]
+}
+
+// SourceProviderFunc is a function that returns the source of the host.
+type SourceProviderFunc func(context.Context) (string, error)
+
+// NewFactoryForAgent creates a factory for datadog connector for use in OTel agent
+func NewFactoryForAgent(tagger types.TaggerClient, hostGetter SourceProviderFunc, concentrator *stats.Concentrator) connector.Factory {
+	f := &factory{
+		tagger:       tagger,
+		concentrator: concentrator,
+	}
+
+	if hostGetter != nil {
+		if hostname, err := hostGetter(context.Background()); err == nil {
+			f.hostname = option.New(hostname)
+		}
+	}
+
 	//  OTel connector factory to make a factory for connectors
 	return connector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+		connector.WithTracesToMetrics(f.createTracesToMetricsConnector, metadata.TracesToMetricsStability),
 		connector.WithTracesToTraces(createTracesToTracesConnector, metadata.TracesToTracesStability))
+}
+
+// NewConnectorFactory creates a factory for datadog connector.
+func NewFactory() connector.Factory {
+	//  OTel connector factory to make a factory for connectors
+	return NewFactoryForAgent(nil, nil, nil)
 }
 
 func createDefaultConfig() component.Config {
@@ -58,12 +88,12 @@ func createDefaultConfig() component.Config {
 
 // defines the consumer type of the connector
 // we want to consume traces and export metrics therefore define nextConsumer as metrics, consumer is the next component in the pipeline
-func createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (c connector.Traces, err error) {
+func (f *factory) createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (c connector.Traces, err error) {
 	metricsClient, err := metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ConnectorSourceTag)
 	if err != nil {
 		return nil, err
 	}
-	c, err = newTraceToMetricConnectorNative(params.TelemetrySettings, cfg, nextConsumer, metricsClient)
+	c, err = newTraceToMetricConnector(params.TelemetrySettings, cfg, nextConsumer, metricsClient, f.concentrator, f.tagger, f.hostname)
 	if err != nil {
 		return nil, err
 	}

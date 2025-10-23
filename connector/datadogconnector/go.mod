@@ -3,13 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datad
 go 1.24.0
 
 require (
+	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.72.0-rc.8
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.72.0-rc.8
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.72.0-rc.8
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-rc.8
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.72.0-rc.8
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-rc.8
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-rc.8
 	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.8
 	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-rc.8
+	github.com/DataDog/datadog-agent/pkg/util/option v0.72.0-rc.8
 	github.com/DataDog/datadog-go/v5 v5.8.1
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.138.0
@@ -52,7 +55,6 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/status v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/def v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-rc.8 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.72.0-rc.8 // indirect
@@ -117,7 +119,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/http v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/json v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-rc.8 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/option v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/otel v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-rc.8 // indirect
