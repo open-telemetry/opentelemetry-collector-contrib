@@ -268,6 +268,9 @@ type MappingsSettings struct {
 	// If unspecified, all mapping modes are allowed.
 	AllowedModes []string `mapstructure:"allowed_modes"`
 
+	// Configures escaping of HTML strings
+	EsacpeHTML bool `mapstructure:"escape_html"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

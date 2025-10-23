@@ -12,11 +12,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func Map(m pcommon.Map, buf *bytes.Buffer) {
+func Map(m pcommon.Map, buf *bytes.Buffer, escapeHTML bool) {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
+	v.SetEscapeHTML(escapeHTML)
 	writeMap(v, m, false)
 }
 

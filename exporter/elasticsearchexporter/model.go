@@ -86,6 +86,7 @@ type encodingContext struct {
 	resourceSchemaURL string
 	scope             pcommon.InstrumentationScope
 	scopeSchemaURL    string
+	escapeHTML        bool
 }
 
 func newEncoder(mode MappingMode) (documentEncoder, error) {
@@ -177,7 +178,7 @@ func (e legacyModeEncoder) encodeLog(ec encodingContext, record plog.LogRecord, 
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, record.Attributes(), idx)
 
-	return document.Serialize(buf, false)
+	return document.Serialize(buf, false, ec.escapeHTML)
 }
 
 func (ecsModeEncoder) encodeLog(
@@ -225,7 +226,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, ec.escapeHTML)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -267,7 +268,7 @@ func (ecsModeEncoder) encodeSpan(
 	}
 	document.AddLinks("span.links", span.Links())
 
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, ec.escapeHTML)
 }
 
 func (e otelModeEncoder) encodeLog(
@@ -335,7 +336,7 @@ func (e otelModeEncoder) encodeProfile(
 }
 
 func (bodymapModeEncoder) encodeLog(
-	_ encodingContext,
+	ec encodingContext,
 	record plog.LogRecord,
 	_ elasticsearch.Index,
 	buf *bytes.Buffer,
@@ -344,7 +345,7 @@ func (bodymapModeEncoder) encodeLog(
 	if body.Type() != pcommon.ValueTypeMap {
 		return fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type())
 	}
-	serializer.Map(body.Map(), buf)
+	serializer.Map(body.Map(), buf, ec.escapeHTML)
 	return nil
 }
 
@@ -409,7 +410,7 @@ func (e nonOTelSpanEncoder) encodeSpan(
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, span.Attributes(), idx)
 	document.AddEvents(e.eventsPrefix, span.Events())
-	return document.Serialize(buf, e.dedot)
+	return document.Serialize(buf, e.dedot, ec.escapeHTML)
 }
 
 type ecsDataPointsEncoder struct{}
@@ -436,7 +437,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		}
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
-	err := document.Serialize(buf, true)
+	err := document.Serialize(buf, true, ec.escapeHTML)
 
 	return document.DynamicTemplates(), err
 }

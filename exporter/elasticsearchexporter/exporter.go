@@ -122,6 +122,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 				resourceSchemaURL: rl.SchemaUrl(),
 				scope:             scope,
 				scopeSchemaURL:    ill.SchemaUrl(),
+				escapeHTML:        e.config.Mapping.EsacpeHTML,
 			}
 
 			for _, lr := range ill.LogRecords().All() {
