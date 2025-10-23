@@ -32,7 +32,7 @@ func complexPdataForNDifferentHosts(count, n int) plog.Logs {
 	pLogs := plog.NewLogs()
 	logs := pLogs.ResourceLogs()
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		rls := logs.AppendEmpty()
 
 		resource := rls.Resource()
@@ -125,37 +125,25 @@ func BenchmarkFromPdataConverter(b *testing.B) {
 
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
+				b.StopTimer()
 				converter := NewFromPdataConverter(componenttest.NewNopTelemetrySettings(), wc)
 				converter.Start()
 				defer converter.Stop()
-				b.ResetTimer()
+				b.StartTimer()
 
 				go func() {
 					assert.NoError(b, converter.Batch(pLogs))
 				}()
 
-				var (
-					timeoutTimer = time.NewTimer(10 * time.Second)
-					ch           = converter.OutChannel()
-				)
-				defer timeoutTimer.Stop()
-
-				var n int
-			forLoop:
-				for n != entryCount {
-					select {
-					case entries, ok := <-ch:
-						if !ok {
-							break forLoop
-						}
-
-						require.Len(b, entries, 250_000)
-						n += len(entries)
-
-					case <-timeoutTimer.C:
-						break forLoop
+				ch := converter.OutChannel()
+				n := 0
+				for n < entryCount {
+					entries, ok := <-ch
+					if !ok {
+						break
 					}
+					n += len(entries)
 				}
 
 				assert.Equal(b, entryCount, n,

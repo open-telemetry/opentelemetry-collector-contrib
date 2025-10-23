@@ -415,7 +415,7 @@ func TestScraper_MultipleEndpoints_ErrorSum(t *testing.T) {
 	scraper := newScraper(cfg, settings)
 
 	// Simulate 5 failed scrapes
-	for idx := 0; idx < 5; idx++ {
+	for idx := range 5 {
 		metrics, err := scraper.scrape(t.Context())
 		require.Error(t, err)
 		require.NotNil(t, metrics)

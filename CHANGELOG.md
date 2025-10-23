@@ -7,6 +7,106 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `connector/datadog`: Mark NativeIngest as stable. (#104622)
+- `connector/signaltometrics`: Drop `signaltometrics.service.{name, namespace}` resource attribute from produced metrics. (#43148)
+- `exporter/datadog`: Remove `logs::dump_payloads` config option from `datadogexporter` config. (#43427)
+  Please remove the previously deprecated `logs::dump_payloads` config option from your `datadogexporter` config.
+- `exporter/elasticsearch`: Remove batcher and related config in favor of sending queue (#42718)
+  Previously deprecated `batcher` configuration is removed. `num_consumers` and `flush` are now deprecated as they conflict with `sending_queue` configurations.
+- `extension/googlecloudlogentry_encoding`: Parse VPC flow logs into log record attributes instead of placing them in the body directly. (#43017)
+
+### 🚀 New components 🚀
+
+- `receiver/icmpcheckreceiver`: Add initial skeleton of ICMP check receiver (README, config, factory, metadata) with In Development stability. (#29009)
+- `receiver/redfish`: adds a redfish receiver (#33724)
+
+### 💡 Enhancements 💡
+
+- `all`: Changelog entries will now have their component field checked against a list of valid components. (#43179)
+  This will ensure a more standardized changelog format which makes it easier to parse.
+- `cmd/telemetrygen`: Enable creation of attributes with values of slice type (#39018)
+- `exporter/coralogix`: Add HTTP/protobuf protocol support alongside existing gRPC transport. (#43216)
+  The exporter now supports both gRPC (default) and HTTP/protobuf protocols for sending telemetry data.
+  HTTP transport enables proxy support and provides an alternative for environments where gRPC is restricted.
+  Configure using the `protocol` field with values "grpc" or "http".
+  
+- `exporter/datadog`: Make defaults for `sending_queue::batch` section to work out of the box with Datadog API intake limits. (#43082)
+- `exporter/elasticsearch`: Support experimental 'encoding.format' scope attribute for dataset routing. (#42844)
+- `exporter/kafka`: Add support for partitioning log records by trace ID (#39146)
+- `exporter/prometheus`: Enable `sending_queue` section for the Prometheus exporter. (#42629)
+- `extension/awslogs_encoding`: Add feature gate to set aws.vpc.flow.start timestamp field to ISO8601 format (#43392)
+  Feature gate ID: extension.awslogsencoding.vpcflow.start.iso8601
+  When enabled, the aws.vpc.flow.start field will be formatted as an ISO-8601 string 
+  instead of a Unix timestamp integer in seconds since epoch. Default behavior remains unchanged for backward compatibility.
+  Enable with: --feature-gates=extension.awslogsencoding.vpcflow.start.iso8601
+  
+- `extension/encoding`: Add user_agent.original, destination.address, destination.port, url.domain to ELB access logs (#43141)
+- `internal/kafka`: Log a hint when broker connections fail due to possible TLS misconfiguration (#40145)
+- `pkg/ottl`: Add XXH3 Converter function to converts a `value` to a XXH3 hash/digest (#42792)
+- `pkg/sampling`: Note that pkg/sampling implements the new OpenTelemetry specification (#43396)
+- `processor/filter`: Add profiles support (#42762)
+- `processor/isolationforest`: Add adaptive window sizing feature that automatically adjusts window size based on traffic patterns, memory usage, and model stability (#42751)
+  The adaptive window sizing feature enables dynamic adjustment of the isolation forest sliding window size based on:
+  - Traffic velocity and throughput patterns
+  - Memory usage and resource constraints  
+  - Model stability and performance metrics
+  This enhancement improves resource utilization and anomaly detection accuracy for varying workload patterns.
+  
+- `processor/resourcedetection`: Add Openstack Nova resource detector to gather Openstack instance metadata as resource attributes (#39117)
+  The Openstack Nova resource detector has been added to gather metadata such as host name, ID, cloud provider, region, and availability zone as resource attributes, enhancing the observability of Openstack environments.
+- `processor/resourcedetection`: Add Azure availability zone to resourcedetectionprocessor (#40983)
+- `receiver/azuremonitor`: parallelize calls by subscriptions in Batch API mode (#39417)
+- `receiver/ciscoosreceiver`: Add `ciscoosreceiver` to collect metrics from Cisco OS devices via SSH (#42647)
+  Supports SSH-based metric collection from Cisco devices including:
+  - System metrics (CPU, memory utilization)
+  - Interface metrics (bytes, packets, errors, status)
+  - Configurable scrapers for modular metric collection
+  - Device authentication via password or SSH key
+  
+- `receiver/gitlab`: Add span attributes in GitLab receiver (#35207)
+- `receiver/hostmetrics`: Add metrics, Linux scraper, and tests to hostmetricsreceiver's nfsscraper (#40134)
+- `receiver/icmpcheckreceiver`: Add complete scraping implementation with ICMP ping/echo to collect metrics (#29009)
+  Replaces skeleton implementation with full production-ready collector functionality.
+  Includes metrics metadata and completed configuration.
+  Includes real scraper implementation that performs ICMP checks and collects metrics.
+  Includes README docs.
+  
+- `receiver/mysql`: Support query-level collection. (#41847)
+  Added top query (most time consumed) collection. The query will gather the queries took most of the time during the last
+  query interval and report related metrics. The number of queries can be configured. This will enable user to have better
+  understanding on what is going on with the database. This enhancement empowers users to not only monitor but also actively 
+  manage and optimize their MySQL database performance based on real usage patterns.
+  
+- `receiver/prometheus`: added NHCB(native histogram wit custom buckets) to explicit histogram conversion (#41131)
+- `receiver/redis`: Add `ClusterInfo` capability to `redisreceiver` (#38117)
+- `receiver/splunkenterprise`: Added a new metric `splunk.license.expiration.seconds_remaining` to report the time remaining in seconds before a Splunk Enterprise license expires. (#42630)
+  - Includes the following attributes: `status`, `label`, `type`.
+  
+- `receiver/sqlserver`: Removing instance name usage in the SQL for top-query collection. (#43558)
+  Additional config of instance name is not required for collecting the top queries.
+  
+- `receiver/syslog`: Promote Syslog receiver to beta stability (#28551)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/awss3`: Support compression with the sumo_ic marshaller (#43574)
+- `exporter/elasticsearch`: Ensure metadata keys are always propagated in client context with batching enabled. (#41937)
+- `exporter/prometheus`: Fixes data_type field formatting in the error logs message when exporting  unknown metrics types - e.g. native histograms. (#43595)
+- `exporter/syslog`: Fix timestamp formatting in rfc5424 syslog messages to use microsecond precision (#43114)
+- `processor/metricstarttime`: Fixes bug where adjustment only relied on the DoubleValue and ignored the IntValue (#42202)
+- `receiver/k8s_cluster`: Fix for k8sclusterreceiver to handle empty containerID in ContainerStatus (#43147)
+- `receiver/libhoney`: fix panic when decompressing poorly formatted data (#42272)
+  When decompressing poorly formatted data, the receiver would panic. This has now been fixed.
+- `receiver/oracledb`: Fix to use time from database clock for more accurate collection window calculation. (#43621)
+  Fixed the top-query collection logic to use database clock instead of the time from collector instance.
+  
+
+<!-- previous-version -->
+
 ## v0.137.0
 
 ### 🛑 Breaking changes 🛑
@@ -1668,7 +1768,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
 - `elasticsearchexporter`: Enable native frame symbolization for Universal Profiling via the symbolization queue indices. (#38577)
 - `hostmetricsreceiver`: Reduced the cost of retrieving number of threads and parent process ID on Windows. Disable the featuregate `hostmetrics.process.onWindowsUseNewGetProcesses` to fallback to the previous implementation.
  (#32947, #38589)
-- `prometheusremotewritereciever`: Add help ref attribute to metric (#37277)
+- `prometheusremotewritereceiver`: Add help ref attribute to metric (#37277)
 - `hostmetricsreceiver`: Reduced the CPU cost of collecting the `process.handles` metric on Windows. (#38886)
   Instead of using WMI to retrieve the number of opened handles by each process
   the scraper now uses the GetProcessHandleCount Win32 API which results in
@@ -1678,7 +1778,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
 - `rabbitmqreceiver`: Enhance the RabbitMQ receiver to collect and report additional node-level metrics: `rabbitmq.node.disk_free`, `rabbitmq.node.disk_free_limit`, `rabbitmq.node.disk_free_alarm`, `rabbitmq.node.disk_free_details.rate`, `rabbitmq.node.mem_used`, `rabbitmq.node.mem_limit`, `rabbitmq.node.mem_alarm`, `rabbitmq.node.mem_used_details.rate`, `rabbitmq.node.fd_used`, `rabbitmq.node.fd_total`, `rabbitmq.node.fd_used_details.rate`, `rabbitmq.node.sockets_used`, `rabbitmq.node.sockets_total`, `rabbitmq.node.sockets_used_details.rate`, `rabbitmq.node.proc_used`, `rabbitmq.node.proc_total`, `rabbitmq.node.proc_used_details.rate`. These provide additional observability into the state and resource usage of RabbitMQ nodes. (#38976)
 - `rabbitmqreceiver`: Enhance the RabbitMQ receiver to collect and report additional node-level metrics across multiple categories. These include metrics related to memory, file descriptors, sockets, processes, disk, uptime, scheduling, garbage collection (GC), I/O, message store, connections, clustering, configuration, application info, and context switches. This significantly improves visibility into the performance, state, and resource usage of RabbitMQ nodes. (#38997)
 - `resourcedetection`: Adding the os.version resource attribute to system resourcedetection processor (#38087)
-- `prometheusremotewritereciever`: Separate timeseries with the same labels are now translated into the same OTLP metric. (#37791)
+- `prometheusremotewritereceiver`: Separate timeseries with the same labels are now translated into the same OTLP metric. (#37791)
   timeseries that belongs to the same metric should be added to the same datapoints slice.
 - `prometheusremotewritereceiver`: Use Created Timestamps to populate Datapoint's StartTimeUnixNano (#37277)
 - `workflow`: Remove path parts from component label suffixes (#38527)
@@ -1835,7 +1935,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
 - `pkg/ottl`: Enhance flatten() editor to resolve attribute key conflicts by adding a number suffix to the conflicting keys. (#35793)
 - `geoipprocessor`: Add the `attributes` parameter and consider both `source.address` and `client.address` by default (#37008)
 - `githubreceiver`: add GitHub workflow job spans (#38016)
-- `prometheusremotewritereciever`: Handle `otel_scope_name` and `otel_scope_version` labels in Prometheus Remote Write receiver properly if not present (#37791)
+- `prometheusremotewritereceiver`: Handle `otel_scope_name` and `otel_scope_version` labels in Prometheus Remote Write receiver properly if not present (#37791)
   if otel_scope_name or otel_scope_name is missing, use collector’s version and description according to the otel spec.
 - `exporter/loadbalancing`: Add support for route with composite keys (#35320)
 - `kafka`: Upgrading to aws sdk v2 (#38478)

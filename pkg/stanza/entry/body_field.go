@@ -6,6 +6,7 @@ package entry // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 )
 
 // BodyField is a field found on an entry body.
@@ -115,9 +116,7 @@ func (f BodyField) Merge(entry *Entry, mapValues map[string]any) {
 		currentMap = getNestedMap(currentMap, key)
 	}
 
-	for key, value := range mapValues {
-		currentMap[key] = value
-	}
+	maps.Copy(currentMap, mapValues)
 }
 
 // Delete removes a value from an entry's body using the field.

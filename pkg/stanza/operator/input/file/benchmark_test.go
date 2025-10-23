@@ -47,8 +47,7 @@ func benchmarkReadExistingLogs(b *testing.B, lines int) {
 	doneChan := make(chan struct{})
 	require.NoError(b, op.SetOutputs([]operator.Operator{newBenchmarkOutput(lines, doneChan)}))
 
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		require.NoError(b, op.Start(testutil.NewUnscopedMockPersister()))
 
 		// Wait until all logs are read
