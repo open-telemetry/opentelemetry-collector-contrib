@@ -9,7 +9,7 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/jpillora/backoff v1.0.0
-	github.com/leodido/go-syslog/v4 v4.2.0
+	github.com/leodido/go-syslog/v4 v4.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.138.0

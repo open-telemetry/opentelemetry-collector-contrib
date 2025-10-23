@@ -100,7 +100,7 @@ func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 	newEntry := entry.New()
 	newEntry.Body = body
 	err = op.Process(t.Context(), newEntry)
-	require.ErrorContains(t, err, "message too long to parse. was size 215, max length 214")
+	require.ErrorContains(t, err, "message length (215) exceeds maximum length (214)")
 
 	select {
 	case e := <-fake.Received:
