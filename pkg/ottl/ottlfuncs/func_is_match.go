@@ -30,12 +30,12 @@ func createIsMatchFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 }
 
 func isMatch[K any](target ottl.StringLikeGetter[K], pattern ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-	compiledPattern, err := compileRegexPattern(pattern, "IsMatch")
+	compiledPattern, err := newDynamicRegex("IsMatch", pattern)
 	if err != nil {
 		return nil, err
 	}
 	return func(ctx context.Context, tCtx K) (any, error) {
-		cp, err := getCompiledRegex(ctx, tCtx, pattern, compiledPattern, "IsMatch")
+		cp, err := compiledPattern.compile(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}

@@ -32,12 +32,12 @@ func createDeleteMatchingKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 }
 
 func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-	compiledPattern, err := compileRegexPattern(pattern, "delete_matching_keys")
+	compiledPattern, err := newDynamicRegex("delete_matching_keys", pattern)
 	if err != nil {
 		return nil, err
 	}
 	return func(ctx context.Context, tCtx K) (any, error) {
-		cp, err := getCompiledRegex(ctx, tCtx, pattern, compiledPattern, "delete_matching_keys")
+		cp, err := compiledPattern.compile(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
