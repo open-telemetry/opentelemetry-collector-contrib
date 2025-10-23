@@ -23,6 +23,7 @@ var (
 		constants.FormatWAFLog,
 		constants.FormatCloudTrailLog,
 		constants.FormatELBAccessLog,
+		constants.FormatNetworkFirewallLog,
 		// Legacy format values (for backward compatibility)
 		constants.FormatCloudWatchLogsSubscriptionFilterV1,
 		constants.FormatVPCFlowLogV1,
@@ -44,6 +45,7 @@ type Config struct {
 	// - waf
 	// - cloudtrail
 	// - elbaccess
+	// - networkfirewall
 	//
 	Format string `mapstructure:"format"`
 
@@ -84,6 +86,7 @@ func (cfg *Config) Validate() error {
 	case constants.FormatCloudTrailLog: // valid
 	case constants.FormatELBAccessLogV1: // valid
 	case constants.FormatELBAccessLog: // valid
+	case constants.FormatNetworkFirewallLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}
