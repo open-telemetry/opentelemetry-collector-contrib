@@ -270,6 +270,12 @@ func Test_e2e_editors(t *testing.T) {
 			statement: `replace_match(attributes["http.path"], Concat(["*","/","*"],""), "test")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
+		},
+		{
+			statement: `replace_all_patterns(attributes, "value", Concat(["/","health"],""), "@")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@")
+				tCtx.GetLogRecord().Attributes().PutStr("http.url", "http://localhost@")
 			},
 		},
 		{
@@ -282,6 +288,12 @@ func Test_e2e_editors(t *testing.T) {
 			statement: `replace_pattern(attributes["http.path"], "/", "@")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@health")
+			},
+		},
+		{
+			statement: `replace_pattern(attributes["http.path"], Concat(["/","health"],""), "@")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@")
 			},
 		},
 		{
