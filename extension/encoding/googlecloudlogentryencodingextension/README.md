@@ -114,6 +114,25 @@ The severity is mapped from [Google Cloud Log Severity](https://cloud.google.com
 
 Currently, these are the log types that are specifically parsed into log record attributes.
 
+## Log Format Identification
+
+All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their Google Cloud service origin.
+
+The pattern used is `gcp.<format_name>`.
+
+Examples:
+- Audit Logs: `encoding.format:"gcp.auditlog"`
+- VPC Flow Logs: `encoding.format:"gcp.vpcflow"`
+
+## Format Values
+
+The following format values are supported in the `googlecloudlogentryencodingextension` to identify different Google Cloud log types:
+
+| **GCP Log Type** | **Format Value** | **Description** |
+|------------------|------------------|-----------------|
+| Audit Logs | `auditlog` | Google Cloud audit logs (activity, data access, system event, policy) |
+| VPC Flow Logs | `vpcflow` | Virtual Private Cloud flow log records |
+
 ### Cloud Audit Logs
 
 See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog). The fields are mapped this way in the extension:
