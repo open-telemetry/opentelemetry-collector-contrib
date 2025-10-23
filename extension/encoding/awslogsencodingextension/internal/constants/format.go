@@ -10,6 +10,7 @@ const (
 	FormatWAFLog                           = "waf"
 	FormatCloudTrailLog                    = "cloudtrail"
 	FormatELBAccessLog                     = "elbaccess"
+	FormatNetworkFirewallLog               = "networkfirewall"
 
 	// Legacy format values (v1) - kept for backward compatibility
 	FormatVPCFlowLogV1                       = "vpc_flow_log"

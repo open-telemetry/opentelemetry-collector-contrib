@@ -22,6 +22,7 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
    - [Classic Load Balancer (CLB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
    - [Application Load Balancer (ALB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html)
    - [Network Load Balancer (NLB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html)
+ - [AWS Network Firewall logs](https://docs.aws.amazon.com/network-firewall/latest/developerguide/firewall-logging-contents.html).
  - (More to be added later.)
 
 
@@ -69,6 +70,13 @@ extensions:
     format: elbaccess
 ```
 
+Example for AWS Network Firewall logs:
+```yaml
+extensions:
+  awslogs_encoding/networkfirewall:
+    format: networkfirewall
+```
+
 ## Log Format Identification
 
 All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their AWS service origin.
@@ -91,6 +99,7 @@ The following format values are supported in the `awslogsencodingextension` to i
 | CloudTrail Logs | `cloudtrail` | AWS CloudTrail API call logs |
 | WAF Logs | `waf` | AWS Web Application Firewall logs |
 | CloudWatch Logs | `cloudwatch` | CloudWatch Logs Subscription Filter events |
+| Network Firewall Logs | `networkfirewall` | AWS Network Firewall event logs (Alert/Flow, TLS) |
 
 ### Breaking Change Notice
 
@@ -401,3 +410,85 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | request_processing_time | _Currently not supported_                                                                |
 | backend_processing_time | _Currently not supported_                                                                |
 | response_processing_time | _Currently not supported_                                                               |
+
+### AWS Network Firewall log record fields
+
+AWS Network Firewall produces three types of logs: Alert, Flow, and TLS logs.
+[AWS Network Firewall logging content](https://docs.aws.amazon.com/network-firewall/latest/developerguide/firewall-logging-contents.html) internally uses [Suricata](https://docs.suricata.io) open source threat detection engine for its alert and flow (`netflow`) event types.
+See the following field references for more information:
+- [Alert event type fields](https://docs.suricata.io/en/latest/output/eve/eve-json-format.html#event-type-alert)
+- [Flow event type fields](https://docs.suricata.io/en/latest/output/eve/eve-json-format.html#event-type-netflow)
+
+The following fields are common across all log types:
+
+| Common log fields   | Attribute in OpenTelemetry log   |
+|---------------------|----------------------------------|
+| `firewall_name`     | `aws.networkfirewall.name`       |
+| `availability_zone` | `cloud.availability_zone`        |
+| `event_timestamp`   | Log timestamp                    |
+| `event.event_type`  | `aws.networkfirewall.event.type` |
+| `event.src_ip`      | `source.address`                 |
+| `event.src_port`    | `source.port`                    |
+| `event.dest_ip`     | `destination.address`            |
+| `event.dest_port`   | `destination.port`               |
+| `event.proto`       | `network.transport`              |
+| `event.flow_id`     | `aws.networkfirewall.flow_id`    |
+
+#### Flow or `netflow` type log fields
+
+| Flow log fields         | Attribute in OpenTelemetry log                  |
+|-------------------------|-------------------------------------------------|
+| `event.netflow.pkts`    | `aws.networkfirewall.netflow.packets`           |
+| `event.netflow.bytes`   | `aws.networkfirewall.netflow.bytes`             |
+| `event.netflow.start`   | `aws.networkfirewall.netflow.start`             |
+| `event.netflow.end`     | `aws.networkfirewall.netflow.end`               |
+| `event.netflow.age`     | `aws.networkfirewall.netflow.age`               |
+| `event.netflow.max_ttl` | `aws.networkfirewall.netflow.max_ttl`           |
+| `event.netflow.min_ttl` | `aws.networkfirewall.netflow.min_ttl`           |
+| `event.netflow.tx_cnt`  | `aws.networkfirewall.netflow.transaction.count` |
+
+#### Alert log fields
+
+| Alert log fields                          | Attribute in OpenTelemetry log                          |
+|-------------------------------------------|---------------------------------------------------------|
+| `event.alert.action`                      | `aws.networkfirewall.alert.action`                      |
+| `event.alert.signature`                   | `aws.networkfirewall.alert.signature`                   |
+| `event.alert.signature_id`                | `aws.networkfirewall.alert.signature_id`                |
+| `event.alert.rev`                         | `aws.networkfirewall.alert.rev`                         |
+| `event.alert.category`                    | `aws.networkfirewall.alert.category`                    |
+| `event.alert.severity`                    | `aws.networkfirewall.alert.severity`                    |
+| `event.alert.gid`                         | `aws.networkfirewall.alert.gid`                         |
+| `event.alert.metadata.affected_product`   | `aws.networkfirewall.alert.metadata.affected_product`   |
+| `event.alert.metadata.attack_target`      | `aws.networkfirewall.alert.metadata.attack_target`      |
+| `event.alert.metadata.deployment`         | `aws.networkfirewall.alert.metadata.deployment`         |
+| `event.alert.metadata.former_category`    | `aws.networkfirewall.alert.metadata.former_category`    |
+| `event.alert.metadata.malware_family`     | `aws.networkfirewall.alert.metadata.malware_family`     |
+| `event.alert.metadata.performance_impact` | `aws.networkfirewall.alert.metadata.performance_impact` |
+| `event.alert.metadata.signature_severity` | `aws.networkfirewall.alert.metadata.signature_severity` |
+| `event.alert.metadata.created_at`         | `aws.networkfirewall.alert.metadata.created_at`         |
+| `event.alert.metadata.updated_at`         | `aws.networkfirewall.alert.metadata.updated_at`         |
+
+#### TLS log fields
+
+[See TLS inspection page](https://docs.aws.amazon.com/network-firewall/latest/developerguide/tls-inspection-logging.html) and [Suricata fields](https://docs.suricata.io/en/latest/output/eve/eve-json-format.html#event-type-tls) for more details. 
+
+| TLS log fields                         | Attribute in OpenTelemetry log                           |
+|----------------------------------------|----------------------------------------------------------|
+| `event.sni`                            | `server.address`                |
+| `event.revocation_check.leaf_cert_fpr` | `aws.networkfirewall.tls.revocation_check.leaf_cert_fpr` |
+| `event.revocation_check.action`        | `aws.networkfirewall.tls.revocation_check.action`        |
+| `event.revocation_check.status`        | `aws.networkfirewall.tls.revocation_check.status`        |
+| `event.tls_error.error_message`        | `aws.networkfirewall.tls.error.message`                  |
+| `event.tls.subject`                    | `tls.client.subject`                                     |
+| `event.tls.issuer`                     | `tls.client.issuer`                                      |
+| `event.tls.session_resumed`            | `tls.resumed`                                            |
+
+#### [HTTP log fields](https://docs.suricata.io/en/latest/output/eve/eve-json-format.html#event-type-http)
+
+| HTTP log fields                | Attribute in OpenTelemetry log     |
+|--------------------------------|------------------------------------|
+| `event.http.hostname`          | `url.domain`                       |
+| `event.http.url`               | `url.path`                         |
+| `event.http.http_user_agent`   | `user_agent.original`              |
+| `event.http.http_content_type` | `http.request.header.content-type` |
+| `event.http.cookie`            | `http.request.header.cookie`       |
