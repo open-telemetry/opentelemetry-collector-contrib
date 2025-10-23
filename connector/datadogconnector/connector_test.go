@@ -39,7 +39,7 @@ import (
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // create test to create a connector, check that basic code compiles
-func TestNewConnectorNative(t *testing.T) {
+func TestNewConnector(t *testing.T) {
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopSettings(metadata.Type)
@@ -52,7 +52,7 @@ func TestNewConnectorNative(t *testing.T) {
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
 }
 
-func TestTraceToTraceConnectorNative(t *testing.T) {
+func TestTraceToTraceConnector(t *testing.T) {
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopSettings(metadata.Type)
@@ -167,7 +167,7 @@ func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []b
 	return tr
 }
 
-func TestContainerTagsAndHostnameNative(t *testing.T) {
+func TestContainerTagsAndHostname(t *testing.T) {
 	connector, metricsSink := createConnector(t)
 	err := connector.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
@@ -269,16 +269,16 @@ var (
 	testSpanID4 = [8]byte{4, 2, 3, 4, 5, 6, 7, 8}
 )
 
-func TestMeasuredAndClientKindNative(t *testing.T) {
+func TestMeasuredAndClientKind(t *testing.T) {
 	t.Run("OperationAndResourceNameV1", func(t *testing.T) {
-		testMeasuredAndClientKindNative(t, false)
+		testMeasuredAndClientKind(t, false)
 	})
 	t.Run("OperationAndResourceNameV2", func(t *testing.T) {
-		testMeasuredAndClientKindNative(t, true)
+		testMeasuredAndClientKind(t, true)
 	})
 }
 
-func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNameV2 bool) {
+func testMeasuredAndClientKind(t *testing.T, enableOperationAndResourceNameV2 bool) {
 	if err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", enableOperationAndResourceNameV2); err != nil {
 		t.Fatal(err)
 	}
