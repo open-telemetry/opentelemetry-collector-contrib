@@ -321,6 +321,7 @@ Processed CloudTrail records come in two formats,
 | CloudTrail digest field  | Attribute in OpenTelemetry log                    |
 |--------------------------|---------------------------------------------------|
 | awsAccountId             | cloud.account.id                                  |
+| digestEndTime            | aws.cloudtrail.digest.end_time                    |
 | digestS3Bucket           | aws.cloudtrail.digest.s3_bucket                   |
 | digestS3Object           | aws.cloudtrail.digest.s3_object                   |
 | newestEventTime          | aws.cloudtrail.digest.newest_event                |
@@ -331,6 +332,15 @@ Processed CloudTrail records come in two formats,
 | logFiles.s3Object        | aws.cloudtrail.digest.log_files.s3_bucket         |
 | logFiles.newestEventTime | aws.cloudtrail.digest.log_files.newest_event_time |
 | logFiles.oldestEventTime | aws.cloudtrail.digest.log_files.oldest_event_time |
+
+Following fields are not included in the derived OpenTelemetry log:
+- digestPublicKeyFingerprint
+- digestSignatureAlgorithm
+- previousDigestHashValue
+- previousDigestHashAlgorithm
+- previousDigestSignature
+- logFiles.hashValue
+- logFiles.hashAlgorithm
 
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
 

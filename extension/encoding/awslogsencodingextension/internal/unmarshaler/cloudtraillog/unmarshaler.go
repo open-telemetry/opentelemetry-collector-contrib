@@ -207,6 +207,7 @@ func (u *CloudTrailLogUnmarshaler) processDigestRecord(record CloudTrailDigest) 
 
 	attributes := logRecord.Attributes()
 	attributes.PutStr(string(conventions.CloudAccountIDKey), record.AWSAccountID)
+	attributes.PutStr("aws.cloudtrail.digest.end_time", record.DigestEndTime)
 	attributes.PutStr("aws.cloudtrail.digest.s3_bucket", record.DigestS3Bucket)
 	attributes.PutStr("aws.cloudtrail.digest.s3_object", record.DigestS3Object)
 
