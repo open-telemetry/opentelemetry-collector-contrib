@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/core/tagger/types"
-	"github.com/DataDog/datadog-agent/pkg/util/option"
-
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
+	"github.com/DataDog/datadog-agent/pkg/util/option"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"

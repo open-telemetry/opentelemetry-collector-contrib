@@ -9,14 +9,16 @@ import (
 	"sync"
 	"time"
 
-	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
-
 	"github.com/DataDog/datadog-agent/comp/core/tagger/types"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
+	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-agent/pkg/util/option"
 	"github.com/DataDog/datadog-go/v5/statsd"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -24,13 +26,8 @@ import (
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 
-	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
-
-	"github.com/DataDog/datadog-agent/pkg/obfuscate"
-	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/DataDog/datadog-agent/pkg/trace/config"
-	"github.com/DataDog/datadog-agent/pkg/trace/stats"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 )
 
 // traceToMetricConnector is the schema for connector

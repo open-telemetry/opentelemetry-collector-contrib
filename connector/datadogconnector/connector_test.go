@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	otlpmetrics "github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
-
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
@@ -32,11 +34,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
-
-	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
-	"github.com/DataDog/datadog-agent/pkg/obfuscate"
-	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 )
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
@@ -48,7 +45,7 @@ func TestNewConnectorNative(t *testing.T) {
 	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tconn, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	_, ok := tconn.(*traceToMetricConnector)
@@ -61,7 +58,7 @@ func TestTraceToTraceConnectorNative(t *testing.T) {
 	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	tconn, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tconn, err := factory.CreateTracesToTraces(t.Context(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	_, ok := tconn.(*traceToTraceConnector)
@@ -87,7 +84,7 @@ func createConnectorCfg(t *testing.T, cfg *Config) (*traceToMetricConnector, *co
 	metricsSink := &consumertest.MetricsSink{}
 
 	cfg.Traces.BucketInterval = 1 * time.Second
-	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
+	tconn, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, metricsSink)
 	assert.NoError(t, err)
 
 	connector, ok := tconn.(*traceToMetricConnector)
@@ -172,29 +169,26 @@ func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []b
 
 func TestContainerTagsAndHostnameNative(t *testing.T) {
 	connector, metricsSink := createConnector(t)
-	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	err := connector.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		_ = connector.Shutdown(context.Background())
+		_ = connector.Shutdown(t.Context())
 	}()
 
 	trace1 := generateTrace(nil)
 
-	err = connector.ConsumeTraces(context.Background(), trace1)
+	err = connector.ConsumeTraces(t.Context(), trace1)
 	assert.NoError(t, err)
 
 	// Send two traces to ensure unique container tags are added to the cache
 	trace2 := generateTrace(nil)
-	err = connector.ConsumeTraces(context.Background(), trace2)
+	err = connector.ConsumeTraces(t.Context(), trace2)
 	assert.NoError(t, err)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -204,7 +198,7 @@ func TestContainerTagsAndHostnameNative(t *testing.T) {
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -222,29 +216,26 @@ func TestContainerTagsAndHostnameNative(t *testing.T) {
 
 func TestHostnameFromAttributesPreferred(t *testing.T) {
 	connector, metricsSink := createConnector(t)
-	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	err := connector.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		_ = connector.Shutdown(context.Background())
+		_ = connector.Shutdown(t.Context())
 	}()
 
 	trace1 := generateTrace(map[string]string{"host": "preferred-host"})
 
-	err = connector.ConsumeTraces(context.Background(), trace1)
+	err = connector.ConsumeTraces(t.Context(), trace1)
 	assert.NoError(t, err)
 
 	// Send two traces to ensure unique container tags are added to the cache
 	trace2 := generateTrace(map[string]string{"host": "preferred-host"})
-	err = connector.ConsumeTraces(context.Background(), trace2)
+	err = connector.ConsumeTraces(t.Context(), trace2)
 	assert.NoError(t, err)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -254,7 +245,7 @@ func TestHostnameFromAttributesPreferred(t *testing.T) {
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -294,13 +285,13 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeTopLevelBySpanKind = true
 	connector, metricsSink := createConnectorCfg(t, cfg)
-	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	err := connector.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		require.NoError(t, connector.Shutdown(context.Background()))
+		require.NoError(t, connector.Shutdown(t.Context()))
 	}()
 
 	td := ptrace.NewTraces()
@@ -338,7 +329,7 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 	s4.SetSpanID(testSpanID4)
 	s4.SetParentSpanID(testSpanID1)
 
-	err = connector.ConsumeTraces(context.Background(), td)
+	err = connector.ConsumeTraces(t.Context(), td)
 	assert.NoError(t, err)
 
 	timeout := time.Now().Add(1 * time.Minute)
@@ -354,7 +345,7 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -432,10 +423,10 @@ func TestObfuscate(t *testing.T) {
 
 	connector, metricsSink := createConnectorCfg(t, cfg)
 
-	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	err := connector.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, connector.Shutdown(context.Background()))
+		require.NoError(t, connector.Shutdown(t.Context()))
 	}()
 
 	td := ptrace.NewTraces()
@@ -453,7 +444,7 @@ func TestObfuscate(t *testing.T) {
 	s.Attributes().PutStr(string(semconv.DBOperationNameKey), "SELECT")
 	s.Attributes().PutStr(string(semconv.DBQueryTextKey), "SELECT username FROM users WHERE id = 123") // id value 123 should be obfuscated
 
-	err = connector.ConsumeTraces(context.Background(), td)
+	err = connector.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
 	timeout := time.Now().Add(1 * time.Minute)
@@ -469,7 +460,7 @@ func TestObfuscate(t *testing.T) {
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
