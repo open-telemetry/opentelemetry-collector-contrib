@@ -187,21 +187,25 @@ func (s *QueryPerformanceScraper) ScrapeQueryExecutionPlanMetrics(ctx context.Co
         return nil
     }
 
-    // Step 2: Extract QueryIDs from slow queries
+    // Step 2: Extract QueryIDs and PlanHandles from slow queries
     queryIDs := s.extractQueryIDsFromSlowQueries(slowQueries)
-    if len(queryIDs) == 0 {
-        s.logger.Debug("No valid QueryIDs found for execution plan analysis")
+    planHandles := s.extractPlanHandlesFromSlowQueries(slowQueries)
+    
+    if len(planHandles) == 0 {
+        s.logger.Debug("No valid PlanHandles found for execution plan analysis")
         return nil
     }
 
-    // Step 3: Format QueryIDs for SQL query
+    // Step 3: Format PlanHandles and QueryIDs for SQL query
+    planHandlesString := s.formatPlanHandlesForSQL(planHandles)
     queryIDsString := s.formatQueryIDsForSQL(queryIDs)
 
-    // Step 4: Execute execution plan query with extracted QueryIDs
-    formattedQuery := fmt.Sprintf(queries.QueryExecutionPlan, topN, elapsedTimeThreshold, queryIDsString, intervalSeconds, textTruncateLimit)
+    // Step 4: Execute execution plan query with extracted PlanHandles and QueryIDs
+    formattedQuery := fmt.Sprintf(queries.QueryExecutionPlan, topN, elapsedTimeThreshold, planHandlesString, queryIDsString, intervalSeconds, textTruncateLimit)
 
     s.logger.Debug("Executing query execution plan metrics collection",
         zap.String("query", queries.TruncateQuery(formattedQuery, 200)),
+        zap.Int("plan_handle_count", len(planHandles)),
         zap.Int("query_id_count", len(queryIDs)))
 
     var results []models.QueryExecutionPlan
@@ -837,7 +841,50 @@ func (s *QueryPerformanceScraper) formatQueryIDsForSQL(queryIDs []string) string
     return queryIDsString
 }
 
+// extractPlanHandlesFromSlowQueries extracts unique PlanHandles from slow query results
+func (s *QueryPerformanceScraper) extractPlanHandlesFromSlowQueries(slowQueries []models.SlowQuery) []string {
+    planHandleMap := make(map[string]bool)
+    var planHandles []string
 
+    for _, slowQuery := range slowQueries {
+        if slowQuery.PlanHandle != nil && !slowQuery.PlanHandle.IsEmpty() {
+            planHandleStr := slowQuery.PlanHandle.String()
+            if !planHandleMap[planHandleStr] {
+                planHandleMap[planHandleStr] = true
+                planHandles = append(planHandles, planHandleStr)
+            }
+        }
+    }
+
+    s.logger.Debug("Extracted unique PlanHandles from slow queries",
+        zap.Int("total_slow_queries", len(slowQueries)),
+        zap.Int("unique_plan_handles", len(planHandles)))
+
+    return planHandles
+}
+
+// formatPlanHandlesForSQL converts PlanHandle slice to comma-separated string for SQL IN clause
+func (s *QueryPerformanceScraper) formatPlanHandlesForSQL(planHandles []string) string {
+    if len(planHandles) == 0 {
+        return "0x0" // Return placeholder if no PlanHandles
+    }
+
+    // Join PlanHandles with commas for SQL STRING_SPLIT
+    // PlanHandles are already in hex format (0x...), so we can use them directly
+    planHandlesString := ""
+    for i, planHandle := range planHandles {
+        if i > 0 {
+            planHandlesString += ","
+        }
+        planHandlesString += planHandle
+    }
+
+    s.logger.Debug("Formatted PlanHandles for SQL query",
+        zap.Int("plan_handle_count", len(planHandles)),
+        zap.String("formatted_plan_handles", queries.TruncateQuery(planHandlesString, 100)))
+
+    return planHandlesString
+}
 
 
 

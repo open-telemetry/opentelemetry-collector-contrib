@@ -561,17 +561,19 @@ const WaitQuery = `DECLARE @TopN INT = %d; 				-- Number of results to retrieve
 const QueryExecutionPlan = `
 DECLARE @TopN INT = %d; 
 DECLARE @ElapsedTimeThreshold INT = %d;  -- Define the elapsed time threshold in milliseconds
-DECLARE @QueryIDs NVARCHAR(1000) = '%s';      -- Change the query ID to a string
-DECLARE @IntervalSeconds INT = %d;       -- Define the interval in seconds (e.g., 3600 for the last hour)
-DECLARE @TextTruncateLimit INT = %d;     -- Define the dynamic limit for truncation of SQL text
+DECLARE @PlanHandles NVARCHAR(MAX) = '%s'; -- INPUT: List of specific Plan Handles (e.g., '0x06000100..., 0x06000200...')
+DECLARE @QueryIDs NVARCHAR(1000) = '%s';  -- List of Query Hashes  
+DECLARE @IntervalSeconds INT = %d;         -- Define the interval in seconds
+DECLARE @TextTruncateLimit INT = %d;       -- Define the dynamic limit for truncation of SQL text
 
--- Declare and fill the temporary table
+-- Declare and fill temporary tables
+DECLARE @PlanHandleTable TABLE (PlanHandle VARBINARY(64));
 DECLARE @QueryIdTable TABLE (QueryId BINARY(8));
 
--- Handle the case where QueryIDs is a placeholder like '0x0' - skip parsing and return empty results
-IF @QueryIDs = '0x0' OR @QueryIDs = '' OR @QueryIDs IS NULL
+-- 1. Handle the Plan Handles input
+IF @PlanHandles = '0x0' OR @PlanHandles = '' OR @PlanHandles IS NULL
 BEGIN
-    -- Return empty result set when using placeholder query IDs
+    -- If no Plan Handles are provided, we cannot proceed with a specific plan lookup.
     SELECT 
         CAST(NULL AS VARBINARY(8)) as query_id,
         CAST(NULL AS VARBINARY(64)) as plan_handle,
@@ -586,31 +588,39 @@ BEGIN
     RETURN;
 END
 
--- Use exact nri-mssql approach: simple STRING_SPLIT with CONVERT BINARY
--- This matches the proven nri-mssql implementation
-INSERT INTO @QueryIdTable (QueryId)
-SELECT CONVERT(BINARY(8), value, 1)
-FROM STRING_SPLIT(@QueryIDs, ',')
+-- Insert Plan Handles
+INSERT INTO @PlanHandleTable (PlanHandle)
+SELECT CONVERT(VARBINARY(64), value, 1)
+FROM STRING_SPLIT(@PlanHandles, ',')
 WHERE LTRIM(RTRIM(value)) != '';
 
-SELECT
+-- 2. Handle the Query Hashes input (Optional, for secondary filtering)
+IF @QueryIDs IS NOT NULL AND @QueryIDs != '0x0' AND @QueryIDs != ''
+BEGIN
+    INSERT INTO @QueryIdTable (QueryId)
+    SELECT CONVERT(BINARY(8), value, 1)
+    FROM STRING_SPLIT(@QueryIDs, ',')
+    WHERE LTRIM(RTRIM(value)) != '';
+END
+
+SELECT TOP (@TopN)
     -- Identifiers
-    qs.query_hash as query_id,
+    qs.query_hash AS query_id,
     qs.plan_handle,
-    qs.query_plan_hash as query_plan_id,
+    qs.query_plan_hash AS query_plan_id,
     
-    -- Query Text Details (the individual query text)
+    -- Query Text Details
     LEFT(SUBSTRING(st.text, (qs.statement_start_offset / 2) + 1,
         ((CASE qs.statement_end_offset
             WHEN -1 THEN DATALENGTH(st.text)
             ELSE qs.statement_end_offset
         END - qs.statement_start_offset) / 2) + 1), @TextTruncateLimit) AS sql_text,
         
-    -- Performance Metrics for this Plan Handle
+    -- Performance Metrics for this Plan Handle (Totals since caching)
     qs.total_worker_time / 1000.0 AS total_cpu_ms,
     qs.total_elapsed_time / 1000.0 AS total_elapsed_ms,
     
-    -- Timestamps converted to Unix epoch (seconds) to avoid cardinality issues
+    -- Timestamps converted to Unix epoch (seconds)
     DATEDIFF(SECOND, '1970-01-01 00:00:00', qs.creation_time) AS creation_time,
     DATEDIFF(SECOND, '1970-01-01 00:00:00', qs.last_execution_time) AS last_execution_time,
     
@@ -623,8 +633,13 @@ CROSS APPLY
 CROSS APPLY 
     sys.dm_exec_query_plan(qs.plan_handle) AS qp
 WHERE
-    qs.query_hash IN (SELECT QueryId FROM @QueryIdTable)
-    -- Use flexible filtering conditions
+    -- *** KEY FILTER 1: Match the specific Plan Handle ***
+    qs.plan_handle IN (SELECT PlanHandle FROM @PlanHandleTable)
+    
+    -- KEY FILTER 2: (Optional, but recommended) Match the Query Hash if provided
+    AND (NOT EXISTS (SELECT 1 FROM @QueryIdTable) OR qs.query_hash IN (SELECT QueryId FROM @QueryIdTable))
+    
+    -- Use remaining flexible filtering conditions
     AND (@IntervalSeconds <= 0 OR qs.last_execution_time >= DATEADD(SECOND, -@IntervalSeconds, GETUTCDATE())) 
     AND (@ElapsedTimeThreshold <= 0 OR COALESCE((qs.total_elapsed_time / NULLIF(qs.execution_count, 0)) / 1000, 0) > @ElapsedTimeThreshold)
     AND qp.query_plan IS NOT NULL
