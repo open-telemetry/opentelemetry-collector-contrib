@@ -608,12 +608,23 @@ This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the defaul
 To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
 Alternatively, try other mapping modes, but the document structure will be different.
 
-### dropping cumulative temporarily histogram
+### "dropping cumulative temporality histogram" and "dropping cumulative temporality exponential histogram"
 
 Symptom: `elasticsearchexporter` logs a warning `dropping cumulative temporarily histogram` similar to:
 
 ```
-warn [elasticsearchexporter@v0.130.0](mailto:elasticsearchexporter@v0.130.0)/exporter.go:347 validation errors [service.name](https://service.name/): metrics error: dropping cumulative temporarily histogram http.client.request.duration
+warn    elasticsearchexporter@v0.132.0/exporter.go:340  validation errors
+{
+  "resource": {
+    "service.instance.id": "33ffe7e8-e944-4f92-8fce-9094f4b61d1d",
+    "service.name": "./elastic-agent",
+    "service.version": "9.1.5"
+  },
+  "otelcol.component.id": "elasticsearch/otel",
+  "otelcol.component.kind": "exporter",
+  "otelcol.signal": "metrics",
+  "error": "dropping cumulative temporality histogram \"http.client.request.duration\""
+}
 ```
 
 This issue occurs because Elasticsearch does not support **cumulative temporality** for histograms.
