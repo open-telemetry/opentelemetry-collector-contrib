@@ -72,13 +72,14 @@ func (ex *ext) handleLogLine(logs plog.Logs, logLine []byte) error {
 
 	scopeLogs := rl.ScopeLogs().AppendEmpty()
 
-	// Set encoding.format scope attribute if we have a recognized log type
-	if encodingFormat := getEncodingFormat(logType); encodingFormat != "" {
+	// Get encoding format and set scope attribute if we have a recognized log type
+	encodingFormat := getEncodingFormat(logType)
+	if encodingFormat != "" {
 		scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
 	}
 
 	logRecord := scopeLogs.LogRecords().AppendEmpty()
-	if err := handleLogEntryFields(r.Attributes(), logRecord, log, logType, ex.config); err != nil {
+	if err := handleLogEntryFields(r.Attributes(), logRecord, log, encodingFormat, ex.config); err != nil {
 		return fmt.Errorf("failed to handle log entry: %w", err)
 	}
 

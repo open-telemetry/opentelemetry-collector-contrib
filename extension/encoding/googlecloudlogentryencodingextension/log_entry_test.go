@@ -396,8 +396,8 @@ func TestHandleLogEntryFields(t *testing.T) {
 	// type "log-test" in the input file is an unsupported log type,
 	// so it won't show up in the expected logs's scope field,
 	// but it should still be processed correctly. Therefore, we handle the field above,
-	// but we pass the log type as "log-test" to handlePayload.
-	err = handleLogEntryFields(resource.Attributes(), logRecord, l, "log-test", cfg)
+	// but we pass empty encodingFormat to handlePayload since it's not a recognized format.
+	err = handleLogEntryFields(resource.Attributes(), logRecord, l, "", cfg)
 	require.NoError(t, err)
 
 	expected, err := golden.ReadLogs("testdata/log_entry_expected.yaml")

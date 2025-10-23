@@ -474,18 +474,14 @@ func handleLogNameField(logName string, resourceAttr pcommon.Map) (string, error
 	}
 }
 
-func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg Config) error {
-	switch logType {
-	case auditlog.ActivityLogNameSuffix,
-		auditlog.DataAccessLogNameSuffix,
-		auditlog.SystemEventLogNameSuffix,
-		auditlog.PolicyLogNameSuffix:
+func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord, cfg Config) error {
+	switch encodingFormat {
+	case constants.GCPFormatAuditLog:
 		if err := auditlog.ParsePayloadIntoAttributes(log.ProtoPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse audit log proto payload: %w", err)
 		}
 		return nil
-	case vpcflowlog.NetworkManagementNameSuffix,
-		vpcflowlog.ComputeNameSuffix:
+	case constants.GCPFormatVPCFlowLog:
 		if err := vpcflowlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse VPC flow log JSON payload: %w", err)
 		}
@@ -513,7 +509,7 @@ func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg C
 
 // handleLogEntryFields will place each entry of logEntry as either an attribute of the log,
 // or as part of the log body, in case of payload.
-func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, logType string, cfg Config) error {
+func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, encodingFormat string, cfg Config) error {
 	ts := log.Timestamp
 	if ts == nil {
 		return errors.New("missing timestamp")
@@ -526,7 +522,7 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogReco
 
 	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
 
-	if err := handlePayload(logType, log, logRecord, cfg); err != nil {
+	if err := handlePayload(encodingFormat, log, logRecord, cfg); err != nil {
 		return fmt.Errorf("failed to handle payload field: %w", err)
 	}
 
