@@ -84,3 +84,13 @@ This approach has some limitations, for example:
     - If the process dies or restarts, the cache will be lost.
     - Some inconsistencies can happen according to the order of the requests and the current cache size.
     - The limit of 1000 resource metrics is hardcoded and not configurable for now.
+
+Request Handling Scenarios
+
+- If `target_info` arrives first:
+    - The associated labels are cached as a `pcommon.Map`.
+    - Subsequent metric data with matching job/instance labels will use these cached resource attributes.
+
+- If normal metrics arrive first:
+    - The receiver cannot predict when (or if) the corresponding `target_info` will arrive.
+    - The metrics are forwarded immediately without resource attributes.
