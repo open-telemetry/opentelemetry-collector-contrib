@@ -30,10 +30,10 @@ Memory usage for the driver's BlockManager.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | false |
-| state | The state of the memory for which the metric was recorded. | Str: ``used``, ``free`` | false |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | Recommended |
+| state | The state of the memory for which the metric was recorded. | Str: ``used``, ``free`` | Recommended |
 
 ### spark.driver.code_generator.compilation.average_time
 
@@ -125,9 +125,9 @@ Number of stages the DAGScheduler is either running or needs to run.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of the DAGScheduler stages for which the metric was recorded. | Str: ``waiting``, ``running`` | false |
+| status | The status of the DAGScheduler stages for which the metric was recorded. | Str: ``waiting``, ``running`` | Recommended |
 
 ### spark.driver.dag_scheduler.stage.failed
 
@@ -147,9 +147,9 @@ Number of garbage collection operations performed by the driver.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` | false |
+| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` | Recommended |
 
 ### spark.driver.executor.gc.time
 
@@ -161,9 +161,9 @@ Total elapsed time during garbage collection operations performed by the driver.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` | false |
+| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` | Recommended |
 
 ### spark.driver.executor.memory.execution
 
@@ -175,9 +175,9 @@ Amount of execution memory currently used by the driver.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | false |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | Recommended |
 
 ### spark.driver.executor.memory.jvm
 
@@ -189,9 +189,9 @@ Amount of memory used by the driver's JVM.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | false |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | Recommended |
 
 ### spark.driver.executor.memory.pool
 
@@ -203,9 +203,9 @@ Amount of pool memory currently used by the driver.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of pool memory for which the metric was recorded. | Str: ``direct``, ``mapped`` | false |
+| type | The type of pool memory for which the metric was recorded. | Str: ``direct``, ``mapped`` | Recommended |
 
 ### spark.driver.executor.memory.storage
 
@@ -217,9 +217,9 @@ Amount of storage memory currently used by the driver.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | false |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | Recommended |
 
 ### spark.driver.hive_external_catalog.file_cache_hits
 
@@ -343,9 +343,9 @@ Amount of data written and read during shuffle operations for this executor.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` | false |
+| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` | Recommended |
 
 ### spark.executor.storage_memory.usage
 
@@ -357,10 +357,10 @@ The executor's storage memory usage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | false |
-| state | The state of the memory for which the metric was recorded. | Str: ``used``, ``free`` | false |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` | Recommended |
+| state | The state of the memory for which the metric was recorded. | Str: ``used``, ``free`` | Recommended |
 
 ### spark.executor.task.active
 
@@ -388,9 +388,9 @@ Number of tasks with a specific result in this executor.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| result | The result of the executor tasks for which the metric was recorded. | Str: ``completed``, ``failed`` | false |
+| result | The result of the executor tasks for which the metric was recorded. | Str: ``completed``, ``failed`` | Recommended |
 
 ### spark.executor.time
 
@@ -418,9 +418,9 @@ Number of stages with a specific result in this job.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| result | The result of the job stages or tasks for which the metric was recorded. | Str: ``completed``, ``failed``, ``skipped`` | false |
+| result | The result of the job stages or tasks for which the metric was recorded. | Str: ``completed``, ``failed``, ``skipped`` | Recommended |
 
 ### spark.job.task.active
 
@@ -440,9 +440,9 @@ Number of tasks with a specific result in this job.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| result | The result of the job stages or tasks for which the metric was recorded. | Str: ``completed``, ``failed``, ``skipped`` | false |
+| result | The result of the job stages or tasks for which the metric was recorded. | Str: ``completed``, ``failed``, ``skipped`` | Recommended |
 
 ### spark.stage.disk.spilled
 
@@ -478,9 +478,9 @@ Number of records written and read in this stage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` | false |
+| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` | Recommended |
 
 ### spark.stage.io.size
 
@@ -492,9 +492,9 @@ Amount of data written and read at this stage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` | false |
+| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` | Recommended |
 
 ### spark.stage.jvm_gc_time
 
@@ -530,9 +530,9 @@ Number of blocks fetched in shuffle operations in this stage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| source | The source from which data was fetched for the metric. | Str: ``local``, ``remote`` | false |
+| source | The source from which data was fetched for the metric. | Str: ``local``, ``remote`` | Recommended |
 
 ### spark.stage.shuffle.fetch_wait_time
 
@@ -560,9 +560,9 @@ Amount of data read in shuffle operations in this stage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| source | The source from which data was fetched for the metric. | Str: ``local``, ``remote`` | false |
+| source | The source from which data was fetched for the metric. | Str: ``local``, ``remote`` | Recommended |
 
 ### spark.stage.shuffle.io.records
 
@@ -574,9 +574,9 @@ Number of records written or read in shuffle operations in this stage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` | false |
+| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` | Recommended |
 
 ### spark.stage.shuffle.io.write.size
 
@@ -604,12 +604,12 @@ A one-hot encoding representing the status of this stage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| active | Whether the stage for which the metric was recorded is active. | Any Bool | false |
-| complete | Whether the stage for which the metric was recorded is complete. | Any Bool | false |
-| pending | Whether the stage for which the metric was recorded is pending. | Any Bool | false |
-| failed | Whether the stage for which the metric was recorded is failed. | Any Bool | false |
+| active | Whether the stage for which the metric was recorded is active. | Any Bool | Recommended |
+| complete | Whether the stage for which the metric was recorded is complete. | Any Bool | Recommended |
+| pending | Whether the stage for which the metric was recorded is pending. | Any Bool | Recommended |
+| failed | Whether the stage for which the metric was recorded is failed. | Any Bool | Recommended |
 
 ### spark.stage.task.active
 
@@ -629,9 +629,9 @@ Number of tasks with a specific result in this stage.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| result | The result of the stage tasks for which the metric was recorded. | Str: ``completed``, ``failed``, ``killed`` | false |
+| result | The result of the stage tasks for which the metric was recorded. | Str: ``completed``, ``failed``, ``killed`` | Recommended |
 
 ### spark.stage.task.result_size
 

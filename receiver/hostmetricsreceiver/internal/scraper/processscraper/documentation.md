@@ -22,9 +22,9 @@ Total CPU seconds broken down by different states.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` | false |
+| state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` | Recommended |
 
 ### process.disk.io
 
@@ -36,9 +36,9 @@ Disk bytes transferred.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` | false |
+| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` | Recommended |
 
 ### process.memory.usage
 
@@ -78,9 +78,9 @@ This metric is only available on Linux.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Type of context switched. | Str: ``involuntary``, ``voluntary`` | false |
+| type | Type of context switched. | Str: ``involuntary``, ``voluntary`` | Recommended |
 
 ### process.cpu.utilization
 
@@ -92,9 +92,9 @@ Percentage of total CPU time used by the process since last scrape, expressed as
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` | false |
+| state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` | Recommended |
 
 ### process.disk.operations
 
@@ -106,9 +106,9 @@ Number of disk operations performed by the process.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` | false |
+| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` | Recommended |
 
 ### process.handles
 
@@ -150,9 +150,9 @@ This metric is only available on Linux.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Type of memory paging fault. | Str: ``major``, ``minor`` | false |
+| type | Type of memory paging fault. | Str: ``major``, ``minor`` | Recommended |
 
 ### process.signals_pending
 

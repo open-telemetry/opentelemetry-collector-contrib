@@ -22,10 +22,10 @@ Number of bytes received on the interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
 
 ### cisco.interface.receive.errors
 
@@ -37,10 +37,10 @@ Number of receive errors on the interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
 
 ### cisco.interface.transmit.bytes
 
@@ -52,10 +52,10 @@ Number of bytes transmitted on the interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
 
 ### cisco.interface.transmit.errors
 
@@ -67,10 +67,10 @@ Number of transmit errors on the interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
 
 ### cisco.interface.up
 
@@ -82,10 +82,10 @@ Interface operational status (1 for up, 0 for down)
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
 
 ### cisco.system.cpu.utilization
 

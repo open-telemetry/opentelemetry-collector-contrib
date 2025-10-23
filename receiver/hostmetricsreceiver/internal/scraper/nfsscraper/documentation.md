@@ -22,9 +22,9 @@ Reports the count of kernel NFS client TCP segments and UDP datagrams handled.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| network.transport | OSI transport layer or inter-process communication method. | Str: ``udp``, ``tcp`` | false |
+| network.transport | OSI transport layer or inter-process communication method. | Str: ``udp``, ``tcp`` | Recommended |
 
 ### nfs.client.net.tcp.connection.accepted
 
@@ -44,10 +44,10 @@ Reports the count of kernel NFSv4+ client operations
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| onc_rpc.version | ONC/Sun RPC program version. | Any Int | false |
-| nfs.operation.name | NFSv4+ operation name. | Any Str | false |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int | Recommended |
+| nfs.operation.name | NFSv4+ operation name. | Any Str | Recommended |
 
 ### nfs.client.procedure.count
 
@@ -59,10 +59,10 @@ Reports the count of kernel NFS client procedures
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| onc_rpc.version | ONC/Sun RPC program version. | Any Int | false |
-| onc_rpc.procedure.name | ONC/Sun RPC procedure name. | Any Str | false |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int | Recommended |
+| onc_rpc.procedure.name | ONC/Sun RPC procedure name. | Any Str | Recommended |
 
 ### nfs.client.rpc.authrefresh.count
 
@@ -106,9 +106,9 @@ Reports the count of kernel NFS server bytes returned to receive and transmit (r
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| network.io.direction | The network IO operation direction. | Str: ``transmit``, ``receive`` | false |
+| network.io.direction | The network IO operation direction. | Str: ``transmit``, ``receive`` | Recommended |
 
 ### nfs.server.net.count
 
@@ -120,9 +120,9 @@ Reports the count of kernel NFS server TCP segments and UDP datagrams handled.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| network.transport | OSI transport layer or inter-process communication method. | Str: ``udp``, ``tcp`` | false |
+| network.transport | OSI transport layer or inter-process communication method. | Str: ``udp``, ``tcp`` | Recommended |
 
 ### nfs.server.net.tcp.connection.accepted
 
@@ -142,10 +142,10 @@ Reports the count of kernel NFSv4+ server operations
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| onc_rpc.version | ONC/Sun RPC program version. | Any Int | false |
-| nfs.operation.name | NFSv4+ operation name. | Any Str | false |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int | Recommended |
+| nfs.operation.name | NFSv4+ operation name. | Any Str | Recommended |
 
 ### nfs.server.procedure.count
 
@@ -157,10 +157,10 @@ Reports the count of kernel NFS server procedures
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| onc_rpc.version | ONC/Sun RPC program version. | Any Int | false |
-| onc_rpc.procedure.name | ONC/Sun RPC procedure name. | Any Str | false |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int | Recommended |
+| onc_rpc.procedure.name | ONC/Sun RPC procedure name. | Any Str | Recommended |
 
 ### nfs.server.repcache.requests
 
@@ -172,9 +172,9 @@ Reports the kernel NFS server reply cache request count by cache hit status.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| nfs.server.repcache.status | NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'. | Str: ``hit``, ``miss``, ``nocache`` | false |
+| nfs.server.repcache.status | NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'. | Str: ``hit``, ``miss``, ``nocache`` | Recommended |
 
 ### nfs.server.rpc.count
 
@@ -186,9 +186,9 @@ Reports the count of kernel NFS server RPCs handled.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| error.type | Describes a class of error the operation ended with. | Str: ``format``, ``auth``, ``client`` | false |
+| error.type | Describes a class of error the operation ended with. | Str: ``format``, ``auth``, ``client`` | Recommended |
 
 ### nfs.server.thread.count
 

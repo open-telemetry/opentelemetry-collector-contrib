@@ -1,0 +1,28 @@
+{
+    "firewall_name": "test-firewall",
+    "availability_zone": "us-east-1a",
+    "event_timestamp": "2025-10-20T10:30:45.123Z",
+    "event": {
+        "event_type": "tls",
+        "flow_id": 1234567892,
+        "src_ip": "192.168.1.100",
+        "src_port": 54323,
+        "dest_ip": "10.0.1.52",
+        "dest_port": 443,
+        "proto": "TCP",
+        "sni": "example.com",
+        "revocation_check": {
+            "leaf_cert_fpr": "1234567890EXAMPLE0987654321",
+            "action": "DROP",
+            "status": "REVOKED"
+        },
+        "tls_error": {
+            "error_message": "Certificate verification failed"
+        },
+        "tls": {
+            "subject": "CN=example.com",
+            "issuer": "CN=Let's Encrypt Authority X3,O=Let's Encrypt,C=US",
+            "session_resumed": true
+        }
+    }
+}

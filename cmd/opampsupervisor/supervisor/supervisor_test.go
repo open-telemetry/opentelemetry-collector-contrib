@@ -2189,6 +2189,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 
 	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
 		newSupervisor := &Supervisor{
+			runCtx:            t.Context(),
 			telemetrySettings: newNopTelemetrySettings(),
 			persistentState:   &persistentState{InstanceID: testUUID},
 			cfgState:          &atomic.Value{},

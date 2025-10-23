@@ -367,6 +367,7 @@ jobs:
           # list of components that require privileged (sudo) access for
           # its integration tests `go test -exec sudo -run Sudo -tags=integration`
           - extension/cgroupruntimeextension
+          - receiver/icmpcheckreceiver
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:

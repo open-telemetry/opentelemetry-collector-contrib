@@ -38,9 +38,9 @@ Number of buffers written.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| source | The source of a buffer write. | Str: ``backend``, ``backend_fsync``, ``checkpoints``, ``bgwriter`` | false |
+| source | The source of a buffer write. | Str: ``backend``, ``backend_fsync``, ``checkpoints``, ``bgwriter`` | Recommended |
 
 ### postgresql.bgwriter.checkpoint.count
 
@@ -52,9 +52,9 @@ The number of checkpoints performed.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of checkpoint state. | Str: ``requested``, ``scheduled`` | false |
+| type | The type of checkpoint state. | Str: ``requested``, ``scheduled`` | Recommended |
 
 ### postgresql.bgwriter.duration
 
@@ -66,9 +66,9 @@ Total time spent writing and syncing files to disk by checkpoints.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of time spent during the checkpoint. | Str: ``sync``, ``write`` | false |
+| type | The type of time spent during the checkpoint. | Str: ``sync``, ``write`` | Recommended |
 
 ### postgresql.bgwriter.maxwritten
 
@@ -88,9 +88,9 @@ The number of blocks read.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| source | The block read source type. | Str: ``heap_read``, ``heap_hit``, ``idx_read``, ``idx_hit``, ``toast_read``, ``toast_hit``, ``tidx_read``, ``tidx_hit`` | false |
+| source | The block read source type. | Str: ``heap_read``, ``heap_hit``, ``idx_read``, ``idx_hit``, ``toast_read``, ``toast_hit``, ``tidx_read``, ``tidx_hit`` | Recommended |
 
 ### postgresql.commits
 
@@ -150,9 +150,9 @@ The number of db row operations.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` | false |
+| operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` | Recommended |
 
 ### postgresql.replication.data_delay
 
@@ -164,9 +164,9 @@ The amount of data delayed in replication.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str | false |
+| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str | Recommended |
 
 ### postgresql.rollbacks
 
@@ -186,9 +186,9 @@ The number of rows in the database.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The tuple (row) state. | Str: ``dead``, ``live`` | false |
+| state | The tuple (row) state. | Str: ``dead``, ``live`` | Recommended |
 
 ### postgresql.table.count
 
@@ -212,7 +212,7 @@ Number of times a table has manually been vacuumed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {vacuums} | Sum | Int | Cumulative | true | development |
+| {vacuum} | Sum | Int | Cumulative | true | development |
 
 ### postgresql.wal.age
 
@@ -238,10 +238,10 @@ This metric requires WAL to be enabled with at least one replica.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` | false |
-| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str | false |
+| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` | Recommended |
+| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str | Recommended |
 
 ## Optional Metrics
 
@@ -279,11 +279,11 @@ The number of database locks.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str | false |
-| mode | Name of the lock mode held or desired by the process. | Any Str | false |
-| lock_type | Type of the lockable object. | Any Str | false |
+| relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str | Recommended |
+| mode | Name of the lock mode held or desired by the process. | Any Str | Recommended |
+| lock_type | Type of the lockable object. | Any Str | Recommended |
 
 ### postgresql.deadlocks
 
@@ -303,9 +303,9 @@ The number of calls made to a function. Requires `track_functions=pl|all` in Pos
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| function | The name of the function. | Any Str | false |
+| function | The name of the function. | Any Str | Recommended |
 
 ### postgresql.sequential_scans
 
@@ -384,10 +384,10 @@ This metric requires WAL to be enabled with at least one replica.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` | false |
-| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str | false |
+| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` | Recommended |
+| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str | Recommended |
 
 ## Default Events
 

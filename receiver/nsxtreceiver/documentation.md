@@ -22,9 +22,9 @@ The average amount of CPU being used by the node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` | false |
+| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` | Recommended |
 
 ### nsxt.node.filesystem.usage
 
@@ -36,9 +36,9 @@ The amount of storage space used by the node.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of storage space. | Str: ``used``, ``available`` | false |
+| state | The state of storage space. | Str: ``used``, ``available`` | Recommended |
 
 ### nsxt.node.filesystem.utilization
 
@@ -74,9 +74,9 @@ The number of bytes which have flowed through the network interface.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | false |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | Recommended |
 
 ### nsxt.node.network.packet.count
 
@@ -88,10 +88,10 @@ The number of packets which have flowed through the network interface on the nod
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | false |
-| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` | false |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | Recommended |
+| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` | Recommended |
 
 ## Resource Attributes
 

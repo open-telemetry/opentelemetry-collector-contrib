@@ -20,7 +20,6 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/util"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -195,7 +194,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				Attributes: attribute.NewSet(signalAttrs...),
 				Exemplars:  w.exemplars,
 			}
-			util.ExpoHistToSDKExponentialDataPoint(hist, dp)
+			expoHistToSDKExponentialDataPoint(hist, dp)
 
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
@@ -233,4 +232,30 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 
 	w.logger.Info("metrics generated", zap.Int64("metrics", i))
 	w.wg.Done()
+}
+
+// expoHistToSDKExponentialDataPoint copies `lightstep/go-expohisto` structure.Histogram to
+// metricdata.ExponentialHistogramDataPoint
+func expoHistToSDKExponentialDataPoint(agg *structure.Histogram[float64], dp *metricdata.ExponentialHistogramDataPoint[int64]) {
+	dp.Count = agg.Count()
+	dp.Sum = int64(agg.Sum())
+	dp.ZeroCount = agg.ZeroCount()
+	dp.Scale = agg.Scale()
+	dp.ZeroThreshold = 0.0 // go-expohisto doesn't expose ZeroThreshold, use default
+
+	// Convert positive buckets
+	posBuckets := agg.Positive()
+	dp.PositiveBucket.Offset = posBuckets.Offset()
+	dp.PositiveBucket.Counts = make([]uint64, posBuckets.Len())
+	for i := uint32(0); i < posBuckets.Len(); i++ {
+		dp.PositiveBucket.Counts[i] = posBuckets.At(i)
+	}
+
+	// Convert negative buckets
+	negBuckets := agg.Negative()
+	dp.NegativeBucket.Offset = negBuckets.Offset()
+	dp.NegativeBucket.Counts = make([]uint64, negBuckets.Len())
+	for i := uint32(0); i < negBuckets.Len(); i++ {
+		dp.NegativeBucket.Counts[i] = negBuckets.At(i)
+	}
 }

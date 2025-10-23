@@ -166,10 +166,10 @@ Count of active sessions.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| session_type | Session type | Any Str | false |
-| session_status | Session status | Any Str | false |
+| session_type | Session type | Any Str | Recommended |
+| session_status | Session status | Any Str | Recommended |
 
 ### oracledb.tablespace_size.limit
 
@@ -181,9 +181,9 @@ Maximum size of tablespace in bytes, -1 if unlimited.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| tablespace_name | Tablespace name | Any Str | false |
+| tablespace_name | Tablespace name | Any Str | Recommended |
 
 ### oracledb.tablespace_size.usage
 
@@ -195,9 +195,9 @@ Used tablespace in bytes.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| tablespace_name | Tablespace name | Any Str | false |
+| tablespace_name | Tablespace name | Any Str | Recommended |
 
 ### oracledb.transactions.limit
 
