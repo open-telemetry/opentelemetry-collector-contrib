@@ -38,15 +38,9 @@ func newPrometheusReceiverWrapper(params receiver.Settings, cfg *Config, consume
 func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	pFactory := prometheusreceiver.NewFactory()
 
-	pConfig, err := getPrometheusConfigWrapper(prw.config, prw.params)
+	pConfig, err := getPrometheusConfigWrapperWithValidation(prw.config, prw.params)
 	if err != nil {
-		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
-	}
-	if err = pConfig.PrometheusConfig.Reload(); err != nil {
-		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
-	}
-	if err = pConfig.PrometheusConfig.Validate(); err != nil {
-		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
+		return err
 	}
 
 	params := receiver.Settings{
@@ -61,6 +55,20 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 
 	prw.prometheusReceiver = pr
 	return prw.prometheusReceiver.Start(ctx, host)
+}
+
+func getPrometheusConfigWrapperWithValidation(cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
+	pConfig, err := getPrometheusConfigWrapper(cfg, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create prometheus receiver config: %w", err)
+	}
+	if err = pConfig.PrometheusConfig.Reload(); err != nil {
+		return nil, fmt.Errorf("failed to reload prometheus receiver config: %w", err)
+	}
+	if err = pConfig.PrometheusConfig.Validate(); err != nil {
+		return nil, fmt.Errorf("failed to validate prometheus receiver config: %w", err)
+	}
+	return pConfig, nil
 }
 
 // Deprecated: [v0.55.0] Use getPrometheusConfig instead.
