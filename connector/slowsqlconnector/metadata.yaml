@@ -1,0 +1,11 @@
+type: slowsql
+
+status:
+  class: connector
+  stability:
+    development: [traces_to_logs]
+  codeowners:
+    active: [JaredTan95, Frapschen, atoulme]
+
+tests:
+  config:
