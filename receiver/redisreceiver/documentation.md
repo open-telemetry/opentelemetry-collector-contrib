@@ -282,9 +282,9 @@ metrics:
 
 Indicate Redis cluster is enabled
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### redis.cluster.known_nodes
 
