@@ -19,6 +19,7 @@ import (
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 )
@@ -61,6 +62,22 @@ const (
 	gcpAppHubWorkloadEnvironmentTypeField = "workload.environment_type"
 	gcpAppHubWorkloadCriticalityTypeField = "workload.criticality_type"
 )
+
+// getEncodingFormat maps GCP log types to encoding format values
+func getEncodingFormat(logType string) string {
+	switch logType {
+	case auditlog.ActivityLogNameSuffix,
+		auditlog.DataAccessLogNameSuffix,
+		auditlog.SystemEventLogNameSuffix,
+		auditlog.PolicyLogNameSuffix:
+		return constants.GCPFormatAuditLog
+	case vpcflowlog.NetworkManagementNameSuffix,
+		vpcflowlog.ComputeNameSuffix:
+		return constants.GCPFormatVPCFlowLog
+	default:
+		return ""
+	}
+}
 
 // See: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
 type logEntry struct {
@@ -496,7 +513,7 @@ func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg C
 
 // handleLogEntryFields will place each entry of logEntry as either an attribute of the log,
 // or as part of the log body, in case of payload.
-func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, cfg Config) error {
+func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, logType string, cfg Config) error {
 	ts := log.Timestamp
 	if ts == nil {
 		return errors.New("missing timestamp")
@@ -509,10 +526,6 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogReco
 
 	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
 
-	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)
-	if errLogName != nil {
-		return fmt.Errorf("failed to handle log name field: %w", errLogName)
-	}
 	if err := handlePayload(logType, log, logRecord, cfg); err != nil {
 		return fmt.Errorf("failed to handle payload field: %w", err)
 	}
