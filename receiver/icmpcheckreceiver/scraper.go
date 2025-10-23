@@ -109,29 +109,18 @@ func addMetrics(result pingResult, mb *metadata.MetricsBuilder, logger *zap.Logg
 	}
 
 	// Record all metrics - they will be filtered by MetricsBuilderConfig
-	mb.RecordPingRttMinDataPoint(
-		now,
-		result.stats.minRtt.Milliseconds(),
-		result.targetHost,
-		result.targetIP)
+	mb.RecordPingRttMinDataPoint(now, result.stats.minRtt.Milliseconds())
+	mb.RecordPingRttMaxDataPoint(now, result.stats.maxRtt.Milliseconds())
+	mb.RecordPingRttAvgDataPoint(now, result.stats.avgRtt.Milliseconds())
+	mb.RecordPingRttStddevDataPoint(now, result.stats.stdDevRtt.Milliseconds())
+	mb.RecordPingLossRatioDataPoint(now, result.stats.lossRatio)
 
-	mb.RecordPingRttMaxDataPoint(
-		now,
-		result.stats.maxRtt.Milliseconds(),
-		result.targetHost,
-		result.targetIP)
+	// Record resource attributes
+	rb := mb.NewResourceBuilder()
+	rb.SetNetPeerName(result.targetHost)
+	rb.SetNetPeerIP(result.targetIP)
 
-	mb.RecordPingRttAvgDataPoint(
-		now,
-		result.stats.avgRtt.Milliseconds(),
-		result.targetHost,
-		result.targetIP)
-
-	mb.RecordPingLossRatioDataPoint(
-		now,
-		result.stats.lossRato,
-		result.targetHost,
-		result.targetIP)
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func newScraper(cfg *Config, settings receiver.Settings) *icmpCheckScraper {

@@ -79,9 +79,9 @@ func TestIntegrationWithSudo(t *testing.T) {
 		),
 		scraperinttest.WithCompareTimeout(30*time.Second),
 		scraperinttest.WithCompareOptions(
-			pmetrictest.IgnoreMetricValues("ping.rtt.max", "ping.rtt.min", "ping.rtt.avg"),
-			pmetrictest.IgnoreMetricAttributeValue("net.peer.ip"),
-			pmetrictest.IgnoreMetricAttributeValue("net.peer.name"),
+			pmetrictest.IgnoreMetricValues("ping.rtt.max", "ping.rtt.min", "ping.rtt.avg", "ping.rtt.stddev"),
+			pmetrictest.IgnoreResourceAttributeValue("net.peer.name"),
+			pmetrictest.IgnoreResourceAttributeValue("net.peer.ip"),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
