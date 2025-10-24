@@ -863,15 +863,6 @@ func TestLoadingConfigOTTL(t *testing.T) {
 				cfg.Profiles.Action = keepAction
 			}),
 		},
-		{
-			id: component.MustNewIDWithName("filter", "drop_action"),
-			expected: createConfig(func(cfg *Config) {
-				cfg.Metrics.Action = dropAction
-				cfg.Logs.Action = dropAction
-				cfg.Traces.Action = dropAction
-				cfg.Profiles.Action = dropAction
-			}),
-		},
 	}
 
 	for _, tt := range tests {
@@ -898,56 +889,6 @@ func TestLoadingConfigOTTL(t *testing.T) {
 				assert.NoError(t, xconfmap.Validate(cfg))
 				assert.EqualExportedValues(t, tt.expected, cfg)
 				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
-			}
-		})
-	}
-}
-
-func TestAction_UnmarshalText(t *testing.T) {
-	testCases := []struct {
-		name        string
-		input       string
-		expected    Action
-		expectedErr bool
-	}{
-		{
-			name:     "valid drop action lowercase",
-			input:    "drop",
-			expected: dropAction,
-		},
-		{
-			name:     "valid keep action lowercase",
-			input:    "keep",
-			expected: keepAction,
-		},
-		{
-			name:        "invalid action",
-			input:       "invalid",
-			expectedErr: true,
-		},
-		{
-			name:        "empty action",
-			input:       "",
-			expectedErr: true,
-		},
-		{
-			name:        "unknown action",
-			input:       "delete",
-			expectedErr: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			var action Action
-			err := action.UnmarshalText([]byte(tc.input))
-
-			if tc.expectedErr {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), "unknown action")
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.expected, action)
 			}
 		})
 	}

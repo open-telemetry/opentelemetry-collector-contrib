@@ -83,19 +83,19 @@ filter/bad_action:
     action: "invalid"
 filter/keep_action:
   metrics:
-    action: "keep"
+    action: keep
   logs:
-    action: "keep"
+    action: keep
   traces:
-    action: "keep"
+    action: keep
   profiles:
-    action: "keep"
+    action: keep
 filter/drop_action:
   metrics:
-    action: "drop"
+    action: drop
   logs:
-    action: "drop"
+    action: drop
   traces:
-    action: "drop"
+    action: drop
   profiles:
-    action: "drop"
+    action: drop

@@ -65,9 +65,7 @@ type MetricFilters struct {
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filterconfig.MetricMatchProperties `mapstructure:"exclude"`
 
-	// Action determines the behavior when conditions match.
-	// "drop" (default): logs matching any condition are dropped.
-	// "keep": logs matching any condition are kept, all others are dropped.
+	// Action specifies the behavior when conditions match.
 	Action Action `mapstructure:"action"`
 
 	// RegexpConfig specifies options for the regexp match type
@@ -86,9 +84,7 @@ type MetricFilters struct {
 
 // TraceFilters filters by OTTL conditions
 type TraceFilters struct {
-	// Action determines the behavior when conditions match.
-	// "drop" (default): logs matching any condition are dropped.
-	// "keep": logs matching any condition are kept, all others are dropped.
+	// Action specifies the behavior when conditions match.
 	Action Action `mapstructure:"action"`
 
 	// SpanConditions is a list of OTTL conditions for an ottlspan context.
@@ -113,9 +109,7 @@ type LogFilters struct {
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *LogMatchProperties `mapstructure:"exclude"`
 
-	// Action determines the behavior when conditions match.
-	// "drop" (default): logs matching any condition are dropped.
-	// "keep": logs matching any condition are kept, all others are dropped.
+	// Action specifies the behavior when conditions match.
 	Action Action `mapstructure:"action"`
 
 	// LogConditions is a list of OTTL conditions for an ottllog context.
@@ -296,9 +290,7 @@ func (lmp LogSeverityNumberMatchProperties) validate() error {
 type ProfileFilters struct {
 	_ struct{} // prevent unkeyed literals
 
-	// Action determines the behavior when conditions match.
-	// "drop" (default): logs matching any condition are dropped.
-	// "keep": logs matching any condition are kept, all others are dropped.
+	// Action specifies the behavior when conditions match.
 	Action Action `mapstructure:"action"`
 
 	// ProfileConditions is a list of OTTL conditions for an ottlprofile context.
@@ -307,13 +299,13 @@ type ProfileFilters struct {
 	ProfileConditions []string `mapstructure:"profile"`
 }
 
-// Action specifies the action to take on logs that match the conditions.
+// Action specifies the behavior when conditions match.
 type Action string
 
 const (
-	// dropAction drops logs that match the conditions and retains all others.
+	// dropAction drops signals that match the conditions and retains all others.
 	dropAction = Action("drop")
-	// keepAction retains logs that match the conditions and drops all others.
+	// keepAction retains signals that match the conditions and drops all others.
 	keepAction = Action("keep")
 )
 
