@@ -46,7 +46,7 @@ func TestHandleLogLine(t *testing.T) {
 		{
 			name:        "invalid log entry fields",
 			logLine:     []byte(`{"logName": "invalid"}`),
-			expectedErr: `failed to handle log name field`,
+			expectedErr: `failed to handle log entry`,
 		},
 		{
 			name: "valid",
