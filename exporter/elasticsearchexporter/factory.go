@@ -87,6 +87,7 @@ func createDefaultConfig() component.Config {
 			LogFailedDocsInputRateLimit: time.Second,
 		},
 		IncludeSourceOnError: nil,
+		LoadBalance:          true,
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/klauspost/compress/gzip"
@@ -21,6 +22,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
+
+var _ elastictransport.Selector = &singleSelector{}
 
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
@@ -134,6 +137,11 @@ func newElasticsearchClient(
 		maxRetries = config.Retry.MaxRetries
 	}
 
+	var selector elastictransport.Selector
+	if !config.LoadBalance {
+		selector = &singleSelector{}
+	}
+
 	return elasticsearchv8.NewClient(elasticsearchv8.Config{
 		Transport: httpClient.Transport,
 
@@ -164,7 +172,8 @@ func newElasticsearchClient(
 			telemetry.TracerProvider,
 			false, /* captureSearchBody */
 		),
-		Logger: esLogger,
+		Logger:   esLogger,
+		Selector: selector,
 	})
 }
 
@@ -186,4 +195,29 @@ func httpRecoverableErrorStatus(statusCode int) bool {
 	// state, we will still wait until we get an actual 200 OK before changing
 	// our state back).
 	return statusCode >= 300 && statusCode != http.StatusConflict
+}
+
+// singleSelector always returns the same connection from the pool
+// until the connection fails in which case the next conn is selected
+type singleSelector struct{}
+
+func (s *singleSelector) Select(conn []*elastictransport.Connection) (*elastictransport.Connection, error) {
+
+	// Select receives a slice of live connections
+	// we always return the first element from the live list until it is marked as dead
+	// dead connection are automtically removed from the live list
+
+	connection := conn[0]
+	connection.Lock()
+	defer connection.Unlock()
+
+	// avoiding a possible race condition here
+	// where a connection is marked dead but not removed from the live list yet
+	// https://github.com/elastic/elastic-transport-go/blob/main/elastictransport/connection.go#L187
+	// hence we double check the state of the connection here
+	if connection.IsDead {
+		return conn[1], nil
+	}
+
+	return connection, nil
 }
