@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 )
 
 var _ encoding.LogsUnmarshalerExtension = (*ext)(nil)
@@ -62,24 +61,8 @@ func (ex *ext) handleLogLine(logs plog.Logs, logLine []byte) error {
 
 	rl := logs.ResourceLogs().AppendEmpty()
 	r := rl.Resource()
-
-	// Parse log name to extract log type and populate resource attributes
-	resourceAttrs := r.Attributes()
-	logType, errLogName := handleLogNameField(log.LogName, resourceAttrs)
-	if errLogName != nil {
-		return fmt.Errorf("failed to handle log name field: %w", errLogName)
-	}
-
-	scopeLogs := rl.ScopeLogs().AppendEmpty()
-
-	// Get encoding format and set scope attribute if we have a recognized log type
-	encodingFormat := getEncodingFormat(logType)
-	if encodingFormat != "" {
-		scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
-	}
-
-	logRecord := scopeLogs.LogRecords().AppendEmpty()
-	if err := handleLogEntryFields(r.Attributes(), logRecord, log, encodingFormat, ex.config); err != nil {
+	logRecord := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	if err := handleLogEntryFields(r.Attributes(), logRecord, log, ex.config); err != nil {
 		return fmt.Errorf("failed to handle log entry: %w", err)
 	}
 
