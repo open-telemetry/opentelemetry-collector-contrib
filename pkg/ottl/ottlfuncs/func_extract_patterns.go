@@ -16,7 +16,7 @@ import (
 
 type ExtractPatternsArguments[K any] struct {
 	Target  ottl.StringGetter[K]
-	Pattern string
+	Pattern ottl.StringGetter[K]
 }
 
 func NewExtractPatternsFactory[K any]() ottl.Factory[K] {
@@ -33,36 +33,67 @@ func createExtractPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arg
 	return extractPatterns(args.Target, args.Pattern)
 }
 
-func extractPatterns[K any](target ottl.StringGetter[K], pattern string) (ottl.ExprFunc[K], error) {
-	r, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to ExtractPatterns is not a valid pattern: %w", err)
+func extractPatterns[K any](target, pattern ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+	literalPattern, ok := ottl.GetLiteralValue(pattern)
+	var compiledPattern *regexp.Regexp
+	var err error
+	compiled := false
+	if ok {
+		compiledPattern, err = regexp.Compile(literalPattern)
+		if err != nil {
+			return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "ExtractPatterns", literalPattern, err)
+		}
+		compiled = true
 	}
 
-	namedCaptureGroups := 0
-	for _, groupName := range r.SubexpNames() {
-		if groupName != "" {
-			namedCaptureGroups++
+	if compiled {
+		namedCaptureGroups := 0
+		for _, groupName := range compiledPattern.SubexpNames() {
+			if groupName != "" {
+				namedCaptureGroups++
+			}
+		}
+
+		if namedCaptureGroups == 0 {
+			return nil, errors.New("at least 1 named capture group must be supplied in the given regex")
 		}
 	}
 
-	if namedCaptureGroups == 0 {
-		return nil, errors.New("at least 1 named capture group must be supplied in the given regex")
-	}
-
 	return func(ctx context.Context, tCtx K) (any, error) {
+		cp := compiledPattern
+		if cp == nil {
+			patternVal, err := pattern.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			cp, err = regexp.Compile(patternVal)
+			if err != nil {
+				return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "ExtractPatterns", patternVal, err)
+			}
+		}
+		namedCaptureGroups := 0
+		for _, groupName := range cp.SubexpNames() {
+			if groupName != "" {
+				namedCaptureGroups++
+			}
+		}
+
+		if namedCaptureGroups == 0 {
+			return nil, errors.New("at least 1 named capture group must be supplied in the given regex")
+		}
+
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		matches := r.FindStringSubmatch(val)
+		matches := cp.FindStringSubmatch(val)
 		if matches == nil {
 			return pcommon.NewMap(), nil
 		}
 
 		result := pcommon.NewMap()
-		for i, subexp := range r.SubexpNames() {
+		for i, subexp := range cp.SubexpNames() {
 			if i == 0 {
 				// Skip whole match
 				continue
