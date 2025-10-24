@@ -283,6 +283,7 @@ The processor can be configured to set the
 The Extracted deployment name is: `opentelemetry-collector`.
 
 > Please note, if your pods are managed by a replicaset but not by a deployment the `k8s.deployment.name` will be set incorrectly. For example, if the replicaset is named `opentelemetry-collector-6c45f8d6f6`, the feature will still set the deployment name of the pod to  `opentelemetry-collector` because it skips watching for the deployment and has no context if the pod is managed by a deployment or a replicaset.
+Another edge case to be aware of is when the deployment name is long. Kubernetes may truncate it in the ReplicaSet name to ensure there is enough space for the pod template hash suffix, so the full name fits within the DNS subdomain limit (253 characters). In such cases, the extracted k8s.deployment.name will be the truncated form, not the original full deployment name.
 
 Example:
 
