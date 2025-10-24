@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/exporter"
+
 	"github.com/DataDog/datadog-agent/comp/logs/agent/config"
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl"
@@ -15,7 +17,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/logs/sources"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
-	"go.opentelemetry.io/collector/exporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
@@ -46,11 +47,19 @@ func newLogsAgentExporter(
 		agentcomponents.WithLogsDefaults(),
 		agentcomponents.WithProxy(cfg),
 	)
+	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgentConfig := &logsagentexporter.Config{
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,
+		OrchestratorConfig: logsagentexporter.OrchestratorConfig{
+			ClusterName: cfg.Orchestrator.ClusterName,
+			Hostname:    hostnameComponent,
+			Key:         string(cfg.API.Key),
+			Site:        cfg.API.Site,
+			Endpoints:   toEndpointMap(cfg.Orchestrator.Endpoints),
+		},
 	}
-	hostnameComponent := logs.NewHostnameService(sourceProvider)
+
 	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
 		Log:          logComponent,
 		Config:       cfgComponent,
@@ -75,4 +84,12 @@ func newLogsAgentExporter(
 		return nil, &logsagentexporter.Exporter{}, fmt.Errorf("failed to create logs agent exporter: %w", err)
 	}
 	return logsAgent, logsAgentExporter, nil
+}
+
+func toEndpointMap(endpoints []datadogconfig.OrchestratorEndpoint) map[string]string {
+	endpointMap := make(map[string]string, len(endpoints))
+	for _, ep := range endpoints {
+		endpointMap[ep.Endpoint] = string(ep.Key)
+	}
+	return endpointMap
 }

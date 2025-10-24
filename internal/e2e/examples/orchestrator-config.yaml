@@ -1,0 +1,57 @@
+receivers:
+  k8sobjects:
+    auth_type: serviceAccount
+    objects:
+      - name: pods
+        mode: pull
+        interval: 15s
+      - name: deployments
+        mode: pull
+        interval: 15s
+      - name: services
+        mode: pull
+        interval: 15s
+      - name: nodes
+        mode: pull
+        interval: 15s
+      - name: namespaces
+        mode: pull
+        interval: 15s
+      - name: events
+        mode: watch
+        group: events.k8s.io
+        namespaces: [default]
+
+processors:
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: "production"
+        action: upsert
+      - key: service.version
+        value: "v1.0.0"
+        action: upsert
+  batch:
+    send_batch_size: 1024
+    timeout: 10s
+
+exporters:
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+      site: ${env:DD_SITE}
+    orchestrator:
+      cluster_name: "my-cluster"
+      use_compression: true
+      compression_level: 6
+      batch_wait: 5
+      cluster_checks_enabled: true
+      collect_events: true
+      leader_election: false
+
+service:
+  pipelines:
+    orchestrator:
+      receivers: [k8sobjects]
+      processors: [resource, batch]
+      exporters: [datadog]
