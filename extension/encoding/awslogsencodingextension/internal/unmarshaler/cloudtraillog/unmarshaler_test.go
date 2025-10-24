@@ -40,6 +40,48 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
 }
 
+func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		logFile      string
+		expectedFile string
+	}{
+		{
+			name:         "Empty Digest",
+			logFile:      "cloudtrail_digest_empty.json",
+			expectedFile: "cloudtrail_digest_empty_expected.yaml",
+		},
+		{
+			name:         "Complete digest",
+			logFile:      "cloudtrail_digest.json",
+			expectedFile: "cloudtrail_digest_expected.yaml",
+		},
+	}
+
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := readLogFile(t, filesDirectory, tt.logFile)
+			logs, err := unmarshaler.UnmarshalAWSLogs(content)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, tt.expectedFile))
+			require.NoError(t, err)
+
+			compareLogsOptions := []plogtest.CompareLogsOption{
+				plogtest.IgnoreResourceLogsOrder(),
+				plogtest.IgnoreScopeLogsOrder(),
+				plogtest.IgnoreLogRecordsOrder(),
+			}
+
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareLogsOptions...))
+		})
+	}
+}
+
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
 	t.Parallel()
 	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
@@ -54,7 +96,7 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{invalid-json}`))
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.ErrorContains(t, err, "failed to unmarshal CloudTrail logs")
+	require.ErrorContains(t, err, "failed to unmarshal payload as CloudTrail logs")
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T) {
