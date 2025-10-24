@@ -481,6 +481,16 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	scope.CopyTo(scopeSpans.Scope())
 
 	span := scopeSpans.Spans().AppendEmpty()
+	err = span.Attributes().FromRaw(map[string]any{
+		string(semconv.MessagingDestinationNameKey): "users_queue",
+		"messaging.operation.name":                  "receive",
+		string(semconv.DBSystemKey):                 "sql",
+		"db.namespace":                              "users",
+		"db.query.text":                             "SELECT * FROM users WHERE user_id=?",
+		string(semconv.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
+	})
+	require.NoError(t, err)
+
 	span.SetName("client span")
 	span.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
@@ -520,6 +530,15 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  "span": {
 		"id": "1920212223242526",
 		"name": "client span",
+		"action": "receive",
+		"db": {
+		  "instance": "users",
+		  "statement": "SELECT * FROM users WHERE user_id=?",
+		  "type": "sql"
+		},
+		"message": {
+		  "queue": { "name": "users_queue" }
+		},
 		"links": [
 		  {
 			"span_id": "1112131415161718",
@@ -565,6 +584,11 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  "faas": {
 		"id" : "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
 		"trigger": { "type": "api-gateway" }
+	  },
+	  "http": {
+		"response": {
+		  "encoded_body_size": "http.response.encoded_body_size"
+		}
 	  }
 	}`, buf.String())
 }
@@ -634,7 +658,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	record := plog.NewLogRecord()
 	err = record.Attributes().FromRaw(map[string]any{
-		"event.name": "user-password-change",
+		"event.name":                            "user-password-change",
+		string(semconv.HTTPResponseBodySizeKey): 1024,
 	})
 	require.NoError(t, err)
 	observedTimestamp := pcommon.Timestamp(1710273641123456789)
@@ -710,6 +735,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "manufacturer": "Samsung"
 		},
 		"event": {"action": "user-password-change"},
+		"http": { "response": {"encoded_body_size": 1024 }} ,
 		"kubernetes": {
 		  "namespace": "default",
 		  "node": {"name": "node-1"},

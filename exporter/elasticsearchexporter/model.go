@@ -206,11 +206,12 @@ func (ecsModeEncoder) encodeLog(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]string{
-		"event.name":                           "event.action",
-		string(semconv.ExceptionMessageKey):    "error.message",
-		string(semconv.ExceptionStacktraceKey): "error.stacktrace",
-		string(semconv.ExceptionTypeKey):       "error.type",
-		string(semconv.ExceptionEscapedKey):    "event.error.exception.handled",
+		"event.name":                            "event.action",
+		string(semconv.ExceptionMessageKey):     "error.message",
+		string(semconv.ExceptionStacktraceKey):  "error.stacktrace",
+		string(semconv.ExceptionTypeKey):        "error.type",
+		string(semconv.ExceptionEscapedKey):     "event.error.exception.handled",
+		string(semconv.HTTPResponseBodySizeKey): "http.response.encoded_body_size",
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
 	addDataStreamAttributes(&document, "", idx)
@@ -254,7 +255,12 @@ func (ecsModeEncoder) encodeSpan(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	spanAttrsConversionMap := map[string]string{
-		// None at the moment
+		string(semconv.MessagingDestinationNameKey): "span.message.queue.name",
+		"messaging.operation.name":                  "span.action",
+		string(semconv.DBSystemKey):                 "span.db.type",
+		"db.namespace":                              "span.db.instance",
+		"db.query.text":                             "span.db.statement",
+		string(semconv.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
 	}
 
 	// Handle special cases.
