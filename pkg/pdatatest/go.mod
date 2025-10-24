@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.138.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.44.1-0.20251023205830-8038c6949379
-	go.opentelemetry.io/collector/pdata/pprofile v0.138.1-0.20251021231522-c657d5d4e920
-	go.opentelemetry.io/collector/pdata/testdata v0.138.1-0.20251021231522-c657d5d4e920
+	go.opentelemetry.io/collector/pdata/pprofile v0.138.1-0.20251023205830-8038c6949379
+	go.opentelemetry.io/collector/pdata/testdata v0.138.1-0.20251023205830-8038c6949379
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
