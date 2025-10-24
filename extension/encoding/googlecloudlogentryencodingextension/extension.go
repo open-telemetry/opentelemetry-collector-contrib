@@ -66,5 +66,6 @@ func (ex *ext) handleLogLine(logs plog.Logs, logLine []byte) error {
 	if err := handleLogEntryFields(r.Attributes(), scopeLogs, log, ex.config); err != nil {
 		return fmt.Errorf("failed to handle log entry: %w", err)
 	}
+
 	return nil
 }

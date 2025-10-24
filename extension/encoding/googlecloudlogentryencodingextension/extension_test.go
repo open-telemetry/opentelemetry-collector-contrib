@@ -381,6 +381,16 @@ func TestGetEncodingFormatFunction(t *testing.T) {
 			expectedFormat: constants.GCPFormatAuditLog,
 		},
 		{
+			name:           "audit log system event",
+			logType:        auditlog.SystemEventLogNameSuffix,
+			expectedFormat: constants.GCPFormatAuditLog,
+		},
+		{
+			name:           "audit log policy",
+			logType:        auditlog.PolicyLogNameSuffix,
+			expectedFormat: constants.GCPFormatAuditLog,
+		},
+		{
 			name:           "vpc flow log network management",
 			logType:        vpcflowlog.NetworkManagementNameSuffix,
 			expectedFormat: constants.GCPFormatVPCFlowLog,
