@@ -14,17 +14,15 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetCiscoDeviceIP("cisco.device.ip-val")
-			rb.SetCiscoDeviceModel("cisco.device.model-val")
-			rb.SetCiscoDeviceName("cisco.device.name-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 1, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 1, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -36,16 +34,6 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "cisco.device.ip-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("cisco.device.model")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "cisco.device.model-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("cisco.device.name")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "cisco.device.name-val", val.Str())
 			}
 		})
 	}
