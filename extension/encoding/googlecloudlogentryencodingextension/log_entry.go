@@ -517,13 +517,6 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 	logRecord := scopeLogs.LogRecords().AppendEmpty()
 	scope := scopeLogs.Scope()
 
-	// Get encoding format from log name
-	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)
-	if errLogName != nil {
-		return fmt.Errorf("failed to handle log name field: %w", errLogName)
-	}
-	encodingFormat := getEncodingFormat(logType)
-
 	ts := log.Timestamp
 	if ts == nil {
 		return errors.New("missing timestamp")
@@ -535,6 +528,13 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 	}
 
 	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
+
+	// Get encoding format from log name
+	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)
+	if errLogName != nil {
+		return fmt.Errorf("failed to handle log name field: %w", errLogName)
+	}
+	encodingFormat := getEncodingFormat(logType)
 
 	if err := handlePayload(encodingFormat, log, logRecord, scope, cfg); err != nil {
 		return fmt.Errorf("failed to handle payload field: %w", err)
