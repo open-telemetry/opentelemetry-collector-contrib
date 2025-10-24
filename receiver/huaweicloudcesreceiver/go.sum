@@ -79,6 +79,10 @@ github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKe
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.172 h1:68VUVbLKwBxPh8tjCXwnLO/d8/thdZ+ExpxdFMEdK5A=
 github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.172/go.mod h1:M+yna96Fx9o5GbIUnF3OvVvQGjgfVSyeJbV9Yb1z/wI=
+github.com/jade-guiton-dd/opentelemetry-collector/config/confighttp v0.0.0-20251023145606-417796e61f83 h1:xZTF4UMWcrPiMwxihpg1H9+SD4H+PFWlR4FzgkdCKsM=
+github.com/jade-guiton-dd/opentelemetry-collector/config/confighttp v0.0.0-20251023145606-417796e61f83/go.mod h1:tDcbM/GNyySNihwgv1ukPYJm4AJfbGAvZe8odltLwkE=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83 h1:Pq/FHHvG9w/YK7/fHhJZxVIjWaEje/wJr4krOueVkw0=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83/go.mod h1:z4EOVwhc3D7IT4W58Ez7Pjqm1pJkM+oVOWFuxxMHvWA=
 github.com/json-iterator/go v1.1.13-0.20220915233716-71ac16282d12 h1:9Nu54bhS/H/Kgo2/7xNSUuC5G28VR8ljfrLKU2G4IjU=
 github.com/json-iterator/go v1.1.13-0.20220915233716-71ac16282d12/go.mod h1:TBzl5BIHNXfS9+C35ZyJaklL7mLDbgUkcgXzSLa8Tk0=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -158,12 +162,8 @@ go.opentelemetry.io/collector/config/configauth v1.44.1-0.20251021231522-c657d5d
 go.opentelemetry.io/collector/config/configauth v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:8arPf8HFVkhKabgDsKqTggm081s71IYF8LogcGlHUeY=
 go.opentelemetry.io/collector/config/configcompression v1.44.1-0.20251021231522-c657d5d4e920 h1:a1BblHXtHI0esaPv9phPonk38eZvmweW5Uc2tcMXSCk=
 go.opentelemetry.io/collector/config/configcompression v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:ZlnKaXFYL3HVMUNWVAo/YOLYoxNZo7h8SrQp3l7GV00=
-go.opentelemetry.io/collector/config/confighttp v0.138.1-0.20251021231522-c657d5d4e920 h1:laJNf/CoUnJUI385nounkxJumzJSyvZFIfX9jTS7/3o=
-go.opentelemetry.io/collector/config/confighttp v0.138.1-0.20251021231522-c657d5d4e920/go.mod h1:tDcbM/GNyySNihwgv1ukPYJm4AJfbGAvZe8odltLwkE=
 go.opentelemetry.io/collector/config/configmiddleware v1.44.1-0.20251021231522-c657d5d4e920 h1:r7CyBpVr5lbU7+svlRMVJPQs1D3aQfWWHuoKvSOw42A=
 go.opentelemetry.io/collector/config/configmiddleware v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:7f+1+cmt4spFY3Gs14XB/04RSsDYG7ycTzvNJbeayPY=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920 h1:HnXZNedeXUOgKdpM8IdpW1wpnyb7URWAi66KMbqCA2Q=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:9uzLyGsWX0FtPWkomQXqLtblmSHgJFaM4T0gMBrCma0=
 go.opentelemetry.io/collector/config/configoptional v1.44.1-0.20251021231522-c657d5d4e920 h1:JKtuflg5oNFWUmQu2gkxXcGNikxrbQOagpA/NWZT4sc=
 go.opentelemetry.io/collector/config/configoptional v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:AGi2klVapjAEHVPrBVdq+3dW9l3wfA2MLH9qn5Q8nSg=
 go.opentelemetry.io/collector/config/configretry v1.44.1-0.20251021231522-c657d5d4e920 h1:MORDfnjCiN8qI7chgI+fzptBzh7GidPdi9+mWbgIgwo=

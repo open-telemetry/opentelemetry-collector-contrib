@@ -105,6 +105,8 @@ github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKe
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
 github.com/hashicorp/golang-lru/v2 v2.0.7/go.mod h1:QeFd9opnmA6QUJc5vARoKUSoFhyfM2/ZepoAG6RGpeM=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83 h1:Pq/FHHvG9w/YK7/fHhJZxVIjWaEje/wJr4krOueVkw0=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83/go.mod h1:z4EOVwhc3D7IT4W58Ez7Pjqm1pJkM+oVOWFuxxMHvWA=
 github.com/jcmturner/aescts/v2 v2.0.0 h1:9YKLH6ey7H4eDBXW8khjYslgyqG2xZikXP0EQFKrle8=
 github.com/jcmturner/aescts/v2 v2.0.0/go.mod h1:AiaICIRyfYg35RUkr8yESTqvSy7csK90qZ5xfvvsoNs=
 github.com/jcmturner/dnsutils/v2 v2.0.0 h1:lltnkeZGL0wILNvrNiVCR6Ro5PGU/SeBvVO/8c/iPbo=
@@ -223,8 +225,6 @@ go.opentelemetry.io/collector/component v1.44.1-0.20251021231522-c657d5d4e920 h1
 go.opentelemetry.io/collector/component v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:geKbCTNoQfu55tOPiDuxLzNZsoO9//HRRg10/8WusWk=
 go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251021231522-c657d5d4e920 h1:yxoV0n3rfi2uMu5nEO838fANnWtxG0G4c2MtaDUuZh4=
 go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251021231522-c657d5d4e920/go.mod h1:ODaEuyS6BrCnTVHCsLSRUtNklT3gnAIq0txYAAI2PKM=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920 h1:HnXZNedeXUOgKdpM8IdpW1wpnyb7URWAi66KMbqCA2Q=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:9uzLyGsWX0FtPWkomQXqLtblmSHgJFaM4T0gMBrCma0=
 go.opentelemetry.io/collector/confmap v1.44.1-0.20251021231522-c657d5d4e920 h1:ydxO2ykoZ/gzXDlwaBp8vSHciH+S5lhm3aC+OWuJGjc=
 go.opentelemetry.io/collector/confmap v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:w37Xiu/PK3nTdqKb7YEvQECHYkuW7QnmdS7b9iRjOGo=
 go.opentelemetry.io/collector/confmap/xconfmap v0.138.1-0.20251021231522-c657d5d4e920 h1:4/4Xm8NBP+WiPztIukl7G31MyYx9QzS51ww/jronD54=

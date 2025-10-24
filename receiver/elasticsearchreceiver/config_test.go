@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -174,7 +173,6 @@ func TestLoadConfig(t *testing.T) {
 					client := confighttp.NewDefaultClientConfig()
 					client.Timeout = 10000000000
 					client.Endpoint = "http://example.com:9200"
-					client.Headers = map[string]configopaque.String{}
 					return client
 				}(),
 			},

@@ -98,7 +98,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
 	req.Header.Set("read_json_by_line", "true")
-	groupCommit := string(cfg.Headers["group_commit"])
+	groupCommit, _ := cfg.Headers.Get("group_commit")
 	if groupCommit == "" || groupCommit == "off_mode" {
 		req.Header.Set("label", label)
 	}

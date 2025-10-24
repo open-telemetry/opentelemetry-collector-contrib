@@ -120,6 +120,10 @@ github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKe
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+github.com/jade-guiton-dd/opentelemetry-collector/config/confighttp v0.0.0-20251023145606-417796e61f83 h1:xZTF4UMWcrPiMwxihpg1H9+SD4H+PFWlR4FzgkdCKsM=
+github.com/jade-guiton-dd/opentelemetry-collector/config/confighttp v0.0.0-20251023145606-417796e61f83/go.mod h1:tDcbM/GNyySNihwgv1ukPYJm4AJfbGAvZe8odltLwkE=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83 h1:Pq/FHHvG9w/YK7/fHhJZxVIjWaEje/wJr4krOueVkw0=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83/go.mod h1:z4EOVwhc3D7IT4W58Ez7Pjqm1pJkM+oVOWFuxxMHvWA=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/jpillora/backoff v1.0.0 h1:uvFg412JmmHBHw7iwprIxkPMI+sGQ4kzOWsMeHnm2EA=
@@ -231,12 +235,8 @@ go.opentelemetry.io/collector/config/configauth v1.44.0 h1:zYur6VJyHFtJW/1MSKyRa
 go.opentelemetry.io/collector/config/configauth v1.44.0/go.mod h1:8arPf8HFVkhKabgDsKqTggm081s71IYF8LogcGlHUeY=
 go.opentelemetry.io/collector/config/configcompression v1.44.0 h1:AaNpVYWFrmWKGnZdJCuVSlY3STSm0UBTuZU13aavvlQ=
 go.opentelemetry.io/collector/config/configcompression v1.44.0/go.mod h1:ZlnKaXFYL3HVMUNWVAo/YOLYoxNZo7h8SrQp3l7GV00=
-go.opentelemetry.io/collector/config/confighttp v0.138.0 h1:6NaoRNwwS+Hci8XC+oxGH2njZTw/hm3Bv66TsvpBip8=
-go.opentelemetry.io/collector/config/confighttp v0.138.0/go.mod h1:0NKEeugQ7zQ/q6REMqxNPOrkYH8LdpUm6e9OlzMbfZg=
 go.opentelemetry.io/collector/config/configmiddleware v1.44.0 h1:lXIF5YMZi9hmyInvmGimmKKMtukSJP4CfvyKaLyIbUg=
 go.opentelemetry.io/collector/config/configmiddleware v1.44.0/go.mod h1:7f+1+cmt4spFY3Gs14XB/04RSsDYG7ycTzvNJbeayPY=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920 h1:HnXZNedeXUOgKdpM8IdpW1wpnyb7URWAi66KMbqCA2Q=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:9uzLyGsWX0FtPWkomQXqLtblmSHgJFaM4T0gMBrCma0=
 go.opentelemetry.io/collector/config/configoptional v1.44.0 h1:Jaq8V5JBVsdKQ275QkBuCYUMmZnlNMoCFatryRius2I=
 go.opentelemetry.io/collector/config/configoptional v1.44.0/go.mod h1:AGi2klVapjAEHVPrBVdq+3dW9l3wfA2MLH9qn5Q8nSg=
 go.opentelemetry.io/collector/config/configretry v1.44.0 h1:2EVcm1trnXhXaLQ2kFdLSnC6sg4a0t20nf78C2RJUd0=

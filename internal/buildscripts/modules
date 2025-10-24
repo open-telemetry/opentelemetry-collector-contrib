@@ -92,3 +92,11 @@ stable_modules=(
   "go.opentelemetry.io/collector/processor"
   "go.opentelemetry.io/collector/receiver"
 )
+
+pr_modules=(
+	"go.opentelemetry.io/collector/config/configopaque"
+  "go.opentelemetry.io/collector/config/configgrpc"
+  "go.opentelemetry.io/collector/config/confighttp"
+  "go.opentelemetry.io/collector/exporter/otlpexporter"
+  "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+)

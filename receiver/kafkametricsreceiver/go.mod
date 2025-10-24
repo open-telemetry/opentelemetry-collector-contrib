@@ -87,6 +87,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.44.1-0.20251021231522-c657d5d4e920 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.44.1-0.20251021231522-c657d5d4e920 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.138.1-0.20251021231522-c657d5d4e920 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.138.1-0.20251021231522-c657d5d4e920 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.138.1-0.20251021231522-c657d5d4e920 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.138.1-0.20251021231522-c657d5d4e920 // indirect
@@ -124,3 +125,13 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace go.opentelemetry.io/collector/config/configopaque => github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83
+
+replace go.opentelemetry.io/collector/config/configgrpc => github.com/jade-guiton-dd/opentelemetry-collector/config/configgrpc v0.0.0-20251023145606-417796e61f83
+
+replace go.opentelemetry.io/collector/config/confighttp => github.com/jade-guiton-dd/opentelemetry-collector/config/confighttp v0.0.0-20251023145606-417796e61f83
+
+replace go.opentelemetry.io/collector/exporter/otlpexporter => github.com/jade-guiton-dd/opentelemetry-collector/exporter/otlpexporter v0.0.0-20251023145606-417796e61f83
+
+replace go.opentelemetry.io/collector/exporter/otlphttpexporter => github.com/jade-guiton-dd/opentelemetry-collector/exporter/otlphttpexporter v0.0.0-20251023145606-417796e61f83
