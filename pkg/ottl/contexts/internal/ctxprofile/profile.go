@@ -143,8 +143,8 @@ func accessDuration[K Context]() ottl.StandardGetSetter[K] {
 }
 
 func accessPeriodType[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
-	periodTypeTarget := func(tCtx K) (pprofile.ProfilesDictionary, pprofile.ValueType) {
-		return tCtx.GetProfilesDictionary(), tCtx.GetProfile().PeriodType()
+	periodTypeTarget := func(tCtx K) pprofile.ValueType {
+		return tCtx.GetProfile().PeriodType()
 	}
 	return valueTypeGetterSetter(path, periodTypeTarget)
 }
@@ -175,8 +175,8 @@ func accessCommentStringIndices[K Context]() ottl.StandardGetSetter[K] {
 }
 
 func accessSampleType[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
-	sampleTypeTarget := func(tCtx K) (pprofile.ProfilesDictionary, pprofile.ValueType) {
-		return tCtx.GetProfilesDictionary(), tCtx.GetProfile().SampleType()
+	sampleTypeTarget := func(tCtx K) pprofile.ValueType {
+		return tCtx.GetProfile().SampleType()
 	}
 	return valueTypeGetterSetter(path, sampleTypeTarget)
 }

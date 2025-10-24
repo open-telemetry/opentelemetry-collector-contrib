@@ -13,9 +13,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 )
 
-type valueTypeSource[K any] = func(ctx K) (pprofile.ProfilesDictionary, pprofile.ValueType)
+type valueTypeSource[K Context] = func(ctx K) pprofile.ValueType
 
-func valueTypeGetterSetter[K any](
+func valueTypeGetterSetter[K Context](
 	path ottl.Path[K],
 	source valueTypeSource[K],
 ) (ottl.GetSetter[K], error) {
@@ -34,33 +34,31 @@ func valueTypeGetterSetter[K any](
 	}
 }
 
-func accessValueType[K any](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
+func accessValueType[K Context](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			_, valueType := getValueType(tCtx)
-			return valueType, nil
+			return getValueType(tCtx), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			newValue, ok := val.(pprofile.ValueType)
 			if !ok {
 				return fmt.Errorf("expected a pprofile.ValueType value for path %q, got %T", path.String(), val)
 			}
-			_, target := getValueType(tCtx)
-			newValue.CopyTo(target)
+			newValue.CopyTo(getValueType(tCtx))
 			return nil
 		},
 	}
 }
 
-func accessValueTypeType[K any](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
+func accessValueTypeType[K Context](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			dict, valueType := getValueType(tCtx)
-			return getValueTypeString(path, dict, valueType.TypeStrindex())
+			valueType := getValueType(tCtx)
+			return getValueTypeString(path, tCtx.GetProfilesDictionary(), valueType.TypeStrindex())
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			dict, valueType := getValueType(tCtx)
-			newIndex, err := setValueTypeString(path, dict, valueType.TypeStrindex(), val)
+			valueType := getValueType(tCtx)
+			newIndex, err := setValueTypeString(path, tCtx.GetProfilesDictionary(), valueType.TypeStrindex(), val)
 			if err != nil {
 				return err
 			}
@@ -70,15 +68,15 @@ func accessValueTypeType[K any](path ottl.Path[K], getValueType valueTypeSource[
 	}
 }
 
-func accessValueTypeUnit[K any](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
+func accessValueTypeUnit[K Context](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			dict, valueType := getValueType(tCtx)
-			return getValueTypeString(path, dict, valueType.UnitStrindex())
+			valueType := getValueType(tCtx)
+			return getValueTypeString(path, tCtx.GetProfilesDictionary(), valueType.UnitStrindex())
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			dict, valueType := getValueType(tCtx)
-			newIndex, err := setValueTypeString(path, dict, valueType.UnitStrindex(), val)
+			valueType := getValueType(tCtx)
+			newIndex, err := setValueTypeString(path, tCtx.GetProfilesDictionary(), valueType.UnitStrindex(), val)
 			if err != nil {
 				return err
 			}
@@ -88,7 +86,7 @@ func accessValueTypeUnit[K any](path ottl.Path[K], getValueType valueTypeSource[
 	}
 }
 
-func getValueTypeString[K any](
+func getValueTypeString[K Context](
 	path ottl.Path[K],
 	dict pprofile.ProfilesDictionary,
 	currIndex int32,
@@ -99,7 +97,7 @@ func getValueTypeString[K any](
 	return dict.StringTable().At(int(currIndex)), nil
 }
 
-func setValueTypeString[K any](
+func setValueTypeString[K Context](
 	path ottl.Path[K],
 	dict pprofile.ProfilesDictionary,
 	currIndex int32,

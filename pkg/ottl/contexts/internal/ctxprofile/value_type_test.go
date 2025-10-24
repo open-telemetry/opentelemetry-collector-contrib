@@ -470,10 +470,19 @@ func newEmptyProfilesDictionary() pprofile.ProfilesDictionary {
 }
 
 type mockValueTypeContext struct {
+	profile    pprofile.Profile
 	dictionary pprofile.ProfilesDictionary
 	valueType  pprofile.ValueType
 }
 
-func mockTargetValueType(ctx *mockValueTypeContext) (pprofile.ProfilesDictionary, pprofile.ValueType) {
-	return ctx.dictionary, ctx.valueType
+func (m *mockValueTypeContext) GetProfile() pprofile.Profile {
+	return m.profile
+}
+
+func (m *mockValueTypeContext) GetProfilesDictionary() pprofile.ProfilesDictionary {
+	return m.dictionary
+}
+
+func mockTargetValueType(ctx *mockValueTypeContext) pprofile.ValueType {
+	return ctx.valueType
 }
