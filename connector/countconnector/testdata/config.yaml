@@ -211,3 +211,5 @@
             default_value: 200
           - key: request_success
             default_value: 0.85
+          - key: cache_hit
+            default_value: true
