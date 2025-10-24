@@ -98,6 +98,7 @@ func TestNewS3SQSReader(t *testing.T) {
 		// check all defaults are set
 		assert.Equal(t, int32(10), r.maxNumberOfMessages)
 		assert.Equal(t, int32(20), r.waitTimeSeconds)
+		assert.False(t, r.preserveMessages)
 	})
 
 	t.Run("override non-default config", func(t *testing.T) {
@@ -111,6 +112,7 @@ func TestNewS3SQSReader(t *testing.T) {
 				Region:              "us-east-1",
 				MaxNumberOfMessages: aws.Int64(5),
 				WaitTimeSeconds:     aws.Int64(10),
+				PreserveMessages:    true,
 			},
 		}
 
@@ -119,6 +121,7 @@ func TestNewS3SQSReader(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, int32(5), r.maxNumberOfMessages)
 		assert.Equal(t, int32(10), r.waitTimeSeconds)
+		assert.True(t, r.preserveMessages)
 	})
 }
 
@@ -147,6 +150,7 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 		s3Prefix:            cfg.S3Downloader.S3Prefix,
 		maxNumberOfMessages: 10,
 		waitTimeSeconds:     20,
+		preserveMessages:    false,
 	}
 
 	s3Event := s3EventNotification{
@@ -296,6 +300,7 @@ func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 		s3Prefix:            cfg.S3Downloader.S3Prefix,
 		maxNumberOfMessages: 10,
 		waitTimeSeconds:     20,
+		preserveMessages:    false,
 	}
 
 	// Create S3 event notification
@@ -387,6 +392,102 @@ func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 	// Verify all expectations
 	mockS3.AssertExpectations(t)
 	mockSQS.AssertExpectations(t)
+}
+
+func TestS3SQSReader_ReadAllSkipDeletion(t *testing.T) {
+	logger := zap.NewNop()
+	cfg := &Config{
+		S3Downloader: S3DownloaderConfig{
+			S3Bucket: "test-bucket",
+			Region:   "us-east-1",
+		},
+		SQS: &SQSConfig{
+			QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+			Region:   "us-east-1",
+		},
+	}
+
+	mockS3 := new(mockS3ClientSQS)
+	mockSQS := new(mockSQSClient)
+
+	reader := &s3SQSNotificationReader{
+		logger:              logger,
+		s3Client:            mockS3,
+		sqsClient:           mockSQS,
+		queueURL:            cfg.SQS.QueueURL,
+		s3Bucket:            cfg.S3Downloader.S3Bucket,
+		s3Prefix:            cfg.S3Downloader.S3Prefix,
+		maxNumberOfMessages: 10,
+		waitTimeSeconds:     20,
+		preserveMessages:    true,
+	}
+
+	s3Event := s3EventNotification{
+		Records: []s3EventRecord{
+			{
+				EventSource: "aws:s3",
+				EventName:   "ObjectCreated:Put",
+				S3: s3Data{
+					Bucket: s3BucketData{
+						Name: "test-bucket",
+					},
+					Object: s3ObjectData{
+						Key: "test-key",
+					},
+				},
+			},
+		},
+	}
+
+	eventJSON, err := json.Marshal(s3Event)
+	require.NoError(t, err)
+
+	snsNotification := snsMessage{
+		Type:    "Notification",
+		Message: string(eventJSON),
+	}
+
+	snsJSON, err := json.Marshal(snsNotification)
+	require.NoError(t, err)
+
+	mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
+		return *input.QueueUrl == cfg.SQS.QueueURL &&
+			input.MaxNumberOfMessages == 10 &&
+			input.WaitTimeSeconds == 20
+	})).Return(
+		&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{
+				{
+					Body:          aws.String(string(snsJSON)),
+					ReceiptHandle: aws.String("test-receipt-handle"),
+				},
+			},
+		},
+		nil,
+	).Once()
+
+	// After processing one message, return empty results to exit the loop
+	mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+		&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{},
+		},
+		nil,
+	)
+
+	mockS3.On("GetObject", mock.Anything, mock.Anything).Return(
+		[]byte("test-content"),
+		nil,
+	)
+
+	// Run test with callback
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+	_ = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
+		return nil
+	})
+
+	mockSQS.AssertExpectations(t)
+	mockSQS.AssertNotCalled(t, "DeleteMessage")
 }
 
 func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
