@@ -62,7 +62,7 @@ exporters:
     org: my-org
     bucket: my-bucket
     token: my-token
-    precision: nanosecond
+    precision: ns
     span_dimensions:
     - service.name
     - span.name
