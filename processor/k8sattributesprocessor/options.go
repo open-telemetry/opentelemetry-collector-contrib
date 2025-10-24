@@ -232,6 +232,13 @@ func withOtelAnnotations(enabled bool) option {
 	}
 }
 
+func withDeploymentNameFromReplicaSet(enabled bool) option {
+	return func(p *kubernetesprocessor) error {
+		p.rules.DeploymentNameFromReplicaSet = enabled
+		return nil
+	}
+}
+
 // withExtractLabels allows specifying options to control extraction of pod labels.
 func withExtractLabels(labels ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {
