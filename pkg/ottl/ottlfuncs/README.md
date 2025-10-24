@@ -468,6 +468,7 @@ Available Converters:
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
+- [GetSemconvSpanName](#getsemconvspanname)
 - [GetXML](#getxml)
 - [HasPrefix](#hasprefix)
 - [HasSuffix](#hassuffix)
@@ -942,6 +943,9 @@ Examples:
 - `FormatTime(Time("02/04/2023", "%m/%d/%Y"), "%A %h %e %Y")`
 - `FormatTime(UnixNano(span.attributes["time_nanoseconds"]), "%b %d %Y %H:%M:%S")`
 - `FormatTime(TruncateTime(spanevent.time, Duration("10h 20m"))), "%Y-%m-%d %H:%M:%S")`
+
+### GetSemconvSpanName
+
 
 ### GetXML
 

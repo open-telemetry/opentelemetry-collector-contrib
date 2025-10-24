@@ -272,6 +272,10 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 - [merge_histogram_buckets](#merge_histogram_buckets)
 
+**Traces only functions**
+
+- [GetSemConvSpanName](#getsemconvspanname)
+
 ### convert_sum_to_gauge
 
 `convert_sum_to_gauge()`
@@ -649,6 +653,127 @@ Examples:
 # bounds: [0.1, 1.0]
 # counts: [5, 11, 1]
 ```
+
+### GetSemConvSpanName
+
+`GetSemconvSpanName()`
+
+The `GetSemconvSpanName()` function derives a span name from the OpenTelemetry semantic conventions for [HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), [RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/), [messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and [database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In other cases, the original `span.name` is returned unchanged.
+
+Its primary use case is to address high-cardinality issues in span metrics when `span.name` does not comply with the OpenTelemetry requirement that span names be low cardinality.
+
+`GetSemconvSpanName()` returned value examples:
+
+<table>
+<thead>
+<tr>
+<th>Span</th>
+<th> <code>GetSemconvSpanName()</code> </th>
+<th>Comments</th>
+</tr>
+</thead>
+<tbody>
+<!-- HTTP SERVER SPANS -->
+<tr>
+<td>
+<pre>
+<code>
+span.name: GET /api/v1/users/{id}
+span.kind: server
+span.attributes["http.request.method"]: GET
+span.attributes["http.route"]: /api/v1/users/{id}
+</code>
+</pre>
+</td>
+<td>
+<pre>
+GET /api/v1/users/{id}
+</pre>
+</td>
+<td>
+Compliant span names don't get modified
+</td>
+</tr>
+<tr>
+<td>
+<pre>
+<code>
+span.name: GET /api/v1/users/123 # /!\ high cardinality
+span.kind: server
+span.attributes["http.request.method"]: GET
+span.attributes["http.route"]: /api/v1/users/{id}
+</code>
+</pre>
+</td>
+<td>
+<pre>
+GET /api/v1/users/{id}
+</pre>
+</td>
+<td>
+High cardinality span name <code>GET /api/v1/users/123</code> gets sanitized without loss of information when recommended semantic convention span attributes are provided (e.g. <code>http.request.method<code> and <code>http.route</code>).
+</td>
+</tr>
+<tr>
+<td>
+<pre>
+<code>
+span.name: GET /api/v1/users/123 # /!\ high cardinality
+span.kind: server
+span.attributes["http.request.method"]: GET
+</code>
+</pre>
+</td>
+<td>
+<pre>
+GET
+</pre>
+</td>
+<td>
+High-cardinality span name <code>GET /api/v1/users/123</code> is sanitized with some loss of information when recommended semantic convention span attributes are missing (e.g., <code>http.route</code>).
+</td>
+</tr>
+</table>
+
+Backward compatibility: `GetSemconvSpanName()` supports the version 1.37 of the semantic conventions and backward compatibility
+for the following attributes:
+
+| Attribute             | Backward compatibility |
+|-----------------------|------------------------|
+| `http.request.method` | `http.method`          |
+| `rpc.method`          | `rpc.grpc.method`      |
+| `rpc.service`         | `rpc.grpc.service`     |
+| `db.system.name`      | `db.system`            |
+| `db.operation.name`   | `db.operation`         |
+| `db.collection.name`  | `db.name`              |
+
+Transform processor syntax examples:
+
+- `set(span.name, GetSemconvSpanName())`
+
+- Ingestion pipeline preventing high cardinality on the `span.name` attribute of the metrics produced by the span metrics connector:
+
+    ```yaml
+    processors:
+      # prevent high-cardinality span names
+      transform/sanitize_span_name:
+        error_mode: ignore
+        trace_statements:
+          - set(span.cache["original_name"], span.name)
+          - set(span.name, GetSemconvSpanName())
+          - set(span.attributes["original_name"], span.cache["original_name"]) where span.cache["original_name"] != span.name
+    connectors:
+      spanmetrics:
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [..., transform/sanitize_span_name, ...]
+          exporters: [otlp, spanmetrics]
+        metrics:
+          receivers: [spanmetrics, ...]
+          exporters: [otlp]
+    ```
 
 ## Examples
 
