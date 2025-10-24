@@ -109,7 +109,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Validate precision
-	validPrecisions := []string{"ns", "nanosecond", "ms", "millisecond", "s", "second", "m", "minute", "h", "hour"}
+	validPrecisions := []string{"ns", "ms", "s", "us"}
 	validPrecision := false
 	for _, p := range validPrecisions {
 		if cfg.Precision == p {
