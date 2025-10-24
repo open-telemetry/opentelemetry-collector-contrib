@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,17 +20,17 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace/internal/metadata"
 )
 
 const TypeStr = "dynatrace"
 
 const dtHostMetadataProperties = "dt_host_metadata.properties"
 
-var dtHostProperties = []string{"dt.entity.host", "host.name", "dt.smartscape.host"}
-
 type Detector struct {
 	enrichmentDirectory string
 	logger              *zap.Logger
+	rb                  *metadata.ResourceBuilder
 }
 
 func NewDetector(set processor.Settings, _ internal.DetectorConfig) (internal.Detector, error) {
@@ -51,19 +50,16 @@ func NewDetector(set processor.Settings, _ internal.DetectorConfig) (internal.De
 	return &Detector{
 		enrichmentDirectory: enrichmentDir,
 		logger:              set.Logger,
+		rb:                  metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}, nil
 }
 
 func (d Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
-	res := pcommon.NewResource()
-
-	if err := d.readPropertiesFile(res.Attributes()); err != nil {
-		return res, "", err
-	}
-	return res, "", nil
+	err := d.readPropertiesFile()
+	return d.rb.Emit(), "", err
 }
 
-func (d Detector) readPropertiesFile(attributes pcommon.Map) error {
+func (d Detector) readPropertiesFile() error {
 	filePath := filepath.Join(d.enrichmentDirectory, dtHostMetadataProperties)
 
 	file, err := os.Open(filePath)
@@ -80,21 +76,26 @@ func (d Detector) readPropertiesFile(attributes pcommon.Map) error {
 
 	scanner := bufio.NewScanner(file)
 
+	setters := map[string]func(string){
+		"dt.entity.host":     d.rb.SetDtEntityHost,
+		"dt.smartscape.host": d.rb.SetDtSmartscapeHost,
+		"host.name":          d.rb.SetHostName,
+	}
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		// split by the first "=" character. If there is another "=" afterward, this will be part of the value
 		split := strings.SplitN(line, "=", 2)
 		if len(split) != 2 {
-			d.logger.Warn("Skipping line as it does not match the expected format of '<key>=<value>", zap.String("line", line))
+			d.logger.Warn("Skipping line as it does not match the expected format of <key>=<value>", zap.String("line", line))
 			continue
 		}
 		key, value := split[0], split[1]
 
-		if key != "" && value != "" {
-			if !slices.Contains(dtHostProperties, key) {
-				continue
-			}
-			attributes.PutStr(strings.TrimSpace(key), strings.TrimSpace(value))
+		if setter, ok := setters[key]; ok {
+			setter(value)
+		} else {
+			d.logger.Debug("Skipping unknown attribute", zap.String("key", key))
 		}
 	}
 

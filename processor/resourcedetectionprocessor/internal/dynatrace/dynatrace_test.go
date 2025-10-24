@@ -56,7 +56,7 @@ func TestDetector_DetectFromProperties(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)
-	require.Equal(t, len(dtHostProperties), resource.Attributes().Len())
+	require.Equal(t, 3, resource.Attributes().Len())
 
 	get, ok := resource.Attributes().Get("dt.entity.host")
 	require.True(t, ok)
