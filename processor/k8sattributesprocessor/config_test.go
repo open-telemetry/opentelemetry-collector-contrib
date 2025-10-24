@@ -131,6 +131,18 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "deployment_name_from_replicaset"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "too_many_sources"),
 		},
 		{
