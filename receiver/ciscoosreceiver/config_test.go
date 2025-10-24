@@ -27,19 +27,17 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					{
-						Device: DeviceInfo{
-							Host: HostInfo{
-								Name: "test-device",
-								IP:   "192.168.1.1",
-								Port: 22,
-							},
+				Device: DeviceConfig{
+					Device: DeviceInfo{
+						Host: HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
 						},
-						Auth: AuthConfig{
-							Username: "admin",
-							Password: configopaque.String("password"),
-						},
+					},
+					Auth: AuthConfig{
+						Username: "admin",
+						Password: configopaque.String("password"),
 					},
 				},
 				Scrapers: map[component.Type]component.Config{
@@ -55,68 +53,38 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					{
-						Device: DeviceInfo{
-							Host: HostInfo{
-								Name: "test-device",
-								IP:   "192.168.1.1",
-								Port: 22,
-							},
+				Device: DeviceConfig{
+					Device: DeviceInfo{
+						Host: HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
 						},
-						Auth: AuthConfig{
-							Username: "admin",
-							KeyFile:  "/path/to/key",
-						},
+					},
+					Auth: AuthConfig{
+						Username: "admin",
+						KeyFile:  "/path/to/key",
 					},
 				},
 				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("interfaces"): nil,
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "",
 		},
 		{
-			name: "no devices",
+			name: "empty device IP",
 			config: &Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{},
+				Device: DeviceConfig{},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "at least one device must be configured",
-		},
-		{
-			name: "empty host IP",
-			config: &Config{
-				ControllerConfig: scraperhelper.ControllerConfig{
-					Timeout:            30 * time.Second,
-					CollectionInterval: 60 * time.Second,
-				},
-				Devices: []DeviceConfig{
-					{
-						Device: DeviceInfo{
-							Host: HostInfo{
-								Name: "test-device",
-								IP:   "",
-								Port: 22,
-							},
-						},
-						Auth: AuthConfig{
-							Username: "admin",
-							Password: configopaque.String("password"),
-						},
-					},
-				},
-				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("system"): nil,
-				},
-			},
-			expectedErr: "host.ip cannot be empty",
+			expectedErr: "device.host.ip cannot be empty",
 		},
 		{
 			name: "missing port",
@@ -125,26 +93,24 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					{
-						Device: DeviceInfo{
-							Host: HostInfo{
-								Name: "test-device",
-								IP:   "192.168.1.1",
-								Port: 0,
-							},
+				Device: DeviceConfig{
+					Device: DeviceInfo{
+						Host: HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 0,
 						},
-						Auth: AuthConfig{
-							Username: "admin",
-							Password: configopaque.String("password"),
-						},
+					},
+					Auth: AuthConfig{
+						Username: "admin",
+						Password: configopaque.String("password"),
 					},
 				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "host.port cannot be empty",
+			expectedErr: "device.host.port cannot be empty",
 		},
 		{
 			name: "missing username",
@@ -153,26 +119,24 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					{
-						Device: DeviceInfo{
-							Host: HostInfo{
-								Name: "test-device",
-								IP:   "192.168.1.1",
-								Port: 22,
-							},
+				Device: DeviceConfig{
+					Device: DeviceInfo{
+						Host: HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
 						},
-						Auth: AuthConfig{
-							Username: "",
-							Password: configopaque.String("password"),
-						},
+					},
+					Auth: AuthConfig{
+						Username: "",
+						Password: configopaque.String("password"),
 					},
 				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "auth.username cannot be empty",
+			expectedErr: "device.auth.username cannot be empty",
 		},
 		{
 			name: "missing password and key file",
@@ -181,25 +145,23 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					{
-						Device: DeviceInfo{
-							Host: HostInfo{
-								Name: "test-device",
-								IP:   "192.168.1.1",
-								Port: 22,
-							},
+				Device: DeviceConfig{
+					Device: DeviceInfo{
+						Host: HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
 						},
-						Auth: AuthConfig{
-							Username: "admin",
-						},
+					},
+					Auth: AuthConfig{
+						Username: "admin",
 					},
 				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "auth.password or auth.key_file must be provided",
+			expectedErr: "device.auth.password or device.auth.key_file must be provided",
 		},
 		{
 			name: "no scrapers configured",
@@ -208,19 +170,17 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					{
-						Device: DeviceInfo{
-							Host: HostInfo{
-								Name: "test-device",
-								IP:   "192.168.1.1",
-								Port: 22,
-							},
+				Device: DeviceConfig{
+					Device: DeviceInfo{
+						Host: HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
 						},
-						Auth: AuthConfig{
-							Username: "admin",
-							Password: configopaque.String("password"),
-						},
+					},
+					Auth: AuthConfig{
+						Username: "admin",
+						Password: configopaque.String("password"),
 					},
 				},
 				Scrapers: map[component.Type]component.Config{},

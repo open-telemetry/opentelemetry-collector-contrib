@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -53,10 +54,9 @@ func (m *metricPingLossRatio) init() {
 	m.data.SetDescription("The percentage of lost packets.")
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPingLossRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
+func (m *metricPingLossRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -64,8 +64,6 @@ func (m *metricPingLossRatio) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("net.peer.ip", netPeerIPAttributeValue)
-	dp.Attributes().PutStr("net.peer.name", netPeerNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -105,10 +103,9 @@ func (m *metricPingRttAvg) init() {
 	m.data.SetDescription("Average round-trip time in milliseconds.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPingRttAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
+func (m *metricPingRttAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -116,8 +113,6 @@ func (m *metricPingRttAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("net.peer.ip", netPeerIPAttributeValue)
-	dp.Attributes().PutStr("net.peer.name", netPeerNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -157,10 +152,9 @@ func (m *metricPingRttMax) init() {
 	m.data.SetDescription("Maximum round-trip time in milliseconds.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPingRttMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
+func (m *metricPingRttMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -168,8 +162,6 @@ func (m *metricPingRttMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("net.peer.ip", netPeerIPAttributeValue)
-	dp.Attributes().PutStr("net.peer.name", netPeerNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -209,10 +201,9 @@ func (m *metricPingRttMin) init() {
 	m.data.SetDescription("Minimum round-trip time in milliseconds.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPingRttMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
+func (m *metricPingRttMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -220,8 +211,6 @@ func (m *metricPingRttMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("net.peer.ip", netPeerIPAttributeValue)
-	dp.Attributes().PutStr("net.peer.name", netPeerNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -261,10 +250,9 @@ func (m *metricPingRttStddev) init() {
 	m.data.SetDescription("Standard deviation of round-trip time in milliseconds.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPingRttStddev) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
+func (m *metricPingRttStddev) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -272,8 +260,6 @@ func (m *metricPingRttStddev) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("net.peer.ip", netPeerIPAttributeValue)
-	dp.Attributes().PutStr("net.peer.name", netPeerNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -304,16 +290,18 @@ func newMetricPingRttStddev(cfg MetricConfig) metricPingRttStddev {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config              MetricsBuilderConfig // config of the metrics builder.
-	startTime           pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity     int                  // maximum observed number of metrics per resource.
-	metricsBuffer       pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo           component.BuildInfo  // contains version information.
-	metricPingLossRatio metricPingLossRatio
-	metricPingRttAvg    metricPingRttAvg
-	metricPingRttMax    metricPingRttMax
-	metricPingRttMin    metricPingRttMin
-	metricPingRttStddev metricPingRttStddev
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricPingLossRatio            metricPingLossRatio
+	metricPingRttAvg               metricPingRttAvg
+	metricPingRttMax               metricPingRttMax
+	metricPingRttMin               metricPingRttMin
+	metricPingRttStddev            metricPingRttStddev
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -335,21 +323,40 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:              mbc,
-		startTime:           pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:       pmetric.NewMetrics(),
-		buildInfo:           settings.BuildInfo,
-		metricPingLossRatio: newMetricPingLossRatio(mbc.Metrics.PingLossRatio),
-		metricPingRttAvg:    newMetricPingRttAvg(mbc.Metrics.PingRttAvg),
-		metricPingRttMax:    newMetricPingRttMax(mbc.Metrics.PingRttMax),
-		metricPingRttMin:    newMetricPingRttMin(mbc.Metrics.PingRttMin),
-		metricPingRttStddev: newMetricPingRttStddev(mbc.Metrics.PingRttStddev),
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricPingLossRatio:            newMetricPingLossRatio(mbc.Metrics.PingLossRatio),
+		metricPingRttAvg:               newMetricPingRttAvg(mbc.Metrics.PingRttAvg),
+		metricPingRttMax:               newMetricPingRttMax(mbc.Metrics.PingRttMax),
+		metricPingRttMin:               newMetricPingRttMin(mbc.Metrics.PingRttMin),
+		metricPingRttStddev:            newMetricPingRttStddev(mbc.Metrics.PingRttStddev),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.NetPeerIP.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["net.peer.ip"] = filter.CreateFilter(mbc.ResourceAttributes.NetPeerIP.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.NetPeerIP.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["net.peer.ip"] = filter.CreateFilter(mbc.ResourceAttributes.NetPeerIP.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.NetPeerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["net.peer.name"] = filter.CreateFilter(mbc.ResourceAttributes.NetPeerName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.NetPeerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["net.peer.name"] = filter.CreateFilter(mbc.ResourceAttributes.NetPeerName.MetricsExclude)
 	}
 
 	for _, op := range options {
 		op.apply(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -418,6 +425,16 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	for _, op := range options {
 		op.apply(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
 
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -436,28 +453,28 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordPingLossRatioDataPoint adds a data point to ping.loss.ratio metric.
-func (mb *MetricsBuilder) RecordPingLossRatioDataPoint(ts pcommon.Timestamp, val float64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
-	mb.metricPingLossRatio.recordDataPoint(mb.startTime, ts, val, netPeerIPAttributeValue, netPeerNameAttributeValue)
+func (mb *MetricsBuilder) RecordPingLossRatioDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricPingLossRatio.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttAvgDataPoint adds a data point to ping.rtt.avg metric.
-func (mb *MetricsBuilder) RecordPingRttAvgDataPoint(ts pcommon.Timestamp, val int64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
-	mb.metricPingRttAvg.recordDataPoint(mb.startTime, ts, val, netPeerIPAttributeValue, netPeerNameAttributeValue)
+func (mb *MetricsBuilder) RecordPingRttAvgDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPingRttAvg.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttMaxDataPoint adds a data point to ping.rtt.max metric.
-func (mb *MetricsBuilder) RecordPingRttMaxDataPoint(ts pcommon.Timestamp, val int64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
-	mb.metricPingRttMax.recordDataPoint(mb.startTime, ts, val, netPeerIPAttributeValue, netPeerNameAttributeValue)
+func (mb *MetricsBuilder) RecordPingRttMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPingRttMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttMinDataPoint adds a data point to ping.rtt.min metric.
-func (mb *MetricsBuilder) RecordPingRttMinDataPoint(ts pcommon.Timestamp, val int64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
-	mb.metricPingRttMin.recordDataPoint(mb.startTime, ts, val, netPeerIPAttributeValue, netPeerNameAttributeValue)
+func (mb *MetricsBuilder) RecordPingRttMinDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPingRttMin.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttStddevDataPoint adds a data point to ping.rtt.stddev metric.
-func (mb *MetricsBuilder) RecordPingRttStddevDataPoint(ts pcommon.Timestamp, val int64, netPeerIPAttributeValue string, netPeerNameAttributeValue string) {
-	mb.metricPingRttStddev.recordDataPoint(mb.startTime, ts, val, netPeerIPAttributeValue, netPeerNameAttributeValue)
+func (mb *MetricsBuilder) RecordPingRttStddevDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPingRttStddev.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
