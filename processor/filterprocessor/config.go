@@ -65,7 +65,7 @@ type MetricFilters struct {
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filterconfig.MetricMatchProperties `mapstructure:"exclude"`
 
-	// Action specifies the behavior when conditions match.
+	// Action specifies the behavior when conditions match. The default is drop.
 	Action Action `mapstructure:"action"`
 
 	// RegexpConfig specifies options for the regexp match type
@@ -84,7 +84,7 @@ type MetricFilters struct {
 
 // TraceFilters filters by OTTL conditions
 type TraceFilters struct {
-	// Action specifies the behavior when conditions match.
+	// Action specifies the behavior when conditions match. The default is drop.
 	Action Action `mapstructure:"action"`
 
 	// SpanConditions is a list of OTTL conditions for an ottlspan context.
@@ -109,7 +109,7 @@ type LogFilters struct {
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *LogMatchProperties `mapstructure:"exclude"`
 
-	// Action specifies the behavior when conditions match.
+	// Action specifies the behavior when conditions match. The default is drop.
 	Action Action `mapstructure:"action"`
 
 	// LogConditions is a list of OTTL conditions for an ottllog context.
@@ -290,7 +290,7 @@ func (lmp LogSeverityNumberMatchProperties) validate() error {
 type ProfileFilters struct {
 	_ struct{} // prevent unkeyed literals
 
-	// Action specifies the behavior when conditions match.
+	// Action specifies the behavior when conditions match. The default is drop.
 	Action Action `mapstructure:"action"`
 
 	// ProfileConditions is a list of OTTL conditions for an ottlprofile context.
@@ -299,7 +299,7 @@ type ProfileFilters struct {
 	ProfileConditions []string `mapstructure:"profile"`
 }
 
-// Action specifies the behavior when conditions match.
+// Action specifies the behavior when conditions match. The default is drop.
 type Action string
 
 const (
@@ -316,7 +316,7 @@ func (a *Action) UnmarshalText(text []byte) error {
 		*a = str
 		return nil
 	default:
-		return fmt.Errorf("unknown action \"%s\". Valid options are: \"%s\", \"%s\"", str, dropAction, keepAction)
+		return fmt.Errorf("unknown action \"%s\": must be \"%s\" or \"%s\"", str, dropAction, keepAction)
 	}
 }
 
