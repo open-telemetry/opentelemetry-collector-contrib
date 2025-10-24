@@ -385,18 +385,11 @@ func TestHandleLogEntryFields(t *testing.T) {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resource := resourceLogs.Resource()
-	logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	cfg := *createDefaultConfig().(*Config)
 
-	// add to the resource attributes via the log name.
-	resourceAttrs := resource.Attributes()
-	_, err = handleLogNameField(l.LogName, resourceAttrs)
-	require.NoError(t, err)
-
 	// add the rest of the log entry fields
-	// note that the log encoding format is unsupported,
-	// so we pass it in as an empty string
-	err = handleLogEntryFields(resourceAttrs, logRecord, l, "", cfg)
+	err = handleLogEntryFields(resource.Attributes(), scopeLogs, l, cfg)
 	require.NoError(t, err)
 
 	expected, err := golden.ReadLogs("testdata/log_entry_expected.yaml")

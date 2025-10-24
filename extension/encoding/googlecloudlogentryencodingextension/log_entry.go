@@ -474,14 +474,18 @@ func handleLogNameField(logName string, resourceAttr pcommon.Map) (string, error
 	}
 }
 
-func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord, cfg Config) error {
+func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, cfg Config) error {
 	switch encodingFormat {
 	case constants.GCPFormatAuditLog:
+		// Add encoding.format to scope attributes for audit logs
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
 		if err := auditlog.ParsePayloadIntoAttributes(log.ProtoPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse audit log proto payload: %w", err)
 		}
 		return nil
 	case constants.GCPFormatVPCFlowLog:
+		// Add encoding.format to scope attributes for VPC flow logs
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
 		if err := vpcflowlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse VPC flow log JSON payload: %w", err)
 		}
@@ -509,7 +513,17 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 
 // handleLogEntryFields will place each entry of logEntry as either an attribute of the log,
 // or as part of the log body, in case of payload.
-func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, encodingFormat string, cfg Config) error {
+func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLogs, log logEntry, cfg Config) error {
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	scope := scopeLogs.Scope()
+
+	// Get encoding format from log name
+	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)
+	if errLogName != nil {
+		return fmt.Errorf("failed to handle log name field: %w", errLogName)
+	}
+	encodingFormat := getEncodingFormat(logType)
+
 	ts := log.Timestamp
 	if ts == nil {
 		return errors.New("missing timestamp")
@@ -522,7 +536,7 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogReco
 
 	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
 
-	if err := handlePayload(encodingFormat, log, logRecord, cfg); err != nil {
+	if err := handlePayload(encodingFormat, log, logRecord, scope, cfg); err != nil {
 		return fmt.Errorf("failed to handle payload field: %w", err)
 	}
 
