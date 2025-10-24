@@ -121,8 +121,24 @@ All logs processed by this extension are automatically tagged with an `encoding.
 The pattern used is `gcp.<format_name>`.
 
 Examples:
-- Audit Logs: `encoding.format:"gcp.auditlog"`
-- VPC Flow Logs: `encoding.format:"gcp.vpcflow"`
+- Audit Logs: `encoding.format: "gcp.auditlog"`
+- VPC Flow Logs: `encoding.format: "gcp.vpcflow"`
+
+### How encoding.format is determined
+
+The `encoding.format` attribute is automatically determined based on the log type extracted from the `logName` field. The extension uses the following logic:
+
+1. **Parse the logName**: The extension extracts the log type from the `logName` field.
+
+For example, `projects/my-project/logs/cloudaudit.googleapis.com%2Fsystem_event` is identified as a system event log via the log type suffix `cloudaudit.googleapis.com%2Fsystem_event`.
+
+2. **Map log type to format**: The extension maps specific log types to their corresponding encoding formats (`encoding.format`):
+   - Audit logs (activity, data access, system event, policy): `gcp.auditlog`
+   - VPC flow logs (network management-sourced and compute-sourced VPC flow logs): `gcp.vpcflow`
+
+3. **Set the attribute**: For recognized log types, the `encoding.format` attribute is set as an attribute of the `scope` field in the OTEL output log, allowing for flexible filtering and routing.
+
+For unrecognized log types, no `encoding.format` attribute is set.
 
 ## Format Values
 
