@@ -27,22 +27,20 @@ processors:
       velocity_threshold: 10.0
       stability_check_interval: 2m
 
-  batch:
-    timeout: 1s
-    send_batch_size: 1024
-
 exporters:
   debug:
     verbosity: detailed
 
   file:
     path: ./metrics_output.json
+    sending_queue:
+      batch:
 
 service:
   pipelines:
     metrics:
       receivers: [hostmetrics]
-      processors: [isolationforest, batch]
+      processors: [isolationforest]
       exporters: [debug, file]
 
   telemetry:
