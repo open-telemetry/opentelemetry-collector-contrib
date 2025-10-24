@@ -204,17 +204,16 @@ type singleSelector struct{}
 func (s *singleSelector) Select(conn []*elastictransport.Connection) (*elastictransport.Connection, error) {
 
 	// Select receives a slice of live connections
-	// we always return the first element from the live list until it is marked as dead
+	// we always return the first element from the live list until it is marked dead
 	// dead connection are automtically removed from the live list
 
 	connection := conn[0]
 	connection.Lock()
 	defer connection.Unlock()
 
-	// avoiding a possible race condition here
-	// where a connection is marked dead but not removed from the live list yet
-	// https://github.com/elastic/elastic-transport-go/blob/main/elastictransport/connection.go#L187
-	// hence we double check the state of the connection here
+	// there can be a possible race condition here
+	// where a connection is marked dead but not removed from the live list yet https://github.com/elastic/elastic-transport-go/blob/main/elastictransport/connection.go#L187
+	// hence we double check the state of the connection
 	if connection.IsDead {
 		return conn[1], nil
 	}
