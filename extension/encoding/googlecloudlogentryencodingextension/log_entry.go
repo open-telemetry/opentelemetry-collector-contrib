@@ -529,7 +529,7 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 
 	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
 
-	// Get encoding format from log name
+	// Handle log name, get type and encoding format
 	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)
 	if errLogName != nil {
 		return fmt.Errorf("failed to handle log name field: %w", errLogName)
