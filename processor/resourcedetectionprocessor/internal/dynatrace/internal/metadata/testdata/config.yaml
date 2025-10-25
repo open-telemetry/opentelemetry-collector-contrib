@@ -1,0 +1,17 @@
+default:
+all_set:
+  resource_attributes:
+    dt.entity.host:
+      enabled: true
+    dt.smartscape.host:
+      enabled: true
+    host.name:
+      enabled: true
+none_set:
+  resource_attributes:
+    dt.entity.host:
+      enabled: false
+    dt.smartscape.host:
+      enabled: false
+    host.name:
+      enabled: false
