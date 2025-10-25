@@ -830,6 +830,8 @@ processors:
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
+# how often resource detection should be refreshed; if unset, detection runs only once at startup
+refresh_interval: <duration>
 # [DEPRECATED] When included, only attributes in the list will be appended.  Applies to all detectors.
 attributes: [ <string> ]
 ```
@@ -878,6 +880,16 @@ resourcedetection:
       os.type:
         enabled: false
 ```
+
+### Using the `refresh_interval` parameter
+
+The `refresh_interval` option allows resource attributes to be periodically refreshed without restarting the Collector.
+
+- It may take some time for newly detected resource attributes to be applied.
+- Changes to resource attributes can result in the creation of new metric time series.
+- Frequent refreshes can increase resource usage and should be configured carefully.
+
+In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector’s lifetime.
 
 ## Ordering
 
