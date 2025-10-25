@@ -3,7 +3,7 @@
 
 //go:build windows
 
-package finder
+package finder // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
 
 import (
 	"strings"
