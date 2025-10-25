@@ -214,8 +214,10 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			},
 		},
 	} {
-		got := s.getMetric(tt.m.Name, md)
-		metricdatatest.AssertEqual(t, tt.m, got, tt.opts...)
+		t.Run(tt.m.Name, func(t *testing.T) {
+			got := s.getMetric(tt.m.Name, md)
+			metricdatatest.AssertEqual(t, tt.m, got, tt.opts...)
+		})
 	}
 
 	// sanity check
@@ -713,6 +715,9 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		err = proc.ConsumeTraces(t.Context(), lateSpan)
 		require.NoError(t, err)
 	}
+
+	// waitForTick here to ensure the consumption is done and the metric is recorded
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
