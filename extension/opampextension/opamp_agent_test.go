@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
@@ -872,6 +873,10 @@ func (m mockStatusEvent) Err() error {
 
 func (m mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
+}
+
+func (mockStatusEvent) Attributes() pcommon.Map {
+	return pcommon.NewMap()
 }
 
 func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *mockOpAMPClient, sa *mockStatusAggregator) *opampAgent {
