@@ -166,6 +166,17 @@ func TestFindFiles(t *testing.T) {
 			include:  []string{filepath.Join("**", "*")},
 			expected: []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
 		},
+		{
+			name:    "CaseSensitivity",
+			files:   []string{"a.log", "A.LOG", "a.Log", "my_file.txt", "My_FIle.TXT"},
+			include: []string{"*.log", "*.txt"},
+			expected: (func() []string {
+				if runtime.GOOS == "windows" {
+					return []string{"a.log", "A.LOG", "a.Log", "my_file.txt", "My_FIle.txt"}
+				}
+				return []string{"a.log", "my_file.txt"}
+			})(),
+		},
 	}
 
 	for _, tc := range cases {
