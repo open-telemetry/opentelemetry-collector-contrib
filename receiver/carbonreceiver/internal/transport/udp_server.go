@@ -9,7 +9,6 @@ import (
 	"errors"
 	"io"
 	"net"
-	"strings"
 	"sync"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -91,28 +90,24 @@ func (u *udpServer) handlePacket(
 ) {
 	ctx := u.reporter.OnDataReceived(context.Background())
 	var numReceivedMetricPoints int
-	metrics := pmetric.NewMetrics()
-	sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-
+	var metrics pmetric.Metrics
 	buf := bytes.NewBuffer(data)
 	for {
-		bytes, err := buf.ReadBytes(byte('\n'))
+		data, err := buf.ReadBytes(byte('\n'))
 		if errors.Is(err, io.EOF) {
-			if len(bytes) == 0 {
+			if len(data) == 0 {
 				// Completed without errors.
 				break
 			}
 		}
-		line := strings.TrimSpace(string(bytes))
-		if line != "" {
+		trimmedData := bytes.TrimSpace(data)
+		if len(trimmedData) != 0 {
 			numReceivedMetricPoints++
-			metric, err := p.Parse(line)
+			metrics, err = p.Parse(trimmedData)
 			if err != nil {
 				u.reporter.OnTranslationError(ctx, err)
 				continue
 			}
-			newMetric := sm.Metrics().AppendEmpty()
-			metric.MoveTo(newMetric)
 		}
 	}
 

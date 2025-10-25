@@ -16,6 +16,7 @@ var (
 	parserMap = map[string]func() ParserConfig{
 		"plaintext": plaintextDefaultConfig,
 		"regex":     regexDefaultConfig,
+		"pickle":    pickleDefaultConfig,
 	}
 
 	// validParsers keeps a list of all valid parsers to be used in error
