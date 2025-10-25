@@ -747,6 +747,8 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 				pcommon.NewResource(),
 				Settings{},
 				metricName,
+				"", // scopeName
+				"", // scopeVersion
 			))
 
 			assert.Equal(t, tt.wantSeries(), converter.unique)
