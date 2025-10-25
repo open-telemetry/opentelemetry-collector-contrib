@@ -159,6 +159,7 @@ The WebHook configuration exposes the following settings:
 * `service_name`: (optional) - The service name for the traces. See the
 [Configuring Service Name](#configuring-service-name) section for more
 information.
+* `include_span_events`: (default = `false`) - When set to `true`, attaches the raw webhook event JSON as a span event. The workflow run event is attached to the workflow run span, and the workflow job event is attached to the job span.
 
 The WebHook configuration block also accepts all the [confighttp][cfghttp]
 settings.
@@ -205,6 +206,35 @@ The precedence for setting the `service.name` resource attribute is as follows:
 2. `service_name` key in the repository's Custom Properties per repository.
 3. `service_name` derived from the repository name.
 4. `service.name` set to `unknown_service` per the semantic conventions as a fall back.
+
+### Span Events
+
+When `include_span_events` is enabled, the receiver attaches the raw GitHub webhook event JSON as a span event to the corresponding span:
+
+- **Workflow Run events**: Attached as a span event named `github.workflow_run.event` to the root workflow run span
+- **Workflow Job events**: Attached as a span event named `github.workflow_job.event` to the job span
+
+The raw event is stored in the `event.payload` attribute as a JSON string. This allows for detailed inspection of the complete webhook payload, including fields that may not be mapped to span attributes.
+
+**Note**: The raw event payload can be large (typically 5-50KB). Consider the impact on storage and performance before enabling this feature in production environments.
+
+An example configuration with span events enabled:
+
+```yaml
+receivers:
+    github:
+        webhook:
+            endpoint: localhost:19418
+            path: /events
+            health_path: /health
+            secret: ${env:SECRET_STRING_VAR}
+            required_headers:
+                WAF-Header: "value"
+            include_span_events: true
+        scrapers: # The validation expects at least a dummy scraper config
+            scraper:
+                github_org: open-telemetry
+```
 
 ### Configuring A GitHub App
 

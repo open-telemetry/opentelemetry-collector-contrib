@@ -12,6 +12,7 @@ receivers:
       health_path: "health/path"
       required_headers:
         key: value-present
+      # include_span_events: false  # default, set to true to attach raw events
 
   github/customname:
     initial_delay: 1s
