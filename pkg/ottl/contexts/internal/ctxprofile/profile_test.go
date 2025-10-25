@@ -32,6 +32,14 @@ func TestPathGetSetter(t *testing.T) {
 			val:  createValueType(),
 		},
 		{
+			path: "sample_type type",
+			val:  "cpu",
+		},
+		{
+			path: "sample_type unit",
+			val:  "cycles",
+		},
+		{
 			path: "sample",
 			val:  createSampleSlice(),
 		},
@@ -54,6 +62,14 @@ func TestPathGetSetter(t *testing.T) {
 		{
 			path: "period_type",
 			val:  createValueType(),
+		},
+		{
+			path: "period_type type",
+			val:  "heap",
+		},
+		{
+			path: "period_type unit",
+			val:  "bytes",
 		},
 		{
 			path: "period",

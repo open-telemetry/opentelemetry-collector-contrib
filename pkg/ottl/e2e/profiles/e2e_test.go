@@ -276,6 +276,24 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(sample_type.type, "profile_sample_type_type")`,
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
+				tbl := tCtx.GetProfilesDictionary().StringTable()
+				idx, err := pprofile.SetString(tbl, "profile_sample_type_type")
+				require.NoError(t, err)
+				tCtx.GetProfile().SampleType().SetTypeStrindex(idx)
+			},
+		},
+		{
+			statement: `set(sample_type.unit, "profile_sample_type_unit")`,
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
+				tbl := tCtx.GetProfilesDictionary().StringTable()
+				idx, err := pprofile.SetString(tbl, "profile_sample_type_unit")
+				require.NoError(t, err)
+				tCtx.GetProfile().SampleType().SetUnitStrindex(idx)
+			},
+		},
+		{
 			statement: `truncate_all(attributes, 100)`,
 			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 		},
