@@ -41,7 +41,7 @@ func newFilterProfilesProcessor(set processor.Settings, cfg *Config) (*filterPro
 		if errBoolExpr != nil {
 			return nil, errBoolExpr
 		}
-		fpp.skipExpr = skipExpr
+		fpp.skipExpr = applyActionToExpr(skipExpr, cfg.Profiles.Action)
 		return fpp, nil
 	}
 

@@ -46,12 +46,14 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 			if err != nil {
 				return nil, err
 			}
+			fsp.skipSpanExpr = applyActionToExpr(fsp.skipSpanExpr, cfg.Traces.Action)
 		}
 		if cfg.Traces.SpanEventConditions != nil {
 			fsp.skipSpanEventExpr, err = filterottl.NewBoolExprForSpanEvent(cfg.Traces.SpanEventConditions, cfg.spanEventFunctions, cfg.ErrorMode, set.TelemetrySettings)
 			if err != nil {
 				return nil, err
 			}
+			fsp.skipSpanEventExpr = applyActionToExpr(fsp.skipSpanEventExpr, cfg.Traces.Action)
 		}
 		return fsp, nil
 	}

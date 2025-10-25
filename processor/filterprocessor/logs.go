@@ -43,7 +43,7 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 		if errBoolExpr != nil {
 			return nil, errBoolExpr
 		}
-		flp.skipExpr = skipExpr
+		flp.skipExpr = applyActionToExpr(skipExpr, cfg.Logs.Action)
 		return flp, nil
 	}
 
