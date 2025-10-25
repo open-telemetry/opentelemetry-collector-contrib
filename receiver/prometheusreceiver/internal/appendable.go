@@ -15,6 +15,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
+// TargetSamplesReporter defines the interface for reporting target samples
+type TargetSamplesReporter interface {
+	ReportTargetSamples(job, instance string, sampleCount int)
+}
+
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
 type appendable struct {
 	sink                   consumer.Metrics
@@ -24,6 +29,7 @@ type appendable struct {
 	trimSuffixes           bool
 	startTimeMetricRegex   *regexp.Regexp
 	externalLabels         labels.Labels
+	targetSamplesReporter  TargetSamplesReporter
 
 	settings receiver.Settings
 	obsrecv  *receiverhelper.ObsReport
@@ -40,6 +46,7 @@ func NewAppendable(
 	enableNativeHistograms bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
+	targetSamplesReporter TargetSamplesReporter,
 ) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
@@ -63,9 +70,10 @@ func NewAppendable(
 		externalLabels:         externalLabels,
 		obsrecv:                obsrecv,
 		trimSuffixes:           trimSuffixes,
+		targetSamplesReporter:  targetSamplesReporter,
 	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.enableNativeHistograms)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.enableNativeHistograms, o.targetSamplesReporter)
 }

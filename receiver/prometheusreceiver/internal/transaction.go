@@ -68,6 +68,11 @@ type transaction struct {
 	buildInfo              component.BuildInfo
 	metricAdjuster         MetricsAdjuster
 	obsrecv                *receiverhelper.ObsReport
+	targetSamplesReporter  TargetSamplesReporter
+	// originalJobName stores the original job name from scrape target, before any relabeling
+	originalJobName string
+	// originalAddress stores the original address from scrape target, before any relabeling
+	originalAddress string
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
@@ -89,6 +94,7 @@ func newTransaction(
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
 	enableNativeHistograms bool,
+	targetSamplesReporter TargetSamplesReporter,
 ) *transaction {
 	return &transaction{
 		ctx:                    ctx,
@@ -102,6 +108,7 @@ func newTransaction(
 		logger:                 settings.Logger,
 		buildInfo:              settings.BuildInfo,
 		obsrecv:                obsrecv,
+		targetSamplesReporter:  targetSamplesReporter,
 		bufBytes:               make([]byte, 0, 1024),
 		scopeAttributes:        make(map[resourceKey]map[scopeID]pcommon.Map),
 		nodeResources:          map[resourceKey]pcommon.Resource{},
@@ -516,6 +523,31 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 		return nil, errors.New("unable to find MetricMetadataStore in context")
 	}
 
+	// Get the original job name from the target labels (before metric relabeling)
+	// This ensures we report the correct job name to the target allocator
+	if t.originalJobName == "" {
+		// Try to get job name from target labels first
+		// t.originalJobName = target.GetValue(model.JobLabel)
+
+		// Debug: log target info to understand what's available
+		builder := labels.NewBuilder(labels.EmptyLabels())
+		targetLabels := target.Labels(builder)
+		discoveredLabels := target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels()))
+
+		t.logger.Info("initTransaction: target info",
+			zap.String("job_from_target_labels", t.originalJobName),
+			zap.String("instance_from_target", target.GetValue(model.InstanceLabel)),
+			zap.String("target_labels", targetLabels.String()),
+			zap.String("discovered_labels", discoveredLabels.String()))
+
+		t.originalJobName = discoveredLabels.Get(model.JobLabel)
+		t.originalAddress = discoveredLabels.Get(model.AddressLabel)
+		t.logger.Info("initTransaction:",
+			zap.String("original_job_name", t.originalJobName),
+			zap.String("original_address", t.originalAddress))
+
+	}
+
 	rKey, err := t.getJobAndInstance(lbs)
 	if err != nil {
 		return nil, err
@@ -586,6 +618,12 @@ func (t *transaction) Commit() error {
 
 	err = t.sink.ConsumeMetrics(ctx, md)
 	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
+
+	// Report target samples to target allocator if configured and successful
+	if err == nil && t.targetSamplesReporter != nil {
+		t.reportTargetSamples(numPoints)
+	}
+
 	return err
 }
 
@@ -643,4 +681,24 @@ func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
 
 func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
 	return ls.HashWithoutLabels(bytes, getSortedNotUsefulLabels(mtype)...)
+}
+
+// reportTargetSamples reports the sample count for each target to the target allocator
+func (t *transaction) reportTargetSamples(totalSamples int) {
+	// Report samples for each resource (job/instance combination)
+	// Use the original job name from the target (before metric relabeling) to ensure
+	// it matches the job name used by the target allocator
+	for rKey := range t.families {
+		jobName := t.originalJobName
+		if jobName == "" {
+			// Fallback to the job from resource key if original job name is not available
+			jobName = rKey.job
+		}
+		instance := t.originalAddress
+		if instance == "" {
+			// Fallback to the instance from resource key if original address is not available
+			instance = rKey.instance
+		}
+		t.targetSamplesReporter.ReportTargetSamples(jobName, instance, totalSamples)
+	}
 }
