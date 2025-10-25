@@ -163,6 +163,38 @@ func TestGenerateBlobName(t *testing.T) {
 	assert.True(t, strings.HasPrefix(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat)))
 }
 
+func TestGenerateBlobNameUseUTC(t *testing.T) {
+	t.Parallel()
+
+	c := &Config{
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
+			LogsFormat:     "2006/01/02/logs_15_04_05.json",
+			TracesFormat:   "2006/01/02/traces_15_04_05.json",
+			SerialNumRange: 10000,
+			Params:         map[string]string{},
+			UseUTC:         true,
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+
+	before := time.Now().UTC()
+	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	require.NoError(t, err)
+	after := time.Now().UTC()
+
+	lastUnderscore := strings.LastIndex(metricsBlobName, "_")
+	require.NotEqual(t, -1, lastUnderscore, "expected serial number separator in blob name")
+	prefix := metricsBlobName[:lastUnderscore]
+
+	parsed, err := time.ParseInLocation(c.BlobNameFormat.MetricsFormat, prefix, time.UTC)
+	require.NoError(t, err)
+
+	assert.False(t, parsed.Before(before.Add(-time.Second)))
+	assert.False(t, parsed.After(after.Add(time.Second)))
+}
+
 func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 	t.Parallel()
 
