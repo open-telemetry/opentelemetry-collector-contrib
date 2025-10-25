@@ -4,6 +4,7 @@
 package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 
 import (
+	"bufio"
 	"errors"
 	"regexp"
 	"time"
@@ -17,6 +18,7 @@ var (
 	errReadTimeoutExceedsMaxValue  = errors.New("the duration specified for read_timeout exceeds the maximum allowed value of 10s")
 	errWriteTimeoutExceedsMaxValue = errors.New("the duration specified for write_timeout exceeds the maximum allowed value of 10s")
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
+	errMaxRequestBodyBytes         = errors.New("max_request_body_bytes must be greater than 1 kb")
 	errHeaderAttributeRegexCompile = errors.New("regex for header_attribute_regex failed to compile")
 )
 
@@ -32,6 +34,7 @@ type Config struct {
 	SplitLogsAtJSONBoundary    bool                     `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
 	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
 	HeaderAttributeRegex       string                   `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
+	MaxRequestBodyBytes        int                      `mapstructure:"max_request_body_bytes"`        // maximum request body size in bytes. Default is 100KB
 }
 
 type RequiredHeader struct {
@@ -70,6 +73,13 @@ func (cfg *Config) Validate() error {
 		if writeTimeout > maxReadWriteTimeout {
 			errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 		}
+	}
+
+	if cfg.MaxRequestBodyBytes == 0 {
+		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
+	} else if cfg.MaxRequestBodyBytes < bufio.MaxScanTokenSize {
+		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
+		// errs = multierr.Append(errs, errMaxRequestBodyBytes)
 	}
 
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
