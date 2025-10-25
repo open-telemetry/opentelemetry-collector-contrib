@@ -82,6 +82,7 @@ type DNSResolver struct {
 	Port     string        `mapstructure:"port"`
 	Interval time.Duration `mapstructure:"interval"`
 	Timeout  time.Duration `mapstructure:"timeout"`
+	Server   string        `mapstructure:"server"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
