@@ -249,6 +249,12 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 					zap.String("resource", config.gvr.String()),
 					zap.Error(err))
 				continue
+			} else if len(objects.Items) > 0 {
+				logs := pullObjectsToLogData(objects, time.Now(), config, kr.setting.BuildInfo.Version)
+				obsCtx := kr.obsrecv.StartLogsOp(ctx)
+				logRecordCount := logs.LogRecordCount()
+				err = kr.consumer.ConsumeLogs(obsCtx, logs)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
 			}
 			if len(objects.Items) == 0 {
 				continue
