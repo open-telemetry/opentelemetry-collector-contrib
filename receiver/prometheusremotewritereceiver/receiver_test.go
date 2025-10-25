@@ -22,6 +22,7 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -83,7 +84,7 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 
 	// Add cleanup to ensure LRU cache is properly purged
 	t.Cleanup(func() {
-		writeReceiver.rmCache.Purge()
+		writeReceiver.attrCache.Purge()
 	})
 
 	return writeReceiver
@@ -1414,8 +1415,8 @@ func TestTranslateV2(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
-			prwReceiver.rmCache.Purge()
+			// since we are using the attrCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
+			prwReceiver.attrCache.Purge()
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
 			if tc.expectError != "" {
 				assert.ErrorContains(t, err, tc.expectError)
@@ -1449,13 +1450,22 @@ func (m *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	defer m.mu.Unlock()
 	m.metrics = append(m.metrics, md)
 	m.dataPoints += md.DataPointCount()
+	md.MarkReadOnly()
 	return nil
+}
+
+func (m *mockConsumer) clearAll() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.metrics = make([]pmetric.Metrics, 0)
+	m.dataPoints = 0
 }
 
 func TestTargetInfoWithMultipleRequests(t *testing.T) {
 	tests := []struct {
-		name     string
-		requests []*writev2.Request
+		name            string
+		requests        []*writev2.Request
+		expectedMetrics func() pmetric.Metrics
 	}{
 		{
 			name: "target_info first, normal metric second",
@@ -1493,6 +1503,31 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 						},
 					},
 				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("machine_type", "n1-standard-1")
+				attrs.PutStr("cloud_provider", "gcp")
+				attrs.PutStr("region", "us-central1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("normal_metric")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetDoubleValue(2.0)
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp1.Attributes().PutStr("foo", "bar")
+
+				return metrics
 			},
 		},
 		{
@@ -1532,36 +1567,32 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 					},
 				},
 			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("normal_metric")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetDoubleValue(2.0)
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp1.Attributes().PutStr("foo", "bar")
+
+				return metrics
+			},
 		},
 	}
 
 	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
-	expectedMetrics := func() pmetric.Metrics {
-		metrics := pmetric.NewMetrics()
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
-		attrs.PutStr("service.instance.id", "host1")
-		attrs.PutStr("machine_type", "n1-standard-1")
-		attrs.PutStr("cloud_provider", "gcp")
-		attrs.PutStr("region", "us-central1")
-
-		sm := rm.ScopeMetrics().AppendEmpty()
-		sm.Scope().SetName("OpenTelemetry Collector")
-		sm.Scope().SetVersion("latest")
-		m1 := sm.Metrics().AppendEmpty()
-		m1.SetName("normal_metric")
-		m1.SetUnit("")
-		m1.SetDescription("")
-		dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp1.SetDoubleValue(2.0)
-		dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-		dp1.Attributes().PutStr("foo", "bar")
-
-		return metrics
-	}()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockConsumer := new(mockConsumer)
@@ -1592,7 +1623,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
 
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
+			assert.NoError(t, pmetrictest.CompareMetrics(tt.expectedMetrics(), mockConsumer.metrics[0]))
 		})
 	}
 }
@@ -1605,10 +1636,10 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	prwReceiver := setupMetricsReceiver(t)
 
 	// Set a small cache size to emulate the cache eviction
-	prwReceiver.rmCache.Resize(1)
+	prwReceiver.attrCache.Resize(1)
 
 	t.Cleanup(func() {
-		prwReceiver.rmCache.Purge()
+		prwReceiver.attrCache.Purge()
 	})
 
 	// Metric 1.
@@ -1747,6 +1778,9 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		attrs.PutStr("service.namespace", "production")
 		attrs.PutStr("service.name", "service_a")
 		attrs.PutStr("service.instance.id", "host1")
+		attrs.PutStr("machine_type", "n1-standard-1")
+		attrs.PutStr("cloud_provider", "gcp")
+		attrs.PutStr("region", "us-central1")
 
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("OpenTelemetry Collector")
@@ -1790,9 +1824,9 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	// As target_info and metric1 have the same job/instance, they generate the same end metric: mockConsumer.metrics[0].
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[0]))
 	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[2]. At this point, the cache is full it should evict the target_info metric to store the metric2.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[1]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[3]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[2]))
 }
 
 func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
@@ -1818,4 +1852,265 @@ func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
 		}
 	}
 	return result
+}
+
+func TestReceiverWithExpectedMetrics(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+	require.NoError(t, err)
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	require.NoError(t, err)
+
+	consumer := &mockConsumer{}
+	receiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	receiver.nextConsumer = consumer
+	receiver.obsrecv = obsrecv
+
+	ts := httptest.NewServer(http.HandlerFunc(receiver.handlePRW))
+	defer ts.Close()
+
+	testCases := []struct {
+		name            string
+		requests        []*writev2.Request
+		expectedMetrics []pmetric.Metrics
+	}{
+		{
+			name: "Single metric, one sample",
+			requests: []*writev2.Request{
+				{
+					Symbols: []string{"", "__name__", "cpu_usage", "job", "jobA", "instance", "instA"},
+					Timeseries: []writev2.TimeSeries{
+						{
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 0.5, Timestamp: 1000}},
+						},
+					},
+				},
+			},
+			expectedMetrics: []pmetric.Metrics{
+				func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.Resource().Attributes().PutStr("service.instance.id", "instA")
+					rm.Resource().Attributes().PutStr("service.name", "jobA")
+
+					sm := rm.ScopeMetrics().AppendEmpty()
+					sm.Scope().SetName("OpenTelemetry Collector")
+					sm.Scope().SetVersion("latest")
+					m := sm.Metrics().AppendEmpty()
+					m.SetName("cpu_usage")
+					m.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(0.5)
+					m.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(1000 * 1e6)) // convert ms to ns
+					return metrics
+				}(),
+			},
+		},
+		{
+			name: "Two metrics, one sample each",
+			requests: []*writev2.Request{
+				{
+					Symbols: []string{"", "__name__", "cpu_usage", "job", "jobA", "instance", "instA", "memory_usage"},
+					Timeseries: []writev2.TimeSeries{
+						{
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1000}},
+						},
+						{
+							LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2048.0, Timestamp: 1000}},
+						},
+					},
+				},
+			},
+			expectedMetrics: []pmetric.Metrics{
+				func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.Resource().Attributes().PutStr("service.name", "jobA")
+					rm.Resource().Attributes().PutStr("service.instance.id", "instA")
+
+					sm := rm.ScopeMetrics().AppendEmpty()
+					sm.Scope().SetName("OpenTelemetry Collector")
+					sm.Scope().SetVersion("latest")
+
+					// cpu_usage
+					m1 := sm.Metrics().AppendEmpty()
+					m1.SetName("cpu_usage")
+					m1.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(1.0)
+					m1.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(1000 * 1e6))
+
+					// memory_usage
+					m2 := sm.Metrics().AppendEmpty()
+					m2.SetName("memory_usage")
+					m2.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(2048.0)
+					m2.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(1000 * 1e6))
+
+					return metrics
+				}(),
+			},
+		},
+		{
+			name: "Two resources, Two metrics, one sample each",
+			requests: []*writev2.Request{
+				{
+					Symbols: []string{"", "__name__", "cpu_usage", "job", "jobA", "instance", "instA", "memory_usage", "jobB", "instB"},
+					Timeseries: []writev2.TimeSeries{
+						{
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1000}},
+						},
+						{
+							LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2048.0, Timestamp: 1000}},
+						},
+						{
+							LabelsRefs: []uint32{1, 2, 3, 8, 5, 9},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 1000}},
+						},
+						{
+							LabelsRefs: []uint32{1, 7, 3, 8, 5, 9},
+							Samples:    []writev2.Sample{{Value: 4096.0, Timestamp: 1000}},
+						},
+					},
+				},
+			},
+			expectedMetrics: []pmetric.Metrics{
+				func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.Resource().Attributes().PutStr("service.name", "jobA")
+					rm.Resource().Attributes().PutStr("service.instance.id", "instA")
+
+					sm := rm.ScopeMetrics().AppendEmpty()
+					sm.Scope().SetName("OpenTelemetry Collector")
+					sm.Scope().SetVersion("latest")
+
+					// cpu_usage
+					m1 := sm.Metrics().AppendEmpty()
+					m1.SetName("cpu_usage")
+					m1.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(1.0)
+					m1.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(1000 * 1e6))
+
+					// memory_usage
+					m2 := sm.Metrics().AppendEmpty()
+					m2.SetName("memory_usage")
+					m2.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(2048.0)
+					m2.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(1000 * 1e6))
+
+					rm = metrics.ResourceMetrics().AppendEmpty()
+					rm.Resource().Attributes().PutStr("service.name", "jobB")
+					rm.Resource().Attributes().PutStr("service.instance.id", "instB")
+
+					sm = rm.ScopeMetrics().AppendEmpty()
+					sm.Scope().SetName("OpenTelemetry Collector")
+					sm.Scope().SetVersion("latest")
+
+					// cpu_usage
+					m1 = sm.Metrics().AppendEmpty()
+					m1.SetName("cpu_usage")
+					m1.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(2.0)
+					m1.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(1000 * 1e6))
+
+					// memory_usage
+					m2 = sm.Metrics().AppendEmpty()
+					m2.SetName("memory_usage")
+					m2.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(4096.0)
+					m2.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(1000 * 1e6))
+
+					return metrics
+				}(),
+			},
+		},
+		{
+			name: "Same job-instance, multiple metrics",
+			requests: []*writev2.Request{
+				{
+					Symbols: []string{"", "__name__", "metric1", "job", "jobA", "instance", "instA", "metric2"},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+						},
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+							LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
+				},
+			},
+			expectedMetrics: []pmetric.Metrics{
+				func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.Resource().Attributes().PutStr("service.name", "jobA")
+					rm.Resource().Attributes().PutStr("service.instance.id", "instA")
+
+					sm := rm.ScopeMetrics().AppendEmpty()
+					sm.Scope().SetName("OpenTelemetry Collector")
+					sm.Scope().SetVersion("latest")
+
+					m := sm.Metrics().AppendEmpty()
+					m.SetName("metric1")
+					m.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(1)
+					m.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(1 * 1e6))
+
+					m = sm.Metrics().AppendEmpty()
+					m.SetName("metric2")
+					m.SetEmptyGauge().DataPoints().AppendEmpty().
+						SetDoubleValue(2)
+					m.Gauge().DataPoints().At(0).SetTimestamp(pcommon.Timestamp(2 * 1e6))
+					return metrics
+				}(),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			consumer.clearAll()
+			require.Len(t, tc.requests, len(tc.expectedMetrics))
+
+			for _, req := range tc.requests {
+				pBuf := proto.NewBuffer(nil)
+				require.NoError(t, pBuf.Marshal(req))
+
+				resp, err := http.Post(
+					ts.URL,
+					fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+					bytes.NewBuffer(pBuf.Bytes()),
+				)
+				require.NoError(t, err)
+				defer resp.Body.Close()
+				_, err = io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusNoContent, resp.StatusCode)
+			}
+
+			require.Len(t, consumer.metrics, len(tc.expectedMetrics))
+
+			for i := range tc.expectedMetrics {
+				actual := consumer.metrics[i]
+				expected := tc.expectedMetrics[i]
+
+				assert.NoError(t, pmetrictest.CompareMetrics(expected, actual))
+			}
+		})
+	}
 }
