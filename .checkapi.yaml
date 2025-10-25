@@ -6,6 +6,7 @@ ignored_paths:
   - extension/observer
   - extension/encoding
   - extension/opampcustommessages
+  - extension/lookup/nooplookupextension
   - pkg/batchperresourceattr
   - pkg/batchpersignal
   - pkg/core/xidutils
@@ -19,6 +20,7 @@ ignored_paths:
   - pkg/resourcetotelemetry
   - pkg/sampling
   - pkg/status
+  - pkg/lookup
   - pkg/translator/azure
   - pkg/translator/azurelogs
   - pkg/translator/faro
@@ -31,6 +33,7 @@ ignored_paths:
   - pkg/translator/skywalking
   - pkg/winperfcounters
   - pkg/xk8stest
+  - processor/lookupprocessor
   - processor/tailsamplingprocessor
   - receiver/hostmetricsreceiver # issue with the parser not identifying Config as a config struct
   - receiver/pulsarreceiver # 38930
