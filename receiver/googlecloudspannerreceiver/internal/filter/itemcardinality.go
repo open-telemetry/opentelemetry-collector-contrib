@@ -23,6 +23,7 @@ type ItemFilter interface {
 	Shutdown() error
 	TotalLimit() int
 	LimitByTimestamp() int
+	StartCache()
 }
 
 type ItemFilterResolver interface {
@@ -38,6 +39,8 @@ type itemCardinalityFilter struct {
 	logger             *zap.Logger
 	cache              *ttlcache.Cache[string, struct{}]
 	stopOnce           sync.Once
+	startOnce          sync.Once
+	wg                 sync.WaitGroup
 }
 
 type currentLimitByTimestamp struct {
@@ -63,7 +66,6 @@ func NewItemCardinalityFilter(metricName string, totalLimit, limitByTimestamp in
 		ttlcache.WithCapacity[string, struct{}](uint64(totalLimit)),
 		ttlcache.WithDisableTouchOnHit[string, struct{}](),
 	)
-	go cache.Start()
 
 	return &itemCardinalityFilter{
 		metricName:         metricName,
@@ -93,6 +95,25 @@ func (f *itemCardinalityFilter) Filter(sourceItems []*Item) []*Item {
 	}
 
 	return filteredItems
+}
+
+// StartCache explicitly starts the TTL cache cleanup loop.
+// Idempotent: safe to call multiple times.
+func (f *itemCardinalityFilter) StartCache() {
+	f.startOnce.Do(func() {
+		f.wg.Add(1)
+		go func() {
+			defer f.wg.Done()
+
+			done := make(chan struct{})
+			go func() {
+				f.cache.Start()
+				close(done)
+			}()
+
+			<-done
+		}()
+	})
 }
 
 func (f *itemCardinalityFilter) filterItems(items []*Item) []*Item {
@@ -133,7 +154,20 @@ func (f *itemCardinalityFilter) canIncludeNewItem(currentLimitByTimestamp int) b
 }
 
 func (f *itemCardinalityFilter) Shutdown() error {
-	f.stopOnce.Do(func() { f.cache.Stop() })
+	f.stopOnce.Do(func() {
+		stopped := make(chan struct{})
+		go func() {
+			f.cache.Stop()
+			f.wg.Wait()
+			close(stopped)
+		}()
+
+		select {
+		case <-stopped:
+		case <-time.After(5 * time.Second):
+			f.logger.Warn("Timeout waiting for ttlcache shutdown", zap.String("metric", f.metricName))
+		}
+	})
 	return nil
 }
 
