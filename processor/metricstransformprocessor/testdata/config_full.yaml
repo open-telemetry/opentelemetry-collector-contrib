@@ -3,6 +3,7 @@ metricstransform:
     - include: name
       action: update
       new_name: new_name
+      new_description: new_description
 
 metricstransform/multiple:
   transforms:
@@ -10,6 +11,7 @@ metricstransform/multiple:
       match_type: strict
       action: insert
       new_name: new_name
+      new_description: new_description
       operations:
         - action: add_label
           new_label: my_label
@@ -18,12 +20,14 @@ metricstransform/multiple:
     - include: new_name
       action: insert
       new_name: new_name_copy_1
+      new_description: new_description_copy_1
       match_type: strict
       experimental_match_labels: {"my_label": "my_value"}
 
     - include: new_name
       action: insert
       new_name: new_name_copy_2
+      new_description: new_description_copy_2
       match_type: regexp
       experimental_match_labels: {"my_label": ".*label"}
 

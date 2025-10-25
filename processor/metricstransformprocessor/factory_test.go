@@ -199,8 +199,9 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 				Include:   "name",
 				MatchType: strictMatchType,
 			},
-			Action:  Update,
-			NewName: "new-name",
+			Action:         Update,
+			NewName:        "new-name",
+			NewDescription: "new_description",
 			Operations: []operation{
 				{
 					Action:   addLabel,
@@ -239,6 +240,7 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 			MetricIncludeFilter: internalFilterStrict{include: "name"},
 			Action:              Update,
 			NewName:             "new-name",
+			NewDescription:      "new_description",
 			Operations: []internalOperation{
 				{
 					configOperation: &operation{
@@ -295,6 +297,7 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 	for i, expTr := range expData {
 		mtpT := internalTransforms[i]
 		assert.Equal(t, expTr.NewName, mtpT.NewName)
+		assert.Equal(t, expTr.NewDescription, mtpT.NewDescription)
 		assert.Equal(t, expTr.Action, mtpT.Action)
 		assert.Equal(t, expTr.MetricIncludeFilter.(internalFilterStrict).include, mtpT.MetricIncludeFilter.(internalFilterStrict).include)
 		for j, expOp := range expTr.Operations {
