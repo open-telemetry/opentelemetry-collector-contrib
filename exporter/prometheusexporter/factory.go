@@ -30,6 +30,7 @@ func createDefaultConfig() component.Config {
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
 		EnableOpenMetrics: false,
+		EnableOpenMetricsTextCreatedSamples: false,
 		AddMetricSuffixes: true,
 	}
 }

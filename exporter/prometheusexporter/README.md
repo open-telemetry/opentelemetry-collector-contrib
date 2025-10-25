@@ -31,6 +31,7 @@ The following settings can be optionally configured:
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
+- `enable_open_metrics_text_created_samples`: (default = `false`): If true, and if `enable_open_metrics` is also true, the new metric `*_created` with the timestamp of the metric creation will additionally be added to counters, histograms, and summaries. See the [OpenMetrics created timestamp documentation](https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#counter-1) for more details.
 - `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled. **Deprecated**: Use `translation_strategy` instead. This setting is ignored when `translation_strategy` is explicitly set.
 - `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. When set, this takes precedence over `add_metric_suffixes`. Available options:
   - `UnderscoreEscapingWithSuffixes`: Fully escapes metric names for classic Prometheus metric name compatibility, and includes appending type and unit suffixes.
