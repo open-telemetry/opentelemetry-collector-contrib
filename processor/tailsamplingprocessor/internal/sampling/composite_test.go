@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -59,10 +60,10 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *samplingpol
 
 func TestCompositeEvaluatorNotSampled(t *testing.T) {
 	// Create 2 policies which do not match any trace
-	min0 := int64(0)
-	max100 := int64(100)
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
-	n2 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
+	min0 := configoptional.Some(NumericValue{Value: 0})
+	max100 := configoptional.Some(NumericValue{Value: 100})
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", min0, max100, false)
+	n2 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", min0, max100, false)
 	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, false)
 
 	trace := createTrace()
@@ -78,9 +79,9 @@ func TestCompositeEvaluatorNotSampled(t *testing.T) {
 
 func TestCompositeEvaluatorSampled(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
-	min0 := int64(0)
-	max100 := int64(100)
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
+	min0 := configoptional.Some(NumericValue{Value: 0})
+	max100 := configoptional.Some(NumericValue{Value: 100})
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", min0, max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, false)
 
@@ -96,9 +97,9 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 
 func TestCompositeEvaluatorSampled_RecordSubPolicy(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
-	min0 := int64(0)
-	max100 := int64(100)
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
+	min0 := configoptional.Some[NumericValue](NumericValue{Value: 0})
+	max100 := configoptional.Some[NumericValue](NumericValue{Value: 100})
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", min0, max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, true)
 
@@ -119,9 +120,9 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 	timeProvider := &FakeTimeProvider{second: 0}
 
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
-	min0 := int64(0)
-	max100 := int64(100)
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
+	min0 := configoptional.Some(NumericValue{Value: 0})
+	max100 := configoptional.Some(NumericValue{Value: 100})
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", min0, max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	c := NewComposite(zap.NewNop(), 3, []SubPolicyEvalParams{{n1, 1, "eval-1"}, {n2, 1, "eval-2"}}, timeProvider, false)
 
@@ -154,9 +155,9 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 
 func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
-	min0 := int64(0)
-	max100 := int64(100)
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
+	min0 := configoptional.Some(NumericValue{Value: 0})
+	max100 := configoptional.Some(NumericValue{Value: 100})
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", min0, max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20, "eval-1"}, {n2, 20, "eval-2"}}, FakeTimeProvider{}, false)
 
@@ -252,9 +253,9 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 }
 
 func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
-	min0 := int64(0)
-	max100 := int64(100)
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
+	min0 := configoptional.Some(NumericValue{Value: 0})
+	max100 := configoptional.Some(NumericValue{Value: 100})
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", min0, max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	timeProvider := &FakeTimeProvider{second: 0}
 	const totalSPS = 10
