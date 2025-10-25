@@ -95,10 +95,14 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	}
 	rs.uptime = currentUptime
 
-	rs.recordCommonMetrics(now, inf)
+	mode := rs.getRedisMode(inf)
+
+	rs.recordCommonMetrics(now, inf, rs.dataPointRecorders())
+	rs.recordCommonMetrics(now, inf, rs.sentinelDataPointRecorders())
 	rs.recordKeyspaceMetrics(now, inf)
 	rs.recordRoleMetrics(now, inf)
 	rs.recordCmdMetrics(now, inf)
+	rs.recordModeMetrics(now, mode)
 	rb := rs.mb.NewResourceBuilder()
 	rb.SetRedisVersion(rs.getRedisVersion(inf))
 	rb.SetServerAddress(rs.configInfo.Address)
@@ -107,8 +111,7 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.
-func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
-	recorders := rs.dataPointRecorders()
+func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info, recorders map[string]any) {
 	for infoKey, infoVal := range inf {
 		recorder, ok := recorders[infoKey]
 		if !ok {
@@ -121,20 +124,25 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
 			if err != nil {
 				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
 					zap.String("val", infoVal), zap.Error(err))
+				continue
 			}
 			recordDataPoint(ts, val)
+
 		case func(pcommon.Timestamp, float64):
 			val, err := strconv.ParseFloat(infoVal, 64)
 			if err != nil {
 				rs.settings.Logger.Warn("failed to parse info float val", zap.String("key", infoKey),
 					zap.String("val", infoVal), zap.Error(err))
+				continue
 			}
 			recordDataPoint(ts, val)
+
 		case func(pcommon.Timestamp, int64, metadata.AttributeClusterState):
 			val, err := strconv.ParseInt(infoVal, 10, 64)
 			if err != nil {
 				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
 					zap.String("val", infoVal), zap.Error(err))
+				continue
 			}
 			var state metadata.AttributeClusterState
 			if infoKey == "cluster_state" {
@@ -177,6 +185,28 @@ func (*redisScraper) getRedisVersion(inf info) string {
 		return str
 	}
 	return "unknown"
+}
+
+// getRedisMode retrieves mode string from 'redis_mode' Redis info key-value pairs
+// e.g. "redis_mode:standalone"
+func (*redisScraper) getRedisMode(inf info) string {
+	if str, ok := inf["redis_mode"]; ok {
+		return str
+	}
+	return "unknown"
+}
+
+// recordModeMetrics records metrics from 'redis_mode' Redis info key-value pairs
+// e.g. "redis_mode:standalone"
+func (rs *redisScraper) recordModeMetrics(ts pcommon.Timestamp, mode string) {
+	switch mode {
+	case "cluster":
+		rs.mb.RecordRedisModeDataPoint(ts, 1, metadata.AttributeModeCluster)
+	case "sentinel":
+		rs.mb.RecordRedisModeDataPoint(ts, 1, metadata.AttributeModeSentinel)
+	case "standalone":
+		rs.mb.RecordRedisModeDataPoint(ts, 1, metadata.AttributeModeStandalone)
+	}
 }
 
 // recordRoleMetrics records metrics from 'role' Redis info key-value pairs
@@ -246,5 +276,17 @@ func (rs *redisScraper) recordCmdLatencyMetrics(ts pcommon.Timestamp, cmd, val s
 			latency := usecs / 1e6 // metric is in seconds
 			rs.mb.RecordRedisCmdLatencyDataPoint(ts, latency, cmd, percentileAttr)
 		}
+	}
+}
+
+// sentinelDataPointRecorders returns the map of supported Sentinel metrics.
+func (rs *redisScraper) sentinelDataPointRecorders() map[string]any {
+	return map[string]any{
+		"sentinel_masters":                rs.mb.RecordRedisSentinelMastersDataPoint,
+		"sentinel_tilt_since_seconds":     rs.mb.RecordRedisSentinelTiltSinceSecondsDataPoint,
+		"sentinel_total_tilt":             rs.mb.RecordRedisSentinelTotalTiltDataPoint,
+		"sentinel_running_scripts":        rs.mb.RecordRedisSentinelRunningScriptsDataPoint,
+		"sentinel_scripts_queue_length":   rs.mb.RecordRedisSentinelScriptsQueueLengthDataPoint,
+		"sentinel_simulate_failure_flags": rs.mb.RecordRedisSentinelSimulateFailureFlagsDataPoint,
 	}
 }
