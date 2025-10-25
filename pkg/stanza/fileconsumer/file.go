@@ -289,7 +289,17 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.String("rotated_path", file.Name()))
 			}
 		}
-		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
+		// Close old reader and adjust metadata if file was copy-truncated.
+		md := oldReader.Close()
+		if info, err := file.Stat(); err == nil && md.Offset > info.Size() {
+			m.set.Logger.Debug("File has been rotated(truncated). Resetting offset to 0",
+				zap.String("path", file.Name()),
+				zap.Int64("stored_offset", md.Offset),
+				zap.Int64("current_file_size", info.Size()),
+			)
+			md.Offset = 0
+		}
+		return m.readerFactory.NewReaderFromMetadata(file, md)
 	}
 
 	// Check for closed files for match
