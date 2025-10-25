@@ -89,8 +89,10 @@ The following settings can be optionally configured:
 - `retry_on_failure`
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
+  - `randomization_factor` (default = 0.5): Is the random factor used to calculate the next backoffs.
+  - `multiplier` (default = 1.5): Is the value multiplied by the backoff innterval bounds.
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
-  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
+  - `max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
