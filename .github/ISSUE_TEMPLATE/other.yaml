@@ -136,8 +136,8 @@ body:
       - internal/common
       - internal/core
       - internal/datadog
+      - internal/datadog/e2e
       - internal/docker
-      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
@@ -239,6 +239,7 @@ body:
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos
+      - receiver/ciscoos/internal/scraper/systemscraper
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
