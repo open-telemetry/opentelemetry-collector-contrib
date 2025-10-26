@@ -1,0 +1,10 @@
+change_type: bugfix
+component: pkg/ottl
+note: Return errors when OTTL context accessors receive values of the wrong type (part 2)
+issues: [40198]
+subtext: |
+  Setters in OTTL contexts now validate that values are of the expected type and return
+  descriptive errors when type mismatches occur, improving debugging experience.
+  This is the continuation of work done in \#43505, addressing remaining context such
+  as datapoint, profile, resource, span, and span event.
+change_logs: [api, user]
