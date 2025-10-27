@@ -128,6 +128,7 @@ The following configuration options can also be configured:
   - `max_conns_per_host` (default = 20): The maximum total number of connections the client can keep open per host.
   - `idle_conn_timeout` (default = 30s): The maximum amount of time an idle connection will remain open before closing itself.
   - `timeout` (default = 10s): Amount of time to wait for the dimension HTTP request to complete.
+  - `drop_tags` (default = false): Flag that indicates whether metadata tags should be sent to Splunk Observability be the exporter.
 - `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters 
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
