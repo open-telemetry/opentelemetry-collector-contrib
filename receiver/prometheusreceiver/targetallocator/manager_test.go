@@ -37,7 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
-type MockTargetAllocator struct {
+type mockTargetAllocator struct {
 	mu          sync.Mutex // mu protects the fields below.
 	endpoints   map[string][]mockTargetAllocatorResponse
 	accessIndex map[string]*atomic.Int32
@@ -78,7 +78,7 @@ type expectedTestResult struct {
 	jobMap map[string]expectedTestResultJobMap
 }
 
-func (mta *MockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+func (mta *mockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	mta.mu.Lock()
 	defer mta.mu.Unlock()
 
@@ -105,11 +105,11 @@ func (mta *MockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 	}
 }
 
-func (mta *MockTargetAllocator) Start() {
+func (mta *mockTargetAllocator) Start() {
 	mta.srv.Start()
 }
 
-func (mta *MockTargetAllocator) Stop() {
+func (mta *mockTargetAllocator) Stop() {
 	mta.srv.Close()
 }
 
@@ -136,13 +136,13 @@ func transformTAResponseMap(rawResponses map[string][]mockTargetAllocatorRespons
 	return responsesMap, responsesIndexMap, nil
 }
 
-func setupMockTargetAllocator(responses Responses) (*MockTargetAllocator, error) {
+func setupMockTargetAllocator(responses Responses) (*mockTargetAllocator, error) {
 	responsesMap, responsesIndexMap, err := transformTAResponseMap(responses.responses)
 	if err != nil {
 		return nil, err
 	}
 
-	mockTA := &MockTargetAllocator{
+	mockTA := &mockTargetAllocator{
 		endpoints:   responsesMap,
 		accessIndex: responsesIndexMap,
 		waitIndex:   responses.releaserMap,
