@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	Name   = "context"
-	DocRef = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlcontext"
+	readOnlyPathErrMsg = "%q is read-only and cannot be modified"
+	Name               = "context"
+	DocRef             = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlcontext"
 )
 
 func PathGetSetter[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
@@ -95,7 +96,7 @@ func accessClientAddr[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 			return cl.Addr.String(), nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
-			return errors.New("context.client.addr is read-only and cannot be modified")
+			return fmt.Errorf(readOnlyPathErrMsg, "context.client.addr")
 		},
 	}, nil
 }
@@ -148,7 +149,7 @@ func accessGRPCMetadataKeys[K any]() ottl.StandardGetSetter[K] {
 			return convertGRPCMetadataToMap(md), nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
-			return errors.New("cannot set value in context.grpc.metadata")
+			return fmt.Errorf(readOnlyPathErrMsg, "context.grpc.metadata")
 		},
 	}
 }
@@ -174,7 +175,7 @@ func accessGRPCMetadataKey[K any](keys []ottl.Key[K]) ottl.StandardGetSetter[K] 
 			return getIndexableValueFromStringArr(ctx, tCtx, keys[1:], mdVal)
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
-			return errors.New("cannot set value in context.grpc.metadata")
+			return fmt.Errorf(readOnlyPathErrMsg, "context.grpc.metadata")
 		},
 	}
 }
@@ -219,15 +220,18 @@ func convertAuthDataToMap(authData client.AuthData) (pcommon.Map, error) {
 	authMap.EnsureCapacity(len(names))
 	for _, name := range names {
 		attrVal := authData.GetAttribute(name)
-		attrStr, err := getAuthAttributeValue(attrVal)
-		if err != nil {
-			return pcommon.NewMap(), err
-		}
-		switch v := attrStr.(type) {
+		authMapAttrVal := authMap.PutEmpty(name)
+		switch typedAttrVal := attrVal.(type) {
 		case string:
-			authMap.PutStr(name, v)
+			authMapAttrVal.SetStr(typedAttrVal)
+		case []string:
+			slice := authMapAttrVal.SetEmptySlice()
+			slice.EnsureCapacity(len(typedAttrVal))
+			for _, str := range typedAttrVal {
+				slice.AppendEmpty().SetStr(str)
+			}
 		default:
-			authMap.PutEmpty(name)
+			_ = authMapAttrVal.FromRaw(attrVal)
 		}
 	}
 	return authMap, nil
@@ -240,7 +244,7 @@ func accessClientAuthAttributesKeys[K any]() ottl.StandardGetSetter[K] {
 			return convertAuthDataToMap(cl.Auth)
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
-			return errors.New("cannot set value in context.client.auth.attributes")
+			return fmt.Errorf(readOnlyPathErrMsg, "context.client.auth.attributes")
 		},
 	}
 }
@@ -267,7 +271,7 @@ func accessClientAuthAttributesKey[K any](keys []ottl.Key[K]) ottl.StandardGetSe
 			return attrStr, nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
-			return errors.New("cannot set value in context.client.auth.attributes")
+			return fmt.Errorf(readOnlyPathErrMsg, "context.client.auth.attributes")
 		},
 	}
 }
@@ -275,10 +279,7 @@ func accessClientAuthAttributesKey[K any](keys []ottl.Key[K]) ottl.StandardGetSe
 func convertClientMetadataToMap(md client.Metadata) pcommon.Map {
 	mdMap := pcommon.NewMap()
 	for k := range md.Keys() {
-		sl := mdMap.PutEmptySlice(k)
-		mdVal := md.Get(k)
-		mdSl := convertStringArrToValueSlice(mdVal)
-		mdSl.Slice().CopyTo(sl)
+		convertStringArrToValueSlice(md.Get(k)).MoveTo(mdMap.PutEmpty(k))
 	}
 	return mdMap
 }
@@ -290,7 +291,7 @@ func accessClientMetadataKeys[K any]() ottl.StandardGetSetter[K] {
 			return convertClientMetadataToMap(cl.Metadata), nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
-			return errors.New("cannot set value in context.client.metadata")
+			return fmt.Errorf(readOnlyPathErrMsg, "context.client.metadata")
 		},
 	}
 }
@@ -314,7 +315,7 @@ func accessClientMetadataKey[K any](keys []ottl.Key[K]) ottl.StandardGetSetter[K
 			return getIndexableValueFromStringArr(ctx, tCtx, keys[1:], mdVal)
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
-			return errors.New("cannot set value in context.client.metadata")
+			return fmt.Errorf(readOnlyPathErrMsg, "context.client.metadata")
 		},
 	}
 }
