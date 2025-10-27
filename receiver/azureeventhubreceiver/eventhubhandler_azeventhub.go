@@ -6,16 +6,19 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
 
 type checkpointSeqNumber struct {
-	SeqNumber int64 `json:"seqNumber"`
+	SequenceNumber int64 `json:"sequenceNumber"`
 }
 
 type azPartitionClient interface {
@@ -45,21 +48,23 @@ func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error)
 		return nil, newHubErr
 	}
 
-	var storage *storageCheckpointPersister[checkpointSeqNumber]
-	if h.storageClient != nil {
-		storage = &storageCheckpointPersister[checkpointSeqNumber]{
-			storageClient: h.storageClient,
-			defaultValue: checkpointSeqNumber{
-				SeqNumber: -1,
-			},
-		}
-	}
-
 	return &hubWrapperAzeventhubImpl{
 		hub:     azEventHubWrapper{hub},
 		config:  h.config,
-		storage: storage,
+		storage: getStorageCheckpointPersister(h.storageClient),
 	}, nil
+}
+
+func getStorageCheckpointPersister(storageClient storage.Client) *storageCheckpointPersister[checkpointSeqNumber] {
+	if storageClient != nil {
+		return nil
+	}
+	return &storageCheckpointPersister[checkpointSeqNumber]{
+		storageClient: storageClient,
+		defaultValue: checkpointSeqNumber{
+			SequenceNumber: -1,
+		},
+	}
 }
 
 type azEventHubWrapper struct {
@@ -121,18 +126,13 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 		if err != nil {
 			return nil, err
 		}
-		startPos := azeventhubs.StartPosition{Latest: to.Ptr(true)}
-		if applyOffset && h.config.Offset != "" {
-			startPos = azeventhubs.StartPosition{Offset: &h.config.Offset}
-		}
-		if h.storage != nil {
-			checkpoint, readErr := h.storage.Read(namespace, pProps.EventHubName, h.config.ConsumerGroup, partitionID)
-			if readErr == nil {
-				startPos = azeventhubs.StartPosition{
-					SequenceNumber: &checkpoint.SeqNumber,
-				}
-			}
-		}
+		startPos := h.getStartPos(
+			applyOffset,
+			namespace,
+			pProps.EventHubName,
+			getConsumerGroup(h.config),
+			partitionID,
+		)
 		pc, err := h.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
 			StartPosition: startPos,
 		})
@@ -185,8 +185,8 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 
 					if h.storage != nil {
 						err := h.storage.Write(
-							namespace, pProps.EventHubName, h.config.ConsumerGroup, partitionID, checkpointSeqNumber{
-								SeqNumber: lastEvent.SequenceNumber,
+							namespace, pProps.EventHubName, getConsumerGroup(h.config), partitionID, checkpointSeqNumber{
+								SequenceNumber: lastEvent.SequenceNumber,
 							},
 						)
 						if err != nil {
@@ -210,13 +210,50 @@ func (h *hubWrapperAzeventhubImpl) Close(ctx context.Context) error {
 	return errNoConfig
 }
 
+func (h *hubWrapperAzeventhubImpl) getStartPos(
+	applyOffset bool,
+	namespace string,
+	eventHubName string,
+	consumerGroup string,
+	partitionID string,
+) azeventhubs.StartPosition {
+	startPos := azeventhubs.StartPosition{Latest: to.Ptr(true)}
+	if applyOffset && h.config.Offset != "" {
+		startPos = azeventhubs.StartPosition{Offset: &h.config.Offset}
+	}
+	if h.storage != nil {
+		fmt.Println("hi")
+		checkpoint, readErr := h.storage.Read(
+			namespace,
+			eventHubName,
+			consumerGroup,
+			partitionID,
+		)
+		fmt.Println(checkpoint, readErr)
+		// Only apply the checkpoint seq number offset if we have one saved
+		if readErr == nil && checkpoint.SequenceNumber != -1 {
+			startPos = azeventhubs.StartPosition{
+				SequenceNumber: &checkpoint.SequenceNumber,
+			}
+		}
+	}
+
+	return startPos
+}
+
 func (h *hubWrapperAzeventhubImpl) namespace() (string, error) {
 	parsed, err := azeventhubs.ParseConnectionString(h.config.Connection)
 	if err != nil {
 		return "", err
 	}
 
-	return parsed.FullyQualifiedNamespace, nil
+	// Return the first part of the namespace
+	// Ex: example.servicebus.windows.net => example
+	n := parsed.FullyQualifiedNamespace
+	if s := strings.Split(n, "."); len(s) > 0 {
+		n = s[0]
+	}
+	return n, nil
 }
 
 type partitionListener struct {
