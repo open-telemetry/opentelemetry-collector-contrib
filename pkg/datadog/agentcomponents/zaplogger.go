@@ -16,6 +16,8 @@ var _ tracelog.Logger = &ZapLogger{}
 type ZapLogger struct {
 	// Logger is the internal zap logger
 	Logger *zap.Logger
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Trace implements Logger.

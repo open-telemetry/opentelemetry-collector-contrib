@@ -57,8 +57,11 @@ jobs:
     if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
     strategy:
       matrix:
-        runner: [windows-latest, ubuntu-latest]
+        runner: [windows-2022, windows-2025, windows-11-arm, ubuntu-latest]
     runs-on: ${{ matrix.runner }}
+    env:
+      # The gcc installed on the Windows arm64 runner doesn't ship native ARM libraries so we need to disable CGO.
+      CGO_ENABLED: ${{ matrix.runner == 'windows-11-arm' && '0' || '' }}
     steps:
       - name: Echo changed files
         shell: bash
