@@ -9,6 +9,8 @@ module-sets:
       - github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otlphistgen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/promgen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider

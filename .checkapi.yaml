@@ -1,4 +1,6 @@
 ignored_paths:
+  - cmd/otlphistgen
+  - cmd/promgen
   - cmd/telemetrygen
   - cmd/opampsupervisor
   - exporter/datadogexporter/integrationtest
