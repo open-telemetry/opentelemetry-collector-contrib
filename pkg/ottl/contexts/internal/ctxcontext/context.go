@@ -211,10 +211,10 @@ func getAuthAttributeValue(attr any) (any, error) {
 	}
 }
 
-func convertAuthDataToMap(authData client.AuthData) (pcommon.Map, error) {
+func convertAuthDataToMap(authData client.AuthData) pcommon.Map {
 	authMap := pcommon.NewMap()
 	if authData == nil {
-		return authMap, nil
+		return authMap
 	}
 	names := authData.GetAttributeNames()
 	authMap.EnsureCapacity(len(names))
@@ -234,14 +234,14 @@ func convertAuthDataToMap(authData client.AuthData) (pcommon.Map, error) {
 			_ = authMapAttrVal.FromRaw(attrVal)
 		}
 	}
-	return authMap, nil
+	return authMap
 }
 
 func accessClientAuthAttributesKeys[K any]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, _ K) (any, error) {
 			cl := client.FromContext(ctx)
-			return convertAuthDataToMap(cl.Auth)
+			return convertAuthDataToMap(cl.Auth), nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
 			return fmt.Errorf(readOnlyPathErrMsg, "context.client.auth.attributes")
