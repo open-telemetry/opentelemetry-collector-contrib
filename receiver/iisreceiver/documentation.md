@@ -70,9 +70,9 @@ Number of transmitted files.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction data is moving. | Str: ``sent``, ``received`` | false |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` | Recommended |
 
 ### iis.network.io
 
@@ -84,9 +84,9 @@ Total amount of bytes sent and received.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction data is moving. | Str: ``sent``, ``received`` | false |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` | Recommended |
 
 ### iis.request.count
 
@@ -98,9 +98,9 @@ Total number of requests of a given type.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` | false |
+| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` | Recommended |
 
 ### iis.request.queue.age.max
 

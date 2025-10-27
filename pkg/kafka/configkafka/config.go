@@ -400,6 +400,8 @@ func (c SASLConfig) Validate() error {
 type AWSMSKConfig struct {
 	// Region is the AWS region the MSK cluster is based in
 	Region string `mapstructure:"region"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // OIDCFileConfig defines the additional configuration fields
