@@ -26,8 +26,6 @@ type Enum int64
 // EnumSymbol is how OTTL represents an enum's string value.
 type EnumSymbol string
 
-const InvalidRegexErrMsg = "the regex pattern supplied to %s '%q' is not a valid pattern: %w"
-
 func buildOriginalText(path *path) string {
 	var builder strings.Builder
 	if path.Context != "" {
