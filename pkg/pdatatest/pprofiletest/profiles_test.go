@@ -21,13 +21,13 @@ func basicProfiles() Profiles {
 		ResourceProfiles: []ResourceProfile{
 			{
 				Resource: Resource{
-					Attributes: []Attribute{{"key1", "value1"}},
+					Attributes: []Attribute{{Key: "key1", Value: "value1"}},
 				},
 				ScopeProfiles: []ScopeProfile{
 					{
 						Profile: []Profile{
 							{
-								Attributes: []Attribute{{"scope-attr1", "value1"}},
+								Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 								ProfileID:  pprofile.NewProfileIDEmpty(),
 							},
 						},
@@ -63,12 +63,12 @@ func TestCompareProfiles(t *testing.T) {
 			name: "attribute value string is not bool",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", "true"}
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{Key: "key1", Value: "true"}
 				return p.Transform()
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", true}
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{Key: "key1", Value: true}
 				return p.Transform()
 			}(),
 			withoutOptions: errors.New(`missing expected resource: map[key1:true]; unexpected resource: map[key1:true]`),
@@ -79,13 +79,13 @@ func TestCompareProfiles(t *testing.T) {
 				p := basicProfiles()
 				p.ResourceProfiles = append(p.ResourceProfiles, ResourceProfile{
 					Resource: Resource{
-						Attributes: []Attribute{{"key2", "value2"}},
+						Attributes: []Attribute{{Key: "key2", Value: "value2"}},
 					},
 					ScopeProfiles: []ScopeProfile{
 						{
 							Profile: []Profile{
 								{
-									Attributes: []Attribute{{"scope-attr2", "value2"}},
+									Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 								},
 							},
 						},
@@ -95,17 +95,17 @@ func TestCompareProfiles(t *testing.T) {
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key2", "value2"}
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].Attributes[0] = Attribute{"scope-attr2", "value2"}
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{Key: "key2", Value: "value2"}
+				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].Attributes[0] = Attribute{Key: "scope-attr2", Value: "value2"}
 				p.ResourceProfiles = append(p.ResourceProfiles, ResourceProfile{
 					Resource: Resource{
-						Attributes: []Attribute{{"key1", "value1"}},
+						Attributes: []Attribute{{Key: "key1", Value: "value1"}},
 					},
 					ScopeProfiles: []ScopeProfile{
 						{
 							Profile: []Profile{
 								{
-									Attributes: []Attribute{{"scope-attr1", "value1"}},
+									Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 								},
 							},
 						},
@@ -145,13 +145,13 @@ func TestCompareProfiles(t *testing.T) {
 					{
 						Scope: Scope{
 							Name:       "scope1",
-							Attributes: []Attribute{{"scope-attr1", "value1"}},
+							Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 						},
 					},
 					{
 						Scope: Scope{
 							Name:       "scope2",
-							Attributes: []Attribute{{"scope-attr2", "value2"}},
+							Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 						},
 					},
 				}
@@ -163,13 +163,13 @@ func TestCompareProfiles(t *testing.T) {
 					{
 						Scope: Scope{
 							Name:       "scope2",
-							Attributes: []Attribute{{"scope-attr2", "value2"}},
+							Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 						},
 					},
 					{
 						Scope: Scope{
 							Name:       "scope1",
-							Attributes: []Attribute{{"scope-attr1", "value1"}},
+							Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 						},
 					},
 				}
@@ -188,13 +188,13 @@ func TestCompareProfiles(t *testing.T) {
 					{
 						Scope: Scope{
 							Name:       "scope1",
-							Attributes: []Attribute{{"scope-attr1", "value1"}},
+							Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 						},
 					},
 					{
 						Scope: Scope{
 							Name:       "scope2",
-							Attributes: []Attribute{{"scope-attr2", "value2"}},
+							Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 						},
 					},
 				}
@@ -206,13 +206,13 @@ func TestCompareProfiles(t *testing.T) {
 					{
 						Scope: Scope{
 							Name:       "scope1",
-							Attributes: []Attribute{{"scope-attr1", "value12"}},
+							Attributes: []Attribute{{Key: "scope-attr1", Value: "value12"}},
 						},
 					},
 					{
 						Scope: Scope{
 							Name:       "scope2",
-							Attributes: []Attribute{{"scope-attr2", "value22"}},
+							Attributes: []Attribute{{Key: "scope-attr2", Value: "value22"}},
 						},
 					},
 				}
@@ -232,11 +232,11 @@ func TestCompareProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"container-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "container-attr1", Value: "value1"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"container-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "container-attr2", Value: "value2"}},
 					},
 				}
 				return p.Transform()
@@ -247,11 +247,11 @@ func TestCompareProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"container-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "container-attr2", Value: "value2"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"container-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "container-attr1", Value: "value1"}},
 					},
 				}
 				return p.Transform()
@@ -269,11 +269,11 @@ func TestCompareProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"container-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "container-attr1", Value: "value1"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"container-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "container-attr2", Value: "value2"}},
 					},
 				}
 				return p.Transform()
@@ -284,11 +284,11 @@ func TestCompareProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"container-attr1", "value3"}},
+						Attributes: []Attribute{{Key: "container-attr1", Value: "value3"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"container-attr2", "value4"}},
+						Attributes: []Attribute{{Key: "container-attr2", Value: "value4"}},
 					},
 				}
 				return p.Transform()
@@ -307,7 +307,7 @@ func TestCompareProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:    []Attribute{{"container-attr1", "value1"}},
+						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
 						DurationNanos: pcommon.NewTimestampFromTime(timestamp2),
 					},
@@ -320,7 +320,7 @@ func TestCompareProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:    []Attribute{{"container-attr1", "value1"}},
+						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp2),
 						DurationNanos: pcommon.NewTimestampFromTime(timestamp2),
 					},
@@ -340,7 +340,7 @@ func TestCompareProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:    []Attribute{{"container-attr1", "value1"}},
+						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
 						DurationNanos: pcommon.NewTimestampFromTime(timestamp1.Add(5 * time.Second)),
 					},
@@ -350,11 +350,11 @@ func TestCompareProfiles(t *testing.T) {
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", "value2"}
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{Key: "key1", Value: "value2"}
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:    []Attribute{{"container-attr1", "value2"}},
+						Attributes:    []Attribute{{Key: "container-attr1", Value: "value2"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp2),
 						DurationNanos: pcommon.NewTimestampFromTime(timestamp2.Add(5 * time.Second)),
 					},
@@ -583,11 +583,11 @@ func TestCompareScopeProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"scope-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"scope-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 					},
 				}
 				tr := p.Transform()
@@ -598,11 +598,11 @@ func TestCompareScopeProfiles(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"scope-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"scope-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 					},
 				}
 				tr := p.Transform()
@@ -651,7 +651,7 @@ func TestCompareProfile(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:             []Attribute{{"key", "val"}},
+						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
 						DefaultSampleType: ValueType{
 							Typ:                    "samples",
@@ -677,7 +677,7 @@ func TestCompareProfile(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:             []Attribute{{"key", "val"}},
+						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
 						DefaultSampleType: ValueType{
 							Typ:                    "samples",
@@ -706,7 +706,7 @@ func TestCompareProfile(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:             []Attribute{{"key", "val"}},
+						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
 						DefaultSampleType: ValueType{
 							Typ:                    "samples",
@@ -732,7 +732,7 @@ func TestCompareProfile(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:             []Attribute{{"key1", "val1"}},
+						Attributes:             []Attribute{{Key: "key1", Value: "val1"}},
 						DroppedAttributesCount: 2,
 						DefaultSampleType: ValueType{
 							Typ:                    "samples1",
