@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -43,30 +42,18 @@ func createReplaceAllPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 }
 
 func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexPattern, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]], replacementFormat ottl.Optional[ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
-	literalPattern, ok := ottl.GetLiteralValue(regexPattern)
-	var compiledPattern *regexp.Regexp
-	var err error
-	if ok {
-		compiledPattern, err = regexp.Compile(literalPattern)
-		if err != nil {
-			return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "replace_all_patterns", literalPattern, err)
-		}
+	compiledPattern, err := newDynamicRegex("replace_all_patterns", regexPattern)
+	if err != nil {
+		return nil, err
 	}
 	if mode != modeValue && mode != modeKey {
 		return nil, fmt.Errorf("invalid mode %v, must be either 'key' or 'value'", mode)
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		cp := compiledPattern
-		if cp == nil {
-			patternVal, err := regexPattern.Get(ctx, tCtx)
-			if err != nil {
-				return nil, err
-			}
-			cp, err = regexp.Compile(patternVal)
-			if err != nil {
-				return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "replace_all_patterns", patternVal, err)
-			}
+		cp, err := compiledPattern.compile(ctx, tCtx)
+		if err != nil {
+			return nil, err
 		}
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {

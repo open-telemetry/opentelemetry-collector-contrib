@@ -270,6 +270,7 @@ func Test_e2e_editors(t *testing.T) {
 			statement: `replace_match(attributes["http.path"], Concat(["*","/","*"],""), "test")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
+			},
 		},
 		{
 			statement: `replace_all_patterns(attributes, "value", Concat(["/","health"],""), "@")`,

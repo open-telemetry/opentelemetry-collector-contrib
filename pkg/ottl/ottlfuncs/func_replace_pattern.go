@@ -99,26 +99,14 @@ func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern
 }
 
 func replacePattern[K any](target ottl.GetSetter[K], regexPattern, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]], replacementFormat ottl.Optional[ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
-	literalPattern, ok := ottl.GetLiteralValue(regexPattern)
-	var compiledPattern *regexp.Regexp
-	var err error
-	if ok {
-		compiledPattern, err = regexp.Compile(literalPattern)
-		if err != nil {
-			return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "replace_pattern", literalPattern, err)
-		}
+	compiledPattern, err := newDynamicRegex("replace_pattern", regexPattern)
+	if err != nil {
+		return nil, err
 	}
 	return func(ctx context.Context, tCtx K) (any, error) {
-		cp := compiledPattern
-		if cp == nil {
-			patternVal, err := regexPattern.Get(ctx, tCtx)
-			if err != nil {
-				return nil, err
-			}
-			cp, err = regexp.Compile(patternVal)
-			if err != nil {
-				return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "replace_pattern", patternVal, err)
-			}
+		cp, err := compiledPattern.compile(ctx, tCtx)
+		if err != nil {
+			return nil, err
 		}
 		originalVal, err := target.Get(ctx, tCtx)
 		var replacementVal string
