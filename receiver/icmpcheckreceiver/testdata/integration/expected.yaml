@@ -1,0 +1,44 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: net.peer.name
+          value:
+            stringValue: example.com
+        - key: net.peer.ip
+          value:
+            stringValue: 0.0.0.0
+    scopeMetrics:
+      - metrics:
+          - description: The percentage of lost packets.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+            name: ping.loss.ratio
+            unit: '%'
+          - description: Average round-trip time in milliseconds.
+            gauge:
+              dataPoints:
+                - asInt: "44"
+            name: ping.rtt.avg
+            unit: ms
+          - description: Maximum round-trip time in milliseconds.
+            gauge:
+              dataPoints:
+                - asInt: "47"
+            name: ping.rtt.max
+            unit: ms
+          - description: Minimum round-trip time in milliseconds.
+            gauge:
+              dataPoints:
+                - asInt: "42"
+            name: ping.rtt.min
+            unit: ms
+          - description: Standard deviation of round-trip time in milliseconds.
+            gauge:
+              dataPoints:
+                - asInt: "5"
+            name: ping.rtt.stddev
+            unit: ms
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icmpcheckreceiver
+          version: latest

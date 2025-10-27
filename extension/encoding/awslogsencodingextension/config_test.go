@@ -144,6 +144,18 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "networkfirewall"),
+			expected: &Config{
+				Format: constants.FormatNetworkFirewallLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: constants.FileFormatPlainText,
+				},
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
+					FileFormat: constants.FileFormatPlainText,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
