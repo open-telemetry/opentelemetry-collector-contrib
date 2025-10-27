@@ -85,6 +85,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxConnsPerHost:     20,
 					IdleConnTimeout:     30 * time.Second,
 					Timeout:             10 * time.Second,
+					DropTags:            false,
 				},
 				ExcludeMetrics:      nil,
 				IncludeMetrics:      nil,
@@ -165,6 +166,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxConnsPerHost:     10000,
 					IdleConnTimeout:     2 * time.Hour,
 					Timeout:             20 * time.Second,
+					DropTags:            false,
 				},
 				ExcludeMetrics: []dpfilters.MetricFilter{
 					{

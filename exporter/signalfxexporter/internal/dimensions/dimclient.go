@@ -82,6 +82,7 @@ type DimensionClientOptions struct {
 	MaxIdleConnsPerHost int
 	IdleConnTimeout     time.Duration
 	Timeout             time.Duration
+	DropTags            bool
 }
 
 // NewDimensionClient returns a new client
