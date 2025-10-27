@@ -58,6 +58,8 @@ type DimensionClient struct {
 	metricsConverter translation.MetricsConverter
 	// ExcludeProperties will filter DimensionUpdate content to not submit undesired metadata.
 	ExcludeProperties []dpfilters.PropertyFilter
+	// dropTags specifies whether tags should be omitted or not. Default value is false.
+	dropTags bool
 }
 
 type queuedDimension struct {
@@ -119,6 +121,7 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 		logUpdates:        options.LogUpdates,
 		metricsConverter:  options.MetricsConverter,
 		ExcludeProperties: options.ExcludeProperties,
+		dropTags:          options.DropTags,
 	}
 }
 
@@ -343,6 +346,11 @@ func (dc *DimensionClient) makePatchRequest(ctx context.Context, dim *DimensionU
 }
 
 func (dc *DimensionClient) filterDimensionUpdate(update *DimensionUpdate) *DimensionUpdate {
+	// clear tags list if dropTags option is set
+	if dc.dropTags {
+		update.Tags = nil
+	}
+
 	for _, excludeRule := range dc.ExcludeProperties {
 		if excludeRule.DimensionName.Matches(update.Name) && excludeRule.DimensionValue.Matches(update.Value) {
 			for k, v := range update.Properties {
