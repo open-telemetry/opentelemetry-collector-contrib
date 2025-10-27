@@ -218,7 +218,6 @@ func TestPayloads(t *testing.T) {
 }
 
 func TestEncodingFormatScopeAttributeUnknownLogs(t *testing.T) {
-
 	// note that testing for known log types is already done in TestPayloads,
 	// so we don't have tests here for known log types.
 	tests := []struct {
