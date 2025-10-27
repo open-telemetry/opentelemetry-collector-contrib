@@ -36,12 +36,12 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) 
 	literalKeySet := make(map[string]struct{}, len(keys))
 	allLiteral := true
 	for _, key := range keys {
-		if k, isLiteral := ottl.GetLiteralValue(key); isLiteral {
-			literalKeySet[k] = struct{}{}
-		} else {
+		k, isLiteral := ottl.GetLiteralValue(key)
+		if !isLiteral {
 			allLiteral = false
 			break
 		}
+		literalKeySet[k] = struct{}{}
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
