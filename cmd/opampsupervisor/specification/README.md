@@ -668,10 +668,10 @@ package.
 - This package MUST have an empty name.
 - The type of the package MUST be top level.
 - The version field SHOULD be the version of the agent. (e.g. `0.110.0`)
-- The download URL MUST point to a gzipped tarball, containing a file named
-  `otelcol-contrib`. This file will be used as the agent binary.
-- The content hash MUST be the sha256 sum of the gzipped tarball.
-- The signature field MUST be a cosign signature, formatted in the way
+- The download URL MUST point to a supported archive format, containing a file matching
+  the binary name the supervisor is configured to expect. This file will be used as the agent binary.
+- The content hash MUST be the sha256 sum of the artifact.
+- The signature field MUST be a Cosign signature, formatted in the way
   described in the [Signature Format](#signature-format) session.
 
 Example:
@@ -771,7 +771,7 @@ A list of configurable options include:
   - This field may be explicitly set empty to skip verifying the repository field
     in the certificate
 
-Additionally various public keys and values are needed. These are retrieved by the supervisor at startup.
+Additionally various public keys and root certificates are needed. These are retrieved by the supervisor at startup.
 
 - A set of [Fulcio](https://github.com/sigstore/fulcio) root certificates.
   - These certificates are retrieved from "https://tuf-repo-cdn.sigstore.dev"
