@@ -78,7 +78,7 @@ func Test_dynamicRegex_compile_Literal_NoOp(t *testing.T) {
 	originalRegex := dr.value
 
 	// Call compile multiple times
-	ctx := context.Background()
+	ctx := t.Context()
 	var tCtx any
 
 	compiled1, err := dr.compile(ctx, tCtx)
@@ -112,7 +112,7 @@ func Test_dynamicRegex_compile_Dynamic_NewRegex(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, dr.value, "dynamic getter should not have pre-compiled value")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var tCtx any
 
 	compiled1, err := dr.compile(ctx, tCtx)
@@ -148,7 +148,7 @@ func Test_dynamicRegex_compile_Dynamic_InvalidPattern(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, dr.value)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var tCtx any
 
 	compiled, err := dr.compile(ctx, tCtx)
@@ -168,7 +168,7 @@ func Test_dynamicRegex_compile_Dynamic_GetterError(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, dr.value)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var tCtx any
 
 	compiled, err := dr.compile(ctx, tCtx)
@@ -192,7 +192,7 @@ func Test_dynamicRegex_compile_Dynamic_DifferentPatterns(t *testing.T) {
 	dr, err := newDynamicRegex("testFunc", getter)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var tCtx any
 
 	// Compile with different patterns and verify each is compiled correctly
