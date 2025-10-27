@@ -1410,6 +1410,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "where clause without comparator dynamic pattern",
+			statement: `set(attributes["test"], "pass") where IsMatch(body, Concat(["operation", "[AC]"], ""))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			name:      "where clause with Converter return value",
 			statement: `set(attributes["test"], "pass") where body == Concat(["operation", "A"], "")`,
 			want: func(tCtx ottllog.TransformContext) {
