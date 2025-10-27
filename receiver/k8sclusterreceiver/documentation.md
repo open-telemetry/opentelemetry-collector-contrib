@@ -228,7 +228,7 @@ The current phase of namespaces (1 for active and 0 for terminating)
 | ---- | ----------- | ---------- | --------- |
 |  | Gauge | Int | Development |
 
-### k8s.node.allocatable.cpu
+### k8s.node.cpu.allocatable
 
 Amount of cpu allocatable on the node
 
@@ -236,7 +236,7 @@ Amount of cpu allocatable on the node
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {cpu} | Sum | Double | Unspecified | false |
 
-### k8s.node.allocatable.ephemeral_storage
+### k8s.node.ephemeral_storage.allocatable
 
 Amount of ephemeral-storage allocatable on the node
 
@@ -244,7 +244,7 @@ Amount of ephemeral-storage allocatable on the node
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Unspecified | false |
 
-### k8s.node.allocatable.memory
+### k8s.node.memory.allocatable
 
 Amount of memory allocatable on the node
 
@@ -252,7 +252,7 @@ Amount of memory allocatable on the node
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Unspecified | false |
 
-### k8s.node.allocatable.pods
+### k8s.node.pods.allocatable
 
 Amount of pods allocatable on the node
 

@@ -73,10 +73,10 @@ func TestNodeAllocatableNamespaceMetrics(t *testing.T) {
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mbc := metadata.DefaultMetricsBuilderConfig()
-	mbc.Metrics.K8sNodeAllocatableCPU.Enabled = true
-	mbc.Metrics.K8sNodeAllocatableMemory.Enabled = true
-	mbc.Metrics.K8sNodeAllocatableEphemeralStorage.Enabled = true
-	mbc.Metrics.K8sNodeAllocatablePods.Enabled = true
+	mbc.Metrics.K8sNodeCPUAllocatable.Enabled = true
+	mbc.Metrics.K8sNodeMemoryAllocatable.Enabled = true
+	mbc.Metrics.K8sNodeEphemeralStorageAllocatable.Enabled = true
+	mbc.Metrics.K8sNodePodsAllocatable.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, n, ts)
 	m := mb.Emit()

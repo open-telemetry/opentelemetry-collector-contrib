@@ -87,7 +87,7 @@ The full list of settings exposed for this receiver are documented in [config.go
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 **Note** that with the introduction of the [semconv.k8s.enableStable](#semconvk8senablestable) feature gate, the metrics for the allocatable resource types
-(`k8s.node.allocatable.cpu`, `k8s.node.allocatable.ephemeral_storage`, `k8s.node.allocatable.memory`, `k8s.node.allocatable.pods`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
+(`k8s.node.cpu.allocatable`, `k8s.node.ephemeral_storage.allocatable`, `k8s.node.memory.allocatable`, `k8s.node.pods.allocatable`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
 To activate the feature flag, start the collector with `--feature-gates=+semconv.k8s.enableStable`.
 To disable the old representation of the allocatable metrics (`k8s.node.allocatable_cpu`, `k8s.node.allocatable_ephemeral_storage`, `k8s.node.allocatable_memory`, `k8s.node.allocatable_pods`) disable the [semconv.k8s.disableLegacy](#semconvk8sdisablelegacy) feature flag with `--feature-gates=-semconv.k8s.disableLegacy`
 
@@ -460,10 +460,10 @@ The feature gate is in `alpha` stage, which means it is disabled by default.
 
 If enabled, the SemConv valid format of the node allocatable metrics are reported (if enabled via the metrics section):
 
-- `k8s.node.allocatable.cpu`
-- `k8s.node.allocatable.ephemeral_storage`
-- `k8s.node.allocatable.memory`
-- `k8s.node.allocatable.pods`
+- `k8s.node.cpu.allocatable`
+- `k8s.node.ephemeral_storage.allocatable`
+- `k8s.node.memory.allocatable`
+- `k8s.node.pods.allocatable`
 
 ### `semconv.k8s.disableLegacy`
 

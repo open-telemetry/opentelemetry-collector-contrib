@@ -77,19 +77,19 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 
 	if EnableStableMetrics.IsEnabled() {
 		if cpuVal, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
-			mb.RecordK8sNodeAllocatableCPUDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
+			mb.RecordK8sNodeCPUAllocatableDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
 		}
 
 		if ephemeralMemoryVal, ok := node.Status.Allocatable[corev1.ResourceEphemeralStorage]; ok {
-			mb.RecordK8sNodeAllocatableEphemeralStorageDataPoint(ts, ephemeralMemoryVal.Value())
+			mb.RecordK8sNodeEphemeralStorageAllocatableDataPoint(ts, ephemeralMemoryVal.Value())
 		}
 
 		if memoryVal, ok := node.Status.Allocatable[corev1.ResourceMemory]; ok {
-			mb.RecordK8sNodeAllocatableMemoryDataPoint(ts, memoryVal.Value())
+			mb.RecordK8sNodeMemoryAllocatableDataPoint(ts, memoryVal.Value())
 		}
 
 		if podVal, ok := node.Status.Allocatable[corev1.ResourcePods]; ok {
-			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, podVal.Value())
+			mb.RecordK8sNodePodsAllocatableDataPoint(ts, podVal.Value())
 		}
 	}
 
