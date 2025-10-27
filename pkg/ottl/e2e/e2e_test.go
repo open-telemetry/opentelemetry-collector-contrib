@@ -242,6 +242,13 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `replace_all_matches(attributes, Concat(["*","/","*"],""), "test")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
+				tCtx.GetLogRecord().Attributes().PutStr("http.url", "test")
+			},
+		},
+		{
 			statement: `replace_all_patterns(attributes, "key", "^http", "test")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().Remove("http.method")
@@ -257,6 +264,12 @@ func Test_e2e_editors(t *testing.T) {
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@health")
 				tCtx.GetLogRecord().Attributes().PutStr("http.url", "http:@@localhost@health")
+			},
+		},
+		{
+			statement: `replace_match(attributes["http.path"], Concat(["*","/","*"],""), "test")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
 			},
 		},
 		{
@@ -613,7 +626,26 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ExtractPatterns("aa123bb", Concat(["(?P", "<numbers>", "\\d+)"], "")))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("numbers", "123")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", "%{ELB_URI}", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("url.scheme", "http")
+				m.PutStr("url.username", "user")
+				m.PutStr("url.domain", "example.com")
+				m.PutInt("url.port", 80)
+				m.PutStr("url.path", "/path")
+				m.PutStr("url.query", "query=string")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", Concat(["%{", "ELB_URI", "}"], ""), true))`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutStr("url.scheme", "http")
@@ -1292,6 +1324,12 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "d447b1ea40e6988b")
 			},
 		},
+		{
+			statement: `set(attributes["test"], XXH128("hello world"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "df8d09e93f874900a99b8775cc15b6c7")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1373,6 +1411,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "where clause without comparator",
 			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause without comparator dynamic pattern",
+			statement: `set(attributes["test"], "pass") where IsMatch(body, Concat(["operation", "[AC]"], ""))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -1495,10 +1540,34 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			},
 		},
 		{
+			name: "delete key of map literal dynamic",
+			statements: []string{
+				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
+				`set(attributes["dynamic_key"], "foo")`,
+				`delete_key(attributes["test"], attributes["dynamic_key"])`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("test", "hello")
+				tCtx.GetLogRecord().Attributes().PutStr("dynamic_key", "foo")
+			},
+		},
+		{
 			name: "delete matching keys of map literal",
 			statements: []string{
 				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
 				`delete_matching_keys(attributes["test"], ".*oo")`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("test", "hello")
+			},
+		},
+		{
+			name: "delete matching keys of map literal dynamic",
+			statements: []string{
+				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
+				`delete_matching_keys(attributes["test"], Concat([".*", "oo"], ""))`,
 			},
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
