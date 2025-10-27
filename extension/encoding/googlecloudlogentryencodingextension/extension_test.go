@@ -218,6 +218,9 @@ func TestPayloads(t *testing.T) {
 }
 
 func TestEncodingFormatScopeAttributeUnknownLogs(t *testing.T) {
+
+	// note that testing for known log types is already done in TestPayloads,
+	// so we don't have tests here for known log types.
 	tests := []struct {
 		name           string
 		logName        string
@@ -256,110 +259,6 @@ func TestEncodingFormatScopeAttributeUnknownLogs(t *testing.T) {
 
 			_, exists := scopeAttrs.Get(constants.FormatIdentificationTag)
 			require.False(t, exists, "encoding.format attribute should not exist for unknown log types")
-		})
-	}
-}
-
-func TestEncodingFormatScopeAttribute(t *testing.T) {
-	tests := []struct {
-		name             string
-		logFilename      string
-		expectedFilename string
-		expectedFormat   string
-	}{
-		{
-			name:             "audit log activity",
-			logFilename:      "testdata/auditlog/activity.json",
-			expectedFilename: "testdata/auditlog/activity_expected.yaml",
-			expectedFormat:   constants.GCPFormatAuditLog,
-		},
-		{
-			name:             "audit log data access",
-			logFilename:      "testdata/auditlog/data_access.json",
-			expectedFilename: "testdata/auditlog/data_access_expected.yaml",
-			expectedFormat:   constants.GCPFormatAuditLog,
-		},
-		{
-			name:             "audit log policy",
-			logFilename:      "testdata/auditlog/policy.json",
-			expectedFilename: "testdata/auditlog/policy_expected.yaml",
-			expectedFormat:   constants.GCPFormatAuditLog,
-		},
-		{
-			name:             "audit log system event",
-			logFilename:      "testdata/auditlog/system_event.json",
-			expectedFilename: "testdata/auditlog/system_event_expected.yaml",
-			expectedFormat:   constants.GCPFormatAuditLog,
-		},
-		{
-			name:             "vpc flow log - 0 bytes sent",
-			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-0-bytes-sent.json",
-			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-0-bytes-sent_expected.yaml",
-			expectedFormat:   constants.GCPFormatVPCFlowLog,
-		},
-		{
-			name:             "vpc flow log - 19kb sent",
-			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-19kb-sent.json",
-			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-19kb-sent_expected.yaml",
-			expectedFormat:   constants.GCPFormatVPCFlowLog,
-		},
-		{
-			name:             "vpc flow log - 800 bytes sent",
-			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-800-bytes-sent.json",
-			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-800-bytes-sent_expected.yaml",
-			expectedFormat:   constants.GCPFormatVPCFlowLog,
-		},
-		{
-			name:             "vpc flow log - from compute engine",
-			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-from-computeengine.json",
-			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-from-computeengine_expected.yaml",
-			expectedFormat:   constants.GCPFormatVPCFlowLog,
-		},
-		{
-			name:             "vpc flow log - with dest vpc",
-			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-w-dest-vpc.json",
-			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-w-dest-vpc_expected.yaml",
-			expectedFormat:   constants.GCPFormatVPCFlowLog,
-		},
-		{
-			name:             "vpc flow log - with internet routing details",
-			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-w-internet-routing-details.json",
-			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-w-internet-routing-details_expected.yaml",
-			expectedFormat:   constants.GCPFormatVPCFlowLog,
-		},
-	}
-
-	extension := newTestExtension(t, Config{})
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			data, err := os.ReadFile(tt.logFilename)
-			require.NoError(t, err)
-
-			content := bytes.NewBuffer([]byte{})
-			err = gojson.Compact(content, data)
-			require.NoError(t, err)
-
-			logs, err := extension.UnmarshalLogs(content.Bytes())
-			require.NoError(t, err)
-
-			require.Equal(t, 1, logs.ResourceLogs().Len())
-			resourceLogs := logs.ResourceLogs().At(0)
-			require.Equal(t, 1, resourceLogs.ScopeLogs().Len())
-			scopeLogs := resourceLogs.ScopeLogs().At(0)
-
-			scopeAttrs := scopeLogs.Scope().Attributes()
-
-			formatValue, exists := scopeAttrs.Get(constants.FormatIdentificationTag)
-			require.True(t, exists, "encoding.format attribute should exist for %s", tt.name)
-			require.Equal(t, tt.expectedFormat, formatValue.AsString())
-
-			// Verify the rest of the log processing works correctly
-			expectedLogs, err := golden.ReadLogs(tt.expectedFilename)
-			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
 		})
 	}
 }
