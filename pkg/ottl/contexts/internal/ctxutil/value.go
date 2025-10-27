@@ -68,7 +68,7 @@ func SetValue(value pcommon.Value, val any) error {
 	return err
 }
 
-func GetIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
+func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
 	val := value
 	var ok bool
 	for index := range keys {
