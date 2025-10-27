@@ -89,10 +89,11 @@ func NewParser(pathParser PathParser) (Parser, error) {
 //
 // The <metric_timestamp> is the Unix time text of when the measurement was
 // made.
-func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
+func (pph *PathParserHelper) Parse(data []byte) (pmetric.Metrics, error) {
+	line := strings.TrimSpace(string(data))
 	parts := strings.SplitN(line, " ", 4)
 	if len(parts) != 3 {
-		return pmetric.Metric{}, fmt.Errorf("invalid carbon metric [%s]", line)
+		return pmetric.NewMetrics(), fmt.Errorf("invalid carbon metric [%s]", line)
 	}
 
 	path := parts[0]
@@ -102,7 +103,7 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 	parsedPath := ParsedPath{}
 	err := pph.pathParser.ParsePath(path, &parsedPath)
 	if err != nil {
-		return pmetric.Metric{}, fmt.Errorf("invalid carbon metric [%s]: %w", line, err)
+		return pmetric.NewMetrics(), fmt.Errorf("invalid carbon metric [%s]: %w", line, err)
 	}
 
 	var unixTimeNs int64
@@ -111,7 +112,7 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 	if errIsFloat != nil {
 		dblVal, err = strconv.ParseFloat(timestampStr, 64)
 		if err != nil {
-			return pmetric.Metric{}, fmt.Errorf("invalid carbon metric time [%s]: %w", line, err)
+			return pmetric.NewMetrics(), fmt.Errorf("invalid carbon metric time [%s]: %w", line, err)
 		}
 		sec, frac := math.Modf(dblVal)
 		unixTime = int64(sec)
@@ -122,7 +123,7 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 	if errIsFloat != nil {
 		dblVal, err = strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			return pmetric.Metric{}, fmt.Errorf("invalid carbon metric value [%s]: %w", line, err)
+			return pmetric.NewMetrics(), fmt.Errorf("invalid carbon metric value [%s]: %w", line, err)
 		}
 	}
 
@@ -143,5 +144,9 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 		dp.SetIntValue(intVal)
 	}
 	parsedPath.Attributes.CopyTo(dp.Attributes())
-	return m, nil
+	// NewMetrics used only for tests
+	metrics := pmetric.NewMetrics()
+	newMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.MoveTo(newMetric)
+	return metrics, nil
 }
