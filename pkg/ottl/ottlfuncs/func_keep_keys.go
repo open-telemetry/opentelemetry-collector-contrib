@@ -32,19 +32,38 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 }
 
 func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) ottl.ExprFunc[K] {
+	// Check if all keys are literals and pre-build the key set if so
+	literalKeySet := make(map[string]struct{}, len(keys))
+	allLiteral := true
+	for _, key := range keys {
+		if k, isLiteral := ottl.GetLiteralValue(key); isLiteral {
+			literalKeySet[k] = struct{}{}
+		} else {
+			allLiteral = false
+			break
+		}
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		keySet := make(map[string]struct{}, len(keys))
-		for _, key := range keys {
-			k, err := key.Get(ctx, tCtx)
-			if err != nil {
-				return nil, err
+		var keySet map[string]struct{}
+		if allLiteral {
+			// Use pre-built key set for literal keys
+			keySet = literalKeySet
+		} else {
+			// Build key set at runtime for dynamic keys
+			keySet = make(map[string]struct{}, len(keys))
+			for _, key := range keys {
+				k, err := key.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				keySet[k] = struct{}{}
 			}
-			keySet[k] = struct{}{}
 		}
 
 		val.RemoveIf(func(key string, _ pcommon.Value) bool {
