@@ -58,11 +58,11 @@ type MetricsConfig struct {
 	K8sJobMaxParallelPods               MetricConfig `mapstructure:"k8s.job.max_parallel_pods"`
 	K8sJobSuccessfulPods                MetricConfig `mapstructure:"k8s.job.successful_pods"`
 	K8sNamespacePhase                   MetricConfig `mapstructure:"k8s.namespace.phase"`
-	K8sNodeAllocatableCPU               MetricConfig `mapstructure:"k8s.node.allocatable.cpu"`
-	K8sNodeAllocatableEphemeralStorage  MetricConfig `mapstructure:"k8s.node.allocatable.ephemeral_storage"`
-	K8sNodeAllocatableMemory            MetricConfig `mapstructure:"k8s.node.allocatable.memory"`
-	K8sNodeAllocatablePods              MetricConfig `mapstructure:"k8s.node.allocatable.pods"`
 	K8sNodeCondition                    MetricConfig `mapstructure:"k8s.node.condition"`
+	K8sNodeCPUAllocatable               MetricConfig `mapstructure:"k8s.node.cpu.allocatable"`
+	K8sNodeEphemeralStorageAllocatable  MetricConfig `mapstructure:"k8s.node.ephemeral_storage.allocatable"`
+	K8sNodeMemoryAllocatable            MetricConfig `mapstructure:"k8s.node.memory.allocatable"`
+	K8sNodePodsAllocatable              MetricConfig `mapstructure:"k8s.node.pods.allocatable"`
 	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
 	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
 	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
@@ -170,20 +170,20 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNamespacePhase: MetricConfig{
 			Enabled: true,
 		},
-		K8sNodeAllocatableCPU: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeAllocatableEphemeralStorage: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeAllocatableMemory: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeAllocatablePods: MetricConfig{
-			Enabled: true,
-		},
 		K8sNodeCondition: MetricConfig{
 			Enabled: false,
+		},
+		K8sNodeCPUAllocatable: MetricConfig{
+			Enabled: true,
+		},
+		K8sNodeEphemeralStorageAllocatable: MetricConfig{
+			Enabled: true,
+		},
+		K8sNodeMemoryAllocatable: MetricConfig{
+			Enabled: true,
+		},
+		K8sNodePodsAllocatable: MetricConfig{
+			Enabled: true,
 		},
 		K8sPodPhase: MetricConfig{
 			Enabled: true,
