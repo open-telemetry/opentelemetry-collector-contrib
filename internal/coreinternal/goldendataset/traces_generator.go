@@ -57,7 +57,7 @@ func (r *randReader) Read(p []byte) (n int, err error) {
 		binary.BigEndian.PutUint64(buf[:], (*rand.Rand)(r).Uint64())
 		n += copy(p, buf[:])
 	}
-	return
+	return n, err
 }
 
 // generateResourceSpan generates a single PData ResourceSpans populated based on the provided inputs. They are:

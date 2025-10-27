@@ -37,6 +37,7 @@ body:
       - connector/routing
       - connector/servicegraph
       - connector/signaltometrics
+      - connector/slowsql
       - connector/spanmetrics
       - connector/sum
       - exporter/alertmanager
@@ -140,8 +141,8 @@ body:
       - internal/common
       - internal/core
       - internal/datadog
+      - internal/datadog/e2e
       - internal/docker
-      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
@@ -243,6 +244,7 @@ body:
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos
+      - receiver/ciscoos/internal/scraper/systemscraper
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
