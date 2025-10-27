@@ -58,9 +58,11 @@ type Athenz struct {
 }
 
 type OAuth2 struct {
-	IssuerURL string `mapstructure:"issuer_url"`
-	ClientID  string `mapstructure:"client_id"`
-	Audience  string `mapstructure:"audience"`
+	IssuerURL  string `mapstructure:"issuer_url"`
+	ClientID   string `mapstructure:"client_id"`
+	Audience   string `mapstructure:"audience"`
+	PrivateKey string `mapstructure:"private_key"`
+	Scope      string `mapstructure:"scope"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -83,9 +85,12 @@ func (cfg *Config) auth() pulsar.Authentication {
 	if authentication.OAuth2.HasValue() {
 		oauth2 := authentication.OAuth2.Get()
 		return pulsar.NewAuthenticationOAuth2(map[string]string{
-			"issuerUrl": oauth2.IssuerURL,
-			"clientId":  oauth2.ClientID,
-			"audience":  oauth2.Audience,
+			"type":       "client_credentials",
+			"issuerUrl":  oauth2.IssuerURL,
+			"clientId":   oauth2.ClientID,
+			"audience":   oauth2.Audience,
+			"scope":      oauth2.Scope,
+			"privateKey": oauth2.PrivateKey,
 		})
 	}
 	if authentication.Athenz.HasValue() {

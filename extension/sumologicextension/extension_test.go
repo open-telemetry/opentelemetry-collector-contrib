@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/metadata"
 )
 
