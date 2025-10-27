@@ -40,11 +40,7 @@ func genTrace() ptrace.Traces {
 	return traces
 }
 
-func BenchmarkPeerTags_Native(b *testing.B) {
-	benchmarkPeerTags(b)
-}
-
-func benchmarkPeerTags(b *testing.B) {
+func BenchmarkPeerTags(b *testing.B) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeStatsBySpanKind = true
 	cfg.Traces.PeerTagsAggregation = true
