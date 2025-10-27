@@ -12,69 +12,9 @@ metrics:
     enabled: false
 ```
 
-### cisco.interface.receive.bytes
+### cisco.device.up
 
-Number of bytes received on the interface
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | Recommended |
-| interface.state | Administrative state of the interface | Any Str | Recommended |
-
-### cisco.interface.receive.errors
-
-Number of receive errors on the interface
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {error} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | Recommended |
-| interface.state | Administrative state of the interface | Any Str | Recommended |
-
-### cisco.interface.transmit.bytes
-
-Number of bytes transmitted on the interface
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | Recommended |
-| interface.state | Administrative state of the interface | Any Str | Recommended |
-
-### cisco.interface.transmit.errors
-
-Number of transmit errors on the interface
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {error} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | Recommended |
-| interface.state | Administrative state of the interface | Any Str | Recommended |
-
-### cisco.interface.up
-
-Interface operational status (1 for up, 0 for down)
+Device availability (1 = up, 0 = down)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -84,29 +24,32 @@ Interface operational status (1 for up, 0 for down)
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | Recommended |
-| interface.state | Administrative state of the interface | Any Str | Recommended |
+| target | The target network device hostname/IP | Any Str | false |
 
-### cisco.system.cpu.utilization
+### system.cpu.utilization
 
-CPU utilization as a fraction
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### cisco.system.memory.utilization
-
-Memory utilization as a fraction
+Percentage of CPU time in use.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-## Resource Attributes
+#### Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cisco.device.ip | IP address of the Cisco device | Any Str | true |
-| cisco.device.model | Model of the Cisco device | Any Str | true |
-| cisco.device.name | Name of the Cisco device | Any Str | true |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |
+
+### system.memory.utilization
+
+Percentage of memory bytes in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |

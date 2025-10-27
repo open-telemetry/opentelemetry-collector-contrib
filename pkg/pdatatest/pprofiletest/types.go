@@ -11,6 +11,8 @@ import (
 
 type Profiles struct {
 	ResourceProfiles []ResourceProfile
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (p Profiles) Transform() pprofile.Profiles {
@@ -24,6 +26,8 @@ func (p Profiles) Transform() pprofile.Profiles {
 type ResourceProfile struct {
 	ScopeProfiles []ScopeProfile
 	Resource      Resource
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (rp ResourceProfile) Transform(pp pprofile.Profiles) pprofile.ResourceProfiles {
@@ -42,12 +46,16 @@ func (rp ResourceProfile) Transform(pp pprofile.Profiles) pprofile.ResourceProfi
 
 type Resource struct {
 	Attributes []Attribute
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ScopeProfile struct {
 	Profile   []Profile
 	Scope     Scope
 	SchemaURL string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (sp ScopeProfile) Transform(dic pprofile.ProfilesDictionary, prp pprofile.ResourceProfiles) pprofile.ScopeProfiles {
@@ -67,6 +75,8 @@ type Scope struct {
 	Name                   string
 	Version                string
 	DroppedAttributesCount uint32
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (sc Scope) Transform(psp pprofile.ScopeProfiles) pcommon.InstrumentationScope {
@@ -194,6 +204,8 @@ type Sample struct {
 	Locations          []Location
 	Attributes         []Attribute
 	TimestampsUnixNano []uint64
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (sa *Sample) Transform(dic pprofile.ProfilesDictionary, pp pprofile.Profile) {
@@ -236,11 +248,15 @@ type Location struct {
 	Line       []Line
 	IsFolded   bool
 	Attributes []Attribute
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Link struct {
 	TraceID pcommon.TraceID
 	SpanID  pcommon.SpanID
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (l *Link) Transform(dic pprofile.ProfilesDictionary) int32 {
@@ -256,6 +272,8 @@ type Mapping struct {
 	FileOffset  uint64
 	Filename    string
 	Attributes  []Attribute
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (m *Mapping) Transform(dic pprofile.ProfilesDictionary) {
@@ -272,6 +290,8 @@ func (m *Mapping) Transform(dic pprofile.ProfilesDictionary) {
 type Attribute struct {
 	Key   string
 	Value any
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type attributable interface {
@@ -302,6 +322,8 @@ type KeyValueAndUnit struct {
 	Key   string
 	Value any
 	Unit  string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (a *KeyValueAndUnit) Transform(dic pprofile.ProfilesDictionary) int32 {
@@ -316,6 +338,8 @@ type Line struct {
 	Line     int64
 	Column   int64
 	Function Function
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Function struct {
@@ -323,6 +347,8 @@ type Function struct {
 	SystemName string
 	Filename   string
 	StartLine  int64
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (f *Function) Transform(dic pprofile.ProfilesDictionary) int32 {
