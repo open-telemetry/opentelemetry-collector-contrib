@@ -8,10 +8,6 @@ receivers:
 processors:
   probabilistic_sampler:
     sampling_percentage: 20
-  batch:
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
 connectors:
     datadog/connector:
 exporters:
@@ -19,17 +15,17 @@ exporters:
     api:
       key: ${env:DD_API_KEY}
       site: ${env:DD_SITE}
+    sending_queue:
+      batch:
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [datadog/connector]
     traces/sampling:
       receivers: [datadog/connector]
-      processors: [batch, probabilistic_sampler]
+      processors: [probabilistic_sampler]
       exporters: [datadog]
     metrics:
       receivers: [datadog/connector]
-      processors: [batch]
       exporters: [datadog]

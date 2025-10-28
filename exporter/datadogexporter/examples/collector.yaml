@@ -87,16 +87,6 @@ receivers:
 # Some processors are recommended in all pipelines:
 # https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor#recommended-processors
 processors:
-  # The batch processor batches telemetry data into larger payloads.
-  # It is necessary for the Datadog traces exporter to work optimally,
-  # and is recommended for any production pipeline.
-  batch:
-    # Datadog APM Intake limit is 3.2MB. Let's make sure the batches do not
-    # go over that.
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
-
   # k8sattributes processor adds the necessary attributes to enable trace/metrics
   # correlation by means of container tags.
   k8sattributes:
@@ -189,6 +179,13 @@ exporters:
     ## when telemetry data is reported via a different host.
     #
     # only_metadata: false
+
+
+    sending_queue:
+      # The batching option batches telemetry data into larger payloads.
+      # It is necessary for the Datadog traces exporter to work optimally,
+      # and is recommended for any production pipeline.
+      batch:
 
     ## @param api - custom object - required.
     ## Specific API configuration.
@@ -503,20 +500,20 @@ service:
   pipelines:
     # Pipelines starting with `metrics` or `metrics/` define a metrics pipeline.
     metrics:
-      # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
+      # This pipeline has an OTLP receiver and a Datadog exporter.
       # It also has additional receivers which generate valuable metrics and the Datadog connector for trace metrics.
       receivers: [hostmetrics, docker_stats, otlp, datadog/connector]
-      processors: [k8sattributes, batch]
+      processors: [k8sattributes]
       exporters: [datadog]
     # Pipelines starting with `traces` or `traces/` define a traces pipeline.
     traces:
-      # This pipeline has an OTLP receiver, a batch processor and a Datadog connector.
+      # This pipeline has an OTLP receiver and a Datadog connector.
       # It sends all the traces to the Datadog connector for generating trace metrics.
       receivers: [otlp]
-      processors: [k8sattributes, batch]
+      processors: [k8sattributes]
       exporters: [datadog/connector]
     traces/sampling:
-      # This pipeline has a Datadog connector, a batch processor and a Datadog exporter.
+      # This pipeline has a Datadog connector and a Datadog exporter.
       # It receivers all traces from the Datadog connector and sends them to Datadog.
       # Add any sampling here, so that the generated trace metrics account for all traces.
       receivers: [datadog/connector]
@@ -526,19 +523,19 @@ service:
 
     # Pipelines starting with `logs` or `logs/` define a logs pipeline.
     logs:
-      # This pipeline has an OTLP receiver, filelog receiver, a batch processor and a Datadog exporter.
+      # This pipeline has an OTLP receiver, filelog receiver and a Datadog exporter.
       receivers: [otlp, filelog]
-      processors: [k8sattributes, batch]
+      processors: [k8sattributes]
       exporters: [datadog]
 
       # # To send data to the gateway on gateway deployment mode, define these pipelines instead.
       #
       # metrics/gateway:
       #   receivers: [otlp]
-      #   processors: [batch, resourcedetection]
+      #   processors: [resourcedetection]
       #   exporters: [otlp]
       #
       # traces/gateway:
       #   receivers: [otlp]
-      #   processors: [batch, resourcedetection]
+      #   processors: [resourcedetection]
       #   exporters: [otlp]

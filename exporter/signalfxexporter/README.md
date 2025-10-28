@@ -270,6 +270,8 @@ exporters:
     realm: us1
     timeout: 5s
     max_idle_conns: 80
+    sending_queue:
+      batch:
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
@@ -279,11 +281,11 @@ service:
   pipelines:
     metrics:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     traces:
       receivers: [zipkin]

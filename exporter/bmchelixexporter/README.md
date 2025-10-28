@@ -29,6 +29,8 @@ exporters:
   bmchelix/helix1:
     endpoint: https://company.onbmc.com
     api_key: <api-key>
+    sending_queue:
+      batch:
 ```
 
 ### Optional Settings
@@ -50,6 +52,8 @@ exporters:
     endpoint: https://company.onbmc.com
     api_key: <api-key>
     timeout: 20s
+    sending_queue:
+      batch:
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -71,7 +75,7 @@ To ensure metrics are correctly populated in BMC Helix, the following attributes
 
 To ensure the necessary attributes are present, it is recommended to leverage the [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) with [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl), and include it in the configuration of the telemetry pipeline.
 
-The minimal pipeline most often looks like: `OTEL metrics --> (batch/memory limit) --> transform processor --> bmchelix exporter`.
+The minimal pipeline most often looks like: `OTEL metrics --> (memory limit) --> transform processor --> bmchelix exporter`.
 
 ### Transformer Example for Hardware Metrics
 

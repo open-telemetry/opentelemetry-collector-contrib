@@ -65,18 +65,16 @@ receivers:
               regex: ^__meta_ecs_container_labels_(.+)$ # Capture the key using regex, e.g. __meta_ecs_container_labels_Java_EMF_Metrics -> Java_EMF_Metrics
               replacement: '$$1'
 
-processors:
-  batch:
-
 # Use awsemf for CloudWatch Container Insights Prometheus. The extension does not have requirement on exporter.
 exporters:
   awsemf:
+    sending_queue:
+      batch:
 
 service:
   pipelines:
     metrics:
       receivers: [ prometheus ]
-      processors: [ batch ]
       exporters: [ awsemf ]
   extensions: [ ecs_observer ]
 ```

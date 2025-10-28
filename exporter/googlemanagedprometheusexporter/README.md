@@ -76,11 +76,6 @@ receivers:
                 - action: labelmap
                 regex: __meta_kubernetes_pod_label_(.+)
 processors:
-    batch:
-        # batch metrics before sending to reduce API usage
-        send_batch_max_size: 200
-        send_batch_size: 200
-        timeout: 5s
     memory_limiter:
         # drop metrics if memory usage gets too high
         check_interval: 1s
@@ -111,12 +106,15 @@ processors:
 
 exporters:
     googlemanagedprometheus:
+      sending_queue:
+        # batch metrics before sending to reduce API usage
+        batch:
 
 service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [memory_limiter, batch, transform, resourcedetection]
+      processors: [memory_limiter, transform, resourcedetection]
       exporters: [googlemanagedprometheus]
 ```
 

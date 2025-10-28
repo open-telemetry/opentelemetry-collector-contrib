@@ -13,9 +13,6 @@ receivers:
       network:
 
 processors:
-  batch:
-    send_batch_size: 1024
-    timeout: 10s
   memory_limiter:
     check_interval: 1s
     limit_mib: 4000
@@ -26,6 +23,8 @@ exporters:
     verbosity: detailed
   otlphttp:
     endpoint: "http://localhost:4318"
+    sending_queue:
+      batch:
 
 extensions:
   health_check:
@@ -46,13 +45,13 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [debug, otlphttp, datadog/connector]
     metrics:
       receivers: [otlp, hostmetrics, datadog/connector]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [debug, otlphttp]
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [debug, otlphttp]
