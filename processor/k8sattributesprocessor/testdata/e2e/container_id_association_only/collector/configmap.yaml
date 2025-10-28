@@ -35,7 +35,6 @@ data:
           - from: namespace
             key: test-namespace
             tag_name: k8s.namespace.labels.test-namespace
-        # Pod association with container.id (always present regardless of metadata config)
         pod_association:
         - sources:
           - from: resource_attribute
