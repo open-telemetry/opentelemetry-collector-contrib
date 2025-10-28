@@ -67,7 +67,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251028105454-507664fb82dc // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.138.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.138.1-0.20251028105454-507664fb82dc // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.138.1-0.20251028105454-507664fb82dc // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.138.1-0.20251028105454-507664fb82dc // indirect
 	go.opentelemetry.io/collector/extension v1.44.1-0.20251028105454-507664fb82dc // indirect

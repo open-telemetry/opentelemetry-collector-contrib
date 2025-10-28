@@ -50,10 +50,10 @@ go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251028105454-50766
 go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251028105454-507664fb82dc/go.mod h1:z4EOVwhc3D7IT4W58Ez7Pjqm1pJkM+oVOWFuxxMHvWA=
 go.opentelemetry.io/collector/config/configtls v1.44.1-0.20251028105454-507664fb82dc h1:qIRqMIyn6Z36GJb1Z8efYF8m7kW5IoLjUhWXVL5Qc4I=
 go.opentelemetry.io/collector/config/configtls v1.44.1-0.20251028105454-507664fb82dc/go.mod h1:wsOaG0LRnZjhRXpl0epNxba2HJzfZwmnKdu6NO7l7pw=
-go.opentelemetry.io/collector/confmap v1.44.0 h1:CIK4jAk6H3KTKza4nvWQkqLqrudLkYGz3evu5163uxg=
-go.opentelemetry.io/collector/confmap v1.44.0/go.mod h1:w37Xiu/PK3nTdqKb7YEvQECHYkuW7QnmdS7b9iRjOGo=
-go.opentelemetry.io/collector/confmap/xconfmap v0.138.0 h1:0b/h3LXBAcHFKPE9eVjZ4KRTaj9ImdOBK2z9hBlmoyA=
-go.opentelemetry.io/collector/confmap/xconfmap v0.138.0/go.mod h1:rk8hjMqoHX2KYUjGUPaiWo3qapj4o8UpQWWsdEqvorg=
+go.opentelemetry.io/collector/confmap v1.44.1-0.20251028105454-507664fb82dc h1:pOpahejn4Dt1DjF4QKxODyYW+9/SxECQHIBHZoHIpf8=
+go.opentelemetry.io/collector/confmap v1.44.1-0.20251028105454-507664fb82dc/go.mod h1:w37Xiu/PK3nTdqKb7YEvQECHYkuW7QnmdS7b9iRjOGo=
+go.opentelemetry.io/collector/confmap/xconfmap v0.138.1-0.20251028105454-507664fb82dc h1:VfMLnwEBf3CXe/x64G61DvmjOGnawaB6mk6OOSnVIvM=
+go.opentelemetry.io/collector/confmap/xconfmap v0.138.1-0.20251028105454-507664fb82dc/go.mod h1:rk8hjMqoHX2KYUjGUPaiWo3qapj4o8UpQWWsdEqvorg=
 go.opentelemetry.io/collector/featuregate v1.44.1-0.20251028105454-507664fb82dc h1:JRd+ny5MY+xjxBkN/2MgUjVcFApCNWnFj1s/tN4VBek=
 go.opentelemetry.io/collector/featuregate v1.44.1-0.20251028105454-507664fb82dc/go.mod h1:d0tiRzVYrytB6LkcYgz2ESFTv7OktRPQe0QEQcPt1L4=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
