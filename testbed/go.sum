@@ -596,8 +596,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.136.0 
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.136.0/go.mod h1:zpzmbo0xm/tk3asovxl1KV/zMGQH4PX91aOFSPjCMb4=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.136.0 h1:m0nscCllUtagBaQntXRMNdFs7Im6eYrAbiSrQixgMjM=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.136.0/go.mod h1:KGmfN52p/WB/qa79YeTlB4VUpUQVsQkbWY/J3RfW86c=
-github.com/open-telemetry/otel-arrow/go v0.43.0 h1:P1BsergAwmn4C5WbuQaS4S3cHIaOirJlTbsUtUPiPNY=
-github.com/open-telemetry/otel-arrow/go v0.43.0/go.mod h1:gGW+5QC51n86Vj3F3FY9m8hTfb6llZrDhW+8HB/mBGw=
+github.com/open-telemetry/otel-arrow/go v0.44.0 h1:CnTqSyo7UXzvi1XQ3AmV1kOTD5bMHJkQBqjtzaHcqvM=
+github.com/open-telemetry/otel-arrow/go v0.44.0/go.mod h1:iZXAgbBgSRQ+NVprvbJfjE/8WBAViIMw1uPuZdkfYi4=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
