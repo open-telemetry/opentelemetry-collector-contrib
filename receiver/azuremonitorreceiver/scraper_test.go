@@ -47,14 +47,14 @@ func newMockSubscriptionsListPager(subscriptionsPages []armsubscriptions.ClientL
 		for _, page := range subscriptionsPages {
 			resp.AddPage(http.StatusOK, page, nil)
 		}
-		return
+		return resp
 	}
 }
 
 func newMockSubscriptionGet(subscriptionsByID map[string]armsubscriptions.ClientGetResponse) func(ctx context.Context, subscriptionID string, options *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
 	return func(_ context.Context, subscriptionID string, _ *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
 		resp.SetResponse(http.StatusOK, subscriptionsByID[subscriptionID], nil)
-		return
+		return resp, errResp
 	}
 }
 
@@ -63,7 +63,7 @@ func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse)
 		for _, page := range resourcesPages {
 			resp.AddPage(http.StatusOK, page, nil)
 		}
-		return
+		return resp
 	}
 }
 
@@ -73,7 +73,7 @@ func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[s
 		for _, page := range metricDefinitionsPagesByResourceURI[resourceURI] {
 			resp.AddPage(http.StatusOK, page, nil)
 		}
-		return
+		return resp
 	}
 }
 
@@ -81,7 +81,7 @@ func newMockMetricList(metricsByResourceURIAndMetricName map[string]map[string]a
 	return func(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
 		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
 		resp.SetResponse(http.StatusOK, metricsByResourceURIAndMetricName[resourceURI][*options.Metricnames], nil)
-		return
+		return resp, errResp
 	}
 }
 
