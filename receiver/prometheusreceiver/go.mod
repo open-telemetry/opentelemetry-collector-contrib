@@ -17,7 +17,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.138.0
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/common v0.67.1
+	github.com/prometheus/common v0.67.2
 	github.com/prometheus/exporter-toolkit v0.15.0
 	github.com/prometheus/prometheus v0.305.1-0.20250808193045-294f36e80261
 	github.com/stretchr/testify v1.11.1
@@ -48,7 +48,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.3.0
-	golang.org/x/net v0.45.0
+	golang.org/x/net v0.46.0
 	google.golang.org/protobuf v1.36.10
 )
 
@@ -299,7 +299,7 @@ require (
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
 	golang.org/x/mod v0.28.0 // indirect
-	golang.org/x/oauth2 v0.31.0 // indirect
+	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/term v0.36.0 // indirect
