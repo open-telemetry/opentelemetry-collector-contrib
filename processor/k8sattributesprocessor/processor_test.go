@@ -728,6 +728,70 @@ func TestPodUID(t *testing.T) {
 	})
 }
 
+func TestPodAssociationFallback(t *testing.T) {
+	m := newMultiTest(
+		t,
+		NewFactory().CreateDefaultConfig(),
+		nil,
+	)
+
+	// Configure two associations: first by UID, second by name+namespace
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				Sources: []kube.AssociationSource{
+					{From: "resource_attribute", Name: "k8s.pod.uid"},
+				},
+			},
+			{
+				Sources: []kube.AssociationSource{
+					{From: "resource_attribute", Name: string(conventions.K8SPodNameKey)},
+					{From: "resource_attribute", Name: string(conventions.K8SNamespaceNameKey)},
+				},
+			},
+		}
+
+		// Only the name+namespace combination will resolve to a Pod; UID will not
+		id := kube.PodIdentifier{
+			kube.PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodNameKey), "test-pod"),
+			kube.PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SNamespaceNameKey), "default"),
+		}
+		kp.kc.(*fakeClient).Pods[id] = &kube.Pod{
+			Name:      "test-pod",
+			Namespace: "default",
+			Attributes: map[string]string{
+				string(conventions.K8SPodNameKey):       "test-pod",
+				string(conventions.K8SNamespaceNameKey): "default",
+			},
+		}
+	})
+
+	// Resource has a UID that doesn't map to any pod, but has name+namespace
+	gens := []generateResourceFunc{
+		withPodUID("static-uid-no-match"),
+		func(res pcommon.Resource) {
+			res.Attributes().PutStr(string(conventions.K8SPodNameKey), "test-pod")
+			res.Attributes().PutStr(string(conventions.K8SNamespaceNameKey), "default")
+		},
+	}
+
+	m.testConsume(t.Context(),
+		generateTraces(gens...),
+		generateMetrics(gens...),
+		generateLogs(gens...),
+		generateProfiles(gens...),
+		nil,
+	)
+
+	m.assertBatchesLen(1)
+	m.assertResource(0, func(r pcommon.Resource) {
+		// Ensure name was preserved and enrichment occurred via fallback
+		require.Positive(t, r.Attributes().Len())
+		assertResourceHasStringAttribute(t, r, string(conventions.K8SPodNameKey), "test-pod")
+		assertResourceHasStringAttribute(t, r, string(conventions.K8SNamespaceNameKey), "default")
+	})
+}
+
 func TestAddPodLabels(t *testing.T) {
 	m := newMultiTest(
 		t,

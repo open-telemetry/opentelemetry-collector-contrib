@@ -139,13 +139,17 @@ func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
-	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
-	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
+	// Gather candidate identifiers from all associations to enable fallback.
+	podIdentifiers := extractAllPodIDs(ctx, resource.Attributes(), kp.podAssociations)
+	kp.logger.Debug("evaluating pod identifiers", zap.Any("values", podIdentifiers))
 
-	for i := range podIdentifierValue {
-		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
-			setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifierValue[i].Value)
-			break
+	// Preserve behavior of setting k8s.pod.ip from connection source when present.
+	if len(podIdentifiers) > 0 {
+		for i := range podIdentifiers[0] {
+			if podIdentifiers[0][i].Source.From == kube.ConnectionSource && podIdentifiers[0][i].Value != "" {
+				setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifiers[0][i].Value)
+				break
+			}
 		}
 	}
 	if kp.passthroughMode {
@@ -153,16 +157,23 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	}
 
 	var pod *kube.Pod
-	if podIdentifierValue.IsNotEmpty() {
-		var podFound bool
-		if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound {
-			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
-
-			for key, val := range pod.Attributes {
-				setResourceAttribute(resource.Attributes(), key, val)
+	// Try each identifier in order until we find a Pod.
+	for idx, id := range podIdentifiers {
+		if id.IsNotEmpty() {
+			if p, ok := kp.kc.GetPod(id); ok {
+				kp.logger.Debug("found pod using association", zap.Int("association_index", idx), zap.Any("identifier", id))
+				pod = p
+				for key, val := range pod.Attributes {
+					setResourceAttribute(resource.Attributes(), key, val)
+				}
+				kp.addContainerAttributes(resource.Attributes(), pod)
+				break
 			}
-			kp.addContainerAttributes(resource.Attributes(), pod)
+			kp.logger.Debug("pod not found with this association, trying next", zap.Int("association_index", idx), zap.Any("identifier", id))
 		}
+	}
+	if pod == nil && len(podIdentifiers) > 0 {
+		kp.logger.Debug("no pod found after trying all associations", zap.Int("attempts", len(podIdentifiers)))
 	}
 
 	namespace := getNamespace(pod, resource.Attributes())
