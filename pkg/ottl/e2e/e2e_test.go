@@ -505,6 +505,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Concat(["A","B"], attributes["val"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "Aval2B")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ConvertCase(attributes["http.method"], "upper"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", http.MethodGet)

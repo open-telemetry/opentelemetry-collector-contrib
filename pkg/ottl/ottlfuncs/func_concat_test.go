@@ -17,7 +17,7 @@ func Test_concat(t *testing.T) {
 	tests := []struct {
 		name      string
 		vals      []ottl.StandardStringLikeGetter[any]
-		delimiter string
+		delimiter ottl.StringGetter[any]
 		expected  string
 	}{
 		{
@@ -34,7 +34,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: " ",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " ", nil }},
 			expected:  "hello world",
 		},
 		{
@@ -56,7 +56,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: "",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "", nil }},
 			expected:  "hello<nil>world",
 		},
 		{
@@ -73,7 +73,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: "",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "", nil }},
 			expected:  "hello1",
 		},
 		{
@@ -90,7 +90,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: "",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "", nil }},
 			expected:  "hello3.14159",
 		},
 		{
@@ -107,7 +107,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: " ",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " ", nil }},
 			expected:  "hello true",
 		},
 		{
@@ -119,7 +119,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: "",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "", nil }},
 			expected:  "00000000000000000ed2e63cbe71f5a8",
 		},
 		{
@@ -140,7 +140,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: ",",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
 			expected:  "[1,2],[3,4]",
 		},
 		{
@@ -161,7 +161,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: ",",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
 			expected:  `{"a":"b"},{"c":"d"}`,
 		},
 		{
@@ -183,7 +183,7 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: "__",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "__", nil }},
 			expected:  "____",
 		},
 		{
@@ -195,19 +195,19 @@ func Test_concat(t *testing.T) {
 					},
 				},
 			},
-			delimiter: "-",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "-", nil }},
 			expected:  "hello",
 		},
 		{
 			name:      "no arguments",
 			vals:      []ottl.StandardStringLikeGetter[any]{},
-			delimiter: "-",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "-", nil }},
 			expected:  "",
 		},
 		{
 			name:      "no arguments with an empty delimiter",
 			vals:      []ottl.StandardStringLikeGetter[any]{},
-			delimiter: "",
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "", nil }},
 			expected:  "",
 		},
 	}
@@ -233,7 +233,28 @@ func Test_concat_error(t *testing.T) {
 			return make(chan int), nil
 		},
 	}
-	exprFunc := concat[any]([]ottl.StringLikeGetter[any]{target}, "test")
+	delimiter := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "test", nil
+		},
+	}
+	exprFunc := concat[any]([]ottl.StringLikeGetter[any]{target}, delimiter)
+	_, err := exprFunc(t.Context(), nil)
+	assert.Error(t, err)
+}
+
+func Test_concat_error_delimiter(t *testing.T) {
+	target := &ottl.StandardStringLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return make(chan int), nil
+		},
+	}
+	delimiter := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return 3, nil
+		},
+	}
+	exprFunc := concat[any]([]ottl.StringLikeGetter[any]{target}, delimiter)
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
