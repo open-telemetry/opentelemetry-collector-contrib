@@ -239,8 +239,8 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig
 //  1. reqRM (per-request): groups samples with the same job/instance into a single ResourceMetrics
 //     during current request processing, avoiding duplication in the output.
 //
-//  2. prw.rmCache (global LRU): stores snapshots of previously seen resource attributes,
-//     allowing future requests to reuse enriched attributes (e.g., via target_info).
+//  2. prw.rmCache (global LRU): stores snapshots of previously seen resource attributes (from target_info),
+//     allowing future requests to reuse enriched attributes.
 //
 // This function always creates new ResourceMetrics per request, only copying attributes
 // from the LRU cache when available. Never returns cached objects to avoid shared
