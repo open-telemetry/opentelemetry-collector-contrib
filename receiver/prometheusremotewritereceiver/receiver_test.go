@@ -1783,8 +1783,7 @@ func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
 	return result
 }
 
-// TestConcurrentRequestsforSameResourceAttributes reproduces the concurrency bug where subsequent requests
-// fail to reach the next consumer after the first successful request.
+// TestConcurrentRequestsforSameResourceAttributes asserts the receiver and its cache work even with concurrent requests
 func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 	mockConsumer := &mockConsumer{}
 	prwReceiver := setupMetricsReceiver(t)
