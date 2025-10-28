@@ -77,7 +77,7 @@ func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, thrott
 
 var _ kgo.HookBrokerE2E = FranzProducerMetrics{}
 
-func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, key int16, e2e kgo.BrokerE2E) {
+func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, _ int16, e2e kgo.BrokerE2E) {
 	outcome := "success"
 	if e2e.Err() != nil {
 		outcome = "failure"
