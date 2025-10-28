@@ -48,6 +48,7 @@ type metricGroup struct {
 	// - https://github.com/prometheus/OpenMetrics/blob/main/specification/OpenMetrics.md#counter-1
 	createdSeconds float64
 	value          float64
+	hasValue       bool
 	hValue         *histogram.Histogram
 	fhValue        *histogram.FloatHistogram
 	complexValue   []*dataPoint
@@ -398,6 +399,9 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
+	if !mg.hasValue {
+		return
+	}
 	tsNanos := timestampFromMs(mg.ts)
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
@@ -488,9 +492,11 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.createdSeconds = v
 		} else {
 			mg.value = v
+			mg.hasValue = true
 		}
 	default:
 		mg.value = v
+		mg.hasValue = true
 	}
 
 	return nil
