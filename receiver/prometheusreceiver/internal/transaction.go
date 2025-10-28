@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -238,25 +239,56 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		t.families[key][scope] = make(map[metricFamilyKey]*metricFamily)
 	}
 
+	normalizedName := normalizeMetricName(mn)
+	isOMCounter := t.isOMCounterLine(mn, normalizedName)
+
 	mfKey := metricFamilyKey{isExponentialHistogram: t.addingNativeHistogram, name: mn}
+	if isOMCounter {
+		mfKey.name = normalizedName
+	}
 
 	curMf, ok := t.families[key][scope][mfKey]
 
 	if !ok {
 		fn := mn
 		if _, ok := t.mc.GetMetadata(mn); !ok {
-			fn = normalizeMetricName(mn)
+			fn = normalizedName
 		}
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
 		mf, ok := t.families[key][scope][fnKey]
 		if !ok || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
-			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
+			mfKey = metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}
+			if isOMCounter {
+				// we want to key the mf and mg of this append to the normalized name if it came from an om counter line
+				mfKey.name = normalizedName
+			}
+			t.families[key][scope][mfKey] = curMf
 			return curMf
 		}
 		curMf = mf
 	}
 	return curMf
+}
+
+// isOMCounterLine determines whether a metric is a counter appended by an om-text parser
+// these assumptions are made
+// 1. the metric name of an OM counter line would always have either _total or _created as a suffix
+// 2. the omptextarser stores metadata of every om text line using the counter's normalized name (i.e foo_total => foo)
+// 3. the promtextparser stores metadata without normalization of metric name
+func (t *transaction) isOMCounterLine(metricName, normalizedName string) bool {
+	if len(metricName) <= len(normalizedName) {
+		return false
+	}
+	if !strings.HasSuffix(metricName, metricSuffixTotal) && !strings.HasSuffix(metricName, metricSuffixCreated) {
+		return false
+	}
+	_, k := t.mc.GetMetadata(metricName)
+	if k {
+		return false
+	}
+	md, k := t.mc.GetMetadata(normalizedName)
+	return k && md.Type == model.MetricTypeCounter
 }
 
 func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {

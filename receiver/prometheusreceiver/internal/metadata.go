@@ -4,6 +4,8 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
+	"strings"
+
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/scrape"
 )
@@ -54,7 +56,13 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 	// try with suffixes trimmed, in-case it is a "merged" metric type.
 	normalizedName := normalizeMetricName(metricName)
 	if metadata, ok := mc.GetMetadata(normalizedName); ok {
+		// unless it's a merged OM counter (_total and _created) in which case
+		// we want to use the _total name instead of the normalized name
 		if metadata.Type == model.MetricTypeCounter {
+			// re-normalize the _created name to expected corresponding _total name
+			if strings.HasSuffix(metricName, metricSuffixCreated) {
+				metricName = normalizedName + metricSuffixTotal
+			}
 			return &metadata, metricName
 		}
 		return &metadata, normalizedName
