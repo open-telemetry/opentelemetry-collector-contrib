@@ -35,8 +35,10 @@ exporters:
     api:
       key: ${env:DD_API_KEY}
     sending_queue:
-      # An empty section means that the defaults will be used.
       batch:
+        min_size: 10
+        max_size: 100
+        flush_timeout: 10s
 ```
 
 
