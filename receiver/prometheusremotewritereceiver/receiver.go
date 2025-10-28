@@ -255,7 +255,6 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 	rm := otelMetrics.ResourceMetrics().AppendEmpty()
 	if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
 		// When the ResourceMetrics already exists in the global cache, we can reuse the previous snapshots and perpass the already seen attributes to the current request.
-		// This is important to not lose information and keep everything aggregated correctly.
 		existingRM.Resource().Attributes().CopyTo(rm.Resource().Attributes())
 	} else {
 		// When the ResourceMetrics does not exist in the global cache, we need to create a new one and add it to the request map.
