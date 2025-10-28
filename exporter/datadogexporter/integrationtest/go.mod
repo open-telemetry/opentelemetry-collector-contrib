@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.138.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tinylib/msgp v1.4.0
+	github.com/tinylib/msgp v1.5.0
 	go.opentelemetry.io/collector/component v1.44.1-0.20251023205830-8038c6949379
 	go.opentelemetry.io/collector/confmap v1.44.1-0.20251023205830-8038c6949379
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.44.1-0.20251023205830-8038c6949379
@@ -255,7 +255,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.1 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
-	github.com/prometheus/procfs v0.17.0 // indirect
+	github.com/prometheus/procfs v0.19.1 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
