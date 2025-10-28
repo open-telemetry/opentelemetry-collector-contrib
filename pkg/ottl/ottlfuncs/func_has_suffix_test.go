@@ -18,25 +18,25 @@ func Test_HasSuffix(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   any
-		suffix   string
+		suffix   ottl.StringGetter[any]
 		expected bool
 	}{
 		{
 			name:     "has suffix true",
 			target:   "hello world",
-			suffix:   " world",
+			suffix:   &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " world", nil }},
 			expected: true,
 		},
 		{
 			name:     "has suffix false",
 			target:   "hello world",
-			suffix:   "hello ",
+			suffix:   &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello ", nil }},
 			expected: false,
 		},
 		{
 			name:     "target pcommon.Value",
 			target:   pcommon.NewValueStr("hello world"),
-			suffix:   `world`,
+			suffix:   &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "world", nil }},
 			expected: true,
 		},
 	}
@@ -67,8 +67,28 @@ func Test_HasSuffix_Error(t *testing.T) {
 			return true, nil
 		},
 	}
-	exprFunc, err := HasSuffix[any](target, "test")
-	assert.NoError(t, err)
-	_, err = exprFunc(t.Context(), nil)
+	suffix := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "test", nil
+		},
+	}
+	exprFunc := HasSuffix[any](target, suffix)
+	_, err := exprFunc(t.Context(), nil)
+	require.Error(t, err)
+}
+
+func Test_HasSuffix_Error_suffix(t *testing.T) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return true, nil
+		},
+	}
+	suffix := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return true, nil
+		},
+	}
+	exprFunc := HasSuffix[any](target, suffix)
+	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
