@@ -84,6 +84,10 @@ component_management:
     name: connector_signaltometrics
     paths:
     - connector/signaltometricsconnector/**
+  - component_id: connector_slowsql
+    name: connector_slowsql
+    paths:
+    - connector/slowsqlconnector/**
   - component_id: connector_spanmetrics
     name: connector_spanmetrics
     paths:
@@ -184,6 +188,10 @@ component_management:
     name: exporter_googlecloudpubsub
     paths:
     - exporter/googlecloudpubsubexporter/**
+  - component_id: exporter_googlecloudstorage
+    name: exporter_googlecloudstorage
+    paths:
+    - exporter/googlecloudstorageexporter/**
   - component_id: exporter_googlemanagedprometheus
     name: exporter_googlemanagedprometheus
     paths:
@@ -612,6 +620,10 @@ component_management:
     name: receiver_chrony
     paths:
     - receiver/chronyreceiver/**
+  - component_id: receiver_ciscoos
+    name: receiver_ciscoos
+    paths:
+    - receiver/ciscoosreceiver/**
   - component_id: receiver_cloudflare
     name: receiver_cloudflare
     paths:
@@ -704,6 +716,10 @@ component_management:
     name: receiver_huaweicloudces
     paths:
     - receiver/huaweicloudcesreceiver/**
+  - component_id: receiver_icmpcheck
+    name: receiver_icmpcheck
+    paths:
+    - receiver/icmpcheckreceiver/**
   - component_id: receiver_iis
     name: receiver_iis
     paths:
@@ -852,6 +868,10 @@ component_management:
     name: receiver_receivercreator
     paths:
     - receiver/receivercreator/**
+  - component_id: receiver_redfish
+    name: receiver_redfish
+    paths:
+    - receiver/redfishreceiver/**
   - component_id: receiver_redis
     name: receiver_redis
     paths:

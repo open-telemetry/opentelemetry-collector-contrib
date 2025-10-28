@@ -181,9 +181,9 @@ type Node struct {
 type deleteRequest struct {
 	// id is identifier (IP address or Pod UID) of pod to remove from pods map
 	id PodIdentifier
-	// name contains name of pod to remove from pods map
-	podName string
-	ts      time.Time
+	// contains uid of pod to remove from pods map
+	podUID string
+	ts     time.Time
 }
 
 // Filters is used to instruct the client on how to filter out k8s pods.
@@ -262,8 +262,9 @@ type ExtractionRules struct {
 	ServiceVersion            bool
 	ServiceInstanceID         bool
 
-	Annotations []FieldExtractionRule
-	Labels      []FieldExtractionRule
+	Annotations                  []FieldExtractionRule
+	Labels                       []FieldExtractionRule
+	DeploymentNameFromReplicaSet bool
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners

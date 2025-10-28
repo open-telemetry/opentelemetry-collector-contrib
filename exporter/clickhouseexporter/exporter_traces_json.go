@@ -18,6 +18,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
+// anyTracesExporter is an interface that satisfies both the default map tracesExporter and the tracesJSONExporter
+type anyTracesExporter interface {
+	start(context.Context, component.Host) error
+	shutdown(context.Context) error
+	pushTraceData(ctx context.Context, td ptrace.Traces) error
+}
+
 type tracesJSONExporter struct {
 	cfg       *Config
 	logger    *zap.Logger
@@ -61,6 +68,7 @@ func (e *tracesJSONExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
 		if err := e.db.Close(); err != nil {
 			e.logger.Warn("failed to close json traces db connection", zap.Error(err))
+			return err
 		}
 	}
 
@@ -83,7 +91,7 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 	var spanCount int
 	rsSpans := td.ResourceSpans()
 	rsLen := rsSpans.Len()
-	for i := 0; i < rsLen; i++ {
+	for i := range rsLen {
 		spans := rsSpans.At(i)
 		res := spans.Resource()
 		resAttr := res.Attributes()
@@ -94,7 +102,7 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 		}
 
 		ssRootLen := spans.ScopeSpans().Len()
-		for j := 0; j < ssRootLen; j++ {
+		for j := range ssRootLen {
 			scopeSpanRoot := spans.ScopeSpans().At(j)
 			scopeSpanScope := scopeSpanRoot.Scope()
 			scopeName := scopeSpanScope.Name()
@@ -102,7 +110,7 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 			scopeSpans := scopeSpanRoot.Spans()
 
 			ssLen := scopeSpans.Len()
-			for k := 0; k < ssLen; k++ {
+			for k := range ssLen {
 				span := scopeSpans.At(k)
 				spanStatus := span.Status()
 				spanDurationNanos := span.EndTimestamp() - span.StartTimestamp()
@@ -183,7 +191,7 @@ func convertEventsJSON(events ptrace.SpanEventSlice) (times []time.Time, names, 
 		attrs = append(attrs, string(eventAttrBytes))
 	}
 
-	return
+	return times, names, attrs, err
 }
 
 func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states, attrs []string, err error) {
@@ -200,7 +208,7 @@ func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states, at
 		attrs = append(attrs, string(linkAttrBytes))
 	}
 
-	return
+	return traceIDs, spanIDs, states, attrs, err
 }
 
 func renderInsertTracesJSONSQL(cfg *Config) string {

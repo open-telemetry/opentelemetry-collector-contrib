@@ -166,10 +166,10 @@ Count of active sessions.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| session_type | Session type | Any Str | false |
-| session_status | Session status | Any Str | false |
+| session_type | Session type | Any Str | Recommended |
+| session_status | Session status | Any Str | Recommended |
 
 ### oracledb.tablespace_size.limit
 
@@ -181,9 +181,9 @@ Maximum size of tablespace in bytes, -1 if unlimited.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| tablespace_name | Tablespace name | Any Str | false |
+| tablespace_name | Tablespace name | Any Str | Recommended |
 
 ### oracledb.tablespace_size.usage
 
@@ -195,9 +195,9 @@ Used tablespace in bytes.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| tablespace_name | Tablespace name | Any Str | false |
+| tablespace_name | Tablespace name | Any Str | Recommended |
 
 ### oracledb.transactions.limit
 
@@ -470,3 +470,4 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | ---- | ----------- | ------ | ------- |
 | host.name | The host name of Oracle Server | Any Str | true |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true |
+| service.instance.id | A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value) | Any Str | true |

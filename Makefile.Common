@@ -18,17 +18,26 @@ GO_BUILD_TAGS=""
 # These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
 GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 900s
-GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
-GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
-GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
-COVER_OPT :=-cover -covermode=atomic -test.gocoverdir="$(COVER_DIR_ABS)"
-GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
-GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
-GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
+
+# On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
+ifeq ($(GOOS)-$(GOARCH),windows-arm64)
+	CGO_ENABLED_OPT?=0
+else
+	GOTEST_RACE_OPT?=-race
+	CGO_ENABLED_OPT?=1
+endif
+
+GOTEST_OPT?=$(GOTEST_RACE_OPT) -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
+GOTEST_INTEGRATION_OPT?=$(GOTEST_RACE_OPT) -timeout 360s -parallel 4 -skip Sudo
+GOTEST_INTEGRATION_OPT_SUDO?=$(GOTEST_RACE_OPT) -timeout 360s -parallel 4 -exec sudo -run Sudo
+COVER_OPT :=-cover -covermode=atomic -test.gocoverdir="$(COVER_DIR_ABS)"
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
+GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
+GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 
 DOCKERCMD ?= docker
 
@@ -80,6 +89,11 @@ GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
 MODERNIZE           := $(TOOLS_BIN_DIR)/modernize
+
+# Tools used by go generate commands
+MDATAGEN := $(TOOLS_BIN_DIR)/mdatagen
+# The githubreceiver uses a "go generate" tool that is not used by other components.
+GENQLIENT := $(TOOLS_BIN_DIR)/genqlient
 
 GOTESTSUM_OPT?= --rerun-fails=1
 
@@ -139,7 +153,7 @@ test-with-junit-and-cover: $(GOTESTSUM)
 .PHONY: buildtest
 buildtest:
 ifneq (,$(wildcard ./*.go))
-	GOARCH=$(GOTESTARCH) CGO_ENABLED=1 $(GOCMD) test -c -o builtunitetest.test
+	GOARCH=$(GOTESTARCH) CGO_ENABLED=$(CGO_ENABLED_OPT) $(GOCMD) test -c -o builtunitetest.test
 endif
 
 .PHONY: runbuilttest
@@ -149,7 +163,7 @@ ifneq (,$(wildcard ./builtunitetest.test))
 endif
 
 INTEGRATION_TEST_FILES := $(shell find . -name *integration_test.go)
-INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES), $(shell cat $(INTEGRATION_TEST_FILES) | sed -n "s/func \(Test[A-Za-z0-9_]*\).*/\1/p" | xargs | sed "s/ /|/g"))
+INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES),$(shell cat $(INTEGRATION_TEST_FILES) | sed -n "s/func \(Test[A-Za-z0-9_]*\).*/\1/p" | xargs | sed "s/ /|/g"))
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) in `pwd`"
@@ -235,13 +249,31 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 	$(GOFUMPT) -l -w -extra .
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
+.PHONY: generate-tools
+generate-tools: $(MDATAGEN) $(GENQLIENT)
+ifeq ($(GOOS),windows)
+	@echo Adding "exe" extensions to generate tools
+	@for f in $^; do \
+		cp -u "$$f" "$$f.exe"; \
+	done
+endif
+
+# On Windows changing path with absolute path includes ':' even escaping it is not enough to get it to correctly
+# update PATH, so use a relative path when pre-pending to PATH on Windows. Unfortunately, realpath is not portable
+# between mac and GNU based bash so keeping the full path on non-Windows OSes.
+ifeq ($(GOOS),windows)
+    TOOLS_BIN_DIR_PORTABLE?=$(shell realpath --relative-to="$(CURDIR)" "$(TOOLS_BIN_DIR)")
+else
+    TOOLS_BIN_DIR_PORTABLE?=$(TOOLS_BIN_DIR)
+endif
+
 .PHONY: generate
-generate: install-tools
+generate: generate-tools
 ifeq ($(CURDIR),$(SRC_ROOT))
-	PATH="$(TOOLS_BIN_DIR):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 else
-	PATH="$(TOOLS_BIN_DIR):$$PATH" $(GOCMD) generate ./...
+	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(GOCMD) generate ./...
 	$(MAKE) fmt
 endif
 

@@ -148,16 +148,28 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		},
 	}
 
+	// Create some traces for sending to the otlp_spans topic.
+	const topic = "otlp_spans"
+	traces := testdata.GenerateTraces(5)
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+	rs := []*kgo.Record{
+		{Topic: topic, Value: data},
+		{Topic: topic, Value: data},
+	}
+
 	testShutdown := func(tb testing.TB, testConfig tCfg, want assertions) {
 		// Test that the consumer shuts down while consuming a message and
 		// commits the offset after it's left the group.
 		setFranzGo(tb, true)
 
-		topic := "otlp_spans"
 		kafkaClient, cfg := mustNewFakeCluster(tb, kfake.SeedTopics(1, topic))
 		cfg.ConsumerConfig = configkafka.ConsumerConfig{
 			GroupID:    tb.Name(),
 			AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second},
+
+			// Set MinFetchSize to ensure all records are fetched at once
+			MinFetchSize: int32(len(data) * len(rs)),
 		}
 		cfg.ErrorBackOff = testConfig.backOff
 		cfg.MessageMarking = testConfig.mark
@@ -184,15 +196,6 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			}, consuming
 		}
 
-		// Send some traces to the otlp_spans topic.
-		traces := testdata.GenerateTraces(5)
-		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
-		require.NoError(t, err)
-		rs := []*kgo.Record{
-			{Topic: topic, Value: data},
-			{Topic: topic, Value: data},
-		}
-
 		test := func(tb testing.TB, expected int64) {
 			ctx := t.Context()
 			consumeFn, consuming := newConsumeFunc()
@@ -207,6 +210,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			case <-time.After(time.Second):
 				tb.Fatal("expected to consume a message")
 			}
+
 			require.NoError(tb, consumer.Shutdown(ctx))
 			wg.Wait() // Wait for the consume functions to exit.
 			// Ensure that the consume function was called twice.
@@ -239,9 +243,12 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 	require.NoError(t, err)
 
 	for range 2 {
-		require.EqualError(t, c.Shutdown(t.Context()),
-			"kafka consumer: consumer isn't running")
+		require.NoError(t, c.Shutdown(t.Context()))
 	}
+
+	// Verify internal signal that there's nothing to shut down.
+	// (Same package, so we can call the unexported helper.)
+	require.False(t, c.triggerShutdown(), "triggerShutdown should indicate no-op when never started")
 }
 
 // TestRaceLostVsConsume verifies no data race occurs between concurrent

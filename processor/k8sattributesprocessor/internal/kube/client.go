@@ -140,6 +140,10 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
 
+// Extract Deployment name from the ReplicaSet name. Deployment name is created using
+// format: [deployment-name]-[hash]
+var deploymentHashSuffixPattern = regexp.MustCompile(`^[a-z0-9]{10}$`)
+
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
 type InformersFactoryList struct {
@@ -291,7 +295,9 @@ func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
+	// The replicaset informer is needed to get the deployment UID.
+	// It is also needed to get the deployment name if the feature gate is not enabled.
+	if c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) {
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -643,39 +649,42 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	for {
 		select {
 		case <-time.After(interval):
-			var cutoff int
-			now := time.Now()
-			c.deleteMut.Lock()
-			for i := range c.deleteQueue {
-				d := c.deleteQueue[i]
-				if d.ts.Add(gracePeriod).After(now) {
-					break
-				}
-				cutoff = i + 1
-			}
-			toDelete := c.deleteQueue[:cutoff]
-			c.deleteQueue = c.deleteQueue[cutoff:]
-			c.deleteMut.Unlock()
-
-			c.m.Lock()
-			for i := range toDelete {
-				d := toDelete[i]
-				if p, ok := c.Pods[d.id]; ok {
-					// Sanity check: make sure we are deleting the same pod
-					// and the underlying state (ip<>pod mapping) has not changed.
-					if p.Name == d.podName {
-						delete(c.Pods, d.id)
-					}
-				}
-			}
-			podTableSize := len(c.Pods)
-			c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
-			c.m.Unlock()
-
+			c.deleteLoopProcessing(gracePeriod)
 		case <-c.stopCh:
 			return
 		}
 	}
+}
+
+func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
+	var cutoff int
+	now := time.Now()
+	c.deleteMut.Lock()
+	for i := range c.deleteQueue {
+		d := c.deleteQueue[i]
+		if d.ts.Add(gracePeriod).After(now) {
+			break
+		}
+		cutoff = i + 1
+	}
+	toDelete := c.deleteQueue[:cutoff]
+	c.deleteQueue = c.deleteQueue[cutoff:]
+	c.deleteMut.Unlock()
+
+	c.m.Lock()
+	for i := range toDelete {
+		d := toDelete[i]
+		if p, ok := c.Pods[d.id]; ok {
+			// Sanity check: make sure we are deleting the same pod
+			// and the underlying state (ip<>pod mapping) has not changed.
+			if p.PodUID == d.podUID {
+				delete(c.Pods, d.id)
+			}
+		}
+	}
+	podTableSize := len(c.Pods)
+	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	c.m.Unlock()
 }
 
 // GetPod takes an IP address or Pod UID and returns the pod the identifier is associated with.
@@ -826,22 +835,25 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
-					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						name := replicaset.Deployment.Name
-						if name != "" {
-							if c.Rules.DeploymentName {
-								tags[string(conventions.K8SDeploymentNameKey)] = name
-							}
-							if c.Rules.ServiceName {
-								// deployment name wins over replicaset name
-								tags[string(conventions.ServiceNameKey)] = name
-							}
+					var deploymentName string
+					if c.Rules.DeploymentNameFromReplicaSet {
+						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
+					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						deploymentName = replicaset.Deployment.Name
+					}
+					if deploymentName != "" {
+						if c.Rules.DeploymentName {
+							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
+						}
+						if c.Rules.ServiceName {
+							// deployment name wins over replicaset name
+							tags[string(conventions.ServiceNameKey)] = deploymentName
 						}
 					}
 				}
 				if c.Rules.DeploymentUID {
 					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						if replicaset.Deployment.Name != "" {
+						if replicaset.Deployment.UID != "" {
 							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
 					}
@@ -1463,18 +1475,18 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 		id := identifiers[i]
 		p, ok := c.GetPod(id)
 
-		if ok && p.Name == pod.Name {
-			c.appendDeleteQueue(id, pod.Name)
+		if ok && p.PodUID == string(pod.UID) {
+			c.appendDeleteQueue(id, p.PodUID)
 		}
 	}
 }
 
-func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podName string) {
+func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podUID string) {
 	c.deleteMut.Lock()
 	c.deleteQueue = append(c.deleteQueue, deleteRequest{
-		id:      podID,
-		podName: podName,
-		ts:      time.Now(),
+		id:     podID,
+		podUID: podUID,
+		ts:     time.Now(),
 	})
 	c.deleteMut.Unlock()
 }
@@ -1843,4 +1855,27 @@ func ignoreDeletedFinalStateUnknown(obj any) any {
 func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 	resNames := []string{pod.Namespace, pod.Name, containerName}
 	return strings.Join(resNames, ".")
+}
+
+// extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name
+// by trimming the pod template hash suffix. ReplicaSets created by Deployments follow the pattern:
+// <deployment-name>-<pod-template-hash> where pod-template-hash is a 10-character alphanumeric string.
+func extractDeploymentNameFromReplicaSet(replicasetName string) string {
+	if replicasetName == "" {
+		return ""
+	}
+
+	parts := strings.Split(replicasetName, "-")
+	if len(parts) < 2 {
+		return ""
+	}
+
+	// Check if the last part is a valid 10-character alphanumeric hash using the pre-compiled regex.
+	lastPart := parts[len(parts)-1]
+	if deploymentHashSuffixPattern.MatchString(lastPart) {
+		// Return everything except the last part (the hash), joined back by hyphens.
+		return strings.Join(parts[:len(parts)-1], "-")
+	}
+
+	return ""
 }

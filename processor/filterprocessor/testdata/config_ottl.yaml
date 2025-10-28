@@ -13,6 +13,9 @@ filter/ottl:
   logs:
     log_record:
       - 'attributes["test"] == "pass"'
+  profiles:
+    profile:
+      - 'attributes["test"] == "pass"'
 filter/multiline:
   traces:
     span:
