@@ -64,54 +64,37 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 	return kube.PodIdentifier{}
 }
 
-// extractAllPodIDs returns a candidate pod identifier per association where all
-// sources are present/valid. It does not verify existence of a Pod; callers
-// should iterate these identifiers and query the kube client until a Pod is found.
-func extractAllPodIDs(ctx context.Context, attrs pcommon.Map, associations []kube.Association) []kube.PodIdentifier {
-	if len(associations) == 0 {
-		id := extractPodIDNoAssociations(ctx, attrs)
-		if id.IsNotEmpty() {
-			return []kube.PodIdentifier{id}
-		}
-		return nil
-	}
-
-	var out []kube.PodIdentifier
+// extractPodIDFromAssociation extracts pod identifier for a single association
+// Returns empty identifier if any source in the association is missing/invalid
+func extractPodIDFromAssociation(ctx context.Context, attrs pcommon.Map, asso kube.Association) kube.PodIdentifier {
 	connectionIP := clientutil.Address(client.FromContext(ctx))
-	for _, asso := range associations {
-		skip := false
+	ret := kube.PodIdentifier{}
 
-		ret := kube.PodIdentifier{}
-		for i, source := range asso.Sources {
-			switch source.From {
-			case kube.ConnectionSource:
-				if connectionIP == "" {
-					skip = true
-					break
-				}
-				ret[i] = kube.PodIdentifierAttributeFromConnection(connectionIP)
-			case kube.ResourceSource:
-				attributeValue := stringAttributeFromMap(attrs, source.Name)
-				if attributeValue == "" {
-					skip = true
-					break
-				}
-
-				if asso.Name == string(conventions.HostNameKey) && net.ParseIP(attributeValue) == nil {
-					skip = true
-					break
-				}
-
-				ret[i] = kube.PodIdentifierAttributeFromSource(source, attributeValue)
+	for i, source := range asso.Sources {
+		switch source.From {
+		case kube.ConnectionSource:
+			if connectionIP == "" {
+				return kube.PodIdentifier{} // Skip this association
 			}
-		}
+			ret[i] = kube.PodIdentifierAttributeFromConnection(connectionIP)
+		case kube.ResourceSource:
+			attributeValue := stringAttributeFromMap(attrs, source.Name)
+			if attributeValue == "" {
+				return kube.PodIdentifier{} // Skip this association
+			}
 
-		if !skip {
-			out = append(out, ret)
+			// If association configured by resource_attribute
+			// In k8s environment, host.name label set to a pod IP address.
+			// If the value doesn't represent an IP address, we skip it.
+			if asso.Name == string(conventions.HostNameKey) && net.ParseIP(attributeValue) == nil {
+				return kube.PodIdentifier{} // Skip this association
+			}
+
+			ret[i] = kube.PodIdentifierAttributeFromSource(source, attributeValue)
 		}
 	}
 
-	return out
+	return ret
 }
 
 // extractPodIds returns pod identifier for first association matching all sources

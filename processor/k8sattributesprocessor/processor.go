@@ -139,41 +139,67 @@ func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
-	// Gather candidate identifiers from all associations to enable fallback.
-	podIdentifiers := extractAllPodIDs(ctx, resource.Attributes(), kp.podAssociations)
-	kp.logger.Debug("evaluating pod identifiers", zap.Any("values", podIdentifiers))
-
-	// Preserve behavior of setting k8s.pod.ip from connection source when present.
-	if len(podIdentifiers) > 0 {
-		for i := range podIdentifiers[0] {
-			if podIdentifiers[0][i].Source.From == kube.ConnectionSource && podIdentifiers[0][i].Value != "" {
-				setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifiers[0][i].Value)
-				break
-			}
-		}
-	}
-	if kp.passthroughMode {
-		return
-	}
-
+	// Try each pod association in order until we find a matching pod.
+	// This enables fallback behavior: if k8s.pod.uid exists but doesn't match any pod,
+	// we try the next association (e.g., k8s.pod.name + k8s.namespace.name).
 	var pod *kube.Pod
-	// Try each identifier in order until we find a Pod.
-	for idx, id := range podIdentifiers {
+	var podFound bool
+	var connectionIPSet bool
+
+	for idx, asso := range kp.podAssociations {
+		id := extractPodIDFromAssociation(ctx, resource.Attributes(), asso)
 		if id.IsNotEmpty() {
+			// Set k8s.pod.ip from connection source if present (preserve existing behavior)
+			if !connectionIPSet {
+				for i := range id {
+					if id[i].Source.From == kube.ConnectionSource && id[i].Value != "" {
+						setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, id[i].Value)
+						connectionIPSet = true
+						break
+					}
+				}
+			}
+
 			if p, ok := kp.kc.GetPod(id); ok {
 				kp.logger.Debug("found pod using association", zap.Int("association_index", idx), zap.Any("identifier", id))
 				pod = p
-				for key, val := range pod.Attributes {
-					setResourceAttribute(resource.Attributes(), key, val)
-				}
-				kp.addContainerAttributes(resource.Attributes(), pod)
+				podFound = true
 				break
 			}
 			kp.logger.Debug("pod not found with this association, trying next", zap.Int("association_index", idx), zap.Any("identifier", id))
 		}
 	}
-	if pod == nil && len(podIdentifiers) > 0 {
-		kp.logger.Debug("no pod found after trying all associations", zap.Int("attempts", len(podIdentifiers)))
+
+	// Handle case with no associations configured
+	if len(kp.podAssociations) == 0 {
+		id := extractPodIDNoAssociations(ctx, resource.Attributes())
+		if id.IsNotEmpty() {
+			if !connectionIPSet {
+				for i := range id {
+					if id[i].Source.From == kube.ConnectionSource && id[i].Value != "" {
+						setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, id[i].Value)
+						break
+					}
+				}
+			}
+			if p, ok := kp.kc.GetPod(id); ok {
+				pod = p
+				podFound = true
+			}
+		}
+	}
+
+	if kp.passthroughMode {
+		return
+	}
+
+	if podFound && pod != nil {
+		for key, val := range pod.Attributes {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+		kp.addContainerAttributes(resource.Attributes(), pod)
+	} else if len(kp.podAssociations) > 0 {
+		kp.logger.Debug("no pod found after trying all associations", zap.Int("attempts", len(kp.podAssociations)))
 	}
 
 	namespace := getNamespace(pod, resource.Attributes())
