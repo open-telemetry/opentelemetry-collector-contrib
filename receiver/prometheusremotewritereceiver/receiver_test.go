@@ -1840,7 +1840,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 			mu.Lock()
 			httpResults = append(httpResults, resp.StatusCode)
 			mu.Unlock()
-		}(i, req)
+		}(req)
 	}
 	wg.Wait()
 
