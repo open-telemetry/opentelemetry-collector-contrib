@@ -51,6 +51,7 @@ func createDefaultConfig() component.Config {
 		// https://docs.influxdata.com/influxdb/cloud-serverless/write-data/best-practices/optimize-writes/#batch-writes
 		PayloadMaxLines: 10_000,
 		PayloadMaxBytes: 10_000_000,
+		Precision:       "ns",
 	}
 }
 
