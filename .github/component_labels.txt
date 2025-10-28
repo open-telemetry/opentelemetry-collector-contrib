@@ -121,8 +121,8 @@ internal/collectd internal/collectd
 internal/common internal/common
 internal/coreinternal internal/core
 internal/datadog internal/datadog
+internal/datadog/e2e internal/datadog/e2e
 internal/docker internal/docker
-internal/e2e internal/e2e
 internal/exp/metrics internal/exp/metrics
 internal/filter internal/filter
 internal/grpcutil internal/grpcutil
@@ -222,6 +222,7 @@ receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
 receiver/chronyreceiver receiver/chrony
 receiver/ciscoosreceiver receiver/ciscoos
+receiver/ciscoosreceiver/internal/scraper/systemscraper receiver/ciscoos/internal/scraper/systemscraper
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd

@@ -42,6 +42,15 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -61,25 +70,28 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPingLossRatioDataPoint(ts, 1, "net.peer.ip-val", "net.peer.name-val")
+			mb.RecordPingLossRatioDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPingRttAvgDataPoint(ts, 1, "net.peer.ip-val", "net.peer.name-val")
+			mb.RecordPingRttAvgDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPingRttMaxDataPoint(ts, 1, "net.peer.ip-val", "net.peer.name-val")
+			mb.RecordPingRttMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPingRttMinDataPoint(ts, 1, "net.peer.ip-val", "net.peer.name-val")
+			mb.RecordPingRttMinDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPingRttStddevDataPoint(ts, 1, "net.peer.ip-val", "net.peer.name-val")
+			mb.RecordPingRttStddevDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
+			rb := mb.NewResourceBuilder()
+			rb.SetNetPeerIP("net.peer.ip-val")
+			rb.SetNetPeerName("net.peer.name-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if tt.expectEmpty {
@@ -113,12 +125,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("net.peer.ip")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.ip-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("net.peer.name")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.name-val", attrVal.Str())
 				case "ping.rtt.avg":
 					assert.False(t, validatedMetrics["ping.rtt.avg"], "Found a duplicate in the metrics slice: ping.rtt.avg")
 					validatedMetrics["ping.rtt.avg"] = true
@@ -131,12 +137,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("net.peer.ip")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.ip-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("net.peer.name")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.name-val", attrVal.Str())
 				case "ping.rtt.max":
 					assert.False(t, validatedMetrics["ping.rtt.max"], "Found a duplicate in the metrics slice: ping.rtt.max")
 					validatedMetrics["ping.rtt.max"] = true
@@ -149,12 +149,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("net.peer.ip")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.ip-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("net.peer.name")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.name-val", attrVal.Str())
 				case "ping.rtt.min":
 					assert.False(t, validatedMetrics["ping.rtt.min"], "Found a duplicate in the metrics slice: ping.rtt.min")
 					validatedMetrics["ping.rtt.min"] = true
@@ -167,12 +161,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("net.peer.ip")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.ip-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("net.peer.name")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.name-val", attrVal.Str())
 				case "ping.rtt.stddev":
 					assert.False(t, validatedMetrics["ping.rtt.stddev"], "Found a duplicate in the metrics slice: ping.rtt.stddev")
 					validatedMetrics["ping.rtt.stddev"] = true
@@ -185,12 +173,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("net.peer.ip")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.ip-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("net.peer.name")
-					assert.True(t, ok)
-					assert.Equal(t, "net.peer.name-val", attrVal.Str())
 				}
 			}
 		})
