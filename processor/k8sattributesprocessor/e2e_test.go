@@ -1968,25 +1968,16 @@ func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc 
 		len(mc.AllMetrics()), len(tc.AllTraces()), len(lc.AllLogs()), len(pc.AllProfiles()), timeoutMinutes)
 }
 
-func waitForTracesOnly(t *testing.T, entriesNum int, tc *consumertest.TracesSink) {
-	timeoutMinutes := 3
-	require.Eventuallyf(t, func() bool {
-		return len(tc.AllTraces()) > entriesNum
-	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
-		"failed to receive %d traces, received %d traces in %d minutes", entriesNum,
-		len(tc.AllTraces()), timeoutMinutes)
-}
-
 func TestE2E_ContainerIDAssociationOnly(t *testing.T) {
 	testDir := filepath.Join("testdata", "e2e", "container_id_association_only")
 
 	// Build custom telemetrygen image with shell capabilities for container ID detection
 	t.Log("Building custom telemetrygen-e2e image...")
-	buildCmd := exec.Command("docker", "build", "-t", "telemetrygen-e2e:latest", 
+	buildCmd := exec.Command("docker", "build", "-t", "telemetrygen-e2e:latest",
 		filepath.Join(testDir, "build"))
 	buildOutput, err := buildCmd.CombinedOutput()
 	require.NoErrorf(t, err, "failed to build telemetrygen-e2e image: %s", string(buildOutput))
-	
+
 	// Load the custom image into kind cluster
 	t.Log("Loading telemetrygen-e2e image into kind cluster...")
 	loadCmd := exec.Command("kind", "load", "docker-image", "telemetrygen-e2e:latest", "--name", "kind")
@@ -2006,12 +1997,12 @@ func TestE2E_ContainerIDAssociationOnly(t *testing.T) {
 	defer func() {
 		require.NoErrorf(t, k8stest.DeleteObject(k8sClient, nsObj), "failed to delete namespace %s", testNs)
 	}()
-	
+
 	// Test both scenarios to demonstrate behavioral difference
 	t.Run("AssociationOnly", func(t *testing.T) {
 		runContainerIDAssociationScenario(t, k8sClient, testDir, testNs, "association-only", false)
 	})
-	
+
 	t.Run("WithContainerMetadata", func(t *testing.T) {
 		runContainerIDAssociationScenario(t, k8sClient, testDir, testNs, "with-container-metadata", true)
 	})
@@ -2026,14 +2017,14 @@ func runContainerIDAssociationScenario(t *testing.T, k8sClient *k8stest.K8sClien
 	defer shutdownSinks()
 
 	testID := uuid.NewString()[:8]
-	
+
 	// Use template values to conditionally enable container metadata extraction
 	collectorDir := filepath.Join(testDir, "collector")
 	templateValues := map[string]string{}
 	if containerMetadataEnabled {
 		templateValues["WithContainerMetadata"] = "true"
 	}
-	
+
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, collectorDir, templateValues, "")
 	defer func() {
 		for _, obj := range collectorObjs {
@@ -2087,18 +2078,18 @@ func runContainerIDAssociationScenario(t *testing.T, k8sClient *k8stest.K8sClien
 			dataType: pipeline.SignalTraces,
 			service:  "test-traces-deployment",
 			attrs: map[string]*expectedValue{
-				"k8s.pod.name":                          newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
-				"k8s.pod.uid":                           newExpectedValue(regex, uidRe),
-				"k8s.namespace.name":                    newExpectedValue(equal, testNs),
-				"k8s.deployment.name":                   newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
-				"k8s.node.name":                         newExpectedValue(exist, ""),
-				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
-				"k8s.labels.app":                        newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
-				"k8s.namespace.labels.test-namespace":   newExpectedValue(equal, "container-id-association"),
-				"k8s.container.name":                    containerNameAttr,
-				"container.image.name":                  containerImageNameAttr,
-				"container.image.tag":                   containerImageTagAttr,
-				"container.id":                          newExpectedValue(regex, "[a-f0-9]{64}"),
+				"k8s.pod.name":                        newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.uid":                         newExpectedValue(regex, uidRe),
+				"k8s.namespace.name":                  newExpectedValue(equal, testNs),
+				"k8s.deployment.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
+				"k8s.node.name":                       newExpectedValue(exist, ""),
+				"k8s.cluster.uid":                     newExpectedValue(regex, uidRe),
+				"k8s.labels.app":                      newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
+				"k8s.namespace.labels.test-namespace": newExpectedValue(equal, "container-id-association"),
+				"k8s.container.name":                  containerNameAttr,
+				"container.image.name":                containerImageNameAttr,
+				"container.image.tag":                 containerImageTagAttr,
+				"container.id":                        newExpectedValue(regex, "[a-f0-9]{64}"),
 			},
 		},
 		{
@@ -2106,18 +2097,18 @@ func runContainerIDAssociationScenario(t *testing.T, k8sClient *k8stest.K8sClien
 			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-deployment",
 			attrs: map[string]*expectedValue{
-				"k8s.pod.name":                          newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
-				"k8s.pod.uid":                           newExpectedValue(regex, uidRe),
-				"k8s.namespace.name":                    newExpectedValue(equal, testNs),
-				"k8s.deployment.name":                   newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
-				"k8s.node.name":                         newExpectedValue(exist, ""),
-				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
-				"k8s.labels.app":                        newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
-				"k8s.namespace.labels.test-namespace":   newExpectedValue(equal, "container-id-association"),
-				"k8s.container.name":                    containerNameAttr,
-				"container.image.name":                  containerImageNameAttr,
-				"container.image.tag":                   containerImageTagAttr,
-				"container.id":                          newExpectedValue(regex, "[a-f0-9]{64}"),
+				"k8s.pod.name":                        newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.uid":                         newExpectedValue(regex, uidRe),
+				"k8s.namespace.name":                  newExpectedValue(equal, testNs),
+				"k8s.deployment.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
+				"k8s.node.name":                       newExpectedValue(exist, ""),
+				"k8s.cluster.uid":                     newExpectedValue(regex, uidRe),
+				"k8s.labels.app":                      newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
+				"k8s.namespace.labels.test-namespace": newExpectedValue(equal, "container-id-association"),
+				"k8s.container.name":                  containerNameAttr,
+				"container.image.name":                containerImageNameAttr,
+				"container.image.tag":                 containerImageTagAttr,
+				"container.id":                        newExpectedValue(regex, "[a-f0-9]{64}"),
 			},
 		},
 		{
@@ -2125,18 +2116,18 @@ func runContainerIDAssociationScenario(t *testing.T, k8sClient *k8stest.K8sClien
 			dataType: pipeline.SignalLogs,
 			service:  "test-logs-deployment",
 			attrs: map[string]*expectedValue{
-				"k8s.pod.name":                          newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
-				"k8s.pod.uid":                           newExpectedValue(regex, uidRe),
-				"k8s.namespace.name":                    newExpectedValue(equal, testNs),
-				"k8s.deployment.name":                   newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
-				"k8s.node.name":                         newExpectedValue(exist, ""),
-				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
-				"k8s.labels.app":                        newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
-				"k8s.namespace.labels.test-namespace":   newExpectedValue(equal, "container-id-association"),
-				"k8s.container.name":                    containerNameAttr,
-				"container.image.name":                  containerImageNameAttr,
-				"container.image.tag":                   containerImageTagAttr,
-				"container.id":                          newExpectedValue(regex, "[a-f0-9]{64}"),
+				"k8s.pod.name":                        newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.uid":                         newExpectedValue(regex, uidRe),
+				"k8s.namespace.name":                  newExpectedValue(equal, testNs),
+				"k8s.deployment.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
+				"k8s.node.name":                       newExpectedValue(exist, ""),
+				"k8s.cluster.uid":                     newExpectedValue(regex, uidRe),
+				"k8s.labels.app":                      newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
+				"k8s.namespace.labels.test-namespace": newExpectedValue(equal, "container-id-association"),
+				"k8s.container.name":                  containerNameAttr,
+				"container.image.name":                containerImageNameAttr,
+				"container.image.tag":                 containerImageTagAttr,
+				"container.id":                        newExpectedValue(regex, "[a-f0-9]{64}"),
 			},
 		},
 		{
@@ -2144,18 +2135,18 @@ func runContainerIDAssociationScenario(t *testing.T, k8sClient *k8stest.K8sClien
 			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-deployment",
 			attrs: map[string]*expectedValue{
-				"k8s.pod.name":                          newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
-				"k8s.pod.uid":                           newExpectedValue(regex, uidRe),
-				"k8s.namespace.name":                    newExpectedValue(equal, testNs),
-				"k8s.deployment.name":                   newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
-				"k8s.node.name":                         newExpectedValue(exist, ""),
-				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
-				"k8s.labels.app":                        newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
-				"k8s.namespace.labels.test-namespace":   newExpectedValue(equal, "container-id-association"),
-				"k8s.container.name":                    containerNameAttr,
-				"container.image.name":                  containerImageNameAttr,
-				"container.image.tag":                   containerImageTagAttr,
-				"container.id":                          newExpectedValue(regex, "[a-f0-9]{64}"),
+				"k8s.pod.name":                        newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.uid":                         newExpectedValue(regex, uidRe),
+				"k8s.namespace.name":                  newExpectedValue(equal, testNs),
+				"k8s.deployment.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.node.name":                       newExpectedValue(exist, ""),
+				"k8s.cluster.uid":                     newExpectedValue(regex, uidRe),
+				"k8s.labels.app":                      newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.namespace.labels.test-namespace": newExpectedValue(equal, "container-id-association"),
+				"k8s.container.name":                  containerNameAttr,
+				"container.image.name":                containerImageNameAttr,
+				"container.image.tag":                 containerImageTagAttr,
+				"container.id":                        newExpectedValue(regex, "[a-f0-9]{64}"),
 			},
 		},
 	}
