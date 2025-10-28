@@ -66,6 +66,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricsSchema:       "telegraf-prometheus-v1",
 				PayloadMaxLines:     72,
 				PayloadMaxBytes:     27,
+				Precision:           "ns",
 			},
 		},
 	}
