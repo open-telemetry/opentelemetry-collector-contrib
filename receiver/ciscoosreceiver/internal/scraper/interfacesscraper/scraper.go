@@ -36,7 +36,6 @@ func (s *interfacesScraper) Start(_ context.Context, _ component.Host) error {
 	device := s.config.Device
 	s.deviceTarget = device.Host.IP
 
-	// Log authentication method
 	authMethod := "password"
 	if device.Auth.KeyFile != "" {
 		authMethod = "key_file"
@@ -88,7 +87,6 @@ func (s *interfacesScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics,
 			intf.OperStatus = StatusDown
 		}
 
-		// Log interface data for debugging
 		s.logger.Debug("Recording interface metrics",
 			zap.String("interface", intf.Name),
 			zap.String("mac", macAddress),
@@ -103,25 +101,26 @@ func (s *interfacesScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics,
 			zap.Float64("multicast", intf.InputMulticast),
 			zap.Float64("broadcast", intf.InputBroadcast))
 
-		// Record metrics with interface attributes: interface.description, interface.mac, interface.name, interface.speed
-		mb.RecordCiscoNetworkIoReceiveDataPoint(timestamp, int64(intf.InputBytes), description, macAddress, intf.Name, speedString)
-		mb.RecordCiscoNetworkIoTransmitDataPoint(timestamp, int64(intf.OutputBytes), description, macAddress, intf.Name, speedString)
-		mb.RecordCiscoNetworkErrorsReceiveDataPoint(timestamp, int64(intf.InputErrors), description, macAddress, intf.Name, speedString)
-		mb.RecordCiscoNetworkErrorsTransmitDataPoint(timestamp, int64(intf.OutputErrors), description, macAddress, intf.Name, speedString)
-		mb.RecordCiscoNetworkDropsReceiveDataPoint(timestamp, int64(intf.InputDrops), description, macAddress, intf.Name, speedString)
-		mb.RecordCiscoNetworkDropsTransmitDataPoint(timestamp, int64(intf.OutputDrops), description, macAddress, intf.Name, speedString)
-		mb.RecordCiscoNetworkPacketsMulticastDataPoint(timestamp, int64(intf.InputMulticast), description, macAddress, intf.Name, speedString)
-		mb.RecordCiscoNetworkPacketsBroadcastDataPoint(timestamp, int64(intf.InputBroadcast), description, macAddress, intf.Name, speedString)
+		mb.RecordSystemNetworkIoDataPoint(timestamp, int64(intf.InputBytes), metadata.AttributeNetworkIoDirectionReceive, description, macAddress, intf.Name, speedString)
+		mb.RecordSystemNetworkIoDataPoint(timestamp, int64(intf.OutputBytes), metadata.AttributeNetworkIoDirectionTransmit, description, macAddress, intf.Name, speedString)
 
-		mb.RecordCiscoNetworkUpDataPoint(timestamp, intf.GetOperStatusInt(), description, macAddress, intf.Name, speedString)
+		mb.RecordSystemNetworkErrorsDataPoint(timestamp, int64(intf.InputErrors), metadata.AttributeNetworkIoDirectionReceive, description, macAddress, intf.Name, speedString)
+		mb.RecordSystemNetworkErrorsDataPoint(timestamp, int64(intf.OutputErrors), metadata.AttributeNetworkIoDirectionTransmit, description, macAddress, intf.Name, speedString)
+
+		mb.RecordSystemNetworkPacketDroppedDataPoint(timestamp, int64(intf.InputDrops), metadata.AttributeNetworkIoDirectionReceive, description, macAddress, intf.Name, speedString)
+		mb.RecordSystemNetworkPacketDroppedDataPoint(timestamp, int64(intf.OutputDrops), metadata.AttributeNetworkIoDirectionTransmit, description, macAddress, intf.Name, speedString)
+
+		mb.RecordSystemNetworkPacketCountDataPoint(timestamp, int64(intf.InputMulticast), metadata.AttributeNetworkPacketTypeMulticast, description, macAddress, intf.Name, speedString)
+		mb.RecordSystemNetworkPacketCountDataPoint(timestamp, int64(intf.InputBroadcast), metadata.AttributeNetworkPacketTypeBroadcast, description, macAddress, intf.Name, speedString)
+
+		mb.RecordSystemNetworkInterfaceStatusDataPoint(timestamp, intf.GetOperStatusInt(), description, macAddress, intf.Name, speedString)
 	}
 
-	// Set resource attributes per OpenTelemetry hardware.network conventions
 	rb := mb.NewResourceBuilder()
-	rb.SetCiscoDeviceIP(s.deviceTarget)
+	rb.SetHostIP(s.deviceTarget)
 	rb.SetHwType("network")
 	if s.rpcClient != nil {
-		rb.SetCiscoOsType(s.rpcClient.GetOSType())
+		rb.SetOsName(s.rpcClient.GetOSType())
 	}
 
 	return mb.Emit(metadata.WithResource(rb.Emit())), nil

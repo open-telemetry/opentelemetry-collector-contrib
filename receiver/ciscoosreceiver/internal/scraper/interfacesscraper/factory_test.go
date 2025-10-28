@@ -29,9 +29,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config)
 
 	// Verify default metrics are enabled
-	assert.True(t, config.Metrics.CiscoNetworkIoReceive.Enabled)
-	assert.True(t, config.Metrics.CiscoNetworkIoTransmit.Enabled)
-	assert.True(t, config.Metrics.CiscoNetworkUp.Enabled)
+	assert.True(t, config.Metrics.SystemNetworkIo.Enabled)
+	assert.True(t, config.Metrics.SystemNetworkErrors.Enabled)
+	assert.True(t, config.Metrics.SystemNetworkInterfaceStatus.Enabled)
 }
 
 func TestFactory_ConfigWithDevice(t *testing.T) {
@@ -63,15 +63,11 @@ func TestConfig_AllMetricsEnabled(t *testing.T) {
 
 	// Verify all interface metrics are enabled by default
 	metrics := config.Metrics
-	assert.True(t, metrics.CiscoNetworkIoReceive.Enabled)
-	assert.True(t, metrics.CiscoNetworkIoTransmit.Enabled)
-	assert.True(t, metrics.CiscoNetworkUp.Enabled)
-	assert.True(t, metrics.CiscoNetworkErrorsReceive.Enabled)
-	assert.True(t, metrics.CiscoNetworkErrorsTransmit.Enabled)
-	assert.True(t, metrics.CiscoNetworkDropsReceive.Enabled)
-	assert.True(t, metrics.CiscoNetworkDropsTransmit.Enabled)
-	assert.True(t, metrics.CiscoNetworkPacketsMulticast.Enabled)
-	assert.True(t, metrics.CiscoNetworkPacketsBroadcast.Enabled)
+	assert.True(t, metrics.SystemNetworkIo.Enabled)
+	assert.True(t, metrics.SystemNetworkErrors.Enabled)
+	assert.True(t, metrics.SystemNetworkPacketDropped.Enabled)
+	assert.True(t, metrics.SystemNetworkPacketCount.Enabled)
+	assert.True(t, metrics.SystemNetworkInterfaceStatus.Enabled)
 }
 
 func TestConfig_DisableMetrics(t *testing.T) {
@@ -80,13 +76,13 @@ func TestConfig_DisableMetrics(t *testing.T) {
 	}
 
 	// Test disabling specific metrics
-	config.Metrics.CiscoNetworkIoReceive.Enabled = false
-	config.Metrics.CiscoNetworkIoTransmit.Enabled = false
+	config.Metrics.SystemNetworkIo.Enabled = false
+	config.Metrics.SystemNetworkErrors.Enabled = false
 
-	assert.False(t, config.Metrics.CiscoNetworkIoReceive.Enabled)
-	assert.False(t, config.Metrics.CiscoNetworkIoTransmit.Enabled)
+	assert.False(t, config.Metrics.SystemNetworkIo.Enabled)
+	assert.False(t, config.Metrics.SystemNetworkErrors.Enabled)
 	// Others should still be enabled
-	assert.True(t, config.Metrics.CiscoNetworkUp.Enabled)
+	assert.True(t, config.Metrics.SystemNetworkInterfaceStatus.Enabled)
 }
 
 func TestDeviceConfig_Structure(t *testing.T) {
@@ -194,17 +190,13 @@ func TestCreateDefaultConfig_AllInterfaceMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	// Verify all 9 interface metrics are enabled
+	// Verify all 5 interface metrics are enabled
 	metrics := cfg.Metrics
-	assert.True(t, metrics.CiscoNetworkIoReceive.Enabled)
-	assert.True(t, metrics.CiscoNetworkIoTransmit.Enabled)
-	assert.True(t, metrics.CiscoNetworkUp.Enabled)
-	assert.True(t, metrics.CiscoNetworkErrorsReceive.Enabled)
-	assert.True(t, metrics.CiscoNetworkErrorsTransmit.Enabled)
-	assert.True(t, metrics.CiscoNetworkDropsReceive.Enabled)
-	assert.True(t, metrics.CiscoNetworkDropsTransmit.Enabled)
-	assert.True(t, metrics.CiscoNetworkPacketsMulticast.Enabled)
-	assert.True(t, metrics.CiscoNetworkPacketsBroadcast.Enabled)
+	assert.True(t, metrics.SystemNetworkIo.Enabled)
+	assert.True(t, metrics.SystemNetworkErrors.Enabled)
+	assert.True(t, metrics.SystemNetworkPacketDropped.Enabled)
+	assert.True(t, metrics.SystemNetworkPacketCount.Enabled)
+	assert.True(t, metrics.SystemNetworkInterfaceStatus.Enabled)
 }
 
 func TestHostInfo_EmptyName(t *testing.T) {

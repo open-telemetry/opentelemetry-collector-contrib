@@ -28,44 +28,28 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for interfaces metrics.
 type MetricsConfig struct {
-	CiscoNetworkDropsReceive     MetricConfig `mapstructure:"cisco.network.drops.receive"`
-	CiscoNetworkDropsTransmit    MetricConfig `mapstructure:"cisco.network.drops.transmit"`
-	CiscoNetworkErrorsReceive    MetricConfig `mapstructure:"cisco.network.errors.receive"`
-	CiscoNetworkErrorsTransmit   MetricConfig `mapstructure:"cisco.network.errors.transmit"`
-	CiscoNetworkIoReceive        MetricConfig `mapstructure:"cisco.network.io.receive"`
-	CiscoNetworkIoTransmit       MetricConfig `mapstructure:"cisco.network.io.transmit"`
-	CiscoNetworkPacketsBroadcast MetricConfig `mapstructure:"cisco.network.packets.broadcast"`
-	CiscoNetworkPacketsMulticast MetricConfig `mapstructure:"cisco.network.packets.multicast"`
-	CiscoNetworkUp               MetricConfig `mapstructure:"cisco.network.up"`
+	SystemNetworkErrors          MetricConfig `mapstructure:"system.network.errors"`
+	SystemNetworkInterfaceStatus MetricConfig `mapstructure:"system.network.interface.status"`
+	SystemNetworkIo              MetricConfig `mapstructure:"system.network.io"`
+	SystemNetworkPacketCount     MetricConfig `mapstructure:"system.network.packet.count"`
+	SystemNetworkPacketDropped   MetricConfig `mapstructure:"system.network.packet.dropped"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		CiscoNetworkDropsReceive: MetricConfig{
+		SystemNetworkErrors: MetricConfig{
 			Enabled: true,
 		},
-		CiscoNetworkDropsTransmit: MetricConfig{
+		SystemNetworkInterfaceStatus: MetricConfig{
 			Enabled: true,
 		},
-		CiscoNetworkErrorsReceive: MetricConfig{
+		SystemNetworkIo: MetricConfig{
 			Enabled: true,
 		},
-		CiscoNetworkErrorsTransmit: MetricConfig{
+		SystemNetworkPacketCount: MetricConfig{
 			Enabled: true,
 		},
-		CiscoNetworkIoReceive: MetricConfig{
-			Enabled: true,
-		},
-		CiscoNetworkIoTransmit: MetricConfig{
-			Enabled: true,
-		},
-		CiscoNetworkPacketsBroadcast: MetricConfig{
-			Enabled: true,
-		},
-		CiscoNetworkPacketsMulticast: MetricConfig{
-			Enabled: true,
-		},
-		CiscoNetworkUp: MetricConfig{
+		SystemNetworkPacketDropped: MetricConfig{
 			Enabled: true,
 		},
 	}
@@ -99,20 +83,20 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for interfaces resource attributes.
 type ResourceAttributesConfig struct {
-	CiscoDeviceIP ResourceAttributeConfig `mapstructure:"cisco.device.ip"`
-	CiscoOsType   ResourceAttributeConfig `mapstructure:"cisco.os.type"`
-	HwType        ResourceAttributeConfig `mapstructure:"hw.type"`
+	HostIP ResourceAttributeConfig `mapstructure:"host.ip"`
+	HwType ResourceAttributeConfig `mapstructure:"hw.type"`
+	OsName ResourceAttributeConfig `mapstructure:"os.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		CiscoDeviceIP: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		CiscoOsType: ResourceAttributeConfig{
+		HostIP: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		HwType: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OsName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

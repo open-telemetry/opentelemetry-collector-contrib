@@ -12,174 +12,98 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 )
 
+// AttributeNetworkIoDirection specifies the value network.io.direction attribute.
+type AttributeNetworkIoDirection int
+
+const (
+	_ AttributeNetworkIoDirection = iota
+	AttributeNetworkIoDirectionReceive
+	AttributeNetworkIoDirectionTransmit
+)
+
+// String returns the string representation of the AttributeNetworkIoDirection.
+func (av AttributeNetworkIoDirection) String() string {
+	switch av {
+	case AttributeNetworkIoDirectionReceive:
+		return "receive"
+	case AttributeNetworkIoDirectionTransmit:
+		return "transmit"
+	}
+	return ""
+}
+
+// MapAttributeNetworkIoDirection is a helper map of string to AttributeNetworkIoDirection attribute value.
+var MapAttributeNetworkIoDirection = map[string]AttributeNetworkIoDirection{
+	"receive":  AttributeNetworkIoDirectionReceive,
+	"transmit": AttributeNetworkIoDirectionTransmit,
+}
+
+// AttributeNetworkPacketType specifies the value network.packet.type attribute.
+type AttributeNetworkPacketType int
+
+const (
+	_ AttributeNetworkPacketType = iota
+	AttributeNetworkPacketTypeMulticast
+	AttributeNetworkPacketTypeBroadcast
+)
+
+// String returns the string representation of the AttributeNetworkPacketType.
+func (av AttributeNetworkPacketType) String() string {
+	switch av {
+	case AttributeNetworkPacketTypeMulticast:
+		return "multicast"
+	case AttributeNetworkPacketTypeBroadcast:
+		return "broadcast"
+	}
+	return ""
+}
+
+// MapAttributeNetworkPacketType is a helper map of string to AttributeNetworkPacketType attribute value.
+var MapAttributeNetworkPacketType = map[string]AttributeNetworkPacketType{
+	"multicast": AttributeNetworkPacketTypeMulticast,
+	"broadcast": AttributeNetworkPacketTypeBroadcast,
+}
+
 var MetricsInfo = metricsInfo{
-	CiscoNetworkDropsReceive: metricInfo{
-		Name: "cisco.network.drops.receive",
+	SystemNetworkErrors: metricInfo{
+		Name: "system.network.errors",
 	},
-	CiscoNetworkDropsTransmit: metricInfo{
-		Name: "cisco.network.drops.transmit",
+	SystemNetworkInterfaceStatus: metricInfo{
+		Name: "system.network.interface.status",
 	},
-	CiscoNetworkErrorsReceive: metricInfo{
-		Name: "cisco.network.errors.receive",
+	SystemNetworkIo: metricInfo{
+		Name: "system.network.io",
 	},
-	CiscoNetworkErrorsTransmit: metricInfo{
-		Name: "cisco.network.errors.transmit",
+	SystemNetworkPacketCount: metricInfo{
+		Name: "system.network.packet.count",
 	},
-	CiscoNetworkIoReceive: metricInfo{
-		Name: "cisco.network.io.receive",
-	},
-	CiscoNetworkIoTransmit: metricInfo{
-		Name: "cisco.network.io.transmit",
-	},
-	CiscoNetworkPacketsBroadcast: metricInfo{
-		Name: "cisco.network.packets.broadcast",
-	},
-	CiscoNetworkPacketsMulticast: metricInfo{
-		Name: "cisco.network.packets.multicast",
-	},
-	CiscoNetworkUp: metricInfo{
-		Name: "cisco.network.up",
+	SystemNetworkPacketDropped: metricInfo{
+		Name: "system.network.packet.dropped",
 	},
 }
 
 type metricsInfo struct {
-	CiscoNetworkDropsReceive     metricInfo
-	CiscoNetworkDropsTransmit    metricInfo
-	CiscoNetworkErrorsReceive    metricInfo
-	CiscoNetworkErrorsTransmit   metricInfo
-	CiscoNetworkIoReceive        metricInfo
-	CiscoNetworkIoTransmit       metricInfo
-	CiscoNetworkPacketsBroadcast metricInfo
-	CiscoNetworkPacketsMulticast metricInfo
-	CiscoNetworkUp               metricInfo
+	SystemNetworkErrors          metricInfo
+	SystemNetworkInterfaceStatus metricInfo
+	SystemNetworkIo              metricInfo
+	SystemNetworkPacketCount     metricInfo
+	SystemNetworkPacketDropped   metricInfo
 }
 
 type metricInfo struct {
 	Name string
 }
 
-type metricCiscoNetworkDropsReceive struct {
+type metricSystemNetworkErrors struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills cisco.network.drops.receive metric with initial data.
-func (m *metricCiscoNetworkDropsReceive) init() {
-	m.data.SetName("cisco.network.drops.receive")
-	m.data.SetDescription("Number of input drops on interface")
-	m.data.SetUnit("{drops}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoNetworkDropsReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkDropsReceive) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkDropsReceive) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoNetworkDropsReceive(cfg MetricConfig) metricCiscoNetworkDropsReceive {
-	m := metricCiscoNetworkDropsReceive{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoNetworkDropsTransmit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.network.drops.transmit metric with initial data.
-func (m *metricCiscoNetworkDropsTransmit) init() {
-	m.data.SetName("cisco.network.drops.transmit")
-	m.data.SetDescription("Number of output drops on interface")
-	m.data.SetUnit("{drops}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoNetworkDropsTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkDropsTransmit) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkDropsTransmit) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoNetworkDropsTransmit(cfg MetricConfig) metricCiscoNetworkDropsTransmit {
-	m := metricCiscoNetworkDropsTransmit{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoNetworkErrorsReceive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.network.errors.receive metric with initial data.
-func (m *metricCiscoNetworkErrorsReceive) init() {
-	m.data.SetName("cisco.network.errors.receive")
-	m.data.SetDescription("Number of input errors on interface")
+// init fills system.network.errors metric with initial data.
+func (m *metricSystemNetworkErrors) init() {
+	m.data.SetName("system.network.errors")
+	m.data.SetDescription("The number of errors encountered")
 	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -187,7 +111,7 @@ func (m *metricCiscoNetworkErrorsReceive) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCiscoNetworkErrorsReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
+func (m *metricSystemNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -195,21 +119,22 @@ func (m *metricCiscoNetworkErrorsReceive) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
+	dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
+	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkErrorsReceive) updateCapacity() {
+func (m *metricSystemNetworkErrors) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkErrorsReceive) emit(metrics pmetric.MetricSlice) {
+func (m *metricSystemNetworkErrors) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -217,8 +142,8 @@ func (m *metricCiscoNetworkErrorsReceive) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricCiscoNetworkErrorsReceive(cfg MetricConfig) metricCiscoNetworkErrorsReceive {
-	m := metricCiscoNetworkErrorsReceive{config: cfg}
+func newMetricSystemNetworkErrors(cfg MetricConfig) metricSystemNetworkErrors {
+	m := metricSystemNetworkErrors{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -226,302 +151,22 @@ func newMetricCiscoNetworkErrorsReceive(cfg MetricConfig) metricCiscoNetworkErro
 	return m
 }
 
-type metricCiscoNetworkErrorsTransmit struct {
+type metricSystemNetworkInterfaceStatus struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills cisco.network.errors.transmit metric with initial data.
-func (m *metricCiscoNetworkErrorsTransmit) init() {
-	m.data.SetName("cisco.network.errors.transmit")
-	m.data.SetDescription("Number of output errors on interface")
-	m.data.SetUnit("{errors}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoNetworkErrorsTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkErrorsTransmit) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkErrorsTransmit) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoNetworkErrorsTransmit(cfg MetricConfig) metricCiscoNetworkErrorsTransmit {
-	m := metricCiscoNetworkErrorsTransmit{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoNetworkIoReceive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.network.io.receive metric with initial data.
-func (m *metricCiscoNetworkIoReceive) init() {
-	m.data.SetName("cisco.network.io.receive")
-	m.data.SetDescription("Number of bytes received on interface")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoNetworkIoReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkIoReceive) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkIoReceive) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoNetworkIoReceive(cfg MetricConfig) metricCiscoNetworkIoReceive {
-	m := metricCiscoNetworkIoReceive{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoNetworkIoTransmit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.network.io.transmit metric with initial data.
-func (m *metricCiscoNetworkIoTransmit) init() {
-	m.data.SetName("cisco.network.io.transmit")
-	m.data.SetDescription("Number of bytes transmitted on interface")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkIoTransmit) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkIoTransmit) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoNetworkIoTransmit(cfg MetricConfig) metricCiscoNetworkIoTransmit {
-	m := metricCiscoNetworkIoTransmit{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoNetworkPacketsBroadcast struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.network.packets.broadcast metric with initial data.
-func (m *metricCiscoNetworkPacketsBroadcast) init() {
-	m.data.SetName("cisco.network.packets.broadcast")
-	m.data.SetDescription("Number of broadcast packets received on interface")
-	m.data.SetUnit("{packets}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoNetworkPacketsBroadcast) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkPacketsBroadcast) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkPacketsBroadcast) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoNetworkPacketsBroadcast(cfg MetricConfig) metricCiscoNetworkPacketsBroadcast {
-	m := metricCiscoNetworkPacketsBroadcast{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoNetworkPacketsMulticast struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.network.packets.multicast metric with initial data.
-func (m *metricCiscoNetworkPacketsMulticast) init() {
-	m.data.SetName("cisco.network.packets.multicast")
-	m.data.SetDescription("Number of multicast packets received on interface")
-	m.data.SetUnit("{packets}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoNetworkPacketsMulticast) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkPacketsMulticast) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkPacketsMulticast) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoNetworkPacketsMulticast(cfg MetricConfig) metricCiscoNetworkPacketsMulticast {
-	m := metricCiscoNetworkPacketsMulticast{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoNetworkUp struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.network.up metric with initial data.
-func (m *metricCiscoNetworkUp) init() {
-	m.data.SetName("cisco.network.up")
+// init fills system.network.interface.status metric with initial data.
+func (m *metricSystemNetworkInterfaceStatus) init() {
+	m.data.SetName("system.network.interface.status")
 	m.data.SetDescription("Interface operational status (1 = up, 0 = down)")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCiscoNetworkUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
+func (m *metricSystemNetworkInterfaceStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -529,21 +174,21 @@ func (m *metricCiscoNetworkUp) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.description", interfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("interface.mac", interfaceMacAttributeValue)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.speed", interfaceSpeedAttributeValue)
+	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoNetworkUp) updateCapacity() {
+func (m *metricSystemNetworkInterfaceStatus) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoNetworkUp) emit(metrics pmetric.MetricSlice) {
+func (m *metricSystemNetworkInterfaceStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -551,8 +196,179 @@ func (m *metricCiscoNetworkUp) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricCiscoNetworkUp(cfg MetricConfig) metricCiscoNetworkUp {
-	m := metricCiscoNetworkUp{config: cfg}
+func newMetricSystemNetworkInterfaceStatus(cfg MetricConfig) metricSystemNetworkInterfaceStatus {
+	m := metricSystemNetworkInterfaceStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemNetworkIo struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.network.io metric with initial data.
+func (m *metricSystemNetworkIo) init() {
+	m.data.SetName("system.network.io")
+	m.data.SetDescription("The number of bytes transmitted and received")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
+	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNetworkIo) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNetworkIo) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
+	m := metricSystemNetworkIo{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemNetworkPacketCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.network.packet.count metric with initial data.
+func (m *metricSystemNetworkPacketCount) init() {
+	m.data.SetName("system.network.packet.count")
+	m.data.SetDescription("The number of packets transmitted or received, categorized by type")
+	m.data.SetUnit("{packets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemNetworkPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkPacketTypeAttributeValue string, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("network.packet.type", networkPacketTypeAttributeValue)
+	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNetworkPacketCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNetworkPacketCount(cfg MetricConfig) metricSystemNetworkPacketCount {
+	m := metricSystemNetworkPacketCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemNetworkPacketDropped struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.network.packet.dropped metric with initial data.
+func (m *metricSystemNetworkPacketDropped) init() {
+	m.data.SetName("system.network.packet.dropped")
+	m.data.SetDescription("The number of packets dropped")
+	m.data.SetUnit("{packets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemNetworkPacketDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
+	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNetworkPacketDropped) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNetworkPacketDropped) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNetworkPacketDropped(cfg MetricConfig) metricSystemNetworkPacketDropped {
+	m := metricSystemNetworkPacketDropped{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -570,15 +386,11 @@ type MetricsBuilder struct {
 	buildInfo                          component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter     map[string]filter.Filter
 	resourceAttributeExcludeFilter     map[string]filter.Filter
-	metricCiscoNetworkDropsReceive     metricCiscoNetworkDropsReceive
-	metricCiscoNetworkDropsTransmit    metricCiscoNetworkDropsTransmit
-	metricCiscoNetworkErrorsReceive    metricCiscoNetworkErrorsReceive
-	metricCiscoNetworkErrorsTransmit   metricCiscoNetworkErrorsTransmit
-	metricCiscoNetworkIoReceive        metricCiscoNetworkIoReceive
-	metricCiscoNetworkIoTransmit       metricCiscoNetworkIoTransmit
-	metricCiscoNetworkPacketsBroadcast metricCiscoNetworkPacketsBroadcast
-	metricCiscoNetworkPacketsMulticast metricCiscoNetworkPacketsMulticast
-	metricCiscoNetworkUp               metricCiscoNetworkUp
+	metricSystemNetworkErrors          metricSystemNetworkErrors
+	metricSystemNetworkInterfaceStatus metricSystemNetworkInterfaceStatus
+	metricSystemNetworkIo              metricSystemNetworkIo
+	metricSystemNetworkPacketCount     metricSystemNetworkPacketCount
+	metricSystemNetworkPacketDropped   metricSystemNetworkPacketDropped
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -604,35 +416,31 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                      pmetric.NewMetrics(),
 		buildInfo:                          settings.BuildInfo,
-		metricCiscoNetworkDropsReceive:     newMetricCiscoNetworkDropsReceive(mbc.Metrics.CiscoNetworkDropsReceive),
-		metricCiscoNetworkDropsTransmit:    newMetricCiscoNetworkDropsTransmit(mbc.Metrics.CiscoNetworkDropsTransmit),
-		metricCiscoNetworkErrorsReceive:    newMetricCiscoNetworkErrorsReceive(mbc.Metrics.CiscoNetworkErrorsReceive),
-		metricCiscoNetworkErrorsTransmit:   newMetricCiscoNetworkErrorsTransmit(mbc.Metrics.CiscoNetworkErrorsTransmit),
-		metricCiscoNetworkIoReceive:        newMetricCiscoNetworkIoReceive(mbc.Metrics.CiscoNetworkIoReceive),
-		metricCiscoNetworkIoTransmit:       newMetricCiscoNetworkIoTransmit(mbc.Metrics.CiscoNetworkIoTransmit),
-		metricCiscoNetworkPacketsBroadcast: newMetricCiscoNetworkPacketsBroadcast(mbc.Metrics.CiscoNetworkPacketsBroadcast),
-		metricCiscoNetworkPacketsMulticast: newMetricCiscoNetworkPacketsMulticast(mbc.Metrics.CiscoNetworkPacketsMulticast),
-		metricCiscoNetworkUp:               newMetricCiscoNetworkUp(mbc.Metrics.CiscoNetworkUp),
+		metricSystemNetworkErrors:          newMetricSystemNetworkErrors(mbc.Metrics.SystemNetworkErrors),
+		metricSystemNetworkInterfaceStatus: newMetricSystemNetworkInterfaceStatus(mbc.Metrics.SystemNetworkInterfaceStatus),
+		metricSystemNetworkIo:              newMetricSystemNetworkIo(mbc.Metrics.SystemNetworkIo),
+		metricSystemNetworkPacketCount:     newMetricSystemNetworkPacketCount(mbc.Metrics.SystemNetworkPacketCount),
+		metricSystemNetworkPacketDropped:   newMetricSystemNetworkPacketDropped(mbc.Metrics.SystemNetworkPacketDropped),
 		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.CiscoDeviceIP.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["cisco.device.ip"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceIP.MetricsInclude)
+	if mbc.ResourceAttributes.HostIP.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["host.ip"] = filter.CreateFilter(mbc.ResourceAttributes.HostIP.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.CiscoDeviceIP.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["cisco.device.ip"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceIP.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.CiscoOsType.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["cisco.os.type"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoOsType.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.CiscoOsType.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["cisco.os.type"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoOsType.MetricsExclude)
+	if mbc.ResourceAttributes.HostIP.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["host.ip"] = filter.CreateFilter(mbc.ResourceAttributes.HostIP.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.HwType.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["hw.type"] = filter.CreateFilter(mbc.ResourceAttributes.HwType.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HwType.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["hw.type"] = filter.CreateFilter(mbc.ResourceAttributes.HwType.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.OsName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["os.name"] = filter.CreateFilter(mbc.ResourceAttributes.OsName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OsName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["os.name"] = filter.CreateFilter(mbc.ResourceAttributes.OsName.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -703,15 +511,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricCiscoNetworkDropsReceive.emit(ils.Metrics())
-	mb.metricCiscoNetworkDropsTransmit.emit(ils.Metrics())
-	mb.metricCiscoNetworkErrorsReceive.emit(ils.Metrics())
-	mb.metricCiscoNetworkErrorsTransmit.emit(ils.Metrics())
-	mb.metricCiscoNetworkIoReceive.emit(ils.Metrics())
-	mb.metricCiscoNetworkIoTransmit.emit(ils.Metrics())
-	mb.metricCiscoNetworkPacketsBroadcast.emit(ils.Metrics())
-	mb.metricCiscoNetworkPacketsMulticast.emit(ils.Metrics())
-	mb.metricCiscoNetworkUp.emit(ils.Metrics())
+	mb.metricSystemNetworkErrors.emit(ils.Metrics())
+	mb.metricSystemNetworkInterfaceStatus.emit(ils.Metrics())
+	mb.metricSystemNetworkIo.emit(ils.Metrics())
+	mb.metricSystemNetworkPacketCount.emit(ils.Metrics())
+	mb.metricSystemNetworkPacketDropped.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -743,49 +547,29 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
-// RecordCiscoNetworkDropsReceiveDataPoint adds a data point to cisco.network.drops.receive metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkDropsReceiveDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkDropsReceive.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
+// RecordSystemNetworkErrorsDataPoint adds a data point to system.network.errors metric.
+func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue AttributeNetworkIoDirection, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
+	mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, val, networkIoDirectionAttributeValue.String(), networkInterfaceDescriptionAttributeValue, networkInterfaceMacAttributeValue, networkInterfaceNameAttributeValue, networkInterfaceSpeedAttributeValue)
 }
 
-// RecordCiscoNetworkDropsTransmitDataPoint adds a data point to cisco.network.drops.transmit metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkDropsTransmitDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkDropsTransmit.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
+// RecordSystemNetworkInterfaceStatusDataPoint adds a data point to system.network.interface.status metric.
+func (mb *MetricsBuilder) RecordSystemNetworkInterfaceStatusDataPoint(ts pcommon.Timestamp, val int64, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
+	mb.metricSystemNetworkInterfaceStatus.recordDataPoint(mb.startTime, ts, val, networkInterfaceDescriptionAttributeValue, networkInterfaceMacAttributeValue, networkInterfaceNameAttributeValue, networkInterfaceSpeedAttributeValue)
 }
 
-// RecordCiscoNetworkErrorsReceiveDataPoint adds a data point to cisco.network.errors.receive metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkErrorsReceiveDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkErrorsReceive.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
+// RecordSystemNetworkIoDataPoint adds a data point to system.network.io metric.
+func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue AttributeNetworkIoDirection, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
+	mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, val, networkIoDirectionAttributeValue.String(), networkInterfaceDescriptionAttributeValue, networkInterfaceMacAttributeValue, networkInterfaceNameAttributeValue, networkInterfaceSpeedAttributeValue)
 }
 
-// RecordCiscoNetworkErrorsTransmitDataPoint adds a data point to cisco.network.errors.transmit metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkErrorsTransmitDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkErrorsTransmit.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
+// RecordSystemNetworkPacketCountDataPoint adds a data point to system.network.packet.count metric.
+func (mb *MetricsBuilder) RecordSystemNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, networkPacketTypeAttributeValue AttributeNetworkPacketType, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
+	mb.metricSystemNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, networkPacketTypeAttributeValue.String(), networkInterfaceDescriptionAttributeValue, networkInterfaceMacAttributeValue, networkInterfaceNameAttributeValue, networkInterfaceSpeedAttributeValue)
 }
 
-// RecordCiscoNetworkIoReceiveDataPoint adds a data point to cisco.network.io.receive metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkIoReceiveDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkIoReceive.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
-}
-
-// RecordCiscoNetworkIoTransmitDataPoint adds a data point to cisco.network.io.transmit metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkIoTransmitDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkIoTransmit.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
-}
-
-// RecordCiscoNetworkPacketsBroadcastDataPoint adds a data point to cisco.network.packets.broadcast metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkPacketsBroadcastDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkPacketsBroadcast.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
-}
-
-// RecordCiscoNetworkPacketsMulticastDataPoint adds a data point to cisco.network.packets.multicast metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkPacketsMulticastDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkPacketsMulticast.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
-}
-
-// RecordCiscoNetworkUpDataPoint adds a data point to cisco.network.up metric.
-func (mb *MetricsBuilder) RecordCiscoNetworkUpDataPoint(ts pcommon.Timestamp, val int64, interfaceDescriptionAttributeValue string, interfaceMacAttributeValue string, interfaceNameAttributeValue string, interfaceSpeedAttributeValue string) {
-	mb.metricCiscoNetworkUp.recordDataPoint(mb.startTime, ts, val, interfaceDescriptionAttributeValue, interfaceMacAttributeValue, interfaceNameAttributeValue, interfaceSpeedAttributeValue)
+// RecordSystemNetworkPacketDroppedDataPoint adds a data point to system.network.packet.dropped metric.
+func (mb *MetricsBuilder) RecordSystemNetworkPacketDroppedDataPoint(ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue AttributeNetworkIoDirection, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
+	mb.metricSystemNetworkPacketDropped.recordDataPoint(mb.startTime, ts, val, networkIoDirectionAttributeValue.String(), networkInterfaceDescriptionAttributeValue, networkInterfaceMacAttributeValue, networkInterfaceNameAttributeValue, networkInterfaceSpeedAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

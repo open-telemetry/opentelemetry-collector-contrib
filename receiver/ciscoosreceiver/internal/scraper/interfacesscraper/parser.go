@@ -30,16 +30,11 @@ type Interface struct {
 	InputBytes  float64
 	OutputBytes float64
 
-	InputPkts  float64
-	OutputPkts float64
-
 	InputBroadcast float64
 	InputMulticast float64
 
 	Speed       int64
 	SpeedString string
-	MTU         int64
-	VLANs       []string
 }
 
 // Status constants for interface status
@@ -54,7 +49,6 @@ func NewInterface(name string) *Interface {
 		Name:        name,
 		AdminStatus: StatusDown,
 		OperStatus:  StatusDown,
-		VLANs:       make([]string, 0),
 	}
 }
 
@@ -197,7 +191,6 @@ func parseInterfaces(output string, logger *zap.Logger) []*Interface {
 		} else if matches := outputErrorsRegexp.FindStringSubmatch(line); matches != nil {
 			current.OutputErrors = str2float64(matches[1])
 		} else if matches := speedRegexp.FindStringSubmatch(line); matches != nil {
-			// Combine speed number + units
 			current.SpeedString = matches[2] + " " + matches[3]
 		} else if txNXOS.MatchString(line) {
 			isRx = false
@@ -225,7 +218,6 @@ func parseInterfaces(output string, logger *zap.Logger) []*Interface {
 		}
 	}
 
-	// Add the last interface if it exists and is valid
 	if current != nil {
 		if current.Validate() {
 			interfaces = append(interfaces, current)
@@ -241,7 +233,6 @@ func parseInterfaces(output string, logger *zap.Logger) []*Interface {
 		}
 	}
 
-	// Log summary of interfaces with/without MAC addresses and multicast/broadcast data
 	withMAC := 0
 	withoutMAC := 0
 	withMulticast := 0
@@ -261,7 +252,6 @@ func parseInterfaces(output string, logger *zap.Logger) []*Interface {
 		if intf.InputBroadcast > 0 {
 			withBroadcast++
 		}
-		// Log interfaces with zero multicast/broadcast
 		if intf.InputMulticast == 0 && intf.InputBroadcast == 0 {
 			logger.Debug("Interface with zero multicast/broadcast counters",
 				zap.String("interface", intf.Name))

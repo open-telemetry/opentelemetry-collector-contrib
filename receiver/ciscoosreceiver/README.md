@@ -72,23 +72,23 @@ The scrapers are configured as modular components. Each scraper type can be conf
   - IOS/IOS XE: Calculated from `show process memory` (Processor Pool used / total)
 
 ### Interface Metrics
-- `cisco.network.io.receive` - Number of bytes received on interface
-- `cisco.network.io.transmit` - Number of bytes transmitted on interface
-- `cisco.network.errors.receive` - Number of input errors on interface
-- `cisco.network.errors.transmit` - Number of output errors on interface
-- `cisco.network.drops.receive` - Number of input drops on interface
-- `cisco.network.drops.transmit` - Number of output drops on interface
-- `cisco.network.packets.multicast` - Number of multicast packets received
-- `cisco.network.packets.broadcast` - Number of broadcast packets received
-- `cisco.network.up` - Interface operational status (1 = up, 0 = down)
+- `system.network.io` - Number of bytes transmitted and received (with `network.io.direction` attribute: `receive` or `transmit`)
+- `system.network.errors` - Number of errors encountered (with `network.io.direction` attribute: `receive` or `transmit`)
+- `system.network.packet.dropped` - Number of packets dropped (with `network.io.direction` attribute: `receive` or `transmit`)
+- `system.network.packet.count` - Number of packets transmitted or received, categorized by type (with `network.packet.type` attribute: `multicast` or `broadcast`)
+- `system.network.interface.status` - Interface operational status (1 = up, 0 = down)
 
-Interface metrics include attributes: `interface.name`, `interface.mac`, `interface.description`, `interface.speed`
+Interface metrics include attributes: `network.interface.name`, `network.interface.mac`, `network.interface.description`, `network.interface.speed`
+
+Metrics with direction attribute also include: `network.io.direction` (enum: `receive`, `transmit`)
+
+Metrics with packet type attribute also include: `network.packet.type` (enum: `multicast`, `broadcast`)
 
 ### Resource Attributes
 All metrics include the following resource attributes following OpenTelemetry semantic conventions:
-- `cisco.device.ip` - Device IP address for correlation with Kubernetes nodes and other resources
+- `host.ip` - Device IP address for correlation with Kubernetes nodes and other resources
 - `hw.type` - Hardware type, set to "network" per OpenTelemetry hardware.network conventions
-- `cisco.os.type` - Cisco OS type (e.g., "NX-OS", "IOS XE", "IOS")
+- `os.name` - Operating system name (e.g., "NX-OS", "IOS XE", "IOS")
 
 ## Example Configuration
 
@@ -118,23 +118,15 @@ receivers:
             enabled: true
       interfaces:
         metrics:
-          cisco.network.io.receive:
+          system.network.io:
             enabled: true
-          cisco.network.io.transmit:
+          system.network.errors:
             enabled: true
-          cisco.network.errors.receive:
+          system.network.packet.dropped:
             enabled: true
-          cisco.network.errors.transmit:
+          system.network.packet.count:
             enabled: true
-          cisco.network.drops.receive:
-            enabled: true
-          cisco.network.drops.transmit:
-            enabled: true
-          cisco.network.packets.multicast:
-            enabled: true
-          cisco.network.packets.broadcast:
-            enabled: true
-          cisco.network.up:
+          system.network.interface.status:
             enabled: true
 
   # Example 2: SSH key file authentication

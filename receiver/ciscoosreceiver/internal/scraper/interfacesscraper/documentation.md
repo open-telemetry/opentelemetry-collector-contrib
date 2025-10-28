@@ -12,43 +12,9 @@ metrics:
     enabled: false
 ```
 
-### cisco.network.drops.receive
+### system.network.errors
 
-Number of input drops on interface
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {drops} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
-
-### cisco.network.drops.transmit
-
-Number of output drops on interface
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {drops} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
-
-### cisco.network.errors.receive
-
-Number of input errors on interface
+The number of errors encountered
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -58,97 +24,13 @@ Number of input errors on interface
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
+| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| network.interface.name | The name of the network interface | Any Str | Recommended |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
-### cisco.network.errors.transmit
-
-Number of output errors on interface
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {errors} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
-
-### cisco.network.io.receive
-
-Number of bytes received on interface
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
-
-### cisco.network.io.transmit
-
-Number of bytes transmitted on interface
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
-
-### cisco.network.packets.broadcast
-
-Number of broadcast packets received on interface
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
-
-### cisco.network.packets.multicast
-
-Number of multicast packets received on interface
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
-
-### cisco.network.up
+### system.network.interface.status
 
 Interface operational status (1 = up, 0 = down)
 
@@ -160,15 +42,69 @@ Interface operational status (1 = up, 0 = down)
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | Recommended |
-| interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| interface.name | The name of the network interface | Any Str | Recommended |
-| interface.speed | The configured speed of the network interface | Any Str | Recommended |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| network.interface.name | The name of the network interface | Any Str | Recommended |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
+
+### system.network.io
+
+The number of bytes transmitted and received
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| network.interface.name | The name of the network interface | Any Str | Recommended |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
+
+### system.network.packet.count
+
+The number of packets transmitted or received, categorized by type
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| network.packet.type | Type of packet (multicast or broadcast) | Str: ``multicast``, ``broadcast`` | Recommended |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| network.interface.name | The name of the network interface | Any Str | Recommended |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
+
+### system.network.packet.dropped
+
+The number of packets dropped
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| network.interface.name | The name of the network interface | Any Str | Recommended |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| cisco.device.ip | The IP address of the Cisco network device | Any Str | true |
-| cisco.os.type | The operating system type of the Cisco device | Any Str | true |
+| host.ip | The IP address of the Cisco network device | Any Str | true |
 | hw.type | Type of the physical hardware component | Any Str | true |
+| os.name | The operating system type of the Cisco device | Any Str | true |

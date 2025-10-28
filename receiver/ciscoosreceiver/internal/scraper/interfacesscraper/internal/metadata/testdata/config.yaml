@@ -1,83 +1,67 @@
 default:
 all_set:
   metrics:
-    cisco.network.drops.receive:
+    system.network.errors:
       enabled: true
-    cisco.network.drops.transmit:
+    system.network.interface.status:
       enabled: true
-    cisco.network.errors.receive:
+    system.network.io:
       enabled: true
-    cisco.network.errors.transmit:
+    system.network.packet.count:
       enabled: true
-    cisco.network.io.receive:
-      enabled: true
-    cisco.network.io.transmit:
-      enabled: true
-    cisco.network.packets.broadcast:
-      enabled: true
-    cisco.network.packets.multicast:
-      enabled: true
-    cisco.network.up:
+    system.network.packet.dropped:
       enabled: true
   resource_attributes:
-    cisco.device.ip:
-      enabled: true
-    cisco.os.type:
+    host.ip:
       enabled: true
     hw.type:
+      enabled: true
+    os.name:
       enabled: true
 none_set:
   metrics:
-    cisco.network.drops.receive:
+    system.network.errors:
       enabled: false
-    cisco.network.drops.transmit:
+    system.network.interface.status:
       enabled: false
-    cisco.network.errors.receive:
+    system.network.io:
       enabled: false
-    cisco.network.errors.transmit:
+    system.network.packet.count:
       enabled: false
-    cisco.network.io.receive:
-      enabled: false
-    cisco.network.io.transmit:
-      enabled: false
-    cisco.network.packets.broadcast:
-      enabled: false
-    cisco.network.packets.multicast:
-      enabled: false
-    cisco.network.up:
+    system.network.packet.dropped:
       enabled: false
   resource_attributes:
-    cisco.device.ip:
-      enabled: false
-    cisco.os.type:
+    host.ip:
       enabled: false
     hw.type:
+      enabled: false
+    os.name:
       enabled: false
 filter_set_include:
   resource_attributes:
-    cisco.device.ip:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    cisco.os.type:
+    host.ip:
       enabled: true
       metrics_include:
         - regexp: ".*"
     hw.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    os.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
-    cisco.device.ip:
+    host.ip:
       enabled: true
       metrics_exclude:
-        - strict: "cisco.device.ip-val"
-    cisco.os.type:
-      enabled: true
-      metrics_exclude:
-        - strict: "cisco.os.type-val"
+        - strict: "host.ip-val"
     hw.type:
       enabled: true
       metrics_exclude:
         - strict: "hw.type-val"
+    os.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "os.name-val"
