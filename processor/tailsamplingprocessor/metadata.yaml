@@ -19,6 +19,10 @@ attributes:
     enum: [sampled, not_sampled, dropped]
     type: string
 
+  early:
+    description: Whether the decision was made early or after the decision wait
+    type: bool
+
   policy:
     description: Name of the policy
     type: string
@@ -38,7 +42,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [policy, sampled, decision]
+      attributes: [policy, sampled, decision, early]
 
     processor_tail_sampling_count_traces_sampled:
       description: Count of traces that were sampled or not per sampling policy
@@ -49,7 +53,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [policy, sampled, decision]
+      attributes: [policy, sampled, decision, early]
 
     processor_tail_sampling_early_releases_from_cache_decision:
       description: Number of spans that were able to be immediately released due to a decision cache hit.

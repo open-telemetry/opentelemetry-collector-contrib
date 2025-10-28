@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
-func TestEvaluate_OTTL(t *testing.T) {
+func TestOTTL_Evaluate(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
@@ -92,6 +92,93 @@ func TestEvaluate_OTTL(t *testing.T) {
 
 			if err == nil {
 				decision, err := filter.Evaluate(t.Context(), traceID, newTraceWithSpansAttributes(c.Spans))
+				assert.Equal(t, err != nil, c.WantErr)
+				assert.Equal(t, decision, c.Decision)
+			}
+		})
+	}
+}
+
+func TestOTTL_EarlyEvaluate(t *testing.T) {
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	cases := []struct {
+		Desc                string
+		SpanConditions      []string
+		SpanEventConditions []string
+		Spans               []spanWithAttributes
+		WantErr             bool
+		Decision            samplingpolicy.Decision
+	}{
+		{
+			// policy
+			"OTTL conditions not set",
+			[]string{},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
+			true,
+			samplingpolicy.Unspecified,
+		},
+		{
+			"OTTL conditions match specific span attributes 1",
+			[]string{"attributes[\"attr_k_1\"] == \"attr_v_1\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions match specific span attributes 2",
+			[]string{"attributes[\"attr_k_1\"] != \"attr_v_1\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
+			false,
+			samplingpolicy.Unspecified,
+		},
+		{
+			"OTTL conditions inverse match(!=) span attributes 2",
+			[]string{"attributes[\"attr_k_1\"] != \"attr_v_1\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_2"}}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions match specific span event attributes",
+			[]string{},
+			[]string{"attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
+			[]spanWithAttributes{{SpanEventAttributes: map[string]string{"event_attr_k_1": "event_attr_v_1"}}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions match specific span event name",
+			[]string{},
+			[]string{"name != \"incorrect event name\""},
+			[]spanWithAttributes{{SpanEventAttributes: nil}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions not matched",
+			[]string{"attributes[\"attr_k_1\"] == \"attr_v_1\""},
+			[]string{"attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
+			[]spanWithAttributes{},
+			false,
+			samplingpolicy.Unspecified,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			filter, err := NewOTTLConditionFilter(componenttest.NewNopTelemetrySettings(), c.SpanConditions, c.SpanEventConditions, ottl.IgnoreError)
+			assert.Equal(t, err != nil, c.WantErr)
+
+			if err == nil {
+				trace := newTraceWithSpansAttributes(c.Spans)
+				rs := trace.ReceivedBatches.ResourceSpans().At(0)
+
+				decision, err := filter.(samplingpolicy.EarlyEvaluator).EarlyEvaluate(t.Context(), traceID, rs, trace)
 				assert.Equal(t, err != nil, c.WantErr)
 				assert.Equal(t, decision, c.Decision)
 			}

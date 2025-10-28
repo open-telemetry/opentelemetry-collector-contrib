@@ -1086,6 +1086,42 @@ func TestNumericAttributeCases(t *testing.T) {
 	}
 }
 
+func TestEarlyDecision(t *testing.T) {
+	traceIDs, batches := generateIDsAndBatches(128)
+	controller := newTestTSPController()
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+		EarlyDecisions: true,
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = sp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = sp.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	for _, batch := range batches {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+	}
+	time.Sleep(5 * time.Millisecond)
+
+	// Make sure all traces are sampled before a tick is called.
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, len(batches))
+}
+
 func TestExtension(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)

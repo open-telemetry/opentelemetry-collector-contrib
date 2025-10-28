@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -26,7 +27,10 @@ type probabilisticSampler struct {
 	hashSalt  string
 }
 
-var _ samplingpolicy.Evaluator = (*probabilisticSampler)(nil)
+var (
+	_ samplingpolicy.Evaluator      = (*probabilisticSampler)(nil)
+	_ samplingpolicy.EarlyEvaluator = (*probabilisticSampler)(nil)
+)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.
@@ -52,6 +56,10 @@ func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.Trace
 	}
 
 	return samplingpolicy.NotSampled, nil
+}
+
+func (s *probabilisticSampler) EarlyEvaluate(ctx context.Context, traceID pcommon.TraceID, _ ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	return s.Evaluate(ctx, traceID, nil)
 }
 
 // calculateThreshold converts a ratio into a value between 0 and MaxUint64

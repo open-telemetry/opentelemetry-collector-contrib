@@ -234,6 +234,70 @@ func TestEvaluate_RangeOfSpans(t *testing.T) {
 	}
 }
 
+func TestSpanCount_EarlyEvaluate(t *testing.T) {
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	cases := []struct {
+		Desc               string
+		minSpans, maxSpans int32
+		NumberSpans        []int32
+		Decision           samplingpolicy.Decision
+	}{
+		{
+			"Spans less than the maxSpans",
+			0, 20,
+			[]int32{
+				5, 3,
+			},
+			samplingpolicy.Unspecified,
+		},
+		{
+			"Spans greater than minSpans, no maxSpans",
+			5, 0,
+			[]int32{
+				5, 3,
+			},
+			samplingpolicy.Sampled,
+		},
+		{
+			"Spans less than minSpans",
+			5, 0,
+			[]int32{
+				3,
+			},
+			samplingpolicy.Unspecified,
+		},
+		{
+			"Spans greater than the maxSpans, in one single batch",
+			0, 20,
+			[]int32{
+				21,
+			},
+			samplingpolicy.NotSampled,
+		},
+		{
+			"Spans greater than the maxSpans, in multiple batches",
+			0, 20,
+			[]int32{
+				5, 10, 6,
+			},
+			samplingpolicy.NotSampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			filter := NewSpanCount(componenttest.NewNopTelemetrySettings(), c.minSpans, c.maxSpans).(samplingpolicy.EarlyEvaluator)
+			trace := newTraceWithMultipleSpans(c.NumberSpans)
+			rss := trace.ReceivedBatches.ResourceSpans()
+			decision, err := filter.EarlyEvaluate(t.Context(), traceID, rss.At(rss.Len()-1), trace)
+
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
 func newTraceWithMultipleSpans(numberSpans []int32) *samplingpolicy.TraceData {
 	totalNumberSpans := int32(0)
 

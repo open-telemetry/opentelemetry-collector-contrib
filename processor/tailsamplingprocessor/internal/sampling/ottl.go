@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -68,28 +69,59 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 
 	for i := 0; i < batches.ResourceSpans().Len(); i++ {
 		rs := batches.ResourceSpans().At(i)
-		resource := rs.Resource()
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
-			ss := rs.ScopeSpans().At(j)
-			scope := ss.Scope()
-			for k := 0; k < ss.Spans().Len(); k++ {
-				span := ss.Spans().At(k)
+		decision, err := ocf.evaluateResourceSpans(ctx, rs)
+		if err != nil {
+			return samplingpolicy.Error, err
+		}
+		if decision != samplingpolicy.Unspecified {
+			return decision, nil
+		}
+	}
+	return samplingpolicy.NotSampled, nil
+}
 
-				var (
-					ok  bool
-					err error
-				)
+func (ocf *ottlConditionFilter) EarlyEvaluate(ctx context.Context, _ pcommon.TraceID, batch ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	return ocf.evaluateResourceSpans(ctx, batch)
+}
 
-				// Now we reach span level and begin evaluation with parsed expr.
-				// The evaluation will break when:
-				// 1. error happened.
-				// 2. "Sampled" decision made.
-				// Otherwise, it will keep evaluating and finally exit with "NotSampled" decision.
+func (ocf *ottlConditionFilter) evaluateResourceSpans(ctx context.Context, rs ptrace.ResourceSpans) (samplingpolicy.Decision, error) {
+	resource := rs.Resource()
+	for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		ss := rs.ScopeSpans().At(j)
+		scope := ss.Scope()
+		for k := 0; k < ss.Spans().Len(); k++ {
+			span := ss.Spans().At(k)
 
-				// Span evaluation
-				if ocf.sampleSpanExpr != nil {
-					tCtx := ottlspan.NewTransformContextPtr(span, scope, resource, ss, rs)
-					ok, err = ocf.sampleSpanExpr.Eval(ctx, tCtx)
+			var (
+				ok  bool
+				err error
+			)
+
+			// Now we reach span level and begin evaluation with parsed expr.
+			// The evaluation will break when:
+			// 1. error happened.
+			// 2. "Sampled" decision made.
+			// Otherwise, it will keep evaluating and finally exit with "NotSampled" decision.
+
+			// Span evaluation
+			if ocf.sampleSpanExpr != nil {
+				tCtx := ottlspan.NewTransformContextPtr(span, scope, resource, ss, rs)
+				ok, err = ocf.sampleSpanExpr.Eval(ctx, tCtx)
+				tCtx.Close()
+				if err != nil {
+					return samplingpolicy.Error, err
+				}
+				if ok {
+					return samplingpolicy.Sampled, nil
+				}
+			}
+
+			// Span event evaluation
+			if ocf.sampleSpanEventExpr != nil {
+				spanEvents := span.Events()
+				for l := 0; l < spanEvents.Len(); l++ {
+					tCtx := ottlspanevent.NewTransformContextPtr(spanEvents.At(l), span, scope, resource, ss, rs)
+					ok, err = ocf.sampleSpanEventExpr.Eval(ctx, tCtx)
 					tCtx.Close()
 					if err != nil {
 						return samplingpolicy.Error, err
@@ -98,24 +130,9 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 						return samplingpolicy.Sampled, nil
 					}
 				}
-
-				// Span event evaluation
-				if ocf.sampleSpanEventExpr != nil {
-					spanEvents := span.Events()
-					for l := 0; l < spanEvents.Len(); l++ {
-						tCtx := ottlspanevent.NewTransformContextPtr(spanEvents.At(l), span, scope, resource, ss, rs)
-						ok, err = ocf.sampleSpanEventExpr.Eval(ctx, tCtx)
-						tCtx.Close()
-						if err != nil {
-							return samplingpolicy.Error, err
-						}
-						if ok {
-							return samplingpolicy.Sampled, nil
-						}
-					}
-				}
 			}
 		}
 	}
-	return samplingpolicy.NotSampled, nil
+	// We need to look at more resource spans to make a decision.
+	return samplingpolicy.Unspecified, nil
 }

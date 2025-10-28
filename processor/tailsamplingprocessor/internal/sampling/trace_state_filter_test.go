@@ -20,7 +20,7 @@ type TestTraceStateCfg struct {
 	Values []string
 }
 
-func TestTraceStateFilter(t *testing.T) {
+func TestTraceStateFilter_Evaluate(t *testing.T) {
 	cases := []struct {
 		Desc      string
 		Trace     *samplingpolicy.TraceData
@@ -81,6 +81,75 @@ func TestTraceStateFilter(t *testing.T) {
 		t.Run(c.Desc, func(t *testing.T) {
 			filter := NewTraceStateFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values)
 			decision, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
+func TestTraceStateFilter_EarlyEvaluate(t *testing.T) {
+	cases := []struct {
+		Desc      string
+		Trace     *samplingpolicy.TraceData
+		filterCfg *TestTraceStateCfg
+		Decision  samplingpolicy.Decision
+	}{
+		{
+			Desc:      "nonmatching trace_state key",
+			Trace:     newTraceState("non_matching=value"),
+			filterCfg: &TestTraceStateCfg{Key: "example", Values: []string{"value"}},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "nonmatching trace_state value",
+			Trace:     newTraceState("example=non_matching"),
+			filterCfg: &TestTraceStateCfg{Key: "example", Values: []string{"value"}},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "matching trace_state",
+			Trace:     newTraceState("example=value"),
+			filterCfg: &TestTraceStateCfg{Key: "example", Values: []string{"value"}},
+			Decision:  samplingpolicy.Sampled,
+		},
+		{
+			Desc:      "nonmatching trace_state on empty filter list",
+			Trace:     newTraceState("example=value"),
+			filterCfg: &TestTraceStateCfg{Key: "example", Values: []string{}},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "nonmatching trace_state on multiple key-values",
+			Trace:     newTraceState("example=non_matching,non_matching=value"),
+			filterCfg: &TestTraceStateCfg{Key: "example", Values: []string{"value"}},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "matching trace_state on multiple key-values",
+			Trace:     newTraceState("example=value,non_matching=value"),
+			filterCfg: &TestTraceStateCfg{Key: "example", Values: []string{"value"}},
+			Decision:  samplingpolicy.Sampled,
+		},
+		{
+			Desc:      "nonmatching trace_state on multiple filter list",
+			Trace:     newTraceState("example=non_matching"),
+			filterCfg: &TestTraceStateCfg{Key: "example", Values: []string{"value1", "value2"}},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "matching trace_state on multiple filter list",
+			Trace:     newTraceState("example=value1"),
+			filterCfg: &TestTraceStateCfg{Key: "example", Values: []string{"value1", "value2"}},
+			Decision:  samplingpolicy.Sampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			filter := NewTraceStateFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values).(samplingpolicy.EarlyEvaluator)
+			traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+			rs := c.Trace.ReceivedBatches.ResourceSpans().At(0)
+			decision, err := filter.EarlyEvaluate(t.Context(), traceID, rs, c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})

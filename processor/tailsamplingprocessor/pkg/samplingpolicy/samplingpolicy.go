@@ -52,6 +52,16 @@ type Evaluator interface {
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
 }
 
+// EarlyEvaluator uses partial traces (newData) in order to make a sampling
+// decision. The partial data could be as little as a single span, up to all
+// the spans for a given resource.
+type EarlyEvaluator interface {
+	// EarlyEvaluate does the actual evaluation of the batch of spans. Any
+	// implementations must only return Sampled, NotSampled, Dropped, or
+	// Unspecified decisions. Any other values will be treated as Unspecified.
+	EarlyEvaluate(ctx context.Context, traceID pcommon.TraceID, newData ptrace.ResourceSpans, allData *TraceData) (Decision, error)
+}
+
 type Extension interface {
 	NewEvaluator(policyName string, cfg map[string]any) (Evaluator, error)
 }

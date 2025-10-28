@@ -5,6 +5,7 @@ package sampling
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math/rand/v2"
 	"testing"
 
@@ -65,29 +66,40 @@ func TestProbabilisticSampling(t *testing.T) {
 			100,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			traceCount := 100_000
+	for _, earlyEvaluation := range []bool{false, true} {
+		for _, tt := range tests {
+			t.Run(fmt.Sprintf("EarlyEvaluate=%t/%s", earlyEvaluation, tt.name), func(t *testing.T) {
+				traceCount := 100_000
 
-			probabilisticSampler := NewProbabilisticSampler(componenttest.NewNopTelemetrySettings(), tt.hashSalt, tt.samplingPercentage)
+				probabilisticSampler := NewProbabilisticSampler(componenttest.NewNopTelemetrySettings(), tt.hashSalt, tt.samplingPercentage)
 
-			sampled := 0
-			for _, traceID := range genRandomTraceIDs(traceCount) {
-				trace := newTraceStringAttrs(nil, "example", "value")
+				sampled := 0
+				for _, traceID := range genRandomTraceIDs(traceCount) {
+					trace := newTraceStringAttrs(nil, "example", "value")
+					rs := trace.ReceivedBatches.ResourceSpans().At(0)
 
-				decision, err := probabilisticSampler.Evaluate(t.Context(), traceID, trace)
-				assert.NoError(t, err)
+					var (
+						decision samplingpolicy.Decision
+						err      error
+					)
+					if earlyEvaluation {
+						decision, err = probabilisticSampler.(samplingpolicy.EarlyEvaluator).EarlyEvaluate(t.Context(), traceID, rs, trace)
+					} else {
+						decision, err = probabilisticSampler.Evaluate(t.Context(), traceID, trace)
+					}
+					assert.NoError(t, err)
 
-				if decision == samplingpolicy.Sampled {
-					sampled++
+					if decision == samplingpolicy.Sampled {
+						sampled++
+					}
 				}
-			}
 
-			effectiveSamplingPercentage := float32(sampled) / float32(traceCount) * 100
-			assert.InDelta(t, tt.expectedSamplingPercentage, effectiveSamplingPercentage, 0.2,
-				"Effective sampling percentage is %f, expected %f", effectiveSamplingPercentage, tt.expectedSamplingPercentage,
-			)
-		})
+				effectiveSamplingPercentage := float32(sampled) / float32(traceCount) * 100
+				assert.InDelta(t, tt.expectedSamplingPercentage, effectiveSamplingPercentage, 0.2,
+					"Effective sampling percentage is %f, expected %f", effectiveSamplingPercentage, tt.expectedSamplingPercentage,
+				)
+			})
+		}
 	}
 }
 
