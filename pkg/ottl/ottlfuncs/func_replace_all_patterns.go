@@ -51,10 +51,6 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		cp, err := compiledPattern.compile(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
@@ -62,6 +58,11 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 
 		var replacementVal string
 		replacementVal, err = replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+
+		cp, err := compiledPattern.compile(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}

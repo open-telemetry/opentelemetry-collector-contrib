@@ -104,10 +104,6 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern, replacement o
 		return nil, err
 	}
 	return func(ctx context.Context, tCtx K) (any, error) {
-		cp, err := compiledPattern.compile(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
 		originalVal, err := target.Get(ctx, tCtx)
 		var replacementVal string
 		if err != nil {
@@ -121,6 +117,10 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern, replacement o
 			return nil, err
 		}
 		if originalValStr, ok := originalVal.(string); ok {
+			cp, err := compiledPattern.compile(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
 			if cp.MatchString(originalValStr) {
 				if !fn.IsEmpty() {
 					var updatedString string

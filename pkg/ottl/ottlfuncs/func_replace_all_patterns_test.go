@@ -706,7 +706,7 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardPMapGetSetter[any]{
 		Getter: func(context.Context, any) (pcommon.Map, error) {
-			return pcommon.Map{}, errors.New("nothing should be received in this scenario")
+			return pcommon.Map{}, nil
 		},
 	}
 	replacement := &ottl.StandardStringGetter[any]{

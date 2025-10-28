@@ -397,11 +397,9 @@ func Test_replacePattern_get_nil(t *testing.T) {
 func Test_replacePatterns_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, any) (any, error) {
-			t.Errorf("nothing should be received in this scenario")
-			return nil, nil
+			return "string", nil
 		},
 		Setter: func(context.Context, any, any) error {
-			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
