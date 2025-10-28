@@ -116,11 +116,9 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.138.1-0.20251028105454-507664fb82dc // indirect
 	go.opentelemetry.io/collector/receiver v1.44.1-0.20251028105454-507664fb82dc // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.138.1-0.20251028105454-507664fb82dc // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.30.0 // indirect
-	go.opentelemetry.io/otel/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
