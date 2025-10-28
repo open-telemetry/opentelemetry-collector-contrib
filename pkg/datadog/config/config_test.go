@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestValidate(t *testing.T) {
@@ -408,7 +409,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: newDefaultQueueConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -484,7 +485,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: newDefaultQueueConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					Site:             "datadoghq.com",
@@ -545,7 +546,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: newDefaultQueueConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -613,7 +614,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: newDefaultQueueConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -679,7 +680,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: newDefaultQueueConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				API: APIConfig{
 					Key:              "abc",
 					Site:             "datadoghq.com",
