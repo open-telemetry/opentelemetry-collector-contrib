@@ -10,10 +10,11 @@ import (
 )
 
 type pingStats struct {
-	minRtt   time.Duration
-	avgRtt   time.Duration
-	maxRtt   time.Duration
-	lossRato float64
+	minRtt    time.Duration
+	avgRtt    time.Duration
+	maxRtt    time.Duration
+	stdDevRtt time.Duration
+	lossRatio float64
 }
 
 type pinger = interface {
@@ -37,10 +38,11 @@ func (p *defaultPinger) HostName() string {
 
 func (p *defaultPinger) Stats() *pingStats {
 	return &pingStats{
-		minRtt:   p.Statistics().MinRtt,
-		avgRtt:   p.Statistics().AvgRtt,
-		maxRtt:   p.Statistics().MaxRtt,
-		lossRato: p.Statistics().PacketLoss,
+		minRtt:    p.Statistics().MinRtt,
+		avgRtt:    p.Statistics().AvgRtt,
+		maxRtt:    p.Statistics().MaxRtt,
+		stdDevRtt: p.Statistics().StdDevRtt,
+		lossRatio: p.Statistics().PacketLoss,
 	}
 }
 
