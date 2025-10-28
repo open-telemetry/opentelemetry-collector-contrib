@@ -34,11 +34,10 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	// Check if all keys are literals and pre-build the key set if so
 	literalKeySet := make(map[string]struct{}, len(keys))
-	allLiteral := true
 	for _, key := range keys {
 		k, isLiteral := ottl.GetLiteralValue(key)
 		if !isLiteral {
-			allLiteral = false
+			literalKeySet = nil
 			break
 		}
 		literalKeySet[k] = struct{}{}
@@ -51,7 +50,7 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) 
 		}
 
 		var keySet map[string]struct{}
-		if allLiteral {
+		if literalKeySet != nil {
 			// Use pre-built key set for literal keys
 			keySet = literalKeySet
 		} else {
