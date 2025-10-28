@@ -12,6 +12,8 @@ import (
 // BodyField is a field found on an entry body.
 type BodyField struct {
 	Keys []string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewBodyField creates a new field from an ordered array of keys.
@@ -32,7 +34,7 @@ func (f BodyField) Parent() BodyField {
 	}
 
 	keys := f.Keys[:len(f.Keys)-1]
-	return BodyField{keys}
+	return BodyField{Keys: keys}
 }
 
 // Child returns a child of the current field using the given key.
@@ -40,7 +42,7 @@ func (f BodyField) Child(key string) BodyField {
 	child := make([]string, len(f.Keys), len(f.Keys)+1)
 	copy(child, f.Keys)
 	child = append(child, key)
-	return BodyField{child}
+	return BodyField{Keys: child}
 }
 
 // IsRoot returns a boolean indicating if this is a root level field.
@@ -169,7 +171,7 @@ func (f *BodyField) UnmarshalJSON(raw []byte) error {
 		return fmt.Errorf("must start with 'body': %s", value)
 	}
 
-	*f = BodyField{keys[1:]}
+	*f = BodyField{Keys: keys[1:]}
 	return nil
 }
 
@@ -189,7 +191,7 @@ func (f *BodyField) UnmarshalYAML(unmarshal func(any) error) error {
 		return fmt.Errorf("must start with 'body': %s", value)
 	}
 
-	*f = BodyField{keys[1:]}
+	*f = BodyField{Keys: keys[1:]}
 	return nil
 }
 
@@ -204,6 +206,6 @@ func (f *BodyField) UnmarshalText(text []byte) error {
 		return fmt.Errorf("must start with 'body': %s", text)
 	}
 
-	*f = BodyField{keys[1:]}
+	*f = BodyField{Keys: keys[1:]}
 	return nil
 }

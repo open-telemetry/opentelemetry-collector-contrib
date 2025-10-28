@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.24.0
 
 require (
-	github.com/IBM/sarama v1.46.2
+	github.com/IBM/sarama v1.46.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.138.0

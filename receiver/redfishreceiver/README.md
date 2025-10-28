@@ -35,7 +35,7 @@ The following settings are optional:
 - `servers`: The list of redfish servers to be monitored.
 
 Each server has the following properties:
-- `host` (required): Host name to monitor in the form [https][://][host]:[port].
+- `base_url` (required): base url to monitor in the form [https][://][host]:[port].
 - `username` (required): Redfish username.
 - `password` (required): Redfish password.
 - `insecure` (optional, default: `false`): Sets the protocol security.
@@ -57,8 +57,8 @@ The redfish resource options include the below:
 
 ```yaml
 receivers:
-  collection_interval: 60s
   redfish:
+    collection_interval: 60s
     servers:
     - host: https://16.1.15.1
       username: "${BMC_USER}"

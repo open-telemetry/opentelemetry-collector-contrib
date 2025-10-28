@@ -1,10 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package credentials // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
+package credentials // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
 )
 
 // CollectorCredentials are used for storing the credentials received during
