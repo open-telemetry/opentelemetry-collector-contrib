@@ -1498,8 +1498,22 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 		},
 	}
 
+	expectedIndex0 := func() pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.namespace", "production")
+		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.instance.id", "host1")
+		attrs.PutStr("machine_type", "n1-standard-1")
+		attrs.PutStr("cloud_provider", "gcp")
+		attrs.PutStr("region", "us-central1")
+
+		return metrics
+	}()
+
 	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
-	expectedMetrics := func() pmetric.Metrics {
+	expectedIndex1 := func() pmetric.Metrics {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		attrs := rm.Resource().Attributes()
@@ -1555,7 +1569,10 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
 
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[1]))
+			// index 0 is related to the target_info metric that is the first request.
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex0, mockConsumer.metrics[0]))
+			// index 1 is related to the join between the target_info and the normal metric.
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex1, mockConsumer.metrics[1]))
 		})
 	}
 }
@@ -1820,9 +1837,9 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 	var httpResults []int
 	var mu sync.Mutex
 
-	for i, req := range requests {
+	for _, req := range requests {
 		wg.Add(1)
-		go func(_ int, request *writev2.Request) {
+		go func(request *writev2.Request) {
 			defer wg.Done()
 
 			pBuf := proto.NewBuffer(nil)
