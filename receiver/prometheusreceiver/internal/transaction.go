@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -242,25 +243,48 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		t.families[key][scope] = make(map[metricFamilyKey]*metricFamily)
 	}
 
+	normalizedName := normalizeMetricName(mn)
+	isOMCounter := t.isOMCounterLine(mn, normalizedName)
+
 	mfKey := metricFamilyKey{isExponentialHistogram: t.addingNativeHistogram, name: mn}
+	if isOMCounter {
+		mfKey.name = normalizedName
+	}
 
 	curMf, ok := t.families[key][scope][mfKey]
 
 	if !ok {
 		fn := mn
-		if _, ok := t.mc.GetMetadata(mn); !ok {
-			fn = normalizeMetricName(mn)
+		if isOMCounter {
+			fn = normalizedName
+		} else if _, ok := t.mc.GetMetadata(mn); !ok {
+			fn = normalizedName
 		}
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
 		mf, ok := t.families[key][scope][fnKey]
 		if !ok || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
-			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
+			mfKey = metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}
+			if isOMCounter {
+				mfKey.name = fn
+			}
+			t.families[key][scope][mfKey] = curMf
 			return curMf
 		}
 		curMf = mf
 	}
 	return curMf
+}
+
+func (t *transaction) isOMCounterLine(metricName, normalizedName string) bool {
+	if len(metricName) <= len(normalizedName) {
+		return false
+	}
+	if !strings.HasSuffix(metricName, metricSuffixTotal) && !strings.HasSuffix(metricName, metricSuffixCreated) {
+		return false
+	}
+	_, k := t.mc.GetMetadata(normalizedName)
+	return k
 }
 
 func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
