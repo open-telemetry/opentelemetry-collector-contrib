@@ -15,6 +15,8 @@ import (
 
 type ProfileIDArguments[K any] struct {
 	Bytes []byte
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func NewProfileIDFactory[K any]() ottl.Factory[K] {

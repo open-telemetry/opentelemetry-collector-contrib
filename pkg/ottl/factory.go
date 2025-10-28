@@ -13,6 +13,8 @@ type Arguments any
 // component to the OTTL for use in functions.
 type FunctionContext struct {
 	Set component.TelemetrySettings
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Factory defines an OTTL function factory that will generate an OTTL

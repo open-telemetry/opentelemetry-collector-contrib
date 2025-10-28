@@ -14,6 +14,8 @@ import (
 
 type SpanIDArguments[K any] struct {
 	Bytes []byte
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func NewSpanIDFactory[K any]() ottl.Factory[K] {

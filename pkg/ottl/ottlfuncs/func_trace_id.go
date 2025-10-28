@@ -14,6 +14,8 @@ import (
 
 type TraceIDArguments[K any] struct {
 	Bytes []byte
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func NewTraceIDFactory[K any]() ottl.Factory[K] {
