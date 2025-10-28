@@ -22,12 +22,12 @@ Number of input drops on interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ### cisco.network.drops.transmit
 
@@ -39,12 +39,12 @@ Number of output drops on interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ### cisco.network.errors.receive
 
@@ -56,12 +56,12 @@ Number of input errors on interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ### cisco.network.errors.transmit
 
@@ -73,12 +73,12 @@ Number of output errors on interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ### cisco.network.io.receive
 
@@ -90,12 +90,12 @@ Number of bytes received on interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ### cisco.network.io.transmit
 
@@ -107,12 +107,12 @@ Number of bytes transmitted on interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ### cisco.network.packets.broadcast
 
@@ -124,12 +124,12 @@ Number of broadcast packets received on interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ### cisco.network.packets.multicast
 
@@ -141,12 +141,12 @@ Number of multicast packets received on interface
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ### cisco.network.up
 
@@ -158,12 +158,12 @@ Interface operational status (1 = up, 0 = down)
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| interface.description | The description/alias of the network interface | Any Str | false |
-| interface.mac | The MAC address of the network interface | Any Str | false |
-| interface.name | The name of the network interface | Any Str | false |
-| interface.speed | The configured speed of the network interface | Any Str | false |
+| interface.description | The description/alias of the network interface | Any Str | Recommended |
+| interface.mac | The MAC address of the network interface | Any Str | Recommended |
+| interface.name | The name of the network interface | Any Str | Recommended |
+| interface.speed | The configured speed of the network interface | Any Str | Recommended |
 
 ## Resource Attributes
 
