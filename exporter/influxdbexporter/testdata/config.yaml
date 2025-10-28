@@ -22,3 +22,4 @@ influxdb/override-config:
     - service.name
   payload_max_lines: 72
   payload_max_bytes: 27
+  precision: ns
