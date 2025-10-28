@@ -106,6 +106,7 @@ type Capabilities struct {
 	AcceptsRemoteConfig            bool `mapstructure:"accepts_remote_config"`
 	AcceptsRestartCommand          bool `mapstructure:"accepts_restart_command"`
 	AcceptsOpAMPConnectionSettings bool `mapstructure:"accepts_opamp_connection_settings"`
+	AcceptsPackages                bool `mapstructure:"accepts_packages"`
 	ReportsEffectiveConfig         bool `mapstructure:"reports_effective_config"`
 	ReportsOwnMetrics              bool `mapstructure:"reports_own_metrics"`
 	ReportsOwnLogs                 bool `mapstructure:"reports_own_logs"`
@@ -114,6 +115,7 @@ type Capabilities struct {
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
+	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -160,6 +162,14 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 	}
 	if c.ReportsHeartbeat {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
+	}
+
+	if c.AcceptsPackages {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
+	}
+
+	if c.ReportsPackageStatuses {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
 	}
 
 	return supportedCapabilities
@@ -209,6 +219,7 @@ type Agent struct {
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
+	Package                 AgentPackage      `mapstructure:"package"`
 }
 
 func (a Agent) Validate() error {
@@ -248,6 +259,139 @@ func (a Agent) Validate() error {
 
 	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
+	if a.ConfigApplyTimeout <= 0 {
+		return errors.New("agent::config_apply_timeout must be valid duration")
+	}
+
+	if err := a.Package.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AgentPackage represents options for installing an agent package when it is received
+// through a PackagesAvailable message.
+type AgentPackage struct {
+	// AgentBinary is the name of the agent binary in the Archive that will be installed.
+	AgentBinary string `mapstructure:"agent_binary"`
+	// Archive is the format of the package that will be installed. This specifies how
+	// the package will be processed.
+	Archive Archive `mapstructure:"archive"`
+	// Signature is the signature of the package that will be installed. This is used to
+	// verify the authenticity of the package.
+	Signature AgentSignature `mapstructure:"signature"`
+}
+
+// Validate validates the agent package configuration.
+func (a AgentPackage) Validate() error {
+	if err := a.Archive.Validate(a.AgentBinary != ""); err != nil {
+		return err
+	}
+
+	if err := a.Signature.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Archive represents the format of the package that will be installed.
+type Archive string
+
+const (
+	// TODO: Add support for other archive formats.
+
+	// ArchiveDefault is the default value for the archive format.
+	// It is used when there is no formatting on the package.
+	ArchiveDefault Archive = ""
+	// ArchiveTarGzip is the archive format for tar.gz files.
+	ArchiveTarGzip Archive = "tar.gz"
+)
+
+// ErrAgentBinaryRequiredError is the error returned when the agent binary is required for the given archive format.
+var ErrAgentBinaryRequiredError = errors.New("agent::package::agent_binary must be specified for given archive")
+
+// Validate validates the archive format is supported. It also verifies that the agent binary is configured if the archive format requires it.
+func (a Archive) Validate(binaryConfigured bool) error {
+	switch a {
+	case ArchiveTarGzip:
+		if !binaryConfigured {
+			return ErrAgentBinaryRequiredError
+		}
+		return nil
+	case ArchiveDefault:
+		return nil
+	default:
+		return fmt.Errorf("unsupported archive format: %s", a)
+	}
+}
+
+// AgentSignature represents options for verifying the agent signature from the PackagesAvailable message.
+// You can read more about Cosign and signing here.
+// https://docs.sigstore.dev/cosign/signing/overview/
+type AgentSignature struct {
+	// TODO: The Fulcio root certificate can be specified via SIGSTORE_ROOT_FILE for now
+	// But we should add it as a config option.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35931
+
+	// github_workflow_repository defines the expected repository field
+	// on the sigstore certificate.
+	CertGithubWorkflowRepository string `mapstructure:"github_workflow_repository"`
+
+	// Identities is a list of valid identities to use when verifying the agent.
+	// Only one needs to match the identity on the certificate for signature
+	// verification to pass.
+	Identities []AgentSignatureIdentity `mapstructure:"identities"`
+}
+
+// Validate validates the agent signature configuration.
+func (a AgentSignature) Validate() error {
+	for i, ident := range a.Identities {
+		if err := ident.Validate(); err != nil {
+			return fmt.Errorf("agent::identities[%d]: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
+// AgentSignatureIdentity represents an Issuer/Subject pair that identifies
+// the signer of the agent. This allows restricting the valid signers, such
+// that only very specific sources are trusted as signers for an agent.
+// You can read more about Cosign and signing here.
+// Issuer and Subject are used to strictly match their values.
+// IssuerRegExp and SubjectRegExp can be used instead to match the values using a regular expression.
+// These are the values that are used to verify the identity of the signer.
+// https://docs.sigstore.dev/cosign/signing/overview/
+type AgentSignatureIdentity struct {
+	// Issuer is the OIDC Issuer for the identity
+	Issuer string `mapstructure:"issuer"`
+	// Subject is the OIDC Subject for the identity
+	Subject string `mapstructure:"subject"`
+	// IssuerRegExp is a regular expression for matching the OIDC Issuer for the identity
+	IssuerRegExp string `mapstructure:"issuer_regex"`
+	// SubjectRegExp is a regular expression for matching the OIDC Subject for the identity.
+	SubjectRegExp string `mapstructure:"subject_regex"`
+}
+
+func (a AgentSignatureIdentity) Validate() error {
+	if a.Issuer != "" && a.IssuerRegExp != "" {
+		return errors.New("cannot specify both issuer and issuer_regex")
+	}
+
+	if a.Subject != "" && a.SubjectRegExp != "" {
+		return errors.New("cannot specify both subject and subject_regex")
+	}
+
+	if a.Issuer == "" && a.IssuerRegExp == "" {
+		return errors.New("must specify one of issuer or issuer_regex")
+	}
+
+	if a.Subject == "" && a.SubjectRegExp == "" {
+		return errors.New("must specify one of subject or subject_regex")
 	}
 
 	return nil
@@ -348,6 +492,7 @@ func DefaultSupervisor() Supervisor {
 			AcceptsRemoteConfig:            false,
 			AcceptsRestartCommand:          false,
 			AcceptsOpAMPConnectionSettings: false,
+			AcceptsPackages:                false,
 			ReportsEffectiveConfig:         true,
 			ReportsOwnMetrics:              true,
 			ReportsOwnLogs:                 false,
@@ -356,6 +501,7 @@ func DefaultSupervisor() Supervisor {
 			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
+			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -365,6 +511,19 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
+			Package: AgentPackage{
+				Signature: AgentSignature{
+					// These defaults will allow the signatures generated by releases in the
+					// open-telemetry/opentelemetry-collector-releases repository.
+					CertGithubWorkflowRepository: "open-telemetry/opentelemetry-collector-releases",
+					Identities: []AgentSignatureIdentity{
+						{
+							Issuer:        "https://token.actions.githubusercontent.com",
+							SubjectRegExp: `^https://github.com/open-telemetry/opentelemetry-collector-releases/.github/workflows/base-release.yaml@refs/tags/[^/]*$`,
+						},
+					},
+				},
+			},
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
