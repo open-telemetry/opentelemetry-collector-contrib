@@ -16,7 +16,7 @@ issues: [43799]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  New optional configuration flag "drop_tags" has been added to SignalFx Exporter to allow users to disable tag metadata sending.
+  New optional configuration flag `drop_tags` has been added to SignalFx Exporter to allow users to disable tag metadata sending.
   This feature has been introduced due to a common issue among Splunk Observability customers when they're receiving more tags 
   than allowed limit. 
   
