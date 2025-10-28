@@ -298,7 +298,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
-	github.com/prometheus/exporter-toolkit v0.14.1 // indirect
+	github.com/prometheus/exporter-toolkit v0.15.0 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/prometheus/sigv4 v0.2.0 // indirect
@@ -404,7 +404,6 @@ require (
 	golang.org/x/term v0.36.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	golang.org/x/tools/godoc v0.1.0-deprecated // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/api v0.239.0 // indirect
