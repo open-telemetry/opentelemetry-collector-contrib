@@ -71,6 +71,19 @@ func TestK8sResolve(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, res.start(t.Context()))
+		// Wait for the initial endpoints to be populated by the informer
+		// The informer cache sync only guarantees the cache is ready, but the OnAdd
+		// handler runs asynchronously and may not have completed yet
+		cErr := waitForCondition(t, 1200*time.Millisecond, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+			if _, resErr := res.resolve(ctx); resErr != nil {
+				return false, resErr
+			}
+			got := res.Endpoints()
+			return slices.Equal(expectInit, got), nil
+		})
+		if cErr != nil {
+			t.Logf("waitForCondition: timed out waiting for initial resolver endpoints: %v", cErr)
+		}
 		// verify endpoints should be the same as expectInit
 		assert.NoError(t, err)
 		assert.Equal(t, expectInit, res.Endpoints())
