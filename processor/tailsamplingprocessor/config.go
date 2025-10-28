@@ -309,4 +309,6 @@ type Config struct {
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
 	// wait when the processor is shutdown.
 	DropPendingTracesOnShutdown bool `mapstructure:"drop_pending_traces_on_shutdown"`
+	// EarlyDecisions enables making early decisions to sample traces rather than waiting for the DecisionWait duration.
+	EarlyDecisions bool `mapstructure:"early_decisions"`
 }

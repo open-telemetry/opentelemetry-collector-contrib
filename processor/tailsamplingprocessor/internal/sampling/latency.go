@@ -20,7 +20,10 @@ type latency struct {
 	upperThresholdMs int64
 }
 
-var _ samplingpolicy.Evaluator = (*latency)(nil)
+var (
+	_ samplingpolicy.Evaluator      = (*latency)(nil)
+	_ samplingpolicy.EarlyEvaluator = (*latency)(nil)
+)
 
 // NewLatency creates a policy evaluator sampling traces with a duration greater than a configured threshold
 func NewLatency(settings component.TelemetrySettings, thresholdMs, upperThresholdMs int64) samplingpolicy.Evaluator {
@@ -37,10 +40,18 @@ func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samp
 
 	batches := traceData.ReceivedBatches
 
+	return hasSpanWithCondition(batches, l.condition()), nil
+}
+
+func (l *latency) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, batch ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	return batchHasSpanWithCondition(batch, l.condition()), nil
+}
+
+func (l *latency) condition() func(span ptrace.Span) bool {
 	var minTime pcommon.Timestamp
 	var maxTime pcommon.Timestamp
 
-	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
+	return func(span ptrace.Span) bool {
 		if minTime == 0 || span.StartTimestamp() < minTime {
 			minTime = span.StartTimestamp()
 		}
@@ -53,5 +64,5 @@ func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samp
 			return duration.Milliseconds() >= l.thresholdMs
 		}
 		return (l.thresholdMs < duration.Milliseconds() && duration.Milliseconds() <= l.upperThresholdMs)
-	}), nil
+	}
 }

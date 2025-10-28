@@ -21,7 +21,10 @@ type booleanAttributeFilter struct {
 	invertMatch bool
 }
 
-var _ samplingpolicy.Evaluator = (*booleanAttributeFilter)(nil)
+var (
+	_ samplingpolicy.Evaluator      = (*booleanAttributeFilter)(nil)
+	_ samplingpolicy.EarlyEvaluator = (*booleanAttributeFilter)(nil)
+)
 
 // NewBooleanAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute that match the supplied boolean value.
@@ -57,8 +60,33 @@ func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 			},
 		), nil
 	}
+
 	return hasResourceOrSpanWithCondition(
 		batches,
+		func(resource pcommon.Resource) bool {
+			if v, ok := resource.Attributes().Get(baf.key); ok {
+				value := v.Bool()
+				return value == baf.value
+			}
+			return false
+		},
+		func(span ptrace.Span) bool {
+			if v, ok := span.Attributes().Get(baf.key); ok {
+				value := v.Bool()
+				return value == baf.value
+			}
+			return false
+		}), nil
+}
+
+func (baf *booleanAttributeFilter) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, batch ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	// Do not support the deprecated invert match code for early evaluations.
+	if baf.invertMatch {
+		return samplingpolicy.Unspecified, nil
+	}
+
+	return batchHasResourceOrSpanWithCondition(
+		batch,
 		func(resource pcommon.Resource) bool {
 			if v, ok := resource.Attributes().Get(baf.key); ok {
 				value := v.Bool()

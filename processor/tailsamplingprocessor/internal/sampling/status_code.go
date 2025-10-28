@@ -22,7 +22,10 @@ type statusCodeFilter struct {
 	statusCodes []ptrace.StatusCode
 }
 
-var _ samplingpolicy.Evaluator = (*statusCodeFilter)(nil)
+var (
+	_ samplingpolicy.Evaluator      = (*statusCodeFilter)(nil)
+	_ samplingpolicy.EarlyEvaluator = (*statusCodeFilter)(nil)
+)
 
 // NewStatusCodeFilter creates a policy evaluator that samples all traces with
 // a given status code.
@@ -61,4 +64,15 @@ func (r *statusCodeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace 
 	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
 		return slices.Contains(r.statusCodes, span.Status().Code())
 	}), nil
+}
+
+func (r *statusCodeFilter) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, newData ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	found := hasInstrumentationLibrarySpanWithCondition(newData.ScopeSpans(), func(span ptrace.Span) bool {
+		return slices.Contains(r.statusCodes, span.Status().Code())
+	}, false)
+
+	if found {
+		return samplingpolicy.Sampled, nil
+	}
+	return samplingpolicy.Unspecified, nil
 }

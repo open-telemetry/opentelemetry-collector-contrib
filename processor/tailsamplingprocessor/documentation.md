@@ -21,6 +21,7 @@ Count of spans that were sampled or not per sampling policy [Development]
 | policy | Name of the policy | Any Str |
 | sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| early | Whether the decision was made early or after the decision wait | Any Bool |
 
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
@@ -37,6 +38,7 @@ Count of traces that were sampled or not per sampling policy [Development]
 | policy | Name of the policy | Any Str |
 | sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| early | Whether the decision was made early or after the decision wait | Any Bool |
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 

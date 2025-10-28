@@ -33,7 +33,10 @@ type regexStrSetting struct {
 	filterList   []*regexp.Regexp
 }
 
-var _ samplingpolicy.Evaluator = (*stringAttributeFilter)(nil)
+var (
+	_ samplingpolicy.Evaluator      = (*stringAttributeFilter)(nil)
+	_ samplingpolicy.EarlyEvaluator = (*stringAttributeFilter)(nil)
+)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
@@ -129,6 +132,36 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 
 	return hasResourceOrSpanWithCondition(
 		batches,
+		func(resource pcommon.Resource) bool {
+			if v, ok := resource.Attributes().Get(saf.key); ok {
+				if ok := saf.matcher(v.Str()); ok {
+					return true
+				}
+			}
+			return false
+		},
+		func(span ptrace.Span) bool {
+			if v, ok := span.Attributes().Get(saf.key); ok {
+				truncatableStr := v.Str()
+				if truncatableStr != "" {
+					if ok := saf.matcher(v.Str()); ok {
+						return true
+					}
+				}
+			}
+			return false
+		},
+	), nil
+}
+
+func (saf *stringAttributeFilter) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, batch ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	// Do not support the deprecated invert match code for early evaluations.
+	if saf.invertMatch {
+		return samplingpolicy.Unspecified, nil
+	}
+
+	return batchHasResourceOrSpanWithCondition(
+		batch,
 		func(resource pcommon.Resource) bool {
 			if v, ok := resource.Attributes().Get(saf.key); ok {
 				if ok := saf.matcher(v.Str()); ok {

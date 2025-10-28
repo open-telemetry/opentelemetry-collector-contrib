@@ -59,3 +59,16 @@ func (tsf *traceStateFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trac
 		return false
 	}), nil
 }
+
+func (tsf *traceStateFilter) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, spans ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	return batchHasSpanWithCondition(spans, func(span ptrace.Span) bool {
+		traceState, err := tracesdk.ParseTraceState(span.TraceState().AsRaw())
+		if err != nil {
+			return false
+		}
+		if ok := tsf.matcher(traceState.Get(tsf.key)); ok {
+			return true
+		}
+		return false
+	}), nil
+}

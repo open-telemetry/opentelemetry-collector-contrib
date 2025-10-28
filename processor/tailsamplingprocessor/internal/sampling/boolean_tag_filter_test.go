@@ -55,6 +55,46 @@ func TestBooleanTagFilter(t *testing.T) {
 	}
 }
 
+func TestBooleanTagFilter_EarlyEvaluate(t *testing.T) {
+	empty := map[string]any{}
+	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true, false).(samplingpolicy.EarlyEvaluator)
+
+	resAttr := map[string]any{}
+	resAttr["example"] = 8
+
+	cases := []struct {
+		Desc     string
+		Trace    *samplingpolicy.TraceData
+		Decision samplingpolicy.Decision
+	}{
+		{
+			Desc:     "non-matching span attribute",
+			Trace:    newTraceBoolAttrs(empty, "non_matching", true),
+			Decision: samplingpolicy.Unspecified,
+		},
+		{
+			Desc:     "span attribute with unwanted boolean value",
+			Trace:    newTraceBoolAttrs(empty, "example", false),
+			Decision: samplingpolicy.Unspecified,
+		},
+		{
+			Desc:     "span attribute with wanted boolean value",
+			Trace:    newTraceBoolAttrs(empty, "example", true),
+			Decision: samplingpolicy.Sampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			u, _ := uuid.NewRandom()
+			rs := c.Trace.ReceivedBatches.ResourceSpans().At(0)
+			decision, err := filter.EarlyEvaluate(t.Context(), pcommon.TraceID(u), rs, c.Trace)
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
 func TestBooleanTagFilterInverted(t *testing.T) {
 	empty := map[string]any{}
 	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true, true)

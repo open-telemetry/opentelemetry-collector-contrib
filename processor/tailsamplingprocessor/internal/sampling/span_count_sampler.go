@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -19,7 +20,10 @@ type spanCount struct {
 	maxSpans int64
 }
 
-var _ samplingpolicy.Evaluator = (*spanCount)(nil)
+var (
+	_ samplingpolicy.Evaluator      = (*spanCount)(nil)
+	_ samplingpolicy.EarlyEvaluator = (*spanCount)(nil)
+)
 
 // NewSpanCount creates a policy evaluator sampling traces with more than one span per trace
 func NewSpanCount(settings component.TelemetrySettings, minSpans, maxSpans int32) samplingpolicy.Evaluator {
@@ -43,4 +47,16 @@ func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *sa
 	default:
 		return samplingpolicy.NotSampled, nil
 	}
+}
+
+func (c *spanCount) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, _ ptrace.ResourceSpans, traceData *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	spanCount := traceData.SpanCount
+	if c.maxSpans == 0 && spanCount >= c.minSpans {
+		return samplingpolicy.Sampled, nil
+	}
+	if c.maxSpans > 0 && spanCount > c.maxSpans {
+		return samplingpolicy.NotSampled, nil
+	}
+	// The cases where we are less than min spans or between min and max spans are not known yet.
+	return samplingpolicy.Unspecified, nil
 }

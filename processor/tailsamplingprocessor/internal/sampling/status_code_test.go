@@ -22,7 +22,7 @@ func TestNewStatusCodeFilter_errorHandling(t *testing.T) {
 	assert.EqualError(t, err, "unknown status code \"ERR\", supported: OK, ERROR, UNSET")
 }
 
-func TestStatusCodeSampling(t *testing.T) {
+func TestStatusCodeFilter_Evaluate(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
@@ -78,6 +78,63 @@ func TestStatusCodeSampling(t *testing.T) {
 			assert.NoError(t, err)
 
 			decision, err := statusCodeFilter.Evaluate(t.Context(), traceID, trace)
+			assert.NoError(t, err)
+			assert.Equal(t, c.Decision, decision)
+		})
+	}
+}
+
+func TestStatusCodeFilter_EarlyEvaluate(t *testing.T) {
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	cases := []struct {
+		Desc                  string
+		StatusCodesToFilterOn []string
+		StatusCodesPresent    []ptrace.StatusCode
+		Decision              samplingpolicy.Decision
+	}{
+		{
+			Desc:                  "filter on ERROR - none match",
+			StatusCodesToFilterOn: []string{"ERROR"},
+			StatusCodesPresent:    []ptrace.StatusCode{ptrace.StatusCodeOk, ptrace.StatusCodeUnset, ptrace.StatusCodeOk},
+			Decision:              samplingpolicy.Unspecified,
+		},
+		{
+			Desc:                  "filter on OK and ERROR - none match",
+			StatusCodesToFilterOn: []string{"OK", "ERROR"},
+			StatusCodesPresent:    []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeUnset},
+			Decision:              samplingpolicy.Unspecified,
+		},
+		{
+			Desc:                  "filter on UNSET - matches",
+			StatusCodesToFilterOn: []string{"UNSET"},
+			StatusCodesPresent:    []ptrace.StatusCode{ptrace.StatusCodeUnset},
+			Decision:              samplingpolicy.Sampled,
+		},
+		{
+			Desc:                  "filter on OK and UNSET - matches",
+			StatusCodesToFilterOn: []string{"OK", "UNSET"},
+			StatusCodesPresent:    []ptrace.StatusCode{ptrace.StatusCodeError, ptrace.StatusCodeOk},
+			Decision:              samplingpolicy.Sampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			rs := ptrace.NewResourceSpans()
+			ils := rs.ScopeSpans().AppendEmpty()
+
+			for _, statusCode := range c.StatusCodesPresent {
+				span := ils.Spans().AppendEmpty()
+				span.Status().SetCode(statusCode)
+				span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+				span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+			}
+
+			statusCodeFilter, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), c.StatusCodesToFilterOn)
+			assert.NoError(t, err)
+
+			decision, err := statusCodeFilter.(samplingpolicy.EarlyEvaluator).EarlyEvaluate(t.Context(), traceID, rs, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, c.Decision, decision)
 		})
