@@ -276,6 +276,7 @@ body:
       - receiver/hostmetrics/internal/scraper/pagingscraper
       - receiver/hostmetrics/internal/scraper/processesscraper
       - receiver/hostmetrics/internal/scraper/processscraper
+      - receiver/hostmetrics/internal/scraper/psiscraper
       - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces

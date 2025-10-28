@@ -57,6 +57,7 @@ The available scrapers are:
 | [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
 | [processes]  | Linux, Mac, FreeBSD, OpenBSD | Process count metrics                                  |
 | [process]    | Linux, Windows, Mac, FreeBSD | Per process CPU, Memory, and Disk I/O metrics          |
+| [psi]        | Linux                        | Pressure Stall Information (PSI) metrics               |
 | [system]     | Linux, Windows, Mac          | Miscellaneous system metrics                           |
 
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
@@ -69,6 +70,7 @@ The available scrapers are:
 [paging]: ./internal/scraper/pagingscraper/documentation.md
 [processes]: ./internal/scraper/processesscraper/documentation.md
 [process]: ./internal/scraper/processscraper/documentation.md
+[psi]: ./internal/scraper/psiscraper/documentation.md
 [system]: ./internal/scraper/systemscraper/documentation.md
 
 ### Notes
