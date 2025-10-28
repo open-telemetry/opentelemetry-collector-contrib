@@ -1029,6 +1029,15 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Sort(Split(attributes["flags"], attributes["split_delimiter"]), "desc"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				s.AppendEmpty().SetStr("C")
+				s.AppendEmpty().SetStr("B")
+				s.AppendEmpty().SetStr("A")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Sort([true, false, false]))`,
 			want: func(tCtx ottllog.TransformContext) {
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
@@ -1899,6 +1908,7 @@ func constructLogTransformContext() ottllog.TransformContext {
 	logRecord.SetSpanID(spanID)
 	logRecord.Attributes().PutStr("encoding", "base64")
 	logRecord.Attributes().PutStr("http.method", "get")
+	logRecord.Attributes().PutStr("split_delimiter", "|")
 	logRecord.Attributes().PutStr("dynamicprefix", "operation")
 	logRecord.Attributes().PutStr("dynamicsuffix", "tionA")
 	logRecord.Attributes().PutStr("http.path", "/health")
