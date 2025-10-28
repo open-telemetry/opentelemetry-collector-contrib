@@ -21,3 +21,7 @@ service:
       receivers: [azureeventhub, azureeventhub/all]
       processors: [nop]
       exporters: [nop]
+    metrics:
+      receivers: [azureeventhub, azureeventhub/all]
+      processors: [nop]
+      exporters: [nop]

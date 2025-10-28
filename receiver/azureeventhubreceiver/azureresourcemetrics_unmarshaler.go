@@ -23,36 +23,268 @@ import (
 const azureResourceID = "azure.resource.id"
 
 type azureResourceMetricsUnmarshaler struct {
-	buildInfo  component.BuildInfo
-	logger     *zap.Logger
-	TimeFormat []string
+	buildInfo   component.BuildInfo
+	logger      *zap.Logger
+	TimeFormat  []string
+	Aggregation string
+}
+
+type azureResourceMetricsConfiger interface {
+	GetLogger() *zap.Logger
+	GetBuildVersion() string
+	GetTimeFormat() []string
+	GetAggregation() string
 }
 
 // azureMetricRecords represents an array of Azure metric records
 // as exported via an Azure Event Hub
 type azureMetricRecords struct {
-	Records []azureMetricRecord `json:"records"`
+	Records []azureGenericMetricRecord `json:"records"`
 }
 
-// azureMetricRecord represents a single Azure Metric following
+type azureMetricAppender interface {
+	AppendMetrics(azureResourceMetricsConfiger, *pmetric.Metrics) error
+}
+
+type azureGenericMetricRecord struct {
+	Record azureMetricAppender
+}
+
+func (r *azureGenericMetricRecord) UnmarshalJSON(data []byte) error {
+	var recordWithType struct {
+		Type string `json:"Type"`
+	}
+	typeDecoder := jsoniter.NewDecoder(bytes.NewReader(data))
+	err := typeDecoder.Decode(&recordWithType)
+	if err != nil {
+		return err
+	}
+
+	switch recordWithType.Type {
+	case "AppMetrics":
+		r.Record = &azureAppMetricRecord{}
+	default:
+		r.Record = &azureResourceMetricRecord{}
+	}
+
+	recordDecoder := jsoniter.NewDecoder(bytes.NewReader(data))
+	err = recordDecoder.Decode(r.Record)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// azureMetricRecord represents a single Azure Platform Metric record following
 // the common schema does not exist (yet):
-type azureMetricRecord struct {
-	Time       string  `json:"time"`
-	ResourceID string  `json:"resourceId"`
-	MetricName string  `json:"metricName"`
-	TimeGrain  string  `json:"timeGrain"`
-	Total      float64 `json:"total"`
-	Count      float64 `json:"count"`
-	Minimum    float64 `json:"minimum"`
-	Maximum    float64 `json:"maximum"`
-	Average    float64 `json:"average"`
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/platform/stream-monitoring-data-event-hubs#data-formats
+type azureResourceMetricRecord struct {
+	Time       string `json:"time"`
+	ResourceID string `json:"resourceId"`
+	MetricName string `json:"metricName"`
+	TimeGrain  string `json:"timeGrain"`
+
+	Total   float64 `json:"total"`
+	Count   float64 `json:"count"`
+	Minimum float64 `json:"minimum"`
+	Maximum float64 `json:"maximum"`
+	Average float64 `json:"average"`
 }
 
-func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, timeFormat []string) eventMetricsUnmarshaler {
-	return azureResourceMetricsUnmarshaler{
-		buildInfo:  buildInfo,
-		logger:     logger,
-		TimeFormat: timeFormat,
+func (r *azureResourceMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, md *pmetric.Metrics) error {
+	resourceMetrics := md.ResourceMetrics().AppendEmpty()
+
+	resource := resourceMetrics.Resource()
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), metadata.ScopeName)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageGo.Value.AsString())
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), c.GetBuildVersion())
+	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+
+	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+
+	metrics := scopeMetrics.Metrics()
+
+	if r.ResourceID != "" {
+		resourceMetrics.Resource().Attributes().PutStr(azureResourceID, r.ResourceID)
+	} else {
+		c.GetLogger().Warn("No ResourceID Set on Metrics!")
+	}
+
+	nanos, err := asTimestamp(r.Time, c.GetTimeFormat())
+	if err != nil {
+		c.GetLogger().Warn("Invalid Timestamp", zap.String("time", r.Time))
+		return err
+	}
+
+	var startTimestamp pcommon.Timestamp
+	if r.TimeGrain != "PT1M" {
+		c.GetLogger().Warn("Unhandled Time Grain", zap.String("timegrain", r.TimeGrain))
+		return err
+	}
+
+	startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
+
+	if c.GetAggregation() == "average" {
+		metrics.EnsureCapacity(1)
+		metricAverage := metrics.AppendEmpty()
+		metricAverage.SetName(strings.ToLower(strings.ReplaceAll(r.MetricName, " ", "_")))
+		dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpAverage.SetStartTimestamp(startTimestamp)
+		dpAverage.SetTimestamp(nanos)
+		dpAverage.SetDoubleValue(r.Total / r.Count)
+
+		return nil
+	}
+
+	metrics.EnsureCapacity(5)
+
+	metricTotal := metrics.AppendEmpty()
+	metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Total")))
+	dpTotal := metricTotal.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpTotal.SetStartTimestamp(startTimestamp)
+	dpTotal.SetTimestamp(nanos)
+	dpTotal.SetDoubleValue(r.Total)
+
+	metricCount := metrics.AppendEmpty()
+	metricCount.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Count")))
+	dpCount := metricCount.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpCount.SetStartTimestamp(startTimestamp)
+	dpCount.SetTimestamp(nanos)
+	dpCount.SetDoubleValue(r.Count)
+
+	metricMin := metrics.AppendEmpty()
+	metricMin.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Minimum")))
+	dpMin := metricMin.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpMin.SetStartTimestamp(startTimestamp)
+	dpMin.SetTimestamp(nanos)
+	dpMin.SetDoubleValue(r.Minimum)
+
+	metricMax := metrics.AppendEmpty()
+	metricMax.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Maximum")))
+	dpMax := metricMax.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpMax.SetStartTimestamp(startTimestamp)
+	dpMax.SetTimestamp(nanos)
+	dpMax.SetDoubleValue(r.Maximum)
+
+	metricAverage := metrics.AppendEmpty()
+	metricAverage.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Average")))
+	dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpAverage.SetStartTimestamp(startTimestamp)
+	dpAverage.SetTimestamp(nanos)
+	dpAverage.SetDoubleValue(r.Average)
+
+	return nil
+}
+
+// azureMetricRecord represents a single Azure Application Metric record
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appmetrics
+type azureAppMetricRecord struct {
+	Time string `json:"time"`
+
+	ResourceID      string `json:"resourceId"`
+	AppRoleInstance string `json:"AppRoleInstance"`
+	AppRoleName     string `json:"AppRoleName"`
+	AppVersion      string `json:"AppVersion"`
+	SDKVersion      string `json:"SDKVersion"`
+
+	ClientCountryOrRegion string `json:"ClientCountryOrRegion"`
+	ClientOS              string `json:"ClientOS"`
+
+	Properties map[string]string `json:"Properties"`
+
+	MetricName string  `json:"Name"`
+	Total      float64 `json:"Sum"`
+	Minimum    float64 `json:"Min"`
+	Maximum    float64 `json:"Max"`
+	Count      float64 `json:"ItemCount"`
+}
+
+func (r *azureAppMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, md *pmetric.Metrics) error {
+	resourceMetrics := md.ResourceMetrics().AppendEmpty()
+
+	resource := resourceMetrics.Resource()
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), r.SDKVersion)
+	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+	resource.Attributes().PutStr(string(conventions.CloudRegionKey), r.ClientCountryOrRegion)
+	resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), r.AppRoleInstance)
+	resource.Attributes().PutStr(string(conventions.ServiceNameKey), r.AppRoleName)
+	resource.Attributes().PutStr(string(conventions.ServiceVersionKey), r.AppVersion)
+	resource.Attributes().PutStr(string(conventions.OSNameKey), r.ClientOS)
+
+	if r.ResourceID != "" {
+		resourceMetrics.Resource().Attributes().PutStr(azureResourceID, r.ResourceID)
+	} else {
+		c.GetLogger().Warn("No ResourceID Set on Metrics!")
+	}
+
+	for k, v := range r.Properties {
+		resource.Attributes().PutStr(k, v)
+	}
+
+	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+
+	metrics := scopeMetrics.Metrics()
+
+	nanos, err := asTimestamp(r.Time, c.GetTimeFormat())
+	if err != nil {
+		c.GetLogger().Warn("Invalid Timestamp", zap.String("time", r.Time))
+		return err
+	}
+
+	startTimestamp := pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
+
+	if c.GetAggregation() == "average" {
+		metrics.EnsureCapacity(1)
+		metricAverage := metrics.AppendEmpty()
+		metricAverage.SetName(strings.ToLower(strings.ReplaceAll(r.MetricName, " ", "_")))
+		dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpAverage.SetStartTimestamp(startTimestamp)
+		dpAverage.SetTimestamp(nanos)
+		dpAverage.SetDoubleValue(r.Total / r.Count)
+
+		return nil
+	}
+
+	metrics.EnsureCapacity(4)
+
+	metricTotal := metrics.AppendEmpty()
+	metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Total")))
+	dpTotal := metricTotal.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpTotal.SetStartTimestamp(startTimestamp)
+	dpTotal.SetTimestamp(nanos)
+	dpTotal.SetDoubleValue(r.Total)
+
+	metricCount := metrics.AppendEmpty()
+	metricCount.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Count")))
+	dpCount := metricCount.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpCount.SetStartTimestamp(startTimestamp)
+	dpCount.SetTimestamp(nanos)
+	dpCount.SetDoubleValue(r.Count)
+
+	metricMin := metrics.AppendEmpty()
+	metricMin.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Minimum")))
+	dpMin := metricMin.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpMin.SetStartTimestamp(startTimestamp)
+	dpMin.SetTimestamp(nanos)
+	dpMin.SetDoubleValue(r.Minimum)
+
+	metricMax := metrics.AppendEmpty()
+	metricMax.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Maximum")))
+	dpMax := metricMax.SetEmptyGauge().DataPoints().AppendEmpty()
+	dpMax.SetStartTimestamp(startTimestamp)
+	dpMax.SetTimestamp(nanos)
+	dpMax.SetDoubleValue(r.Maximum)
+
+	return nil
+}
+
+func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, cfg *Config) eventMetricsUnmarshaler {
+	return &azureResourceMetricsUnmarshaler{
+		buildInfo:   buildInfo,
+		logger:      logger,
+		TimeFormat:  cfg.TimeFormats.Metrics,
+		Aggregation: cfg.MetricAggregation,
 	}
 }
 
@@ -61,7 +293,7 @@ func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *z
 // an OpenTelemetry pmetric.Metrics object. The data in the Azure
 // metric record appears as fields and attributes in the
 // OpenTelemetry representation;
-func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azureEvent) (pmetric.Metrics, error) {
+func (r *azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azureEvent) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 
 	var azureMetrics azureMetricRecords
@@ -71,80 +303,30 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azureEvent) (pm
 		return md, err
 	}
 
-	resourceMetrics := md.ResourceMetrics().AppendEmpty()
-	resource := resourceMetrics.Resource()
-	resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), metadata.ScopeName)
-	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageGo.Value.AsString())
-	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), r.buildInfo.Version)
-	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
-
-	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
-
-	metrics := scopeMetrics.Metrics()
-	metrics.EnsureCapacity(len(azureMetrics.Records) * 5)
-
-	resourceID := ""
-	for _, azureMetric := range azureMetrics.Records {
-		if resourceID == "" && azureMetric.ResourceID != "" {
-			resourceID = azureMetric.ResourceID
-		}
-
-		nanos, err := asTimestamp(azureMetric.Time, r.TimeFormat)
+	for _, mr := range azureMetrics.Records {
+		err := mr.Record.AppendMetrics(r, &md)
 		if err != nil {
-			r.logger.Warn("Invalid Timestamp", zap.String("time", azureMetric.Time))
-			continue
+			r.logger.Warn("Failed to append metric", zap.Error(err))
 		}
-
-		var startTimestamp pcommon.Timestamp
-		if azureMetric.TimeGrain != "PT1M" {
-			r.logger.Warn("Unhandled Time Grain", zap.String("timegrain", azureMetric.TimeGrain))
-			continue
-		}
-		startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
-
-		metricTotal := metrics.AppendEmpty()
-		metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Total")))
-		dpTotal := metricTotal.SetEmptyGauge().DataPoints().AppendEmpty()
-		dpTotal.SetStartTimestamp(startTimestamp)
-		dpTotal.SetTimestamp(nanos)
-		dpTotal.SetDoubleValue(azureMetric.Total)
-
-		metricCount := metrics.AppendEmpty()
-		metricCount.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Count")))
-		dpCount := metricCount.SetEmptyGauge().DataPoints().AppendEmpty()
-		dpCount.SetStartTimestamp(startTimestamp)
-		dpCount.SetTimestamp(nanos)
-		dpCount.SetDoubleValue(azureMetric.Count)
-
-		metricMin := metrics.AppendEmpty()
-		metricMin.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Minimum")))
-		dpMin := metricMin.SetEmptyGauge().DataPoints().AppendEmpty()
-		dpMin.SetStartTimestamp(startTimestamp)
-		dpMin.SetTimestamp(nanos)
-		dpMin.SetDoubleValue(azureMetric.Minimum)
-
-		metricMax := metrics.AppendEmpty()
-		metricMax.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Maximum")))
-		dpMax := metricMax.SetEmptyGauge().DataPoints().AppendEmpty()
-		dpMax.SetStartTimestamp(startTimestamp)
-		dpMax.SetTimestamp(nanos)
-		dpMax.SetDoubleValue(azureMetric.Maximum)
-
-		metricAverage := metrics.AppendEmpty()
-		metricAverage.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Average")))
-		dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
-		dpAverage.SetStartTimestamp(startTimestamp)
-		dpAverage.SetTimestamp(nanos)
-		dpAverage.SetDoubleValue(azureMetric.Average)
-	}
-
-	if resourceID != "" {
-		resourceMetrics.Resource().Attributes().PutStr(azureResourceID, resourceID)
-	} else {
-		r.logger.Warn("No ResourceID Set on Metrics!")
 	}
 
 	return md, nil
+}
+
+func (r *azureResourceMetricsUnmarshaler) GetLogger() *zap.Logger {
+	return r.logger
+}
+
+func (r *azureResourceMetricsUnmarshaler) GetBuildVersion() string {
+	return r.buildInfo.Version
+}
+
+func (r *azureResourceMetricsUnmarshaler) GetTimeFormat() []string {
+	return r.TimeFormat
+}
+
+func (r *azureResourceMetricsUnmarshaler) GetAggregation() string {
+	return r.Aggregation
 }
 
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
