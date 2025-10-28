@@ -1,0 +1,98 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: test-project-id
+        - key: cloud.resource_id
+          value:
+            stringValue: networkmanagement.googleapis.com%2Fvpc_flows
+        - key: gcp.resource_type
+          value:
+            stringValue: vpc_flow_logs_config
+        - key: gcp.label.name
+          value:
+            stringValue: "test-flow-logs-config"
+        - key: gcp.label.location
+          value:
+            stringValue: global
+        - key: gcp.label.resource_container
+          value:
+            stringValue: projects/123456789012
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 16gybk0f1tkpe0
+              - key: gcp.label.target_resource_name
+                value:
+                  stringValue: projects/123456789012/global/networks/default
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.1
+              - key: destination.address
+                value:
+                  stringValue: 203.0.113.1
+              - key: source.port
+                value:
+                  intValue: "443"
+              - key: destination.port
+                value:
+                  intValue: "40708"
+              - key: gcp.vpc.flow.reporter
+                value:
+                  stringValue: SRC
+              - key: gcp.vpc.flow.bytes_sent
+                value:
+                  intValue: "0"
+              - key: gcp.vpc.flow.packets_sent
+                value:
+                  intValue: "640"
+              - key: gcp.vpc.flow.start_time
+                value:
+                  stringValue: "2025-09-27T21:12:02.937646004Z"
+              - key: gcp.vpc.flow.end_time
+                value:
+                  stringValue: "2025-09-27T21:12:02.937646004Z"
+              - key: gcp.vpc.flow.source.instance.project.id
+                value:
+                  stringValue: test-project-id
+              - key: gcp.vpc.flow.source.instance.vm.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.source.instance.vm.name
+                value:
+                  stringValue: test-vm-1
+              - key: gcp.vpc.flow.source.instance.vm.zone
+                value:
+                  stringValue: us-central1-a
+              - key: gcp.vpc.flow.source.instance.managed_instance_group.name
+                value:
+                  stringValue: test-mig-1
+              - key: gcp.vpc.flow.source.instance.managed_instance_group.zone
+                value:
+                  stringValue: us-central1-a
+              - key: gcp.vpc.flow.source.project.id
+                value:
+                  stringValue: test-project-id
+              - key: gcp.vpc.flow.source.subnet.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.source.subnet.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.source.vpc.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.network_service.dscp
+                value:
+                  intValue: "32"
+            body: {}
+            observedTimeUnixNano: "1759007531539677207"
+            timeUnixNano: "1759007531539677207"
+        scope: {}
+

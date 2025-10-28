@@ -13,6 +13,8 @@ import (
 // ResourceField is the path to an entry resource
 type ResourceField struct {
 	Keys []string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewResourceField will creat a new resource field from a key
@@ -33,7 +35,9 @@ func (f ResourceField) Parent() ResourceField {
 	}
 
 	keys := f.Keys[:len(f.Keys)-1]
-	return ResourceField{keys}
+	return ResourceField{
+		Keys: keys,
+	}
 }
 
 // Child returns a child of the current field using the given key.
@@ -41,7 +45,9 @@ func (f ResourceField) Child(key string) ResourceField {
 	child := make([]string, len(f.Keys), len(f.Keys)+1)
 	copy(child, f.Keys)
 	child = append(child, key)
-	return ResourceField{child}
+	return ResourceField{
+		Keys: child,
+	}
 }
 
 // IsRoot returns a boolean indicating if this is a root level field.
@@ -178,7 +184,7 @@ func (f *ResourceField) UnmarshalJSON(raw []byte) error {
 		return fmt.Errorf("must start with 'resource': %s", value)
 	}
 
-	*f = ResourceField{keys[1:]}
+	*f = ResourceField{Keys: keys[1:]}
 	return nil
 }
 
@@ -198,7 +204,7 @@ func (f *ResourceField) UnmarshalYAML(unmarshal func(any) error) error {
 		return fmt.Errorf("must start with 'resource': %s", value)
 	}
 
-	*f = ResourceField{keys[1:]}
+	*f = ResourceField{Keys: keys[1:]}
 	return nil
 }
 
@@ -213,6 +219,6 @@ func (f *ResourceField) UnmarshalText(text []byte) error {
 		return fmt.Errorf("must start with 'resource': %s", text)
 	}
 
-	*f = ResourceField{keys[1:]}
+	*f = ResourceField{Keys: keys[1:]}
 	return nil
 }

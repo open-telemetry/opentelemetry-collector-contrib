@@ -33,17 +33,17 @@ var (
 func Test_e2e_editors(t *testing.T) {
 	tests := []struct {
 		statement string
-		want      func(tCtx ottlprofile.TransformContext)
+		want      func(t *testing.T, tCtx ottlprofile.TransformContext)
 	}{
 		{
 			statement: `delete_key(attributes, "http.method")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				removeAttribute(t, tCtx, "http.method")
 			},
 		},
 		{
 			statement: `delete_matching_keys(attributes, "^http")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				removeAttribute(t, tCtx, "http.method")
 				removeAttribute(t, tCtx, "http.path")
 				removeAttribute(t, tCtx, "http.url")
@@ -51,7 +51,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `keep_matching_keys(attributes, "^http")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				removeAttribute(t, tCtx, "flags")
 				removeAttribute(t, tCtx, "total.string")
 				removeAttribute(t, tCtx, "foo")
@@ -62,7 +62,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `flatten(attributes)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				removeAttribute(t, tCtx, "foo")
 				removeAttribute(t, tCtx, "conflict.conflict1")
 				removeAttribute(t, tCtx, "conflict")
@@ -82,7 +82,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `flatten(attributes, "test")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().AttributeIndices().FromRaw([]int32{})
 				putProfileAttribute(t, tCtx, "test.http.method", "get")
 				putProfileAttribute(t, tCtx, "test.http.path", "/health")
@@ -102,7 +102,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `flatten(attributes, "test", resolveConflicts=true)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().AttributeIndices().FromRaw([]int32{})
 				putProfileAttribute(t, tCtx, "test.http.method", "get")
 				putProfileAttribute(t, tCtx, "test.http.path", "/health")
@@ -123,7 +123,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `flatten(attributes, depth=1)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().AttributeIndices().FromRaw([]int32{})
 				putProfileAttribute(t, tCtx, "http.method", "get")
 				putProfileAttribute(t, tCtx, "http.path", "/health")
@@ -148,7 +148,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `keep_keys(attributes, ["flags", "total.string"])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				removeAttribute(t, tCtx, "http.method")
 				removeAttribute(t, tCtx, "http.path")
 				removeAttribute(t, tCtx, "http.url")
@@ -160,11 +160,11 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `limit(attributes, 100, [])`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 		},
 		{
 			statement: `limit(attributes, 1, ["total.string"])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				removeAttribute(t, tCtx, "http.method")
 				removeAttribute(t, tCtx, "http.path")
 				removeAttribute(t, tCtx, "http.url")
@@ -177,7 +177,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `merge_maps(attributes, attributes["foo"], "insert")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "bar", "pass")
 				putProfileAttribute(t, tCtx, "slice", []any{"val"})
 				putProfileAttribute(t, tCtx, "nested", map[string]any{"test": "pass"})
@@ -185,13 +185,13 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `merge_maps(attributes, attributes["foo"], "update")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "flags", "pass")
 			},
 		},
 		{
 			statement: `merge_maps(attributes, attributes["foo"], "upsert")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "bar", "pass")
 				putProfileAttribute(t, tCtx, "flags", "pass")
 				putProfileAttribute(t, tCtx, "slice", []any{"val"})
@@ -200,7 +200,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `merge_maps(attributes, {"map_literal": {"list": [{"foo":"bar"}, "test"]}}, "upsert")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "map_literal", map[string]any{
 					"list": []any{
 						map[string]any{"foo": "bar"},
@@ -211,14 +211,14 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `replace_all_matches(attributes, "*/*", "test")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "http.path", "test")
 				putProfileAttribute(t, tCtx, "http.url", "test")
 			},
 		},
 		{
 			statement: `replace_all_patterns(attributes, "key", "^http", "test")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				removeAttribute(t, tCtx, "http.method")
 				removeAttribute(t, tCtx, "http.path")
 				removeAttribute(t, tCtx, "http.url")
@@ -229,59 +229,59 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `replace_all_patterns(attributes, "value", "/", "@")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "http.path", "@health")
 				putProfileAttribute(t, tCtx, "http.url", "http:@@localhost@health")
 			},
 		},
 		{
 			statement: `replace_match(attributes["http.path"], "*/*", "test")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "http.path", "test")
 			},
 		},
 		{
 			statement: `replace_pattern(attributes["http.path"], "/", "@")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "http.path", "@health")
 			},
 		},
 		{
 			statement: `replace_pattern(attributes["http.path"], "/", "@", SHA256)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "http.path", "c3641f8544d7c02f3580b07c0f9887f0c6a27ff5ab1d4a3e29caf197cfc299aehealth")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], nil)`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 		},
 		{
 			statement: `set(attributes["test"], attributes["unknown"])`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 		},
 		{
 			statement: `set(attributes["foo"]["test"], "pass")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
 				v := pcommon.NewValueEmpty()
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				v.Map().PutStr("test", "pass")
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 		{
 			statement: `truncate_all(attributes, 100)`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 		},
 		{
 			statement: `truncate_all(attributes, 1)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "http.method", "g")
 				putProfileAttribute(t, tCtx, "http.path", "/")
 				putProfileAttribute(t, tCtx, "http.url", "h")
@@ -291,43 +291,43 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `append(attributes["foo"]["slice"], "sample_value")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
 				v := pcommon.NewValueEmpty()
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				mv, _ := v.Map().Get("slice")
 				s := mv.Slice()
 				s.AppendEmpty().SetStr("sample_value")
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 		{
 			statement: `append(attributes["foo"]["flags"], "sample_value")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
 				v := pcommon.NewValueEmpty()
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				mv, _ := v.Map().Get("flags")
 				_ = mv.FromRaw([]any{"pass", "sample_value"})
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 		{
 			statement: `append(attributes["foo"]["slice"], values=[5,6])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
 				v := pcommon.NewValueEmpty()
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				mv, _ := v.Map().Get("slice")
 				_ = mv.FromRaw([]any{"val", 5, 6})
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 		{
 			statement: `append(attributes["foo"]["new_slice"], values=[5,6])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
 				v := pcommon.NewValueEmpty()
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				s := v.Map().PutEmptySlice("new_slice")
 				_ = s.FromRaw([]any{5, 6})
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 	}
@@ -343,13 +343,39 @@ func Test_e2e_editors(t *testing.T) {
 				require.NoError(t, validator.validate())
 
 				exValidator, exTCtx := newDictionaryValidator(constructProfileTransformContextEditors())
-				tt.want(exTCtx)
+				tt.want(t, exTCtx)
 				require.NoError(t, exValidator.validate())
 
 				assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 			}
 		})
 	}
+}
+
+func putAttribute(t *testing.T, dic pprofile.ProfilesDictionary, profile pprofile.Profile, key string, value pcommon.Value) {
+	t.Helper()
+
+	kvu := pprofile.NewKeyValueAndUnit()
+	keyIdx, err := pprofile.SetString(dic.StringTable(), key)
+	require.NoError(t, err)
+
+	kvu.SetKeyStrindex(keyIdx)
+	value.CopyTo(kvu.Value())
+	idx, err := pprofile.SetAttribute(dic.AttributeTable(), kvu)
+	require.NoError(t, err)
+
+	for k, i := range profile.AttributeIndices().All() {
+		if i == idx {
+			return
+		}
+
+		attr := dic.AttributeTable().At(int(i))
+		if attr.KeyStrindex() == keyIdx {
+			profile.AttributeIndices().SetAt(k, idx)
+			return
+		}
+	}
+	profile.AttributeIndices().Append(idx)
 }
 
 type table[T any] interface {
@@ -412,220 +438,220 @@ func compareTables[T any](org, cmp table[T]) error {
 func Test_e2e_converters(t *testing.T) {
 	tests := []struct {
 		statement string
-		want      func(tCtx ottlprofile.TransformContext)
+		want      func(t *testing.T, tCtx ottlprofile.TransformContext)
 		wantErr   bool
 		errMsg    string
 	}{
 		{
 			statement: `set(attributes["newOne"], attributes[1])`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 			errMsg:    "unable to resolve a string index in map: invalid key type",
 		},
 		{
 			statement: `set(attributes["array"][0.0], "bar")`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 			errMsg:    "unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64'",
 		},
 		{
 			statement: `set(attributes["array"][ConvertCase(attributes["A|B|C"], "upper")], "bar")`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 			errMsg:    "unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64'",
 		},
 		{
 			statement: `set(attributes[ConvertCase(attributes["A|B|C"], "upper")], "myvalue")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "SOMETHING", "myvalue")
 			},
 		},
 		{
 			statement: `set(attributes[ConvertCase(attributes[attributes["flags"]], "upper")], "myvalue")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "SOMETHING", "myvalue")
 			},
 		},
 		{
 			statement: `set(attributes[attributes["flags"]], "something33")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "A|B|C", "something33")
 			},
 		},
 		{
 			statement: `set(attributes[attributes[attributes["flags"]]], "something2")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "something", "something2")
 			},
 		},
 		{
 			statement: `set(original_payload_format, attributes["things"][Len(attributes["things"]) - 1]["name"])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().SetOriginalPayloadFormat("bar")
 			},
 		},
 		{
 			statement: `set(original_payload_format, attributes["things"][attributes["int_value"] + 1]["name"])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().SetOriginalPayloadFormat("bar")
 			},
 		},
 		{
 			statement: `set(original_payload_format, attributes[attributes["foo"][attributes["slice"]][attributes["int_value"] + 1 - 1]])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().SetOriginalPayloadFormat("val2")
 			},
 		},
 		{
 			statement: `set(original_payload_format, attributes[attributes["foo"][attributes["slice"]][attributes["int_value"]]])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().SetOriginalPayloadFormat("val2")
 			},
 		},
 		{
 			statement: `set(resource.attributes[attributes["flags"]], "something33")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetResource().Attributes().PutStr("A|B|C", "something33")
 			},
 		},
 		{
 			statement: `set(resource.attributes[resource.attributes[attributes["flags"]]], "something33")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetResource().Attributes().PutStr("newValue", "something33")
 			},
 		},
 		{
 			statement: `set(attributes[resource.attributes[attributes["flags"]]], "something33")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "newValue", "something33")
 			},
 		},
 		{
 			statement: `set(attributes["array"][attributes["int_value"]], 3)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "array", []any{3})
 			},
 		},
 		{
 			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Decode("cGFzcw==", "base64"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "A:B")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ConvertCase(attributes["http.method"], "upper"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", http.MethodGet)
 			},
 		},
 		{
 			statement: `set(attributes["test"], ConvertCase("PASS", "lower"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ConvertCase("fooBar", "snake"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "foo_bar")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ConvertCase("foo_bar", "camel"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "FooBar")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ToCamelCase("foo_bar"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "FooBar")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ToSnakeCase("fooBar"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "foo_bar")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ToUpperCase(attributes["http.method"]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", http.MethodGet)
 			},
 		},
 		{
 			statement: `set(attributes["test"], ToLowerCase("PASS"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ConvertAttributesToElementsXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", `<Log><Message>This is a log message!</Message><id>1</id></Log>`)
 			},
 		},
 		{
 			statement: `set(original_payload_format, ConvertTextToElementsXML("<a><b/>foo</a>"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().SetOriginalPayloadFormat("<a><b></b><value>foo</value></a>")
 			},
 		},
 		{
 			statement: `set(original_payload_format, ConvertTextToElementsXML("<a><b/>foo</a><c><b/>bar</c>", "/a", "custom"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().SetOriginalPayloadFormat("<a><b></b><custom>foo</custom></a><c><b></b>bar</c>")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Double(1.0))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1.0)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Double("1"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1.0)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Double(true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1.0)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Double(1))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1.0)
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where Time("10", "%M") - Time("01", "%M") < Duration("10m")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ExtractPatterns("aa123bb", "(?P<numbers>\\d+)"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{"numbers": "123"})
 			},
 		},
 		{
 			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", "%{ELB_URI}", true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"url.scheme":   "http",
 					"url.username": "user",
@@ -638,199 +664,199 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], FNV("pass"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 266877920130663416)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Format("%03d-%s", [7, "test"]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "007-test")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Hour(Time("12", "%H")))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 12)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Hours(Duration("90m")))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1.5)
 			},
 		},
 		{
 			statement: `set(attributes["test"], InsertXML("<a></a>", "/a", "<b></b>"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "<a><b></b></a>")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Int(1.0))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Int("1"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Int(true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Int(1))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1)
 			},
 		},
 		{
 			statement: `set(attributes["test"], GetXML("<a><b>1</b><c><b>2</b></c></a>", "/a//b"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "<b>1</b><b>2</b>")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Hex(1.0))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "3ff0000000000000")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Hex(true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "01")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Hex(12))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "000000000000000c")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Hex("12"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "3132")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where IsBool(false)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where IsDouble(1.0)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where IsMap(attributes["foo"])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where IsList(attributes["foo"]["slice"])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where IsMatch("aa123bb", "\\d{3}")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where IsString("")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Len(attributes["foo"]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 4)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Log(1))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 0.0)
 			},
 		},
 		{
 			statement: `set(attributes["test"], IsValidLuhn("17893729974"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", true)
 			},
 		},
 		{
 			statement: `set(attributes["test"], IsValidLuhn(17893729975))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", false)
 			},
 		},
 		{
 			statement: `set(attributes["test"], MD5("pass"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "1a1dc91c907325c69271ddf0c944bc72")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Microseconds(Duration("1ms")))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1000)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Milliseconds(Duration("1s")))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1000)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Minutes(Duration("1h")))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 60.0)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Murmur3Hash128("Hello World"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "dbc2a0c1ab26631a27b4c09fcf1fe683")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Murmur3Hash("Hello World"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "ce837619")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Nanoseconds(Duration("1ms")))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 1000000)
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where Now() - Now() < Duration("1h")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ParseCSV("val1;val2;val3","header1|header2|header3",";","|","strict"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"header1": "val1",
 					"header2": "val2",
@@ -840,7 +866,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], ParseCSV("val1,val2,val3","header1|header2|header3",headerDelimiter="|",mode="strict"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"header1": "val1",
 					"header2": "val2",
@@ -850,19 +876,19 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], ParseJSON("{\"id\":1}"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{"id": 1.0})
 			},
 		},
 		{
 			statement: `set(attributes["test"], ParseJSON("[\"value1\",\"value2\"]"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{"value1", "value2"})
 			},
 		},
 		{
 			statement: `set(attributes["test"], ParseKeyValue("k1=v1 k2=v2"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"k1": "v1",
 					"k2": "v2",
@@ -871,7 +897,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], ParseKeyValue("k1!v1_k2!v2", "!", "_"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"k1": "v1",
 					"k2": "v2",
@@ -880,7 +906,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], ParseKeyValue("k1!v1_k2!\"v2__!__v2\"", "!", "_"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"k1": "v1",
 					"k2": "v2__!__v2",
@@ -889,31 +915,31 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2"), "=", " ", true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "k1=v1 k2=v2")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1:v1,k2:v2", ":" , ","), ":", ",", true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "k1:v1,k2:v2")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2"), "!", "+", true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "k1!v1+k2!v2")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2=v3"), "=", " ", true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "k1=v1 k2=\"v2=v3\"")
 			},
 		},
 		{
 			statement: `set(attributes["test"], ParseSimplifiedXML("<Log><id>1</id><Message>This is a log message!</Message></Log>"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"Log": map[string]any{
 						"id":      "1",
@@ -924,7 +950,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], ParseXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"tag": "Log",
 					"attributes": map[string]any{
@@ -941,200 +967,200 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], RemoveXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>", "/Log/Message"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", `<Log id="1"></Log>`)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Seconds(Duration("1m")))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 60.0)
 			},
 		},
 		{
 			statement: `set(attributes["test"], SHA1("pass"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "9d4e1e23bd5b727046a9e3b4b7db57bd8d6ee684")
 			},
 		},
 		{
 			statement: `set(attributes["test"], SHA256("pass"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1")
 			},
 		},
 		{
 			statement: `set(attributes["test"], SHA512("pass"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "5b722b307fce6c944905d132691d5e4a2214b7fe92b738920eb3fce3a90420a19511c3010a0e7712b054daef5b57bad59ecbd93b3280f210578f547f4aed4d25")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Sort(Split(attributes["flags"], "|"), "desc"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{"C", "B", "A"})
 			},
 		},
 		{
 			statement: `set(attributes["test"], Sort([true, false, false]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{false, false, true})
 			},
 		},
 		{
 			statement: `set(attributes["test"], Sort([3, 6, 9], "desc"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{9, 6, 3})
 			},
 		},
 		{
 			statement: `set(attributes["test"], Sort([Double(1.5), Double(10.2), Double(2.3), Double(0.5)]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{0.5, 1.5, 2.3, 10.2})
 			},
 		},
 		{
 			statement: `set(attributes["test"], Sort([Int(11), Double(2.2), Double(-1)]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{-1.0, 2.2, 11})
 			},
 		},
 		{
 			statement: `set(attributes["test"], Sort([false, Int(11), Double(2.2), "three"]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{11, 2.2, false, "three"})
 			},
 		},
 		{
 			statement: `set(profile_id, ProfileID(0x01000000000000000000000000000000))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().SetProfileID(pprofile.ProfileID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 			},
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{"A", "B", "C"})
 			},
 		},
 		{
 			statement: `set(attributes["test"], String("test"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "test")
 			},
 		},
 		{
 			statement: `set(attributes["test"], String(attributes["http.method"]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "get")
 			},
 		},
 		{
 			statement: `set(attributes["test"], String(profile_id))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "[2,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16]")
 			},
 		},
 		{
 			statement: `set(attributes["test"], String([1,2,3]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "[1,2,3]")
 			},
 		},
 		{
 			statement: `set(attributes["test"], String(true))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "true")
 			},
 		},
 		{
 			statement: `set(attributes["test"], Substring("pass", 0, 2))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pa")
 			},
 		},
 		{
 			statement: `set(time, TruncateTime(time, Duration("1s")))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().SetTime(pcommon.NewTimestampFromTime(TestLogTimestamp.AsTime().Truncate(time.Second)))
 			},
 		},
 		{
 			statement: `set(attributes["time"], FormatTime(time, "%Y-%m-%d"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "time", "2020-02-11")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where UnixMicro(time) > 0`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where UnixMilli(time) > 0`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where UnixNano(time) > 0`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where UnixSeconds(time) > 0`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "pass") where IsString(UUID())`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "\\")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "\\")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "\\\\")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "\\\\")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "\\\\\\")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "\\\\\\")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "\\\\\\\\")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "\\\\\\\\")
 			},
 		},
 		{
 			statement: `set(attributes["test"], "\"")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", `"`)
 			},
 		},
 		{
 			statement: `keep_keys(attributes["foo"], ["\\", "bar"])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				// keep_keys should see two arguments
 				putProfileAttribute(t, tCtx, "foo", map[string]any{"bar": "pass"})
 			},
 		},
 		{
 			statement: `set(attributes["test"], UserAgent("curl/7.81.0"))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"user_agent.original": "curl/7.81.0",
 					"user_agent.name":     "curl",
@@ -1145,7 +1171,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"foo": map[string]any{"name": "foo", "value": 2},
 					"bar": map[string]any{"name": "bar", "value": 5},
@@ -1154,7 +1180,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"], ["value"]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"foo": 2,
 					"bar": 5,
@@ -1163,7 +1189,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], {"list":[{"foo":"bar"}]})`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"list": []any{
 						map[string]any{"foo": "bar"},
@@ -1173,7 +1199,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes, {"list":[{"foo":"bar"}]})`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				tCtx.GetProfile().AttributeIndices().FromRaw([]int32{})
 				putProfileAttribute(t, tCtx, "list", []any{
 					map[string]any{"foo": "bar"},
@@ -1182,7 +1208,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["arr"], [{"list":[{"foo":"bar"}]}, {"bar":"baz"}])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "arr", []any{
 					map[string]any{"list": []any{map[string]any{"foo": "bar"}}},
 					map[string]any{"bar": "baz"},
@@ -1191,19 +1217,19 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], IsList([{"list":[{"foo":"bar"}]}, {"bar":"baz"}]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", true)
 			},
 		},
 		{
 			statement: `set(attributes["test"], IsMap({"list":[{"foo":"bar"}]}))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", true)
 			},
 		},
 		{
 			statement: `set(attributes["test"], Len([{"list":[{"foo":"bar"}]}, {"bar":"baz"}]))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", 2)
 			},
 		},
@@ -1224,7 +1250,7 @@ func Test_e2e_converters(t *testing.T) {
 				}
 
 				exTCtx := constructProfileTransformContext()
-				tt.want(exTCtx)
+				tt.want(t, exTCtx)
 
 				assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 			}
@@ -1236,78 +1262,78 @@ func Test_e2e_ottl_features(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
-		want      func(tCtx ottlprofile.TransformContext)
+		want      func(t *testing.T, tCtx ottlprofile.TransformContext)
 	}{
 		{
 			name:      "where clause",
 			statement: `set(attributes["test"], "pass") where original_payload_format == "operationB"`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 		},
 		{
 			name:      "reach upwards",
 			statement: `set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			name:      "where clause with dynamic indexing",
 			statement: `set(attributes["foo"], "bar") where attributes[attributes["flags"]] != nil`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "foo", "bar")
 			},
 		},
 		{
 			name:      "Using hex",
 			statement: `set(attributes["test"], "pass") where profile_id == ProfileID(0x0201030405060708090a0b0c0d0e0f10)`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			name:      "where clause without comparator",
 			statement: `set(attributes["test"], "pass") where IsMatch(original_payload_format, "operation[AC]")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			name:      "where clause with Converter return value",
 			statement: `set(attributes["test"], "pass") where original_payload_format == Concat(["operation", "A"], "")`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			name:      "composing functions",
 			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where original_payload_format == "operationA"`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "json_test", "pass")
 			},
 		},
 		{
 			name:      "complex indexing found",
 			statement: `set(attributes["test"], attributes["foo"]["bar"])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
 		},
 		{
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
-			want:      func(_ ottlprofile.TransformContext) {},
+			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 		},
 		{
 			name:      "map value as input to function",
 			statement: `set(attributes["isMap"], IsMap({"foo": {"bar": "baz", "test": "pass"}}))`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "isMap", true)
 			},
 		},
 		{
 			name:      "extract value from Split function result slice of type []string",
 			statement: `set(attributes["my.environment.2"], Split(resource.attributes["host.name"],"h")[1])`,
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "my.environment.2", "ost")
 			},
 		},
@@ -1323,7 +1349,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 				_, _, _ = statement.Execute(t.Context(), tCtx)
 
 				exTCtx := constructProfileTransformContext()
-				tt.want(exTCtx)
+				tt.want(t, exTCtx)
 
 				assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 			}
@@ -1335,7 +1361,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 	tests := []struct {
 		name       string
 		statements []string
-		want       func(tCtx ottlprofile.TransformContext)
+		want       func(t *testing.T, tCtx ottlprofile.TransformContext)
 	}{
 		{
 			name: "delete key of map literal",
@@ -1343,7 +1369,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
 				`delete_key(attributes["test"], "foo")`,
 			},
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{"list": []any{map[string]any{"test": "hello"}}})
 			},
 		},
@@ -1353,7 +1379,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
 				`delete_matching_keys(attributes["test"], ".*oo")`,
 			},
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{"list": []any{map[string]any{"test": "hello"}}})
 			},
 		},
@@ -1363,7 +1389,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
 				`keep_matching_keys(attributes["test"], ".*ist")`,
 			},
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{"list": []any{map[string]any{"test": "hello"}}})
 			},
 		},
@@ -1373,7 +1399,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
 				`flatten(attributes["test"])`,
 			},
-			want: func(tCtx ottlprofile.TransformContext) {
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{"foo": "bar", "list.0.test": "hello"})
 			},
 		},
@@ -1393,7 +1419,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			}
 
 			exTCtx := constructProfileTransformContext()
-			tt.want(exTCtx)
+			tt.want(t, exTCtx)
 
 			assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 		})
@@ -1673,21 +1699,21 @@ func putProfileAttribute(t *testing.T, tCtx ottlprofile.TransformContext, key st
 	profile := tCtx.GetProfile()
 	switch v := value.(type) {
 	case string:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueStr(v)))
+		putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), key, pcommon.NewValueStr(v))
 	case float64:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueDouble(v)))
+		putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), key, pcommon.NewValueDouble(v))
 	case int:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueInt(int64(v))))
+		putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), key, pcommon.NewValueInt(int64(v)))
 	case bool:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueBool(v)))
+		putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), key, pcommon.NewValueBool(v))
 	case []any:
 		sl := pcommon.NewValueSlice()
 		require.NoError(t, sl.FromRaw(v))
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, sl))
+		putAttribute(t, dic, profile, key, sl)
 	case map[string]any:
 		m := pcommon.NewValueMap()
 		require.NoError(t, m.FromRaw(v))
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, m))
+		putAttribute(t, dic, profile, key, m)
 	default:
 		t.Fatalf("unsupported value type: %T", v)
 	}
