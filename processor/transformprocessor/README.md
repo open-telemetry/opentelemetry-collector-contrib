@@ -274,7 +274,7 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Traces only functions**
 
-- [GetSemConvSpanName](#getsemconvspanname)
+- [set_semconv_span_name](#getsemconvspanname)
 
 ### convert_sum_to_gauge
 
@@ -654,21 +654,25 @@ Examples:
 # counts: [5, 11, 1]
 ```
 
-### GetSemConvSpanName
+### set_semconv_span_name
 
-`GetSemconvSpanName()`
+`set_semconv_span_name(semconvVersion, Optional[originalSpanNameAttribute])`
 
-The `GetSemconvSpanName()` function derives a span name from the OpenTelemetry semantic conventions for [HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), [RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/), [messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and [database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In other cases, the original `span.name` is returned unchanged.
+The `set_semconv_span_name()` function overwrites a span name using the OpenTelemetry semantic conventions for [HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), [RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/), [messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and [database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In other cases, the original `span.name` remains unchanged.
 
-Its primary use case is to address high-cardinality issues in span metrics when `span.name` does not comply with the OpenTelemetry requirement that span names be low cardinality.
+`semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`.
 
-`GetSemconvSpanName()` returned value examples:
+`originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the new name derived from semantic conventions.
+
+The primary use case of the `set_semconv_span_name()` function is to address high-cardinality issues in span metrics when `span.name` doesn't comply with the OpenTelemetry requirement that span names be low cardinality.
+
+Examples:
 
 <table>
 <thead>
 <tr>
-<th>Span</th>
-<th> <code>GetSemconvSpanName()</code> </th>
+<th>Original span</th>
+<th>New span name using <code>set_semconv_span_name("1.37.0")</code> </th>
 <th>Comments</th>
 </tr>
 </thead>
@@ -735,7 +739,7 @@ High-cardinality span name <code>GET /api/v1/users/123</code> is sanitized with 
 </tr>
 </table>
 
-Backward compatibility: `GetSemconvSpanName()` supports the version 1.37 of the semantic conventions and backward compatibility
+Backward compatibility: `set_semconv_span_name()` supports the version 1.37.0 of the semantic conventions and backward compatibility
 for the following attributes:
 
 | Attribute             | Backward compatibility |
@@ -749,7 +753,9 @@ for the following attributes:
 
 Transform processor syntax examples:
 
-- `set(span.name, GetSemconvSpanName())`
+- `set_semconv_span_name("1.37.0")`
+
+- `set_semconv_span_name("1.37.0", "original_span_name")`
 
 - Ingestion pipeline preventing high cardinality on the `span.name` attribute of the metrics produced by the span metrics connector:
 
@@ -759,9 +765,7 @@ Transform processor syntax examples:
       transform/sanitize_span_name:
         error_mode: ignore
         trace_statements:
-          - set(span.cache["original_name"], span.name)
-          - set(span.name, GetSemconvSpanName())
-          - set(span.attributes["original_name"], span.cache["original_name"]) where span.cache["original_name"] != span.name
+          - set_semconv_span_name("1.37.0")
     connectors:
       spanmetrics:
     service:
