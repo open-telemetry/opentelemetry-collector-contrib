@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.138.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tinylib/msgp v1.4.0
+	github.com/tinylib/msgp v1.5.0
 	go.opentelemetry.io/collector/component v1.44.1-0.20251028105454-507664fb82dc
 	go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251028105454-507664fb82dc
 	go.opentelemetry.io/collector/confmap v1.44.1-0.20251028105454-507664fb82dc
