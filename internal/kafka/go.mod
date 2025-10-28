@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
 go 1.24.0
 
 require (
-	github.com/IBM/sarama v1.46.2
+	github.com/IBM/sarama v1.46.3
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.138.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
