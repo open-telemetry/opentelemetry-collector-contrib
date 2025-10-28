@@ -5,6 +5,8 @@ package traces // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -15,18 +17,43 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
-func NewGetSemconvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
-	return ottl.NewFactory("GetSemconvSpanName", nil, createGetSemconvSpanNameFunction)
+type setSemconvSpanNameArguments struct {
+	SemconvVersion            string
+	OriginalSpanNameAttribute ottl.Optional[string]
 }
 
-func createGetSemconvSpanNameFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
-	return getSemconvSpanName()
+func NewSetSemconvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
+	return ottl.NewFactory("set_semconv_span_name", &setSemconvSpanNameArguments{}, createSetSemconvSpanNameFunction)
 }
 
-func getSemconvSpanName() (ottl.ExprFunc[ottlspan.TransformContext], error) {
+func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
+
+	args, ok := oArgs.(*setSemconvSpanNameArguments)
+
+	if !ok {
+		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
+	}
+	return setSemconvSpanName(args.SemconvVersion, args.OriginalSpanNameAttribute)
+}
+
+func setSemconvSpanName(semconvVersion string, originalSpanNameAttribute ottl.Optional[string]) (ottl.ExprFunc[ottlspan.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		return SemconvSpanName(tCtx.GetSpan()), nil
+		return setSemconvSpanName_(semconvVersion, originalSpanNameAttribute, tCtx.GetSpan()), nil
 	}, nil
+}
+
+func setSemconvSpanName_(semconvVersion string, originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) error {
+	if semconvVersion != "1.37.0" {
+		// Currently only v1.37.0 is supported
+		return fmt.Errorf("unsupported semconv version: %s", semconvVersion)
+	}
+	originalSpanName := span.Name()
+	semConvSpanName := SemconvSpanName(span)
+	span.SetName(semConvSpanName)
+	if originalSpanName != semConvSpanName && originalSpanNameAttribute.GetOr("") != "" {
+		span.Attributes().PutStr(originalSpanNameAttribute.Get(), originalSpanName)
+	}
+	return nil
 }
 
 func SemconvSpanName(span ptrace.Span) string {

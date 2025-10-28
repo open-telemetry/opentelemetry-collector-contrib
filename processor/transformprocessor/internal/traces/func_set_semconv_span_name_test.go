@@ -6,6 +6,7 @@ package traces
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -333,6 +334,17 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 			assert.Equal(t, tt.want, SemconvSpanName(span))
+
+			err := setSemconvSpanName_("1.37.0", ottl.NewTestingOptional("original_span_name"), span)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, span.Name())
+			originalSpanName, ok := span.Attributes().Get("original_span_name")
+			if tt.want == tt.currentSpanName {
+				assert.False(t, ok)
+			} else {
+				assert.True(t, ok)
+				assert.Equal(t, tt.currentSpanName, originalSpanName.AsString())
+			}
 		})
 	}
 }

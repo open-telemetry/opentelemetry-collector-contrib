@@ -17,7 +17,7 @@ func SpanFunctions() map[string]ottl.Factory[ottlspan.TransformContext] {
 
 	spanFunctions := ottl.CreateFactoryMap(
 		ottlfuncs.NewIsRootSpanFactory(),
-		NewGetSemconvSpanNameFactory(),
+		NewSetSemconvSpanNameFactory(),
 	)
 
 	maps.Copy(functions, spanFunctions)
