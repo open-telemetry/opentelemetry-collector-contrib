@@ -252,5 +252,5 @@ func (b *influxHTTPWriterBatch) convertFields(m map[string]any) (fields map[stri
 			fields[k] = lpv
 		}
 	}
-	return
+	return fields
 }

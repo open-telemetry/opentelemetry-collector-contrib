@@ -1,6 +1,6 @@
 name: Beta stability promotion
 description: Promote a component to beta stability
-labels: ["needs triage"]
+labels: ["needs triage", "promote-beta"]
 body:
   - type: markdown
     attributes:
@@ -35,6 +35,7 @@ body:
       - connector/routing
       - connector/servicegraph
       - connector/signaltometrics
+      - connector/slowsql
       - connector/spanmetrics
       - connector/sum
       - exporter/alertmanager
@@ -138,8 +139,8 @@ body:
       - internal/common
       - internal/core
       - internal/datadog
+      - internal/datadog/e2e
       - internal/docker
-      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
@@ -170,6 +171,7 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/stanza/operator/input/journald
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
@@ -240,6 +242,7 @@ body:
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos
+      - receiver/ciscoos/internal/scraper/systemscraper
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
@@ -312,6 +315,7 @@ body:
       - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
+      - receiver/redfish
       - receiver/redis
       - receiver/riak
       - receiver/saphana

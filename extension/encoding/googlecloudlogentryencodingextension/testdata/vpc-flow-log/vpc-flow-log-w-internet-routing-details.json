@@ -1,0 +1,62 @@
+{
+  "insertId": "79c1kvepzqvr",
+  "jsonPayload": {
+    "connection": {
+      "dest_ip": "203.0.113.6",
+      "protocol": 1,
+      "src_ip": "192.0.2.6"
+    },
+    "packets_sent": "20",
+    "reporter": "SRC",
+    "bytes_sent": "800",
+    "internet_routing_details": {
+      "egress_as_path": [
+        {
+          "as_details": [
+            {
+              "asn": 16509
+            },
+            {
+              "asn": 14618
+            }
+          ]
+        }
+      ]
+    },
+    "src_instance": {
+      "zone": "asia-south1-c",
+      "vm_name": "test-vm-6",
+      "region": "asia-south1",
+      "project_id": "test-project-id"
+    },
+    "src_vpc": {
+      "vpc_name": "default",
+      "subnetwork_region": "asia-south1",
+      "subnetwork_name": "default",
+      "project_id": "test-project-id"
+    },
+    "end_time": "2025-09-27T21:13:05.056628399Z",
+    "dest_location": {
+      "region": "Virginia",
+      "continent": "America",
+      "asn": 14618,
+      "country": "usa",
+      "city": "Ashburn"
+    },
+    "start_time": "2025-09-27T21:13:05.056628399Z"
+  },
+  "resource": {
+    "type": "vpc_flow_logs_config",
+    "labels": {
+      "name": "test-flow-logs-config",
+      "location": "global",
+      "resource_container": "projects/123456789012"
+    }
+  },
+  "timestamp": "2025-09-27T21:13:16.799966252Z",
+  "labels": {
+    "target_resource_name": "projects/123456789012/global/networks/default"
+  },
+  "logName": "projects/test-project-id/logs/networkmanagement.googleapis.com%2Fvpc_flows",
+  "receiveTimestamp": "2025-09-27T21:13:16.799966252Z"
+}

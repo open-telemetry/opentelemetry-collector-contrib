@@ -146,7 +146,7 @@ type kvEntry struct {
 
 type kvStatus struct {
 	Current   kvStoreCurrent `json:"current"`
-	KVService kvService      `json:"externalKVStore,omitempty"`
+	KVService kvService      `json:"externalKVStore,omitzero"`
 }
 
 type kvService struct {
