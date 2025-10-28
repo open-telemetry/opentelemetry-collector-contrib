@@ -1,0 +1,83 @@
+default:
+all_set:
+  metrics:
+    cisco.network.drops.receive:
+      enabled: true
+    cisco.network.drops.transmit:
+      enabled: true
+    cisco.network.errors.receive:
+      enabled: true
+    cisco.network.errors.transmit:
+      enabled: true
+    cisco.network.io.receive:
+      enabled: true
+    cisco.network.io.transmit:
+      enabled: true
+    cisco.network.packets.broadcast:
+      enabled: true
+    cisco.network.packets.multicast:
+      enabled: true
+    cisco.network.up:
+      enabled: true
+  resource_attributes:
+    cisco.device.ip:
+      enabled: true
+    cisco.os.type:
+      enabled: true
+    hw.type:
+      enabled: true
+none_set:
+  metrics:
+    cisco.network.drops.receive:
+      enabled: false
+    cisco.network.drops.transmit:
+      enabled: false
+    cisco.network.errors.receive:
+      enabled: false
+    cisco.network.errors.transmit:
+      enabled: false
+    cisco.network.io.receive:
+      enabled: false
+    cisco.network.io.transmit:
+      enabled: false
+    cisco.network.packets.broadcast:
+      enabled: false
+    cisco.network.packets.multicast:
+      enabled: false
+    cisco.network.up:
+      enabled: false
+  resource_attributes:
+    cisco.device.ip:
+      enabled: false
+    cisco.os.type:
+      enabled: false
+    hw.type:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    cisco.device.ip:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    cisco.os.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    hw.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    cisco.device.ip:
+      enabled: true
+      metrics_exclude:
+        - strict: "cisco.device.ip-val"
+    cisco.os.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "cisco.os.type-val"
+    hw.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "hw.type-val"

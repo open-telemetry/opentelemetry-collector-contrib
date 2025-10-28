@@ -1,0 +1,129 @@
+type: interfaces
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: []
+
+resource_attributes:
+  cisco.device.ip:
+    description: The IP address of the Cisco network device
+    type: string
+    enabled: true
+  cisco.os.type:
+    description: The operating system type of the Cisco device
+    type: string
+    enabled: true
+  hw.type:
+    description: Type of the physical hardware component
+    type: string
+    enabled: true
+
+attributes:
+  interface.description:
+    description: The description/alias of the network interface
+    type: string
+  interface.mac:
+    description: The MAC address of the network interface
+    type: string
+  interface.name:
+    description: The name of the network interface
+    type: string
+  interface.speed:
+    description: The configured speed of the network interface
+    type: string
+
+metrics:
+  cisco.network.drops.receive:
+    enabled: true
+    description: Number of input drops on interface
+    unit: "{drops}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+  cisco.network.drops.transmit:
+    enabled: true
+    description: Number of output drops on interface
+    unit: "{drops}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+  cisco.network.errors.receive:
+    enabled: true
+    description: Number of input errors on interface
+    unit: "{errors}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+  cisco.network.errors.transmit:
+    enabled: true
+    description: Number of output errors on interface
+    unit: "{errors}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+  cisco.network.io.receive:
+    enabled: true
+    description: Number of bytes received on interface
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+  cisco.network.io.transmit:
+    enabled: true
+    description: Number of bytes transmitted on interface
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+  cisco.network.packets.broadcast:
+    enabled: true
+    description: Number of broadcast packets received on interface
+    unit: "{packets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+  cisco.network.packets.multicast:
+    enabled: true
+    description: Number of multicast packets received on interface
+    unit: "{packets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+  cisco.network.up:
+    enabled: true
+    description: Interface operational status (1 = up, 0 = down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [interface.description, interface.mac, interface.name, interface.speed]
+
+tests:
+  config:
