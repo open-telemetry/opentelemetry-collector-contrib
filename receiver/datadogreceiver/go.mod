@@ -15,6 +15,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.138.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.138.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.138.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tinylib/msgp v1.4.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -85,8 +87,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.138.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.138.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.138.0 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
