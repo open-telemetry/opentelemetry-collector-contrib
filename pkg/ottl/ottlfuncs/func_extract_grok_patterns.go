@@ -71,7 +71,7 @@ func extractGrokPatterns[K any](target, pattern ottl.StringGetter[K], nco ottl.O
 	if ok {
 		err = g.Compile(literalPattern, namedCapturesOnly)
 		if err != nil {
-			return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "ExtractGrokPatterns", literalPattern, err)
+			return nil, fmt.Errorf(invalidRegexErrMsg, "ExtractGrokPatterns", literalPattern, err)
 		}
 		compiled = true
 	}
@@ -88,7 +88,7 @@ func extractGrokPatterns[K any](target, pattern ottl.StringGetter[K], nco ottl.O
 			}
 			err = g.Compile(patternVal, namedCapturesOnly)
 			if err != nil {
-				return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "ExtractGrokPatterns", patternVal, err)
+				return nil, fmt.Errorf(invalidRegexErrMsg, "ExtractGrokPatterns", patternVal, err)
 			}
 		}
 

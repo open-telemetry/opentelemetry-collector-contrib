@@ -46,7 +46,7 @@ func replaceMatch[K any](target ottl.GetSetter[K], pattern, replacement ottl.Str
 	if ok {
 		compiledPattern, err = glob.Compile(literalPattern)
 		if err != nil {
-			return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "replace_match", literalPattern, err)
+			return nil, fmt.Errorf(invalidRegexErrMsg, "replace_match", literalPattern, err)
 		}
 	}
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -58,7 +58,7 @@ func replaceMatch[K any](target ottl.GetSetter[K], pattern, replacement ottl.Str
 			}
 			cp, err = glob.Compile(patternVal)
 			if err != nil {
-				return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "replace_all_matches", patternVal, err)
+				return nil, fmt.Errorf(invalidRegexErrMsg, "replace_all_matches", patternVal, err)
 			}
 		}
 		val, err := target.Get(ctx, tCtx)

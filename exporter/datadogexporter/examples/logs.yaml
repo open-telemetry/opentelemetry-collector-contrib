@@ -16,10 +16,6 @@ receivers:
         layout: '%Y-%m-%dT%H:%M:%S%z'
 
 processors:
-  batch:
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
   transform:
     log_statements:
       - context: log
@@ -33,10 +29,12 @@ exporters:
     api:
       site: ${env:DD_SITE}
       key: ${env:DD_API_KEY}
+    sending_queue:
+      batch:
 
 service:
   pipelines:
     logs:
       receivers: [filelog]
-      processors: [transform, batch]
+      processors: [transform]
       exporters: [datadog]
