@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redac
 go 1.24.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.71.2
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-devel.0.20251029125601-4994df05eb4e
 	github.com/grafana/clusterurl v0.2.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.44.1-0.20251028105454-507664fb82dc
@@ -62,7 +62,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
