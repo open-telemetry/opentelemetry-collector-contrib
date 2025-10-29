@@ -45,6 +45,9 @@ type prometheusConverterV2 struct {
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
 	unitNamer   otlptranslator.UnitNamer
+
+	// Track scopes for otel_scope_info generation
+	scopes map[uint64]scopeInfo
 }
 
 type metadata struct {
@@ -61,6 +64,7 @@ func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
 		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
 		unitNamer:   otlptranslator.UnitNamer{},
+		scopes:      map[uint64]scopeInfo{},
 	}
 }
 
@@ -74,13 +78,46 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 		// keep track of the most recent timestamp in the ResourceMetrics for
 		// use with the "target" info metric
 		var mostRecentTimestamp pcommon.Timestamp
-		for j := 0; j < scopeMetricsSlice.Len(); j++ {
-			metricSlice := scopeMetricsSlice.At(j).Metrics()
 
-			// TODO: decide if instrumentation library information should be exported as labels
+		// Track scope signatures for this resource to generate scope info later
+		resourceScopeSignatures := make(map[uint64]bool)
+
+		for j := 0; j < scopeMetricsSlice.Len(); j++ {
+			scopeMetrics := scopeMetricsSlice.At(j)
+			metricSlice := scopeMetrics.Metrics()
+
+			scope := scopeMetrics.Scope()
+			scopeName := scope.Name()
+			scopeVersion := scope.Version()
+			scopeAttrs := scope.Attributes()
+
+			// Generate scope signature for deduplication
+			scopeSignature := getScopeSignature(scopeName, scopeVersion, scopeAttrs, resource)
+
+			// Track this scope signature for the current resource
+			resourceScopeSignatures[scopeSignature] = true
+
+			// Store scope information for later processing (otel_scope_info generation)
+			if _, exists := c.scopes[scopeSignature]; !exists {
+				c.scopes[scopeSignature] = scopeInfo{
+					name:       scopeName,
+					version:    scopeVersion,
+					attributes: scopeAttrs,
+					resource:   resource,
+					timestamp:  0, // Will be updated with most recent timestamp
+				}
+			}
+
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
-				mostRecentTimestamp = max(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
+				metricTimestamp := mostRecentTimestampInMetric(metric)
+				mostRecentTimestamp = max(mostRecentTimestamp, metricTimestamp)
+
+				// Update the scope's most recent timestamp
+				if storedScopeInfo, exists := c.scopes[scopeSignature]; exists {
+					storedScopeInfo.timestamp = max(storedScopeInfo.timestamp, metricTimestamp)
+					c.scopes[scopeSignature] = storedScopeInfo
+				}
 
 				if !isValidAggregationTemporality(metric) {
 					errs = multierr.Append(errs, fmt.Errorf("invalid temporality and type combination for metric %q", metric.Name()))
@@ -106,41 +143,53 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m, scopeName, scopeVersion))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					if !metric.Sum().IsMonotonic() {
-						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m))
+						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m, scopeName, scopeVersion))
 					} else {
-						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m))
+						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m, scopeName, scopeVersion))
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, settings, promName, m, scopeName, scopeVersion))
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
-						dataPoints, resource, settings, promName, m))
+						dataPoints, resource, settings, promName, m, scopeName, scopeVersion))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, settings, promName, m, scopeName, scopeVersion))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
 			}
 		}
+
+		// Generate otel_scope_info metrics for each unique scope in this resource
+		for signature := range resourceScopeSignatures {
+			if storedScopeInfo, exists := c.scopes[signature]; exists {
+				err := c.addScopeInfoV2(storedScopeInfo.name, storedScopeInfo.version, storedScopeInfo.attributes,
+					resource, settings, storedScopeInfo.timestamp)
+				if err != nil {
+					errs = multierr.Append(errs, fmt.Errorf("failed to add scope info for scope %q: %w", storedScopeInfo.name, err))
+				}
+			}
+		}
+
 		errs = multierr.Append(errs, c.addResourceTargetInfoV2(resource, settings, mostRecentTimestamp))
 	}
 
