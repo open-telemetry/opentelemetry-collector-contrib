@@ -65,7 +65,7 @@ jobs:
         run: make gobuildtest GROUP=cgo
       - name: Zip test binaries
         run: zip -r testbinaries.zip  . --include \*builtunitetest.test
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         if: ${{ matrix.os == 'macos-14' }}
         with:
           name: testbinaries
@@ -87,7 +87,7 @@ jobs:
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           name: testbinaries
       - name: Unzip binaries to each module

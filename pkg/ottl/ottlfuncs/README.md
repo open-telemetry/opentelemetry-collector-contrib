@@ -538,6 +538,7 @@ Available Converters:
 - [Values](#values)
 - [Weekday](#weekday)
 - [XXH3](#xxh3)
+- [XXH128](#xxh128)
 - [Year](#year)
 
 ### Base64Decode (Deprecated)
@@ -2586,6 +2587,23 @@ Examples:
 
 - `XXH3(resource.attributes["device.name"])`
 - `XXH3("name")`
+
+### XXH128
+
+`XXH128(value)`
+
+The `XXH128` Converter generates a 128-bit xxHash digest from the input `value` using the XXH128 hash algorithm.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing, it is returned.
+
+Examples:
+
+- `XXH128(resource.attributes["device.name"])`
+- `XXH128("name")`
 
 ### Year
 
