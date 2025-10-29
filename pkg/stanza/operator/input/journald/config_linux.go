@@ -9,7 +9,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -29,6 +31,10 @@ func init() {
 
 // Build will build a journald input operator from the supplied configuration
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+
 	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
@@ -46,6 +52,37 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}, nil
 }
 
+func (c Config) validate() error {
+	if c.StartAt != "end" && c.StartAt != "beginning" {
+		return fmt.Errorf("invalid value '%s' for parameter 'start_at'", c.StartAt)
+	}
+
+	if c.RootPath != "" {
+		if !filepath.IsAbs(c.JournalctlPath) {
+			return errors.New("'journalctl_path' must be an absolute path when 'root_path' is set")
+		}
+
+		if !filepath.IsAbs(c.RootPath) {
+			return errors.New("'root_path' must be an absolute path")
+		}
+
+		info, err := os.Stat(c.RootPath)
+		if err != nil {
+			return fmt.Errorf("root_path %q not found: %w", c.RootPath, err)
+		}
+
+		if !info.IsDir() {
+			return fmt.Errorf("root_path %q is not a directory", c.RootPath)
+		}
+	}
+
+	if strings.TrimSpace(c.JournalctlPath) == "" {
+		return errors.New("'journalctl_path' must be non-whitespace")
+	}
+
+	return nil
+}
+
 func (c Config) buildArgs() ([]string, error) {
 	args := make([]string, 0, 10)
 
@@ -55,12 +92,8 @@ func (c Config) buildArgs() ([]string, error) {
 		"--follow",      // Continue watching logs until cancelled
 	)
 
-	switch c.StartAt {
-	case "end":
-	case "beginning":
+	if c.StartAt == "beginning" {
 		args = append(args, "--no-tail")
-	default:
-		return nil, fmt.Errorf("invalid value '%s' for parameter 'start_at'", c.StartAt)
 	}
 
 	for _, unit := range c.Units {
@@ -156,10 +189,6 @@ func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd,
 	args, err := c.buildArgs()
 	if err != nil {
 		return nil, err
-	}
-
-	if strings.TrimSpace(c.JournalctlPath) == "" {
-		return nil, errors.New("invalid value for parameter 'journalctl_path': must be non-whitespace")
 	}
 
 	return func(ctx context.Context, cursor []byte) cmd {

@@ -44,8 +44,8 @@ Journald receiver requires that:
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
 | `retry_on_failure.max_interval`     | `30 seconds`                         | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                     |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`                          | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                            |
-| `root_path`                         |                                      | Chroot to use when executing the journalctl command. When empty (default), no chroot is used when executing journalctl.                                                                                                                  |
-| `journalctl_path`                   | `journalctl`                         | journalctl command to execute. Relative to `root_path`. See below for more details                                                                                                            |
+| `root_path`                         |                                      | Chroot to use when executing the journalctl command. Must be an absolute path or empty. When empty (default), no chroot is used when executing journalctl.                                                                               |
+| `journalctl_path`                   | `journalctl`                         | journalctl command to execute. Relative to `root_path`. Must be an absolute path if `root_path` is non-empty. See below for more details                                                                                                 |
 | `operators`                         | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details                                                                                                              |
 
 ### Operators
@@ -209,21 +209,19 @@ You can pass `-v /:/host` to `docker run` to mount the host's rootfs:
 docker run -v /:/host otel/opentelemetry-collector-contrib
 ```
 
-Then, you can configure the receiver with `root_path` to use that mount as a chroot for journalctl: 
-
-```yaml
-receivers:
-  journald:
-    root_path: /host
-```
-
-Due to a [Golang issue](https://github.com/golang/go/issues/39341), running executables from $PATH does not work well in a chroot. To avoid this, use `journalctl_path` to configure a full path to `journalctl` inside of the chroot:
+Then, you can configure the receiver with `root_path` to use that mount as a chroot for journalctl. Due to a [Go issue](https://github.com/golang/go/issues/39341), running executables from $PATH does not work well in a chroot, so you must also use `journalctl_path` to configure a full path to `journalctl` inside of the chroot:
 
 ```yaml
 receivers:
   journald:
     root_path: /host
     journalctl_path: /usr/bin/journalctl
+```
+
+You also need to ensure the user running the collector can run the journalctl from the chroot, one way to do this is to run the collector as root:
+
+```
+docker run -v /:/host --user 0 otel/opentelemetry-collector-contrib
 ```
 
 ### Linux packaging

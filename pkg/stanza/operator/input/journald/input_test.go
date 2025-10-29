@@ -249,10 +249,9 @@ func TestBuildConfigArgs(t *testing.T) {
 
 func TestBuildConfigCmd(t *testing.T) {
 	testCases := []struct {
-		Name          string
-		Config        func(_ *Config)
-		RequireCmd    func(*exec.Cmd)
-		ExpectedError string
+		Name       string
+		Config     func(_ *Config)
+		RequireCmd func(*exec.Cmd)
 	}{
 		{
 			Name:   "empty config",
@@ -297,13 +296,6 @@ func TestBuildConfigCmd(t *testing.T) {
 				assert.Equal(t, "/usr/bin/journalctl", cmd.Args[0])
 			},
 		},
-		{
-			Name: "invalid journalctl_path",
-			Config: func(cfg *Config) {
-				cfg.JournalctlPath = " "
-			},
-			ExpectedError: "invalid value for parameter 'journalctl_path': must be non-whitespace",
-		},
 	}
 
 	for _, tt := range testCases {
@@ -312,14 +304,67 @@ func TestBuildConfigCmd(t *testing.T) {
 			tt.Config(cfg)
 			newCmdFunc, err := cfg.buildNewCmdFunc()
 
+			require.NoError(t, err)
+			cmd := newCmdFunc(t.Context(), nil).(*exec.Cmd)
+			tt.RequireCmd(cmd)
+		})
+	}
+}
+
+func TestConfigValidation(t *testing.T) {
+	testCases := []struct {
+		Name          string
+		Config        func(_ *Config)
+		ExpectedError string
+	}{
+		{
+			Name:   "empty config",
+			Config: func(_ *Config) {},
+		},
+		{
+			Name: "invalid journalctl_path",
+			Config: func(cfg *Config) {
+				cfg.JournalctlPath = " "
+			},
+			ExpectedError: "'journalctl_path' must be non-whitespace",
+		},
+		{
+			Name: "invalid root_path",
+			Config: func(cfg *Config) {
+				cfg.RootPath = "not/absolute"
+				cfg.JournalctlPath = "/usr/bin/journalctl"
+			},
+			ExpectedError: "'root_path' must be an absolute path",
+		},
+		{
+			Name: "invalid journalctl_path with valid root_path",
+			Config: func(cfg *Config) {
+				cfg.RootPath = "/host"
+				cfg.JournalctlPath = "journalctl"
+			},
+			ExpectedError: "'journalctl_path' must be an absolute path when 'root_path' is set",
+		},
+		{
+			Name: "invalid start_at",
+			Config: func(cfg *Config) {
+				cfg.StartAt = "middle"
+			},
+			ExpectedError: "invalid value 'middle' for parameter 'start_at'",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			cfg := NewConfigWithID("my_journald_input")
+			tt.Config(cfg)
+			err := cfg.validate()
+
 			if tt.ExpectedError != "" {
 				require.Error(t, err)
 				require.ErrorContains(t, err, tt.ExpectedError)
 				return
 			}
 			require.NoError(t, err)
-			cmd := newCmdFunc(t.Context(), nil).(*exec.Cmd)
-			tt.RequireCmd(cmd)
 		})
 	}
 }
