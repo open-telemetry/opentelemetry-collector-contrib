@@ -660,84 +660,50 @@ Examples:
 
 The `set_semconv_span_name()` function overwrites a span name using the OpenTelemetry semantic conventions for [HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), [RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/), [messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and [database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In other cases, the original `span.name` remains unchanged.
 
-`semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, `1.37.0` is the supported version.
-
-`originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
-
 The primary use case of the `set_semconv_span_name()` function is to address high-cardinality issues in span metrics when `span.name` doesn't comply with the OpenTelemetry requirement that span names be low cardinality such as `GET /product/12345`, `GET/product?id=12345`, or `SELECT * FROM product WHERE id=12345`.
+
+Parameters:
+* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, `1.37.0` is the supported version.
+* `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Examples:
 
-<table>
-<thead>
-<tr>
-<th>Original span</th>
-<th>New span name using <code>set_semconv_span_name("1.37.0")</code> </th>
-<th>Comments</th>
-</tr>
-</thead>
-<tbody>
-<!-- HTTP SERVER SPANS -->
-<tr>
-<td>
-<pre>
-<code>
-span.name: GET /api/v1/users/{id}
-span.kind: server
-span.attributes["http.request.method"]: GET
-span.attributes["http.route"]: /api/v1/users/{id}
-</code>
-</pre>
-</td>
-<td>
-<pre>
-GET /api/v1/users/{id}
-</pre>
-</td>
-<td>
-Compliant span names don't get modified
-</td>
-</tr>
-<tr>
-<td>
-<pre>
-<code>
-span.name: GET /api/v1/users/123 # /!\ high cardinality
-span.kind: server
-span.attributes["http.request.method"]: GET
-span.attributes["http.route"]: /api/v1/users/{id}
-</code>
-</pre>
-</td>
-<td>
-<pre>
-GET /api/v1/users/{id}
-</pre>
-</td>
-<td>
-High cardinality span name <code>GET /api/v1/users/123</code> gets sanitized without loss of information when recommended semantic convention span attributes are provided (e.g. <code>http.request.method</code> and <code>http.route</code>).
-</td>
-</tr>
-<tr>
-<td>
-<pre>
-<code>
-span.name: GET /api/v1/users/123 # /!\ high cardinality
-span.kind: server
-span.attributes["http.request.method"]: GET
-</code>
-</pre>
-</td>
-<td>
-<pre>
-GET
-</pre>
-</td>
-<td>
-High-cardinality span name <code>GET /api/v1/users/123</code> is sanitized with some loss of information when recommended semantic convention span attributes are missing (e.g., <code>http.route</code>).
-</td>
-</tr>
-</table>
+* Span with high-cardinality name but recommended semantic convention attributes
+   * Incoming span:
+        ```
+        span.name: GET /api/v1/users/123 # /!\ high cardinality
+        span.kind: server
+        span.attributes
+           http.request.method: GET
+           http.route: /api/v1/users/{id}
+           url.path: /api/v1/users/123
+        ```
+   * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
+   * No loss of information on `span.name` occurs because the recommended attribute `http.route` is present.
+* Span with high-cardinality name lacking recommended semantic convention attribute `http.route`
+    * Incoming span:
+         ```
+         span.name: GET /api/v1/users/123 # /!\ high cardinality
+         span.kind: server
+         span.attributes
+            http.request.method: GET
+            url.path: /api/v1/users/123
+         ```
+    * Span name after applying `set_semconv_span_name("1.37.0")`: `GET`
+    * Loss of information on `span.name` occurs because the recommended attribute `http.route` is missing 
+    and is mitigated by other span attributes like `url.path` or `url.full`.
+* Compliant span name is unchanged
+    * Incoming span:
+         ```
+         span.name: GET /api/v1/users/{id}
+         span.kind: server
+         span.attributes
+            http.request.method: GET
+            http.route: /api/v1/users/{id}
+            url.path: /api/v1/users/123
+         ```
+    * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
+
 
 Backward compatibility: `set_semconv_span_name()` supports the version 1.37.0 of the semantic conventions and backward compatibility
 for the following attributes:
