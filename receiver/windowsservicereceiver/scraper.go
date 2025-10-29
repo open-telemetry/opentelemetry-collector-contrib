@@ -1,12 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
+
 //go:build windows
 
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
 
 import (
 	"context"
-	"sync"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"golang.org/x/sys/windows"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver/internal/metadata"
 )
@@ -26,9 +28,9 @@ type windowsServiceScraper struct {
 	mgr        serviceManager
 	includeSet map[string]struct{}
 	excludeSet map[string]struct{}
-}
 
-const defaultScrapeConcurrency = 32
+	disabled bool
+}
 
 func newWindowsServiceScraper(settings receiver.Settings, cfg *Config, mb *metadata.MetricsBuilder) *windowsServiceScraper {
 	ws := &windowsServiceScraper{
@@ -70,10 +72,21 @@ func mapStartTypeToAttr(st StartType) metadata.AttributeStartupMode {
 }
 
 func (ws *windowsServiceScraper) start(_ context.Context, _ component.Host) error {
-	return ws.mgr.connect()
+	if err := ws.mgr.connect(); err != nil {
+		if errors.Is(err, windows.ERROR_ACCESS_DENIED) {
+			ws.logger.Warn("windowsservicereceiver: access denied to Service Control Manager; metrics will not be collected", zap.Error(err))
+			ws.disabled = true
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func (ws *windowsServiceScraper) shutdown(_ context.Context) error {
+	if ws.disabled {
+		return nil
+	}
 	return ws.mgr.disconnect()
 }
 
@@ -90,6 +103,10 @@ func (ws *windowsServiceScraper) allowed(name string) bool {
 }
 
 func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+	if ws.disabled {
+		return ws.mb.Emit(), nil
+	}
+
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	names, err := ws.mgr.listServices()
@@ -97,62 +114,38 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 		return ws.mb.Emit(), err
 	}
 
-	type result struct {
-		name      string
-		val       int64
-		startAttr metadata.AttributeStartupMode
-		err       error
-	}
-
-	results := make(chan result, len(names))
-	sem := make(chan struct{}, defaultScrapeConcurrency)
-	var wg sync.WaitGroup
+	var scrapeErr error
 
 	for _, name := range names {
 		if !ws.allowed(name) {
 			continue
 		}
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(n string) {
-			defer wg.Done()
-			defer func() { <-sem }()
 
-			svc, err := getService(&ws.mgr, n)
-			if err != nil {
-				results <- result{err: err}
-				return
-			}
-			defer func() { _ = svc.close() }()
-
-			if err := svc.updateStatus(); err != nil {
-				results <- result{err: err}
-				return
-			}
-			if err := svc.updateConfig(); err != nil {
-				results <- result{err: err}
-				return
-			}
-
-			val := int64(svc.status.State)
-			startAttr := mapStartTypeToAttr(svc.config.StartType)
-
-			results <- result{name: n, val: val, startAttr: startAttr}
-		}(name)
-	}
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var scrapeErr error
-	for r := range results {
-		if r.err != nil {
-			scrapeErr = multierr.Append(scrapeErr, r.err)
+		svc, err := updateService(&ws.mgr, name)
+		if err != nil {
+			scrapeErr = multierr.Append(scrapeErr, err)
 			continue
 		}
-		ws.mb.RecordWindowsServiceStatusDataPoint(ts, r.val, r.name, r.startAttr)
+
+		if err := svc.updateStatus(); err != nil {
+			_ = svc.close()
+			scrapeErr = multierr.Append(scrapeErr, err)
+			continue
+		}
+		if err := svc.updateConfig(); err != nil {
+			_ = svc.close()
+			scrapeErr = multierr.Append(scrapeErr, err)
+			continue
+		}
+
+		val := int64(svc.status.State)
+		startAttr := mapStartTypeToAttr(svc.config.StartType)
+
+		ws.mb.RecordWindowsServiceStatusDataPoint(ts, val, name, startAttr)
+
+		if err := svc.close(); err != nil {
+			scrapeErr = multierr.Append(scrapeErr, err)
+		}
 	}
 
 	return ws.mb.Emit(), scrapeErr

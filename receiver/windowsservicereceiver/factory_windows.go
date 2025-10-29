@@ -1,5 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
+
 //go:build windows
 
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
@@ -23,7 +24,6 @@ func createMetricsReceiver(
 	next consumer.Metrics,
 ) (receiver.Metrics, error) {
 	rcfg := cfg.(*Config)
-
 	mb := metadata.NewMetricsBuilder(rcfg.MetricsBuilderConfig, settings)
 	s := newWindowsServiceScraper(settings, rcfg, mb)
 
