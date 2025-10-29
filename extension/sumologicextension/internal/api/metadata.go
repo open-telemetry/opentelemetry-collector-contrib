@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package api // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
+package api // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
 
 type OpenMetadataHostDetails struct {
 	Name        string `json:"name"`

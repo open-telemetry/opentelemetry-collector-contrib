@@ -82,7 +82,7 @@ func composeWriteURL(config *Config) (string, error) {
 		}
 	}
 	queryValues := writeURL.Query()
-	queryValues.Set("precision", "ns")
+	queryValues.Set("precision", config.Precision)
 
 	if config.V1Compatibility.Enabled {
 		queryValues.Set("db", config.V1Compatibility.DB)
