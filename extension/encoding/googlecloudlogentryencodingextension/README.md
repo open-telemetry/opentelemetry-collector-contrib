@@ -116,7 +116,7 @@ Currently, these are the log types that are specifically parsed into log record 
 
 ## Log Format Identification
 
-All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their Google Cloud service origin.
+A subset of logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their Google Cloud service origin.
 
 The pattern used is `gcp.<format_name>`.
 
