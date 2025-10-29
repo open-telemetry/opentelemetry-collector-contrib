@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.39.4
 	github.com/aws/aws-sdk-go-v2/config v1.31.15
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.19
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.88.7
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.89.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.9
 	github.com/google/uuid v1.6.0
 	github.com/itchyny/timefmt-go v0.1.7
