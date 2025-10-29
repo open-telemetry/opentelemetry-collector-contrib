@@ -4,10 +4,10 @@
 change_type: "enhancement"
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: "pkg/ottl"
+component: "transformprocessor"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "New OTTL function `GetSemconvSpanName()` to derives a span name from the semantic conventions for HTTP, RPC, messaging, and database spans."
+note: "New Transform Processor function `set_semconv_span_name()` to overwrite the span name with the semantic conventions for HTTP, RPC, messaging, and database spans."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43124]
@@ -16,8 +16,8 @@ issues: [43124]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  In other cases, the original `span.name` is returned unchanged.
-  The primary use of `GetSemconvSpanName()` is alongside the
+  In other cases, the original `span.name` is unchanged.
+  The primary use of `set_semconv_span_name()` is alongside the
   [Span Metrics Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/spanmetricsconnector)
   to address high-cardinality issues in span metrics when `span.name` does not comply with the OTel requirement
   that span names be low cardinality.
