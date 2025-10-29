@@ -19,6 +19,7 @@ import (
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 )
@@ -61,6 +62,22 @@ const (
 	gcpAppHubWorkloadEnvironmentTypeField = "workload.environment_type"
 	gcpAppHubWorkloadCriticalityTypeField = "workload.criticality_type"
 )
+
+// getEncodingFormat maps GCP log types to encoding format values
+func getEncodingFormat(logType string) string {
+	switch logType {
+	case auditlog.ActivityLogNameSuffix,
+		auditlog.DataAccessLogNameSuffix,
+		auditlog.SystemEventLogNameSuffix,
+		auditlog.PolicyLogNameSuffix:
+		return constants.GCPFormatAuditLog
+	case vpcflowlog.NetworkManagementNameSuffix,
+		vpcflowlog.ComputeNameSuffix:
+		return constants.GCPFormatVPCFlowLog
+	default:
+		return ""
+	}
+}
 
 // See: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
 type logEntry struct {
@@ -457,18 +474,18 @@ func handleLogNameField(logName string, resourceAttr pcommon.Map) (string, error
 	}
 }
 
-func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg Config) error {
-	switch logType {
-	case auditlog.ActivityLogNameSuffix,
-		auditlog.DataAccessLogNameSuffix,
-		auditlog.SystemEventLogNameSuffix,
-		auditlog.PolicyLogNameSuffix:
+func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, cfg Config) error {
+	switch encodingFormat {
+	case constants.GCPFormatAuditLog:
+		// Add encoding.format to scope attributes for audit logs
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
 		if err := auditlog.ParsePayloadIntoAttributes(log.ProtoPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse audit log proto payload: %w", err)
 		}
 		return nil
-	case vpcflowlog.NetworkManagementNameSuffix,
-		vpcflowlog.ComputeNameSuffix:
+	case constants.GCPFormatVPCFlowLog:
+		// Add encoding.format to scope attributes for VPC flow logs
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
 		if err := vpcflowlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse VPC flow log JSON payload: %w", err)
 		}
@@ -496,7 +513,10 @@ func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg C
 
 // handleLogEntryFields will place each entry of logEntry as either an attribute of the log,
 // or as part of the log body, in case of payload.
-func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogRecord, log logEntry, cfg Config) error {
+func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLogs, log logEntry, cfg Config) error {
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	scope := scopeLogs.Scope()
+
 	ts := log.Timestamp
 	if ts == nil {
 		return errors.New("missing timestamp")
@@ -509,11 +529,14 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, logRecord plog.LogReco
 
 	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
 
+	// Handle log name, get type and encoding format
 	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)
 	if errLogName != nil {
 		return fmt.Errorf("failed to handle log name field: %w", errLogName)
 	}
-	if err := handlePayload(logType, log, logRecord, cfg); err != nil {
+	encodingFormat := getEncodingFormat(logType)
+
+	if err := handlePayload(encodingFormat, log, logRecord, scope, cfg); err != nil {
 		return fmt.Errorf("failed to handle payload field: %w", err)
 	}
 

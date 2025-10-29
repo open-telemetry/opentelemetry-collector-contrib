@@ -5,6 +5,7 @@ package googlecloudlogentryencodingextension
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"testing"
 
@@ -13,6 +14,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -209,6 +213,104 @@ func TestPayloads(t *testing.T) {
 			expectedLogs, err := golden.ReadLogs(tt.expectedFilename)
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
+		})
+	}
+}
+
+func TestEncodingFormatScopeAttributeUnknownLogs(t *testing.T) {
+	// note that testing for known log types is already done in TestPayloads,
+	// so we don't have tests here for known log types.
+	tests := []struct {
+		name           string
+		logName        string
+		expectedFormat string
+	}{
+		{
+			name:           "unknown log type",
+			logName:        "projects/test-project/logs/unknown-log-type",
+			expectedFormat: "",
+		},
+		{
+			name:           "generic log type",
+			logName:        "projects/test-project/logs/generic-log",
+			expectedFormat: "",
+		},
+	}
+
+	extension := newTestExtension(t, Config{})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create a minimal log entry that won't trigger payload processing errors
+			logLine := fmt.Appendf(nil, `{"logName": "%s", "timestamp": "2024-05-05T10:31:19.45570687Z", "textPayload": "test message"}`, tt.logName)
+
+			logs, err := extension.UnmarshalLogs(logLine)
+			require.NoError(t, err)
+
+			require.Equal(t, 1, logs.ResourceLogs().Len())
+			resourceLogs := logs.ResourceLogs().At(0)
+			require.Equal(t, 1, resourceLogs.ScopeLogs().Len())
+			scopeLogs := resourceLogs.ScopeLogs().At(0)
+
+			scopeAttrs := scopeLogs.Scope().Attributes()
+
+			_, exists := scopeAttrs.Get(constants.FormatIdentificationTag)
+			require.False(t, exists, "encoding.format attribute should not exist for unknown log types")
+		})
+	}
+}
+
+func TestGetEncodingFormatFunction(t *testing.T) {
+	tests := []struct {
+		name           string
+		logType        string
+		expectedFormat string
+	}{
+		{
+			name:           "audit log activity",
+			logType:        auditlog.ActivityLogNameSuffix,
+			expectedFormat: constants.GCPFormatAuditLog,
+		},
+		{
+			name:           "audit log data access",
+			logType:        auditlog.DataAccessLogNameSuffix,
+			expectedFormat: constants.GCPFormatAuditLog,
+		},
+		{
+			name:           "audit log system event",
+			logType:        auditlog.SystemEventLogNameSuffix,
+			expectedFormat: constants.GCPFormatAuditLog,
+		},
+		{
+			name:           "audit log policy",
+			logType:        auditlog.PolicyLogNameSuffix,
+			expectedFormat: constants.GCPFormatAuditLog,
+		},
+		{
+			name:           "vpc flow log network management",
+			logType:        vpcflowlog.NetworkManagementNameSuffix,
+			expectedFormat: constants.GCPFormatVPCFlowLog,
+		},
+		{
+			name:           "vpc flow log compute",
+			logType:        vpcflowlog.ComputeNameSuffix,
+			expectedFormat: constants.GCPFormatVPCFlowLog,
+		},
+		{
+			name:           "unknown log type",
+			logType:        "unknown-log-type",
+			expectedFormat: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := getEncodingFormat(tt.logType)
+			require.Equal(t, tt.expectedFormat, result)
 		})
 	}
 }

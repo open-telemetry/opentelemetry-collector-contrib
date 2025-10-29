@@ -94,4 +94,8 @@ resourceLogs:
             body: {}
             observedTimeUnixNano: "1759007488320127676"
             timeUnixNano: "1759007488320127676"
-        scope: {}
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.vpcflow
