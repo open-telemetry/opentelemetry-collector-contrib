@@ -59,7 +59,21 @@ Authenticating using managed identities has the following optional settings:
 
 ### Filtering metrics
 
-The `metrics` configuration setting is designed to limit scraping to specific metrics and their particular aggregations. It accepts a nested map where the key of the top-level is the Azure Metric Namespace, the key of the nested map is an Azure Metric Name, and the map values are a list of aggregation methods (e.g., Average, Minimum, Maximum, Total, Count). Additionally, the metric map value can be an empty array or an array with one element `*` (asterisk). In this case, the scraper will fetch all supported aggregations for a metric. The letter case of the Namespaces, Metric names, and Aggregations does not affect the functionality.
+The `metrics` configuration setting is designed to limit scraping to specific metrics and their particular aggregations.
+It accepts a nested map where 
+- the key of the top-level is the Azure Metric Namespace,
+- the key of the nested map is an Azure Metric Name,
+- and the map values are a list of aggregation methods (e.g., Average, Minimum, Maximum, Total, Count).
+
+Additionally, the metric map value can be an empty array or an array with one element `*` (asterisk).
+In this case, the scraper will fetch **all supported aggregations** for that metric, which is also the case if no
+`metrics` configuration is provided.
+
+> [!WARNING]  
+> If you started providing a `metrics` configuration, for a namespace, you have to specify all the metrics and their 
+> aggregations for that namespace. Otherwise, these metrics will be ignored.
+
+The letter case of the Namespaces, Metric names, and Aggregations does not affect the functionality.
 
 Scraping limited metrics and aggregations:
 

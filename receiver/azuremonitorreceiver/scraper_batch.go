@@ -351,7 +351,7 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 
 		for _, v := range nextResult.Value {
 			metricName := *v.Name.Value
-			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
+			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
 			if len(metricAggregations) == 0 {
 				continue
 			}
