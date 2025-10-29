@@ -42,18 +42,19 @@ func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 	}
 
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		return setSemconvSpanName(originalSpanNameAttribute, tCtx.GetSpan()), nil
+		setSemconvSpanName(originalSpanNameAttribute, tCtx.GetSpan())
+		return nil, nil
 	}, nil
 }
 
-func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) error {
+func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) {
 	originalSpanName := span.Name()
 	semConvSpanName := SemconvSpanName(span)
 	span.SetName(semConvSpanName)
 	if originalSpanName != semConvSpanName && originalSpanNameAttribute.GetOr("") != "" {
 		span.Attributes().PutStr(originalSpanNameAttribute.Get(), originalSpanName)
 	}
-	return nil
+	return
 }
 
 func SemconvSpanName(span ptrace.Span) string {
