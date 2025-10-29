@@ -54,7 +54,6 @@ func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span pt
 	if originalSpanName != semConvSpanName && originalSpanNameAttribute.GetOr("") != "" {
 		span.Attributes().PutStr(originalSpanNameAttribute.Get(), originalSpanName)
 	}
-	return
 }
 
 func SemconvSpanName(span ptrace.Span) string {
