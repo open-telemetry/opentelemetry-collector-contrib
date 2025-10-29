@@ -15,18 +15,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
-// TestTraceFlagsCfg is replicated with StringAttributeCfg
-type TestTraceFlagsCfg struct {
-	Key    string
-	Values []string
-}
-
 func TestTraceFlags(t *testing.T) {
 	cases := []struct {
-		Desc      string
-		Trace     *samplingpolicy.TraceData
-		filterCfg *TestTraceStateCfg
-		Decision  samplingpolicy.Decision
+		Desc     string
+		Trace    *samplingpolicy.TraceData
+		Decision samplingpolicy.Decision
 	}{
 		{
 			Desc:     "sampled trace_flags",

@@ -21,7 +21,7 @@ type traceFlags struct {
 
 var _ samplingpolicy.Evaluator = (*traceFlags)(nil)
 
-// NewTraceFlags creates a policy evaluator the samples all traces with the sampled flag set in the trace flags.
+// NewTraceFlags creates a policy evaluator that samples all traces with the sampled flag set in the trace flags.
 func NewTraceFlags(settings component.TelemetrySettings) samplingpolicy.Evaluator {
 	return &traceFlags{
 		logger: settings.Logger,
@@ -32,6 +32,9 @@ func NewTraceFlags(settings component.TelemetrySettings) samplingpolicy.Evaluato
 // Spans are sampled if any span in the trace has the sampled flag set in the trace flags.
 func (tf *traceFlags) Evaluate(ctx context.Context, tId pcommon.TraceID, td *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	tf.logger.Debug("Evaluating spans in trace-flags filter")
+
+	td.Lock()
+	defer td.Unlock()
 
 	return hasSpanWithCondition(td.ReceivedBatches, func(span ptrace.Span) bool {
 		// Get first 8 bits for trace flags byte from span flags, then bit mask for sampled flag.
