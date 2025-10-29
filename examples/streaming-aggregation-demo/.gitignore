@@ -1,0 +1,12 @@
+# Compiled binaries
+otelcol-streaming
+otelcontribcol
+otelcol
+*.exe
+
+# Temporary files
+*.tmp
+*.log
+
+# OS files
+.DS_Store

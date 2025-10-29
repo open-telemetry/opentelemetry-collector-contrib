@@ -1,0 +1,26 @@
+# Simple runtime stage using pre-built binary
+FROM alpine:latest
+
+# Install ca-certificates for HTTPS
+RUN apk --no-cache add ca-certificates
+
+# Create non-root user
+RUN addgroup -g 1000 otel && \
+    adduser -u 1000 -G otel -s /bin/sh -D otel
+
+# Copy the pre-built collector binary
+COPY otelcol-streaming /otelcol-streaming
+
+# Set ownership and make executable
+RUN chown otel:otel /otelcol-streaming && \
+    chmod +x /otelcol-streaming
+
+# Switch to non-root user
+USER otel
+
+# Expose ports
+EXPOSE 4317 4318 8888 8889 8890
+
+# Set the entrypoint
+ENTRYPOINT ["/otelcol-streaming"]
+CMD ["--config", "/etc/otel-config.yaml"]

@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Scrape collector's own internal metrics (optional)
+  - job_name: "otel-collector-raw-internal"
+    static_configs:
+      - targets: ["collector-raw:8887"]
+    scrape_interval: 15s
+
+  - job_name: "otel-collector-aggregated-internal"
+    static_configs:
+      - targets: ["collector-aggregated:8888"]
+    scrape_interval: 15s
+
+# Note: All application metrics (raw and aggregated) are now pushed via Prometheus Remote Write
+# No scraping of application metrics - only collector internal metrics are scraped
