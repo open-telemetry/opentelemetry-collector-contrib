@@ -5,7 +5,9 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -13,7 +15,7 @@ import (
 )
 
 type TraceIDArguments[K any] struct {
-	Bytes []byte
+	Target ottl.ByteSliceLikeGetter[K]
 }
 
 func NewTraceIDFactory[K any]() ottl.Factory[K] {
@@ -27,17 +29,36 @@ func createTraceIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 		return nil, errors.New("TraceIDFactory args must be of type *TraceIDArguments[K]")
 	}
 
-	return traceID[K](args.Bytes)
+	return traceID[K](args.Target)
 }
 
-func traceID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
-	if len(bytes) != 16 {
-		return nil, errors.New("traces ids must be 16 bytes")
-	}
-	var idArr [16]byte
-	copy(idArr[:16], bytes)
-	id := pcommon.TraceID(idArr)
-	return func(context.Context, K) (any, error) {
-		return id, nil
+// Sentinel errors for TraceID conversion
+var (
+	errTraceIDInvalidLength = errors.New("invalid trace id length")
+	errTraceIDHexDecode     = errors.New("invalid trace id hex")
+)
+
+func traceID[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error) {
+	const traceIDLen = len(pcommon.TraceID{})
+	const traceIDHexLen = traceIDLen * 2
+
+	return func(ctx context.Context, tCtx K) (any, error) {
+		b, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		var idArr pcommon.TraceID
+		if len(b) == traceIDLen {
+			copy(idArr[:], b)
+		} else if len(b) == traceIDHexLen {
+			_, err := hex.Decode(idArr[:], b)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %v", errTraceIDHexDecode, err)
+			}
+			return idArr, nil
+		} else {
+			return nil, fmt.Errorf("%w: expected %d or %d bytes, got %d", errTraceIDInvalidLength, traceIDLen, traceIDHexLen, len(b))
+		}
+		return pcommon.TraceID(idArr), nil
 	}, nil
 }

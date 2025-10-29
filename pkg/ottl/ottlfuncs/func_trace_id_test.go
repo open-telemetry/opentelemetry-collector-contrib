@@ -4,6 +4,7 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,14 +19,19 @@ func Test_traceID(t *testing.T) {
 		want  pcommon.TraceID
 	}{
 		{
-			name:  "create trace id",
+			name:  "create trace id from 16 bytes",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+			want:  pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}),
+		},
+		{
+			name:  "create trace id from 32 hex chars",
+			bytes: []byte("0102030405060708090a0b0c0d0e0f10"),
 			want:  pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := traceID[any](tt.bytes)
+			exprFunc, err := traceID(makeTraceIDGetter(tt.bytes))
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -40,19 +46,35 @@ func Test_traceID_validation(t *testing.T) {
 		bytes []byte
 	}{
 		{
-			name:  "byte slice less than 16",
+			name:  "byte slice less than 16 (15)",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
 		},
 		{
-			name:  "byte slice longer than 16",
+			name:  "byte slice longer than 16 (17)",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := traceID[any](tt.bytes)
-			require.Error(t, err)
-			assert.ErrorContains(t, err, "traces ids must be 16 bytes")
+			exprFunc, err := traceID(makeTraceIDGetter(tt.bytes))
+			require.NoError(t, err)
+
+			result, err := exprFunc(nil, nil)
+			assert.Error(t, err)
+			assert.Nil(t, result)
+			assert.ErrorIs(t, err, errTraceIDInvalidLength)
 		})
 	}
+}
+
+func makeTraceIDGetter(bytes []byte) *traceIDGetter {
+	return &traceIDGetter{bytes: bytes}
+}
+
+type traceIDGetter struct {
+	bytes []byte
+}
+
+func (t *traceIDGetter) Get(ctx context.Context, tCtx any) ([]byte, error) {
+	return t.bytes, nil
 }
