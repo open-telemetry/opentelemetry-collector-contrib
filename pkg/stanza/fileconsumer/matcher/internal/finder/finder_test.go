@@ -168,11 +168,11 @@ func TestFindFiles(t *testing.T) {
 		},
 		{
 			name:    "CaseSensitivity",
-			files:   []string{"a.log", "A.LOG", "a.Log", "my_file.txt", "My_FIle.TXT"},
+			files:   []string{"a.log", "B.LOG", "c.Log", "my_file.txt", "CaSe_FIle.TXT"},
 			include: []string{"*.log", "*.txt"},
 			expected: (func() []string {
 				if runtime.GOOS == "windows" {
-					return []string{"a.log", "A.LOG", "a.Log", "my_file.txt", "My_FIle.txt"}
+					return []string{"a.log", "B.LOG", "c.Log", "my_file.txt", "CaSe_FIle.TXT"}
 				}
 				return []string{"a.log", "my_file.txt"}
 			})(),
