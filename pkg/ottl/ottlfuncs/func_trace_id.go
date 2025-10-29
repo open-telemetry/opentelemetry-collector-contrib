@@ -32,7 +32,6 @@ func createTraceIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	return traceID[K](args.Target)
 }
 
-// Sentinel errors for TraceID conversion
 var (
 	errTraceIDInvalidLength = errors.New("invalid trace id length")
 	errTraceIDHexDecode     = errors.New("invalid trace id hex")
@@ -48,8 +47,10 @@ func traceID[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error
 			return nil, err
 		}
 		var idArr pcommon.TraceID
+		// Handle 16 bytes (binary encoded trace ID)
 		if len(b) == traceIDLen {
 			copy(idArr[:], b)
+			// Handle 32 bytes (string hex encoded trace ID)
 		} else if len(b) == traceIDHexLen {
 			_, err := hex.Decode(idArr[:], b)
 			if err != nil {
