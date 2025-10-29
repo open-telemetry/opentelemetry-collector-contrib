@@ -238,7 +238,7 @@ func New(
 				return object, nil
 			}
 
-			return removeUnnecessaryPodData(originalPod, c.Rules), nil
+			return removeUnnecessaryPodData(originalPod, c.Rules, c.Associations), nil
 		},
 	)
 	if err != nil {
@@ -961,7 +961,7 @@ func copyLabel(pod *api_v1.Pod, tags map[string]string, labelKey string, key att
 }
 
 // This function removes all data from the Pod except what is required by extraction rules and pod association
-func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Pod {
+func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules, associations []Association) *api_v1.Pod {
 	// name, namespace, uid, start time and ip are needed for identifying Pods
 	// there's room to optimize this further, it's kept this way for simplicity
 	transformedPod := api_v1.Pod{
@@ -995,7 +995,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		transformedPod.Spec.Hostname = pod.Spec.Hostname
 	}
 
-	if needContainerAttributes(rules) {
+	if needContainerAttributes(rules, associations) {
 		removeUnnecessaryContainerStatus := func(c api_v1.ContainerStatus) api_v1.ContainerStatus {
 			transformedContainerStatus := api_v1.ContainerStatus{
 				Name:         c.Name,
@@ -1096,73 +1096,85 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 		ByID:   map[string]*Container{},
 		ByName: map[string]*Container{},
 	}
-	if !needContainerAttributes(c.Rules) {
+
+	extractionRulesNeed := extractionRulesNeedContainers(c.Rules)
+	associationsNeed := associationsNeedContainerID(c.Associations)
+
+	if !extractionRulesNeed && !associationsNeed {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
-		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
-		specs := append(pod.Spec.Containers, pod.Spec.InitContainers...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
-		for i := range specs {
-			spec := &specs[i]
-			container := &Container{}
-			imageRef, err := dcommon.ParseImageName(spec.Image)
-			if err == nil {
-				if c.Rules.ContainerImageName {
-					container.ImageName = imageRef.Repository
-				}
-				if c.Rules.ContainerImageTag {
-					container.ImageTag = imageRef.Tag
-				}
-				if c.Rules.ServiceVersion {
-					serviceVersion, err := parseServiceVersionFromImage(spec.Image)
-					if err == nil {
-						container.ServiceVersion = serviceVersion
+
+	if extractionRulesNeed {
+		if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
+			c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
+			specs := append(pod.Spec.Containers, pod.Spec.InitContainers...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+			for i := range specs {
+				spec := &specs[i]
+				container := &Container{}
+				imageRef, err := dcommon.ParseImageName(spec.Image)
+				if err == nil {
+					if c.Rules.ContainerImageName {
+						container.ImageName = imageRef.Repository
+					}
+					if c.Rules.ContainerImageTag {
+						container.ImageTag = imageRef.Tag
+					}
+					if c.Rules.ServiceVersion {
+						serviceVersion, err := parseServiceVersionFromImage(spec.Image)
+						if err == nil {
+							container.ServiceVersion = serviceVersion
+						}
 					}
 				}
+				containers.ByName[spec.Name] = container
 			}
-			containers.ByName[spec.Name] = container
 		}
-	}
-	apiStatuses := append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
-	for i := range apiStatuses {
-		apiStatus := &apiStatuses[i]
-		containerName := apiStatus.Name
-		container, ok := containers.ByName[containerName]
-		if !ok {
-			container = &Container{}
-			containers.ByName[containerName] = container
-		}
-		if c.Rules.ContainerName {
-			container.Name = containerName
-		}
-		if c.Rules.ServiceInstanceID {
-			container.ServiceInstanceID = automaticServiceInstanceID(pod, containerName)
-		}
-		containerID := apiStatus.ContainerID
-		// Remove container runtime prefix
-		parts := strings.Split(containerID, "://")
-		if len(parts) == 2 {
-			containerID = parts[1]
-		}
-		containers.ByID[containerID] = container
-		if c.Rules.ContainerID || c.Rules.ContainerImageRepoDigests {
-			if container.Statuses == nil {
-				container.Statuses = map[int]ContainerStatus{}
-			}
-			containerStatus := ContainerStatus{}
-			if c.Rules.ContainerID {
-				containerStatus.ContainerID = containerID
-			}
 
-			if c.Rules.ContainerImageRepoDigests {
-				if canonicalRef, err := dcommon.CanonicalImageRef(apiStatus.ImageID); err == nil {
-					containerStatus.ImageRepoDigest = canonicalRef
+		apiStatuses := append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+		for i := range apiStatuses {
+			apiStatus := &apiStatuses[i]
+			containerName := apiStatus.Name
+			container, ok := containers.ByName[containerName]
+			if !ok {
+				container = &Container{}
+				containers.ByName[containerName] = container
+			}
+			if c.Rules.ContainerName {
+				container.Name = containerName
+			}
+			if c.Rules.ServiceInstanceID {
+				container.ServiceInstanceID = automaticServiceInstanceID(pod, containerName)
+			}
+			containerID := normalizeContainerID(apiStatus.ContainerID)
+			containers.ByID[containerID] = container
+			if c.Rules.ContainerID || c.Rules.ContainerImageRepoDigests {
+				if container.Statuses == nil {
+					container.Statuses = map[int]ContainerStatus{}
 				}
-			}
+				containerStatus := ContainerStatus{}
+				if c.Rules.ContainerID {
+					containerStatus.ContainerID = containerID
+				}
 
-			container.Statuses[int(apiStatus.RestartCount)] = containerStatus
+				if c.Rules.ContainerImageRepoDigests {
+					if canonicalRef, err := dcommon.CanonicalImageRef(apiStatus.ImageID); err == nil {
+						containerStatus.ImageRepoDigest = canonicalRef
+					}
+				}
+
+				container.Statuses[int(apiStatus.RestartCount)] = containerStatus
+			}
+		}
+	} else if associationsNeed {
+		// Only ByID needed for associations with container.id but no extraction rules for container attributes
+		apiStatuses := append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+		for i := range apiStatuses {
+			apiStatus := &apiStatuses[i]
+			containerID := normalizeContainerID(apiStatus.ContainerID)
+			containers.ByID[containerID] = &Container{}
 		}
 	}
+
 	return containers
 }
 
@@ -1306,7 +1318,7 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		newPod.Ignore = true
 	} else {
 		newPod.Attributes = c.extractPodAttributes(pod)
-		if needContainerAttributes(c.Rules) {
+		if needContainerAttributes(c.Rules, c.Associations) {
 			newPod.Containers = c.extractPodContainersAttributes(pod)
 		}
 	}
@@ -1749,7 +1761,7 @@ func (c *WatchClient) addOrUpdateJob(job *batch_v1.Job) {
 	c.m.Unlock()
 }
 
-func needContainerAttributes(rules ExtractionRules) bool {
+func extractionRulesNeedContainers(rules ExtractionRules) bool {
 	return rules.ContainerImageName ||
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
@@ -1757,6 +1769,31 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerID ||
 		rules.ServiceVersion ||
 		rules.ServiceInstanceID
+}
+
+func associationsNeedContainerID(associations []Association) bool {
+	for _, association := range associations {
+		for _, source := range association.Sources {
+			if source.From == ResourceSource && source.Name == string(conventions.ContainerIDKey) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func needContainerAttributes(rules ExtractionRules, associations []Association) bool {
+	return extractionRulesNeedContainers(rules) || associationsNeedContainerID(associations)
+}
+
+// normalizeContainerID removes container runtime prefixes (e.g., "containerd://", "docker://")
+// from container IDs.
+func normalizeContainerID(containerID string) string {
+	parts := strings.Split(containerID, "://")
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return containerID
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
