@@ -100,7 +100,7 @@ The following configuration options can also be configured:
   IMPORTANT: Host metadata synchronization relies on `resourcedetection`
   processor. If this option is enabled make sure that `resourcedetection`
   processor is enabled in the pipeline with one of the cloud provider detectors
-  or environment variable detector setting a unique value to `host.name` attribute
+  or environment variable detector setting a unique value to `host.id` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
 - `root_path`: Used by the host metadata to identify the root filesystem.
   This is needed when running in a containerized environment and the host root
@@ -270,6 +270,8 @@ exporters:
     realm: us1
     timeout: 5s
     max_idle_conns: 80
+    sending_queue:
+      batch:
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
@@ -279,11 +281,11 @@ service:
   pipelines:
     metrics:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     traces:
       receivers: [zipkin]

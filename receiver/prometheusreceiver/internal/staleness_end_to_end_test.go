@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/telemetry"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -119,9 +120,6 @@ exporters:
       insecure: true
 
 service:
-  telemetry:
-    metrics:
-      level: "none"
   pipelines:
     metrics:
       receivers: [prometheus]
@@ -144,6 +142,9 @@ service:
 		Receivers:  receivers,
 		Exporters:  exporters,
 		Processors: processors,
+		Telemetry: telemetry.NewFactory(
+			func() component.Config { return struct{}{} },
+		),
 	}
 
 	appSettings := otelcol.CollectorSettings{
@@ -188,7 +189,7 @@ service:
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wReqL = append(wReqL, <-prweUploads)
 	}
 	defer cancel()

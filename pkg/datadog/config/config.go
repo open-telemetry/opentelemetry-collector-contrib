@@ -28,8 +28,6 @@ var (
 	ErrNoMetadata = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 	// ErrInvalidHostname is returned when the hostname is invalid.
 	ErrEmptyEndpoint = errors.New("endpoint cannot be empty")
-	// ErrAPIKeyFormat is returned if API key contains invalid characters
-	ErrAPIKeyFormat = errors.New("api::key contains invalid characters")
 	// NonHexRegex is a regex of characters that are always invalid in a Datadog API key
 	NonHexRegex = regexp.MustCompile(NonHexChars)
 )
@@ -54,6 +52,8 @@ type APIConfig struct {
 	// FailOnInvalidKey states whether to exit at startup on invalid API key.
 	// The default value is false.
 	FailOnInvalidKey bool `mapstructure:"fail_on_invalid_key"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // TagsConfig defines the tag-related configuration
@@ -66,6 +66,8 @@ type TagsConfig struct {
 	// Prefer using the `datadog.host.name` resource attribute over using this setting.
 	// See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#general-hostname-semantic-conventions for details.
 	Hostname string `mapstructure:"hostname"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for the Datadog exporter.
@@ -119,6 +121,27 @@ func (c *Config) LogWarnings(logger *zap.Logger) {
 	}
 }
 
+// AddWarning adds a warning message to the configuration.
+// This allows external modules to add warnings that will be logged later.
+func (c *Config) AddWarning(warning error) {
+	c.warnings = append(c.warnings, warning)
+}
+
+// AddWarningf adds a formatted warning message to the configuration.
+// This allows external modules to add formatted warnings that will be logged later.
+func (c *Config) AddWarningf(format string, args ...any) {
+	c.warnings = append(c.warnings, fmt.Errorf(format, args...))
+}
+
+// GetWarnings returns a copy of all warnings stored in the configuration.
+// This allows external modules to retrieve and process warnings as needed.
+func (c *Config) GetWarnings() []error {
+	// Return a copy to prevent external modification of the internal slice
+	warnings := make([]error, len(c.warnings))
+	copy(warnings, c.warnings)
+	return warnings
+}
+
 var _ component.Config = (*Config)(nil)
 
 // Validate the configuration for errors. This is required by component.Config.
@@ -135,8 +158,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
-	if err := StaticAPIKeyCheck(string(c.API.Key)); err != nil {
-		return err
+	if c.API.Key == "" {
+		return ErrUnsetAPIKey
 	}
 
 	if err := c.Traces.Validate(); err != nil {
@@ -157,14 +180,12 @@ func (c *Config) Validate() error {
 
 // StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
 // It does not validate online; this is handled on startup.
+// Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
 func StaticAPIKeyCheck(key string) error {
 	if key == "" {
 		return ErrUnsetAPIKey
 	}
-	invalidAPIKeyChars := NonHexRegex.FindAllString(key, -1)
-	if len(invalidAPIKeyChars) > 0 {
-		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
-	}
+
 	return nil
 }
 
@@ -384,4 +405,13 @@ func CreateDefaultConfig() component.Config {
 
 		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373
 	}
+}
+
+// CheckAndCastConfig checks a component.Config type and casts it to the Datadog Config struct.
+func CheckAndCastConfig(c component.Config) (*Config, error) {
+	cfg, ok := c.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("expected config of type *datadog.Config, got %T", c)
+	}
+	return cfg, nil
 }

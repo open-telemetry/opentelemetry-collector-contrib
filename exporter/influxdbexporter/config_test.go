@@ -44,12 +44,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
 				ClientConfig: clientConfig,
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 3,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
+				QueueSettings: func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 3
+					queue.QueueSize = 10
+					return queue
+				}(),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     1 * time.Second,
@@ -66,6 +66,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricsSchema:       "telegraf-prometheus-v1",
 				PayloadMaxLines:     72,
 				PayloadMaxBytes:     27,
+				Precision:           "ns",
 			},
 		},
 	}
