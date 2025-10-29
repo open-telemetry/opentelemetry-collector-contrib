@@ -86,9 +86,9 @@ System CPU consumed by the Redis server in seconds since server start
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` | false |
+| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` | Recommended |
 
 ### redis.db.avg_ttl
 
@@ -100,9 +100,9 @@ Average keyspace keys TTL
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | false |
+| db | Redis database identifier | Any Str | Recommended |
 
 ### redis.db.expires
 
@@ -114,9 +114,9 @@ Number of keyspace keys with an expiration
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | false |
+| db | Redis database identifier | Any Str | Recommended |
 
 ### redis.db.keys
 
@@ -128,9 +128,9 @@ Number of keyspace keys
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | false |
+| db | Redis database identifier | Any Str | Recommended |
 
 ### redis.keys.evicted
 
@@ -278,6 +278,108 @@ metrics:
     enabled: true
 ```
 
+### redis.cluster.known_nodes
+
+Number of known nodes in the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {node} | Gauge | Int | development |
+
+### redis.cluster.links_buffer_limit_exceeded.count
+
+Total number of times the cluster links buffer limit was exceeded
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {count} | Sum | Int | Cumulative | true | development |
+
+### redis.cluster.node.count
+
+Number of master nodes in the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {node} | Gauge | Int | development |
+
+### redis.cluster.node.uptime
+
+The node's current epoch
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
+
+### redis.cluster.slots_assigned
+
+Number of slots assigned in the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | development |
+
+### redis.cluster.slots_fail
+
+Number of slots in the cluster that are in a failing state
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | development |
+
+### redis.cluster.slots_ok
+
+Number of slots in the cluster that are ok
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | development |
+
+### redis.cluster.slots_pfail
+
+Number of slots in the cluster that are in a 'potentially failing' state
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | development |
+
+### redis.cluster.state
+
+State of the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {state} | Gauge | Int | development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| cluster_state | State of the cluster | Str: ``ok``, ``fail`` | Recommended |
+
+### redis.cluster.stats_messages_received
+
+Total number of messages received by the cluster
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {message} | Sum | Int | Cumulative | true | development |
+
+### redis.cluster.stats_messages_sent
+
+Total number of messages sent by the cluster
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {message} | Sum | Int | Cumulative | true | development |
+
+### redis.cluster.uptime
+
+Current epoch of the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
+
 ### redis.cmd.calls
 
 Total number of calls for a command
@@ -288,9 +390,9 @@ Total number of calls for a command
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | false |
+| cmd | Redis command name | Any Str | Recommended |
 
 ### redis.cmd.latency
 
@@ -302,10 +404,10 @@ Command execution latency
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | false |
-| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | false |
+| cmd | Redis command name | Any Str | Recommended |
+| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | Recommended |
 
 ### redis.cmd.usec
 
@@ -317,9 +419,9 @@ Total time for all executions of this command
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | false |
+| cmd | Redis command name | Any Str | Recommended |
 
 ### redis.maxmemory
 
@@ -347,9 +449,9 @@ Redis node's role
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| role | Redis node's role | Str: ``replica``, ``primary`` | false |
+| role | Redis node's role | Str: ``replica``, ``primary`` | Recommended |
 
 ## Resource Attributes
 

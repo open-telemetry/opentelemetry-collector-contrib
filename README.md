@@ -94,6 +94,7 @@ For more information about the maintainer role, see the [community repository](h
 - [Matt Wear](https://github.com/mwear), Lightstep
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
+- [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
@@ -101,6 +102,7 @@ For more information about the approver role, see the [community repository](htt
 ### Triagers
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
+- [Bogdan Stancu](https://github.com/bogdan-st), Adobe
 - [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
@@ -110,7 +112,6 @@ For more information about the approver role, see the [community repository](htt
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Roger Coll](https://github.com/rogercoll), Elastic
-- [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
 For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).

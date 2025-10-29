@@ -104,7 +104,7 @@ func BenchmarkJoinAttributes(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			b.ResetTimer()
 			from := initMetricAttributes(tt.args.from, 0)
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				to := initMetricAttributes(tt.args.to, tt.args.from)
 				joinAttributeMaps(from, to)
 			}
@@ -115,7 +115,7 @@ func BenchmarkJoinAttributes(b *testing.B) {
 func initMetricAttributes(capacity, idx int) pcommon.Map {
 	dest := pcommon.NewMap()
 	dest.EnsureCapacity(capacity)
-	for i := 0; i < capacity; i++ {
+	for i := range capacity {
 		dest.PutStr(fmt.Sprintf("label-name-for-index-%d", i+idx), fmt.Sprintf("label-value-for-index-%d", i+idx))
 	}
 	return dest

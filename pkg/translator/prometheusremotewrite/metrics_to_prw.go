@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {
@@ -53,7 +55,7 @@ func newPrometheusConverter(settings Settings) *prometheusConverter {
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
 		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }
@@ -138,7 +140,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 		errs = multierr.Append(errs, addResourceTargetInfo(resource, settings, mostRecentTimestamp, c))
 	}
 
-	return
+	return errs
 }
 
 // timeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.

@@ -20,63 +20,132 @@ The following settings are available:
 
 | Setting | Type | Required | Description |
 |---------|------|----------|-------------|
-| `devices` | []DeviceConfig | Yes | List of Cisco devices to monitor |
+| `device` | DeviceConfig | Yes | Cisco device to monitor |
 | `collection_interval` | duration | No | How often to collect metrics (default: 60s) |
 | `timeout` | duration | No | SSH connection and command timeout (default: 30s) |
 | `scrapers` | map | Yes | Scrapers to enable |
 
+**Note:** Each receiver instance monitors a single device. To monitor multiple devices, create multiple receiver instances with unique identifiers (e.g., `ciscoosreceiver/device1`, `ciscoosreceiver/device2`).
+
 ### Device Configuration
+
+Each device configuration contains device information and authentication settings following semantic conventions:
 
 | Setting | Type | Required | Description |
 |---------|------|----------|-------------|
-| `host` | string | Yes | Device address in `host:port` format |
-| `username` | string | Yes | SSH username for authentication |
-| `password` | string | No* | Password for authentication |
-| `key_file` | string | No* | Path to SSH private key file |
+| `device.host.name` | string | No | Human-readable device name |
+| `device.host.ip` | string | Yes | Device IP address |
+| `device.host.port` | int | Yes | SSH port (typically 22) |
+| `auth.username` | string | Yes | SSH username for authentication |
+| `auth.password` | string | No* | Password for authentication |
+| `auth.key_file` | string | No* | Path to SSH private key file (supports RSA, ECDSA, Ed25519 in PEM or OpenSSH format) |
 
-*Either `password` or `key_file` is required, but not both.
+*At least one of `auth.password` or `auth.key_file` is required. Both can be provided for fallback authentication (key file is tried first).
+
+**Authentication Methods:**
+- **Password authentication**: Provide `auth.password`
+- **SSH key file authentication**: Provide `auth.key_file` (path to private key)
+  - Supports unencrypted keys in RSA, ECDSA, Ed25519 formats
+  - Supports both PEM and OpenSSH formats
+  - Encrypted keys are not supported
+- **Fallback authentication**: Provide both `auth.password` and `auth.key_file`
+  - Key file is tried first, password is used as fallback if key authentication fails
 
 ### Scrapers Configuration
 
-The scrapers are configured as groups.
+The scrapers are configured as modular components. Each scraper type can be configured individually:
 
 | Setting | Type | Description |
 |---------|------|-------------|
-| `bgp` | map | BGP session metrics configuration |
-| `environment` | map | Temperature and power metrics configuration |
-| `facts` | map | System information metrics configuration |
-| `interfaces` | map | Interface status and statistics configuration |
-| `optics` | map | Optical transceiver metrics configuration |
+| `system` | map | System metrics (device availability, CPU, memory) |
 
-Each scraper can be enabled by simply including it in the configuration, or disabled by omitting it. Future versions may support scraper-specific configuration options within each group.
+## Metrics Collected
 
-## Scrapers
+### System Metrics
+- `cisco.device.up` - Device availability (1=up, 0=down)
+- `system.cpu.utilization` - CPU utilization as a percentage (0-1)
+  - NX-OS: Calculated from `show system resources` (user + kernel)
+  - IOS/IOS XE: Calculated from `show process cpu` (5-second average)
+- `system.memory.utilization` - Memory utilization as a percentage (0-1)
+  - NX-OS: Calculated from `show system resources` (used / total)
+  - IOS/IOS XE: Calculated from `show process memory` (Processor Pool used / total)
 
-The receiver supports the following scrapers:
-
-- **BGP**: Collects BGP session information and statistics
-- **Environment**: Collects temperature and power consumption metrics  
-- **Facts**: Collects system information (OS version, memory, CPU utilization)
-- **Interfaces**: Collects interface statistics (bytes, packets, errors)
-- **Optics**: Collects optical signal strength information
+### Attributes
+All metrics include the `target` attribute with the device's IP address for correlation with Kubernetes nodes and other resources.
 
 ## Example Configuration
 
 ```yaml
 receivers:
-  ciscoosreceiver:
+  # Example 1: Password authentication
+  ciscoosreceiver/switch01:
     collection_interval: 60s
     timeout: 30s
-    devices:
-      - host: "cisco-device:22"
+    device:
+      device:
+        host:
+          name: "core-switch-01"
+          ip: "192.168.1.10"
+          port: 22
+      auth:
         username: "admin"
-        password: "password"
+        password: "secure-password"
     scrapers:
-      bgp:
-      environment:
-      facts:
-      interfaces:
-      optics:
+      system:
+        metrics:
+          cisco.device.up:
+            enabled: true
+          system.cpu.utilization:
+            enabled: true
+          system.memory.utilization:
+            enabled: true
+
+  # Example 2: SSH key file authentication
+  ciscoosreceiver/router01:
+    collection_interval: 60s
+    timeout: 30s
+    device:
+      device:
+        host:
+          name: "edge-router-01"
+          ip: "192.168.1.20"
+          port: 22
+      auth:
+        username: "admin"
+        key_file: "/home/user/.ssh/id_rsa"
+    scrapers:
+      system:
+        metrics:
+          cisco.device.up:
+            enabled: true
+          system.cpu.utilization:
+            enabled: true
+          system.memory.utilization:
+            enabled: true
+
+  # Example 3: Fallback authentication (key file with password backup)
+  ciscoosreceiver/firewall01:
+    collection_interval: 60s
+    timeout: 30s
+    device:
+      device:
+        host:
+          name: "firewall-01"
+          ip: "192.168.1.30"
+          port: 22
+      auth:
+        username: "admin"
+        key_file: "/home/user/.ssh/id_rsa"
+        password: "backup-password"  # Used if key auth fails
+    scrapers:
+      system:
+        metrics:
+          cisco.device.up:
+            enabled: true
+          system.cpu.utilization:
+            enabled: true
+          system.memory.utilization:
+            enabled: true
 
 exporters:
   debug:
@@ -84,6 +153,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ciscoosreceiver]
+      receivers: [ciscoosreceiver/switch01, ciscoosreceiver/router01, ciscoosreceiver/firewall01]
       exporters: [debug]
 ```
