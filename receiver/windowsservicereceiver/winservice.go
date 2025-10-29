@@ -1,5 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
+
 //go:build windows
 
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
@@ -15,7 +16,7 @@ type winService struct {
 	handle *mgr.Service
 
 	status svc.Status
-	config ConfigEx
+	config configEx
 }
 
 func updateService(m *serviceManager, sname string) (*winService, error) {
@@ -50,7 +51,7 @@ func (ws *winService) updateConfig() error {
 	if err != nil {
 		return err
 	}
-	ws.config = ConfigEx{
+	ws.config = configEx{
 		StartType:        StartType(cfg.StartType),
 		DelayedAutoStart: cfg.DelayedAutoStart,
 	}

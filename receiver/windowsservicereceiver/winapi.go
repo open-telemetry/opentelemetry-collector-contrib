@@ -1,7 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//revive:disable:unused-parameter
 //go:build windows
 
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
@@ -33,13 +32,13 @@ const (
 	StartDisabled  StartType = 4
 )
 
-type ConfigEx struct {
+type configEx struct {
 	StartType        StartType
 	DelayedAutoStart bool
 }
 
 type serviceManager struct {
-	h *mgr.Mgr
+	svcmgr *mgr.Mgr
 }
 
 func (sm *serviceManager) connect() error {
@@ -47,30 +46,30 @@ func (sm *serviceManager) connect() error {
 	if err != nil {
 		return err
 	}
-	sm.h = m
+	sm.svcmgr = m
 	return nil
 }
 
 func (sm *serviceManager) disconnect() error {
-	if sm.h != nil {
-		return sm.h.Disconnect()
+	if sm.svcmgr != nil {
+		return sm.svcmgr.Disconnect()
 	}
 	return nil
 }
 
 func (sm *serviceManager) listServices() ([]string, error) {
-	if sm.h == nil {
-		return nil, windows.ERROR_INVALID_HANDLE
+	if sm.svcmgr == nil {
+		return []string{}, nil
 	}
-	return sm.h.ListServices()
+	return sm.svcmgr.ListServices()
 }
 
 func (sm *serviceManager) openService(name string) (*mgr.Service, error) {
-	if sm.h == nil {
+	if sm.svcmgr == nil {
 		return nil, windows.ERROR_INVALID_HANDLE
 	}
 	if name == "" {
 		return nil, windows.ERROR_INVALID_PARAMETER
 	}
-	return sm.h.OpenService(name)
+	return sm.svcmgr.OpenService(name)
 }
