@@ -10,12 +10,13 @@ import (
     "go.opentelemetry.io/collector/exporter"
     "go.opentelemetry.io/collector/pdata/pcommon"
     "go.opentelemetry.io/collector/pdata/pmetric"
+    "go.uber.org/zap"
 )
 
 type metricsExporter struct {
     config *Config
     client *http.Client
-    logger exporter.Logger
+    logger *zap.Logger
 }
 
 type HydrolixMetric struct {

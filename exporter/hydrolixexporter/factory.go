@@ -36,14 +36,11 @@ func createTracesExporter(
     config := cfg.(*Config)
     te := newTracesExporter(config, set)
 
-    return exporterhelper.NewTracesExporter(
+    return exporterhelper.NewTraces(
         ctx,
         set,
         cfg,
         te.pushTraces,
-        exporterhelper.WithTimeout(config.Timeout),
-        exporterhelper.WithRetry(config.BackOffConfig),
-        exporterhelper.WithQueue(config.QueueSettings),
     )
 }
 
@@ -55,13 +52,10 @@ func createMetricsExporter(
     config := cfg.(*Config)
     me := newMetricsExporter(config, set)
 
-    return exporterhelper.NewMetricsExporter(
+    return exporterhelper.NewMetrics(
         ctx,
         set,
         cfg,
         me.pushMetrics,
-        exporterhelper.WithTimeout(config.Timeout),
-        exporterhelper.WithRetry(config.BackOffConfig),
-        exporterhelper.WithQueue(config.QueueSettings),
     )
 }
