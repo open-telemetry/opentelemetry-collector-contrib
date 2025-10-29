@@ -33,8 +33,8 @@ github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
 github.com/DataDog/agent-payload/v5 v5.0.171 h1:o9vSLDPNeg5PSpVUciSVnGOvfzQ3Uw7ucp0TPv60oN4=
 github.com/DataDog/agent-payload/v5 v5.0.171/go.mod h1:9PtvPKsgZVTTvqgYtcwB4bjXAkxYzC2wzSXSadPRHv8=
-github.com/DataDog/datadog-agent/comp/api/api/def v0.72.0-rc.1 h1:AW2l1OlbAdXPZGz8hTTnadqSD+3ZxiSeY5Ub1TGJs/Q=
-github.com/DataDog/datadog-agent/comp/api/api/def v0.72.0-rc.1/go.mod h1:G7ydZlGwrRFMpcYvQmaPpQaIcM57EWjLMWPphjM8Wv4=
+github.com/DataDog/datadog-agent/comp/api/api/def v0.73.0-devel.0.20251029125601-4994df05eb4e h1:8yfURk4csy3OTkt4rPheSO/ZwH+9IkZbgSorYblpC8g=
+github.com/DataDog/datadog-agent/comp/api/api/def v0.73.0-devel.0.20251029125601-4994df05eb4e/go.mod h1:Y8NNf3UfsAWmmeMuRGlz9u3OXQMFgIWeB+xl72fpOTQ=
 github.com/DataDog/datadog-agent/comp/core/config v0.73.0-devel.0.20251029125601-4994df05eb4e h1:hIXJtMn93iQrTnOcIylDxrajEwFfXBI9sCSPUwDv1D4=
 github.com/DataDog/datadog-agent/comp/core/config v0.73.0-devel.0.20251029125601-4994df05eb4e/go.mod h1:YZBDQTm46e8/jEBKCqaal4958Vm4vKnqdttksFq4zh0=
 github.com/DataDog/datadog-agent/comp/core/flare/builder v0.73.0-devel.0.20251029125601-4994df05eb4e h1:bPzvX7xl7wkkQP7aXKCYFOj2hg82QtzCSm9Q5UOC650=
@@ -51,8 +51,8 @@ github.com/DataDog/datadog-agent/comp/core/secrets/def v0.73.0-devel.0.202510291
 github.com/DataDog/datadog-agent/comp/core/secrets/def v0.73.0-devel.0.20251029125601-4994df05eb4e/go.mod h1:mV7hPUjpP86cntCTF3J7BsL1aXnwNGrmIhWTUCuXtUw=
 github.com/DataDog/datadog-agent/comp/core/secrets/mock v0.70.0 h1:4qqGLbfJU6xBml/ErQ/pqamFWFHQG57MwQRCcxhBJ7Y=
 github.com/DataDog/datadog-agent/comp/core/secrets/mock v0.70.0/go.mod h1:oZhWOObGSvWooOnq+WJrdkx77wb1uRGeA/+fhzHDnn4=
-github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.0.0-20251003153905-4e3e64f07b69 h1:K6vIND4IfYhOcpfSawv7Y3x6zeLV1UpphCMEN1EArIg=
-github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.0.0-20251003153905-4e3e64f07b69/go.mod h1:KVmvZ2fb3LKkW+1HTSsj3GS7Q+mzX3RwhF+eoKIh9Yw=
+github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.0.0-20251029125601-4994df05eb4e h1:u0DH9eXdzNpeJkAK7ieg8hkjZJiP2GM05SqEyis0Qlw=
+github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.0.0-20251029125601-4994df05eb4e/go.mod h1:Hot/gkdKQA4OzlaAB9au1Vrb0Dw+bgxnJ2tAnKfGbvw=
 github.com/DataDog/datadog-agent/comp/core/secrets/utils v0.70.0 h1:i7y3at4X4TSdaCpZU7JoRerIbezD+LudVsB2rDd4Leo=
 github.com/DataDog/datadog-agent/comp/core/secrets/utils v0.70.0/go.mod h1:ALBDP+QHSmtWZEHhWL1CvfNa/IW7Kv47MU5QBzEX4ss=
 github.com/DataDog/datadog-agent/comp/core/status v0.73.0-devel.0.20251029125601-4994df05eb4e h1:IlUeTLmsTOGfsT7OTOzsN1T6Xam1CgEDihxu0BlqR3Y=

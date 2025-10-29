@@ -129,8 +129,8 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/api/api/def v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.0.0-20251003153905-4e3e64f07b69 // indirect
+	github.com/DataDog/datadog-agent/comp/api/api/def v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
+	github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.0.0-20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect

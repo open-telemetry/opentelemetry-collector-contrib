@@ -39,14 +39,14 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.171 // indirect
-	github.com/DataDog/datadog-agent/comp/api/api/def v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/comp/api/api/def v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/log/def v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets/def v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
-	github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.0.0-20251003153905-4e3e64f07b69 // indirect
+	github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.0.0-20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/status v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/def v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-devel.0.20251029125601-4994df05eb4e // indirect
