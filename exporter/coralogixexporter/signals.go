@@ -51,7 +51,7 @@ func (w *signalConfigWrapper) GetEndpoint() string {
 	return w.config.Endpoint
 }
 
-func newSignalExporter(oCfg *Config, set exp.Settings, signalEndpoint string, headers map[string]configopaque.String) (*signalExporter, error) {
+func newSignalExporter(oCfg *Config, set exp.Settings, signalEndpoint string, headers configopaque.MapList) (*signalExporter, error) {
 	if isEmpty(oCfg.Domain) && isEmpty(signalEndpoint) {
 		return nil, errors.New("coralogix exporter config requires `domain` or `logs.endpoint` configuration")
 	}
@@ -60,7 +60,7 @@ func newSignalExporter(oCfg *Config, set exp.Settings, signalEndpoint string, he
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
 	md := metadata.New(nil)
-	for k, v := range headers {
+	for k, v := range headers.Iter {
 		md.Set(k, string(v))
 	}
 
@@ -120,12 +120,9 @@ func (e *signalExporter) enhanceContext(ctx context.Context) context.Context {
 
 func (e *signalExporter) startSignalExporter(ctx context.Context, host component.Host, signalConfig signalConfig) (err error) {
 	if signalConfigWrapper, ok := signalConfig.(*signalConfigWrapper); ok {
-		if signalConfigWrapper.config.Headers == nil {
-			signalConfigWrapper.config.Headers = make(map[string]configopaque.String)
-		}
-		signalConfigWrapper.config.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
+		signalConfigWrapper.config.Headers.Set("Authorization", configopaque.String("Bearer "+string(e.config.PrivateKey)))
 		if e.config.Protocol != httpProtocol {
-			for k, v := range signalConfigWrapper.config.Headers {
+			for k, v := range signalConfigWrapper.config.Headers.Iter {
 				e.metadata.Set(k, string(v))
 			}
 		}

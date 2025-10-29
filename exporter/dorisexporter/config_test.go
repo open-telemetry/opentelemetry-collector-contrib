@@ -37,10 +37,10 @@ func TestLoadConfig(t *testing.T) {
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 5 * time.Second
 	httpClientConfig.Endpoint = "http://localhost:8030"
-	httpClientConfig.Headers = map[string]configopaque.String{
-		"max_filter_ratio": "0.1",
-		"strict_mode":      "true",
-		"group_commit":     "async_mode",
+	httpClientConfig.Headers = configopaque.MapList{
+		{Name: "group_commit", Value: "async_mode"},
+		{Name: "max_filter_ratio", Value: "0.1"},
+		{Name: "strict_mode", Value: "true"},
 	}
 
 	fullCfg := &Config{

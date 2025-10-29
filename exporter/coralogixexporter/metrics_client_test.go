@@ -82,11 +82,6 @@ func TestMetricsExporter_Start(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Metrics: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{},
-			},
-		},
 	}
 
 	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -96,7 +91,8 @@ func TestMetricsExporter_Start(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.grpcMetricsExporter)
-	assert.Contains(t, exp.config.Metrics.Headers, "Authorization")
+	_, ok := exp.config.Metrics.Headers.Get("Authorization")
+	assert.True(t, ok)
 
 	// Test shutdown
 	err = exp.shutdown(t.Context())
@@ -109,8 +105,8 @@ func TestMetricsExporter_EnhanceContext(t *testing.T) {
 		PrivateKey: "test-key",
 		Metrics: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"test-header": "test-value",
+				Headers: configopaque.MapList{
+					{Name: "test-header", Value: "test-value"},
 				},
 			},
 		},
@@ -128,11 +124,6 @@ func TestMetricsExporter_PushMetrics(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Metrics: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{},
-			},
-		},
 	}
 
 	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -188,11 +179,6 @@ func TestMetricsExporter_PushMetrics_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
-				Metrics: TransportConfig{
-					ClientConfig: configgrpc.ClientConfig{
-						Headers: map[string]configopaque.String{},
-					},
-				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.enabled,
 					Threshold: 1,
@@ -293,7 +279,6 @@ func BenchmarkMetricsExporter_PushMetrics(b *testing.B) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: map[string]configopaque.String{},
 			},
 		},
 		PrivateKey: "test-key",
@@ -352,7 +337,6 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: map[string]configopaque.String{},
 			},
 		},
 		PrivateKey: "test-key",
@@ -442,7 +426,6 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: map[string]configopaque.String{},
 			},
 		},
 		PrivateKey: "test-key",

@@ -305,7 +305,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			}
 
 			// Add headers to the request
-			for key, value := range h.cfg.Targets[targetIndex].Headers {
+			for key, value := range h.cfg.Targets[targetIndex].Headers.Iter {
 				req.Header.Set(key, value.String()) // Convert configopaque.String to string
 			}
 
