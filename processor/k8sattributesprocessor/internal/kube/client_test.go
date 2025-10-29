@@ -4024,7 +4024,7 @@ func TestContainerCacheAndPodAssociation(t *testing.T) {
 
 				if assert.True(t, associationFound, "Pod should be found by container.id association") {
 					assert.Equal(t, "test-pod", foundPod.Name)
-					assert.Equal(t, "pod-uid-123", string(foundPod.PodUID))
+					assert.Equal(t, "pod-uid-123", foundPod.PodUID)
 					assert.NotEmpty(t, foundPod.Containers.ByID, "Associated pod should have container indexing")
 					assert.Contains(t, foundPod.Containers.ByID, "abc123def456", "Associated pod should contain the lookup container")
 				}
