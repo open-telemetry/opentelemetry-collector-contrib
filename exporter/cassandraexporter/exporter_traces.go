@@ -6,9 +6,9 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"time"
 
-	"github.com/gocql/gocql"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -133,7 +133,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
 					traceutil.StatusCodeStr(status.Code()),
 					status.Message(),
-				).WithContext(ctx).Exec()
+				).ExecContext(ctx)
 
 				if insertSpanError != nil {
 					e.logger.Error("insert span error", zap.Error(insertSpanError))

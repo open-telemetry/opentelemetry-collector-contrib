@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"time"
 
-	"github.com/gocql/gocql"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -135,7 +135,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					string(bodyByte),
 					resAttr,
 					logAttr,
-				).WithContext(ctx).Exec()
+				).ExecContext(ctx)
 
 				if insertLogError != nil {
 					e.logger.Error("insert log error", zap.Error(insertLogError))
