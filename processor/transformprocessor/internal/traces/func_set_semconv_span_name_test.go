@@ -336,7 +336,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			tt.addAttributes(span.Attributes())
 			assert.Equal(t, tt.want, SemconvSpanName(span))
 
-			err := setSemconvSpanName("1.37.0", ottl.NewTestingOptional("original_span_name"), span)
+			err := setSemconvSpanName(ottl.NewTestingOptional("original_span_name"), span)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, span.Name())
 			originalSpanName, ok := span.Attributes().Get("original_span_name")

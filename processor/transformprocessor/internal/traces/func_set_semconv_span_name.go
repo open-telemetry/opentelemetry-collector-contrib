@@ -32,16 +32,21 @@ func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 	if !ok {
 		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
 	}
+	semconvVersion := args.SemconvVersion
+	originalSpanNameAttribute := args.OriginalSpanNameAttribute
+
+	// Currently only v1.37.0 is supported
+	supportedSemconvVersion := "1.37.0"
+	if semconvVersion != supportedSemconvVersion {
+		return nil, fmt.Errorf("unsupported semconv version: %s, supported version: %s", semconvVersion, supportedSemconvVersion)
+	}
+
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		return setSemconvSpanName(args.SemconvVersion, args.OriginalSpanNameAttribute, tCtx.GetSpan()), nil
+		return setSemconvSpanName(originalSpanNameAttribute, tCtx.GetSpan()), nil
 	}, nil
 }
 
-func setSemconvSpanName(semconvVersion string, originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) error {
-	if semconvVersion != "1.37.0" {
-		// Currently only v1.37.0 is supported
-		return fmt.Errorf("unsupported semconv version: %s", semconvVersion)
-	}
+func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) error {
 	originalSpanName := span.Name()
 	semConvSpanName := SemconvSpanName(span)
 	span.SetName(semConvSpanName)

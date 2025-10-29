@@ -4,7 +4,7 @@
 change_type: "enhancement"
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: "transformprocessor"
+component: "processor/transform"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "New Transform Processor function `set_semconv_span_name()` to overwrite the span name with the semantic conventions for HTTP, RPC, messaging, and database spans."
