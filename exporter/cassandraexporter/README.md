@@ -18,7 +18,7 @@
 The following settings can be optionally configured:
 
 - `dsn` The Cassandra server DSN (Data Source Name), for example `127.0.0.1`.
-  reference: [https://pkg.go.dev/github.com/gocql/gocql](https://pkg.go.dev/github.com/gocql/gocql)
+  reference: [github.com/apache/cassandra-gocql-driver/v2](https://github.com/apache/cassandra-gocql-driver/)
 - `port` (default = 9042): The Cassandra server port
 - `timeout` (default = 10s): The Cassandra server connection timeout
 - `keyspace` (default = otel): The keyspace name.
