@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Set your Hydrolix credentials as environment variables
-export HYDROLIX_USERNAME="your_username_here"
-export HYDROLIX_PASSWORD="your_password_here"
+# Set your Hydrolix credentials as environment variables do
+# Do not add them here!
+#export HYDROLIX_USERNAME="your_username_here"
+#export HYDROLIX_PASSWORD="your_password_here"
 
 # Find the built collector binary
 COLLECTOR_BIN=$(find ./bin -name "otelcontribcol*" -type f | head -1)

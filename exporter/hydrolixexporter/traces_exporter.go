@@ -8,14 +8,14 @@ package hydrolixexporter
      "net/http"
 
      "go.opentelemetry.io/collector/exporter"
-     "go.opentelemetry.io/collector/pdata/pcommon"
      "go.opentelemetry.io/collector/pdata/ptrace"
+     "go.uber.org/zap"
  )
 
  type tracesExporter struct {
      config *Config
      client *http.Client
-     logger exporter.Logger
+     logger *zap.Logger
  }
 
  type HydrolixSpan struct {

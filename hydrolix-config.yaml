@@ -6,15 +6,14 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://localhost:3000"
+            - "http://localhost:3001"  # Add other ports if needed
+          allowed_headers:
+            - "*"
+          max_age: 7200
 
-  # Example: host metrics receiver
-  hostmetrics:
-    collection_interval: 30s
-    scrapers:
-      cpu:
-      memory:
-      disk:
-      network:
 
 processors:
   # Batch processor - recommended for performance
@@ -31,22 +30,23 @@ processors:
 
 exporters:
   # Your Hydrolix exporter
-  hydrolix:
-    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest
-    hdx_table: otel_data
-    hdx_transform: otel_transform
+  hydrolix/metrics:
+    endpoint: https://argus.hydrolix.live/ingest/event
+      #    https://your-hydrolix-cluster.hydrolix.io/ingest
+    hdx_table: cicd.metrics
+    hdx_transform: tf_metrics
     hdx_username: ${env:HYDROLIX_USERNAME}
     hdx_password: ${env:HYDROLIX_PASSWORD}
     timeout: 30s
-    retry_on_failure:
-      enabled: true
-      initial_interval: 5s
-      max_interval: 30s
-      max_elapsed_time: 300s
-    sending_queue:
-      enabled: true
-      num_consumers: 10
-      queue_size: 5000
+
+  hydrolix/traces:
+    endpoint: https://argus.hydrolix.live/ingest/event
+    #    https://your-hydrolix-cluster.hydrolix.io/ingest
+    hdx_table: cicd.spans
+    hdx_transform: tf_spans
+    hdx_username: ${env:HYDROLIX_USERNAME}
+    hdx_password: ${env:HYDROLIX_PASSWORD}
+    timeout: 30s
 
   # Debug exporter to see what's being sent
   debug:
@@ -57,9 +57,9 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch, resource]
-      exporters: [hydrolix, debug]
+      exporters: [hydrolix/traces, debug]
 
     metrics:
-      receivers: [otlp, hostmetrics]
+      receivers: [otlp]
       processors: [batch, resource]
-      exporters: [hydrolix, debug]
+      exporters: [hydrolix/metrics, debug]
