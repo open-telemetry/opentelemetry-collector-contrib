@@ -665,7 +665,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(resourceSpans ptrace.Resource
 	finalDecision := actualData.FinalDecision
 
 	if finalDecision == samplingpolicy.Unspecified {
-		// If the final decision hasn't been made, add the new spans under the lock.
+		// If the final decision hasn't been made, add the new spans to the
+		// existing trace.
 		appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
 		return
 	}
