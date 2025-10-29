@@ -33,10 +33,6 @@ receivers:
     target_system: kafka-producer
 
 processors:
-  batch:
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
   attributes:
     actions:
       - key: ddtags
@@ -48,14 +44,15 @@ exporters:
     api:
       site: ${env:DD_SITE}
       key: ${env:DD_API_KEY}
+    sending_queue:
+      batch:
 
 service:
   pipelines:
     metrics:
       receivers: [otlp, kafkametrics, jmx, jmx/consumer, jmx/producer]
-      processors: [batch]
       exporters: [datadog]
     logs:
       receivers: [otlp, filelog]
-      processors: [batch, attributes]
+      processors: [attributes]
       exporters: [datadog]

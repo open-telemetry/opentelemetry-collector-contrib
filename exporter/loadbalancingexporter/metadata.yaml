@@ -94,3 +94,10 @@ tests:
           - backend-3:4317
           - backend-4:4317
   expect_consumer_error: true
+  goleak:
+    ignore:
+      top:
+        # Ignore goroutines spawned by net.Resolver for DNS lookups on Windows
+        # These can remain in syscall state during test cleanup
+        - internal/poll.runtime_pollWait
+        - syscall.Syscall6

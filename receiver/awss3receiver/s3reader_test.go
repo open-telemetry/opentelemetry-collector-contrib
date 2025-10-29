@@ -83,6 +83,46 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 			},
 			want: "year=2021/month=02/day=01/hour=17/minute=32/metrics_",
 		},
+		{
+			name: "prefix is / (should preserve leading slash)",
+			args: args{
+				s3Prefix:      "/",
+				s3Partition:   "minute",
+				filePrefix:    "file",
+				telemetryType: "logs",
+			},
+			want: "/year=2021/month=02/day=01/hour=17/minute=32/filelogs_",
+		},
+		{
+			name: "prefix is // (should preserve double leading slashes)",
+			args: args{
+				s3Prefix:      "//",
+				s3Partition:   "hour",
+				filePrefix:    "file",
+				telemetryType: "metrics",
+			},
+			want: "//year=2021/month=02/day=01/hour=17/filemetrics_",
+		},
+		{
+			name: "prefix starts and ends with slash /logs/",
+			args: args{
+				s3Prefix:      "/logs/",
+				s3Partition:   "hour",
+				filePrefix:    "file",
+				telemetryType: "traces",
+			},
+			want: "/logs//year=2021/month=02/day=01/hour=17/filetraces_",
+		},
+		{
+			name: "prefix starts and ends with double slash //raw//",
+			args: args{
+				s3Prefix:      "//raw//",
+				s3Partition:   "minute",
+				filePrefix:    "file",
+				telemetryType: "logs",
+			},
+			want: "//raw///year=2021/month=02/day=01/hour=17/minute=32/filelogs_",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
