@@ -1,7 +1,0 @@
-change_type: enhancement
-component: dockerstatsreceiver
-note: "Add Windows support"
-issues: [42297]
-subtext: |
-  The dockerstatsreceiver now supports Windows hosts.
-change_logs: [user]

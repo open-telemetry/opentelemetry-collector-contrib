@@ -13,6 +13,60 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
 
+// AttributeK8sContainerStatusReason specifies the value k8s.container.status.reason attribute.
+type AttributeK8sContainerStatusReason int
+
+const (
+	_ AttributeK8sContainerStatusReason = iota
+	AttributeK8sContainerStatusReasonContainerCreating
+	AttributeK8sContainerStatusReasonCrashLoopBackOff
+	AttributeK8sContainerStatusReasonCreateContainerConfigError
+	AttributeK8sContainerStatusReasonErrImagePull
+	AttributeK8sContainerStatusReasonImagePullBackOff
+	AttributeK8sContainerStatusReasonOOMKilled
+	AttributeK8sContainerStatusReasonCompleted
+	AttributeK8sContainerStatusReasonError
+	AttributeK8sContainerStatusReasonContainerCannotRun
+)
+
+// String returns the string representation of the AttributeK8sContainerStatusReason.
+func (av AttributeK8sContainerStatusReason) String() string {
+	switch av {
+	case AttributeK8sContainerStatusReasonContainerCreating:
+		return "ContainerCreating"
+	case AttributeK8sContainerStatusReasonCrashLoopBackOff:
+		return "CrashLoopBackOff"
+	case AttributeK8sContainerStatusReasonCreateContainerConfigError:
+		return "CreateContainerConfigError"
+	case AttributeK8sContainerStatusReasonErrImagePull:
+		return "ErrImagePull"
+	case AttributeK8sContainerStatusReasonImagePullBackOff:
+		return "ImagePullBackOff"
+	case AttributeK8sContainerStatusReasonOOMKilled:
+		return "OOMKilled"
+	case AttributeK8sContainerStatusReasonCompleted:
+		return "Completed"
+	case AttributeK8sContainerStatusReasonError:
+		return "Error"
+	case AttributeK8sContainerStatusReasonContainerCannotRun:
+		return "ContainerCannotRun"
+	}
+	return ""
+}
+
+// MapAttributeK8sContainerStatusReason is a helper map of string to AttributeK8sContainerStatusReason attribute value.
+var MapAttributeK8sContainerStatusReason = map[string]AttributeK8sContainerStatusReason{
+	"ContainerCreating":          AttributeK8sContainerStatusReasonContainerCreating,
+	"CrashLoopBackOff":           AttributeK8sContainerStatusReasonCrashLoopBackOff,
+	"CreateContainerConfigError": AttributeK8sContainerStatusReasonCreateContainerConfigError,
+	"ErrImagePull":               AttributeK8sContainerStatusReasonErrImagePull,
+	"ImagePullBackOff":           AttributeK8sContainerStatusReasonImagePullBackOff,
+	"OOMKilled":                  AttributeK8sContainerStatusReasonOOMKilled,
+	"Completed":                  AttributeK8sContainerStatusReasonCompleted,
+	"Error":                      AttributeK8sContainerStatusReasonError,
+	"ContainerCannotRun":         AttributeK8sContainerStatusReasonContainerCannotRun,
+}
+
 // AttributeK8sContainerStatusState specifies the value k8s.container.status.state attribute.
 type AttributeK8sContainerStatusState int
 
@@ -67,6 +121,9 @@ var MetricsInfo = metricsInfo{
 	},
 	K8sContainerRestarts: metricInfo{
 		Name: "k8s.container.restarts",
+	},
+	K8sContainerStatusReason: metricInfo{
+		Name: "k8s.container.status.reason",
 	},
 	K8sContainerStatusState: metricInfo{
 		Name: "k8s.container.status.state",
@@ -190,6 +247,7 @@ type metricsInfo struct {
 	K8sContainerMemoryRequest           metricInfo
 	K8sContainerReady                   metricInfo
 	K8sContainerRestarts                metricInfo
+	K8sContainerStatusReason            metricInfo
 	K8sContainerStatusState             metricInfo
 	K8sContainerStorageLimit            metricInfo
 	K8sContainerStorageRequest          metricInfo
@@ -618,6 +676,59 @@ func (m *metricK8sContainerRestarts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerRestarts(cfg MetricConfig) metricK8sContainerRestarts {
 	m := metricK8sContainerRestarts{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sContainerStatusReason struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.status.reason metric with initial data.
+func (m *metricK8sContainerStatusReason) init() {
+	m.data.SetName("k8s.container.status.reason")
+	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.")
+	m.data.SetUnit("{container}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sContainerStatusReason) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sContainerStatusReasonAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.container.status.reason", k8sContainerStatusReasonAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerStatusReason) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerStatusReason) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerStatusReason(cfg MetricConfig) metricK8sContainerStatusReason {
+	m := metricK8sContainerStatusReason{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2476,6 +2587,7 @@ type MetricsBuilder struct {
 	metricK8sContainerMemoryRequest           metricK8sContainerMemoryRequest
 	metricK8sContainerReady                   metricK8sContainerReady
 	metricK8sContainerRestarts                metricK8sContainerRestarts
+	metricK8sContainerStatusReason            metricK8sContainerStatusReason
 	metricK8sContainerStatusState             metricK8sContainerStatusState
 	metricK8sContainerStorageLimit            metricK8sContainerStorageLimit
 	metricK8sContainerStorageRequest          metricK8sContainerStorageRequest
@@ -2546,6 +2658,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
 		metricK8sContainerReady:                   newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
 		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
+		metricK8sContainerStatusReason:            newMetricK8sContainerStatusReason(mbc.Metrics.K8sContainerStatusReason),
 		metricK8sContainerStatusState:             newMetricK8sContainerStatusState(mbc.Metrics.K8sContainerStatusState),
 		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
 		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
@@ -2904,6 +3017,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sContainerMemoryRequest.emit(ils.Metrics())
 	mb.metricK8sContainerReady.emit(ils.Metrics())
 	mb.metricK8sContainerRestarts.emit(ils.Metrics())
+	mb.metricK8sContainerStatusReason.emit(ils.Metrics())
 	mb.metricK8sContainerStatusState.emit(ils.Metrics())
 	mb.metricK8sContainerStorageLimit.emit(ils.Metrics())
 	mb.metricK8sContainerStorageRequest.emit(ils.Metrics())
@@ -3010,6 +3124,11 @@ func (mb *MetricsBuilder) RecordK8sContainerReadyDataPoint(ts pcommon.Timestamp,
 // RecordK8sContainerRestartsDataPoint adds a data point to k8s.container.restarts metric.
 func (mb *MetricsBuilder) RecordK8sContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerRestarts.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sContainerStatusReasonDataPoint adds a data point to k8s.container.status.reason metric.
+func (mb *MetricsBuilder) RecordK8sContainerStatusReasonDataPoint(ts pcommon.Timestamp, val int64, k8sContainerStatusReasonAttributeValue AttributeK8sContainerStatusReason) {
+	mb.metricK8sContainerStatusReason.recordDataPoint(mb.startTime, ts, val, k8sContainerStatusReasonAttributeValue.String())
 }
 
 // RecordK8sContainerStatusStateDataPoint adds a data point to k8s.container.status.state metric.

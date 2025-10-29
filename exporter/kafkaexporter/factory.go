@@ -32,6 +32,8 @@ const (
 	defaultPartitionMetricsByResourceAttributesEnabled = false
 	// partitioning logs by resource attributes is disabled by default
 	defaultPartitionLogsByResourceAttributesEnabled = false
+	// partitioning logs by trace id is disabled by default
+	defaultPartitionLogsByTraceIDEnabled = false
 )
 
 // NewFactory creates Kafka exporter factory.
@@ -71,6 +73,7 @@ func createDefaultConfig() component.Config {
 		},
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
+		PartitionLogsByTraceID:               defaultPartitionLogsByTraceIDEnabled,
 	}
 }
 
@@ -88,7 +91,7 @@ func createTracesExporter(
 		exp.exportData,
 		exporterhelperOptions(
 			oCfg,
-			exporterhelper.NewTracesQueueBatchSettings(),
+			xexporterhelper.NewTracesQueueBatchSettings(),
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -108,7 +111,7 @@ func createMetricsExporter(
 		exp.exportData,
 		exporterhelperOptions(
 			oCfg,
-			exporterhelper.NewMetricsQueueBatchSettings(),
+			xexporterhelper.NewMetricsQueueBatchSettings(),
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -128,7 +131,7 @@ func createLogsExporter(
 		exp.exportData,
 		exporterhelperOptions(
 			oCfg,
-			exporterhelper.NewLogsQueueBatchSettings(),
+			xexporterhelper.NewLogsQueueBatchSettings(),
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -156,7 +159,7 @@ func createProfilesExporter(
 
 func exporterhelperOptions(
 	cfg Config,
-	qbs exporterhelper.QueueBatchSettings,
+	qbs xexporterhelper.QueueBatchSettings,
 	startFunc component.StartFunc,
 	shutdownFunc component.ShutdownFunc,
 ) []exporterhelper.Option {
@@ -169,7 +172,7 @@ func exporterhelperOptions(
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
-		exporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
+		xexporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
 		exporterhelper.WithStart(startFunc),
 		exporterhelper.WithShutdown(shutdownFunc),
 	}

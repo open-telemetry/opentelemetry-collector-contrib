@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -86,31 +87,30 @@ func TestSendTracesWithMetadata(t *testing.T) {
 
 	requestCount := 3
 	spansPerRequest := 33
-	for requestNum := 0; requestNum < requestCount; requestNum++ {
+	var wg sync.WaitGroup
+	wg.Add(requestCount)
+	for requestNum := range requestCount {
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+		for spanIndex := range spansPerRequest {
 			spans.At(spanIndex).SetName(fmt.Sprintf("%d-%d", requestNum, spanIndex))
 		}
 
 		num := requestNum % len(callCtxs)
 		expectByContext[num] += spansPerRequest
 		go func(n int) {
+			defer wg.Done()
 			assert.NoError(t, exp.ConsumeTraces(callCtxs[n], td))
 		}(num)
 	}
+	wg.Wait()
 
-	assert.Eventually(t, func() bool {
-		return rcv.requestCount.Load() == int32(requestCount)
-	}, 1*time.Second, 5*time.Millisecond)
-	assert.Eventually(t, func() bool {
-		return rcv.totalItems.Load() == int32(requestCount*spansPerRequest)
-	}, 1*time.Second, 5*time.Millisecond)
-	assert.Eventually(t, func() bool {
-		rcv.mux.Lock()
-		defer rcv.mux.Unlock()
-		return len(callCtxs) == len(rcv.spanCountByMetadata)
-	}, 1*time.Second, 5*time.Millisecond)
+	rcv.mux.Lock()
+	defer rcv.mux.Unlock()
+
+	assert.Equal(t, rcv.requestCount.Load(), int32(requestCount))
+	assert.Equal(t, rcv.totalItems.Load(), int32(requestCount*spansPerRequest))
+	assert.Len(t, rcv.spanCountByMetadata, len(callCtxs))
 
 	for idx, ctx := range callCtxs {
 		md := client.FromContext(ctx).Metadata
@@ -173,7 +173,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
-	for requestNum := 0; requestNum < cardLimit; requestNum++ {
+	for requestNum := range cardLimit {
 		td := testdata.GenerateTraces(1)
 		ctx := client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{

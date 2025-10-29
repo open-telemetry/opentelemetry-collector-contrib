@@ -206,7 +206,7 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 		bucketLabels := labels.Clone()
 		bucketLabels.Append(bucketLabelKey, "")
 		bucketLabels.Sort()
-		for i := 0; i < bucketCount; i++ {
+		for i := range bucketCount {
 			bucket := dataPoint.BucketCounts().At(i)
 			bucketLabels.Replace(bucketLabelKey, boundsStr[i])
 

@@ -41,7 +41,7 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 									Address: 0x42,
 								},
 							},
-							Value: []int64{73},
+							Values: []int64{73},
 							Link: &pprofiletest.Link{
 								TraceID: pcommon.TraceID{
 									0xf, 0xe, 0xd, 0xc, 0xb, 0xa, 0x9, 0x8,
@@ -56,7 +56,7 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 									Address: 0x43,
 								},
 							},
-							Value: []int64{74},
+							Values: []int64{74},
 							Attributes: []pprofiletest.Attribute{
 								{Key: "sample2", Value: "value2"},
 							},

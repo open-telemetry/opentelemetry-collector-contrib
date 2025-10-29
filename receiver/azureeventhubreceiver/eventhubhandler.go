@@ -47,10 +47,14 @@ type eventhubHandler struct {
 	storageClient storage.Client
 }
 
+func shouldInitializeStorageClient(storageClient storage.Client, storageID *component.ID) bool {
+	return storageClient == nil && storageID != nil
+}
+
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
 
-	if h.storageClient == nil { // set manually for testing.
+	if shouldInitializeStorageClient(h.storageClient, h.config.StorageID) { // set manually for testing.
 		storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
 		if err != nil {
 			h.settings.Logger.Debug("Error connecting to Storage", zap.Error(err))

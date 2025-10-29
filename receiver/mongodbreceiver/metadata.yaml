@@ -90,6 +90,8 @@ attributes:
 metrics:
   mongodb.cache.operations:
     description: The number of cache operations of the instance.
+    stability:
+      level: development
     unit: "{operations}"
     enabled: true
     sum:
@@ -99,6 +101,8 @@ metrics:
     attributes: [type]
   mongodb.collection.count:
     description: The number of collections.
+    stability:
+      level: development
     unit: "{collections}"
     enabled: true
     sum:
@@ -108,6 +112,8 @@ metrics:
     attributes: []
   mongodb.data.size:
     description: The size of the collection. Data compression does not affect this value.
+    stability:
+      level: development
     unit: By
     enabled: true
     sum:
@@ -117,6 +123,8 @@ metrics:
     attributes: []
   mongodb.connection.count:
     description: The number of connections.
+    stability:
+      level: development
     unit: "{connections}"
     enabled: true
     sum:
@@ -126,6 +134,8 @@ metrics:
     attributes: [connection_type]
   mongodb.extent.count:
     description: The number of extents.
+    stability:
+      level: development
     unit: "{extents}"
     enabled: true
     sum:
@@ -135,6 +145,8 @@ metrics:
     attributes: []
   mongodb.global_lock.time:
     description: The time the global lock has been held.
+    stability:
+      level: development
     unit: ms
     enabled: true
     sum:
@@ -144,6 +156,8 @@ metrics:
     attributes: []
   mongodb.index.count:
     description: The number of indexes.
+    stability:
+      level: development
     unit: "{indexes}"
     enabled: true
     sum:
@@ -153,6 +167,8 @@ metrics:
     attributes: []
   mongodb.index.size:
     description: Sum of the space allocated to all indexes in the database, including free index space.
+    stability:
+      level: development
     unit: By
     enabled: true
     sum:
@@ -162,6 +178,8 @@ metrics:
     attributes: []
   mongodb.memory.usage:
     description: The amount of memory used.
+    stability:
+      level: development
     unit: By
     enabled: true
     sum:
@@ -171,6 +189,8 @@ metrics:
     attributes: [memory_type]
   mongodb.object.count:
     description: The number of objects.
+    stability:
+      level: development
     unit: "{objects}"
     enabled: true
     sum:
@@ -180,6 +200,8 @@ metrics:
     attributes: []
   mongodb.operation.latency.time:
     description: The latency of operations.
+    stability:
+      level: development
     unit: us
     enabled: false
     gauge:
@@ -187,6 +209,8 @@ metrics:
     attributes: [operation_latency]
   mongodb.operation.count:
     description: The number of operations executed.
+    stability:
+      level: development
     unit: "{operations}"
     enabled: true
     sum:
@@ -196,6 +220,8 @@ metrics:
     attributes: [operation]
   mongodb.operation.repl.count:
     description: The number of replicated operations executed.
+    stability:
+      level: development
     unit: "{operations}"
     enabled: false
     sum:
@@ -206,6 +232,8 @@ metrics:
   mongodb.storage.size:
     description: The total amount of storage allocated to this collection.
     extended_documentation: If collection data is compressed it reflects the compressed size.
+    stability:
+      level: development
     unit: By
     enabled: true
     sum:
@@ -215,6 +243,8 @@ metrics:
     attributes: []
   mongodb.database.count:
     description: The number of existing databases.
+    stability:
+      level: development
     unit: "{databases}"
     enabled: true
     sum:
@@ -224,6 +254,8 @@ metrics:
     attributes: []
   mongodb.index.access.count:
     description: The number of times an index has been accessed.
+    stability:
+      level: development
     unit: "{accesses}"
     enabled: true
     sum:
@@ -233,6 +265,8 @@ metrics:
     attributes: [collection]
   mongodb.document.operation.count:
     description: The number of document operations executed.
+    stability:
+      level: development
     unit: "{documents}"
     enabled: true
     sum:
@@ -242,6 +276,8 @@ metrics:
     attributes: [operation]
   mongodb.network.io.receive:
     description: The number of bytes received.
+    stability:
+      level: development
     unit: By
     enabled: true
     sum:
@@ -251,6 +287,8 @@ metrics:
     attributes: []
   mongodb.network.io.transmit:
     description: The number of by transmitted.
+    stability:
+      level: development
     unit: By
     enabled: true
     sum:
@@ -260,6 +298,8 @@ metrics:
     attributes: []
   mongodb.network.request.count:
     description: The number of requests received by the server.
+    stability:
+      level: development
     unit: "{requests}"
     enabled: true
     sum:
@@ -269,6 +309,8 @@ metrics:
     attributes: []
   mongodb.operation.time:
     description: The total time spent performing operations.
+    stability:
+      level: development
     unit: ms
     enabled: true
     sum:
@@ -278,6 +320,8 @@ metrics:
     attributes: [operation]
   mongodb.session.count:
     description: The total number of active sessions.
+    stability:
+      level: development
     unit: "{sessions}"
     enabled: true
     sum:
@@ -287,6 +331,8 @@ metrics:
     attributes: []
   mongodb.cursor.count:
     description: The number of open cursors maintained for clients.
+    stability:
+      level: development
     unit: "{cursors}"
     enabled: true
     sum:
@@ -296,6 +342,8 @@ metrics:
     attributes: []
   mongodb.cursor.timeout.count:
     description: The number of cursors that have timed out.
+    stability:
+      level: development
     unit: "{cursors}"
     enabled: true
     sum:
@@ -305,6 +353,8 @@ metrics:
     attributes: []
   mongodb.lock.acquire.count:
     description: Number of times the lock was acquired in the specified mode.
+    stability:
+      level: development
     unit: "{count}"
     enabled: false
     sum:
@@ -314,6 +364,8 @@ metrics:
     attributes: [lock_type, lock_mode]
   mongodb.lock.acquire.wait_count:
     description: Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.
+    stability:
+      level: development
     unit: "{count}"
     enabled: false
     sum:
@@ -323,6 +375,8 @@ metrics:
     attributes: [lock_type, lock_mode]
   mongodb.lock.acquire.time:
     description: Cumulative wait time for the lock acquisitions.
+    stability:
+      level: development
     unit: "microseconds"
     enabled: false
     sum:
@@ -332,6 +386,8 @@ metrics:
     attributes: [lock_type, lock_mode]
   mongodb.lock.deadlock.count:
     description: Number of times the lock acquisitions encountered deadlocks.
+    stability:
+      level: development
     unit: "{count}"
     enabled: false
     sum:
@@ -344,6 +400,8 @@ metrics:
     description: The health status of the server.
     extended_documentation: A value of '1' indicates healthy.
       A value of '0' indicates unhealthy.
+    stability:
+      level: development
     unit: "1"
     gauge:
       value_type: int
@@ -351,6 +409,8 @@ metrics:
   mongodb.uptime:
     enabled: false
     description: The amount of time that the server has been running.
+    stability:
+      level: development
     unit: ms
     sum:
       value_type: int
@@ -359,6 +419,8 @@ metrics:
     attributes: []
   mongodb.repl_queries_per_sec:
     description: The number of replicated queries executed per second.
+    stability:
+      level: development
     unit: "{query}/s"
     enabled: false
     gauge:
@@ -367,6 +429,8 @@ metrics:
       monotonic: false
   mongodb.repl_inserts_per_sec:
     description: The number of replicated insertions executed per second.
+    stability:
+      level: development
     unit: "{insert}/s"
     enabled: false
     gauge:
@@ -375,6 +439,8 @@ metrics:
       monotonic: false
   mongodb.repl_commands_per_sec:
     description: The number of replicated commands executed per second.
+    stability:
+      level: development
     unit: "{command}/s"
     enabled: false
     gauge:
@@ -383,6 +449,8 @@ metrics:
       monotonic: false
   mongodb.repl_getmores_per_sec:
     description: The number of replicated getmores executed per second.
+    stability:
+      level: development
     unit: "{getmore}/s"
     enabled: false
     gauge:
@@ -391,6 +459,8 @@ metrics:
       monotonic: false
   mongodb.repl_deletes_per_sec:
     description: The number of replicated deletes executed per second.
+    stability:
+      level: development
     unit: "{delete}/s"
     enabled: false
     gauge:
@@ -399,6 +469,8 @@ metrics:
       monotonic: false
   mongodb.repl_updates_per_sec:
     description: The number of replicated updates executed per second.
+    stability:
+      level: development
     unit: "{update}/s"
     enabled: false
     gauge:
@@ -407,6 +479,8 @@ metrics:
       monotonic: false
   mongodb.queries.rate:
     description: The number of queries executed per second.
+    stability:
+      level: development
     unit: "{query}/s"
     enabled: false
     gauge:
@@ -415,6 +489,8 @@ metrics:
       monotonic: false
   mongodb.inserts.rate:
     description: The number of insertions executed per second.
+    stability:
+      level: development
     unit: "{insert}/s"
     enabled: false
     gauge:
@@ -423,6 +499,8 @@ metrics:
       monotonic: false
   mongodb.commands.rate:
     description: The number of commands executed per second.
+    stability:
+      level: development
     unit: "{command}/s"
     enabled: false
     gauge:
@@ -431,6 +509,8 @@ metrics:
       monotonic: false
   mongodb.getmores.rate:
     description: The number of getmores executed per second.
+    stability:
+      level: development
     unit: "{getmore}/s"
     enabled: false
     gauge:
@@ -439,6 +519,8 @@ metrics:
       monotonic: false
   mongodb.deletes.rate:
     description: The number of deletes executed per second.
+    stability:
+      level: development
     unit: "{delete}/s"
     enabled: false
     gauge:
@@ -447,6 +529,8 @@ metrics:
       monotonic: false
   mongodb.updates.rate:
     description: The number of updates executed per second.
+    stability:
+      level: development
     unit: "{update}/s"
     enabled: false
     gauge:
@@ -455,6 +539,8 @@ metrics:
       monotonic: false
   mongodb.flushes.rate:
     description: The number of flushes executed per second.
+    stability:
+      level: development
     unit: "{flush}/s"
     enabled: false
     gauge:
@@ -463,6 +549,8 @@ metrics:
       monotonic: false
   mongodb.active.writes:
     description: The number of write operations currently being processed.
+    stability:
+      level: development
     unit: "{writes}"
     enabled: false
     sum:
@@ -472,6 +560,8 @@ metrics:
     attributes: []
   mongodb.active.reads:
     description: The number of read operations currently being processed.
+    stability:
+      level: development
     unit: "{reads}"
     enabled: false
     sum:
@@ -481,6 +571,8 @@ metrics:
     attributes: []
   mongodb.wtcache.bytes.read:
     description: The number of bytes read into the WiredTiger cache.
+    stability:
+      level: development
     unit: "By"
     enabled: false
     sum:
@@ -490,6 +582,8 @@ metrics:
     attributes: []
   mongodb.page_faults:
     description: The number of page faults.
+    stability:
+      level: development
     unit: "{faults}"
     enabled: false
     sum:

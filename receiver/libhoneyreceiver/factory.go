@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 		HTTP: configoptional.Default(HTTPConfig{
 			ServerConfig: confighttp.ServerConfig{
 				Endpoint:              endpointStr,
-				CompressionAlgorithms: []string{},
+				CompressionAlgorithms: []string{"", "zstd", "gzip", "deflate"},
 			},
 			TracesURLPaths: defaultTracesURLPaths,
 		}),

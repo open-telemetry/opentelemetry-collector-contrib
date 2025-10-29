@@ -1056,7 +1056,8 @@ func initResourceSpans(t *testing.T, expectedSeg *awsxray.Segment,
 	ls := rs.ScopeSpans().AppendEmpty()
 	ls.Spans().EnsureCapacity(len(propsPerSpan))
 
-	for _, props := range propsPerSpan {
+	for i := range propsPerSpan {
+		props := &propsPerSpan[i]
 		sp := ls.Spans().AppendEmpty()
 		spanID := props.spanID
 		spanIDBytes, _ := decodeXRaySpanID(&spanID)
