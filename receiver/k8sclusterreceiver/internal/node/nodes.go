@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/iancoleman/strcase"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -25,6 +26,20 @@ const (
 	// Keys for node metadata and entity attributes. These are NOT used by resource attributes.
 	nodeCreationTime       = "node.creation_timestamp"
 	k8sNodeConditionPrefix = "k8s.node.condition"
+)
+
+var EnableStableMetrics = featuregate.GlobalRegistry().MustRegister(
+	"semconv.k8s.enableStable",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, semconv stable metrics are enabled."),
+	featuregate.WithRegisterFromVersion("v0.139.0"),
+)
+
+var DisableLegacyMetrics = featuregate.GlobalRegistry().MustRegister(
+	"semconv.k8s.disableLegacy",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, semconv legacy metrics are disabled."),
+	featuregate.WithRegisterFromVersion("v0.139.0"),
 )
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
@@ -60,6 +75,24 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 
+	if EnableStableMetrics.IsEnabled() {
+		if cpuVal, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
+			mb.RecordK8sNodeCPUAllocatableDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
+		}
+
+		if ephemeralMemoryVal, ok := node.Status.Allocatable[corev1.ResourceEphemeralStorage]; ok {
+			mb.RecordK8sNodeEphemeralStorageAllocatableDataPoint(ts, ephemeralMemoryVal.Value())
+		}
+
+		if memoryVal, ok := node.Status.Allocatable[corev1.ResourceMemory]; ok {
+			mb.RecordK8sNodeMemoryAllocatableDataPoint(ts, memoryVal.Value())
+		}
+
+		if podVal, ok := node.Status.Allocatable[corev1.ResourcePods]; ok {
+			mb.RecordK8sNodePodsAllocatableDataPoint(ts, podVal.Value())
+		}
+	}
+
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -83,22 +116,24 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 	}
 
 	// Adding 'node allocatable type' metrics
-	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
-		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
-		if !ok {
-			set.Logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
-				node.GetName()).Error())
-			continue
+	if !DisableLegacyMetrics.IsEnabled() {
+		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
+			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
+			quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
+			if !ok {
+				set.Logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
+					node.GetName()).Error())
+				continue
+			}
+			m := sm.Metrics().AppendEmpty()
+			m.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
+			m.SetDescription(fmt.Sprintf("Amount of %v allocatable on the node", nodeAllocatableTypeValue))
+			m.SetUnit(getNodeAllocatableUnit(v1NodeAllocatableTypeValue))
+			g := m.SetEmptyGauge()
+			dp := g.DataPoints().AppendEmpty()
+			setNodeAllocatableValue(dp, v1NodeAllocatableTypeValue, quantity)
+			dp.SetTimestamp(ts)
 		}
-		m := sm.Metrics().AppendEmpty()
-		m.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
-		m.SetDescription(fmt.Sprintf("Amount of %v allocatable on the node", nodeAllocatableTypeValue))
-		m.SetUnit(getNodeAllocatableUnit(v1NodeAllocatableTypeValue))
-		g := m.SetEmptyGauge()
-		dp := g.DataPoints().AppendEmpty()
-		setNodeAllocatableValue(dp, v1NodeAllocatableTypeValue, quantity)
-		dp.SetTimestamp(ts)
 	}
 
 	if sm.Metrics().Len() == 0 {
