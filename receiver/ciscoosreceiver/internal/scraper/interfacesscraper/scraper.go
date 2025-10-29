@@ -18,15 +18,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/interfacesscraper/internal/metadata"
 )
 
-// interfacesScraper implements scraper.Metrics interface for interface metrics collection
+// interfacesScraper collects interface metrics from Cisco devices
 type interfacesScraper struct {
 	logger       *zap.Logger
 	config       *Config
-	deviceTarget string // Device IP address from config
+	deviceTarget string
 	rpcClient    *connection.RPCClient
 }
 
-// Start initializes the scraper
 func (s *interfacesScraper) Start(_ context.Context, _ component.Host) error {
 	if s.config.Device.Host.IP == "" {
 		s.logger.Warn("No device configured, scraper will not collect metrics")
@@ -36,24 +35,11 @@ func (s *interfacesScraper) Start(_ context.Context, _ component.Host) error {
 	device := s.config.Device
 	s.deviceTarget = device.Host.IP
 
-	authMethod := "password"
-	if device.Auth.KeyFile != "" {
-		authMethod = "key_file"
-		if device.Auth.Password != "" {
-			authMethod = "key_file+password"
-		}
-	}
-
-	s.logger.Info("Interfaces scraper initialized - will establish persistent SSH connection on first collection",
-		zap.String("target", s.deviceTarget),
-		zap.Int("port", device.Host.Port),
-		zap.String("username", device.Auth.Username),
-		zap.String("auth_method", authMethod))
+	s.logger.Info("Interfaces scraper initialized", zap.String("target", s.deviceTarget))
 
 	return nil
 }
 
-// ScrapeMetrics implements scraper.Metrics interface
 func (s *interfacesScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -87,20 +73,6 @@ func (s *interfacesScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics,
 			intf.OperStatus = StatusDown
 		}
 
-		s.logger.Debug("Recording interface metrics",
-			zap.String("interface", intf.Name),
-			zap.String("mac", macAddress),
-			zap.String("description", description),
-			zap.String("speed", speedString),
-			zap.Float64("input_bytes", intf.InputBytes),
-			zap.Float64("output_bytes", intf.OutputBytes),
-			zap.Float64("input_errors", intf.InputErrors),
-			zap.Float64("output_errors", intf.OutputErrors),
-			zap.Float64("input_drops", intf.InputDrops),
-			zap.Float64("output_drops", intf.OutputDrops),
-			zap.Float64("multicast", intf.InputMulticast),
-			zap.Float64("broadcast", intf.InputBroadcast))
-
 		mb.RecordSystemNetworkIoDataPoint(timestamp, int64(intf.InputBytes), metadata.AttributeNetworkIoDirectionReceive, description, macAddress, intf.Name, speedString)
 		mb.RecordSystemNetworkIoDataPoint(timestamp, int64(intf.OutputBytes), metadata.AttributeNetworkIoDirectionTransmit, description, macAddress, intf.Name, speedString)
 
@@ -126,14 +98,10 @@ func (s *interfacesScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics,
 	return mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
-// Shutdown closes SSH connection and cleans up resources
 func (s *interfacesScraper) Shutdown(_ context.Context) error {
-	s.logger.Info("Shutting down interfaces scraper")
-
 	if s.rpcClient != nil {
-		s.logger.Info("Closing persistent SSH connection", zap.String("target", s.deviceTarget))
 		if err := s.rpcClient.SSHClient.Close(); err != nil {
-			s.logger.Warn("Error closing SSH connection", zap.Error(err))
+			s.logger.Warn("Failed to close SSH connection", zap.Error(err))
 		}
 		s.rpcClient = nil
 	}
@@ -144,19 +112,12 @@ func (s *interfacesScraper) Shutdown(_ context.Context) error {
 // parseInterfaceData establishes SSH connection and parses interface data
 func (s *interfacesScraper) parseInterfaceData(ctx context.Context) ([]*Interface, error) {
 	if s.rpcClient == nil {
-		s.logger.Info("Establishing persistent SSH connection", zap.String("target", s.deviceTarget))
 		rpcClient, err := s.establishDeviceConnection(ctx)
 		if err != nil {
-			s.logger.Error("Device connection failed",
-				zap.String("target", s.deviceTarget),
-				zap.String("error_type", fmt.Sprintf("%T", err)),
-				zap.Error(err))
+			s.logger.Error("Failed to establish SSH connection", zap.String("target", s.deviceTarget), zap.Error(err))
 			return []*Interface{}, fmt.Errorf("failed to establish connection: %w", err)
 		}
 		s.rpcClient = rpcClient
-		s.logger.Info("Persistent SSH connection established successfully",
-			zap.String("target", s.deviceTarget),
-			zap.String("os_type", s.rpcClient.GetOSType()))
 	}
 
 	command := s.rpcClient.GetCommand("interfaces")
@@ -167,7 +128,7 @@ func (s *interfacesScraper) parseInterfaceData(ctx context.Context) ([]*Interfac
 	output, err := s.rpcClient.ExecuteCommand(command)
 	if err != nil {
 		fallbackCommand := "show interface brief"
-		s.logger.Warn("Primary command failed, trying fallback", zap.String("primary", command), zap.String("fallback", fallbackCommand), zap.Error(err))
+		s.logger.Warn("Primary command failed, using fallback", zap.String("fallback", fallbackCommand))
 		output, err = s.rpcClient.ExecuteCommand(fallbackCommand)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute interface commands '%s' and '%s': %w", command, fallbackCommand, err)
@@ -183,7 +144,6 @@ func (s *interfacesScraper) parseInterfaceData(ctx context.Context) ([]*Interfac
 	return interfaces, nil
 }
 
-// establishDeviceConnection establishes SSH connection to Cisco device
 func (s *interfacesScraper) establishDeviceConnection(ctx context.Context) (*connection.RPCClient, error) {
 	deviceConfig := connection.DeviceConfig{
 		Host: connection.HostInfo{
@@ -198,6 +158,5 @@ func (s *interfacesScraper) establishDeviceConnection(ctx context.Context) (*con
 		},
 	}
 
-	// Use shared connection factory
 	return connection.EstablishConnection(ctx, deviceConfig, s.logger)
 }

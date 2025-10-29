@@ -18,8 +18,7 @@ type Interface struct {
 	MACAddress  string
 	Description string
 
-	AdminStatus string
-	OperStatus  string
+	OperStatus string
 
 	InputErrors  float64
 	OutputErrors float64
@@ -37,22 +36,19 @@ type Interface struct {
 	SpeedString string
 }
 
-// Status constants for interface status
 const (
 	StatusUp   = "up"
 	StatusDown = "down"
 )
 
-// NewInterface creates a new Interface with default values
 func NewInterface(name string) *Interface {
 	return &Interface{
-		Name:        name,
-		AdminStatus: StatusDown,
-		OperStatus:  StatusDown,
+		Name:       name,
+		OperStatus: StatusDown,
 	}
 }
 
-// GetOperStatusInt returns operational status as integer (1=up, 0=down)
+// GetOperStatusInt converts operational status to integer (1=up, 0=down)
 func (i *Interface) GetOperStatusInt() int64 {
 	if i.OperStatus == StatusUp {
 		return 1
@@ -83,26 +79,25 @@ func parseStatus(status string) string {
 	}
 }
 
-// formatSpeed converts numeric speed (bps) to human-readable format with units
+// formatSpeed converts speed in bps to human-readable format
 func formatSpeed(speedBps int64) string {
 	if speedBps <= 0 {
 		return ""
 	}
 
-	// Convert from bps to common network interface speeds
 	switch {
-	case speedBps >= 1000000000: // >= 1 Gbps
+	case speedBps >= 1000000000:
 		return fmt.Sprintf("%.0f Gb/s", float64(speedBps)/1000000000)
-	case speedBps >= 1000000: // >= 1 Mbps
+	case speedBps >= 1000000:
 		return fmt.Sprintf("%.0f Mb/s", float64(speedBps)/1000000)
-	case speedBps >= 1000: // >= 1 Kbps
+	case speedBps >= 1000:
 		return fmt.Sprintf("%.0f Kb/s", float64(speedBps)/1000)
 	default:
 		return fmt.Sprintf("%d b/s", speedBps)
 	}
 }
 
-// str2float64 converts string to float64 (returns 0 for "-" or empty)
+// str2float64 converts string to float64
 func str2float64(s string) float64 {
 	if s == "-" || s == "" {
 		return 0
@@ -115,16 +110,13 @@ func str2float64(s string) float64 {
 
 // parseInterfaces parses interface information from command output
 func parseInterfaces(output string, logger *zap.Logger) []*Interface {
-	// Regex patterns for parsing interface output
 	txNXOS := regexp.MustCompile(`^\s+TX$`)
-	// Match MAC address - handle line wrapping where (bia ...) may be on next line
 	macRegexp := regexp.MustCompile(`^\s+Hardware(?: is|:) .+, address(?: is|:) ([0-9a-fA-F]{4}\.[0-9a-fA-F]{4}\.[0-9a-fA-F]{4})`)
 	deviceNameRegexp := regexp.MustCompile(`^([a-zA-Z0-9/.-]+) is.*$`)
 	adminStatusRegexp := regexp.MustCompile(`^.+ is (administratively)?\s*(up|down).*, line protocol is.*$`)
 	adminStatusNXOSRegexp := regexp.MustCompile(`^\S+ is (up|down)(?:\s|,)?(\(Administratively down\))?.*$`)
 	descRegexp := regexp.MustCompile(`^\s+Description: (.*)$`)
 	dropsRegexp := regexp.MustCompile(`^\s+Input queue: \d+\/\d+\/(\d+|-)\/\d+ .+ Total output drops: (\d+|-)$`)
-	// Match multicast/broadcast - handle line wrapping where "packets" may be split
 	multiBroadNXOS := regexp.MustCompile(`^.* (\d+|-) multicast packets?\s+(\d+|-) broadcast pack`)
 	multiBroadIOSXE := regexp.MustCompile(`^\s+Received\s+(\d+|-)\sbroadcasts \((\d+|-) (?:IP\s)?multicasts?\)`)
 	multiBroadIOS := regexp.MustCompile(`^\s+Received (\d+|-) broadcasts.*$`)
@@ -140,13 +132,10 @@ func parseInterfaces(output string, logger *zap.Logger) []*Interface {
 	var interfaces []*Interface
 	lines := strings.Split(output, "\n")
 
-	logger.Debug("Processing interface parsing", zap.Int("line_count", len(lines)))
-
 	for _, line := range lines {
 		if !newIfRegexp.MatchString(line) {
 			if current != nil && current.Validate() {
 				interfaces = append(interfaces, current)
-				logger.Debug("Added interface from parsing", zap.String("name", current.Name))
 			}
 			matches := deviceNameRegexp.FindStringSubmatch(line)
 			if matches == nil {
@@ -158,125 +147,76 @@ func parseInterfaces(output string, logger *zap.Logger) []*Interface {
 		if current == nil {
 			continue
 		}
-		if matches := adminStatusRegexp.FindStringSubmatch(line); matches != nil {
-			if matches[1] == "administratively" {
-				current.AdminStatus = StatusDown
-			} else {
-				current.AdminStatus = StatusUp
-			}
+		switch {
+		case adminStatusRegexp.MatchString(line):
+			matches := adminStatusRegexp.FindStringSubmatch(line)
 			current.OperStatus = parseStatus(matches[2])
-		} else if matches := adminStatusNXOSRegexp.FindStringSubmatch(line); matches != nil {
-			if matches[2] == "" {
-				current.AdminStatus = StatusUp
-			} else {
-				current.AdminStatus = StatusDown
-			}
+		case adminStatusNXOSRegexp.MatchString(line):
+			matches := adminStatusNXOSRegexp.FindStringSubmatch(line)
 			current.OperStatus = parseStatus(matches[1])
-		} else if matches := descRegexp.FindStringSubmatch(line); matches != nil {
+		case descRegexp.MatchString(line):
+			matches := descRegexp.FindStringSubmatch(line)
 			current.Description = matches[1]
-		} else if matches := macRegexp.FindStringSubmatch(line); matches != nil {
+		case macRegexp.MatchString(line):
+			matches := macRegexp.FindStringSubmatch(line)
 			current.MACAddress = matches[1]
-			logger.Debug("Parsed MAC address for interface",
-				zap.String("interface", current.Name),
-				zap.String("mac", current.MACAddress))
-		} else if matches := dropsRegexp.FindStringSubmatch(line); matches != nil {
+		case dropsRegexp.MatchString(line):
+			matches := dropsRegexp.FindStringSubmatch(line)
 			current.InputDrops = str2float64(matches[1])
 			current.OutputDrops = str2float64(matches[2])
-		} else if matches := inputBytesRegexp.FindStringSubmatch(line); matches != nil {
+		case inputBytesRegexp.MatchString(line):
+			matches := inputBytesRegexp.FindStringSubmatch(line)
 			current.InputBytes = str2float64(matches[1])
-		} else if matches := outputBytesRegexp.FindStringSubmatch(line); matches != nil {
+		case outputBytesRegexp.MatchString(line):
+			matches := outputBytesRegexp.FindStringSubmatch(line)
 			current.OutputBytes = str2float64(matches[1])
-		} else if matches := inputErrorsRegexp.FindStringSubmatch(line); matches != nil {
+		case inputErrorsRegexp.MatchString(line):
+			matches := inputErrorsRegexp.FindStringSubmatch(line)
 			current.InputErrors = str2float64(matches[1])
-		} else if matches := outputErrorsRegexp.FindStringSubmatch(line); matches != nil {
+		case outputErrorsRegexp.MatchString(line):
+			matches := outputErrorsRegexp.FindStringSubmatch(line)
 			current.OutputErrors = str2float64(matches[1])
-		} else if matches := speedRegexp.FindStringSubmatch(line); matches != nil {
+		case speedRegexp.MatchString(line):
+			matches := speedRegexp.FindStringSubmatch(line)
 			current.SpeedString = matches[2] + " " + matches[3]
-		} else if txNXOS.MatchString(line) {
+		case txNXOS.MatchString(line):
 			isRx = false
-		} else if matches := multiBroadNXOS.FindStringSubmatch(line); matches != nil {
+		case multiBroadNXOS.MatchString(line):
 			if isRx {
+				matches := multiBroadNXOS.FindStringSubmatch(line)
 				current.InputMulticast = str2float64(matches[1])
 				current.InputBroadcast = str2float64(matches[2])
-				logger.Debug("Parsed NX-OS multicast/broadcast",
-					zap.String("interface", current.Name),
-					zap.Float64("multicast", current.InputMulticast),
-					zap.Float64("broadcast", current.InputBroadcast))
 			}
-		} else if matches := multiBroadIOSXE.FindStringSubmatch(line); matches != nil {
+		case multiBroadIOSXE.MatchString(line):
+			matches := multiBroadIOSXE.FindStringSubmatch(line)
 			current.InputBroadcast = str2float64(matches[1])
 			current.InputMulticast = str2float64(matches[2])
-			logger.Debug("Parsed IOS XE multicast/broadcast",
-				zap.String("interface", current.Name),
-				zap.Float64("multicast", current.InputMulticast),
-				zap.Float64("broadcast", current.InputBroadcast))
-		} else if matches := multiBroadIOS.FindStringSubmatch(line); matches != nil {
+		case multiBroadIOS.MatchString(line):
+			matches := multiBroadIOS.FindStringSubmatch(line)
 			current.InputBroadcast = str2float64(matches[1])
-			logger.Debug("Parsed IOS broadcast",
-				zap.String("interface", current.Name),
-				zap.Float64("broadcast", current.InputBroadcast))
 		}
 	}
 
 	if current != nil {
 		if current.Validate() {
 			interfaces = append(interfaces, current)
-			logger.Debug("Added final interface from parsing",
-				zap.String("name", current.Name),
-				zap.String("mac", current.MACAddress),
-				zap.String("oper_status", current.OperStatus),
-				zap.String("admin_status", current.AdminStatus),
-				zap.Bool("has_mac", current.MACAddress != ""))
 		} else {
-			logger.Warn("Skipping invalid interface",
-				zap.String("name", current.Name))
+			logger.Warn("Skipping invalid interface", zap.String("name", current.Name))
 		}
 	}
 
-	withMAC := 0
-	withoutMAC := 0
-	withMulticast := 0
-	withBroadcast := 0
-	for _, intf := range interfaces {
-		if intf.MACAddress != "" {
-			withMAC++
-		} else {
-			withoutMAC++
-			logger.Debug("Interface without MAC address",
-				zap.String("interface", intf.Name),
-				zap.String("type", "virtual or no hardware"))
-		}
-		if intf.InputMulticast > 0 {
-			withMulticast++
-		}
-		if intf.InputBroadcast > 0 {
-			withBroadcast++
-		}
-		if intf.InputMulticast == 0 && intf.InputBroadcast == 0 {
-			logger.Debug("Interface with zero multicast/broadcast counters",
-				zap.String("interface", intf.Name))
-		}
-	}
-	logger.Info("Interface parsing complete",
-		zap.Int("total_interfaces", len(interfaces)),
-		zap.Int("with_mac", withMAC),
-		zap.Int("without_mac", withoutMAC),
-		zap.Int("with_multicast", withMulticast),
-		zap.Int("with_broadcast", withBroadcast))
+	logger.Info("Parsed interfaces", zap.Int("count", len(interfaces)))
 
 	return interfaces
 }
 
-// parseSimpleInterfaces implements simple interface parsing fallback (for "show interface brief" output)
-func parseSimpleInterfaces(output string, logger *zap.Logger) []*Interface {
+// parseSimpleInterfaces parses "show interface brief" output as fallback
+func parseSimpleInterfaces(output string, _ *zap.Logger) []*Interface {
 	interfaces := make([]*Interface, 0)
 
-	// Simple regex for "show interface brief" output format
-	// Example: Ethernet1/1   10.1.1.1   YES   NVRAM  up     up
 	simpleRegex := regexp.MustCompile(`^(\S+)\s+(?:\S+\s+)*(\S+)\s+(\S+)\s*$`)
 
 	lines := strings.Split(output, "\n")
-	logger.Debug("Parsing simple interface format", zap.Int("lines", len(lines)))
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -287,24 +227,14 @@ func parseSimpleInterfaces(output string, logger *zap.Logger) []*Interface {
 		matches := simpleRegex.FindStringSubmatch(line)
 		if len(matches) >= 4 {
 			interfaceName := matches[1]
-			adminStatus := parseStatus(matches[2])
 			operStatus := parseStatus(matches[3])
 
 			iface := NewInterface(interfaceName)
-			iface.AdminStatus = adminStatus
 			iface.OperStatus = operStatus
-
-			logger.Debug("Parsed simple interface",
-				zap.String("name", interfaceName),
-				zap.String("admin", adminStatus),
-				zap.String("oper", operStatus))
 
 			interfaces = append(interfaces, iface)
 		}
 	}
-
-	logger.Info("Simple interface parsing completed",
-		zap.Int("interfaces_found", len(interfaces)))
 
 	return interfaces
 }
