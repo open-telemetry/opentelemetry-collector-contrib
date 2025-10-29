@@ -666,7 +666,7 @@ Parameters:
 * `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, `1.37.0` is the supported version.
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
-Examples:
+Sanitization examples:
 
 * Span with high-cardinality name but recommended semantic convention attributes
    * Incoming span:
