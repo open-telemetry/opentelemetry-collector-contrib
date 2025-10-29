@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap/zapcore"
 )
@@ -498,6 +499,56 @@ func TestValidate(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestOpAMPServer_OpaqueHeaders(t *testing.T) {
+	testCases := []struct {
+		name     string
+		headers  http.Header
+		expected map[string][]configopaque.String
+	}{
+		{
+			name: "Single-value header",
+			headers: http.Header{
+				"key1": []string{"value1"},
+				"key2": []string{"value2"},
+			},
+			expected: map[string][]configopaque.String{
+				"key1": {configopaque.String("value1")},
+				"key2": {configopaque.String("value2")},
+			},
+		},
+		{
+			name: "Multi-value header",
+			headers: http.Header{
+				"key1": []string{"value1"},
+				"key2": []string{"value2a", "value2b"},
+			},
+			expected: map[string][]configopaque.String{
+				"key1": {configopaque.String("value1")},
+				"key2": {configopaque.String("value2a"), configopaque.String("value2b")},
+			},
+		},
+		{
+			name:     "Empty header",
+			headers:  http.Header{},
+			expected: map[string][]configopaque.String{},
+		},
+		{
+			name:     "Nil header",
+			headers:  nil,
+			expected: map[string][]configopaque.String{},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			serverCfg := OpAMPServer{
+				Headers: tc.headers,
+			}
+			actual := serverCfg.OpaqueHeaders()
+			require.Equal(t, tc.expected, actual)
 		})
 	}
 }
