@@ -27,16 +27,14 @@ func NewSetSemconvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
 }
 
 func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
-
 	args, ok := oArgs.(*setSemconvSpanNameArguments)
 
 	if !ok {
 		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
 	}
-	var r error = nil
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
 		return setSemconvSpanName(args.SemconvVersion, args.OriginalSpanNameAttribute, tCtx.GetSpan()), nil
-	}, r
+	}, nil
 }
 
 func setSemconvSpanName(semconvVersion string, originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) error {
