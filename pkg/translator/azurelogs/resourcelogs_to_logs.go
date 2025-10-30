@@ -23,10 +23,13 @@ const (
 	// Constants for OpenTelemetry Specs
 	scopeName = "otelcol/azureresourcelogs"
 
-	attributeAzureCategory         = "azure.category"
-	attributeAzureCorrelationID    = "azure.correlation_id"
-	attributeAzureOperationName    = "azure.operation.name"
-	attributeAzureOperationVersion = "azure.operation.version"
+	attributeAzureCategory          = "azure.category"
+	attributeAzureCorrelationID     = "azure.correlation_id"
+	attributeAzureOperationName     = "azure.operation.name"
+	attributeAzureOperationVersion  = "azure.operation.version"
+	attributeAzureResultType        = "azure.result.type"
+	attributeAzureResultSignature   = "azure.result.signature"
+	attributeAzureResultDescription = "azure.result.description"
 
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
@@ -91,6 +94,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
+	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
+
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
 	for i := range azureLogs.Records {
 		log := &azureLogs.Records[i]
@@ -110,6 +115,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.SetTimestamp(nanos)
+		lr.SetObservedTimestamp(observedTimestamp)
 
 		if log.Level != nil {
 			severity := asSeverity(*log.Level)
@@ -223,7 +229,16 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	putStrPtr(attributeAzureCorrelationID, log.CorrelationID, record)
 	record.Attributes().PutStr(attributeAzureOperationName, log.OperationName)
 	putStrPtr(attributeAzureOperationVersion, log.OperationVersion, record)
-	// TODO Keep adding other common fields, like tenant ID
+	putStrPtr(string(conventions.CloudAccountIDKey), log.TenantID, record)
+	putStrPtr(attributeAzureResultType, log.ResultType, record)
+	putStrPtr(attributeAzureResultSignature, log.ResultSignature, record)
+	putStrPtr(attributeAzureResultDescription, log.ResultDescription, record)
+	putStrPtr(string(conventions.NetworkPeerAddressKey), log.CallerIPAddress, record)
+
+	// Extract identity/claims for activity logs
+	if log.Identity != nil {
+		addIdentityAttributes(*log.Identity, record)
+	}
 }
 
 func extractRawAttributes(log *azureLogRecord) map[string]any {
@@ -316,5 +331,24 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 func setIf(attrs map[string]any, key string, value *string) {
 	if value != nil && *value != "" {
 		attrs[key] = *value
+	}
+}
+
+// addIdentityAttributes extracts identity details from Activity Logs like Recommendation
+func addIdentityAttributes(identity any, record plog.LogRecord) {
+	identityMap, ok := identity.(map[string]any)
+	if !ok {
+		return
+	}
+
+	// Extract claims details (used by Recommendation and other Activity Logs)
+	if claims, ok := identityMap["claims"].(map[string]any); ok {
+		// Extract common claim fields
+		if email, ok := claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"].(string); ok && email != "" {
+			record.Attributes().PutStr(string(conventions.UserEmailKey), email)
+		}
+		// Store the complete claims data
+		claimsMap := record.Attributes().PutEmptyMap("azure.identity.claims")
+		_ = claimsMap.FromRaw(claims)
 	}
 }
