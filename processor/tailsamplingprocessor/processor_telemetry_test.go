@@ -214,10 +214,8 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tt.m.Name, func(t *testing.T) {
-			got := s.getMetric(tt.m.Name, md)
-			metricdatatest.AssertEqual(t, tt.m, got, tt.opts...)
-		})
+		got := s.getMetric(tt.m.Name, md)
+		metricdatatest.AssertEqual(t, tt.m, got, tt.opts...)
 	}
 
 	// sanity check
