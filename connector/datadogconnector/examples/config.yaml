@@ -6,9 +6,6 @@ receivers:
       grpc:
         endpoint: "localhost:4317"
 processors:
-  batch:
-    send_batch_size: 10
-    timeout: 5s
   tail_sampling:
     decision_wait: 1s
     policies: [{name: sample_flag, type: boolean_attribute, boolean_attribute: {key: sampled, value: true}}]
@@ -92,17 +89,17 @@ exporters:
       key: ${env:DD_API_KEY}
     traces:
       trace_buffer: 100
+    sending_queue:
+      batch:
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [datadog/connector]
     traces/2: # this pipeline uses sampling
       receivers: [datadog/connector]
-      processors: [tail_sampling, batch]
+      processors: [tail_sampling]
       exporters: [datadog, debug]
     metrics:
       receivers: [datadog/connector]
-      processors: [batch]
       exporters: [datadog, debug]
