@@ -464,9 +464,9 @@ Total number of failed ingest operations during the lifetime of this node.
 
 The number of open file descriptors held by the node.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {files} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {files} | Sum | Int | Cumulative | false | development |
 
 ### elasticsearch.node.operations.completed
 
