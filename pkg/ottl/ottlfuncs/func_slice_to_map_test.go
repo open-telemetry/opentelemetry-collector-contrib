@@ -82,7 +82,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			wantExecutionErr: "could not extract key from element: provided object does not contain the path [notfound]",
+			wantExecutionErr: "could not extract key from element 0: provided object does not contain the path [notfound]",
 		},
 		{
 			name:      "flat object with both key and value path",
@@ -186,7 +186,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			wantExecutionErr: "could not cast element 'unsupported' to a map",
+			wantExecutionErr: "could not cast element of type `Str` to a map",
 		},
 		{
 			name:      "mixed data types with invalid element",
@@ -206,7 +206,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			wantExecutionErr: "could not cast element 'nothingToSeeHere' to a map",
+			wantExecutionErr: "could not cast element of type `Str` to a map",
 		},
 		{
 			name:      "nested with different value data types",

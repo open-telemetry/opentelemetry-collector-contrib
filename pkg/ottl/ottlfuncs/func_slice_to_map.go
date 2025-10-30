@@ -51,9 +51,7 @@ func sliceToMap(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]string]) (pc
 	useValuePath := !valuePath.IsEmpty()
 
 	for i, elem := range v.All() {
-
-		// If key_path is not set, key is the index
-		key := strconv.Itoa(i)
+		var key string
 		// If value_path is not set, value is the whole element
 		value := elem
 
@@ -64,7 +62,7 @@ func sliceToMap(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]string]) (pc
 		}
 
 		if useKeyPath {
-			extractedKey, err := extractPcommonValue(elem.Map(), keyPath.Get())
+			extractedKey, err := extractValue(elem.Map(), keyPath.Get())
 			if err != nil {
 				return pcommon.Map{}, fmt.Errorf("could not extract key from element %d: %w", i, err)
 			}
@@ -72,46 +70,21 @@ func sliceToMap(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]string]) (pc
 				return pcommon.Map{}, fmt.Errorf("element %d: extracted key attribute is not of type string, got %q", i, extractedKey.Type())
 			}
 			key = extractedKey.Str()
+		} else {
+			key = strconv.Itoa(i)
 		}
 
 		if useValuePath {
-			extractedValue, err := extractPcommonValue(elem.Map(), valuePath.Get())
+			extractedValue, err := extractValue(elem.Map(), valuePath.Get())
 			if err != nil {
 				return pcommon.Map{}, fmt.Errorf("could not extract value from element: %w", err)
 			}
 			value = extractedValue
 		}
 
-		err := putValue(value, m, key)
-		if err != nil {
-			return pcommon.Map{}, err
-		}
+		value.CopyTo(m.PutEmpty(key))
 	}
 	return m, nil
-}
-
-func putValue(value pcommon.Value, m pcommon.Map, key string) error {
-	switch value.Type() {
-	case pcommon.ValueTypeStr:
-		m.PutStr(key, value.Str())
-	case pcommon.ValueTypeInt:
-		m.PutInt(key, value.Int())
-	case pcommon.ValueTypeDouble:
-		m.PutDouble(key, value.Double())
-	case pcommon.ValueTypeBool:
-		m.PutBool(key, value.Bool())
-	case pcommon.ValueTypeBytes:
-		m.PutEmptyBytes(key).FromRaw(value.Bytes().AsRaw())
-	case pcommon.ValueTypeMap:
-		value.Map().CopyTo(m.PutEmptyMap(key))
-	case pcommon.ValueTypeSlice:
-		value.Slice().CopyTo(m.PutEmptySlice(key))
-	case pcommon.ValueTypeEmpty:
-		m.PutEmpty(key)
-	default:
-		return fmt.Errorf("unsupported value type %s for key %q", value.Type().String(), key)
-	}
-	return nil
 }
 
 func extractValue(m pcommon.Map, path []string) (pcommon.Value, error) {
@@ -132,5 +105,5 @@ func extractValue(m pcommon.Map, path []string) (pcommon.Value, error) {
 		return pcommon.NewValueEmpty(), fmt.Errorf("provided object does not contain the path %v", path)
 	}
 
-	return extractPcommonValue(val.Map(), path[1:])
+	return extractValue(val.Map(), path[1:])
 }
