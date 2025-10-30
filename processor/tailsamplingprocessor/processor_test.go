@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -60,6 +61,70 @@ func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.Trac
 	close(t.Started)
 	<-t.CouldContinue
 	return t.pe.Evaluate(ctx, traceID, trace)
+}
+
+// testTSPController is a set of mechanisms to make the TSP do predictable
+// things in tests.
+type testTSPController struct {
+	// tickBarrier is a barrier to block ticks until the test is ready
+	tickBarrier chan struct{}
+}
+
+func newTestTSPController() *testTSPController {
+	return &testTSPController{
+		tickBarrier: make(chan struct{}),
+	}
+}
+
+func (t *testTSPController) waitForTick() {
+	t.concurrentWithTick(func() {})
+}
+
+func (t *testTSPController) concurrentWithTick(f func()) {
+	t.tickBarrier <- struct{}{}
+	f()
+	<-t.tickBarrier
+}
+
+func withTestController(t *testTSPController) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		// Replace the policy ticker with a custom one that uses the tick barrier
+		originalOnTickFunc := tsp.policyTicker.OnTickFunc
+		tsp.policyTicker = &timeutils.PolicyTicker{
+			OnTickFunc: func() {
+				select {
+				case <-t.tickBarrier:
+					originalOnTickFunc()
+					t.tickBarrier <- struct{}{}
+				case <-tsp.policyTicker.StopCh:
+					return
+				}
+			},
+		}
+
+		// use a sync ID batcher to avoid waiting on lots of empty ticks
+		tsp.decisionBatcher = newSyncIDBatcher()
+
+		// Use a fast tick frequency to avoid waiting on slow ticks. Since we
+		// use the tick barrier, we know the ticks will only fire when we're
+		// ready anyway.
+		tsp.tickerFrequency = 1 * time.Millisecond
+	}
+}
+
+// withTickerFrequency sets the frequency at which the processor will evaluate
+// the sampling policies.
+func withTickerFrequency(frequency time.Duration) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.tickerFrequency = frequency
+	}
+}
+
+// withPolicies sets the sampling policies to be used by the processor.
+func withPolicies(policies []*policy) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.policies = policies
+	}
 }
 
 type spanInfo struct {
@@ -123,7 +188,6 @@ func TestTraceIntegrity(t *testing.T) {
 	require.Len(t, spans, spanCount)
 
 	nextConsumer := new(consumertest.TracesSink)
-	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
 
@@ -131,12 +195,13 @@ func TestTraceIntegrity(t *testing.T) {
 		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 	}
 
+	controller := newTestTSPController()
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
 		Options: []Option{
-			withDecisionBatcher(idb),
 			withPolicies(policies),
+			withTestController(controller),
 		},
 	}
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
@@ -152,17 +217,15 @@ func TestTraceIntegrity(t *testing.T) {
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
 
-	tsp := p.(*tailSamplingSpanProcessor)
-
 	// The first tick won't do anything
-	tsp.policyTicker.OnTick()
+	controller.waitForTick()
 	require.Equal(t, 0, mpe1.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
-	tsp.policyTicker.OnTick()
+	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	require.Equal(t, 4, mpe1.EvaluationCount)
+	assert.Equal(t, 4, mpe1.EvaluationCount)
 
 	consumed := nextConsumer.AllTraces()
 	require.Len(t, consumed, 4)
@@ -185,16 +248,20 @@ func TestTraceIntegrity(t *testing.T) {
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIDs, batches := generateIDsAndBatches(128)
+	controller := newTestTSPController()
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 		Options: []Option{
-			withTickerFrequency(time.Millisecond),
+			withTestController(controller),
 		},
 	}
-	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(t.Context(), componenttest.NewNopHost())
@@ -208,18 +275,27 @@ func TestSequentialTraceArrival(t *testing.T) {
 		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
 	}
 
-	tsp := sp.(*tailSamplingSpanProcessor)
-	for i := range traceIDs {
-		d, ok := tsp.idToTrace.Load(traceIDs[i])
-		require.True(t, ok, "Missing expected traceId")
-		v := d.(*samplingpolicy.TraceData)
-		require.Equal(t, int64(i+1), v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
+	// The first tick won't do anything
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces := nextConsumer.AllTraces()
+	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+	for _, trace := range allSampledTraces {
+		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
 	}
+	require.Len(t, sampledTraceIDs, 128)
+	for _, expectedTrace := range traceIDs {
+		_, ok := sampledTraceIDs[expectedTrace]
+		require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
+		delete(sampledTraceIDs, expectedTrace)
+	}
+	require.Empty(t, sampledTraceIDs, "No extra traces should be sampled")
 }
 
 func TestConcurrentTraceArrival(t *testing.T) {
 	traceIDs, batches := generateIDsAndBatches(128)
-
+	controller := newTestTSPController()
 	var wg sync.WaitGroup
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
@@ -227,10 +303,13 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 		Options: []Option{
-			withTickerFrequency(time.Millisecond),
+			withTestController(controller),
 		},
 	}
-	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(t.Context(), componenttest.NewNopHost())
@@ -263,19 +342,27 @@ func TestConcurrentTraceArrival(t *testing.T) {
 
 	wg.Wait()
 
-	tsp := sp.(*tailSamplingSpanProcessor)
-	for i := range traceIDs {
-		d, ok := tsp.idToTrace.Load(traceIDs[i])
-		require.True(t, ok, "Missing expected traceId")
-		v := d.(*samplingpolicy.TraceData)
-		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
+	// The first tick won't do anything
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces := nextConsumer.AllTraces()
+	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+	for _, trace := range allSampledTraces {
+		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
 	}
+	require.Len(t, sampledTraceIDs, 128)
+	for _, expectedTrace := range traceIDs {
+		_, ok := sampledTraceIDs[expectedTrace]
+		require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
+		delete(sampledTraceIDs, expectedTrace)
+	}
+	require.Empty(t, sampledTraceIDs, "No extra traces should be sampled")
 }
 
 func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 	traceIDs, batches := generateIDsAndBatches(1)
-	evalStarted := make(chan struct{})
-	continueEvaluation := make(chan struct{})
+	controller := newTestTSPController()
 
 	var wg sync.WaitGroup
 	cfg := Config{
@@ -285,6 +372,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		PolicyCfgs:              testLatencyPolicy,
 		Options: []Option{
 			withTickerFrequency(time.Millisecond),
+			withTestController(controller),
 		},
 	}
 	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
@@ -297,25 +385,17 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	tsp := sp.(*tailSamplingSpanProcessor)
-	tpe := &TestPolicyEvaluator{
-		Started:       evalStarted,
-		CouldContinue: continueEvaluation,
-		pe:            tsp.policies[0].evaluator,
-	}
-	tsp.policies[0].evaluator = tpe
-
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
 			for range 10 {
-				assert.NoError(t, tsp.ConsumeTraces(t.Context(), td))
+				assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			}
-			<-evalStarted
-			close(continueEvaluation)
-			for range 10 {
-				assert.NoError(t, tsp.ConsumeTraces(t.Context(), td))
-			}
+			controller.concurrentWithTick(func() {
+				for range 10 {
+					assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+				}
+			})
 			wg.Done()
 		}(batch)
 	}
@@ -324,6 +404,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 }
 
 func TestSequentialTraceMapSize(t *testing.T) {
+	controller := newTestTSPController()
 	traceIDs, batches := generateIDsAndBatches(210)
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
@@ -331,10 +412,11 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 		Options: []Option{
-			withTickerFrequency(100 * time.Millisecond),
+			withTestController(controller),
 		},
 	}
-	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(t.Context(), componenttest.NewNopHost())
@@ -349,12 +431,25 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// On sequential insertion it is possible to know exactly which traces should be still on the map.
-	tsp := sp.(*tailSamplingSpanProcessor)
-	for i := 0; i < len(traceIDs)-int(cfg.NumTraces); i++ {
-		_, ok := tsp.idToTrace.Load(traceIDs[i])
-		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIDs[i])
+	// On sequential insertion it is possible to know exactly which traces
+	// should be still on the map. We expect those to be sampled now.
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces := nextConsumer.AllTraces()
+	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+	for _, trace := range allSampledTraces {
+		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
 	}
+
+	require.Len(t, sampledTraceIDs, int(cfg.NumTraces))
+	for _, expectedTrace := range traceIDs[len(traceIDs)-int(cfg.NumTraces):] {
+		_, ok := sampledTraceIDs[expectedTrace]
+		require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
+		delete(sampledTraceIDs, expectedTrace)
+	}
+
+	require.Empty(t, sampledTraceIDs, "No extra traces should be sampled")
 }
 
 func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
@@ -384,7 +479,6 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	// We need a lot of tries to make this happen reliably.
 	numBatches := 100
 	_, batches := generateIDsAndBatches(numBatches)
-
 	// prepare
 	msp := new(consumertest.TracesSink)
 	cfg := Config{
@@ -398,15 +492,15 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			// dropped too early errors.
 			SampledCacheSize: numBatches * 2,
 		},
+		Options: []Option{
+			withTickerFrequency(5 * time.Millisecond),
+		},
 	}
 	settings := processortest.NewNopSettings(metadata.Type)
 	reader := sdkmetric.NewManualReader()
 	settings.MeterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	tsp, err := newTracesProcessor(t.Context(), settings, msp, cfg)
 	require.NoError(t, err)
-
-	// speed up the test a bit
-	tsp.(*tailSamplingSpanProcessor).tickerFrequency = 5 * time.Millisecond
 
 	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
@@ -460,49 +554,8 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	}, 1*time.Second, 100*time.Millisecond)
 }
 
-func TestConcurrentTraceMapSize(t *testing.T) {
-	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126")
-	_, batches := generateIDsAndBatches(210)
-	const maxSize = 100
-	var wg sync.WaitGroup
-	cfg := Config{
-		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(maxSize),
-		ExpectedNewTracesPerSec: 64,
-		PolicyCfgs:              testPolicy,
-		Options: []Option{
-			withTickerFrequency(100 * time.Millisecond),
-		},
-	}
-	sp, _ := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	require.NoError(t, sp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, sp.Shutdown(t.Context()))
-	}()
-
-	for _, batch := range batches {
-		wg.Add(1)
-		go func(td ptrace.Traces) {
-			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
-			wg.Done()
-		}(batch)
-	}
-
-	wg.Wait()
-
-	// Since we can't guarantee the order of insertion the only thing that can be checked is
-	// if the number of traces on the map matches the expected value.
-	cnt := 0
-	tsp := sp.(*tailSamplingSpanProcessor)
-	tsp.idToTrace.Range(func(_, _ any) bool {
-		cnt++
-		return true
-	})
-	require.Equal(t, maxSize, cnt, "Incorrect traces count on idToTrace")
-}
-
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
-	idb := newSyncIDBatcher()
+	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
@@ -517,7 +570,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(idb),
+			withTestController(controller),
 		},
 	}
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
@@ -533,9 +586,8 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		require.NoError(t, p.ConsumeTraces(t.Context(), batch))
 	}
 
-	tsp := p.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	require.Len(t, msp.AllTraces(), 3, "There should be three batches, one for each trace")
 
@@ -575,8 +627,9 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 }
 
 func TestSetSamplingPolicy(t *testing.T) {
-	idb := newSyncIDBatcher()
+	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
+	telem := setupTestTelemetry()
 
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
@@ -584,16 +637,20 @@ func TestSetSamplingPolicy(t *testing.T) {
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
-					Name: "always",
-					Type: AlwaysSample,
+					Name: "only-metrics",
+					Type: StringAttribute,
+					StringAttributeCfg: StringAttributeCfg{
+						Key:    "url.path",
+						Values: []string{"/metrics"},
+					},
 				},
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(idb),
+			withTestController(controller),
 		},
 	}
-	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	p, err := newTracesProcessor(t.Context(), telem.newSettings(), msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
@@ -601,65 +658,52 @@ func TestSetSamplingPolicy(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	tsp := p.(*tailSamplingSpanProcessor)
+	// Send some metrics traces and confirm they are sampled
+	metricsTrace := simpleTracesWithID(uInt64ToTraceID(1))
+	metricsTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/metrics")
+	healthTrace := simpleTracesWithID(uInt64ToTraceID(2))
+	healthTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/health")
 
-	assert.Len(t, tsp.policies, 1)
+	require.NoError(t, p.ConsumeTraces(t.Context(), metricsTrace))
+	require.NoError(t, p.ConsumeTraces(t.Context(), healthTrace))
 
-	tsp.policyTicker.OnTick()
+	controller.waitForTick()
+	controller.waitForTick()
 
-	assert.Len(t, tsp.policies, 1)
+	assert.Len(t, msp.AllTraces(), 1)
+	assert.Equal(t, uInt64ToTraceID(1), msp.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
+
+	msp.Reset()
 
 	cfgs := []PolicyCfg{
 		{
 			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "always",
-				Type: AlwaysSample,
-			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
-			},
-		},
-	}
-	tsp.SetSamplingPolicy(cfgs)
-
-	assert.Len(t, tsp.policies, 1)
-
-	tsp.policyTicker.OnTick()
-
-	assert.Len(t, tsp.policies, 2)
-
-	// Duplicate policy name.
-	cfgs = []PolicyCfg{
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "always",
-				Type: AlwaysSample,
-			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
-			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
+				Name: "only-health",
+				Type: StringAttribute,
+				StringAttributeCfg: StringAttributeCfg{
+					Key:    "url.path",
+					Values: []string{"/health"},
+				},
 			},
 		},
 	}
-	tsp.SetSamplingPolicy(cfgs)
+	p.(*tailSamplingSpanProcessor).SetSamplingPolicy(cfgs)
 
-	assert.Len(t, tsp.policies, 2)
+	controller.waitForTick()
 
-	tsp.policyTicker.OnTick()
+	metricsTrace = simpleTracesWithID(uInt64ToTraceID(3))
+	metricsTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/metrics")
+	healthTrace = simpleTracesWithID(uInt64ToTraceID(4))
+	healthTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/health")
 
-	// Should revert sampling policy.
-	assert.Len(t, tsp.policies, 2)
+	require.NoError(t, p.ConsumeTraces(t.Context(), metricsTrace))
+	require.NoError(t, p.ConsumeTraces(t.Context(), healthTrace))
+
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Len(t, msp.AllTraces(), 1)
+	assert.Equal(t, uInt64ToTraceID(4), msp.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
 }
 
 func TestSubSecondDecisionTime(t *testing.T) {
@@ -669,11 +713,11 @@ func TestSubSecondDecisionTime(t *testing.T) {
 		DecisionWait: 500 * time.Millisecond,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs:   testPolicy,
+		Options: []Option{
+			withTickerFrequency(10 * time.Millisecond),
+		},
 	})
 	require.NoError(t, err)
-
-	// speed up the test a bit
-	tsp.(*tailSamplingSpanProcessor).tickerFrequency = 10 * time.Millisecond
 
 	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
@@ -741,50 +785,8 @@ func TestDuplicatePolicyName(t *testing.T) {
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
 }
 
-func TestDecisionPolicyMetrics(t *testing.T) {
-	traceIDs, batches := generateIDsAndBatches(10)
-	policy := []PolicyCfg{
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name:             "test-policy",
-				Type:             Probabilistic,
-				ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 50},
-			},
-		},
-	}
-	cfg := Config{
-		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(2 * len(traceIDs)),
-		ExpectedNewTracesPerSec: 64,
-		PolicyCfgs:              policy,
-	}
-	sp, _ := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	tsp := sp.(*tailSamplingSpanProcessor)
-	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, tsp.Shutdown(t.Context()))
-	}()
-	metrics := newPolicyMetrics(len(policy))
-
-	for i, id := range traceIDs {
-		sb := &samplingpolicy.TraceData{
-			ArrivalTime:     time.Now(),
-			ReceivedBatches: batches[i],
-			SpanCount:       &atomic.Int64{},
-		}
-		sb.SpanCount.Store(int64(batches[i].SpanCount()))
-
-		_ = tsp.makeDecision(id, sb, metrics)
-	}
-
-	assert.EqualValues(t, 5, metrics.decisionSampled)
-	assert.EqualValues(t, 5, metrics.decisionNotSampled)
-	assert.EqualValues(t, 0, metrics.idNotFoundOnMapCount)
-	assert.EqualValues(t, 0, metrics.evaluateErrorCount)
-}
-
 func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
-	idb := newSyncIDBatcher()
+	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
@@ -799,13 +801,27 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 			},
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
-					Name: "drop-policy",
+					Name: "drop-metrics-policy",
 					Type: Drop,
+				},
+				DropCfg: DropCfg{
+					SubPolicyCfg: []AndSubPolicyCfg{
+						{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name: "drop-metrics-policy",
+								Type: StringAttribute,
+								StringAttributeCfg: StringAttributeCfg{
+									Key:    "url.path",
+									Values: []string{"/metrics"},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(idb),
+			withTestController(controller),
 		},
 	}
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
@@ -817,9 +833,26 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	tsp := p.(*tailSamplingSpanProcessor)
-	require.GreaterOrEqual(t, len(tsp.policies), 2)
-	assert.Equal(t, "drop-policy", tsp.policies[0].name)
+	metricsTrace := simpleTracesWithID(uInt64ToTraceID(1))
+	metricsTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/metrics")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), metricsTrace))
+
+	healthTrace := simpleTracesWithID(uInt64ToTraceID(2))
+	healthTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/health")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), healthTrace))
+
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Len(t, msp.AllTraces(), 1, "Health trace should be sampled")
+	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+	for _, trace := range msp.AllTraces() {
+		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
+	}
+	require.Len(t, sampledTraceIDs, 1)
+	assert.Contains(t, sampledTraceIDs, uInt64ToTraceID(2))
 }
 
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
@@ -1040,7 +1073,7 @@ func TestNumericAttributeCases(t *testing.T) {
 }
 
 func TestExtension(t *testing.T) {
-	idb := newSyncIDBatcher()
+	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
@@ -1060,7 +1093,7 @@ func TestExtension(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(idb),
+			withTestController(controller),
 		},
 	}
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
@@ -1072,8 +1105,6 @@ func TestExtension(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	tsp := p.(*tailSamplingSpanProcessor)
-	assert.Len(t, tsp.policies, 1)
 	assert.Equal(t, "extension", host.extension.policyName)
 	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
 }
