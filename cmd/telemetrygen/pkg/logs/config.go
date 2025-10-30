@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/validate"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -70,13 +71,13 @@ func (c *Config) Validate() error {
 	}
 
 	if c.TraceID != "" {
-		if err := common.ValidateTraceID(c.TraceID); err != nil {
+		if err := validate.TraceID(c.TraceID); err != nil {
 			return err
 		}
 	}
 
 	if c.SpanID != "" {
-		if err := common.ValidateSpanID(c.SpanID); err != nil {
+		if err := validate.SpanID(c.SpanID); err != nil {
 			return err
 		}
 	}

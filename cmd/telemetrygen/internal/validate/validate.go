@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common
+package validate
 
 import (
 	"encoding/hex"
@@ -15,7 +15,7 @@ var (
 	errInvalidSpanID        = errors.New("failed to create SpanID byte array from the given SpanID, make sure the SpanID is a hex representation of a [8]byte, like: '5828fa4960140870'")
 )
 
-func ValidateTraceID(traceID string) error {
+func TraceID(traceID string) error {
 	if len(traceID) != 32 {
 		return errInvalidTraceIDLength
 	}
@@ -28,7 +28,7 @@ func ValidateTraceID(traceID string) error {
 	return nil
 }
 
-func ValidateSpanID(spanID string) error {
+func SpanID(spanID string) error {
 	if len(spanID) != 16 {
 		return errInvalidSpanIDLength
 	}
