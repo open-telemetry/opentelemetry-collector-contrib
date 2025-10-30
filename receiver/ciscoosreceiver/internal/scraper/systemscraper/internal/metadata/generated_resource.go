@@ -21,10 +21,24 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetCiscoDeviceIP sets provided value as "cisco.device.ip" attribute.
-func (rb *ResourceBuilder) SetCiscoDeviceIP(val string) {
-	if rb.config.CiscoDeviceIP.Enabled {
-		rb.res.Attributes().PutStr("cisco.device.ip", val)
+// SetHostIP sets provided value as "host.ip" attribute.
+func (rb *ResourceBuilder) SetHostIP(val string) {
+	if rb.config.HostIP.Enabled {
+		rb.res.Attributes().PutStr("host.ip", val)
+	}
+}
+
+// SetHwType sets provided value as "hw.type" attribute.
+func (rb *ResourceBuilder) SetHwType(val string) {
+	if rb.config.HwType.Enabled {
+		rb.res.Attributes().PutStr("hw.type", val)
+	}
+}
+
+// SetOsName sets provided value as "os.name" attribute.
+func (rb *ResourceBuilder) SetOsName(val string) {
+	if rb.config.OsName.Enabled {
+		rb.res.Attributes().PutStr("os.name", val)
 	}
 }
 

@@ -13,16 +13,18 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetCiscoDeviceIP("cisco.device.ip-val")
+			rb.SetHostIP("host.ip-val")
+			rb.SetHwType("hw.type-val")
+			rb.SetOsName("os.name-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -30,10 +32,20 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			val, ok := res.Attributes().Get("cisco.device.ip")
+			val, ok := res.Attributes().Get("host.ip")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cisco.device.ip-val", val.Str())
+				assert.Equal(t, "host.ip-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("hw.type")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "hw.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("os.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "os.name-val", val.Str())
 			}
 		})
 	}
