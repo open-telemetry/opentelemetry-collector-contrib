@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
+package routingconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 
 import (
 	"context"
@@ -17,7 +17,7 @@ func createRouteFunction[K any](ottl.FunctionContext, ottl.Arguments) (ottl.Expr
 	}, nil
 }
 
-func StandardFunctions[K any]() map[string]ottl.Factory[K] {
+func standardFunctions[K any]() map[string]ottl.Factory[K] {
 	// standard converters do not transform data, so we can safely use them
 	funcs := ottlfuncs.StandardConverters[K]()
 
@@ -33,8 +33,8 @@ func StandardFunctions[K any]() map[string]ottl.Factory[K] {
 	return funcs
 }
 
-func SpanFunctions() map[string]ottl.Factory[ottlspan.TransformContext] {
-	funcs := StandardFunctions[ottlspan.TransformContext]()
+func spanFunctions() map[string]ottl.Factory[ottlspan.TransformContext] {
+	funcs := standardFunctions[ottlspan.TransformContext]()
 
 	isRootSpan := ottlfuncs.NewIsRootSpanFactory()
 	funcs[isRootSpan.Name()] = isRootSpan
