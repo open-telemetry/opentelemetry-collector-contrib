@@ -208,8 +208,3 @@ The receiver automatically detects the event source based on the Lambda invocati
 - Detailed error information is logged for debugging
 - Retry mechanisms are handled by AWS Lambda
 
-## Code Owners
-
-- @MichaelKatsoulis
-- @Kavindu-Dodan
-
