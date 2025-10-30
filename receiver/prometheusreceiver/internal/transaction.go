@@ -55,6 +55,7 @@ type transaction struct {
 	isNew                  bool
 	trimSuffixes           bool
 	enableNativeHistograms bool
+	useMetadata            bool
 	addingNativeHistogram  bool // true if the last sample was a native histogram.
 	addingNHCB             bool // true if the last sample was a NHCB.
 	ctx                    context.Context
@@ -89,6 +90,7 @@ func newTransaction(
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
 	enableNativeHistograms bool,
+	useMetadata bool,
 ) *transaction {
 	return &transaction{
 		ctx:                    ctx,
@@ -96,6 +98,7 @@ func newTransaction(
 		isNew:                  true,
 		trimSuffixes:           trimSuffixes,
 		enableNativeHistograms: enableNativeHistograms,
+		useMetadata:            useMetadata,
 		sink:                   sink,
 		metricAdjuster:         metricAdjuster,
 		externalLabels:         externalLabels,
@@ -507,9 +510,13 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 	if !ok {
 		return nil, errors.New("unable to find target in context")
 	}
-	t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
-	if !ok {
-		return nil, errors.New("unable to find MetricMetadataStore in context")
+	if t.useMetadata {
+		t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
+		if !ok {
+			return nil, errors.New("unable to find MetricMetadataStore in context")
+		}
+	} else {
+		t.mc = &emptyMetadataStore{}
 	}
 
 	rKey, err := t.getJobAndInstance(lbs)
