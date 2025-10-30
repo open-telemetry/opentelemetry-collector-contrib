@@ -13,6 +13,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+var (
+	validRegex   = regexp.MustCompile(`^(.*?%s.*?)$`)
+	invalidRegex = regexp.MustCompile(`%[^s]`)
+)
+
 type ReplacePatternArguments[K any] struct {
 	Target            ottl.GetSetter[K]
 	RegexPattern      ottl.StringGetter[K]
@@ -41,11 +46,6 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 
 func validFormatString(formatString string) bool {
 	// Check for exactly one %s and no other invalid format specifiers
-	validPattern := `^(.*?%s.*?)$`
-	validRegex := regexp.MustCompile(validPattern)
-	invalidPattern := `%[^s]`
-	invalidRegex := regexp.MustCompile(invalidPattern)
-
 	return validRegex.MatchString(formatString) && !invalidRegex.MatchString(formatString)
 }
 
