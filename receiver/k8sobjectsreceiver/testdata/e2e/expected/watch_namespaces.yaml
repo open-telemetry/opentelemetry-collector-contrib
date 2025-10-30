@@ -110,6 +110,9 @@ resourceLogs:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
+              - key: config.mode
+                value:
+                  stringValue: watch
               - key: event.domain
                 value:
                   stringValue: k8s

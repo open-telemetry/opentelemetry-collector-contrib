@@ -142,6 +142,9 @@ resourceLogs:
               - key: k8s.resource.name
                 value:
                   stringValue: events
+              - key: config.mode
+                value:
+                  stringValue: watch
               - key: event.domain
                 value:
                   stringValue: k8s
