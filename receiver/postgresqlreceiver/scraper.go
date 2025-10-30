@@ -109,7 +109,7 @@ func newPostgreSQLScraper(
 		cache:              cache,
 		queryPlanCache:     queryPlanCache,
 		separateSchemaAttr: separateSchemaAttr,
-		serviceInstanceID:  getInstanceID(config.AddrConfig.Endpoint, settings.Logger),
+		serviceInstanceID:  getInstanceID(config.Endpoint, settings.Logger),
 	}
 }
 
@@ -707,8 +707,8 @@ func (*postgreSQLScraper) retrieveBackends(
 	r.Unlock()
 }
 
-func (s *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
-	rb.SetServiceInstanceID(s.serviceInstanceID)
+func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+	rb.SetServiceInstanceID(p.serviceInstanceID)
 	return rb
 }
 
