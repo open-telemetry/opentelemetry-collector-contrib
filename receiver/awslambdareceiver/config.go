@@ -21,6 +21,6 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func (c *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }

@@ -13,14 +13,14 @@ import (
 
 type awsLambdaReceiver struct{}
 
-func newAWSLambdaReceiver(cfg *Config, set *receiver.Settings, logs consumer.Logs) *awsLambdaReceiver {
+func newAWSLambdaReceiver(_ *Config, _ *receiver.Settings, _ consumer.Logs) *awsLambdaReceiver {
 	return &awsLambdaReceiver{}
 }
 
-func (r *awsLambdaReceiver) Start(_ context.Context, _ component.Host) error {
+func (*awsLambdaReceiver) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (r *awsLambdaReceiver) Shutdown(_ context.Context) error {
+func (*awsLambdaReceiver) Shutdown(_ context.Context) error {
 	return nil
 }
