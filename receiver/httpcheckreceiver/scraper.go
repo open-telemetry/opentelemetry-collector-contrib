@@ -80,7 +80,7 @@ func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs 
 		responseMs = (readEndNs - readStartNs) / int64(time.Millisecond)
 	}
 
-	return
+	return dnsMs, tcpMs, tlsMs, requestMs, responseMs
 }
 
 type httpcheckScraper struct {
@@ -235,7 +235,7 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 	}
 
 	h.cfg.Targets = expandedTargets // Replace targets with expanded targets
-	return
+	return err
 }
 
 // scrape performs the HTTP checks and records metrics based on responses.
@@ -305,7 +305,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			}
 
 			// Add headers to the request
-			for key, value := range h.cfg.Targets[targetIndex].Headers {
+			for key, value := range h.cfg.Targets[targetIndex].Headers.Iter {
 				req.Header.Set(key, value.String()) // Convert configopaque.String to string
 			}
 

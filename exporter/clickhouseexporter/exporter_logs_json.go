@@ -18,6 +18,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
+// anyLogsExporter is an interface that satisfies both the default map logsExporter and the logsJSONExporter
+type anyLogsExporter interface {
+	start(context.Context, component.Host) error
+	shutdown(context.Context) error
+	pushLogsData(context.Context, plog.Logs) error
+}
+
 type logsJSONExporter struct {
 	cfg       *Config
 	logger    *zap.Logger
@@ -61,6 +68,7 @@ func (e *logsJSONExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
 		if err := e.db.Close(); err != nil {
 			e.logger.Warn("failed to close json logs db connection", zap.Error(err))
+			return err
 		}
 	}
 

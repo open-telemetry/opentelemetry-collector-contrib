@@ -79,6 +79,7 @@ connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
 connector/signaltometricsconnector
+connector/slowsqlconnector
 connector/sumconnector
 exporter/alertmanagerexporter
 exporter/alibabacloudlogserviceexporter
@@ -195,7 +196,7 @@ processor/resourcedetectionprocessor
 processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
-internal/e2e
+internal/datadog/e2e
 internal/kubelet
 internal/sqlquery
 internal/tools
@@ -262,6 +263,7 @@ receiver/googlecloudspannerreceiver
 receiver/haproxyreceiver
 receiver/httpcheckreceiver
 receiver/huaweicloudcesreceiver
+receiver/icmpcheckreceiver
 receiver/iisreceiver
 receiver/influxdbreceiver
 receiver/jmxreceiver
@@ -296,6 +298,7 @@ receiver/purefareceiver
 receiver/purefbreceiver
 receiver/rabbitmqreceiver
 receiver/receivercreator
+receiver/redfishreceiver
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver

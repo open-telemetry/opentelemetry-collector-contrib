@@ -1,0 +1,51 @@
+{
+  "insertId": "29gom3ewhg88",
+  "jsonPayload": {
+    "reporter": "DEST",
+    "src_location": {
+      "city": "Indore",
+      "country": "ind",
+      "asn": 24560,
+      "continent": "Asia",
+      "region": "Madhya Pradesh"
+    },
+    "end_time": "2025-09-27T21:13:15.943125002Z",
+    "start_time": "2025-09-27T21:13:15.686128981Z",
+    "packets_sent": "90",
+    "rtt_msec": "22",
+    "dest_vpc": {
+      "vpc_name": "default",
+      "project_id": "test-project-id",
+      "subnetwork_region": "asia-south1",
+      "subnetwork_name": "default"
+    },
+    "dest_instance": {
+      "zone": "asia-south1-c",
+      "vm_name": "test-vm-5",
+      "region": "asia-south1",
+      "project_id": "test-project-id"
+    },
+    "connection": {
+      "src_ip": "203.0.113.5",
+      "dest_ip": "192.0.2.5",
+      "dest_port": 22,
+      "protocol": 6,
+      "src_port": 45004
+    },
+    "bytes_sent": "11590"
+  },
+  "resource": {
+    "type": "vpc_flow_logs_config",
+    "labels": {
+      "name": "test-flow-logs-config",
+      "resource_container": "projects/123456789012",
+      "location": "global"
+    }
+  },
+  "timestamp": "2025-09-27T21:13:28.314589494Z",
+  "labels": {
+    "target_resource_name": "projects/123456789012/global/networks/default"
+  },
+  "logName": "projects/test-project-id/logs/networkmanagement.googleapis.com%2Fvpc_flows",
+  "receiveTimestamp": "2025-09-27T21:13:28.314589494Z"
+}
