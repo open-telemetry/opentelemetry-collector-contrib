@@ -669,6 +669,7 @@ If present in the file, the following attributes will be added:
 
 - `dt.entity.host`
 - `host.name`
+- `dt.smartscape.host`
 
 The Dynatrace detector does not require any additional configuration, other than being added to the list of detectors.
 
@@ -683,7 +684,7 @@ processors:
 
 It is strongly recommended to use the `override: false` configuration option, to prevent the detector from overwriting
 existing resource attributes.
-If the Dynatrace host entity identifier attribute `dt.entity.host` or `host.name` are already present on incoming data as it is sent from
+If the Dynatrace host entity identifier attribute `dt.entity.host`, `host.name`, or `dt.smartscape.host` are already present on incoming data as it is sent from
 other sources to the collector, then these describe the monitored entity in the best way.
 Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
 or the collector's host instead, which might be inaccurate.
