@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	awsLogsEncoding = "awslogs_encoding"
 	s3ARNPrefix     = "arn:aws:s3:::"
 )
 
