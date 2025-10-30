@@ -6,7 +6,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bytes"
 	"context"
-
 	//gosec:disable G505 -- SHA1 is intentionally used for generating unique identifiers
 	"crypto/sha1"
 	"encoding/base64"
