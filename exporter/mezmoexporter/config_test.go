@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -49,7 +48,6 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 					MaxConnsPerHost:     defaultMaxConnsPerHost,
 					IdleConnTimeout:     defaultIdleConnTimeout,
-					Headers:             map[string]configopaque.String{},
 					ForceAttemptHTTP2:   true,
 				},
 				BackOffConfig: configretry.BackOffConfig{
