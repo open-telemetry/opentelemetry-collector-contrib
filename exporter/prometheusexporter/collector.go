@@ -195,6 +195,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 // defaultZeroThreshold matches the remote-write translator's default for native histograms
 // when an explicit zero threshold is not provided in the datapoint.
 const defaultZeroThreshold = 1e-128
+const CBNHScale = -53
 
 func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) map[int]int64 {
 	counts := buckets.BucketCounts()
@@ -222,6 +223,11 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	}
 
 	schema := dp.Scale()
+
+	// TODO: implement custom bucket native histograms
+	if schema == CBNHScale {
+		return nil, fmt.Errorf("custom bucket native histograms (CBNH) are still not implemented")
+	}
 	if schema < -4 {
 		return nil, fmt.Errorf("cannot convert exponential to native histogram: scale must be >= -4, was %d", schema)
 	}
