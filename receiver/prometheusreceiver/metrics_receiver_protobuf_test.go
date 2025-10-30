@@ -708,7 +708,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
 	}()
 
-	for _, ignoreMetadata := range []bool{true} {
+	for _, ignoreMetadata := range []bool{false, true} {
 		t.Run(fmt.Sprintf("skip metadata=%v", ignoreMetadata), func(t *testing.T) {
 			for name, tc := range testCases {
 				t.Run(name, func(t *testing.T) {
