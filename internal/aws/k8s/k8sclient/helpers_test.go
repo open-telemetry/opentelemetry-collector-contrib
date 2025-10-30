@@ -24,6 +24,11 @@ apiVersion: v1
 clusters:
 - cluster:
     server: https://localhost:8080
+    extensions:
+    - name: client.authentication.k8s.io/exec
+      extension:
+        audience: foo
+        other: bar
   name: foo-cluster
 contexts:
 - context:
@@ -36,7 +41,13 @@ kind: Config
 users:
 - name: foo-user
   user:
-    token: fake-token
+    exec:
+      apiVersion: client.authentication.k8s.io/v1beta1
+      args:
+      - arg-1
+      - arg-2
+      command: foo-command
+      provideClusterInfo: true
 `
 	tmpfile, err := os.CreateTemp(t.TempDir(), "kubeconfig")
 	require.NoError(t, err)
