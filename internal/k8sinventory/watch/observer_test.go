@@ -21,7 +21,7 @@ import (
 	"k8s.io/client-go/dynamic/fake"
 	k8s_testing "k8s.io/client-go/testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 )
 
 func TestObserver(t *testing.T) {
@@ -33,7 +33,7 @@ func TestObserver(t *testing.T) {
 	)
 
 	cfg := Config{
-		Config: observer.Config{
+		Config: k8sinventory.Config{
 			Gvr: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",
@@ -83,7 +83,7 @@ func TestObserverWithInitialState(t *testing.T) {
 	)
 
 	cfg := Config{
-		Config: observer.Config{
+		Config: k8sinventory.Config{
 			Gvr: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",
@@ -115,7 +115,7 @@ func TestObserverExcludeDelete(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	cfg := Config{
-		Config: observer.Config{
+		Config: k8sinventory.Config{
 			Gvr: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",
@@ -160,7 +160,7 @@ func TestObserverEmptyNamespaces(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	cfg := Config{
-		Config: observer.Config{
+		Config: k8sinventory.Config{
 			Gvr: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",
@@ -198,7 +198,7 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	cfg := Config{
-		Config: observer.Config{
+		Config: k8sinventory.Config{
 			Gvr: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",
@@ -237,7 +237,7 @@ func TestObserverWithSelectors(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	cfg := Config{
-		Config: observer.Config{
+		Config: k8sinventory.Config{
 			Gvr: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",
@@ -284,7 +284,7 @@ func TestObserverInitialStateError(t *testing.T) {
 	})
 
 	cfg := Config{
-		Config: observer.Config{
+		Config: k8sinventory.Config{
 			Gvr: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",
@@ -326,7 +326,7 @@ func TestObserverInitialStateNoObjects(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	cfg := Config{
-		Config: observer.Config{
+		Config: k8sinventory.Config{
 			Gvr: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",

@@ -19,13 +19,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 )
 
 const defaultResourceVersion = "1"
 
 type Config struct {
-	observer.Config
+	k8sinventory.Config
 	IncludeInitialState bool
 	Exclude             map[apiWatch.EventType]bool
 }
@@ -156,7 +156,7 @@ func (o *Observer) doWatch(resourceVersion string, watchFunc func(options metav1
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),
 			zap.Error(err))
-		return true
+		return false
 	}
 
 	defer watcher.Stop()
@@ -198,7 +198,7 @@ func (o *Observer) doWatch(resourceVersion string, watchFunc func(options metav1
 	}
 }
 
-func getResourceVersion(ctx context.Context, config observer.Config, resource dynamic.ResourceInterface) (string, error) {
+func getResourceVersion(ctx context.Context, config k8sinventory.Config, resource dynamic.ResourceInterface) (string, error) {
 	resourceVersion := config.ResourceVersion
 	if resourceVersion == "" || resourceVersion == "0" {
 		// Proper use of the Kubernetes API Watch capability when no resourceVersion is supplied is to do a list first

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package pull // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer/pull"
+package pull
 
 import (
 	"context"
@@ -13,11 +13,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 )
 
 type Config struct {
-	observer.Config
+	k8sinventory.Config
 	Interval time.Duration
 }
 
