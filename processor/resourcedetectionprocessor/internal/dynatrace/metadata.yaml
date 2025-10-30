@@ -11,17 +11,4 @@ tests:
   skip_lifecycle: true
   skip_shutdown: true
 
-resource_attributes:
-  dt.entity.host:
-    description: The Dynatrace host entity
-    type: string
-    enabled: true
-  dt.smartscape.host:
-    description: The Dynatrace Smartscape host
-    type: string
-    enabled: true
-  host.name:
-    description: The hostname
-    type: string
-    enabled: true
 
