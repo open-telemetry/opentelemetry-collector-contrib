@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/github
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `include_span_events` for GitHub Workflow Runs and Jobs for enhancement troubleshooting
+note: Add `include_span_events` for GitHub Workflow Runs and Jobs for enhanced troubleshooting
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43180]
