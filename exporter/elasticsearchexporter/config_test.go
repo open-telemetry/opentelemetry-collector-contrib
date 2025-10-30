@@ -94,7 +94,9 @@ func TestConfig(t *testing.T) {
 					cfg.Timeout = 2 * time.Minute
 					cfg.MaxIdleConns = defaultMaxIdleConns
 					cfg.IdleConnTimeout = defaultIdleConnTimeout
-					cfg.Headers = map[string]configopaque.String{"myheader": "test"}
+					cfg.Headers = configopaque.MapList{
+						{Name: "myheader", Value: "test"},
+					}
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed
 				},
@@ -176,8 +178,8 @@ func TestConfig(t *testing.T) {
 					cfg.Timeout = 2 * time.Minute
 					cfg.MaxIdleConns = defaultMaxIdleConns
 					cfg.IdleConnTimeout = defaultIdleConnTimeout
-					cfg.Headers = map[string]configopaque.String{
-						"myheader": "test",
+					cfg.Headers = configopaque.MapList{
+						{Name: "myheader", Value: "test"},
 					}
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed
@@ -250,8 +252,8 @@ func TestConfig(t *testing.T) {
 					cfg.Timeout = 2 * time.Minute
 					cfg.MaxIdleConns = defaultMaxIdleConns
 					cfg.IdleConnTimeout = defaultIdleConnTimeout
-					cfg.Headers = map[string]configopaque.String{
-						"myheader": "test",
+					cfg.Headers = configopaque.MapList{
+						{Name: "myheader", Value: "test"},
 					}
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed

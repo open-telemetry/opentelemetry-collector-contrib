@@ -21,7 +21,7 @@ func NewBodyField(keys ...string) Field {
 	if keys == nil {
 		keys = []string{}
 	}
-	return Field{BodyField{
+	return Field{FieldInterface: BodyField{
 		Keys: keys,
 	}}
 }

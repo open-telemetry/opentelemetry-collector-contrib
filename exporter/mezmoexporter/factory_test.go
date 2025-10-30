@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -46,7 +45,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 			MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 			MaxConnsPerHost:     defaultMaxConnsPerHost,
 			IdleConnTimeout:     defaultIdleConnTimeout,
-			Headers:             map[string]configopaque.String{},
 			ForceAttemptHTTP2:   true,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),

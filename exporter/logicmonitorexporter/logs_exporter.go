@@ -105,10 +105,11 @@ func (e *logExporter) shutdown(_ context.Context) error {
 }
 
 func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option {
+	authHeader, _ := config.Headers.Get("Authorization")
 	authParams := utils.AuthParams{
 		AccessID:    config.APIToken.AccessID,
 		AccessKey:   string(config.APIToken.AccessKey),
-		BearerToken: string(config.Headers["Authorization"]),
+		BearerToken: string(authHeader),
 	}
 
 	opts := []lmsdklogs.Option{
