@@ -327,7 +327,7 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (ot
 			otlpCompression = gZip
 		}
 	}
-	return
+	return otlpEncoding, otlpCompression
 }
 
 func convertEncoding(encodingConfig string) (encoding buildInEncoding) {

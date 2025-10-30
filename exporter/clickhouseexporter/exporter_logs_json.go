@@ -18,6 +18,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
+// anyLogsExporter is an interface that satisfies both the default map logsExporter and the logsJSONExporter
+type anyLogsExporter interface {
+	start(context.Context, component.Host) error
+	shutdown(context.Context) error
+	pushLogsData(context.Context, plog.Logs) error
+}
+
 type logsJSONExporter struct {
 	cfg       *Config
 	logger    *zap.Logger
@@ -61,6 +68,7 @@ func (e *logsJSONExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
 		if err := e.db.Close(); err != nil {
 			e.logger.Warn("failed to close json logs db connection", zap.Error(err))
+			return err
 		}
 	}
 
@@ -84,7 +92,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 	var logCount int
 	rsLogs := ld.ResourceLogs()
 	rsLen := rsLogs.Len()
-	for i := 0; i < rsLen; i++ {
+	for i := range rsLen {
 		logs := rsLogs.At(i)
 		res := logs.Resource()
 		resURL := logs.SchemaUrl()
@@ -96,7 +104,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 		}
 
 		slLen := logs.ScopeLogs().Len()
-		for j := 0; j < slLen; j++ {
+		for j := range slLen {
 			scopeLog := logs.ScopeLogs().At(j)
 			scopeURL := scopeLog.SchemaUrl()
 			scopeLogScope := scopeLog.Scope()
@@ -109,7 +117,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 			}
 
 			slrLen := scopeLogRecords.Len()
-			for k := 0; k < slrLen; k++ {
+			for k := range slrLen {
 				r := scopeLogRecords.At(k)
 				logAttrBytes, logAttrErr := json.Marshal(r.Attributes().AsRaw())
 				if logAttrErr != nil {

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"sort"
 	"strconv"
@@ -26,14 +27,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
-// ToTranslator converts from Zipkin data model to pdata.
-type ToTranslator struct {
+// toTranslator converts from Zipkin data model to pdata.
+type toTranslator struct {
 	// ParseStringTags should be set to true if tags should be converted to numbers when possible.
 	ParseStringTags bool
 }
 
 // ToTraces translates Zipkin v2 spans into ptrace.Traces.
-func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (ptrace.Traces, error) {
+func (t toTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (ptrace.Traces, error) {
 	traceData := ptrace.NewTraces()
 	if len(zipkinSpans) == 0 {
 		return traceData, nil
@@ -273,7 +274,7 @@ func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) ptrace.
 }
 
 func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
-	for i := 0; i < 128; i++ {
+	for i := range 128 {
 		key := fmt.Sprintf("otlp.link.%d", i)
 		val, ok := tags[key]
 		if !ok {
@@ -488,9 +489,7 @@ func populateILFromZipkinSpan(tags map[string]string, instrLibName string, libra
 
 func copySpanTags(tags map[string]string) map[string]string {
 	dest := make(map[string]string, len(tags))
-	for key, val := range tags {
-		dest[key] = val
-	}
+	maps.Copy(dest, tags)
 	return dest
 }
 

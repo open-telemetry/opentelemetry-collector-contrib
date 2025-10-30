@@ -699,7 +699,7 @@ func getMetricProperties(metric pmetric.Metric) (
 		log.Panicf("Invalid data type %s", metric.Type().String())
 	}
 
-	return
+	return attributes, ts, value, temporality, isMonotonic
 }
 
 func TestAccumulateSum_RefusedNonMonotonicDelta_Logging(t *testing.T) {
@@ -720,7 +720,7 @@ func TestAccumulateSum_RefusedNonMonotonicDelta_Logging(t *testing.T) {
 	sum.SetIsMonotonic(false)
 
 	// Add 2 data points
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		dp := sum.DataPoints().AppendEmpty()
 		dp.SetDoubleValue(42.0)
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))

@@ -234,7 +234,12 @@ func Test_replacePattern(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
-			exprFunc, err := replacePattern(tt.target, tt.pattern, tt.replacement, tt.function, tt.replacementFormat)
+			pattern := &ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
+					return tt.pattern, nil
+				},
+			}
+			exprFunc, err := replacePattern(tt.target, pattern, tt.replacement, tt.function, tt.replacementFormat)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, scenarioValue)
@@ -268,7 +273,13 @@ func Test_replacePattern_bad_input(t *testing.T) {
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replacePattern[any](target, "regexp", replacement, function, replacementFormat)
+	pattern := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "regexp", nil
+		},
+	}
+
+	exprFunc, err := replacePattern[any](target, pattern, replacement, function, replacementFormat)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -296,7 +307,13 @@ func Test_replacePattern_bad_function_input(t *testing.T) {
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replacePattern[any](target, "regexp", replacement, function, replacementFormat)
+	pattern := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "regexp", nil
+		},
+	}
+
+	exprFunc, err := replacePattern[any](target, pattern, replacement, function, replacementFormat)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -330,7 +347,13 @@ func Test_replacePattern_bad_function_result(t *testing.T) {
 	function := ottl.NewTestingOptional[ottl.FunctionGetter[any]](ottlValue)
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replacePattern[any](target, "regexp", replacement, function, replacementFormat)
+	pattern := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "regexp", nil
+		},
+	}
+
+	exprFunc, err := replacePattern[any](target, pattern, replacement, function, replacementFormat)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -357,7 +380,13 @@ func Test_replacePattern_get_nil(t *testing.T) {
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replacePattern[any](target, `nomatch\=[^\s]*(\s?)`, replacement, function, replacementFormat)
+	pattern := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return `nomatch\=[^\s]*(\s?)`, nil
+		},
+	}
+
+	exprFunc, err := replacePattern[any](target, pattern, replacement, function, replacementFormat)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)
@@ -368,11 +397,9 @@ func Test_replacePattern_get_nil(t *testing.T) {
 func Test_replacePatterns_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, any) (any, error) {
-			t.Errorf("nothing should be received in this scenario")
-			return nil, nil
+			return "string", nil
 		},
 		Setter: func(context.Context, any, any) error {
-			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
@@ -384,9 +411,14 @@ func Test_replacePatterns_invalid_pattern(t *testing.T) {
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	invalidRegexPattern := "*"
-	_, err := replacePattern[any](target, invalidRegexPattern, replacement, function, replacementFormat)
-	require.Error(t, err)
+	invalidRegexPattern := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "*", nil
+		},
+	}
+	exprFunc, err := replacePattern[any](target, invalidRegexPattern, replacement, function, replacementFormat)
+	require.NoError(t, err)
+	_, err = exprFunc(nil, nil)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }
 
@@ -420,7 +452,13 @@ func Test_replacePattern_bad_format_string(t *testing.T) {
 	replacementFormat := ottl.NewTestingOptional[ottl.StringGetter[pcommon.Value]](passwdPrefix) // This is not a valid format string
 	function := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Value]](ottlValue)
 
-	exprFunc, err := replacePattern[pcommon.Value](target, `passwd\=[^\s]*`, replacement, function, replacementFormat)
+	pattern := &ottl.StandardStringGetter[pcommon.Value]{
+		Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
+			return `passwd\=[^\s]*`, nil
+		},
+	}
+
+	exprFunc, err := replacePattern[pcommon.Value](target, pattern, replacement, function, replacementFormat)
 	assert.NoError(t, err)
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)

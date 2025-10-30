@@ -59,18 +59,18 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-					NumConsumers: 2,
-					QueueSize:    10,
-				},
+				QueueSettings: func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return queue
+				}(),
 				ClientConfig: func() confighttp.ClientConfig {
 					client := confighttp.NewDefaultClientConfig()
-					client.Headers = map[string]configopaque.String{
-						"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-						"header1":                "234",
-						"another":                "somevalue",
+					client.Headers = configopaque.MapList{
+						{Name: "another", Value: "somevalue"},
+						{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
+						{Name: "header1", Value: "234"},
 					}
 					client.Endpoint = "a.new.alertmanager.target:9093"
 					client.TLS = configtls.ClientConfig{

@@ -24,6 +24,7 @@ components:
     - connector/routing
     - connector/servicegraph
     - connector/signaltometrics
+    - connector/slowsql
     - connector/spanmetrics
     - connector/sum
     - exporter/alertmanager
@@ -127,6 +128,7 @@ components:
     - internal/common
     - internal/coreinternal
     - internal/datadog
+    - internal/datadog/e2e
     - internal/docker
     - internal/exp/metrics
     - internal/filter
@@ -158,6 +160,7 @@ components:
     - pkg/resourcetotelemetry
     - pkg/sampling
     - pkg/stanza
+    - pkg/stanza/operator/input/journald
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
@@ -255,6 +258,7 @@ components:
     - receiver/hostmetrics
     - receiver/httpcheck
     - receiver/huaweicloudcesreceiver
+    - receiver/icmpcheckreceiver
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
@@ -293,6 +297,7 @@ components:
     - receiver/purefb
     - receiver/rabbitmq
     - receiver/receiver_creator
+    - receiver/redfish
     - receiver/redis
     - receiver/riak
     - receiver/saphana
@@ -332,6 +337,7 @@ components:
     - scraper/paging
     - scraper/process
     - scraper/processes
+    - scraper/system
     - scraper/system
     - scraper/zookeeper
     - testbed

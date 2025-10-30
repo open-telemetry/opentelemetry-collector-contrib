@@ -55,8 +55,7 @@ func (*PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 		return nil
 	}
 
-	tags := strings.Split(parts[1], ";")
-	for _, tag := range tags {
+	for tag := range strings.SplitSeq(parts[1], ";") {
 		idx := strings.IndexByte(tag, '=')
 		if idx < 1 {
 			return fmt.Errorf("cannot parse metric path [%s]: incorrect key value separator for [%s]", path, tag)
