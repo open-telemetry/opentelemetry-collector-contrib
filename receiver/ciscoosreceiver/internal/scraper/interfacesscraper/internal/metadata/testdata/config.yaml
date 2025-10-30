@@ -1,11 +1,15 @@
 default:
 all_set:
   metrics:
-    cisco.device.up:
+    system.network.errors:
       enabled: true
-    system.cpu.utilization:
+    system.network.interface.status:
       enabled: true
-    system.memory.utilization:
+    system.network.io:
+      enabled: true
+    system.network.packet.count:
+      enabled: true
+    system.network.packet.dropped:
       enabled: true
   resource_attributes:
     host.ip:
@@ -16,11 +20,15 @@ all_set:
       enabled: true
 none_set:
   metrics:
-    cisco.device.up:
+    system.network.errors:
       enabled: false
-    system.cpu.utilization:
+    system.network.interface.status:
       enabled: false
-    system.memory.utilization:
+    system.network.io:
+      enabled: false
+    system.network.packet.count:
+      enabled: false
+    system.network.packet.dropped:
       enabled: false
   resource_attributes:
     host.ip:

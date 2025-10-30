@@ -222,6 +222,7 @@ receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
 receiver/chronyreceiver receiver/chrony
 receiver/ciscoosreceiver receiver/ciscoos
+receiver/ciscoosreceiver/internal/scraper/interfacesscraper receiver/ciscoos/internal/scraper/interfaces
 receiver/ciscoosreceiver/internal/scraper/systemscraper receiver/ciscoos/internal/scraper/systemscraper
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry

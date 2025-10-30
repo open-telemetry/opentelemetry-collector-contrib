@@ -106,7 +106,8 @@ func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, err
 
 			// Set resource attributes
 			rb := s.mb.NewResourceBuilder()
-			rb.SetCiscoDeviceIP(s.deviceTarget)
+			rb.SetHostIP(s.deviceTarget)
+			rb.SetHwType("network")
 
 			return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 		}
@@ -135,7 +136,11 @@ func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, err
 
 	// Set resource attributes
 	rb := s.mb.NewResourceBuilder()
-	rb.SetCiscoDeviceIP(s.deviceTarget)
+	rb.SetHostIP(s.deviceTarget)
+	rb.SetHwType("network")
+	if s.rpcClient != nil {
+		rb.SetOsName(s.rpcClient.GetOSType())
+	}
 
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }

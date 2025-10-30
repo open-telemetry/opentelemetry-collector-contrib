@@ -26,22 +26,30 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for system metrics.
+// MetricsConfig provides config for interfaces metrics.
 type MetricsConfig struct {
-	CiscoDeviceUp           MetricConfig `mapstructure:"cisco.device.up"`
-	SystemCPUUtilization    MetricConfig `mapstructure:"system.cpu.utilization"`
-	SystemMemoryUtilization MetricConfig `mapstructure:"system.memory.utilization"`
+	SystemNetworkErrors          MetricConfig `mapstructure:"system.network.errors"`
+	SystemNetworkInterfaceStatus MetricConfig `mapstructure:"system.network.interface.status"`
+	SystemNetworkIo              MetricConfig `mapstructure:"system.network.io"`
+	SystemNetworkPacketCount     MetricConfig `mapstructure:"system.network.packet.count"`
+	SystemNetworkPacketDropped   MetricConfig `mapstructure:"system.network.packet.dropped"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		CiscoDeviceUp: MetricConfig{
+		SystemNetworkErrors: MetricConfig{
 			Enabled: true,
 		},
-		SystemCPUUtilization: MetricConfig{
+		SystemNetworkInterfaceStatus: MetricConfig{
 			Enabled: true,
 		},
-		SystemMemoryUtilization: MetricConfig{
+		SystemNetworkIo: MetricConfig{
+			Enabled: true,
+		},
+		SystemNetworkPacketCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNetworkPacketDropped: MetricConfig{
 			Enabled: true,
 		},
 	}
@@ -73,7 +81,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for system resource attributes.
+// ResourceAttributesConfig provides config for interfaces resource attributes.
 type ResourceAttributesConfig struct {
 	HostIP ResourceAttributeConfig `mapstructure:"host.ip"`
 	HwType ResourceAttributeConfig `mapstructure:"hw.type"`
@@ -94,7 +102,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for system metrics builder.
+// MetricsBuilderConfig is a configuration for interfaces metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

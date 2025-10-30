@@ -27,9 +27,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoDeviceUp:           MetricConfig{Enabled: true},
-					SystemCPUUtilization:    MetricConfig{Enabled: true},
-					SystemMemoryUtilization: MetricConfig{Enabled: true},
+					SystemNetworkErrors:          MetricConfig{Enabled: true},
+					SystemNetworkInterfaceStatus: MetricConfig{Enabled: true},
+					SystemNetworkIo:              MetricConfig{Enabled: true},
+					SystemNetworkPacketCount:     MetricConfig{Enabled: true},
+					SystemNetworkPacketDropped:   MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostIP: ResourceAttributeConfig{Enabled: true},
@@ -42,9 +44,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoDeviceUp:           MetricConfig{Enabled: false},
-					SystemCPUUtilization:    MetricConfig{Enabled: false},
-					SystemMemoryUtilization: MetricConfig{Enabled: false},
+					SystemNetworkErrors:          MetricConfig{Enabled: false},
+					SystemNetworkInterfaceStatus: MetricConfig{Enabled: false},
+					SystemNetworkIo:              MetricConfig{Enabled: false},
+					SystemNetworkPacketCount:     MetricConfig{Enabled: false},
+					SystemNetworkPacketDropped:   MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostIP: ResourceAttributeConfig{Enabled: false},

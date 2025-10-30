@@ -9,8 +9,16 @@ status:
     active: []
 
 resource_attributes:
-  cisco.device.ip:
+  host.ip:
     description: The IP address of the Cisco network device
+    type: string
+    enabled: true
+  hw.type:
+    description: Type of the physical hardware component
+    type: string
+    enabled: true
+  os.name:
+    description: The operating system type of the Cisco device
     type: string
     enabled: true
 
