@@ -10,5 +10,3 @@ status:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
-
-
