@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
@@ -187,7 +188,13 @@ func getScraperConfFromAnnotations(
 		return userConfigMap{}, nil
 	}
 	conf := userConfigMap{}
-	if err := yaml.Unmarshal([]byte(configStr), &conf); err != nil {
+
+	var rawConf map[string]any
+	if err := yaml.Unmarshal([]byte(configStr), &rawConf); err != nil {
+		return nil, err
+	}
+	cm := confmap.NewFromStringMap(rawConf)
+	if err := cm.Unmarshal(&conf); err != nil {
 		return userConfigMap{}, fmt.Errorf("could not unmarshal configuration from hint: %v", zap.Error(err))
 	}
 

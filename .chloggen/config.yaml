@@ -128,8 +128,8 @@ components:
     - internal/common
     - internal/coreinternal
     - internal/datadog
+    - internal/datadog/e2e
     - internal/docker
-    - internal/e2e
     - internal/exp/metrics
     - internal/filter
     - internal/grpcutil
@@ -337,6 +337,7 @@ components:
     - scraper/paging
     - scraper/process
     - scraper/processes
+    - scraper/system
     - scraper/system
     - scraper/zookeeper
     - testbed

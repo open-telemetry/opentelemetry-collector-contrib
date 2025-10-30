@@ -617,7 +617,7 @@ nested_example:
 				"endpoint":            "0.0.0.0:8080",
 				"initial_delay":       "20s",
 				"read_buffer_size":    "10",
-				"nested_example":      userConfigMap{"foo": "bar"},
+				"nested_example":      map[string]any{"foo": "bar"},
 			}, defaultEndpoint: "0.0.0.0:8080",
 			scopeSuffix: "",
 		}, "simple_annotation_case_default_endpoint": {
@@ -628,7 +628,7 @@ nested_example:
 				"collection_interval": "20s",
 				"initial_delay":       "20s",
 				"read_buffer_size":    "10",
-				"nested_example":      userConfigMap{"foo": "bar"},
+				"nested_example":      map[string]any{"foo": "bar"},
 			}, defaultEndpoint: "1.1.1.1:8080",
 			scopeSuffix: "",
 		}, "simple_annotation_case_scoped": {
@@ -640,7 +640,7 @@ nested_example:
 				"endpoint":            "0.0.0.0:8080",
 				"initial_delay":       "20s",
 				"read_buffer_size":    "10",
-				"nested_example":      userConfigMap{"foo": "bar"},
+				"nested_example":      map[string]any{"foo": "bar"},
 			}, defaultEndpoint: "0.0.0.0:8080",
 			scopeSuffix: "8080",
 		}, "simple_annotation_case_with_invalid_endpoint": {

@@ -1,0 +1,56 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.account.id
+                value:
+                  stringValue: "111122223333"
+              - key: aws.cloudtrail.digest.end_time
+                value:
+                  stringValue: "2025-10-21T01:00:00Z"
+              - key: aws.cloudtrail.digest.s3_bucket
+                value:
+                  stringValue: amzn-s3-demo-bucket
+              - key: aws.cloudtrail.digest.s3_object
+                value:
+                  stringValue: AWSLogs/111122223333/CloudTrail-Digest/us-east-1/2025/10/21/digest.json.gz
+              - key: aws.cloudtrail.digest.newest_event
+                value:
+                  stringValue: "2025-10-21T00:59:58Z"
+              - key: aws.cloudtrail.digest.oldest_event
+                value:
+                  stringValue: "2025-10-21T00:00:01Z"
+              - key: aws.cloudtrail.digest.previous_s3_bucket
+                value:
+                  stringValue: amzn-s3-demo-bucket
+              - key: aws.cloudtrail.digest.previous_s3_object
+                value:
+                  stringValue: AWSLogs/123456789012/CloudTrail-Digest/us-east-1/2025/10/21/digest-previous.json.gz
+              - key: aws.cloudtrail.digest.log_files
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: s3_bucket
+                              value:
+                                stringValue: amzn-s3-demo-bucket
+                            - key: s3_object
+                              value:
+                                stringValue: AWSLogs/123456789012/CloudTrail/us-east-1/2025/10/21/obj1.json.gz
+                            - key: newest_event_time
+                              value:
+                                stringValue: 2025-10-21TT00:52:27Z
+                            - key: oldest_event_time
+                              value:
+                                stringValue: 2025-10-21TT00:42:27Z
+            body: {}
+            timeUnixNano: "1761004800000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudtrail
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: test-version

@@ -60,7 +60,7 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 		{
 			name:              "grok - URI AWS pattern with captures",
 			targetString:      `http://user:password@example.com:80/path?query=string`,
-			pattern:           "%{ELB_URI}",
+			pattern:           `%{ELB_URI}`,
 			namedCapturesOnly: true,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("url.scheme", "http")
@@ -75,7 +75,7 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 		{
 			name:              "grok - POSTGRES log sample",
 			targetString:      `2024-06-18 12:34:56 UTC johndoe 12345 67890`,
-			pattern:           "%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}",
+			pattern:           `%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}`,
 			namedCapturesOnly: true,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("timestamp", "24-06-18 12:34:56")
@@ -89,7 +89,7 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 		{
 			name:              "grok - custom patterns",
 			targetString:      `2024-06-18 12:34:56 otel`,
-			pattern:           "%{MYPATTERN}",
+			pattern:           `%{MYPATTERN}`,
 			namedCapturesOnly: true,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("timestamp", "24-06-18 12:34:56")
@@ -110,7 +110,12 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 			}
 
 			patternDefinitionOptional := ottl.NewTestingOptional[[]string](tt.definitions)
-			exprFunc, err := extractGrokPatterns(target, tt.pattern, nco, patternDefinitionOptional)
+			pattern := &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return tt.pattern, nil
+				},
+			}
+			exprFunc, err := extractGrokPatterns(target, pattern, nco, patternDefinitionOptional)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
@@ -148,9 +153,9 @@ func Test_extractGrokPatterns_validation(t *testing.T) {
 					return "foobar", nil
 				},
 			},
-			pattern:              "(",
-			namedCapturesOnly:    false,
-			expectedFactoryError: true,
+			pattern:           "(",
+			namedCapturesOnly: false,
+			expectedError:     true,
 		},
 		{
 			name: "no named capture group",
@@ -181,7 +186,12 @@ func Test_extractGrokPatterns_validation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			nco := ottl.NewTestingOptional(tt.namedCapturesOnly)
 			patternDefinitionOptional := ottl.NewTestingOptional[[]string](tt.definitions)
-			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco, patternDefinitionOptional)
+			pattern := &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return tt.pattern, nil
+				},
+			}
+			exprFunc, err := extractGrokPatterns[any](tt.target, pattern, nco, patternDefinitionOptional)
 			if tt.expectedFactoryError {
 				require.Error(t, err)
 				return
@@ -244,7 +254,12 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 			nco := ottl.NewTestingOptional(false)
 			patternDefinitionOptional := ottl.NewTestingOptional[[]string](nil)
 
-			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco, patternDefinitionOptional)
+			pattern := &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return tt.pattern, nil
+				},
+			}
+			exprFunc, err := extractGrokPatterns[any](tt.target, pattern, nco, patternDefinitionOptional)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, nil)

@@ -18,6 +18,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
+// anyTracesExporter is an interface that satisfies both the default map tracesExporter and the tracesJSONExporter
+type anyTracesExporter interface {
+	start(context.Context, component.Host) error
+	shutdown(context.Context) error
+	pushTraceData(ctx context.Context, td ptrace.Traces) error
+}
+
 type tracesJSONExporter struct {
 	cfg       *Config
 	logger    *zap.Logger

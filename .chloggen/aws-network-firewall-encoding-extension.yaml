@@ -1,0 +1,6 @@
+change_type: 'enhancement'
+component: extension/awslogs_encoding
+note: Add support for AWS Network Firewall logs.
+issues: [43616]
+subtext: The AWS Logs Encoding Extension now supports unmarshaling AWS Network Firewall logs into OpenTelemetry logs format.
+change_logs: [user]

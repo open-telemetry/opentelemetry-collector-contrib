@@ -161,10 +161,11 @@ func TestAddMetrics(t *testing.T) {
 				targetHost: "example.com",
 				targetIP:   "192.168.1.1",
 				stats: &pingStats{
-					minRtt:   10 * time.Millisecond,
-					maxRtt:   20 * time.Millisecond,
-					avgRtt:   15 * time.Millisecond,
-					lossRato: 0.1,
+					minRtt:    10 * time.Millisecond,
+					maxRtt:    20 * time.Millisecond,
+					avgRtt:    15 * time.Millisecond,
+					stdDevRtt: 5 * time.Millisecond,
+					lossRatio: 0.1,
 				},
 				err: nil,
 			},
@@ -172,6 +173,7 @@ func TestAddMetrics(t *testing.T) {
 				"ping.rtt.min":    int64(10),
 				"ping.rtt.max":    int64(20),
 				"ping.rtt.avg":    int64(15),
+				"ping.rtt.stddev": int64(5),
 				"ping.loss.ratio": 0.1,
 			},
 		},
@@ -188,16 +190,18 @@ func TestAddMetrics(t *testing.T) {
 				targetHost: "example.com",
 				targetIP:   "192.168.1.1",
 				stats: &pingStats{
-					minRtt:   10 * time.Millisecond,
-					maxRtt:   20 * time.Millisecond,
-					avgRtt:   15 * time.Millisecond,
-					lossRato: 0.1,
+					minRtt:    10 * time.Millisecond,
+					maxRtt:    20 * time.Millisecond,
+					avgRtt:    15 * time.Millisecond,
+					stdDevRtt: 5 * time.Millisecond,
+					lossRatio: 0.1,
 				},
 				err: nil,
 			},
 			expected: map[string]any{
-				"ping.rtt.min": int64(10),
-				"ping.rtt.max": int64(20),
+				"ping.rtt.min":    int64(10),
+				"ping.rtt.max":    int64(20),
+				"ping.rtt.stddev": int64(5),
 			},
 			customizeConfig: func(cfg *Config) {
 				cfg.Metrics.PingRttAvg.Enabled = false
@@ -210,10 +214,10 @@ func TestAddMetrics(t *testing.T) {
 				targetHost: "example.com",
 				targetIP:   "192.168.1.1",
 				stats: &pingStats{
-					minRtt:   10 * time.Millisecond,
-					maxRtt:   20 * time.Millisecond,
-					avgRtt:   15 * time.Millisecond,
-					lossRato: 0.1,
+					minRtt:    10 * time.Millisecond,
+					maxRtt:    20 * time.Millisecond,
+					avgRtt:    15 * time.Millisecond,
+					lossRatio: 0.1,
 				},
 				err: nil,
 			},
@@ -223,6 +227,7 @@ func TestAddMetrics(t *testing.T) {
 				cfg.Metrics.PingRttMax.Enabled = false
 				cfg.Metrics.PingRttAvg.Enabled = false
 				cfg.Metrics.PingLossRatio.Enabled = false
+				cfg.Metrics.PingRttStddev.Enabled = false
 			},
 		},
 	}
@@ -280,6 +285,7 @@ func TestIcmpCheckScraperScrape(t *testing.T) {
 	cfg := &Config{
 		Targets: []PingTarget{
 			{Host: "127.0.0.1", PingCount: 1, PingTimeout: 1 * time.Second, PingInterval: 1 * time.Second},
+			{Host: "example.com"},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -291,10 +297,10 @@ func TestIcmpCheckScraperScrape(t *testing.T) {
 				targetHost: target.Host,
 				targetIP:   "212.133.0.1",
 				stats: &pingStats{
-					minRtt:   10 * time.Millisecond,
-					maxRtt:   20 * time.Millisecond,
-					avgRtt:   15 * time.Millisecond,
-					lossRato: 0.0,
+					minRtt:    10 * time.Millisecond,
+					maxRtt:    20 * time.Millisecond,
+					avgRtt:    15 * time.Millisecond,
+					lossRatio: 0.0,
 				},
 				err: nil,
 			},
@@ -310,8 +316,17 @@ func TestIcmpCheckScraperScrape(t *testing.T) {
 
 	// Verify that metrics were generated
 	assert.Positive(t, metrics.DataPointCount())
-	rm := metrics.ResourceMetrics().At(0)
-	ilm := rm.ScopeMetrics().At(0)
+	assert.Equal(t, 2, metrics.ResourceMetrics().Len())
 
-	assert.Equal(t, 4, ilm.Metrics().Len())
+	for idx := range cfg.Targets {
+		rm := metrics.ResourceMetrics().At(idx)
+
+		_, hasNameAttr := rm.Resource().Attributes().Get("net.peer.name")
+		_, hasIPAttr := rm.Resource().Attributes().Get("net.peer.name")
+		assert.True(t, hasNameAttr)
+		assert.True(t, hasIPAttr)
+
+		ilm := rm.ScopeMetrics().At(0)
+		assert.Equal(t, 5, ilm.Metrics().Len())
+	}
 }

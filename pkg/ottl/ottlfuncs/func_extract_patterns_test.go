@@ -23,23 +23,31 @@ func Test_extractPatterns(t *testing.T) {
 	tests := []struct {
 		name    string
 		target  ottl.StringGetter[any]
-		pattern string
+		pattern ottl.StringGetter[any]
 		want    func(pcommon.Map)
 	}{
 		{
-			name:    "extract patterns",
-			target:  target,
-			pattern: `^a=(?P<a>\w+)\s+c=(?P<c>\w+)$`,
+			name:   "extract patterns",
+			target: target,
+			pattern: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return `^a=(?P<a>\w+)\s+c=(?P<c>\w+)$`, nil
+				},
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("a", "b")
 				expectedMap.PutStr("c", "d")
 			},
 		},
 		{
-			name:    "no pattern found",
-			target:  target,
-			pattern: `^a=(?P<a>\w+)$`,
-			want:    func(_ pcommon.Map) {},
+			name:   "no pattern found",
+			target: target,
+			pattern: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return `^a=(?P<a>\w+)$`, nil
+				},
+			},
+			want: func(_ pcommon.Map) {},
 		},
 	}
 	for _, tt := range tests {
@@ -70,7 +78,7 @@ func Test_extractPatterns_validation(t *testing.T) {
 	tests := []struct {
 		name    string
 		target  ottl.StringGetter[any]
-		pattern string
+		pattern ottl.StringGetter[any]
 	}{
 		{
 			name: "bad regex",
@@ -79,7 +87,11 @@ func Test_extractPatterns_validation(t *testing.T) {
 					return "foobar", nil
 				},
 			},
-			pattern: "(",
+			pattern: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "(", nil
+				},
+			},
 		},
 		{
 			name: "no named capture group",
@@ -88,14 +100,20 @@ func Test_extractPatterns_validation(t *testing.T) {
 					return "foobar", nil
 				},
 			},
-			pattern: "(.*)",
+			pattern: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "(.*)", nil
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := extractPatterns[any](tt.target, tt.pattern)
+			assert.NoError(t, err)
+			assert.NotNil(t, exprFunc)
+			_, err = exprFunc(t.Context(), nil)
 			assert.Error(t, err)
-			assert.Nil(t, exprFunc)
 		})
 	}
 }
@@ -104,7 +122,7 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 	tests := []struct {
 		name    string
 		target  ottl.StringGetter[any]
-		pattern string
+		pattern ottl.StringGetter[any]
 	}{
 		{
 			name: "target is non-string",
@@ -113,7 +131,11 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 					return 123, nil
 				},
 			},
-			pattern: "(?P<line>.*)",
+			pattern: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "(?P<line>.*)", nil
+				},
+			},
 		},
 		{
 			name: "target is nil",
@@ -122,7 +144,11 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 					return nil, nil
 				},
 			},
-			pattern: "(?P<line>.*)",
+			pattern: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "(?P<line>.*)", nil
+				},
+			},
 		},
 	}
 

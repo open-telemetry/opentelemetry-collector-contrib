@@ -196,7 +196,7 @@ processor/resourcedetectionprocessor
 processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
-internal/e2e
+internal/datadog/e2e
 internal/kubelet
 internal/sqlquery
 internal/tools

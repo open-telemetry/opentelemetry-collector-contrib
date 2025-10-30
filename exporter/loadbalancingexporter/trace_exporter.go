@@ -54,7 +54,7 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
+		oParams := buildExporterSettings(params, endpoint)
 
 		return exporterFactory.CreateTraces(ctx, oParams, &oCfg)
 	}

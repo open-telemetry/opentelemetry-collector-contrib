@@ -79,14 +79,28 @@ func TestFranzProducerMetrics(t *testing.T) {
 			metricdatatest.IgnoreTimestamp(),
 		)
 	})
-	t.Run("should report the metrics when OnBrokerWrite hook is called", func(t *testing.T) {
+	t.Run("should report the metrics when OnBrokerE2E hook is called", func(t *testing.T) {
 		testTel := componenttest.NewTelemetry()
 		tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		fpm := NewFranzProducerMetrics(tb)
-		fpm.OnBrokerWrite(kgo.BrokerMetadata{NodeID: 1}, 0, 0, time.Second/2, time.Second/2, nil)
-		fpm.OnBrokerWrite(kgo.BrokerMetadata{NodeID: 1}, 0, 0, 100*time.Second, 0, errors.New(""))
+		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1}, 0, kgo.BrokerE2E{
+			WriteWait:   time.Second / 4,
+			TimeToWrite: time.Second / 4,
+			ReadWait:    time.Second / 4,
+			TimeToRead:  time.Second / 4,
+			WriteErr:    nil,
+			ReadErr:     nil,
+		})
+		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1}, 0, kgo.BrokerE2E{
+			WriteWait:   time.Second * 25,
+			TimeToWrite: time.Second * 25,
+			ReadWait:    time.Second * 25,
+			TimeToRead:  time.Second * 25,
+			WriteErr:    errors.New(""),
+			ReadErr:     nil,
+		})
 		var rm metricdata.ResourceMetrics
 		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)

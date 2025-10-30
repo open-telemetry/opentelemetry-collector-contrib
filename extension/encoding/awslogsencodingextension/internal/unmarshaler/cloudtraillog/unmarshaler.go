@@ -108,6 +108,28 @@ type CloudTrailRecord struct {
 	SharedEventID                string         `json:"sharedEventID"`
 }
 
+// logFiles represents log file information in a CloudTrail digest file
+type logFiles struct {
+	S3Bucket        string `json:"s3Bucket"`
+	S3Object        string `json:"s3Object"`
+	NewestEventTime string `json:"newestEventTime"`
+	OldestEventTime string `json:"oldestEventTime"`
+}
+
+// CloudTrailDigest represents a CloudTrail digest file
+type CloudTrailDigest struct {
+	AWSAccountID           string     `json:"awsAccountId"`
+	DigestStartTime        string     `json:"digestStartTime"`
+	DigestEndTime          string     `json:"digestEndTime"`
+	DigestS3Bucket         string     `json:"digestS3Bucket"`
+	DigestS3Object         string     `json:"digestS3Object"`
+	NewestEventTime        string     `json:"newestEventTime"`
+	OldestEventTime        string     `json:"oldestEventTime"`
+	PreviousDigestS3Bucket string     `json:"previousDigestS3Bucket"`
+	PreviousDigestS3Object string     `json:"previousDigestS3Object"`
+	LogFiles               []logFiles `json:"logFiles"`
+}
+
 type CloudTrailLog struct {
 	Records []CloudTrailRecord `json:"Records"`
 }
@@ -126,10 +148,20 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 
 	var cloudTrailLog CloudTrailLog
 	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal CloudTrail logs: %w", err)
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as CloudTrail logs: %w", err)
 	}
 
-	return u.processRecords(cloudTrailLog.Records)
+	if cloudTrailLog.Records != nil {
+		return u.processRecords(cloudTrailLog.Records)
+	}
+
+	// Try to parse as a CloudTrail digest record
+	var cloudTrailDigest CloudTrailDigest
+	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailDigest); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as a CloudTrail digest: %w", err)
+	}
+
+	return u.processDigestRecord(cloudTrailDigest)
 }
 
 func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (plog.Logs, error) {
@@ -142,9 +174,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	// Create a single resource logs entry for all records
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName(metadata.ScopeName)
-	scopeLogs.Scope().SetVersion(u.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatCloudTrailLog)
+	u.setCommonScopeAttributes(scopeLogs)
 
 	// Set resource attributes based on the first record
 	// (all records have the same account ID and region)
@@ -159,6 +189,63 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	}
 
 	return logs, nil
+}
+
+func (u *CloudTrailLogUnmarshaler) processDigestRecord(record CloudTrailDigest) (plog.Logs, error) {
+	logs := plog.NewLogs()
+
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+	u.setCommonScopeAttributes(scopeLog)
+
+	logRecord := scopeLog.LogRecords().AppendEmpty()
+	t, err := time.Parse(time.RFC3339, record.DigestStartTime)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to parse start time: %w", err)
+	}
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(t))
+
+	attributes := logRecord.Attributes()
+	attributes.PutStr(string(conventions.CloudAccountIDKey), record.AWSAccountID)
+	attributes.PutStr("aws.cloudtrail.digest.end_time", record.DigestEndTime)
+	attributes.PutStr("aws.cloudtrail.digest.s3_bucket", record.DigestS3Bucket)
+	attributes.PutStr("aws.cloudtrail.digest.s3_object", record.DigestS3Object)
+
+	// following attributes may be empty (null)
+	if record.NewestEventTime != "" {
+		attributes.PutStr("aws.cloudtrail.digest.newest_event", record.NewestEventTime)
+	}
+
+	if record.OldestEventTime != "" {
+		attributes.PutStr("aws.cloudtrail.digest.oldest_event", record.OldestEventTime)
+	}
+
+	if record.PreviousDigestS3Bucket != "" {
+		attributes.PutStr("aws.cloudtrail.digest.previous_s3_bucket", record.PreviousDigestS3Bucket)
+	}
+
+	if record.PreviousDigestS3Object != "" {
+		attributes.PutStr("aws.cloudtrail.digest.previous_s3_object", record.PreviousDigestS3Object)
+	}
+
+	if len(record.LogFiles) > 0 {
+		logFilesArray := attributes.PutEmptySlice("aws.cloudtrail.digest.log_files")
+		for _, logFile := range record.LogFiles {
+			logFileMap := logFilesArray.AppendEmpty().SetEmptyMap()
+			logFileMap.PutStr("s3_bucket", logFile.S3Bucket)
+			logFileMap.PutStr("s3_object", logFile.S3Object)
+			logFileMap.PutStr("newest_event_time", logFile.NewestEventTime)
+			logFileMap.PutStr("oldest_event_time", logFile.OldestEventTime)
+		}
+	}
+
+	return logs, nil
+}
+
+func (u *CloudTrailLogUnmarshaler) setCommonScopeAttributes(scope plog.ScopeLogs) {
+	scope.Scope().SetName(metadata.ScopeName)
+	scope.Scope().SetVersion(u.buildInfo.Version)
+	scope.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatCloudTrailLog)
 }
 
 func (*CloudTrailLogUnmarshaler) setResourceAttributes(attrs pcommon.Map, record CloudTrailRecord) {

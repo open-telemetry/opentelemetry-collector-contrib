@@ -361,25 +361,25 @@ func TestAttributeFieldSet(t *testing.T) {
 
 func TestAttributeFieldParent(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
-		field := AttributeField{[]string{"child"}}
-		require.Equal(t, AttributeField{[]string{}}, field.Parent())
+		field := AttributeField{Keys: []string{"child"}}
+		require.Equal(t, AttributeField{Keys: []string{}}, field.Parent())
 	})
 
 	t.Run("Root", func(t *testing.T) {
-		field := AttributeField{[]string{}}
-		require.Equal(t, AttributeField{[]string{}}, field.Parent())
+		field := AttributeField{Keys: []string{}}
+		require.Equal(t, AttributeField{Keys: []string{}}, field.Parent())
 	})
 }
 
 func TestAttributeFieldChild(t *testing.T) {
-	field := AttributeField{[]string{"parent"}}
-	require.Equal(t, AttributeField{[]string{"parent", "child"}}, field.Child("child"))
+	field := AttributeField{Keys: []string{"parent"}}
+	require.Equal(t, AttributeField{Keys: []string{"parent", "child"}}, field.Child("child"))
 }
 
 func TestAttributeFieldMerge(t *testing.T) {
 	entry := &Entry{}
 	entry.Attributes = map[string]any{"old": "values"}
-	field := AttributeField{[]string{"embedded"}}
+	field := AttributeField{Keys: []string{"embedded"}}
 	values := map[string]any{"new": "values"}
 	field.Merge(entry, values)
 	expected := map[string]any{"embedded": values, "old": "values"}

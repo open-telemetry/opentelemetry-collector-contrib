@@ -268,10 +268,29 @@ The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
+- `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `replicasets`. It also reduces memory consumption of the processor. When enabled, this feature works automatically with the existing deployment name extraction. Take the following ownerReference of a pod managed by deployment for example:
+
+```yaml
+  ownerReferences:                                                  
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true 
+    kind: ReplicaSet
+    name: opentelemetry-collector-6c45f8d6f6
+    uid: ee75293d-14ec-42a0-9548-a768d9e07c48
+```
+
+The Extracted deployment name is: `opentelemetry-collector`.
+
+> Please note, if your pods are managed by a replicaset but not by a deployment the `k8s.deployment.name` will be set incorrectly. For example, if the replicaset is named `opentelemetry-collector-6c45f8d6f6`, the feature will still set the deployment name of the pod to  `opentelemetry-collector` because it skips watching for the deployment and has no context if the pod is managed by a deployment or a replicaset.
+Another edge case to be aware of is when the deployment name is long. Kubernetes may truncate it in the ReplicaSet name to ensure there is enough space for the pod template hash suffix, so the full name fits within the DNS subdomain limit (253 characters). In such cases, the extracted k8s.deployment.name will be the truncated form, not the original full deployment name.
+
+Example:
 
 ```yaml
   extract:
     otel_annotations: true
+    deployment_name_from_replicaset: true
     metadata:
       - service.namespace
       - service.name
@@ -325,7 +344,7 @@ k8sattributes:
 
 ## Cluster-scoped RBAC
 
-If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.name` (which is enabled by default) or `k8s.deployment.uid` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources. When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources. When using `k8s.cronjob.uid` the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
+If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.name` (which is enabled by default) or `k8s.deployment.uid` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources (unless `deployment_name_from_replicaset` is enabled). When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources. When using `k8s.cronjob.uid` the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
 
 Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 
@@ -375,7 +394,7 @@ k8sattributes:
   filter:
     namespace: <WORKLOAD_NAMESPACE>
 ```
-With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and replicasets (if `deployment_name_from_replicaset` is not enabled) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Please note, when extracting the workload related attributes, these workloads need to be present in the `Role` with the correct permissions. For example, an extraction of `k8s.deployment.label.*` attributes, `deployments` need to be present in `Role`.
 

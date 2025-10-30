@@ -26,7 +26,9 @@ func TestLoadConfig(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "http://localhost:8080"
 	clientConfig.Timeout = 500 * time.Millisecond
-	clientConfig.Headers = map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"}
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "User-Agent", Value: "OpenTelemetry -> Influx"},
+	}
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -66,6 +68,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricsSchema:       "telegraf-prometheus-v1",
 				PayloadMaxLines:     72,
 				PayloadMaxBytes:     27,
+				Precision:           "ns",
 			},
 		},
 	}

@@ -47,9 +47,9 @@ receivers:
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
 
-## Attributes
+## Resource Attributes
 
-The following attributes are added to all metrics:
+The following attributes are added to all reported resources:
 
 - `net.peer.ip` - the IP address of the host being pinged.
 - `net.peer.name` - the string address of the host being pinged.

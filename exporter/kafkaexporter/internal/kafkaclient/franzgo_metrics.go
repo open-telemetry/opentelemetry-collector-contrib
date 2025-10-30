@@ -26,6 +26,8 @@ func NewFranzProducerMetrics(tb *metadata.TelemetryBuilder) FranzProducerMetrics
 	return FranzProducerMetrics{tb: tb}
 }
 
+var _ kgo.HookBrokerConnect = FranzProducerMetrics{}
+
 func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
 	outcome := "success"
 	if err != nil {
@@ -41,6 +43,8 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 	)
 }
 
+var _ kgo.HookBrokerDisconnect = FranzProducerMetrics{}
+
 func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
 	fpm.tb.KafkaBrokerClosed.Add(
 		context.Background(),
@@ -50,6 +54,8 @@ func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ ne
 		),
 	)
 }
+
+var _ kgo.HookBrokerThrottle = FranzProducerMetrics{}
 
 func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
 	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
@@ -69,15 +75,17 @@ func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, thrott
 	)
 }
 
-func (fpm FranzProducerMetrics) OnBrokerWrite(meta kgo.BrokerMetadata, _ int16, _ int, writeWait, timeToWrite time.Duration, err error) {
+var _ kgo.HookBrokerE2E = FranzProducerMetrics{}
+
+func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, _ int16, e2e kgo.BrokerE2E) {
 	outcome := "success"
-	if err != nil {
+	if e2e.Err() != nil {
 		outcome = "failure"
 	}
 	// KafkaExporterLatency is deprecated in favor of KafkaExporterWriteLatency.
 	fpm.tb.KafkaExporterLatency.Record(
 		context.Background(),
-		writeWait.Milliseconds()+timeToWrite.Milliseconds(),
+		e2e.DurationE2E().Milliseconds()+e2e.WriteWait.Milliseconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
@@ -85,13 +93,15 @@ func (fpm FranzProducerMetrics) OnBrokerWrite(meta kgo.BrokerMetadata, _ int16, 
 	)
 	fpm.tb.KafkaExporterWriteLatency.Record(
 		context.Background(),
-		writeWait.Seconds()+timeToWrite.Seconds(),
+		e2e.DurationE2E().Seconds()+e2e.WriteWait.Seconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
 		),
 	)
 }
+
+var _ kgo.HookProduceBatchWritten = FranzProducerMetrics{}
 
 // OnProduceBatchWritten is called when a batch has been produced.
 // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookProduceBatchWritten
@@ -125,6 +135,8 @@ func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, t
 		metric.WithAttributes(attrs...),
 	)
 }
+
+var _ kgo.HookProduceRecordUnbuffered = FranzProducerMetrics{}
 
 // OnProduceRecordUnbuffered records the number of produced messages that were
 // not produced due to errors. The successfully produced records is recorded by
