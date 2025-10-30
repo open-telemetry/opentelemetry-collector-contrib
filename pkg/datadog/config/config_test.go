@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestValidate(t *testing.T) {
@@ -179,10 +180,12 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
-					Endpoint:             "endpoint",
-					Compression:          "gzip",
-					Auth:                 someAuth,
-					Headers:              map[string]configopaque.String{"key": "val"},
+					Endpoint:    "endpoint",
+					Compression: "gzip",
+					Auth:        someAuth,
+					Headers: configopaque.MapList{
+						{Name: "key", Value: "val"},
+					},
 					HTTP2ReadIdleTimeout: 250,
 					HTTP2PingTimeout:     200,
 				},
@@ -408,7 +411,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: newDefaultQueueConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -484,7 +487,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: newDefaultQueueConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					Site:             "datadoghq.com",
@@ -545,7 +548,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: newDefaultQueueConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -613,7 +616,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: newDefaultQueueConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -679,7 +682,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: newDefaultQueueConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				API: APIConfig{
 					Key:              "abc",
 					Site:             "datadoghq.com",

@@ -36,15 +36,21 @@ type Authentication struct {
 	Token  configoptional.Optional[Token]  `mapstructure:"token"`
 	Athenz configoptional.Optional[Athenz] `mapstructure:"athenz"`
 	OAuth2 configoptional.Optional[OAuth2] `mapstructure:"oauth2"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type TLS struct {
 	CertFile string `mapstructure:"cert_file"`
 	KeyFile  string `mapstructure:"key_file"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Token struct {
 	Token configopaque.String `mapstructure:"token"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Athenz struct {

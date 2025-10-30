@@ -42,13 +42,18 @@ var resourceAttrsConversionMap = map[string]string{
 	string(semconv.ContainerImageTagsKey):     "container.image.tag",
 	string(semconv.HostNameKey):               "host.hostname",
 	string(semconv.HostArchKey):               "host.architecture",
+	string(semconv.ProcessParentPIDKey):       "process.parent.pid",
+	string(semconv.ProcessExecutableNameKey):  "process.title",
 	string(semconv.ProcessExecutablePathKey):  "process.executable",
+	string(semconv.ProcessCommandLineKey):     "process.args",
 	string(semconv.ProcessRuntimeNameKey):     "service.runtime.name",
 	string(semconv.ProcessRuntimeVersionKey):  "service.runtime.version",
 	string(semconv.OSNameKey):                 "host.os.name",
 	string(semconv.OSTypeKey):                 "host.os.platform",
 	string(semconv.OSDescriptionKey):          "host.os.full",
 	string(semconv.OSVersionKey):              "host.os.version",
+	string(semconv.ClientAddressKey):          "client.ip",
+	string(semconv.SourceAddressKey):          "source.ip",
 	string(semconv.K8SDeploymentNameKey):      "kubernetes.deployment.name",
 	string(semconv.K8SNamespaceNameKey):       "kubernetes.namespace",
 	string(semconv.K8SNodeNameKey):            "kubernetes.node.name",
@@ -61,6 +66,8 @@ var resourceAttrsConversionMap = map[string]string{
 	string(semconv.K8SDaemonSetNameKey):       "kubernetes.daemonset.name",
 	string(semconv.K8SContainerNameKey):       "kubernetes.container.name",
 	string(semconv.K8SClusterNameKey):         "orchestrator.cluster.name",
+	string(semconv.FaaSInstanceKey):           "faas.id",
+	string(semconv.FaaSTriggerKey):            "faas.trigger.type",
 }
 
 // resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
@@ -199,11 +206,12 @@ func (ecsModeEncoder) encodeLog(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]string{
-		"event.name":                           "event.action",
-		string(semconv.ExceptionMessageKey):    "error.message",
-		string(semconv.ExceptionStacktraceKey): "error.stacktrace",
-		string(semconv.ExceptionTypeKey):       "error.type",
-		string(semconv.ExceptionEscapedKey):    "event.error.exception.handled",
+		"event.name":                            "event.action",
+		string(semconv.ExceptionMessageKey):     "error.message",
+		string(semconv.ExceptionStacktraceKey):  "error.stacktrace",
+		string(semconv.ExceptionTypeKey):        "error.type",
+		string(semconv.ExceptionEscapedKey):     "event.error.exception.handled",
+		string(semconv.HTTPResponseBodySizeKey): "http.response.encoded_body_size",
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
 	addDataStreamAttributes(&document, "", idx)
@@ -247,7 +255,12 @@ func (ecsModeEncoder) encodeSpan(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	spanAttrsConversionMap := map[string]string{
-		// None at the moment
+		string(semconv.MessagingDestinationNameKey): "span.message.queue.name",
+		"messaging.operation.name":                  "span.action",
+		string(semconv.DBSystemKey):                 "span.db.type",
+		"db.namespace":                              "span.db.instance",
+		"db.query.text":                             "span.db.statement",
+		string(semconv.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
 	}
 
 	// Handle special cases.

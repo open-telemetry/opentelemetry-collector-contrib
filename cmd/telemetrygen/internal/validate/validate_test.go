@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common
+package validate
 
 import (
 	"testing"
@@ -33,7 +33,7 @@ func TestValidateTraceID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateTraceID(tt.traceID)
+			err := TraceID(tt.traceID)
 			assert.ErrorIs(t, err, tt.expected)
 		})
 	}
@@ -63,7 +63,7 @@ func TestValidateSpanID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateSpanID(tt.spanID)
+			err := SpanID(tt.spanID)
 			assert.ErrorIs(t, err, tt.expected)
 		})
 	}

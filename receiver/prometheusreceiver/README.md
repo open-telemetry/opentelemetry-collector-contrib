@@ -109,7 +109,7 @@ receivers:
 
 ## Prometheus native histograms
 
-Native histograms are an experimental [feature](https://prometheus.io/docs/prometheus/latest/feature_flags/#native-histograms) of Prometheus.
+Native histograms are a data type in Prometheus, for more information see the [specification](https://prometheus.io/docs/specs/native_histograms/).
 
 To start scraping native histograms, set `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
 in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
@@ -120,7 +120,7 @@ The feature is considered experimental.
 This feature applies to the most common integer counter histograms, gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
-[scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `scrape_classic_histograms`.
+[scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `always_scrape_classic_histograms`.
 
 ## OpenTelemetry Operator
 Additional to this static job definitions this receiver allows to query a list of jobs from the 
