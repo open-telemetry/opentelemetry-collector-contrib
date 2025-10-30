@@ -480,16 +480,15 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 }
 
 func accumulateExponentialHistogramValues(prev, current, dest pmetric.ExponentialHistogramDataPoint) {
-	older := prev
-	newer := current
 	if current.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
-		older = current
-		newer = prev
+		dest.SetStartTimestamp(prev.StartTimestamp())
+		current.Attributes().CopyTo(dest.Attributes())
+		dest.SetTimestamp(current.Timestamp())
+	} else {
+		dest.SetStartTimestamp(current.StartTimestamp())
+		prev.Attributes().CopyTo(dest.Attributes())
+		dest.SetTimestamp(prev.Timestamp())
 	}
-
-	dest.SetStartTimestamp(older.StartTimestamp())
-	newer.Attributes().CopyTo(dest.Attributes())
-	dest.SetTimestamp(newer.Timestamp())
 
 	targetScale := min(current.Scale(), prev.Scale())
 	dest.SetScale(targetScale)
@@ -516,30 +515,26 @@ func accumulateExponentialHistogramValues(prev, current, dest pmetric.Exponentia
 	}
 	dest.SetZeroThreshold(zt)
 
-	if prev.HasSum() || current.HasSum() {
+	if prev.HasSum() && current.HasSum() {
 		dest.SetSum(prev.Sum() + current.Sum())
 	}
 
-	if prev.HasMin() || current.HasMin() {
-		switch {
-		case prev.HasMin() && current.HasMin():
-			dest.SetMin(min(prev.Min(), current.Min()))
-		case prev.HasMin():
-			dest.SetMin(prev.Min())
-		case current.HasMin():
-			dest.SetMin(current.Min())
-		}
+	switch {
+	case prev.HasMin() && current.HasMin():
+		dest.SetMin(min(prev.Min(), current.Min()))
+	case prev.HasMin():
+		dest.SetMin(prev.Min())
+	case current.HasMin():
+		dest.SetMin(current.Min())
 	}
 
-	if prev.HasMax() || current.HasMax() {
-		switch {
-		case prev.HasMax() && current.HasMax():
-			dest.SetMax(max(prev.Max(), current.Max()))
-		case prev.HasMax():
-			dest.SetMax(prev.Max())
-		case current.HasMax():
-			dest.SetMax(current.Max())
-		}
+	switch {
+	case prev.HasMax() && current.HasMax():
+		dest.SetMax(max(prev.Max(), current.Max()))
+	case prev.HasMax():
+		dest.SetMax(prev.Max())
+	case current.HasMax():
+		dest.SetMax(current.Max())
 	}
 }
 
