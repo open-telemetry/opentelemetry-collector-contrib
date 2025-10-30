@@ -474,7 +474,7 @@ resourceMetrics:
       attributes:
         - key: service.instance.id
           value:
-            stringValue: INSTANCE-NAME:5432
+            stringValue: SAMBALAM-M-P4X5:5432
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
