@@ -268,7 +268,17 @@ func accessClientAuthAttributesKey[K any](keys []ottl.Key[K]) ottl.StandardGetSe
 			if err != nil {
 				return nil, err
 			}
-			return attrStr, nil
+			if len(keys) > 1 {
+				switch attrVal.Type() {
+				case pcommon.ValueTypeSlice:
+					return ctxutil.GetSliceValue[K](ctx, tCtx, attrVal.Slice(), keys[1:])
+				case pcommon.ValueTypeMap:
+					return ctxutil.GetMapValue[K](ctx, tCtx, attrVal.Map(), keys[1:])
+				default:
+					return nil, fmt.Errorf("attribute %q value is not indexable: %T", *key, attrVal.Type().String())
+				}
+			}
+			return ottlcommon.GetValue(attrVal), nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
 			return fmt.Errorf(readOnlyPathErrMsg, "context.client.auth.attributes")
