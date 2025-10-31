@@ -7,7 +7,7 @@ change_type: new_component
 component: receiver/awslambda
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add a new awslambda receiver."
+note: "Add scaffolding for the new awslambda receiver, for event-triggered receiving of data from S3 and CloudWatch."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43504]
