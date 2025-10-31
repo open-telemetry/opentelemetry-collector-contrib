@@ -14,6 +14,7 @@ INSERT INTO "%s"."%s" (
     ScopeVersion,
     ScopeAttributes,
     LogAttributes
+    %s
 ) VALUES (
      ?,
      ?,
@@ -30,4 +31,5 @@ INSERT INTO "%s"."%s" (
      ?,
      ?,
      ?
+     %s
  )
