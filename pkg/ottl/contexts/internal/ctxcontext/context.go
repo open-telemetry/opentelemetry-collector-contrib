@@ -5,7 +5,6 @@ package ctxcontext // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 const (
