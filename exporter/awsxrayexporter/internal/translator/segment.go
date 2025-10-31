@@ -335,7 +335,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	var (
 		startTime                                          = timestampToFloatSeconds(span.StartTimestamp())
-		endTime                                            = timestampToFloatSeconds(span.EndTimestamp())
+		endTime, inProgress                                = makeEndTimeAndInProgress(span, attributes)
 		httpfiltered, http                                 = makeHTTP(span)
 		isError, isFault, isThrottle, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                             = determineAwsOrigin(resource)
@@ -457,7 +457,8 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		TraceID:     awsxray.String(traceID),
 		Name:        awsxray.String(name),
 		StartTime:   awsP.Float64(startTime),
-		EndTime:     awsP.Float64(endTime),
+		EndTime:     endTime,
+		InProgress:  inProgress,
 		ParentID:    awsxray.String(traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
@@ -754,6 +755,18 @@ func fixAnnotationKey(key string) string {
 			return '_'
 		}
 	}, key)
+}
+
+func makeEndTimeAndInProgress(span ptrace.Span, attributes pcommon.Map) (*float64, *bool) {
+	if inProgressAttr, ok := attributes.Get(awsxray.AWSXRayInProgressAttribute); ok && inProgressAttr.Type() == pcommon.ValueTypeBool {
+		inProgressVal := inProgressAttr.Bool()
+		attributes.Remove(awsxray.AWSXRayInProgressAttribute)
+		if inProgressVal {
+			return nil, &inProgressVal
+		}
+	}
+	endTimeVal := timestampToFloatSeconds(span.EndTimestamp())
+	return &endTimeVal, nil
 }
 
 func trimAwsSdkPrefix(name string, span ptrace.Span) string {
