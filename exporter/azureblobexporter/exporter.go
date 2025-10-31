@@ -294,6 +294,9 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryData any) (string, error) {
 	// Get current time
 	now := time.Now()
+	if e.config.BlobNameFormat.UseUTC {
+		now = now.UTC()
+	}
 
 	var format string
 	var tmpl *template.Template

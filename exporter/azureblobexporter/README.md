@@ -38,6 +38,7 @@ The following settings can be optionally configured and have default values:
   - metrics_format (default `2006/01/02/metrics_15_04_05.json`): blob name format. The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
   - logs_format (default `2006/01/02/logs_15_04_05.json`): blob name format.
   - traces_format (default `2006/01/02/traces_15_04_05.json`): blob name format.
+  - use_utc (default `false`): Use UTC time in blob name format.
   - serial_num_range (default `10000`): a range of random number to be appended after blob_name. e.g. `blob_name_{serial_num}`.
   - serial_num_before_extension (default `false`): places the serial number before the file extension if there is one. e.g `blob_name_{serial_num}.json` instead of `blob_name.json_{serial_num}`
 - format (default `json`): `json` or `proto`. which present otel json or otel protobuf format, the file extension will be `json` or `pb`.
