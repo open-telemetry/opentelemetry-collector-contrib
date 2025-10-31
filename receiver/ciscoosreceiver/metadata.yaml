@@ -4,6 +4,6 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [dmitryax]
