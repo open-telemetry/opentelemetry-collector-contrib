@@ -237,9 +237,9 @@ type ALBAccessLogRecord struct {
 	TargetIPPort           string // Target IP:Port or -
 	TargetIP               string // Target IP
 	TargetPort             int64  // Target port
-	RequestProcessingTime  string // Time taken to process the request in seconds
-	TargetProcessingTime   string // Time taken for the target to process the request in seconds
-	ResponseProcessingTime string // Time taken to send the response to the client in seconds
+	RequestProcessingTime  int64  // Time taken to process the request in milliseconds
+	TargetProcessingTime   int64  // Time taken for the target to process the request in milliseconds
+	ResponseProcessingTime int64  // Time taken to send the response to the client in milliseconds
 	ELBStatusCode          int64  // Status code from the load balancer
 	TargetStatusCode       string // Status code from the target
 	ReceivedBytes          int64  // Size of the request in bytes
@@ -264,6 +264,10 @@ type ALBAccessLogRecord struct {
 	TargetStatusCodeList   string // List of status codes from targets
 	Classification         string // Classification of the request
 	ClassificationReason   string // Reason for classification
+	ConnectionTraceID      string // The connection traceability ID
+	TransformedHost        string // The transformed host header
+	TransformedURI         string // The URI after it is modified by a URL rewrite transform
+	RequestTransformStatus string // The status of the rewrite transform
 }
 
 // convertTextToALBAccessLogRecord converts a slice of strings into a ALBAccessLogRecord
@@ -279,9 +283,6 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 		Time:                   fields[1],
 		ELB:                    fields[2],
 		TargetIPPort:           fields[4],
-		RequestProcessingTime:  fields[5],
-		TargetProcessingTime:   fields[6],
-		ResponseProcessingTime: fields[7],
 		TargetStatusCode:       fields[9],
 		UserAgent:              fields[13],
 		SSLCipher:              fields[14],
@@ -299,6 +300,18 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 		TargetStatusCodeList:   fields[26],
 		Classification:         fields[27],
 		ClassificationReason:   fields[28],
+		ConnectionTraceID:      unknownField,
+		TransformedHost:        unknownField,
+		TransformedURI:         unknownField,
+		RequestTransformStatus: unknownField,
+	}
+	if len(fields) >= 30 {
+		record.ConnectionTraceID = fields[29]
+	}
+	if len(fields) >= 33 {
+		record.TransformedHost = fields[30]
+		record.TransformedURI = fields[31]
+		record.RequestTransformStatus = fields[32]
 	}
 	var clientPort string
 	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[3]); err != nil {
@@ -327,6 +340,27 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 	}
 	if record.SentBytes, err = safeConvertStrToInt(fields[11]); err != nil {
 		return record, fmt.Errorf("could not convert sent bytes to integer: %w", err)
+	}
+	if fields[5] != unknownField {
+		rpt, e := safeConvertStrToFloat(fields[5])
+		if e != nil {
+			return record, fmt.Errorf("could not convert response processing time to float: %w", e)
+		}
+		record.ResponseProcessingTime = int64(rpt * 1000)
+	}
+	if fields[6] != unknownField {
+		tpt, e := safeConvertStrToFloat(fields[6])
+		if e != nil {
+			return record, fmt.Errorf("could not convert target processing time to float: %w", e)
+		}
+		record.TargetProcessingTime = int64(tpt * 1000)
+	}
+	if fields[7] != unknownField {
+		rpt, e := safeConvertStrToFloat(fields[7])
+		if e != nil {
+			return record, fmt.Errorf("could not convert request processing time to float: %w", e)
+		}
+		record.RequestProcessingTime = int64(rpt * 1000)
 	}
 
 	if record.RequestMethod, record.RequestURI, record.ProtocolName, record.ProtocolVersion, err = parseRequestField(fields[12]); err != nil {
