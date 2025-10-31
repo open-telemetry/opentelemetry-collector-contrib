@@ -54,7 +54,12 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	return oCfg
 }
 
-func buildExporterSettings(params exporter.Settings, endpoint string) exporter.Settings {
+func buildExporterSettings(typ component.Type, params exporter.Settings, endpoint string) exporter.Settings {
+	if name := params.ID.Name(); name != "" {
+		params.ID = component.NewIDWithName(typ, name)
+	} else {
+		params.ID = component.NewID(typ)
+	}
 	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
 	return params
 }
