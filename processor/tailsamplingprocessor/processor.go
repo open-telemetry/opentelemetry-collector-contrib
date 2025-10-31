@@ -64,7 +64,7 @@ type tailSamplingSpanProcessor struct {
 	host component.Host
 
 	newPolicyChan chan newPolicyCmd
-	workChan      chan ptrace.Traces
+	workChan      chan tracesCmd
 	doneChan      chan struct{}
 
 	// tickChan triggers ticks and responds on the provided channel when the tick is complete.
@@ -109,7 +109,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		blockOnOverflow:    cfg.BlockOnOverflow,
 		// We don't need a buffer here for the system to be correct, but it can
 		// be a convenient lever to improve latency upstream.
-		workChan: make(chan ptrace.Traces, cfg.WorkChanCapacity),
+		workChan: make(chan tracesCmd, cfg.WorkChanCapacity),
 		// We need to buffer one new policy command so that external callers can
 		// queue up new policies without blocking on the ticker.
 		newPolicyChan: make(chan newPolicyCmd, 1),
@@ -162,7 +162,21 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 
 // ConsumeTraces is required by the processor.Traces interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	tsp.workChan <- td
+	for _, rss := range td.ResourceSpans().All() {
+		batch := tracesCmd{
+			rss: rss,
+		}
+		idToSpansAndScope := groupSpansByTraceKey(rss)
+		for traceID, spans := range idToSpansAndScope {
+			batch.traces = append(batch.traces, traceInfo{
+				id:    traceID,
+				spans: spans,
+			})
+		}
+		if len(batch.traces) > 0 {
+			tsp.workChan <- batch
+		}
+	}
 	return nil
 }
 
@@ -219,6 +233,16 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 	}
 	// Dropped decision takes precedence over all others, therefore we evaluate them first.
 	return slices.Concat(dropPolicies, policies), nil
+}
+
+type tracesCmd struct {
+	rss    ptrace.ResourceSpans
+	traces []traceInfo
+}
+
+type traceInfo struct {
+	id    pcommon.TraceID
+	spans []spanAndScope
 }
 
 type newPolicyCmd struct {
@@ -377,7 +401,7 @@ func (tsp *tailSamplingSpanProcessor) loop() {
 	}
 }
 
-func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <-chan ptrace.Traces) bool {
+func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <-chan tracesCmd) bool {
 	select {
 	case <-tsp.ctx.Done():
 		// If the context is done then we can't send anything anymore so just exit.
@@ -396,21 +420,18 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 			return false
 		}
 
-		for _, rss := range td.ResourceSpans().All() {
-			idToSpansAndScope := groupSpansByTraceKey(rss)
-			for traceID, spans := range idToSpansAndScope {
-				// Short circuit if the trace has already been sampled or dropped.
-				if tsp.processCachedTrace(traceID, rss, spans) {
-					continue
-				}
-
-				_, ok := tsp.idToTrace[traceID]
-				if !ok && len(tsp.idToTrace) >= int(tsp.cfg.NumTraces) {
-					tsp.waitForSpace(tickChan)
-				}
-
-				tsp.processTrace(rss, traceID, spans)
+		for _, trace := range td.traces {
+			// Short circuit if the trace has already been sampled or dropped.
+			if tsp.processCachedTrace(trace.id, td.rss, trace.spans) {
+				continue
 			}
+
+			_, ok = tsp.idToTrace[trace.id]
+			if !ok && len(tsp.idToTrace) >= int(tsp.cfg.NumTraces) {
+				tsp.waitForSpace(tickChan)
+			}
+
+			tsp.processTrace(td.rss, trace.id, trace.spans)
 		}
 	case cmd := <-tsp.newPolicyChan:
 		tsp.policies = cmd.policies
