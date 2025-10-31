@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/telemetry"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -42,6 +43,7 @@ import (
 // Prometheus remotewrite exporter that staleness markers are emitted per timeseries.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/3413
 func TestStalenessMarkersEndToEnd(t *testing.T) {
+	t.Skip("Skipping test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved")
 	if testing.Short() {
 		t.Skip("This test can take a long time")
 	}
@@ -119,9 +121,6 @@ exporters:
       insecure: true
 
 service:
-  telemetry:
-    metrics:
-      level: "none"
   pipelines:
     metrics:
       receivers: [prometheus]
@@ -144,6 +143,9 @@ service:
 		Receivers:  receivers,
 		Exporters:  exporters,
 		Processors: processors,
+		Telemetry: telemetry.NewFactory(
+			func() component.Config { return struct{}{} },
+		),
 	}
 
 	appSettings := otelcol.CollectorSettings{

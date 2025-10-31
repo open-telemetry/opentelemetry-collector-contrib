@@ -103,9 +103,9 @@ func TestCreateMetrics_CustomConfig(t *testing.T) {
 		Realm:       "us1",
 		ClientConfig: confighttp.ClientConfig{
 			Timeout: 2 * time.Second,
-			Headers: map[string]configopaque.String{
-				"added-entry": "added value",
-				"dot.test":    "test",
+			Headers: configopaque.MapList{
+				{Name: "added-entry", Value: "added value"},
+				{Name: "dot.test", Value: "test"},
 			},
 		},
 	}
@@ -655,30 +655,4 @@ func testReadJSON(f string, v any) error {
 		return err
 	}
 	return json.Unmarshal(bytes, &v)
-}
-
-func buildHistogramDP(dp pmetric.HistogramDataPoint, timestamp pcommon.Timestamp) {
-	dp.SetStartTimestamp(timestamp)
-	dp.SetTimestamp(timestamp)
-	dp.SetMin(1.0)
-	dp.SetMax(2)
-	dp.SetCount(5)
-	dp.SetSum(7.0)
-	dp.BucketCounts().FromRaw([]uint64{3, 2})
-	dp.ExplicitBounds().FromRaw([]float64{1, 2})
-	dp.Attributes().PutStr("k1", "v1")
-}
-
-func buildHistogram(im pmetric.Metric, name string, timestamp pcommon.Timestamp, dpCount int) {
-	im.SetName(name)
-	im.SetDescription("Histogram")
-	im.SetUnit("1")
-	im.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-	idps := im.Histogram().DataPoints()
-	idps.EnsureCapacity(dpCount)
-
-	for range dpCount {
-		dp := idps.AppendEmpty()
-		buildHistogramDP(dp, timestamp)
-	}
 }

@@ -148,7 +148,7 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.ServiceInstanceID.Enabled {
 		attributes = append(attributes, string(conventions.ServiceInstanceIDKey))
 	}
-	return
+	return attributes
 }
 
 // withExtractMetadata allows specifying options to control extraction of pod metadata.
@@ -228,6 +228,13 @@ func withOtelAnnotations(enabled bool) option {
 		if enabled {
 			p.rules.Annotations = append(p.rules.Annotations, kube.OtelAnnotations())
 		}
+		return nil
+	}
+}
+
+func withDeploymentNameFromReplicaSet(enabled bool) option {
+	return func(p *kubernetesprocessor) error {
+		p.rules.DeploymentNameFromReplicaSet = enabled
 		return nil
 	}
 }
