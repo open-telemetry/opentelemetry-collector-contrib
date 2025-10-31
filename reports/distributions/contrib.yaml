@@ -149,7 +149,6 @@ components:
         - bigip
         - carbon
         - chrony
-        - ciscoosreceiver
         - cloudflare
         - cloudfoundry
         - collectd
