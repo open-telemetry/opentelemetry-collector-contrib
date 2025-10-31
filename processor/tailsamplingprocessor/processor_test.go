@@ -1138,11 +1138,16 @@ func BenchmarkProcessorThroughput(b *testing.B) {
 		require.NoError(b, p.Shutdown(b.Context()))
 	}()
 
+	batch := generateRandomizedBatch(128)
+	m := &ptrace.ProtoMarshaler{}
+	b.SetBytes(int64(m.TracesSize(batch)))
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.SetParallelism(4)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
+			// Generate new batches to avoid just hitting the cache.
 			batch := generateRandomizedBatch(128)
 			err := p.ConsumeTraces(b.Context(), batch)
 			require.NoError(b, err)
