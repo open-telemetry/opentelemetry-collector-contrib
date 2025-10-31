@@ -559,6 +559,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		{
 			name: "drop metrics",
 			conditions: MetricFilters{
+				Action: dropAction,
 				MetricConditions: []string{
 					`name == "operationA"`,
 				},
@@ -571,8 +572,24 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep metrics",
+			conditions: MetricFilters{
+				Action: keepAction,
+				MetricConditions: []string{
+					`name == "operationA"`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Name() != "operationA"
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop everything by dropping all metrics",
 			conditions: MetricFilters{
+				Action: dropAction,
 				MetricConditions: []string{
 					`IsMatch(name, "operation.*")`,
 				},
@@ -581,8 +598,20 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "keep everything",
+			conditions: MetricFilters{
+				Action: keepAction,
+				MetricConditions: []string{
+					`IsMatch(name, "operation.*")`,
+				},
+			},
+			want:      func(_ pmetric.Metrics) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop sum data point",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_SUM and value_double == 1.0`,
 				},
@@ -595,8 +624,27 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep metrics other than specific sum data point",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_SUM and value_double == 1.0`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeSum
+				})
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().RemoveIf(func(point pmetric.NumberDataPoint) bool {
+					return point.DoubleValue() != 1.0
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop all sum data points",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_SUM`,
 				},
@@ -609,8 +657,24 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep all sum data points",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_SUM`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeSum
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop gauge data point",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_GAUGE and value_double == 1.0`,
 				},
@@ -623,8 +687,27 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep gauge data point",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_GAUGE and value_double == 1.0`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Gauge().DataPoints().RemoveIf(func(point pmetric.NumberDataPoint) bool {
+					return point.DoubleValue() != 1.0
+				})
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeGauge
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop all gauge data points",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_GAUGE`,
 				},
@@ -637,8 +720,24 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep all gauge data points",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_GAUGE`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeGauge
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop histogram data point",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_HISTOGRAM and count == 1`,
 				},
@@ -651,8 +750,27 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep histogram data point",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_HISTOGRAM and count == 1`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().RemoveIf(func(point pmetric.HistogramDataPoint) bool {
+					return point.Count() != 1
+				})
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeHistogram
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop all histogram data points",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_HISTOGRAM`,
 				},
@@ -665,8 +783,24 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep all histogram data points",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_HISTOGRAM`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeHistogram
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop exponential histogram data point",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM and count == 1`,
 				},
@@ -679,8 +813,27 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep exponential histogram data point",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM and count == 1`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().RemoveIf(func(point pmetric.ExponentialHistogramDataPoint) bool {
+					return point.Count() != 1
+				})
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeExponentialHistogram
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop all exponential histogram data points",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM`,
 				},
@@ -693,8 +846,24 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep all exponential histogram data points",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeExponentialHistogram
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop summary data point",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_SUMMARY and sum == 43.21`,
 				},
@@ -707,8 +876,27 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep summary data point",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_SUMMARY and sum == 43.21`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().RemoveIf(func(point pmetric.SummaryDataPoint) bool {
+					return point.Sum() != 43.21
+				})
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeSummary
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop all summary data points",
 			conditions: MetricFilters{
+				Action: dropAction,
 				DataPointConditions: []string{
 					`metric.type == METRIC_DATA_TYPE_SUMMARY`,
 				},
@@ -721,8 +909,24 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep all summary data points",
+			conditions: MetricFilters{
+				Action: keepAction,
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_SUMMARY`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() != pmetric.MetricTypeSummary
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "multiple conditions",
 			conditions: MetricFilters{
+				Action: dropAction,
 				MetricConditions: []string{
 					`resource.attributes["not real"] == "unknown"`,
 					`type != nil`,
@@ -732,8 +936,21 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "multiple conditions keep everything",
+			conditions: MetricFilters{
+				Action: keepAction,
+				MetricConditions: []string{
+					`resource.attributes["not real"] == "unknown"`,
+					`type != nil`,
+				},
+			},
+			want:      func(_ pmetric.Metrics) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "with error conditions",
 			conditions: MetricFilters{
+				Action: dropAction,
 				MetricConditions: []string{
 					`Substring("", 0, 100) == "test"`,
 				},
@@ -744,6 +961,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		{
 			name: "HasAttrOnDatapoint",
 			conditions: MetricFilters{
+				Action: dropAction,
 				MetricConditions: []string{
 					`HasAttrOnDatapoint("attr1", "test1")`,
 				},
@@ -754,6 +972,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		{
 			name: "HasAttrKeyOnDatapoint",
 			conditions: MetricFilters{
+				Action: dropAction,
 				MetricConditions: []string{
 					`HasAttrKeyOnDatapoint("attr1")`,
 				},
@@ -899,7 +1118,7 @@ func fillMetricFive(m pmetric.Metric) {
 	dataPoint0.Attributes().PutStr("attr2", "test2")
 	dataPoint0.Attributes().PutStr("attr3", "test3")
 
-	dataPoint1 := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dataPoint1 := m.Gauge().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(dataPointStartTimestamp)
 	dataPoint1.SetDoubleValue(2.0)
 	dataPoint1.Attributes().PutStr("attr1", "test1")

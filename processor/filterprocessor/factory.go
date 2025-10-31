@@ -149,6 +149,10 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 func (f *filterProcessorFactory) createDefaultConfig() component.Config {
 	return &Config{
 		ErrorMode:          ottl.PropagateError,
+		Metrics:            MetricFilters{Action: dropAction},
+		Logs:               LogFilters{Action: dropAction},
+		Traces:             TraceFilters{Action: dropAction},
+		Profiles:           ProfileFilters{Action: dropAction},
 		dataPointFunctions: f.dataPointFunctions,
 		logFunctions:       f.logFunctions,
 		metricFunctions:    f.metricFunctions,
