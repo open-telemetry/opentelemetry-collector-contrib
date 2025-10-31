@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/redis
+note: "Add redis metrics that are present in telegraf: cluster_enabled, tracking_total_keys, used_memory_overhead, used_memory_startup"
+issues:
+  - 39859
