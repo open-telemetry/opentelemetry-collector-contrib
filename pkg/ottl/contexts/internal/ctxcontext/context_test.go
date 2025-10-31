@@ -325,6 +325,26 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "user-123", val)
 	})
+	t.Run("specific attribute key present with index", func(t *testing.T) {
+		path := &pathtest.Path[testContext]{
+			N: "client",
+			NextPath: &pathtest.Path[testContext]{
+				N: "auth",
+				NextPath: &pathtest.Path[testContext]{
+					N: "attributes",
+					KeySlice: []ottl.Key[testContext]{
+						&pathtest.Key[testContext]{S: ottltest.Strp("roles")},
+						&pathtest.Key[testContext]{I: ottltest.Intp(1)},
+					},
+				},
+			},
+		}
+		getter, err := PathGetSetter[testContext](path)
+		require.NoError(t, err)
+		val, err := getter.Get(ctx, testContext{})
+		require.NoError(t, err)
+		assert.Equal(t, "user", val)
+	})
 
 	t.Run("specific attribute key missing returns empty string", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
