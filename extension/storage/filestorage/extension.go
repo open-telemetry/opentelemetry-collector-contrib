@@ -124,7 +124,7 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("backup", backupName))
 
 			// Try to create client again with fresh database
-			client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+			client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, int(lfs.cfg.MaxSize), lfs.cfg.Compaction, !lfs.cfg.FSync)
 		}
 	}()
 
