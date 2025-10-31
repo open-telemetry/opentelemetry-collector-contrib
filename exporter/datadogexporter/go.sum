@@ -429,6 +429,10 @@ github.com/onsi/ginkgo/v2 v2.21.0 h1:7rg/4f3rB88pb5obDgNZrNHrQ4e6WpjonchcpuBRnZM
 github.com/onsi/ginkgo/v2 v2.21.0/go.mod h1:7Du3c42kxCUegi0IImZ1wUQzMBVecgIHjR1C+NkhLQo=
 github.com/onsi/gomega v1.35.1 h1:Cwbd75ZBPxFSuZ6T+rN/WCb/gOc6YgFBXLlZLhC7Ds4=
 github.com/onsi/gomega v1.35.1/go.mod h1:PvZbdDc8J6XJEpDK4HCuRBm8a6Fzp9/DmhC9C7yFlog=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.138.0 h1:1F3Bw4+unBsQYEaUYyW12PRd4ABLfGjXI3qasvmO8Hg=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.138.0/go.mod h1:iAVP8f/tmQgHKGVhpMISI4fHXcCDN4K9wf4+Z8RSOZs=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.138.0 h1:z1vDaoN5aXpvn3l3IpRRTOdsMGe5F4NKSl3TK8ZSy/w=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.138.0/go.mod h1:PEM5r6HTr/kQG+0VdST7L3Up+MTGH6gs52TVpvTIjMo=
 github.com/openshift/api v0.0.0-20180801171038-322a19404e37 h1:05irGU4HK4IauGGDbsk+ZHrm1wOzMLYjMlfaiqMrBYc=
 github.com/openshift/api v0.0.0-20180801171038-322a19404e37/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
 github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 h1:9JBeIXmnHlpXTQPi7LPmu1jdxznBhAE7bb1K+3D8gxY=

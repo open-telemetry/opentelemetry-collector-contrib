@@ -503,6 +503,10 @@ github.com/onsi/ginkgo/v2 v2.21.0 h1:7rg/4f3rB88pb5obDgNZrNHrQ4e6WpjonchcpuBRnZM
 github.com/onsi/ginkgo/v2 v2.21.0/go.mod h1:7Du3c42kxCUegi0IImZ1wUQzMBVecgIHjR1C+NkhLQo=
 github.com/onsi/gomega v1.35.1 h1:Cwbd75ZBPxFSuZ6T+rN/WCb/gOc6YgFBXLlZLhC7Ds4=
 github.com/onsi/gomega v1.35.1/go.mod h1:PvZbdDc8J6XJEpDK4HCuRBm8a6Fzp9/DmhC9C7yFlog=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.138.0 h1:1F3Bw4+unBsQYEaUYyW12PRd4ABLfGjXI3qasvmO8Hg=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.138.0/go.mod h1:iAVP8f/tmQgHKGVhpMISI4fHXcCDN4K9wf4+Z8RSOZs=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.138.0 h1:z1vDaoN5aXpvn3l3IpRRTOdsMGe5F4NKSl3TK8ZSy/w=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.138.0/go.mod h1:PEM5r6HTr/kQG+0VdST7L3Up+MTGH6gs52TVpvTIjMo=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
