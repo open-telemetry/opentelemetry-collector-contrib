@@ -144,14 +144,14 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pc
 	ctx, cancel := context.WithTimeout(ctx, client.Timeout)
 	defer cancel()
 
-	res, schemaURL, err := p.detectResource(ctx, client.Timeout)
+	res, schemaURL, err := p.detectResource(ctx)
 	p.mu.Lock()
 	p.detectedResource = &resourceResult{resource: res, schemaURL: schemaURL, err: err}
 	p.mu.Unlock()
 	return res, schemaURL, err
 }
 
-func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Duration) (pcommon.Resource, string, error) {
+func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource, string, error) {
 	res := pcommon.NewResource()
 	mergedSchemaURL := ""
 	var joinedErr error
@@ -168,7 +168,6 @@ func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Dura
 				InitialInterval:     1 * time.Second,
 				RandomizationFactor: 1.5,
 				Multiplier:          2,
-				MaxInterval:         timeout,
 			}
 			sleep.Reset()
 
