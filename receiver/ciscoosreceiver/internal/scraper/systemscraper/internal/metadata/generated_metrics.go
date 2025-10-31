@@ -225,11 +225,23 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.CiscoDeviceIP.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["cisco.device.ip"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceIP.MetricsInclude)
+	if mbc.ResourceAttributes.HostIP.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["host.ip"] = filter.CreateFilter(mbc.ResourceAttributes.HostIP.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.CiscoDeviceIP.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["cisco.device.ip"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceIP.MetricsExclude)
+	if mbc.ResourceAttributes.HostIP.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["host.ip"] = filter.CreateFilter(mbc.ResourceAttributes.HostIP.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.HwType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["hw.type"] = filter.CreateFilter(mbc.ResourceAttributes.HwType.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HwType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["hw.type"] = filter.CreateFilter(mbc.ResourceAttributes.HwType.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.OsName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["os.name"] = filter.CreateFilter(mbc.ResourceAttributes.OsName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OsName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["os.name"] = filter.CreateFilter(mbc.ResourceAttributes.OsName.MetricsExclude)
 	}
 
 	for _, op := range options {
