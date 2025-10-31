@@ -10,8 +10,10 @@ import (
 type Config struct {
 	// S3Encoding identifies the encoding of the S3 objects that trigger the Lambda.
 	//
-	// If this is unspecified, the receiver defaults to parsing logs in CloudWatch Log
-	// subscription filter format.
+	// If S3Encoding is unspecified, the receiver will return an error for any S3 event notifications.
+	//
+	// If you have objects with multiple different encodings to handle, you should deploy
+	// separate Lambda functions with different configurations.
 	S3Encoding string `mapstructure:"s3_encoding"`
 }
 
