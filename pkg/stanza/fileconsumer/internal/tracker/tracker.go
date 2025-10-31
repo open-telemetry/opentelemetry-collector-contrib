@@ -149,7 +149,7 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 		t.knownFiles[0].Add(r.Close())
 		filesClosed++
 	}
-	return
+	return filesClosed
 }
 
 func (t *fileTracker) EndPoll(ctx context.Context) {
@@ -214,7 +214,7 @@ func (t *noStateTracker) EndConsume() (filesClosed int) {
 	}
 	t.unmatchedFiles = make([]*os.File, 0)
 	t.unmatchedFps = make([]*fingerprint.Fingerprint, 0)
-	return
+	return filesClosed
 }
 
 func (*noStateTracker) GetOpenFile(*fingerprint.Fingerprint) *reader.Reader { return nil }

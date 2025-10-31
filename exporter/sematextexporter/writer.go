@@ -274,5 +274,5 @@ func (b *sematextHTTPWriterBatch) convertFields(m map[string]any) (fields map[st
 			fields[k] = lpv
 		}
 	}
-	return
+	return fields
 }
