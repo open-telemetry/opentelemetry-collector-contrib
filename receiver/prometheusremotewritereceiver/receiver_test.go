@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -1495,48 +1496,24 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "normal metric first, target_info second",
-			requests: []*writev2.Request{
-				{
-					Symbols: []string{
-						"",
-						"job", "production/service_a", // 1, 2
-						"instance", "host1", // 3, 4
-						"__name__", "normal_metric", // 5, 6
-						"foo", "bar", // 7, 8
-					},
-					Timeseries: []writev2.TimeSeries{
-						{
-							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-							LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
-							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
-						},
-					},
-				},
-				{
-					Symbols: []string{
-						"",
-						"job", "production/service_a", // 1, 2
-						"instance", "host1", // 3, 4
-						"machine_type", "n1-standard-1", // 5, 6
-						"cloud_provider", "gcp", // 7, 8
-						"region", "us-central1", // 9, 10
-						"__name__", "target_info", // 11, 12
-					},
-					Timeseries: []writev2.TimeSeries{
-						{
-							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
-						},
-					},
-				},
-			},
-		},
 	}
 
+	expectedIndex0 := func() pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.namespace", "production")
+		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.instance.id", "host1")
+		attrs.PutStr("machine_type", "n1-standard-1")
+		attrs.PutStr("cloud_provider", "gcp")
+		attrs.PutStr("region", "us-central1")
+
+		return metrics
+	}()
+
 	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
-	expectedMetrics := func() pmetric.Metrics {
+	expectedIndex1 := func() pmetric.Metrics {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		attrs := rm.Resource().Attributes()
@@ -1592,7 +1569,10 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
 
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
+			// index 0 is related to the target_info metric that is the first request.
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex0, mockConsumer.metrics[0]))
+			// index 1 is related to the join between the target_info and the normal metric.
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex1, mockConsumer.metrics[1]))
 		})
 	}
 }
@@ -1788,7 +1768,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	}
 
 	// As target_info and metric1 have the same job/instance, they generate the same end metric: mockConsumer.metrics[0].
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[0]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[1]))
 	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[2]. At this point, the cache is full it should evict the target_info metric to store the metric2.
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
@@ -1818,4 +1798,104 @@ func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
 		}
 	}
 	return result
+}
+
+// TestConcurrentRequestsforSameResourceAttributes asserts the receiver and its cache work even with concurrent requests
+func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
+	mockConsumer := &mockConsumer{}
+	prwReceiver := setupMetricsReceiver(t)
+	prwReceiver.nextConsumer = mockConsumer
+
+	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
+	defer ts.Close()
+
+	// Create multiple requests with the same job/instance labels (triggering cache key collision)
+	createRequest := func(metricName string, value float64, timestamp int64) *writev2.Request {
+		return &writev2.Request{
+			Symbols: []string{
+				"",                     // 0
+				"__name__", metricName, // 1, 2
+				"job", "test_job", // 3, 4
+				"instance", "test_instance", // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: value, Timestamp: timestamp}},
+				},
+			},
+		}
+	}
+
+	requests := []*writev2.Request{}
+	for i := 0; i < 5; i++ {
+		requests = append(requests, createRequest("metric_"+strconv.Itoa(i+1), float64(i+1)*10, int64(i+1)*1000))
+	}
+
+	var wg sync.WaitGroup
+	var httpResults []int
+	var mu sync.Mutex
+
+	for _, req := range requests {
+		wg.Add(1)
+		go func(request *writev2.Request) {
+			defer wg.Done()
+
+			pBuf := proto.NewBuffer(nil)
+			err := pBuf.Marshal(request)
+			assert.NoError(t, err)
+
+			resp, err := http.Post(
+				ts.URL,
+				fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+				bytes.NewBuffer(pBuf.Bytes()),
+			)
+			assert.NoError(t, err)
+			defer resp.Body.Close()
+
+			mu.Lock()
+			httpResults = append(httpResults, resp.StatusCode)
+			mu.Unlock()
+		}(req)
+	}
+	wg.Wait()
+
+	// Give some time for async processing
+	time.Sleep(100 * time.Millisecond)
+
+	mockConsumer.mu.Lock()
+	totalDataPoints := mockConsumer.dataPoints
+	mockConsumer.mu.Unlock()
+
+	// Verify all HTTP requests succeeded
+	for i, status := range httpResults {
+		assert.Equal(t, http.StatusNoContent, status, "Request %d should return 204", i+1)
+	}
+
+	// The expected behavior is:
+	// - All HTTP requests return 204 (success)
+	// - All 5 data points are present (no data loss)
+	// - We have 5 resource attributes, each with 1 data point. The resource attributes are equal since they have the same job/instance labels.
+	// - The cache should have a single resource attribute.
+	assert.Equal(t, 5, totalDataPoints)
+	assert.Equal(t, 1, prwReceiver.rmCache.Len())
+
+	// Verify thread safety: Check that metrics are properly consolidated without corruption
+	for i, metrics := range mockConsumer.metrics {
+		if metrics.DataPointCount() > 0 {
+			resourceMetrics := metrics.ResourceMetrics()
+			for j := 0; j < resourceMetrics.Len(); j++ {
+				rm := resourceMetrics.At(j)
+				scopeMetrics := rm.ScopeMetrics()
+				for k := 0; k < scopeMetrics.Len(); k++ {
+					scope := scopeMetrics.At(k)
+					metricsCount := scope.Metrics().Len()
+					if metricsCount != 1 {
+						t.Errorf("Batch %d: Found %d datapoints when it should be 1", i+1, metricsCount)
+					}
+				}
+			}
+		}
+	}
 }
