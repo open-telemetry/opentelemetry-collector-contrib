@@ -45,6 +45,8 @@ const (
 	// OTTLCondition sample traces which match user provided OpenTelemetry Transformation Language
 	// conditions.
 	OTTLCondition PolicyType = "ottl_condition"
+	// TraceFlags sample traces which have specific trace flags set.
+	TraceFlags PolicyType = "trace_flags"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
