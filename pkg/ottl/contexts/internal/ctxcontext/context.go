@@ -271,8 +271,7 @@ func accessClientAuthAttributesKey[K any](keys []ottl.Key[K]) ottl.StandardGetSe
 			if cl.Auth == nil {
 				return nil, nil
 			}
-			attrVal := cl.Auth.GetAttribute(*key)
-			attrStr, err := getAuthAttributeValue(attrVal)
+			attrVal, err := getAuthAttributeValue(cl.Auth, *key)
 			if err != nil {
 				return nil, err
 			}
