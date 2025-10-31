@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common
+package routingconnector
 
 import (
 	"maps"
@@ -15,11 +15,11 @@ import (
 )
 
 func TestStandardFunctions(t *testing.T) {
-	assertStandardFunctions(t, StandardFunctions[any]())
+	assertStandardFunctions(t, standardFunctions[any]())
 }
 
 func TestSpanFunctions(t *testing.T) {
-	funcs := SpanFunctions()
+	funcs := spanFunctions()
 	assertStandardFunctions(t, funcs)
 
 	isRouteFuncName := ottlfuncs.NewIsRootSpanFactory().Name()
