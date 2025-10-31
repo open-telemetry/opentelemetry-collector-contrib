@@ -8,9 +8,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.44.1-0.20251030084003-6f29b34c24f6
-	go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251028105454-507664fb82dc
+	go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251030084003-6f29b34c24f6
 	go.opentelemetry.io/collector/confmap v1.44.1-0.20251030084003-6f29b34c24f6
-	go.opentelemetry.io/collector/confmap/xconfmap v0.138.1-0.20251028105454-507664fb82dc
+	go.opentelemetry.io/collector/confmap/xconfmap v0.138.1-0.20251030084003-6f29b34c24f6
 	go.opentelemetry.io/collector/consumer v1.44.1-0.20251030084003-6f29b34c24f6
 	go.opentelemetry.io/collector/exporter v1.44.1-0.20251030084003-6f29b34c24f6
 	go.opentelemetry.io/collector/extension v1.44.1-0.20251030084003-6f29b34c24f6
@@ -60,8 +60,8 @@ require (
 	github.com/zeebo/errs v1.4.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.44.1-0.20251030084003-6f29b34c24f6 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.138.1-0.20251028105454-507664fb82dc // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.138.1-0.20251028105454-507664fb82dc // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.138.1-0.20251030084003-6f29b34c24f6 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.138.1-0.20251030084003-6f29b34c24f6 // indirect
 	go.opentelemetry.io/collector/pipeline v1.44.1-0.20251030084003-6f29b34c24f6 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.36.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect

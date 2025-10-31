@@ -36,7 +36,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.44.1-0.20251030084003-6f29b34c24f6 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.138.1-0.20251028105454-507664fb82dc // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.138.1-0.20251030084003-6f29b34c24f6 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
