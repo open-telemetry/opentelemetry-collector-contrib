@@ -59,6 +59,9 @@ type Config struct {
 	// MetricDeclarations is the list of rules to be used to set dimensions for exported metrics.
 	MetricDeclarations []*MetricDeclaration `mapstructure:"metric_declarations"`
 
+	// List of string denoting Gauge metric names required for compact into values and counts representation.
+	MetricAsDistribution []string `mapstructure:"metric_as_distribution"`
+
 	// MetricDescriptors is the list of override metric descriptors that are sent to the CloudWatch
 	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
 

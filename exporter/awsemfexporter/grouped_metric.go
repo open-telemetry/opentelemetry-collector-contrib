@@ -5,6 +5,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"encoding/json"
+	"math"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -41,50 +42,20 @@ func addToGroupedMetric(
 		return nil
 	}
 
-	for i := 0; i < dps.Len(); i++ {
-		// Drop stale or NaN metric values
-		if isStaleNanInf, attrs := dps.IsStaleNaNInf(i); isStaleNanInf {
-			if config != nil && config.logger != nil {
-				config.logger.Debug("dropped metric with nan value",
-					zap.String("metric.name", pmd.Name()),
-					zap.Any("metric.attributes", attrs))
-			}
-			continue
+	filteredDps := filterAndCalculateDps(dps, pmd.Name(), metadata, config, calculators)
+
+	if shouldConvertToDistribution(pmd, config) {
+		histogram, labels, updatedMetadata := convertToDistribution(filteredDps, metadata, patternReplaceSucceeded, config)
+		if histogram != nil {
+			upsertGroupedMetric(groupedMetrics, updatedMetadata, labels, pmd.Name(), histogram, translateUnit(pmd, descriptor), config.logger)
 		}
-		dps, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationScopeName, config.DetailedMetrics, calculators)
-		if !retained {
-			continue
-		}
-
-		for i, dp := range dps {
-			labels := dp.labels
-
-			if metricType, ok := labels["Type"]; ok {
-				if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
-					addKubernetesWrapper(labels)
-				}
-			}
-
-			// if patterns were found in config file and weren't replaced by resource attributes, replace those patterns with metric labels.
-			// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
-			if !patternReplaceSucceeded {
-				if strings.Contains(metadata.logGroup, "undefined") {
-					metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
-				}
-				if strings.Contains(metadata.logStream, "undefined") {
-					metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
-				}
-			}
-
-			metric := &metricInfo{
-				value: dp.value,
-				unit:  translateUnit(pmd, descriptor),
-			}
-
+	} else {
+		for i, dp := range filteredDps {
+			labels := enrichLabels(dp, config)
+			metadata = replacePatternsIfNeeded(metadata, labels, config, patternReplaceSucceeded)
 			if dp.timestampMs > 0 {
 				metadata.timestampMs = dp.timestampMs
 			}
-
 			// Extra params to use when grouping metrics
 			if metadata.metricDataType != pmetric.MetricTypeSummary || !config.DetailedMetrics {
 				// Summary metrics can be split into separate datapoints when using DetailedMetrics, but we still want to group
@@ -99,28 +70,10 @@ func addToGroupedMetric(
 					metadata.metricDataType = pmetric.MetricTypeSum
 				}
 			}
-
-			groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
-			if _, ok := groupedMetrics[groupKey]; ok {
-				// if MetricName already exists in metrics map, print warning log
-				if _, ok := groupedMetrics[groupKey].metrics[dp.name]; ok {
-					config.logger.Warn(
-						"Duplicate metric found",
-						zap.String("Name", dp.name),
-						zap.Any("Labels", labels),
-					)
-				} else {
-					groupedMetrics[groupKey].metrics[dp.name] = metric
-				}
-			} else {
-				groupedMetrics[groupKey] = &groupedMetric{
-					labels:   labels,
-					metrics:  map[string]*metricInfo{(dp.name): metric},
-					metadata: metadata,
-				}
-			}
+			upsertGroupedMetric(groupedMetrics, metadata, labels, dp.name, dp.value, translateUnit(pmd, descriptor), config.logger)
 		}
 	}
+
 	return nil
 }
 
@@ -223,4 +176,151 @@ func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor
 		unit = "Bits"
 	}
 	return unit
+}
+
+func shouldConvertToDistribution(pmd pmetric.Metric, config *Config) bool {
+	if pmd.Type() != pmetric.MetricTypeGauge {
+		return false
+	}
+	// Check if the current metric is in the MetricAsDistribution list
+	for _, name := range config.MetricAsDistribution {
+		if name == pmd.Name() {
+			return true
+		}
+	}
+	return false
+}
+
+func filterAndCalculateDps(dps dataPoints, metricName string, metadata cWMetricMetadata, config *Config, calculators *emfCalculators) []dataPoint {
+	var result []dataPoint
+	for i := 0; i < dps.Len(); i++ {
+		// Drop stale or NaN metric values
+		if isStale, attrs := dps.IsStaleNaNInf(i); isStale {
+			if config != nil && config.logger != nil {
+				config.logger.Debug("dropped metric with nan value",
+					zap.String("metric.name", metricName),
+					zap.Any("metric.attributes", attrs))
+			}
+			continue
+		}
+		calculated, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationScopeName, config.DetailedMetrics, calculators)
+		if retained {
+			result = append(result, calculated...)
+		}
+	}
+	return result
+}
+
+func enrichLabels(dp dataPoint, config *Config) map[string]string {
+	labels := dp.labels
+	if metricType, ok := labels["Type"]; ok {
+		if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
+			addKubernetesWrapper(labels)
+		}
+	}
+	return labels
+}
+
+func replacePatternsIfNeeded(metadata cWMetricMetadata, labels map[string]string, config *Config, patternReplaceSucceeded bool) cWMetricMetadata {
+	// if patterns were found in config file and weren't replaced by resource attributes, replace those patterns with metric labels.
+	// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
+	if !patternReplaceSucceeded {
+		if strings.Contains(metadata.logGroup, "undefined") {
+			metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+		}
+		if strings.Contains(metadata.logStream, "undefined") {
+			metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
+		}
+	}
+	return metadata
+}
+
+func upsertGroupedMetric(
+	groupedMetrics map[any]*groupedMetric,
+	metadata cWMetricMetadata,
+	labels map[string]string,
+	metricName string,
+	metricVal any,
+	unit string,
+	logger *zap.Logger,
+) {
+	metric := &metricInfo{value: metricVal, unit: unit}
+	groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
+
+	if _, ok := groupedMetrics[groupKey]; ok {
+		// if MetricName already exists in metrics map, print warning log
+		if _, ok := groupedMetrics[groupKey].metrics[metricName]; ok {
+			logger.Warn("Duplicate metric found", zap.String("Name", metricName), zap.Any("Labels", labels))
+		} else {
+			groupedMetrics[groupKey].metrics[metricName] = metric
+		}
+	} else {
+		groupedMetrics[groupKey] = &groupedMetric{
+			labels:   labels,
+			metrics:  map[string]*metricInfo{metricName: metric},
+			metadata: metadata,
+		}
+	}
+}
+
+// convertToDistribution converts a collection of gauge data points into a distribution representation, e.g. values and counts.
+func convertToDistribution(
+	dps []dataPoint,
+	metadata cWMetricMetadata,
+	patternReplaceSucceeded bool,
+	config *Config,
+) (histogram *cWMetricHistogram, labels map[string]string, updatedMetadata cWMetricMetadata) {
+	var values []float64
+	var timestampMs int64
+
+	// Extract float values from data points and find the latest timestamp
+	for _, dp := range dps {
+		if dp.timestampMs > timestampMs {
+			timestampMs = dp.timestampMs
+			labels = enrichLabels(dp, config)
+		}
+		if v, ok := dp.value.(float64); ok {
+			values = append(values, v)
+		}
+	}
+
+	if len(values) == 0 {
+		return nil, nil, metadata
+	}
+
+	updatedMetadata = replacePatternsIfNeeded(metadata, labels, config, patternReplaceSucceeded)
+	updatedMetadata.metricDataType = pmetric.MetricTypeGauge
+	updatedMetadata.timestampMs = timestampMs
+
+	histogram = &cWMetricHistogram{
+		Values: []float64{},
+		Counts: []float64{},
+		Count:  uint64(len(values)),
+		Sum:    0,
+		Min:    math.MaxFloat64,
+		Max:    -math.MaxFloat64,
+	}
+
+	// Calculate sum, min, max and count frequencies for each unique value
+	countMap := make(map[float64]float64)
+	for _, v := range values {
+		histogram.Sum += v
+		if v < histogram.Min {
+			histogram.Min = v
+		}
+		if v > histogram.Max {
+			histogram.Max = v
+		}
+		countMap[v]++
+	}
+
+	// Pre-allocate slices to avoid multiple allocations during append
+	histogram.Values = make([]float64, 0, len(countMap))
+	histogram.Counts = make([]float64, 0, len(countMap))
+	for val, cnt := range countMap {
+		histogram.Values = append(histogram.Values, val)
+		histogram.Counts = append(histogram.Counts, cnt)
+	}
+
+	return histogram, labels, updatedMetadata
 }

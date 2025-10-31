@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -508,6 +509,158 @@ func TestAddToGroupedMetric(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Gauge metric converted to histogram metric of values and counts ", func(t *testing.T) {
+		emfCalcs := setupEmfCalculators()
+		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+
+		// Create a gauge metric with multiple data points
+		gpuMetricName := "container_gpu_utilization"
+		gaugeMetric := generateTestGaugeMetricWithDataPoints(gpuMetricName, doubleValueType, []float64{10, 25, 15, 30, 20})
+
+		// Create a config that includes the metric in MetricAsDistribution
+		cfg := createDefaultConfig().(*Config)
+		cfg.MetricAsDistribution = []string{gpuMetricName}
+
+		// Set up the test
+		groupedMetrics := make(map[any]*groupedMetric)
+		rms := gaugeMetric.ResourceMetrics()
+		ilms := rms.At(0).ScopeMetrics()
+		metrics := ilms.At(0).Metrics()
+
+		// Call addToGroupedMetric
+		err := addToGroupedMetric(
+			metrics.At(0),
+			groupedMetrics,
+			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type()),
+			true,
+			nil,
+			cfg,
+			emfCalcs,
+		)
+
+		// Verify results
+		assert.NoError(t, err)
+		assert.Len(t, groupedMetrics, 1, "Should have one grouped metric")
+
+		// Get the grouped metric
+		var group *groupedMetric
+		for _, g := range groupedMetrics {
+			group = g
+			break
+		}
+
+		// Verify the metric was in histogram
+		assert.NotNil(t, group)
+		assert.Contains(t, group.metrics, gpuMetricName)
+
+		// Verify the metric value is in format of histogram values and counts
+		metricInfo := group.metrics[gpuMetricName]
+		histogram, ok := metricInfo.value.(*cWMetricHistogram)
+		assert.True(t, ok, "Metric should be converted to a format of histogram values and counts")
+
+		// Verify histogram properties
+		assert.Equal(t, uint64(5), histogram.Count, "Histogram should have count of 5")
+		assert.Equal(t, 100.0, histogram.Sum, "Histogram sum should match the sum of all values")
+		assert.Equal(t, 10.0, histogram.Min, "Histogram min should match the minimum value")
+		assert.Equal(t, 30.0, histogram.Max, "Histogram max should match the maximum value")
+
+		// Check that we have the right number of unique values and counts
+		assert.Len(t, histogram.Values, 5, "Histogram should have 5 unique values")
+		assert.Len(t, histogram.Counts, 5, "Histogram should have 5 counts")
+
+		// Verify the metadata was updated
+		assert.Equal(t, pmetric.MetricTypeGauge, group.metadata.metricDataType)
+	})
+
+	t.Run("Gauge metric converted to histogram metric with duplicate metric name", func(t *testing.T) {
+		emfCalcs := setupEmfCalculators()
+		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+
+		// Create two gauge metrics with the same name but different data points
+		gpuMetricName := "container_gpu_utilization"
+		generateMetrics := []pmetric.Metrics{
+			generateTestGaugeMetricWithDataPoints(gpuMetricName, doubleValueType, []float64{10, 25, 15, 30, 20}),
+			generateTestGaugeMetricWithDataPoints(gpuMetricName, doubleValueType, []float64{35, 40, 45}),
+		}
+
+		finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
+
+		// Create a config that includes the metric in MetricAsDistribution
+		cfg := createDefaultConfig().(*Config)
+		cfg.MetricAsDistribution = []string{gpuMetricName}
+
+		// Set up logger to capture warning logs
+		obs, logs := observer.New(zap.WarnLevel)
+		cfg.logger = zap.New(obs)
+
+		// Set up the test
+		groupedMetrics := make(map[any]*groupedMetric)
+		rms := finalOtelMetrics.ResourceMetrics()
+		ilms := rms.At(0).ScopeMetrics()
+		metrics := ilms.At(0).Metrics()
+		assert.Equal(t, 2, metrics.Len(), "Should have 2 gauge metrics with same name")
+
+		// Process both metrics
+		for i := 0; i < metrics.Len(); i++ {
+			err := addToGroupedMetric(
+				metrics.At(i),
+				groupedMetrics,
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				true,
+				nil,
+				cfg,
+				emfCalcs,
+			)
+			assert.NoError(t, err)
+		}
+
+		// Verify that we still have only one grouped metric (second one should be ignored)
+		assert.Len(t, groupedMetrics, 1, "Should have one grouped metric")
+
+		// Get the grouped metric
+		var group *groupedMetric
+		for _, g := range groupedMetrics {
+			group = g
+			break
+		}
+
+		// Verify the first metric was converted to histogram and the second was ignored
+		assert.NotNil(t, group)
+		assert.Contains(t, group.metrics, gpuMetricName)
+
+		// Verify the labels in the grouped metric
+		expectedLabels := map[string]string{"label1": "value1"}
+		assert.Equal(t, expectedLabels, group.labels, "Grouped metric should have correct labels")
+
+		// Verify the metric value is still from the first metric (values from second should be ignored)
+		metricInfo := group.metrics[gpuMetricName]
+		histogram, ok := metricInfo.value.(*cWMetricHistogram)
+		assert.True(t, ok, "Metric should be converted to a format of values and counts")
+
+		// Verify histogram properties match the first metric only
+		assert.Equal(t, uint64(5), histogram.Count, "Histogram should have count of 5 from first metric")
+		assert.Equal(t, 100.0, histogram.Sum, "Histogram sum should match the sum of first metric values")
+		assert.Equal(t, 10.0, histogram.Min, "Histogram min should match the minimum value from first metric")
+		assert.Equal(t, 30.0, histogram.Max, "Histogram max should match the maximum value from first metric")
+
+		// Check that we have the right number of unique values and counts from first metric
+		assert.Len(t, histogram.Values, 5, "Histogram should have 5 unique values from first metric")
+		assert.Len(t, histogram.Counts, 5, "Histogram should have 5 counts from first metric")
+
+		// Test that warning log was generated for duplicate metric
+		expectedLogs := []observer.LoggedEntry{
+			{
+				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Duplicate metric found"},
+				Context: []zapcore.Field{
+					zap.String("Name", gpuMetricName),
+					zap.Any("Labels", map[string]string{"label1": "value1"}),
+				},
+			},
+		}
+		assert.Equal(t, 1, logs.Len(), "Should have one warning log")
+		assert.Equal(t, expectedLogs, logs.AllUntimed(), "Should log duplicate metric warning")
+	})
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {
@@ -629,4 +782,33 @@ func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, log
 		},
 		instrumentationScopeName: instrumentationScopeName,
 	}
+}
+
+func generateTestGaugeMetricWithDataPoints(name string, valueType metricValueType, values []float64) pmetric.Metrics {
+	otelMetrics := pmetric.NewMetrics()
+	rs := otelMetrics.ResourceMetrics().AppendEmpty()
+	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
+	metric := metrics.AppendEmpty()
+	metric.SetName(name)
+	metric.SetUnit("Count")
+	gaugeMetric := metric.SetEmptyGauge()
+
+	// Use current time as base timestamp
+	baseTimestamp := time.Now().UnixNano()
+
+	for i, val := range values {
+		gaugeDatapoint := gaugeMetric.DataPoints().AppendEmpty()
+		gaugeDatapoint.Attributes().PutStr("label1", "value1")
+		// Set timestamp so labels get extracted properly in convertToDistribution
+		gaugeDatapoint.SetTimestamp(pcommon.Timestamp(baseTimestamp + int64(i)))
+
+		switch valueType {
+		case doubleValueType:
+			gaugeDatapoint.SetDoubleValue(val)
+		default:
+			gaugeDatapoint.SetIntValue(int64(val))
+		}
+	}
+
+	return otelMetrics
 }
