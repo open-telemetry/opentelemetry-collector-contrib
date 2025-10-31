@@ -146,6 +146,7 @@ func (r *k8sResolver) start(_ context.Context) error {
 	r.once.Do(func() {
 		if r.epsListWatcher != nil {
 			r.logger.Debug("creating and starting endpoints informer")
+			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 			epsInformer := cache.NewSharedInformer(r.epsListWatcher, &corev1.Endpoints{}, 0)
 			if _, err := epsInformer.AddEventHandler(r.handler); err != nil {
 				r.logger.Error("unable to start watching for changes to the specified service names", zap.Error(err))

@@ -19,6 +19,7 @@ import (
 )
 
 var endpointsArray = []runtime.Object{
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	&v1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "guestbook",
@@ -35,6 +36,7 @@ var endpointsArray = []runtime.Object{
 				"app": "guestbook",
 			},
 		},
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		Subsets: []v1.EndpointSubset{
 			{
 				Addresses: []v1.EndpointAddress{
@@ -91,6 +93,7 @@ var endpointsArray = []runtime.Object{
 			},
 		},
 	},
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	&v1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kubernetes",
@@ -104,6 +107,7 @@ var endpointsArray = []runtime.Object{
 				Time: time.Now(),
 			},
 		},
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		Subsets: []v1.EndpointSubset{
 			{
 				Addresses: []v1.EndpointAddress{
@@ -126,6 +130,7 @@ var endpointsArray = []runtime.Object{
 			},
 		},
 	},
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	&v1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "redis-master",
@@ -143,6 +148,7 @@ var endpointsArray = []runtime.Object{
 				"role": "master",
 			},
 		},
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		Subsets: []v1.EndpointSubset{
 			{
 				Addresses: []v1.EndpointAddress{
@@ -171,6 +177,7 @@ var endpointsArray = []runtime.Object{
 			},
 		},
 	},
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	&v1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "redis-slave",
@@ -188,6 +195,7 @@ var endpointsArray = []runtime.Object{
 				"role": "slave",
 			},
 		},
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		Subsets: []v1.EndpointSubset{
 			{
 				Addresses: []v1.EndpointAddress{
@@ -244,6 +252,7 @@ var endpointsArray = []runtime.Object{
 			},
 		},
 	},
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	&v1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kube-controller-manager",
@@ -261,6 +270,7 @@ var endpointsArray = []runtime.Object{
 			},
 		},
 	},
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	&v1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kube-dns",
@@ -280,6 +290,7 @@ var endpointsArray = []runtime.Object{
 				"kubernetes.io/name":            "CoreDNS",
 			},
 		},
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		Subsets: []v1.EndpointSubset{
 			{
 				Addresses: []v1.EndpointAddress{
@@ -327,6 +338,7 @@ var endpointsArray = []runtime.Object{
 			},
 		},
 	},
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	&v1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kube-scheduler",

@@ -66,6 +66,7 @@ func newSharedInformer(
 	return informer
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func informerListFuncWithSelectors(client kubernetes.Interface, namespace string, ls labels.Selector, fs fields.Selector) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		opts.LabelSelector = ls.String()
@@ -74,6 +75,7 @@ func informerListFuncWithSelectors(client kubernetes.Interface, namespace string
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func informerWatchFuncWithSelectors(client kubernetes.Interface, namespace string, ls labels.Selector, fs fields.Selector) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		opts.LabelSelector = ls.String()
@@ -117,12 +119,14 @@ func newNamespaceSharedInformer(
 	return informer
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func namespaceInformerListFunc(client kubernetes.Interface) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		return client.CoreV1().Namespaces().List(context.Background(), opts)
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.CoreV1().Namespaces().Watch(context.Background(), opts)
@@ -144,12 +148,14 @@ func newReplicaSetSharedInformer(
 	return informer
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		return client.AppsV1().ReplicaSets(namespace).List(context.Background(), opts)
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().ReplicaSets(namespace).Watch(context.Background(), opts)
@@ -171,12 +177,14 @@ func newDeploymentSharedInformer(
 	return informer
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func deploymentListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		return client.AppsV1().Deployments(namespace).List(context.Background(), opts)
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func deploymentWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().Deployments(namespace).Watch(context.Background(), opts)
@@ -198,12 +206,14 @@ func newStatefulSetSharedInformer(
 	return informer
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func statefulsetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		return client.AppsV1().StatefulSets(namespace).List(context.Background(), opts)
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().StatefulSets(namespace).Watch(context.Background(), opts)
@@ -240,24 +250,28 @@ func newJobSharedInformer(
 	return informer
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func jobListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		return client.BatchV1().Jobs(namespace).List(context.Background(), opts)
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func jobWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.BatchV1().Jobs(namespace).Watch(context.Background(), opts)
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func daemonsetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		return client.AppsV1().DaemonSets(namespace).List(context.Background(), opts)
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func daemonsetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().DaemonSets(namespace).Watch(context.Background(), opts)

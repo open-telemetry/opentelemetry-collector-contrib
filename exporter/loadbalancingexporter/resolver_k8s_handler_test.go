@@ -13,11 +13,13 @@ import (
 
 func TestConvertToEndpoints(tst *testing.T) {
 	// Create dummy Endpoints objects
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	endpoints1 := &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-endpoints-1",
 			Namespace: "test-namespace",
 		},
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		Subsets: []corev1.EndpointSubset{
 			{
 				Addresses: []corev1.EndpointAddress{
@@ -29,11 +31,13 @@ func TestConvertToEndpoints(tst *testing.T) {
 			},
 		},
 	}
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	endpoints2 := &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-endpoints-2",
 			Namespace: "test-namespace",
 		},
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		Subsets: []corev1.EndpointSubset{
 			{
 				Addresses: []corev1.EndpointAddress{
@@ -45,11 +49,13 @@ func TestConvertToEndpoints(tst *testing.T) {
 			},
 		},
 	}
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	endpoints3 := &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-endpoints-3",
 			Namespace: "test-namespace",
 		},
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		Subsets: []corev1.EndpointSubset{
 			{
 				Addresses: []corev1.EndpointAddress{
@@ -62,29 +68,33 @@ func TestConvertToEndpoints(tst *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		returnNames       bool
+		name        string
+		returnNames bool
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		includedEndpoints []*corev1.Endpoints
 		expectedEndpoints map[string]bool
 		wantNil           bool
 	}{
 		{
-			name:              "return hostnames",
-			returnNames:       true,
+			name:        "return hostnames",
+			returnNames: true,
+			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 			includedEndpoints: []*corev1.Endpoints{endpoints1, endpoints2},
 			expectedEndpoints: map[string]bool{"pod-1": true, "pod-2": true},
 			wantNil:           false,
 		},
 		{
-			name:              "return IPs",
-			returnNames:       false,
+			name:        "return IPs",
+			returnNames: false,
+			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 			includedEndpoints: []*corev1.Endpoints{endpoints1, endpoints2, endpoints3},
 			expectedEndpoints: map[string]bool{"192.168.10.101": true, "192.168.10.102": true, "192.168.10.103": true},
 			wantNil:           false,
 		},
 		{
-			name:              "missing hostname",
-			returnNames:       true,
+			name:        "missing hostname",
+			returnNames: true,
+			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 			includedEndpoints: []*corev1.Endpoints{endpoints1, endpoints3},
 			expectedEndpoints: nil,
 			wantNil:           true,

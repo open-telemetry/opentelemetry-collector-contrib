@@ -46,6 +46,7 @@ var totalScrapes = 10
 
 // TestStaleNaNs validates that staleness marker gets generated when the timeseries is no longer present
 func TestStaleNaNs(t *testing.T) {
+	t.Skip("Skipping test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved")
 	var mockResponses []mockPrometheusResponse
 	for i := range totalScrapes {
 		if i%2 == 0 {

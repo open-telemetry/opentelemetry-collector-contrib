@@ -30,17 +30,20 @@ func TestK8sResolve(t *testing.T) {
 		returnHostnames bool
 	}
 	type suiteContext struct {
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		endpoint  *corev1.Endpoints
 		clientset *fake.Clientset
 		resolver  *k8sResolver
 	}
 	setupSuite := func(t *testing.T, args args) (*suiteContext, func(*testing.T)) {
 		service, defaultNs, ports, returnHostnames := args.service, args.namespace, args.ports, args.returnHostnames
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		endpoint := &corev1.Endpoints{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      service,
 				Namespace: defaultNs,
 			},
+			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 			Subsets: []corev1.EndpointSubset{
 				{
 					Addresses: []corev1.EndpointAddress{
@@ -113,6 +116,7 @@ func TestK8sResolve(t *testing.T) {
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
 				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
+				//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 				endpoint.Subsets = append(endpoint.Subsets, corev1.EndpointSubset{
 					Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11"}},
 				})
@@ -170,6 +174,7 @@ func TestK8sResolve(t *testing.T) {
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
 				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
+				//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 				endpoint.Subsets = append(endpoint.Subsets, corev1.EndpointSubset{
 					Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11", Hostname: "pod-1"}},
 				})
@@ -199,6 +204,7 @@ func TestK8sResolve(t *testing.T) {
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
 				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
+				//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 				endpoint.Subsets = []corev1.EndpointSubset{
 					{Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11"}}},
 				}

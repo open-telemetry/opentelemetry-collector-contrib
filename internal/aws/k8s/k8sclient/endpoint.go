@@ -133,6 +133,7 @@ func newEpClient(clientSet kubernetes.Interface, logger *zap.Logger, options ...
 
 	c.store = NewObjStore(transformFuncEndpoint, logger)
 	lw := c.createEndpointListWatch(clientSet, metav1.NamespaceAll)
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	reflector := cache.NewReflector(lw, &v1.Endpoints{}, c.store, 0)
 
 	go reflector.Run(c.stopChan)
@@ -151,6 +152,7 @@ func (c *epClient) shutdown() {
 }
 
 func transformFuncEndpoint(obj any) (any, error) {
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	endpoint, ok := obj.(*v1.Endpoints)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Endpoint type", obj)
