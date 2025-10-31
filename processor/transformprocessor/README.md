@@ -663,7 +663,8 @@ The `set_semconv_span_name()` function overwrites a span name using the OpenTele
 The primary use case of the `set_semconv_span_name()` function is to address high-cardinality issues in span metrics when `span.name` doesn't comply with the OpenTelemetry requirement that span names be low cardinality such as `GET /product/12345`, `GET/product?id=12345`, or `SELECT * FROM product WHERE id=12345`.
 
 Parameters:
-* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, `1.37.0` is the supported version.
+
+* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. `1.37.0` is the supported version.
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Sanitization examples:
