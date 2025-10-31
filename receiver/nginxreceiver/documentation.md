@@ -18,7 +18,7 @@ The total number of accepted client connections
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| connections | Sum | Int | Cumulative | true | development |
+| connections | Sum | Int | Cumulative | true | Development |
 
 ### nginx.connections_current
 
@@ -26,7 +26,7 @@ The current number of nginx connections by state
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| connections | Sum | Int | Cumulative | false | development |
+| connections | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -40,7 +40,7 @@ The total number of handled connections. Generally, the parameter value is the s
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| connections | Sum | Int | Cumulative | true | development |
+| connections | Sum | Int | Cumulative | true | Development |
 
 ### nginx.requests
 
@@ -48,4 +48,4 @@ Total number of requests made to the server since it started
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| requests | Sum | Int | Cumulative | true | development |
+| requests | Sum | Int | Cumulative | true | Development |

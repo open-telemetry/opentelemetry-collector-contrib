@@ -18,7 +18,7 @@ Availability of the node.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ Current number of connections to the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.node.data.transmitted
 
@@ -40,7 +40,7 @@ Amount of data transmitted to and from the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -54,7 +54,7 @@ Enabled state of of the node.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -68,7 +68,7 @@ Number of packets transmitted to and from the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -82,7 +82,7 @@ Number of requests to the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### bigip.node.session.count
 
@@ -90,7 +90,7 @@ Current number of sessions for the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {sessions} | Sum | Int | Cumulative | false | development |
+| {sessions} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.pool.availability
 
@@ -98,7 +98,7 @@ Availability of the pool.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -112,7 +112,7 @@ Current number of connections to the pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.pool.data.transmitted
 
@@ -120,7 +120,7 @@ Amount of data transmitted to and from the pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -134,7 +134,7 @@ Enabled state of of the pool.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -148,7 +148,7 @@ Total number of pool members.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {members} | Sum | Int | Cumulative | false | development |
+| {members} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -162,7 +162,7 @@ Number of packets transmitted to and from the pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -176,7 +176,7 @@ Number of requests to the pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### bigip.pool_member.availability
 
@@ -184,7 +184,7 @@ Availability of the pool member.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -198,7 +198,7 @@ Current number of connections to the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.pool_member.data.transmitted
 
@@ -206,7 +206,7 @@ Amount of data transmitted to and from the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -220,7 +220,7 @@ Enabled state of of the pool member.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -234,7 +234,7 @@ Number of packets transmitted to and from the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -248,7 +248,7 @@ Number of requests to the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### bigip.pool_member.session.count
 
@@ -256,7 +256,7 @@ Current number of sessions for the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {sessions} | Sum | Int | Cumulative | false | development |
+| {sessions} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.virtual_server.availability
 
@@ -264,7 +264,7 @@ Availability of the virtual server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -278,7 +278,7 @@ Current number of connections to the virtual server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.virtual_server.data.transmitted
 
@@ -286,7 +286,7 @@ Amount of data transmitted to and from the virtual server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -300,7 +300,7 @@ Enabled state of of the virtual server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -314,7 +314,7 @@ Number of packets transmitted to and from the virtual server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -328,7 +328,7 @@ Number of requests to the virtual server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 

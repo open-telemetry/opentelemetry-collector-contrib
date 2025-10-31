@@ -18,7 +18,7 @@ The number of checkpoints completed or failed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {checkpoints} | Sum | Int | Cumulative | true | development |
+| {checkpoints} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ The number of checkpoints in progress.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {checkpoints} | Sum | Int | Cumulative | false | development |
+| {checkpoints} | Sum | Int | Cumulative | false | Development |
 
 ### flink.job.last_checkpoint.size
 
@@ -40,7 +40,7 @@ The total size of the last checkpoint.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.job.last_checkpoint.time
 
@@ -48,7 +48,7 @@ The end to end duration of the last checkpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 ### flink.job.restart.count
 
@@ -56,7 +56,7 @@ The total number of restarts since this job was submitted, including full restar
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {restarts} | Sum | Int | Cumulative | true | development |
+| {restarts} | Sum | Int | Cumulative | true | Development |
 
 ### flink.jvm.class_loader.classes_loaded
 
@@ -64,7 +64,7 @@ The total number of classes loaded since the start of the JVM.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {classes} | Sum | Int | Cumulative | true | development |
+| {classes} | Sum | Int | Cumulative | true | Development |
 
 ### flink.jvm.cpu.load
 
@@ -72,7 +72,7 @@ The CPU usage of the JVM for a jobmanager or taskmanager.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 ### flink.jvm.cpu.time
 
@@ -80,7 +80,7 @@ The CPU time used by the JVM for a jobmanager or taskmanager.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 ### flink.jvm.gc.collections.count
 
@@ -88,7 +88,7 @@ The total number of collections that have occurred.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {collections} | Sum | Int | Cumulative | true | development |
+| {collections} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -102,7 +102,7 @@ The total time spent performing garbage collection.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -116,7 +116,7 @@ The total capacity of all buffers in the direct buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.direct.used
 
@@ -124,7 +124,7 @@ The amount of memory used by the JVM for the direct buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.heap.committed
 
@@ -132,7 +132,7 @@ The amount of heap memory guaranteed to be available to the JVM.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.heap.max
 
@@ -140,7 +140,7 @@ The maximum amount of heap memory that can be used for memory management.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.heap.used
 
@@ -148,7 +148,7 @@ The amount of heap memory currently used.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.mapped.total_capacity
 
@@ -156,7 +156,7 @@ The number of buffers in the mapped buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.mapped.used
 
@@ -164,7 +164,7 @@ The amount of memory used by the JVM for the mapped buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.metaspace.committed
 
@@ -172,7 +172,7 @@ The amount of memory guaranteed to be available to the JVM in the Metaspace memo
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.metaspace.max
 
@@ -180,7 +180,7 @@ The maximum amount of memory that can be used in the Metaspace memory pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.metaspace.used
 
@@ -188,7 +188,7 @@ The amount of memory currently used in the Metaspace memory pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.nonheap.committed
 
@@ -196,7 +196,7 @@ The amount of non-heap memory guaranteed to be available to the JVM.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.nonheap.max
 
@@ -204,7 +204,7 @@ The maximum amount of non-heap memory that can be used for memory management.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.memory.nonheap.used
 
@@ -212,7 +212,7 @@ The amount of non-heap memory currently used.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.jvm.threads.count
 
@@ -220,7 +220,7 @@ The total number of live threads.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {threads} | Sum | Int | Cumulative | false | development |
+| {threads} | Sum | Int | Cumulative | false | Development |
 
 ### flink.memory.managed.total
 
@@ -228,7 +228,7 @@ The total amount of managed memory.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.memory.managed.used
 
@@ -236,7 +236,7 @@ The amount of managed memory currently used.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### flink.operator.record.count
 
@@ -244,7 +244,7 @@ The number of records an operator has.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {records} | Sum | Int | Cumulative | true | development |
+| {records} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -259,7 +259,7 @@ The last watermark this operator has emitted.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | false | development |
+| ms | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -273,7 +273,7 @@ The number of records a task has.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {records} | Sum | Int | Cumulative | true | development |
+| {records} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 

@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_probabilistic_sampler_count_logs_sampled",
-		Description: "Count of logs that were sampled or not [development]",
+		Description: "Count of logs that were sampled or not [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t *testing.T, tt *
 func AssertEqualProcessorProbabilisticSamplerCountTracesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_probabilistic_sampler_count_traces_sampled",
-		Description: "Count of traces that were sampled or not [development]",
+		Description: "Count of traces that were sampled or not [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

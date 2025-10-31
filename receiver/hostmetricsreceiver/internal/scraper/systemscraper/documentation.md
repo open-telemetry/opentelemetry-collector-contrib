@@ -18,4 +18,4 @@ The time the system has been running
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |

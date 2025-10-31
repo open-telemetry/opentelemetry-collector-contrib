@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorGroupbyattrsLogGroups(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_log_groups",
-		Description: "Distribution of groups extracted for logs [development]",
+		Description: "Distribution of groups extracted for logs [Development]",
 		Unit:        "1",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -39,7 +39,7 @@ func AssertEqualProcessorGroupbyattrsLogGroups(t *testing.T, tt *componenttest.T
 func AssertEqualProcessorGroupbyattrsMetricGroups(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_metric_groups",
-		Description: "Distribution of groups extracted for metrics [development]",
+		Description: "Distribution of groups extracted for metrics [Development]",
 		Unit:        "1",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -54,7 +54,7 @@ func AssertEqualProcessorGroupbyattrsMetricGroups(t *testing.T, tt *componenttes
 func AssertEqualProcessorGroupbyattrsNumGroupedLogs(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_grouped_logs",
-		Description: "Number of logs that had attributes grouped [development]",
+		Description: "Number of logs that had attributes grouped [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -70,7 +70,7 @@ func AssertEqualProcessorGroupbyattrsNumGroupedLogs(t *testing.T, tt *componentt
 func AssertEqualProcessorGroupbyattrsNumGroupedMetrics(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_grouped_metrics",
-		Description: "Number of metrics that had attributes grouped [development]",
+		Description: "Number of metrics that had attributes grouped [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -86,7 +86,7 @@ func AssertEqualProcessorGroupbyattrsNumGroupedMetrics(t *testing.T, tt *compone
 func AssertEqualProcessorGroupbyattrsNumGroupedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_grouped_spans",
-		Description: "Number of spans that had attributes grouped [development]",
+		Description: "Number of spans that had attributes grouped [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -102,7 +102,7 @@ func AssertEqualProcessorGroupbyattrsNumGroupedSpans(t *testing.T, tt *component
 func AssertEqualProcessorGroupbyattrsNumNonGroupedLogs(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_non_grouped_logs",
-		Description: "Number of logs that did not have attributes grouped [development]",
+		Description: "Number of logs that did not have attributes grouped [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -118,7 +118,7 @@ func AssertEqualProcessorGroupbyattrsNumNonGroupedLogs(t *testing.T, tt *compone
 func AssertEqualProcessorGroupbyattrsNumNonGroupedMetrics(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_non_grouped_metrics",
-		Description: "Number of metrics that did not have attributes grouped [development]",
+		Description: "Number of metrics that did not have attributes grouped [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -134,7 +134,7 @@ func AssertEqualProcessorGroupbyattrsNumNonGroupedMetrics(t *testing.T, tt *comp
 func AssertEqualProcessorGroupbyattrsNumNonGroupedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_non_grouped_spans",
-		Description: "Number of spans that did not have attributes grouped [development]",
+		Description: "Number of spans that did not have attributes grouped [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -150,7 +150,7 @@ func AssertEqualProcessorGroupbyattrsNumNonGroupedSpans(t *testing.T, tt *compon
 func AssertEqualProcessorGroupbyattrsSpanGroups(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_span_groups",
-		Description: "Distribution of groups extracted for spans [development]",
+		Description: "Distribution of groups extracted for spans [Development]",
 		Unit:        "1",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,

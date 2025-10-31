@@ -18,7 +18,7 @@ The average amount of CPU being used by the node.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ The amount of storage space used by the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -46,7 +46,7 @@ The percentage of storage space utilized.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 ### nsxt.node.memory.cache.usage
 
@@ -54,7 +54,7 @@ The size of the node's memory cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| KBy | Sum | Int | Cumulative | false | development |
+| KBy | Sum | Int | Cumulative | false | Development |
 
 ### nsxt.node.memory.usage
 
@@ -62,7 +62,7 @@ The memory usage of the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| KBy | Sum | Int | Cumulative | false | development |
+| KBy | Sum | Int | Cumulative | false | Development |
 
 ### nsxt.node.network.io
 
@@ -70,7 +70,7 @@ The number of bytes which have flowed through the network interface.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -84,7 +84,7 @@ The number of packets which have flowed through the network interface on the nod
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 

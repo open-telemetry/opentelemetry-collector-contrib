@@ -18,7 +18,7 @@ The number of connections in different asynchronous states reported by Apache's 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {connections} | Gauge | Int | development |
+| {connections} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ Current load of the CPU.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 ### apache.cpu.time
 
@@ -40,7 +40,7 @@ Jiffs used by processes of given category.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {jiff} | Sum | Double | Cumulative | true | development |
+| {jiff} | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
@@ -55,7 +55,7 @@ The number of active connections currently attached to the HTTP server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### apache.load.1
 
@@ -63,7 +63,7 @@ The average server load during the last minute.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 ### apache.load.15
 
@@ -71,7 +71,7 @@ The average server load during the last 15 minutes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 ### apache.load.5
 
@@ -79,7 +79,7 @@ The average server load during the last 5 minutes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 ### apache.request.time
 
@@ -87,7 +87,7 @@ Total time spent on handling requests.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 ### apache.requests
 
@@ -95,7 +95,7 @@ The number of requests serviced by the HTTP server per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### apache.scoreboard
 
@@ -105,7 +105,7 @@ The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {workers} | Sum | Int | Cumulative | false | development |
+| {workers} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -119,7 +119,7 @@ Total HTTP server traffic.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### apache.uptime
 
@@ -127,7 +127,7 @@ The amount of time that the server has been running in seconds.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 ### apache.workers
 
@@ -135,7 +135,7 @@ The number of workers currently attached to the HTTP server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {workers} | Sum | Int | Cumulative | false | development |
+| {workers} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

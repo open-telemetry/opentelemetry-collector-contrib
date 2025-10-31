@@ -18,7 +18,7 @@ The number of changes (pull requests) in a repository, categorized by their stat
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {change} | Gauge | Int | development |
+| {change} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -34,7 +34,7 @@ The time duration a change (pull request/merge request/changelist) has been in a
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
@@ -51,7 +51,7 @@ The amount of time it took a change (pull request) to go from open to approved.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
@@ -67,7 +67,7 @@ The amount of time it took a change (pull request) to go from open to merged.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
@@ -83,7 +83,7 @@ The number of refs of type branch in a repository.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {ref} | Gauge | Int | development |
+| {ref} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -99,7 +99,7 @@ The number of lines added/removed in a ref (branch) relative to the default bran
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {line} | Gauge | Int | development |
+| {line} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -119,7 +119,7 @@ The number of revisions (commits) a ref (branch) is ahead/behind the branch from
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {revision} | Gauge | Int | development |
+| {revision} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -139,7 +139,7 @@ Time a ref (branch) created from the default branch (trunk) has existed. The `vc
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
@@ -156,7 +156,7 @@ The number of repositories in an organization.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {repository} | Gauge | Int | development |
+| {repository} | Gauge | Int | Development |
 
 ## Optional Metrics
 
@@ -174,7 +174,7 @@ The number of unique contributors to a repository.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {contributor} | Gauge | Int | development |
+| {contributor} | Gauge | Int | Development |
 
 #### Attributes
 

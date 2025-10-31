@@ -18,7 +18,7 @@ Current number of bytes used by this server to store items.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### memcached.commands
 
@@ -26,7 +26,7 @@ Commands executed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {commands} | Sum | Int | Cumulative | true | development |
+| {commands} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -40,7 +40,7 @@ The current number of open connections.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### memcached.connections.total
 
@@ -48,7 +48,7 @@ Total number of connections opened since the server started running.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | true | development |
+| {connections} | Sum | Int | Cumulative | true | Development |
 
 ### memcached.cpu.usage
 
@@ -56,7 +56,7 @@ Accumulated user and system time.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
@@ -70,7 +70,7 @@ Number of items currently stored in the cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {items} | Sum | Int | Cumulative | false | development |
+| {items} | Sum | Int | Cumulative | false | Development |
 
 ### memcached.evictions
 
@@ -78,7 +78,7 @@ Cache item evictions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {evictions} | Sum | Int | Cumulative | true | development |
+| {evictions} | Sum | Int | Cumulative | true | Development |
 
 ### memcached.network
 
@@ -86,7 +86,7 @@ Bytes transferred over the network.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | development |
+| by | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -100,7 +100,7 @@ Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 #### Attributes
 
@@ -114,7 +114,7 @@ Operation counts.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -129,4 +129,4 @@ Number of threads used by the memcached instance.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {threads} | Sum | Int | Cumulative | false | development |
+| {threads} | Sum | Int | Cumulative | false | Development |

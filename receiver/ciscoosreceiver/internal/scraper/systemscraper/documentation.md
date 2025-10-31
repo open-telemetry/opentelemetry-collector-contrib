@@ -18,7 +18,7 @@ Device availability (1 = up, 0 = down)
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### system.cpu.utilization
 
@@ -26,7 +26,7 @@ Percentage of CPU time in use.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### system.memory.utilization
 
@@ -34,7 +34,7 @@ Percentage of memory bytes in use.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ## Resource Attributes
 
