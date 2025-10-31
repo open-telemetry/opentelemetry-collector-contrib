@@ -14,7 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.138.0
-	github.com/openshift/api v3.9.0+incompatible
+	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.44.1-0.20251028105454-507664fb82dc
@@ -166,8 +166,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
-// openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
-replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
+// openshift removed all tags from their repo, use the pseudoversion from the release-4.19 branch HEAD
+replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20250313134101-8a7efbfb5316
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
 
