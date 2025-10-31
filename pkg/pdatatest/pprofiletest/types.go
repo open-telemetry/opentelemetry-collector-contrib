@@ -25,7 +25,8 @@ func (p Profiles) Transform() pprofile.Profiles {
 
 type ResourceProfile struct {
 	ScopeProfiles []ScopeProfile
-	Resource      Resource
+	Resource      pcommon.Resource
+	SchemaURL     string
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -35,24 +36,15 @@ func (rp ResourceProfile) Transform(pp pprofile.Profiles) pprofile.ResourceProfi
 	for _, sp := range rp.ScopeProfiles {
 		sp.Transform(pp.Dictionary(), prp)
 	}
-	for _, a := range rp.Resource.Attributes {
-		if prp.Resource().Attributes().PutEmpty(a.Key).FromRaw(a.Value) != nil {
-			panic(fmt.Sprintf("unsupported resource attribute value: {%s: %v (type %T)}",
-				a.Key, a.Value, a.Value))
-		}
-	}
+
+	rp.Resource.Attributes().CopyTo(prp.Resource().Attributes())
+
 	return prp
 }
 
-type Resource struct {
-	Attributes []Attribute
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 type ScopeProfile struct {
-	Profile   []Profile
-	Scope     Scope
+	Profiles  []Profile
+	Scope     pcommon.InstrumentationScope
 	SchemaURL string
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -60,38 +52,15 @@ type ScopeProfile struct {
 
 func (sp ScopeProfile) Transform(dic pprofile.ProfilesDictionary, prp pprofile.ResourceProfiles) pprofile.ScopeProfiles {
 	psp := prp.ScopeProfiles().AppendEmpty()
-	for i := range sp.Profile {
-		p := &sp.Profile[i]
+	for i := range sp.Profiles {
+		p := &sp.Profiles[i]
 		p.Transform(dic, psp)
 	}
-	sp.Scope.Transform(psp)
 	psp.SetSchemaUrl(sp.SchemaURL)
 
+	sp.Scope.CopyTo(psp.Scope())
+
 	return psp
-}
-
-type Scope struct {
-	Attributes             []Attribute
-	Name                   string
-	Version                string
-	DroppedAttributesCount uint32
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-func (sc Scope) Transform(psp pprofile.ScopeProfiles) pcommon.InstrumentationScope {
-	psc := psp.Scope()
-	for _, a := range sc.Attributes {
-		if psc.Attributes().PutEmpty(a.Key).FromRaw(a.Value) != nil {
-			panic(fmt.Sprintf("unsupported scope attribute value: {%s: %v (type %T)}",
-				a.Key, a.Value, a.Value))
-		}
-	}
-	psc.SetName(sc.Name)
-	psc.SetVersion(sc.Version)
-	psc.SetDroppedAttributesCount(sc.DroppedAttributesCount)
-
-	return psc
 }
 
 type Profile struct {
