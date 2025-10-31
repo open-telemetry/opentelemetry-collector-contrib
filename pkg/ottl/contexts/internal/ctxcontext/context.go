@@ -196,18 +196,26 @@ func accessClientAuth[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	}
 }
 
-func getAuthAttributeValue(attr any) (any, error) {
-	switch a := attr.(type) {
+func getAuthAttributeValue(authData client.AuthData, key string) (pcommon.Value, error) {
+	attrVal := authData.GetAttribute(key)
+	switch typedAttrVal := attrVal.(type) {
 	case string:
-		return a, nil
-	case nil:
-		return nil, nil
-	default:
-		b, err := json.Marshal(attr)
-		if err != nil {
-			return "", err
+		return pcommon.NewValueStr(typedAttrVal), nil
+	case []string:
+		value := pcommon.NewValueSlice()
+		slice := value.Slice()
+		slice.EnsureCapacity(len(typedAttrVal))
+		for _, str := range typedAttrVal {
+			slice.AppendEmpty().SetStr(str)
 		}
-		return string(b), nil
+		return value, nil
+	default:
+		value := pcommon.NewValueEmpty()
+		err := value.FromRaw(attrVal)
+		if err != nil {
+			return pcommon.Value{}, err
+		}
+		return value, nil
 	}
 }
 
@@ -219,19 +227,9 @@ func convertAuthDataToMap(authData client.AuthData) pcommon.Map {
 	names := authData.GetAttributeNames()
 	authMap.EnsureCapacity(len(names))
 	for _, name := range names {
-		attrVal := authData.GetAttribute(name)
-		authMapAttrVal := authMap.PutEmpty(name)
-		switch typedAttrVal := attrVal.(type) {
-		case string:
-			authMapAttrVal.SetStr(typedAttrVal)
-		case []string:
-			slice := authMapAttrVal.SetEmptySlice()
-			slice.EnsureCapacity(len(typedAttrVal))
-			for _, str := range typedAttrVal {
-				slice.AppendEmpty().SetStr(str)
-			}
-		default:
-			_ = authMapAttrVal.FromRaw(attrVal)
+		newKeyValue := authMap.PutEmpty(name)
+		if value, err := getAuthAttributeValue(authData, name); err == nil {
+			value.MoveTo(newKeyValue)
 		}
 	}
 	return authMap
@@ -263,12 +261,21 @@ func accessClientAuthAttributesKey[K any](keys []ottl.Key[K]) ottl.StandardGetSe
 			if cl.Auth == nil {
 				return nil, nil
 			}
-			attrVal := cl.Auth.GetAttribute(*key)
-			attrStr, err := getAuthAttributeValue(attrVal)
+			attrVal, err := getAuthAttributeValue(cl.Auth, *key)
 			if err != nil {
 				return nil, err
 			}
-			return attrStr, nil
+			if len(keys) > 1 {
+				switch attrVal.Type() {
+				case pcommon.ValueTypeSlice:
+					return ctxutil.GetSliceValue[K](ctx, tCtx, attrVal.Slice(), keys[1:])
+				case pcommon.ValueTypeMap:
+					return ctxutil.GetMapValue[K](ctx, tCtx, attrVal.Map(), keys[1:])
+				default:
+					return nil, fmt.Errorf("attribute %q value is not indexable: %T", *key, attrVal.Type().String())
+				}
+			}
+			return ottlcommon.GetValue(attrVal), nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
 			return fmt.Errorf(readOnlyPathErrMsg, "context.client.auth.attributes")
