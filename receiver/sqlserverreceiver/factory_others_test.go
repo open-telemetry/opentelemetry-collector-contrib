@@ -95,6 +95,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.NotEmpty(t, scrapers)
 
 				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
+				require.Equal(t, 2*sqlScrapers[0].config.ControllerConfig.CollectionInterval.Seconds(), sqlScrapers[0].config.LookbackTime.Seconds())
 				require.NotEmpty(t, sqlScrapers)
 
 				q := getSQLServerQueryTextAndPlanQuery()
