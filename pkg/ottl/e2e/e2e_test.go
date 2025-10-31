@@ -1315,13 +1315,13 @@ func Test_e2e_converters(t *testing.T) {
 		{
 			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["nonexistent_key"], ["value"]))`,
 			wantErr:   true,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 			errMsg:    "could not extract key from element",
 		},
 		{
 			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"], ["nonexistent_value"]))`,
 			wantErr:   true,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 			errMsg:    "provided object does not contain the path",
 		},
 		{
