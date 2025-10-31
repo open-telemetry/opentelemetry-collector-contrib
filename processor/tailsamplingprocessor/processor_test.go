@@ -1102,9 +1102,23 @@ func TestNumericAttributeCases(t *testing.T) {
 
 func BenchmarkProcessorThroughput(b *testing.B) {
 	cfg := Config{
-		DecisionWait:    defaultTestDecisionWait,
-		NumTraces:       1024,
-		PolicyCfgs:      testPolicy,
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    1024,
+		// Create a handful of reasonable policies to not only test batching.
+		PolicyCfgs: []PolicyCfg{
+			{sharedPolicyCfg: sharedPolicyCfg{Name: "always-sample", Type: AlwaysSample}},
+			{sharedPolicyCfg: sharedPolicyCfg{Name: "latency", Type: Latency,
+				LatencyCfg: LatencyCfg{ThresholdMs: 1}},
+			},
+			{sharedPolicyCfg: sharedPolicyCfg{Name: "ottl", Type: OTTLCondition,
+				OTTLConditionCfg: OTTLConditionCfg{
+					SpanConditions: []string{`attributes["attr_k_1"] == "attr_v_1"`},
+				},
+			}},
+			{sharedPolicyCfg: sharedPolicyCfg{Name: "errors", Type: StatusCode,
+				StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"ERROR"}}},
+			},
+		},
 		BlockOnOverflow: true,
 		DecisionCache: DecisionCacheConfig{
 			SampledCacheSize:    8192,
