@@ -529,7 +529,6 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 }
 
 func TestStaleExponentialHistogram(t *testing.T) {
-	t.Skip("Skipping test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved")
 	mf := &dto.MetricFamily{
 		Name: "test_counter",
 		Type: dto.MetricType_COUNTER,
