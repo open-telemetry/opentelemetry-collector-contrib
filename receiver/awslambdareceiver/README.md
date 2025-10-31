@@ -57,7 +57,6 @@ The following receiver configuration parameters are supported.
 | Name                  | Description                                                                                                                                | Default     | Required |
 |:----------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|----------|
 | `s3_encoding`         | Name of the encoding extension to use for S3 objects                                                                                       | "awslogs_encoding" | Optional |
-| `failure_bucket_arn`  | Optional ARN of S3 bucket to store failed Lambda invocation events                                                                         |             | Optional |
 
 ### Example Configuration
 
@@ -65,7 +64,6 @@ The following receiver configuration parameters are supported.
 receivers:
   awslambda:
     s3_encoding: awslogs_encoding
-    failure_bucket_arn: "arn:aws:s3:::my-failure-bucket"
 
 extensions:
   awslogs_encoding:
@@ -94,7 +92,6 @@ service:
 receivers:
   awslambda:
     s3_encoding: awslogs_encoding
-    failure_bucket_arn: "arn:aws:s3:::my-failure-bucket"
 
 extensions:
   awslogs_encoding:
@@ -123,7 +120,6 @@ In this example, `awslambdareceiver` receives a notification when a new VPC flow
 receivers:
   awslambda:
     s3_encoding: awslogs_encoding
-    failure_bucket_arn: "arn:aws:s3:::my-failure-bucket"
 
 extensions:
   awslogs_encoding:
@@ -149,7 +145,6 @@ service:
 ```yaml
 receivers:
   awslambda:
-    failure_bucket_arn: "arn:aws:s3:::my-failure-bucket"
 
 exporters:
   otlphttp:
@@ -183,13 +178,6 @@ The Lambda function requires the following IAM permissions:
         "s3:GetObject"
       ],
       "Resource": "arn:aws:s3:::your-log-bucket/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject"
-      ],
-      "Resource": "arn:aws:s3:::your-failure-bucket/*"
     }
   ]
 }
@@ -204,7 +192,6 @@ The receiver automatically detects the event source based on the Lambda invocati
 
 ## Error Handling
 
-- Failed invocations are stored in the specified failure bucket (if configured)
 - Detailed error information is logged for debugging
 - Retry mechanisms are handled by AWS Lambda
 
