@@ -418,44 +418,80 @@ exporters:
 
 `elasticsearchexporter` follows ECS mapping defined here: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#elastic-common-schema
 
-When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
+When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level and record-level (log or trace) attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
 
 If the target ECS field name is specified as an empty string (`""`), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
 
 When "Preserved" is true, the attribute will be preserved in the payload and duplicated as mapped to its ECS equivalent.
 
-| Semantic Convention Name | ECS Name                    | Preserve |
-|--------------------------|-----------------------------|----------|
-| cloud.platform           | cloud.service.name          | false    |
-| container.image.tags     | container.image.tag         | false    |
-| deployment.environment   | service.environment         | false    |
-| host.arch                | host.architecture           | false    |
-| host.name                | host.hostname               | true     |
-| k8s.cluster.name         | orchestrator.cluster.name   | false    |
-| k8s.container.name       | kubernetes.container.name   | false    |
-| k8s.cronjob.name         | kubernetes.cronjob.name     | false    |
-| k8s.daemonset.name       | kubernetes.daemonset.name   | false    |
-| k8s.deployment.name      | kubernetes.deployment.name  | false    |
-| k8s.job.name             | kubernetes.job.name         | false    |
-| k8s.namespace.name       | kubernetes.namespace        | false    |
-| k8s.node.name            | kubernetes.node.name        | false    |
-| k8s.pod.name             | kubernetes.pod.name         | false    |
-| k8s.pod.uid              | kubernetes.pod.uid          | false    |
-| k8s.replicaset.name      | kubernetes.replicaset.name  | false    |
-| k8s.statefulset.name     | kubernetes.statefulset.name | false    |
-| os.description           | host.os.full                | false    |
-| os.name                  | host.os.name                | false    |
-| os.type                  | host.os.platform            | false    |
-| os.version               | host.os.version             | false    |
-| process.executable.path  | process.executable          | false    |
-| process.runtime.name     | service.runtime.name        | false    |
-| process.runtime.version  | service.runtime.version     | false    |
-| service.instance.id      | service.node.name           | false    |
-| telemetry.distro.name    | ""                          | false    |
-| telemetry.distro.version | ""                          | false    |
-| telemetry.sdk.language   | ""                          | false    |
-| telemetry.sdk.name       | ""                          | false    |
-| telemetry.sdk.version    | ""                          | false    |
+When more than one SemConv attribute maps to the same ECS attribute, the converter will map all attributes to the same ECS name.
+This is mean to support backwards compatibility for SemConv attributes that have been renamed/deprecated. 
+The value of the last-mapped attribute will take precedence.
+
+### Resource attribute mapping
+
+| Semantic Convention Name    | ECS Name                    | Preserve |
+|-----------------------------|-----------------------------|----------|
+| client.address              | client.ip                   | false    |
+| cloud.platform              | cloud.service.name          | false    |
+| container.image.tags        | container.image.tag         | false    |
+| deployment.environment      | service.environment         | false    |
+| deployment.environment.name | service.environment         | false    |
+| faas.instance               | faas.id                     | false    |
+| faas.trigger                | faas.trigger.type           | false    |
+| host.arch                   | host.architecture           | false    |
+| host.name                   | host.hostname               | true     |
+| k8s.cluster.name            | orchestrator.cluster.name   | false    |
+| k8s.container.name          | kubernetes.container.name   | false    |
+| k8s.cronjob.name            | kubernetes.cronjob.name     | false    |
+| k8s.daemonset.name          | kubernetes.daemonset.name   | false    |
+| k8s.deployment.name         | kubernetes.deployment.name  | false    |
+| k8s.job.name                | kubernetes.job.name         | false    |
+| k8s.namespace.name          | kubernetes.namespace        | false    |
+| k8s.node.name               | kubernetes.node.name        | false    |
+| k8s.pod.name                | kubernetes.pod.name         | false    |
+| k8s.pod.uid                 | kubernetes.pod.uid          | false    |
+| k8s.replicaset.name         | kubernetes.replicaset.name  | false    |
+| k8s.statefulset.name        | kubernetes.statefulset.name | false    |
+| os.description              | host.os.full                | false    |
+| os.name                     | host.os.name                | false    |
+| os.type                     | host.os.platform            | false    |
+| os.version                  | host.os.version             | false    |
+| process.command_line        | process.args                 | false    |
+| process.executable.name     | process.title                | false    |
+| process.executable.path     | process.executable          | false    |
+| process.parent.pid          | process.parent.pid          | false    |
+| process.runtime.name        | service.runtime.name        | false    |
+| process.runtime.version     | service.runtime.version     | false    |
+| service.instance.id         | service.node.name           | false    |
+| source.address              | source.ip                   | false    |
+| telemetry.distro.name       | ""                          | false    |
+| telemetry.distro.version    | ""                          | false    |
+| telemetry.sdk.language      | ""                          | false    |
+| telemetry.sdk.name          | ""                          | false    |
+| telemetry.sdk.version       | ""                          | false    |
+
+### Log record attribute mapping
+
+| Semantic Convention Name | ECS Name                        | Preserve |
+|--------------------------|---------------------------------|----------|
+| event.name               | event.action                    | false    |
+| exception.message        | error.message                   | false    |
+| exception.stacktrace     | error.stacktrace                | false    |
+| exception.type           | error.type                      | false    |
+| exception.escaped        | event.error.exception.handled   | false    |
+| http.response.body.size  | http.response.encoded_body_size | false    |
+
+### Span attribute mapping
+
+| Semantic Convention Name   | ECS Name                                                  | Preserve |
+|----------------------------|-----------------------------------------------------------|----------|
+| messaging.operation.name   | span.action                                               | false    |
+| db.system                  | span.db.type                                              | false    |
+| db.namespace               | span.db.instance                                          | false    |
+| db.query.text              | span.db.statement                                         | false    |
+| http.response.body.size    | http.response.encoded_body_size                           | false    |
+
 
 ### Compound Mapping
 
@@ -507,6 +543,11 @@ Otherwise, it is mapped to an empty string ("").
 #### `@timestamp`
 
 In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
+
+### `messaging.destination.name`
+
+Maps to `span.message.queue.name` for regular spans, but to `transaction.message.queue.name` when the `processor.event` attribute equals "transaction".
+This attribute is only applicable at the trace level. 
 
 ## Setting a document id dynamically
 
