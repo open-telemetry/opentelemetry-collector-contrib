@@ -29,7 +29,6 @@ type systemScraper struct {
 	rpcClient       *connection.RPCClient
 }
 
-// Start initializes the scraper and establishes SSH connection
 func (s *systemScraper) Start(_ context.Context, _ component.Host) error {
 	s.logger.Info("Starting system scraper with metric configuration",
 		zap.Bool("device_up_enabled", s.config.Metrics.CiscoDeviceUp.Enabled))
@@ -39,12 +38,12 @@ func (s *systemScraper) Start(_ context.Context, _ component.Host) error {
 		TelemetrySettings: component.TelemetrySettings{Logger: s.logger},
 	})
 
-	if s.config.Device.Host.IP == "" {
+	if s.config.Device.Device.Host.IP == "" {
 		return errors.New("no device configured")
 	}
 
 	device := s.config.Device
-	s.deviceTarget = device.Host.IP
+	s.deviceTarget = device.Device.Host.IP
 
 	// Log authentication method
 	authMethod := "password"
@@ -57,14 +56,13 @@ func (s *systemScraper) Start(_ context.Context, _ component.Host) error {
 
 	s.logger.Info("System scraper initialized - will establish persistent SSH connection on first collection",
 		zap.String("target", s.deviceTarget),
-		zap.Int("port", device.Host.Port),
+		zap.Int("port", device.Device.Host.Port),
 		zap.String("username", device.Auth.Username),
 		zap.String("auth_method", authMethod))
 
 	return nil
 }
 
-// Shutdown closes the SSH connection
 func (s *systemScraper) Shutdown(_ context.Context) error {
 	s.logger.Info("Shutting down system scraper")
 
@@ -79,7 +77,6 @@ func (s *systemScraper) Shutdown(_ context.Context) error {
 	return nil
 }
 
-// ScrapeMetrics collects metrics
 func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	s.collectionCount++
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -89,9 +86,12 @@ func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, err
 			zap.String("target", s.deviceTarget),
 			zap.Int("collection_number", s.collectionCount))
 
-		rpcClient, err := s.establishDeviceConnection(ctx, s.deviceTarget)
+		rpcClient, err := connection.EstablishDeviceConnection(
+			ctx,
+			s.config.Device,
+			s.logger,
+		)
 		if err != nil {
-			// SSH connection failed - device is down
 			s.logger.Error("Device connection failed - recording cisco.device.up=0",
 				zap.String("target", s.deviceTarget),
 				zap.Int("collection_number", s.collectionCount),
@@ -143,26 +143,6 @@ func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, err
 	}
 
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
-}
-
-// establishDeviceConnection establishes SSH connection to Cisco device using shared connection factory
-func (s *systemScraper) establishDeviceConnection(ctx context.Context, _ string) (*connection.RPCClient, error) {
-	// Convert scraper device config to connection device config
-	deviceConfig := connection.DeviceConfig{
-		Host: connection.HostInfo{
-			Name: s.config.Device.Host.Name,
-			IP:   s.config.Device.Host.IP,
-			Port: s.config.Device.Host.Port,
-		},
-		Auth: connection.AuthConfig{
-			Username: s.config.Device.Auth.Username,
-			Password: s.config.Device.Auth.Password,
-			KeyFile:  s.config.Device.Auth.KeyFile,
-		},
-	}
-
-	// Use shared connection factory
-	return connection.EstablishConnection(ctx, deviceConfig, s.logger)
 }
 
 // collectCPUUtilization collects CPU utilization metric from the device
