@@ -455,7 +455,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	// simulate rolling updates, the dns resolver should resolve in the following order
 	// ["127.0.0.1"] -> ["127.0.0.1", "127.0.0.2"] -> ["127.0.0.2"]
 	ts, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, nil, tb)
 	require.NoError(t, err)
 
 	mu := sync.Mutex{}
@@ -586,6 +586,108 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 
 	close(unreachableCh)
 	waitWG.Wait()
+}
+
+func TestConsumeLogs_DNSResolverRetriesOnUnreachableEndpoint(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: "", Quarantine: QuarantineSettings{Enabled: true}}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockLogsExporter(), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	// Set up the hash ring with the test endpoints
+	lb.ring = newHashRing([]string{"endpoint-1", "endpoint-2"})
+
+	p, err := newLogsExporter(ts, simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Endpoint-1 returns an error to simulate an unreachable endpoint
+	// Endpoint-2 succeeds normally
+	lb.exporters = map[string]*wrappedExporter{
+		"endpoint-1:4317": newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+			return errors.New("endpoint unreachable")
+		}), "endpoint-1:4317"),
+		"endpoint-2:4317": newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+			return nil
+		}), "endpoint-2:4317"),
+	}
+
+	// test - first call should fail by retrying with endpoint-2
+	res := p.ConsumeLogs(t.Context(), simpleLogs())
+	require.NoError(t, res)
+
+	// We want to verify that logs are consumed by "endpoint-2" exporter, which uses consumeWithRetry.
+	// To do so, we can provide a spy function and check whether it is called.
+	var consumedBySecondEndpoint atomic.Bool
+	lb.exporters["endpoint-2:4317"] = newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+		consumedBySecondEndpoint.Store(true)
+		return nil
+	}), "endpoint-2:4317")
+
+	// Re-run test with the spy.
+	require.NoError(t, p.ConsumeLogs(t.Context(), simpleLogs()))
+	require.True(t, consumedBySecondEndpoint.Load(), "logs should be consumed by the second endpoint")
+}
+
+func TestConsumeLogs_DNSResolverRetriesExhausted(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: "", Quarantine: QuarantineSettings{Enabled: true}}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockLogsExporter(), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	// Set up the hash ring with the test endpoints
+	lb.ring = newHashRing([]string{"endpoint-1", "endpoint-2"})
+
+	p, err := newLogsExporter(ts, simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Both endpoints return an error to simulate unreachable endpoints
+	lb.exporters = map[string]*wrappedExporter{
+		"endpoint-1:4317": newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+			return errors.New("endpoint unreachable")
+		}), "endpoint-1:4317"),
+		"endpoint-2:4317": newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+			return errors.New("endpoint unreachable")
+		}), "endpoint-2:4317"),
+	}
+
+	// test - first call should fail by retrying with endpoint-2
+	res := p.ConsumeLogs(t.Context(), simpleLogs())
+	require.Error(t, res)
+	require.EqualError(t, res, "all endpoints were tried and failed: map[endpoint-1:true endpoint-2:true]")
 }
 
 func randomLogs() plog.Logs {

@@ -95,6 +95,9 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `port` port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
+  * `quarantine` node: enables a quarantine mechanism that prevents the exporter from sending data to endpoints that have previously failed (i.e., are marked as unhealthy) until a defined quarantine period passes. While an endpoint is quarantined, only healthy endpoints in the hash ring are used to dispatch data, avoiding unnecessary hash ring updates and reducing the risk of repeatedly targeting unhealthy endpoints.
+    * `enabled` toggle to activate endpoint quarantine logic. Default is `false`.
+    * `duration` how long in go-Duration format an unhealthy endpoint should remain in quarantine before the exporter retries it (e.g., `30s`, `1m`). Defaults to `30s` if not specified.
 * The `k8s` node accepts the following optional properties:
   * `service` Kubernetes service to resolve, e.g. `lb-svc.lb-ns`. If no namespace is specified, an attempt will be made to infer the namespace for this collector, and if this fails it will fall back to the `default` namespace.
   * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used. When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.

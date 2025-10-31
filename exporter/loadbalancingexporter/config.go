@@ -78,10 +78,11 @@ type StaticResolver struct {
 
 // DNSResolver defines the configuration for the DNS resolver
 type DNSResolver struct {
-	Hostname string        `mapstructure:"hostname"`
-	Port     string        `mapstructure:"port"`
-	Interval time.Duration `mapstructure:"interval"`
-	Timeout  time.Duration `mapstructure:"timeout"`
+	Hostname   string             `mapstructure:"hostname"`
+	Port       string             `mapstructure:"port"`
+	Interval   time.Duration      `mapstructure:"interval"`
+	Timeout    time.Duration      `mapstructure:"timeout"`
+	Quarantine QuarantineSettings `mapstructure:"quarantine"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -92,6 +93,17 @@ type K8sSvcResolver struct {
 	Ports           []int32       `mapstructure:"ports"`
 	Timeout         time.Duration `mapstructure:"timeout"`
 	ReturnHostnames bool          `mapstructure:"return_hostnames"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// QuarantineSettings defines the configuration for endpoint quarantine behavior
+type QuarantineSettings struct {
+	// Duration specifies how long an unhealthy endpoint should be excluded from load balancing
+	// after a failure. After this duration, the endpoint will be eligible for retry.
+	// Default: 30s
+	Duration time.Duration `mapstructure:"duration"`
+	Enabled  bool          `mapstructure:"enabled"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
