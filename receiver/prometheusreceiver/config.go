@@ -47,6 +47,9 @@ type Config struct {
 	// server in agent mode. This allows the user to call the endpoint to get
 	// the config, service discovery, and targets for debugging purposes.
 	APIServer APIServer `mapstructure:"api_server"`
+
+	// From feature gate.
+	enableNativeHistograms bool
 }
 
 // Validate checks the receiver configuration is valid.

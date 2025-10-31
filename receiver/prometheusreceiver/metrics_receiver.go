@@ -98,7 +98,7 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 			set,
 			cfg.TargetAllocator.Get(),
 			&baseCfg,
-			enableNativeHistogramsGate.IsEnabled(),
+			cfg.enableNativeHistograms,
 		),
 	}
 	return pr, nil
@@ -176,7 +176,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
-		enableNativeHistogramsGate.IsEnabled(),
+		r.cfg.enableNativeHistograms,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
 	)
@@ -231,7 +231,7 @@ func (r *pReceiver) initScrapeOptions() *scrape.Options {
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
 		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
-		EnableNativeHistogramsIngestion:     enableNativeHistogramsGate.IsEnabled(),
+		EnableNativeHistogramsIngestion:     r.cfg.enableNativeHistograms,
 	}
 
 	return opts
