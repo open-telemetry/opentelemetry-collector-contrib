@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -433,4 +434,192 @@ func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
 
 func newNopMockExporter() *wrappedExporter {
 	return newWrappedExporter(mockComponent{}, "mock")
+}
+
+func TestNextExporterAndEndpoint(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockExporter(), nil
+	}
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// get position of endpoint-2
+	pos := getPosition([]byte("endpoint-2"))
+
+	// find next exporter and endpoint at the position
+	exp, nextEndpoint, err := p.nextExporterAndEndpoint(pos)
+
+	// verify
+	assert.NoError(t, err)
+	assert.NotNil(t, exp)
+	assert.NotEmpty(t, nextEndpoint)
+	assert.Contains(t, []string{"endpoint-1"}, nextEndpoint)
+}
+
+func TestNextExporterAndEndpointVisitsAllEndpoints(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockExporter(), nil
+	}
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	visited := make(map[string]bool)
+
+	for _, endpoint := range endpoints {
+		pos := getPosition([]byte(endpoint))
+		_, endpoint, err := p.nextExporterAndEndpoint(pos)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, endpoint)
+		visited[endpoint] = true
+	}
+
+	for _, ep := range endpoints {
+		assert.True(t, visited[ep], "endpoint %v should have been visited", ep)
+	}
+}
+
+func TestNextExporterAndEndpointEmptyRing(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockExporter(), nil
+	}
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Remove all exporters to create a scenario where the ring exists but has no matching exporters
+	for endpoint := range p.exporters {
+		delete(p.exporters, endpoint)
+	}
+
+	_, _, err = p.nextExporterAndEndpoint(getPosition([]byte("endpoint-1")))
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "couldn't find the exporter")
+}
+
+func TestQuarantineEndpoints(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{
+				Hostname: "service-1",
+				Port:     "",
+				Quarantine: QuarantineSettings{
+					Enabled:  true,
+					Duration: 1 * time.Millisecond,
+				},
+			}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockExporter(), nil
+	}
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	p.ring = newHashRing([]string{"endpoint-1", "endpoint-2"})
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// test
+	p.markUnhealthy("endpoint-1")
+
+	// verify
+	assert.False(t, p.isHealthy("endpoint-1"))
+	assert.True(t, p.isHealthy("endpoint-2"))
+	// wait for the quarantine duration to pass
+	require.Eventually(t, func() bool {
+		return p.isHealthy("endpoint-1")
+	}, 1*time.Second, 100*time.Millisecond)
+}
+
+func TestIsQuarantineEnabled(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: "", Quarantine: QuarantineSettings{Enabled: true}}),
+		},
+	}
+
+	res, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	require.NoError(t, err)
+
+	assert.True(t, res.isQuarantineEnabled())
+}
+
+func TestIsQuarantineEnabledFalse(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: "", Quarantine: QuarantineSettings{Enabled: false}}),
+		},
+	}
+
+	res, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	require.NoError(t, err)
+
+	assert.False(t, res.isQuarantineEnabled())
+}
+
+func TestIsQuarantineWithDNSQuarantineOmitted(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: ""}),
+		},
+	}
+
+	res, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	require.NoError(t, err)
+	assert.False(t, res.isQuarantineEnabled())
 }
