@@ -98,7 +98,8 @@ type ResourceProvider struct {
 	timeout          time.Duration
 	detectors        []Detector
 	detectedResource *resourceResult
-	once             sync.Once
+	mu               sync.RWMutex
+	initOnce         sync.Once
 	attributesToKeep map[string]struct{}
 }
 
@@ -117,65 +118,93 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesTo
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
-	p.once.Do(func() {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
-		defer cancel()
-		p.detectResource(ctx, client.Timeout)
-	})
+func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
+	p.mu.RLock()
+	res := p.detectedResource
+	p.mu.RUnlock()
 
-	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
+	if res != nil {
+		return res.resource, res.schemaURL, res.err
+	}
+
+	// First access: ensure only one goroutine computes.
+	p.initOnce.Do(func() { _, _, _ = p.Refresh(ctx, client) })
+
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	res = p.detectedResource
+	if res == nil {
+		return pcommon.NewResource(), "", nil
+	}
+	return res.resource, res.schemaURL, res.err
 }
 
-func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Duration) {
-	p.detectedResource = &resourceResult{}
+// Refresh recomputes the resource, replacing any previous result.
+func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.Timeout)
+	defer cancel()
 
+	res, schemaURL, err := p.detectResource(ctx)
+	p.mu.Lock()
+	p.detectedResource = &resourceResult{resource: res, schemaURL: schemaURL, err: err}
+	p.mu.Unlock()
+	return res, schemaURL, err
+}
+
+func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource, string, error) {
 	res := pcommon.NewResource()
 	mergedSchemaURL := ""
+	var joinedErr error
 
 	p.logger.Info("began detecting resource information")
 
 	resultsChan := make([]chan resourceResult, len(p.detectors))
 	for i, detector := range p.detectors {
-		resultsChan[i] = make(chan resourceResult)
-		go func(detector Detector) {
+		ch := make(chan resourceResult, 1)
+		resultsChan[i] = ch
+
+		go func(detector Detector, ch chan resourceResult) {
 			sleep := backoff.ExponentialBackOff{
 				InitialInterval:     1 * time.Second,
 				RandomizationFactor: 1.5,
 				Multiplier:          2,
-				MaxInterval:         timeout,
 			}
 			sleep.Reset()
-			var err error
-			var r pcommon.Resource
-			var schemaURL string
+
 			for {
-				r, schemaURL, err = detector.Detect(ctx)
+				r, schemaURL, err := detector.Detect(ctx)
 				if err == nil {
-					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: nil}
+					ch <- resourceResult{resource: r, schemaURL: schemaURL, err: nil}
 					return
 				}
+
 				p.logger.Warn("failed to detect resource", zap.Error(err))
 
-				timer := time.NewTimer(sleep.NextBackOff())
-				select {
-				case <-timer.C:
-					fmt.Println("Retrying fetching data...")
-				case <-ctx.Done():
-					p.logger.Warn("Context was cancelled: %w", zap.Error(ctx.Err()))
-					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: err}
+				next := sleep.NextBackOff()
+				if next == backoff.Stop {
+					ch <- resourceResult{resource: pcommon.NewResource(), schemaURL: "", err: err}
 					return
 				}
+
+				timer := time.NewTimer(next)
+				select {
+				case <-ctx.Done():
+					p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
+					timer.Stop()
+					ch <- resourceResult{resource: pcommon.NewResource(), schemaURL: "", err: err}
+					return
+				case <-timer.C:
+					// retry
+				}
 			}
-		}(detector)
+		}(detector, ch)
 	}
 
 	for _, ch := range resultsChan {
 		result := <-ch
 		if result.err != nil {
 			if allowErrorPropagationFeatureGate.IsEnabled() {
-				p.detectedResource.err = errors.Join(p.detectedResource.err, result.err)
+				joinedErr = errors.Join(joinedErr, result.err)
 			}
 		} else {
 			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
@@ -190,8 +219,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Dura
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
 
-	p.detectedResource.resource = res
-	p.detectedResource.schemaURL = mergedSchemaURL
+	return res, mergedSchemaURL, joinedErr
 }
 
 func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {
