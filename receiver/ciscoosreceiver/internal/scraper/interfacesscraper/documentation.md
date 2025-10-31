@@ -16,9 +16,9 @@ metrics:
 
 The number of errors encountered
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {errors} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {errors} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -34,9 +34,9 @@ The number of errors encountered
 
 Interface operational status (1 = up, 0 = down)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 #### Attributes
 
@@ -51,9 +51,9 @@ Interface operational status (1 = up, 0 = down)
 
 The number of bytes transmitted and received
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -69,9 +69,9 @@ The number of bytes transmitted and received
 
 The number of packets transmitted or received, categorized by type
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {packets} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -87,9 +87,9 @@ The number of packets transmitted or received, categorized by type
 
 The number of packets dropped
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {packets} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
