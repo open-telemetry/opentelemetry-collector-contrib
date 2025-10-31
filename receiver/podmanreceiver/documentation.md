@@ -50,9 +50,9 @@ Total CPU time consumed per CPU-core.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| core | The CPU core number when utilising per-CPU metrics. | Any Str | false |
+| core | The CPU core number when utilising per-CPU metrics. | Any Str | Recommended |
 
 ### container.cpu.usage.system
 

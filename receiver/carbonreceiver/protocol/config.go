@@ -5,7 +5,7 @@ package protocol // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -30,9 +30,7 @@ func init() {
 	}
 
 	// Sort the valid parsers by name so the message is consistent on every run.
-	sort.Slice(validParsers, func(i, j int) bool {
-		return validParsers[i] < validParsers[j]
-	})
+	slices.Sort(validParsers)
 }
 
 var _ confmap.Unmarshaler = (*Config)(nil)

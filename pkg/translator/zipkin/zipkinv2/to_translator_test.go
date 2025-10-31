@@ -141,7 +141,7 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			td, err := ToTranslator{}.ToTraces(test.zs)
+			td, err := toTranslator{}.ToTraces(test.zs)
 			assert.Equal(t, test.err, err)
 			if test.name != "nilSpan" {
 				assert.Equal(t, len(test.zs), td.SpanCount())
@@ -241,7 +241,7 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 		Tags:           nil,
 	}
 
-	gb, err := ToTranslator{}.ToTraces(spans)
+	gb, err := toTranslator{}.ToTraces(spans)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return

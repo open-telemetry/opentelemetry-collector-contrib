@@ -90,25 +90,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.DeltatocumulativeDatapoints, err = builder.meter.Int64Counter(
 		"otelcol_deltatocumulative_datapoints",
-		metric.WithDescription("total number of datapoints processed. may have 'error' attribute, if processing failed"),
+		metric.WithDescription("total number of datapoints processed. may have 'error' attribute, if processing failed [development]"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeStreamsLimit, err = builder.meter.Int64Gauge(
 		"otelcol_deltatocumulative_streams_limit",
-		metric.WithDescription("upper limit of tracked streams"),
+		metric.WithDescription("upper limit of tracked streams [development]"),
 		metric.WithUnit("{stream}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeStreamsMaxStale, err = builder.meter.Int64Gauge(
 		"otelcol_deltatocumulative_streams_max_stale",
-		metric.WithDescription("duration after which streams inactive streams are dropped"),
+		metric.WithDescription("duration after which streams inactive streams are dropped [development]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeStreamsTracked, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol_deltatocumulative_streams_tracked",
-		metric.WithDescription("number of streams tracked"),
+		metric.WithDescription("number of streams tracked [development]"),
 		metric.WithUnit("{dps}"),
 	)
 	errs = errors.Join(errs, err)

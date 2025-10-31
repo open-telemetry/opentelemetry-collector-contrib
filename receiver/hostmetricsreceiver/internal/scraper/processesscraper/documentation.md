@@ -22,9 +22,9 @@ Total number of processes in each state.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | Breakdown status of the processes. | Str: ``blocked``, ``daemon``, ``detached``, ``idle``, ``locked``, ``orphan``, ``paging``, ``running``, ``sleeping``, ``stopped``, ``system``, ``unknown``, ``zombies`` | false |
+| status | Breakdown status of the processes. | Str: ``blocked``, ``daemon``, ``detached``, ``idle``, ``locked``, ``orphan``, ``paging``, ``running``, ``sleeping``, ``stopped``, ``system``, ``unknown``, ``zombies`` | Recommended |
 
 ### system.processes.created
 

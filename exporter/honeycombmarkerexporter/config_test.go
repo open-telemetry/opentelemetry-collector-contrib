@@ -48,7 +48,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all_fields"),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings: exporterhelper.QueueBatchConfig{
+					Enabled:      true,
+					NumConsumers: 10,
+					QueueSize:    1000,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
+				},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				APIKey:        "test-apikey",
 				APIURL:        "https://api.testhost.io",

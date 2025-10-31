@@ -22,7 +22,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -102,7 +101,7 @@ func (s *sfxDPClient) pushMetricsData(
 
 	// export any histograms in otlp if sendOTLPHistograms is true
 	if s.sendOTLPHistograms {
-		histogramData, metricCount := utils.GetHistograms(md)
+		histogramData, metricCount := getHistograms(md)
 		if metricCount > 0 {
 			droppedCount, err := s.pushOTLPMetricsDataForToken(ctx, histogramData, metricToken)
 			if err != nil {
