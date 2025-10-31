@@ -434,9 +434,9 @@ This is the overall status of the kvstore for the given deployment.
 
 Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {seconds} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {seconds} | Gauge | Int | development |
 
 #### Attributes
 
