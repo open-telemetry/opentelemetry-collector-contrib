@@ -17,7 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,14 +35,14 @@ func TestLoadConfig(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name:          "pods",
-						Mode:          observer.PullMode,
+						Mode:          PullMode,
 						Interval:      time.Hour,
 						FieldSelector: "status.phase=Running",
 						LabelSelector: "environment in (production),tier in (frontend)",
 					},
 					{
 						Name:       "events",
-						Mode:       observer.WatchMode,
+						Mode:       WatchMode,
 						Namespaces: []string{"default"},
 						Group:      "events.k8s.io",
 						ExcludeWatchType: []apiWatch.EventType{
@@ -62,13 +61,13 @@ func TestLoadConfig(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name:            "pods",
-						Mode:            observer.PullMode,
+						Mode:            PullMode,
 						ResourceVersion: "1",
 						Interval:        time.Hour,
 					},
 					{
 						Name:     "events",
-						Mode:     observer.PullMode,
+						Mode:     PullMode,
 						Interval: time.Hour,
 					},
 				},
@@ -83,14 +82,14 @@ func TestLoadConfig(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name:            "events",
-						Mode:            observer.WatchMode,
+						Mode:            WatchMode,
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "",
 					},
 					{
 						Name:            "events",
-						Mode:            observer.WatchMode,
+						Mode:            WatchMode,
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "2",
@@ -151,7 +150,7 @@ func TestValidate(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: observer.PullMode,
+						Mode: PullMode,
 						ExcludeWatchType: []apiWatch.EventType{
 							apiWatch.Deleted,
 						},
@@ -178,7 +177,7 @@ func TestValidate(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: observer.PullMode,
+						Mode: PullMode,
 					},
 				},
 			},
@@ -210,7 +209,7 @@ func TestDeepCopy(t *testing.T) {
 				Name:             "pods",
 				Group:            "group",
 				Namespaces:       []string{"default"},
-				Mode:             observer.PullMode,
+				Mode:             PullMode,
 				FieldSelector:    "status.phase=Running",
 				LabelSelector:    "environment in (production),tier in (frontend)",
 				Interval:         time.Hour,
@@ -235,7 +234,7 @@ func TestDeepCopy(t *testing.T) {
 			actual.Name = "changed"
 			actual.Group = "changed"
 			actual.Namespaces[0] = "changed"
-			actual.Mode = observer.WatchMode
+			actual.Mode = WatchMode
 			actual.FieldSelector = "changed"
 			actual.LabelSelector = "changed"
 			actual.Interval = time.Minute
@@ -274,7 +273,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: observer.WatchMode,
+						Mode: WatchMode,
 					},
 				},
 			},
@@ -287,7 +286,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: observer.WatchMode,
+						Mode: WatchMode,
 					},
 				},
 			},
@@ -300,7 +299,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: observer.PullMode,
+						Mode: PullMode,
 					},
 				},
 			},
@@ -313,7 +312,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: observer.WatchMode,
+						Mode: WatchMode,
 					},
 				},
 			},
