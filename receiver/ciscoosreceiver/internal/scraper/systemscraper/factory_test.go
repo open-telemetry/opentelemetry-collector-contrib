@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/systemscraper/internal/metadata"
 )
 
@@ -37,12 +38,14 @@ func TestFactory_CreateScraperMethod(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Add device configuration
-	cfg.Device = DeviceConfig{
-		Host: HostInfo{
-			IP:   "192.168.1.1",
-			Port: 22,
+	cfg.Device = connection.DeviceConfig{
+		Device: connection.DeviceInfo{
+			Host: connection.HostInfo{
+				IP:   "192.168.1.1",
+				Port: 22,
+			},
 		},
-		Auth: AuthConfig{
+		Auth: connection.AuthConfig{
 			Username: "admin",
 			Password: "password",
 		},
@@ -50,7 +53,7 @@ func TestFactory_CreateScraperMethod(t *testing.T) {
 
 	// Verify config structure is correct for scraper creation
 	assert.NotNil(t, cfg)
-	assert.Equal(t, "192.168.1.1", cfg.Device.Host.IP)
+	assert.Equal(t, "192.168.1.1", cfg.Device.Device.Host.IP)
 }
 
 func TestConfig_Validate(t *testing.T) {
@@ -63,9 +66,11 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid_config",
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-				Device: DeviceConfig{
-					Host: HostInfo{IP: "192.168.1.1", Port: 22},
-					Auth: AuthConfig{Username: "admin", Password: "password"},
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{IP: "192.168.1.1", Port: 22},
+					},
+					Auth: connection.AuthConfig{Username: "admin", Password: "password"},
 				},
 			},
 			expectError: false,
@@ -74,7 +79,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "empty_device",
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-				Device:               DeviceConfig{},
+				Device:               connection.DeviceConfig{},
 			},
 			expectError: false, // Empty device is allowed at config level
 		},
@@ -105,29 +110,31 @@ func TestConfig_MetricsConfiguration(t *testing.T) {
 }
 
 func TestDeviceConfig_Structure(t *testing.T) {
-	device := DeviceConfig{
-		Host: HostInfo{
-			Name: "router1",
-			IP:   "10.0.0.1",
-			Port: 22,
+	device := connection.DeviceConfig{
+		Device: connection.DeviceInfo{
+			Host: connection.HostInfo{
+				Name: "router1",
+				IP:   "10.0.0.1",
+				Port: 22,
+			},
 		},
-		Auth: AuthConfig{
+		Auth: connection.AuthConfig{
 			Username: "admin",
 			Password: "secret",
 			KeyFile:  "/path/to/key",
 		},
 	}
 
-	assert.Equal(t, "router1", device.Host.Name)
-	assert.Equal(t, "10.0.0.1", device.Host.IP)
-	assert.Equal(t, 22, device.Host.Port)
+	assert.Equal(t, "router1", device.Device.Host.Name)
+	assert.Equal(t, "10.0.0.1", device.Device.Host.IP)
+	assert.Equal(t, 22, device.Device.Host.Port)
 	assert.Equal(t, "admin", device.Auth.Username)
-	assert.Equal(t, "secret", device.Auth.Password)
+	assert.Equal(t, "secret", string(device.Auth.Password))
 	assert.Equal(t, "/path/to/key", device.Auth.KeyFile)
 }
 
 func TestHostInfo_DefaultPort(t *testing.T) {
-	host := HostInfo{
+	host := connection.HostInfo{
 		Name: "router",
 		IP:   "192.168.1.1",
 		Port: 22,
@@ -139,18 +146,18 @@ func TestHostInfo_DefaultPort(t *testing.T) {
 }
 
 func TestAuthConfig_PasswordOnly(t *testing.T) {
-	auth := AuthConfig{
+	auth := connection.AuthConfig{
 		Username: "testuser",
 		Password: "testpass",
 	}
 
 	assert.Equal(t, "testuser", auth.Username)
-	assert.Equal(t, "testpass", auth.Password)
+	assert.Equal(t, "testpass", string(auth.Password))
 	assert.Empty(t, auth.KeyFile)
 }
 
 func TestAuthConfig_KeyFileOnly(t *testing.T) {
-	auth := AuthConfig{
+	auth := connection.AuthConfig{
 		Username: "testuser",
 		KeyFile:  "/home/user/.ssh/id_rsa",
 	}

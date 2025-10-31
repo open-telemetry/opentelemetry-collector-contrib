@@ -33,13 +33,13 @@ func (s *interfacesScraper) Start(_ context.Context, _ component.Host) error {
 		TelemetrySettings: component.TelemetrySettings{Logger: s.logger},
 	})
 
-	if s.config.Device.Host.IP == "" {
+	if s.config.Device.Device.Host.IP == "" {
 		s.logger.Warn("No device configured, scraper will not collect metrics")
 		return nil
 	}
 
 	device := s.config.Device
-	s.deviceTarget = device.Host.IP
+	s.deviceTarget = device.Device.Host.IP
 
 	s.logger.Info("Interfaces scraper initialized", zap.String("target", s.deviceTarget))
 
@@ -104,10 +104,13 @@ func (s *interfacesScraper) Shutdown(_ context.Context) error {
 	return nil
 }
 
-// parseInterfaceData establishes SSH connection and parses interface data
 func (s *interfacesScraper) parseInterfaceData(ctx context.Context) ([]*Interface, error) {
 	if s.rpcClient == nil {
-		rpcClient, err := s.establishDeviceConnection(ctx)
+		rpcClient, err := connection.EstablishDeviceConnection(
+			ctx,
+			s.config.Device,
+			s.logger,
+		)
 		if err != nil {
 			s.logger.Error("Failed to establish SSH connection", zap.String("target", s.deviceTarget), zap.Error(err))
 			return []*Interface{}, fmt.Errorf("failed to establish connection: %w", err)
@@ -137,21 +140,4 @@ func (s *interfacesScraper) parseInterfaceData(ctx context.Context) ([]*Interfac
 	}
 
 	return interfaces, nil
-}
-
-func (s *interfacesScraper) establishDeviceConnection(ctx context.Context) (*connection.RPCClient, error) {
-	deviceConfig := connection.DeviceConfig{
-		Host: connection.HostInfo{
-			Name: s.config.Device.Host.Name,
-			IP:   s.config.Device.Host.IP,
-			Port: s.config.Device.Host.Port,
-		},
-		Auth: connection.AuthConfig{
-			Username: s.config.Device.Auth.Username,
-			Password: s.config.Device.Auth.Password,
-			KeyFile:  s.config.Device.Auth.KeyFile,
-		},
-	}
-
-	return connection.EstablishConnection(ctx, deviceConfig, s.logger)
 }
