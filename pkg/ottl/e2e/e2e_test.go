@@ -65,6 +65,17 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `keep_matching_keys(attributes, Concat(["^", "http"], ""))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().Remove("flags")
+				tCtx.GetLogRecord().Attributes().Remove("total.string")
+				tCtx.GetLogRecord().Attributes().Remove("foo")
+				tCtx.GetLogRecord().Attributes().Remove("things")
+				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
+				tCtx.GetLogRecord().Attributes().Remove("conflict")
+			},
+		},
+		{
 			statement: `flatten(attributes)`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().Remove("foo")
@@ -1223,6 +1234,14 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], "\"")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", `"`)
+			},
+		},
+		{
+			statement: `keep_keys(attributes["foo"], [Concat(["ba", "r"], "")])`,
+			want: func(tCtx ottllog.TransformContext) {
+				// keep_keys should see two arguments
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
+				m.PutStr("bar", "pass")
 			},
 		},
 		{
