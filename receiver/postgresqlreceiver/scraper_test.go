@@ -9,6 +9,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -864,4 +865,32 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}
 		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
 	}
+}
+
+func TestGetInstanceId(t *testing.T) {
+	localhostName, _ := os.Hostname()
+
+	instanceString := "example.com:5432"
+	instanceID := getInstanceID(instanceString, zap.NewNop())
+	assert.Equal(t, "example.com:5432", instanceID)
+
+	localHostStringUppercase := "Localhost:5432"
+	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	localHostString := "127.0.0.1:5432"
+	localInstanceID = getInstanceID(localHostString, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	localHostStringIPV6 := "[::1]:5432"
+	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	hostNameErrorSample := ""
+	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, "unknown:5432", localInstanceID)
 }
