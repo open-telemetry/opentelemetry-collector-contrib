@@ -157,7 +157,7 @@ require (
 	go.elastic.co/apm/module/apmhttp/v2 v2.7.1 // indirect
 	go.elastic.co/apm/v2 v2.7.1 // indirect
 	go.elastic.co/fastjson v1.5.1 // indirect
-	go.etcd.io/bbolt v1.4.3 // indirect
+	go.etcd.io/bbolt v1.4.0-beta.0.0.20250425174651-88d2b5469521 //indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector v0.138.1-0.20251028105454-507664fb82dc // indirect
 	go.opentelemetry.io/collector/client v1.44.1-0.20251028105454-507664fb82dc // indirect

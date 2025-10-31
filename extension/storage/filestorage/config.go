@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -21,6 +22,7 @@ var (
 type Config struct {
 	Directory string        `mapstructure:"directory,omitempty"`
 	Timeout   time.Duration `mapstructure:"timeout,omitempty"`
+	MaxSize   uint          `mapstructure:"max_size,omitempty"`
 
 	Compaction *CompactionConfig `mapstructure:"compaction,omitempty"`
 
@@ -84,6 +86,11 @@ func (cfg *Config) Validate() error {
 		} else if !info.IsDir() {
 			return fmt.Errorf("%s is not a directory", dir)
 		}
+	}
+
+	if cfg.MaxSize > math.MaxInt {
+		// this is because bbolt stores maximum size as a signed int
+		return fmt.Errorf("max size cannot be greater than %d", math.MaxInt)
 	}
 
 	if cfg.Compaction.MaxTransactionSize < 0 {

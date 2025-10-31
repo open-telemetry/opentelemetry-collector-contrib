@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
-	go.etcd.io/bbolt v1.4.3
+	go.etcd.io/bbolt v1.4.0-beta.0.0.20250425174651-88d2b5469521
 	go.opentelemetry.io/collector/component v1.44.1-0.20251028105454-507664fb82dc
 	go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251028105454-507664fb82dc
 	go.opentelemetry.io/collector/confmap v1.44.1-0.20251028105454-507664fb82dc
