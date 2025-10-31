@@ -58,6 +58,7 @@ The scrapers are configured as modular components. Each scraper type can be conf
 | Setting | Type | Description |
 |---------|------|-------------|
 | `system` | map | System metrics (device availability, CPU, memory) |
+| `interfaces` | map | Interface metrics (traffic, errors, status) |
 
 ## Metrics Collected
 
@@ -70,8 +71,24 @@ The scrapers are configured as modular components. Each scraper type can be conf
   - NX-OS: Calculated from `show system resources` (used / total)
   - IOS/IOS XE: Calculated from `show process memory` (Processor Pool used / total)
 
-### Attributes
-All metrics include the `target` attribute with the device's IP address for correlation with Kubernetes nodes and other resources.
+### Interface Metrics
+- `system.network.io` - Number of bytes transmitted and received (with `network.io.direction` attribute: `receive` or `transmit`)
+- `system.network.errors` - Number of errors encountered (with `network.io.direction` attribute: `receive` or `transmit`)
+- `system.network.packet.dropped` - Number of packets dropped (with `network.io.direction` attribute: `receive` or `transmit`)
+- `system.network.packet.count` - Number of packets transmitted or received, categorized by type (with `network.packet.type` attribute: `multicast` or `broadcast`)
+- `system.network.interface.status` - Interface operational status (1 = up, 0 = down)
+
+Interface metrics include attributes: `network.interface.name`, `network.interface.mac`, `network.interface.description`, `network.interface.speed`
+
+Metrics with direction attribute also include: `network.io.direction` (enum: `receive`, `transmit`)
+
+Metrics with packet type attribute also include: `network.packet.type` (enum: `multicast`, `broadcast`)
+
+### Resource Attributes
+All metrics include the following resource attributes following OpenTelemetry semantic conventions:
+- `host.ip` - Device IP address for correlation with Kubernetes nodes and other resources
+- `hw.type` - Hardware type, set to "network" per OpenTelemetry hardware.network conventions
+- `os.name` - Operating system name (e.g., "NX-OS", "IOS XE", "IOS")
 
 ## Example Configuration
 
@@ -98,6 +115,18 @@ receivers:
           system.cpu.utilization:
             enabled: true
           system.memory.utilization:
+            enabled: true
+      interfaces:
+        metrics:
+          system.network.io:
+            enabled: true
+          system.network.errors:
+            enabled: true
+          system.network.packet.dropped:
+            enabled: true
+          system.network.packet.count:
+            enabled: true
+          system.network.interface.status:
             enabled: true
 
   # Example 2: SSH key file authentication

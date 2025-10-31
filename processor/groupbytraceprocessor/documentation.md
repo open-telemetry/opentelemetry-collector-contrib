@@ -8,64 +8,64 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_groupbytrace_conf_num_traces
 
-Maximum number of traces to hold in the internal storage
+Maximum number of traces to hold in the internal storage [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### otelcol_processor_groupbytrace_event_latency
 
-How long the queue events are taking to be processed
+How long the queue events are taking to be processed [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | development |
 
 ### otelcol_processor_groupbytrace_incomplete_releases
 
-Releases that are suspected to have been incomplete
+Releases that are suspected to have been incomplete [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {releases} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {releases} | Sum | Int | true | development |
 
 ### otelcol_processor_groupbytrace_num_events_in_queue
 
-Number of events currently in the queue
+Number of events currently in the queue [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### otelcol_processor_groupbytrace_num_traces_in_memory
 
-Number of traces currently in the in-memory storage
+Number of traces currently in the in-memory storage [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### otelcol_processor_groupbytrace_spans_released
 
-Spans released to the next consumer
+Spans released to the next consumer [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_processor_groupbytrace_traces_evicted
 
-Traces evicted from the internal buffer
+Traces evicted from the internal buffer [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_processor_groupbytrace_traces_released
 
-Traces released to the next consumer
+Traces released to the next consumer [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
