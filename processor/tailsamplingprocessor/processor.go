@@ -107,9 +107,8 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		deleteTraceQueue:   list.New(),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
-		// We don't need a buffer here for the system to be correct, but it can
-		// be a convenient lever to improve latency upstream.
-		workChan: make(chan tracesCmd, cfg.WorkChanCapacity),
+		// Similar to the id batcher, allow a batch per CPU to be buffered before blocking ConsumeTraces.
+		workChan: make(chan tracesCmd, runtime.NumCPU()),
 		// We need to buffer one new policy command so that external callers can
 		// queue up new policies without blocking on the ticker.
 		newPolicyChan: make(chan newPolicyCmd, 1),

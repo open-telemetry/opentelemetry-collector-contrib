@@ -99,6 +99,10 @@ func withTestController(t *testTSPController) Option {
 		tsp.tickChan = make(chan chan struct{})
 		t.tickChan = tsp.tickChan
 
+		// Use an unbuffered work channel so we know that when ConsumeTraces
+		// completes the traces will have been ingested by the TSP.
+		tsp.workChan = make(chan tracesCmd)
+
 		// use a sync ID batcher to avoid waiting on lots of empty ticks.
 		// We need to close the old one before creating a new one.
 		tsp.decisionBatcher = newSyncIDBatcher()

@@ -291,9 +291,6 @@ type Config struct {
 	Options []Option `mapstructure:"-"`
 	// Make decision as soon as a policy matches
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
-	// WorkChanCapacity sets the capacity of the work channel. This is the number of batches of traces to store in the
-	// channel, not individual traces.
-	WorkChanCapacity int `mapstructure:"work_chan_capacity"`
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
 	// wait when the processor is shutdown.
 	DropPendingTracesOnShutdown bool `mapstructure:"drop_pending_traces_on_shutdown"`
