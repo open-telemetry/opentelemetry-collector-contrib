@@ -39,18 +39,21 @@ func newHashRing(endpoints []string) *hashRing {
 	}
 }
 
-// endpointFor calculates which backend is responsible for the given traceID
-func (h *hashRing) endpointFor(identifier []byte) string {
-	if h == nil {
-		// perhaps the ring itself couldn't get initialized yet?
-		return ""
-	}
+// getPosition calculates the position in the ring for the given identifier
+func getPosition(identifier []byte) position {
 	hasher := crc32.NewIEEE()
 	hasher.Write(identifier)
 	hash := hasher.Sum32()
 	pos := hash % maxPositions
+	return position(pos)
+}
 
-	return h.findEndpoint(position(pos))
+// endpointFor calculates which backend is responsible for the given traceID
+func (h *hashRing) endpointFor(identifier []byte) string {
+	if h == nil {
+		return ""
+	}
+	return h.findEndpoint(getPosition(identifier))
 }
 
 // findEndpoint returns the "next" endpoint starting from the given position, or an empty string in case no endpoints are available

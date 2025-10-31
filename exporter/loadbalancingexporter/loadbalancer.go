@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -37,6 +38,10 @@ type loadBalancer struct {
 
 	componentFactory componentFactory
 	exporters        map[string]*wrappedExporter
+
+	// Track unhealthy endpoints across all signal types
+	unhealthyEndpoints map[string]time.Time
+	healthLock         sync.RWMutex
 
 	stopped    bool
 	updateLock sync.RWMutex
@@ -79,12 +84,14 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 
 		var err error
 		dnsResolver := oCfg.Resolver.DNS.Get()
+
 		res, err = newDNSResolver(
 			dnsLogger,
 			dnsResolver.Hostname,
 			dnsResolver.Port,
 			dnsResolver.Interval,
 			dnsResolver.Timeout,
+			&dnsResolver.Quarantine,
 			telemetry,
 		)
 		if err != nil {
@@ -137,10 +144,11 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 	}
 
 	return &loadBalancer{
-		logger:           logger,
-		res:              res,
-		componentFactory: factory,
-		exporters:        map[string]*wrappedExporter{},
+		logger:             logger,
+		res:                res,
+		componentFactory:   factory,
+		exporters:          map[string]*wrappedExporter{},
+		unhealthyEndpoints: make(map[string]time.Time),
 	}, nil
 }
 
@@ -212,6 +220,48 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 	}
 }
 
+// markUnhealthy marks an endpoint as unhealthy
+func (lb *loadBalancer) markUnhealthy(endpoint string) {
+	lb.healthLock.Lock()
+	defer lb.healthLock.Unlock()
+
+	if _, exists := lb.unhealthyEndpoints[endpoint]; !exists {
+		lb.unhealthyEndpoints[endpoint] = time.Now()
+	}
+}
+
+// isHealthy checks if an endpoint is healthy or if it has been quarantined long enough to retry
+func (lb *loadBalancer) isHealthy(endpoint string) bool {
+	lb.healthLock.RLock()
+	timestamp, exists := lb.unhealthyEndpoints[endpoint]
+	lb.healthLock.RUnlock()
+
+	if !exists {
+		return true
+	}
+
+	// If quarantine period has passed, remove from unhealthy list and allow retry
+	if dnsRes, ok := lb.res.(*dnsResolver); ok && dnsRes.quarantine != nil {
+		lb.logger.Debug("isHealthy", zap.String("endpoint", endpoint), zap.Time("timestamp", timestamp), zap.Duration("quarantineDuration", dnsRes.quarantine.Duration))
+		if time.Since(timestamp) > dnsRes.quarantine.Duration {
+			lb.healthLock.Lock()
+			delete(lb.unhealthyEndpoints, endpoint)
+			lb.healthLock.Unlock()
+			lb.logger.Debug("isHealthy - quarantine period passed", zap.String("endpoint", endpoint))
+			return true
+		}
+	}
+
+	return false
+}
+
+// isQuarantineEnabled checks if the resolver supports quarantine logic and if it's enabled.
+// Quarantine logic is supported for DNS resolvers only.
+func (lb *loadBalancer) isQuarantineEnabled() bool {
+	dnsRes, ok := lb.res.(*dnsResolver)
+	return ok && dnsRes.quarantine.Enabled
+}
+
 func (lb *loadBalancer) Shutdown(ctx context.Context) error {
 	err := lb.res.shutdown(ctx)
 	lb.stopped = true
@@ -237,4 +287,80 @@ func (lb *loadBalancer) exporterAndEndpoint(identifier []byte) (*wrappedExporter
 	}
 
 	return exp, endpoint, nil
+}
+
+// nextExporterAndEndpoint returns the next exporter and endpoint in the ring after the given position.
+func (lb *loadBalancer) nextExporterAndEndpoint(pos position) (*wrappedExporter, string, error) {
+	lb.updateLock.RLock()
+	defer lb.updateLock.RUnlock()
+
+	endpoint := lb.ring.findEndpoint(pos)
+	exp, found := lb.exporters[endpointWithPort(endpoint)]
+	if !found {
+		return nil, "", fmt.Errorf("couldn't find the exporter for the endpoint %q", endpoint)
+	}
+
+	return exp, endpoint, nil
+}
+
+// consumeWithRetryAndQuarantine executes the consume operation with the initial assignment of the exporter and endpoint.
+// If the consume operation fails, it will retry with the next endpoint in its associated ring.
+// It will try subsequent endpoints until either one succeeds or all available endpoints have been tried.
+// Once an unhealthy endpoint is found, it will be marked as unhealthy and not tried again until the quarantine period has passed.
+func (lb *loadBalancer) consumeWithRetryAndQuarantine(identifier []byte, exp *wrappedExporter, endpoint string, consume func(*wrappedExporter, string) error) error {
+	var err error
+
+	// Try the first endpoint if it's healthy or quarantine period has passed
+	if lb.isHealthy(endpoint) {
+		if err = consume(exp, endpoint); err == nil {
+			return nil
+		}
+		// Mark as unhealthy if the consume failed
+		lb.markUnhealthy(endpoint)
+	}
+
+	// If consume failed, try with subsequent endpoints
+	// Keep track of tried endpoints to avoid infinite loop
+	tried := map[string]bool{endpoint: true}
+	currentPos := getPosition(identifier)
+
+	// Try until we've used all available endpoints
+	for len(tried) < len(lb.exporters) {
+		// retryExp, retryEndpoint, retryErr := lb.exporterAndEndpoint(identifier)
+		retryExp, retryEndpoint, retryErr := lb.nextExporterAndEndpoint(currentPos)
+		if retryErr != nil {
+			// Return original error if we can't get a new endpoint
+			return err
+		}
+
+		// If we've already tried this endpoint in this cycle, move to next position
+		if tried[retryEndpoint] {
+			currentPos = (currentPos + 1) % position(maxPositions)
+			continue
+		}
+
+		// Skip unhealthy endpoints that are still in quarantine
+		if !lb.isHealthy(retryEndpoint) {
+			tried[retryEndpoint] = true
+			// If we've exhausted all endpoints and they're all unhealthy, stop
+			if len(tried) == len(lb.exporters) {
+				break
+			}
+			currentPos = (currentPos + 1) % position(maxPositions)
+			continue
+		}
+
+		tried[retryEndpoint] = true
+
+		if retryErr = consume(retryExp, retryEndpoint); retryErr == nil {
+			return nil
+		}
+		// Mark as unhealthy if the consume failed
+		lb.markUnhealthy(retryEndpoint)
+
+		// Move to next position for next iteration
+		currentPos = (currentPos + 1) % position(maxPositions)
+	}
+
+	return fmt.Errorf("all endpoints were tried and failed: %v", tried)
 }
