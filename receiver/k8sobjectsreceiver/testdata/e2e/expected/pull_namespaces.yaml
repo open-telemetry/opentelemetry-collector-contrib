@@ -97,6 +97,9 @@ resourceLogs:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
+              - key: config.mode
+                value:
+                  stringValue: pull
               - key: k8s.namespace.name
                 value:
                   stringValue: default
@@ -194,6 +197,9 @@ resourceLogs:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
+              - key: config.mode
+                value:
+                  stringValue: pull
               - key: k8s.namespace.name
                 value:
                   stringValue: kube-node-lease
@@ -291,6 +297,9 @@ resourceLogs:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
+              - key: config.mode
+                value:
+                  stringValue: pull
               - key: k8s.namespace.name
                 value:
                   stringValue: kube-public
@@ -388,6 +397,9 @@ resourceLogs:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
+              - key: config.mode
+                value:
+                  stringValue: pull
               - key: k8s.namespace.name
                 value:
                   stringValue: kube-system
@@ -503,6 +515,9 @@ resourceLogs:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
+              - key: config.mode
+                value:
+                  stringValue: pull
               - key: k8s.namespace.name
                 value:
                   stringValue: local-path-storage

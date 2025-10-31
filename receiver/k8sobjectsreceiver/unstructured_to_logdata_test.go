@@ -132,7 +132,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 
-	t.Run("Test pull and watch objects both contain k8s.namespace.name", func(t *testing.T) {
+	t.Run("Test pull and watch objects both contain all attributes", func(t *testing.T) {
 		version := "0.1"
 		observedTimestamp := time.Now()
 		config := &K8sObjectsConfig{
@@ -169,6 +169,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			}},
 		}
 
+		config.Mode = WatchMode
 		logEntryFromWatchEvent, err := watchObjectsToLogData(watchedEvent, observedTimestamp, config, version)
 		assert.NoError(t, err)
 		assert.NotNil(t, logEntryFromWatchEvent)
@@ -208,6 +209,15 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			k8sResourceName.AsString(),
 		)
 
+		configMode, ok := watchEvenLogRecordAttrs.Get("config.mode")
+		assert.True(t, ok)
+		assert.Equal(
+			t,
+			"watch",
+			configMode.AsString(),
+		)
+
+		config.Mode = PullMode
 		logEntryFromPulledEvent := unstructuredListToLogData(pulledEvent, observedTimestamp, config, version)
 		assert.NotNil(t, logEntryFromPulledEvent)
 
@@ -229,9 +239,17 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			"events",
 			k8sResourceName.AsString(),
 		)
+
+		configMode, ok = pullEventLogRecordAttrs.Get("config.mode")
+		assert.True(t, ok)
+		assert.Equal(
+			t,
+			"pull",
+			configMode.AsString(),
+		)
 	})
 
-	t.Run("Test pull and watch objects both scope name and version", func(t *testing.T) {
+	t.Run("Test pull and watch objects both contain scope name and version", func(t *testing.T) {
 		version := "0.1"
 		observedTimestamp := time.Now()
 		config := &K8sObjectsConfig{

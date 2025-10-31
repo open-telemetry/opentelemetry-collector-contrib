@@ -71,6 +71,7 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 
 		attrs := record.Attributes()
 		attrs.PutStr("k8s.resource.name", config.gvr.Resource)
+		attrs.PutStr("config.mode", string(config.Mode))
 
 		for _, attrUpdate := range attrUpdaters {
 			attrUpdate(attrs)
