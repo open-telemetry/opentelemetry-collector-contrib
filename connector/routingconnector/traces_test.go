@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutiltest"
 )
@@ -410,9 +409,9 @@ func TestTracesConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isResourceString := `IsString(attributes["resourceName"]) == true`
-	require.Contains(t, common.SpanFunctions(), "IsString")
+	require.Contains(t, spanFunctions(), "IsString")
 	isAttributesMap := `IsMap(attributes) == true`
-	require.Contains(t, common.SpanFunctions(), "IsMap")
+	require.Contains(t, spanFunctions(), "IsMap")
 
 	isSpanE := `name == "spanE"`
 	isSpanF := `name == "spanF"`
