@@ -196,18 +196,26 @@ func accessClientAuth[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	}
 }
 
-func getAuthAttributeValue(attr any) (any, error) {
-	switch a := attr.(type) {
+func getAuthAttributeValue(authData client.AuthData, key string) (pcommon.Value, error) {
+	attrVal := authData.GetAttribute(key)
+	switch typedAttrVal := attrVal.(type) {
 	case string:
-		return a, nil
-	case nil:
-		return nil, nil
-	default:
-		b, err := json.Marshal(attr)
-		if err != nil {
-			return "", err
+		return pcommon.NewValueStr(typedAttrVal), nil
+	case []string:
+		value := pcommon.NewValueSlice()
+		slice := value.Slice()
+		slice.EnsureCapacity(len(typedAttrVal))
+		for _, str := range typedAttrVal {
+			slice.AppendEmpty().SetStr(str)
 		}
-		return string(b), nil
+		return value, nil
+	default:
+		value := pcommon.NewValueEmpty()
+		err := value.FromRaw(attrVal)
+		if err != nil {
+			return pcommon.Value{}, err
+		}
+		return value, nil
 	}
 }
 
