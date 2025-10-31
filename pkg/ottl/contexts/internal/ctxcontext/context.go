@@ -227,19 +227,9 @@ func convertAuthDataToMap(authData client.AuthData) pcommon.Map {
 	names := authData.GetAttributeNames()
 	authMap.EnsureCapacity(len(names))
 	for _, name := range names {
-		attrVal := authData.GetAttribute(name)
-		authMapAttrVal := authMap.PutEmpty(name)
-		switch typedAttrVal := attrVal.(type) {
-		case string:
-			authMapAttrVal.SetStr(typedAttrVal)
-		case []string:
-			slice := authMapAttrVal.SetEmptySlice()
-			slice.EnsureCapacity(len(typedAttrVal))
-			for _, str := range typedAttrVal {
-				slice.AppendEmpty().SetStr(str)
-			}
-		default:
-			_ = authMapAttrVal.FromRaw(attrVal)
+		newKeyValue := authMap.PutEmpty(name)
+		if value, err := getAuthAttributeValue(authData, name); err == nil {
+			value.MoveTo(newKeyValue)
 		}
 	}
 	return authMap
