@@ -17,6 +17,7 @@ require (
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	github.com/zeebo/xxh3 v1.0.2
+	go.opentelemetry.io/collector/client v1.44.1-0.20251030084003-6f29b34c24f6
 	go.opentelemetry.io/collector/component v1.44.1-0.20251030084003-6f29b34c24f6
 	go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251030084003-6f29b34c24f6
 	go.opentelemetry.io/collector/pdata v1.44.1-0.20251030084003-6f29b34c24f6
@@ -27,6 +28,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	golang.org/x/net v0.44.0
+	google.golang.org/grpc v1.76.0
 )
 
 require (
