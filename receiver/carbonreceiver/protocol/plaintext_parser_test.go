@@ -201,8 +201,8 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &PlaintextPathParser{}
-			got := ParsedPath{}
+			p := &plaintextPathParser{}
+			got := parsedPath{}
 			err := p.ParsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
