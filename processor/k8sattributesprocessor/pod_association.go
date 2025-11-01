@@ -47,7 +47,7 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 				// If association configured by resource_attribute
 				// In k8s environment, host.name label set to a pod IP address.
 				// If the value doesn't represent an IP address, we skip it.
-				if asso.Name == string(conventions.HostNameKey) && net.ParseIP(attributeValue) == nil {
+				if source.Name == string(conventions.HostNameKey) && net.ParseIP(attributeValue) == nil {
 					skip = true
 					break
 				}
