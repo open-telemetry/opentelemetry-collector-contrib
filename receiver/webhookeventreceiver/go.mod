@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/json-iterator/go v1.1.12

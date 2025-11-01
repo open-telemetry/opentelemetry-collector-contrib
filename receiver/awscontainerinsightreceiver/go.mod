@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/Microsoft/hcsshim v0.12.9

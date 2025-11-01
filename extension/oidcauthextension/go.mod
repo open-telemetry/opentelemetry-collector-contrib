@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/coreos/go-oidc/v3 v3.14.1

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.124.1

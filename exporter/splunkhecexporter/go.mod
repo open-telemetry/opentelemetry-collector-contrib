@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0

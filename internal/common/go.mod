@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/distribution/reference v0.6.0

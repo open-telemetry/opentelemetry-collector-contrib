@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0

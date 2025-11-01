@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/apache/thrift v0.21.0

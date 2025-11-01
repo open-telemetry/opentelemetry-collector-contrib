@@ -1,6 +1,6 @@
 module github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/aws/aws-sdk-go v1.44.309

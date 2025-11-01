@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/KimMachineGun/automemlimit v0.7.1

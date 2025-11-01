@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/lightstep/go-expohisto v1.0.0

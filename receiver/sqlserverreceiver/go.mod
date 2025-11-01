@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
 
-go 1.24.6
+go 1.24.9
 
 require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.3
