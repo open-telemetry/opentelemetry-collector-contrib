@@ -14,12 +14,12 @@ import (
 // EventXML is the rendered xml of an event.
 type EventXML struct {
 	Original         string      `xml:"-"`
-	EventID          EventID     `xml:"System>EventID"`
+	EventID          eventID     `xml:"System>EventID"`
 	Provider         Provider    `xml:"System>Provider"`
 	Computer         string      `xml:"System>Computer"`
 	Channel          string      `xml:"System>Channel"`
 	RecordID         uint64      `xml:"System>EventRecordID"`
-	TimeCreated      TimeCreated `xml:"System>TimeCreated"`
+	TimeCreated      timeCreated `xml:"System>TimeCreated"`
 	Message          string      `xml:"RenderingInfo>Message"`
 	RenderedLevel    string      `xml:"RenderingInfo>Level"`
 	Level            string      `xml:"System>Level"`
@@ -29,9 +29,9 @@ type EventXML struct {
 	Opcode           string      `xml:"System>Opcode"`
 	RenderedKeywords []string    `xml:"RenderingInfo>Keywords>Keyword"`
 	Keywords         []string    `xml:"System>Keywords"`
-	Security         *Security   `xml:"System>Security"`
-	Execution        *Execution  `xml:"System>Execution"`
-	EventData        EventData   `xml:"EventData"`
+	Security         *security   `xml:"System>Security"`
+	Execution        *execution  `xml:"System>Execution"`
+	EventData        eventData   `xml:"EventData"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -146,7 +146,7 @@ func parseMessage(channel, message string) (string, map[string]any) {
 
 // parse event data into a map[string]interface
 // see: https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-datafieldtype-complextype
-func parseEventData(eventData EventData) map[string]any {
+func parseEventData(eventData eventData) map[string]any {
 	outputMap := make(map[string]any, 3)
 	if eventData.Name != "" {
 		outputMap["name"] = eventData.Name
@@ -171,14 +171,14 @@ func parseEventData(eventData EventData) map[string]any {
 	return outputMap
 }
 
-// EventID is the identifier of the event.
-type EventID struct {
+// eventID is the identifier of the event.
+type eventID struct {
 	Qualifiers uint16 `xml:"Qualifiers,attr"`
 	ID         uint32 `xml:",chardata"`
 }
 
-// TimeCreated is the creation time of the event.
-type TimeCreated struct {
+// timeCreated is the creation time of the event.
+type timeCreated struct {
 	SystemTime string `xml:"SystemTime,attr"`
 }
 
@@ -187,29 +187,31 @@ type Provider struct {
 	Name            string `xml:"Name,attr"`
 	GUID            string `xml:"Guid,attr"`
 	EventSourceName string `xml:"EventSourceName,attr"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
-type EventData struct {
+type eventData struct {
 	// https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-eventdatatype-complextype
 	// ComplexData is not supported.
-	Name   string `xml:"Name,attr"`
-	Data   []Data `xml:"Data"`
-	Binary string `xml:"Binary"`
+	Name   string     `xml:"Name,attr"`
+	Data   []dataItem `xml:"Data"`
+	Binary string     `xml:"Binary"`
 }
 
-type Data struct {
+type dataItem struct {
 	// https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-datafieldtype-complextype
 	Name  string `xml:"Name,attr"`
 	Value string `xml:",chardata"`
 }
 
-// Security contains info pertaining to the user triggering the event.
-type Security struct {
+// security contains info pertaining to the user triggering the event.
+type security struct {
 	UserID string `xml:"UserID,attr"`
 }
 
-// Execution contains info pertaining to the process that triggered the event.
-type Execution struct {
+// execution contains info pertaining to the process that triggered the event.
+type execution struct {
 	// ProcessID and ThreadID are required on execution info
 	ProcessID uint `xml:"ProcessID,attr"`
 	ThreadID  uint `xml:"ThreadID,attr"`
@@ -221,7 +223,7 @@ type Execution struct {
 	ProcessorTime *uint `xml:"ProcessorTime,attr"`
 }
 
-func (e Execution) asMap() map[string]any {
+func (e execution) asMap() map[string]any {
 	result := map[string]any{
 		"process_id": e.ProcessID,
 		"thread_id":  e.ThreadID,
