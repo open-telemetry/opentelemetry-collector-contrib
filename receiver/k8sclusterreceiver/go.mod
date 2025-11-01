@@ -166,9 +166,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
-// openshift removed all tags from their repo, use the pseudoversion from the release-4.19 branch HEAD
-replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20250313134101-8a7efbfb5316
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
