@@ -3,7 +3,6 @@
 package sampling
 
 import (
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,9 +27,7 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 var traceID = pcommon.TraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *samplingpolicy.TraceData {
-	spanCount := &atomic.Int64{}
-	spanCount.Store(1)
-	trace := &samplingpolicy.TraceData{SpanCount: spanCount, ReceivedBatches: ptrace.NewTraces()}
+	trace := &samplingpolicy.TraceData{SpanCount: 1, ReceivedBatches: ptrace.NewTraces()}
 	return trace
 }
 
@@ -49,11 +46,9 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *samplingpol
 	))
 	span.Attributes().PutInt(key, val)
 
-	spanCount := &atomic.Int64{}
-	spanCount.Store(1)
 	return &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
-		SpanCount:       spanCount,
+		SpanCount:       1,
 	}
 }
 
