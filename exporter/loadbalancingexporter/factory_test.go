@@ -98,24 +98,47 @@ func TestBuildExporterConfig(t *testing.T) {
 }
 
 func TestBuildExporterSettings(t *testing.T) {
-	// prepare
-	creationParams := exportertest.NewNopSettings(metadata.Type)
-	testEndpoint := "the-endpoint"
-	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
-	creationParams.Logger = zap.New(observedZapCore)
+	otlpType := otlpexporter.NewFactory().Type()
 
-	// test
-	exporterParams := buildExporterSettings(creationParams, testEndpoint)
-	exporterParams.Logger.Info("test")
+	t.Run("without exporter name", func(t *testing.T) {
+		creationParams := exportertest.NewNopSettings(metadata.Type)
+		creationParams.ID = component.NewID(metadata.Type)
+		testEndpoint := "the-endpoint"
+		observedZapCore, observedLogs := observer.New(zap.InfoLevel)
+		creationParams.Logger = zap.New(observedZapCore)
 
-	assert.Equal(t, creationParams.ID, exporterParams.ID)
+		exporterParams := buildExporterSettings(otlpType, creationParams, testEndpoint)
+		exporterParams.Logger.Info("test")
 
-	allLogs := observedLogs.All()
-	require.Equal(t, 1, observedLogs.Len())
-	assert.Contains(t,
-		allLogs[0].Context,
-		zap.String(zapEndpointKey, testEndpoint),
-	)
+		assert.Equal(t, component.NewID(otlpType), exporterParams.ID)
+
+		allLogs := observedLogs.All()
+		require.Equal(t, 1, observedLogs.Len())
+		assert.Contains(t,
+			allLogs[0].Context,
+			zap.String(zapEndpointKey, testEndpoint),
+		)
+	})
+
+	t.Run("with exporter name", func(t *testing.T) {
+		creationParams := exportertest.NewNopSettings(metadata.Type)
+		creationParams.ID = component.NewIDWithName(metadata.Type, "custom")
+		testEndpoint := "the-endpoint"
+		observedZapCore, observedLogs := observer.New(zap.InfoLevel)
+		creationParams.Logger = zap.New(observedZapCore)
+
+		exporterParams := buildExporterSettings(otlpType, creationParams, testEndpoint)
+		exporterParams.Logger.Info("test")
+
+		assert.Equal(t, component.NewIDWithName(otlpType, "custom"), exporterParams.ID)
+
+		allLogs := observedLogs.All()
+		require.Equal(t, 1, observedLogs.Len())
+		assert.Contains(t,
+			allLogs[0].Context,
+			zap.String(zapEndpointKey, testEndpoint),
+		)
+	})
 }
 
 func TestWrappedExporterHasEndpointAttribute(t *testing.T) {
