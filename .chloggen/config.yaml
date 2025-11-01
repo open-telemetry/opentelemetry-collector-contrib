@@ -226,6 +226,7 @@ components:
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
+    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azureblob
