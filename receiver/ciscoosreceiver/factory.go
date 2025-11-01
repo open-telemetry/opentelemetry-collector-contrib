@@ -66,10 +66,10 @@ func createMetricsReceiver(
 
 		// Inject device configuration into scraper config
 		if sysCfg, ok := scraperCfg.(*systemscraper.Config); ok {
-			sysCfg.Device = convertToSystemScraperDeviceConfig(conf.Device)
+			sysCfg.Device = conf.Device
 		}
 		if intfCfg, ok := scraperCfg.(*interfacesscraper.Config); ok {
-			intfCfg.Device = convertToInterfacesScraperDeviceConfig(conf.Device)
+			intfCfg.Device = conf.Device
 		}
 
 		scraperOptions = append(scraperOptions, scraperhelper.AddFactoryWithConfig(factory, scraperCfg))
@@ -85,36 +85,6 @@ func createMetricsReceiver(
 		consumer,
 		scraperOptions...,
 	)
-}
-
-func convertToSystemScraperDeviceConfig(device DeviceConfig) systemscraper.DeviceConfig {
-	return systemscraper.DeviceConfig{
-		Host: systemscraper.HostInfo{
-			Name: device.Device.Host.Name,
-			IP:   device.Device.Host.IP,
-			Port: device.Device.Host.Port,
-		},
-		Auth: systemscraper.AuthConfig{
-			Username: device.Auth.Username,
-			Password: string(device.Auth.Password),
-			KeyFile:  device.Auth.KeyFile,
-		},
-	}
-}
-
-func convertToInterfacesScraperDeviceConfig(device DeviceConfig) interfacesscraper.DeviceConfig {
-	return interfacesscraper.DeviceConfig{
-		Host: interfacesscraper.HostInfo{
-			Name: device.Device.Host.Name,
-			IP:   device.Device.Host.IP,
-			Port: device.Device.Host.Port,
-		},
-		Auth: interfacesscraper.AuthConfig{
-			Username: device.Auth.Username,
-			Password: string(device.Auth.Password),
-			KeyFile:  device.Auth.KeyFile,
-		},
-	}
 }
 
 type nopMetricsReceiver struct{}

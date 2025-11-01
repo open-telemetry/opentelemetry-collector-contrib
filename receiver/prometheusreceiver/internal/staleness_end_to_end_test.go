@@ -43,7 +43,6 @@ import (
 // Prometheus remotewrite exporter that staleness markers are emitted per timeseries.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/3413
 func TestStalenessMarkersEndToEnd(t *testing.T) {
-	t.Skip("Skipping test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved")
 	if testing.Short() {
 		t.Skip("This test can take a long time")
 	}

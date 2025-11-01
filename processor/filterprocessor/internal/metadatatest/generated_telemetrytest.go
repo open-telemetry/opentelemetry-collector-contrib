@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorFilterDatapointsFiltered(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_datapoints.filtered",
-		Description: "Number of metric data points dropped by the filter processor",
+		Description: "Number of metric data points dropped by the filter processor [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualProcessorFilterDatapointsFiltered(t *testing.T, tt *componenttes
 func AssertEqualProcessorFilterLogsFiltered(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_logs.filtered",
-		Description: "Number of logs dropped by the filter processor",
+		Description: "Number of logs dropped by the filter processor [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualProcessorFilterLogsFiltered(t *testing.T, tt *componenttest.Tele
 func AssertEqualProcessorFilterProfilesFiltered(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_profiles.filtered",
-		Description: "Number of profiles dropped by the filter processor",
+		Description: "Number of profiles dropped by the filter processor [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -72,7 +72,7 @@ func AssertEqualProcessorFilterProfilesFiltered(t *testing.T, tt *componenttest.
 func AssertEqualProcessorFilterSpansFiltered(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_spans.filtered",
-		Description: "Number of spans dropped by the filter processor",
+		Description: "Number of spans dropped by the filter processor [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
