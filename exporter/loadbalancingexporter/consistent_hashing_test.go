@@ -5,6 +5,7 @@ package loadbalancingexporter
 
 import (
 	"fmt"
+	"hash/crc32"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,6 +43,39 @@ func TestEndpointFor(t *testing.T) {
 
 			// verify
 			assert.Equal(t, tt.expected, endpoint)
+		})
+	}
+}
+
+func TestGetPosition(t *testing.T) {
+	tests := []struct {
+		name       string
+		identifier []byte
+		want       position
+	}{
+		{
+			name:       "simple case",
+			identifier: []byte("example"),
+			want:       position(crc32.ChecksumIEEE([]byte("example")) % maxPositions),
+		},
+		{
+			name:       "different input",
+			identifier: []byte("another"),
+			want:       position(crc32.ChecksumIEEE([]byte("another")) % maxPositions),
+		},
+		{
+			name:       "empty identifier",
+			identifier: []byte(""),
+			want:       position(crc32.ChecksumIEEE([]byte("")) % maxPositions),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getPosition(tt.identifier)
+			if got != tt.want {
+				t.Errorf("getPosition(%q) = %v, want %v", tt.identifier, got, tt.want)
+			}
 		})
 	}
 }
