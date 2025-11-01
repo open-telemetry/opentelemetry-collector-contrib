@@ -100,7 +100,7 @@ func (rpc *RegexParserConfig) BuildParser() (Parser, error) {
 		metricNameSeparator: rpc.MetricNameSeparator,
 	}
 
-	return NewParser(rpp)
+	return newParser(rpp)
 }
 
 func compileRegexRules(rules []*RegexRule) error {
@@ -153,13 +153,13 @@ type regexPathParser struct {
 	metricNameSeparator string
 
 	// plaintextParser is used if no rule matches a given metric.
-	plaintextPathParser PlaintextPathParser
+	plaintextPathParser plaintextPathParser
 }
 
 // ParsePath converts the <metric_path> of a Carbon line (see PathParserHelper
 // a full description of the line format) according to the RegexParserConfig
 // settings.
-func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error {
+func (rpp *regexPathParser) ParsePath(path string, parsedPath *parsedPath) error {
 	for _, rule := range rpp.rules {
 		if !rule.compRegexp.MatchString(path) {
 			continue

@@ -162,7 +162,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ParsedPath{}
+			got := parsedPath{}
 			err := rp.ParsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -231,7 +231,7 @@ func Test_regexParser_parsePath_simple_unnamed_group(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ParsedPath{}
+			got := parsedPath{}
 			err := rp.ParsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -304,7 +304,7 @@ func Test_regexParser_parsePath_key_inside_unnamed_group(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ParsedPath{}
+			got := parsedPath{}
 			err := rp.ParsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -356,7 +356,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 		"svc_02.host02.avg.duration",
 	}
 
-	got := ParsedPath{}
+	got := parsedPath{}
 	err := rp.ParsePath(tests[0], &got)
 	res.name = got.MetricName
 	res.attributes = got.Attributes
