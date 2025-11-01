@@ -103,13 +103,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.OtelarrowAdmissionInFlightBytes, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol_otelarrow_admission_in_flight_bytes",
-		metric.WithDescription("Number of bytes that have started processing but are not finished. [development]"),
+		metric.WithDescription("Number of bytes that have started processing but are not finished. [Development]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.OtelarrowAdmissionWaitingBytes, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol_otelarrow_admission_waiting_bytes",
-		metric.WithDescription("Number of items waiting to start processing. [development]"),
+		metric.WithDescription("Number of items waiting to start processing. [Development]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
