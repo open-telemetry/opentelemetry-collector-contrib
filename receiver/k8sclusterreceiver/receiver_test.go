@@ -358,6 +358,103 @@ func getUpdatedPod(pod *corev1.Pod) any {
 	}
 }
 
+func TestReceiverWithLeaderElection_StandbyAndResume_Metrics(t *testing.T) {
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+
+	client := newFakeClientWithAllResources()
+	osQuotaClient := fakeQuota.NewSimpleClientset()
+	sink := new(consumertest.MetricsSink)
+
+	tt := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tt.Shutdown(t.Context())) }()
+
+	kr := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, nil, component.MustNewID("k8s_leader_elector"))
+
+	// Seed initial pods once (avoid calling createPods multiple times to prevent name collisions).
+	createPods(t, client, 2, false)
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// Become leader -> start session
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Wait for first collection
+	var baseline int
+	require.Eventually(t, func() bool {
+		baseline = sink.DataPointCount()
+		return baseline >= 2
+	}, 10*time.Second, 100*time.Millisecond, "metrics not collected while leader")
+
+	// Enter standby: stop current session (informers + ticker)
+	fakeLeaderElection.InvokeOnStopping()
+
+	// While in standby, add a new pod with a UNIQUE name; should NOT affect metrics
+	createUniquePod(t, client, "default", "standby-pod-1")
+
+	// Wait > 1 interval; no new data should arrive in standby
+	time.Sleep(1500 * time.Millisecond)
+	require.Equal(t, baseline, sink.DataPointCount(), "no metrics should be emitted while in standby")
+
+	// Regain leadership
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Add another unique pod after resuming -> should be picked up
+	createUniquePod(t, client, "default", "resumed-pod-1")
+
+	require.Eventually(t, func() bool {
+		return sink.DataPointCount() > baseline
+	}, 10*time.Second, 100*time.Millisecond, "metrics did not resume after re-leading")
+
+	require.NoError(t, kr.Shutdown(t.Context()))
+}
+
+func TestReceiverWithLeaderElection_StandbyDoesNotDeadlock_OnQuickFlaps(t *testing.T) {
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+
+	client := newFakeClientWithAllResources()
+	osQuotaClient := fakeQuota.NewSimpleClientset()
+	sink := new(consumertest.MetricsSink)
+
+	tt := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tt.Shutdown(t.Context())) }()
+
+	kr := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, nil, component.MustNewID("k8s_leader_elector"))
+
+	// Seed something to observe; also avoids zero-work sessions
+	createUniquePod(t, client, "default", "initial-pod")
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// Start one clean session and wait for any data point to ensure we're up
+	fakeLeaderElection.InvokeOnLeading()
+	require.Eventually(t, func() bool {
+		return sink.DataPointCount() >= 1
+	}, 10*time.Second, 100*time.Millisecond, "session did not start")
+
+	// Flap with small sleeps to let stop complete before next start, avoiding exporter race
+	const loops = 50
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < loops; i++ {
+			fakeLeaderElection.InvokeOnStopping()
+			time.Sleep(3 * time.Millisecond) // allow session goroutine to exit
+			fakeLeaderElection.InvokeOnLeading()
+			time.Sleep(3 * time.Millisecond) // allow new session to initialize
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("leader flap goroutine timed out (possible deadlock)")
+	}
+
+	require.NoError(t, kr.Shutdown(t.Context()))
+}
+
 func setupReceiver(client *fake.Clientset, osQuotaClient quotaclientset.Interface, metricsConsumer consumer.Metrics, logsConsumer consumer.Logs, initialSyncTimeout time.Duration, tt *componenttest.Telemetry, namespaces []string, leaderElector component.ID) *kubernetesReceiver {
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
@@ -437,4 +534,18 @@ func gvkToAPIResource(gvk schema.GroupVersionKind) v1.APIResource {
 		Version: gvk.Version,
 		Kind:    gvk.Kind,
 	}
+}
+
+func createUniquePod(t *testing.T, client *fake.Clientset, ns, name string) {
+	t.Helper()
+	_, err := client.CoreV1().Pods(ns).Create(t.Context(), &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{Name: "c", Image: "i"}},
+		},
+	}, v1.CreateOptions{})
+	require.NoError(t, err)
 }

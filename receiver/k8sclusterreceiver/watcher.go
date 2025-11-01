@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -62,6 +63,7 @@ type resourceWatcher struct {
 	initialSyncTimedOut *atomic.Bool
 	config              *Config
 	entityLogConsumer   consumer.Logs
+	mu                  sync.RWMutex
 
 	// For mocking.
 	makeClient               func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
@@ -85,6 +87,17 @@ func newResourceWatcher(set receiver.Settings, cfg *Config, metadataStore *metad
 }
 
 func (rw *resourceWatcher) initialize() error {
+	// Reset per-leadership-session state to avoid accumulating informers and
+	// to ensure handlers wait for cache sync again after re-election.
+	// (Old factories tied to the previous context must not be reused.)
+	rw.informerFactories = nil
+	if rw.initialSyncDone != nil {
+		rw.initialSyncDone.Store(false)
+	}
+	if rw.initialSyncTimedOut != nil {
+		rw.initialSyncTimedOut.Store(false)
+	}
+
 	client, err := rw.makeClient(rw.config.APIConfig)
 	if err != nil {
 		return fmt.Errorf("Failed to create Kubernetes client: %w", err)
@@ -331,7 +344,10 @@ func (rw *resourceWatcher) onAdd(obj any) {
 }
 
 func (rw *resourceWatcher) hasDestination() bool {
-	return len(rw.metadataConsumers) != 0 || rw.entityLogConsumer != nil
+	rw.mu.RLock()
+	has := len(rw.metadataConsumers) != 0 || rw.entityLogConsumer != nil
+	rw.mu.RUnlock()
+	return has
 }
 
 func (rw *resourceWatcher) onUpdate(oldObj, newObj any) {
@@ -424,7 +440,9 @@ func (rw *resourceWatcher) setupMetadataExporters(
 		)
 	}
 
+	rw.mu.Lock()
 	rw.metadataConsumers = out
+	rw.mu.Unlock()
 	return nil
 }
 
@@ -448,12 +466,18 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 
 	metadataUpdate := metadata.GetMetadataUpdate(oldMetadata, newMetadata)
 	if len(metadataUpdate) != 0 {
-		for _, consume := range rw.metadataConsumers {
+		rw.mu.RLock()
+		consumers := append([]metadataConsumer(nil), rw.metadataConsumers...)
+		rw.mu.RUnlock()
+		for _, consume := range consumers {
 			_ = consume(metadataUpdate)
 		}
 	}
 
-	if rw.entityLogConsumer != nil {
+	rw.mu.RLock()
+	entityLogsConsumer := rw.entityLogConsumer
+	rw.mu.RUnlock()
+	if entityLogsConsumer != nil {
 		// Represent metadata update as entity events.
 		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp, rw.config.MetadataCollectionInterval)
 
@@ -461,7 +485,7 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 		logs := entityEvents.ConvertAndMoveToLogs()
 
 		if logs.LogRecordCount() != 0 {
-			err := rw.entityLogConsumer.ConsumeLogs(context.Background(), logs)
+			err := entityLogsConsumer.ConsumeLogs(context.Background(), logs)
 			if err != nil {
 				rw.logger.Error("Error sending entity events to the consumer", zap.Error(err))
 
