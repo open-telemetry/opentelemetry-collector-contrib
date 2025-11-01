@@ -134,8 +134,8 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 	return removeErr
 }
 
-// InsertDefault is a helper function to insert a default value for a configoptional.Optional type.
-func InsertDefault[T any](opt *configoptional.Optional[T]) error {
+// insertDefault is a helper function to insert a default value for a configoptional.Optional type.
+func insertDefault[T any](opt *configoptional.Optional[T]) error {
 	if opt.HasValue() {
 		return nil
 	}
@@ -168,7 +168,7 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 
 	factory := otlpreceiver.NewFactory()
 	config := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	if err := InsertDefault(&config.GRPC); err != nil {
+	if err := insertDefault(&config.GRPC); err != nil {
 		return nil, err
 	}
 	config.GRPC.Get().NetAddr = confignet.AddrConfig{Endpoint: endpoint, Transport: confignet.TransportTypeTCP}
