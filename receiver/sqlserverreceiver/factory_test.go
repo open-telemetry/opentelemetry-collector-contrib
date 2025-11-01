@@ -43,7 +43,6 @@ func TestFactory(t *testing.T) {
 						InitialDelay:       time.Second,
 					},
 					TopQueryCollection: TopQueryCollection{
-						LookbackTime:        2 * 10,
 						MaxQuerySampleCount: 1000,
 						TopQueryCount:       200,
 						CollectionInterval:  time.Minute,

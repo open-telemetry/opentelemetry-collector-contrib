@@ -56,7 +56,6 @@ func createDefaultConfig() component.Config {
 			MaxRowsPerQuery: 100,
 		},
 		TopQueryCollection: TopQueryCollection{
-			LookbackTime:        2 * cfg.CollectionInterval / time.Second,
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
 			CollectionInterval:  time.Minute,
@@ -153,6 +152,10 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
 		return nil
+	}
+
+	if cfg.LookbackTime.Seconds() <= 0 {
+		cfg.LookbackTime = 2 * cfg.ControllerConfig.CollectionInterval
 	}
 
 	queries := setupLogQueries(cfg)
