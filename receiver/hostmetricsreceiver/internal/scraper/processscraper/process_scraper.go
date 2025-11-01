@@ -228,9 +228,8 @@ func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMeta
 		cgroup, err := getProcessCgroup(ctx, handle)
 		if err != nil {
 			if !s.config.MuteProcessCgroupError {
-				errs.AddPartial(1, fmt.Errorf("error reading process cgroup for pid %v: %w", pid, err))
+				errs.AddPartial(0, fmt.Errorf("error reading process cgroup for pid %v: %w", pid, err))
 			}
-			continue
 		}
 
 		executable := &executableMetadata{name: name, path: exe, cgroup: cgroup}

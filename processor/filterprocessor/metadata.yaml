@@ -21,6 +21,8 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      stability:
+        level: development
     processor_filter_logs.filtered:
       enabled: true
       description: Number of logs dropped by the filter processor
@@ -28,13 +30,8 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    processor_filter_spans.filtered:
-      enabled: true
-      description: Number of spans dropped by the filter processor
-      unit: "1"
-      sum:
-        value_type: int
-        monotonic: true
+      stability:
+        level: development
     processor_filter_profiles.filtered:
       enabled: true
       description: Number of profiles dropped by the filter processor
@@ -42,3 +39,14 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      stability:
+        level: development
+    processor_filter_spans.filtered:
+      enabled: true
+      description: Number of spans dropped by the filter processor
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      stability:
+        level: development

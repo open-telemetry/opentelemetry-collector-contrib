@@ -82,7 +82,7 @@ func composeWriteURL(config *Config) (string, error) {
 		}
 	}
 	queryValues := writeURL.Query()
-	queryValues.Set("precision", "ns")
+	queryValues.Set("precision", config.Precision)
 
 	if config.V1Compatibility.Enabled {
 		queryValues.Set("db", config.V1Compatibility.DB)
@@ -90,20 +90,14 @@ func composeWriteURL(config *Config) (string, error) {
 		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
 			basicAuth := base64.StdEncoding.EncodeToString(
 				[]byte(config.V1Compatibility.Username + ":" + string(config.V1Compatibility.Password)))
-			if config.Headers == nil {
-				config.Headers = make(map[string]configopaque.String, 1)
-			}
-			config.Headers["Authorization"] = configopaque.String("Basic " + basicAuth)
+			config.Headers.Set("Authorization", configopaque.String("Basic "+basicAuth))
 		}
 	} else {
 		queryValues.Set("org", config.Org)
 		queryValues.Set("bucket", config.Bucket)
 
 		if config.Token != "" {
-			if config.Headers == nil {
-				config.Headers = make(map[string]configopaque.String, 1)
-			}
-			config.Headers["Authorization"] = "Token " + config.Token
+			config.Headers.Set("Authorization", "Token "+config.Token)
 		}
 	}
 
