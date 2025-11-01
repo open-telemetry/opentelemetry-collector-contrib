@@ -483,6 +483,27 @@ func TestMultiMetrics(t *testing.T) {
 	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
+func TestStartTimeAlreadySet(t *testing.T) {
+	script := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "TestStartTimeAlreadySet",
+			Metrics: testhelper.Metrics(
+				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44)),
+				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44)),
+				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{4, 2, 3, 7})),
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44)),
+				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44)),
+				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{4, 2, 3, 7})),
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+		},
+	}
+	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
+}
+
 func TestNewDataPointsAdded(t *testing.T) {
 	script := []*testhelper.MetricsAdjusterTest{
 		{

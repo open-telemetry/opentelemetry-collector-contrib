@@ -11,7 +11,6 @@ import (
 	"github.com/prometheus/prometheus/config"
 	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -496,14 +495,9 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 		},
 	}
 
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
-	}()
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", tc.enableNativeHistograms)
-			require.NoError(t, err)
+			t.Parallel()
 
 			targets := []*testData{
 				{
@@ -522,6 +516,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 				mutCfg = func(*PromConfig) {}
 			}
 			testComponent(t, targets, func(c *Config) {
+				c.enableNativeHistograms = tc.enableNativeHistograms
 				c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 			}, mutCfg)
 		})
@@ -650,12 +645,9 @@ func TestStaleExponentialHistogram(t *testing.T) {
 			},
 		},
 	}
-	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", true)
-	require.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
-	}()
+
 	testComponent(t, targets, func(c *Config) {
+		c.enableNativeHistograms = true
 		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	})
 }
@@ -715,12 +707,9 @@ func TestFloatCounterHistogram(t *testing.T) {
 			},
 		},
 	}
-	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", true)
-	require.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
-	}()
+
 	testComponent(t, targets, func(c *Config) {
+		c.enableNativeHistograms = true
 		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	})
 }

@@ -67,8 +67,6 @@ confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider
 internal/filter
 connector/countconnector
-pkg/sampling
-processor/probabilisticsamplerprocessor
 exporter/datadogexporter
 processor/tailsamplingprocessor
 connector/datadogconnector
@@ -78,6 +76,7 @@ connector/grafanacloudconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
+pkg/sampling
 connector/signaltometricsconnector
 connector/slowsqlconnector
 connector/sumconnector
@@ -192,6 +191,7 @@ internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
 processor/k8sattributesprocessor
+processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
 processor/transformprocessor
 receiver/dockerstatsreceiver
