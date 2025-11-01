@@ -203,6 +203,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
