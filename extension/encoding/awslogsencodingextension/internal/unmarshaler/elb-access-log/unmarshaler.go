@@ -248,6 +248,57 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 		recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), albRecord.TargetPort)
 	}
 
+	// ALB time specific attributes
+	if albRecord.RequestProcessingTime >= 0 {
+		recordLog.Attributes().PutInt(AttributeELBRequestProcessingTimeMs, albRecord.RequestProcessingTime)
+	}
+	if albRecord.TargetProcessingTime >= 0 {
+		recordLog.Attributes().PutInt(AttributeELBTargetProcessingTimeMs, albRecord.TargetProcessingTime)
+	}
+	if albRecord.ResponseProcessingTime >= 0 {
+		recordLog.Attributes().PutInt(AttributeELBResponseProcessingTimeMs, albRecord.ResponseProcessingTime)
+	}
+
+	if albRecord.TargetStatusCode != unknownField {
+		statusCode, e := safeConvertStrToInt(albRecord.TargetStatusCode)
+		if e == nil {
+			recordLog.Attributes().PutInt(AttributeELBBackendStatusCode, statusCode)
+		}
+	}
+	if albRecord.TargetGroupARN != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBTargetGroupARN, albRecord.TargetGroupARN)
+	}
+	if albRecord.ChosenCertARN != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBChosenCertARN, albRecord.ChosenCertARN)
+	}
+	if albRecord.ActionsExecuted != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBActionsExecuted, albRecord.ActionsExecuted)
+	}
+	if albRecord.RedirectURL != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBRedirectURL, albRecord.RedirectURL)
+	}
+	if albRecord.ErrorReason != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBErrorReason, albRecord.ErrorReason)
+	}
+	if albRecord.Classification != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBClassification, albRecord.Classification)
+	}
+	if albRecord.ClassificationReason != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBClassificationReason, albRecord.ClassificationReason)
+	}
+	if albRecord.ConnectionTraceID != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBConnectionTraceID, albRecord.ConnectionTraceID)
+	}
+	if albRecord.TransformedHost != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBTransformedHost, albRecord.TransformedHost)
+	}
+	if albRecord.TransformedURI != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBTransformedURI, albRecord.TransformedURI)
+	}
+	if albRecord.RequestTransformStatus != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBRequestTransformStatus, albRecord.RequestTransformStatus)
+	}
+
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
