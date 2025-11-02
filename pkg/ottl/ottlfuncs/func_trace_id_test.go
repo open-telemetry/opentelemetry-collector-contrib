@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -31,8 +30,7 @@ func Test_traceID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := traceID(makeTraceIDGetter(tt.bytes))
-			assert.NoError(t, err)
+			exprFunc := traceID(makeTraceIDGetter(tt.bytes))
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
@@ -60,8 +58,7 @@ func Test_traceID_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := traceID(makeTraceIDGetter(tt.bytes))
-			require.NoError(t, err)
+			exprFunc := traceID(makeTraceIDGetter(tt.bytes))
 
 			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
@@ -79,6 +76,6 @@ type traceIDGetter struct {
 	bytes []byte
 }
 
-func (t *traceIDGetter) Get(ctx context.Context, tCtx any) ([]byte, error) {
+func (t *traceIDGetter) Get(_ context.Context, _ any) ([]byte, error) {
 	return t.bytes, nil
 }

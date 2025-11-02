@@ -29,7 +29,7 @@ func createTraceIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 		return nil, errors.New("TraceIDFactory args must be of type *TraceIDArguments[K]")
 	}
 
-	return traceID[K](args.Target)
+	return traceID[K](args.Target), nil
 }
 
 var (
@@ -37,7 +37,7 @@ var (
 	errTraceIDHexDecode     = errors.New("invalid trace id hex")
 )
 
-func traceID[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error) {
+func traceID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
 	const traceIDLen = len(pcommon.TraceID{})
 	const traceIDHexLen = traceIDLen * 2
 
@@ -47,19 +47,20 @@ func traceID[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error
 			return nil, err
 		}
 		var idArr pcommon.TraceID
-		// Handle 16 bytes (binary encoded trace ID)
-		if len(b) == traceIDLen {
+		switch len(b) {
+		case traceIDLen:
+			// Handle 16 bytes (binary encoded trace ID)
 			copy(idArr[:], b)
+		case traceIDHexLen:
 			// Handle 32 bytes (string hex encoded trace ID)
-		} else if len(b) == traceIDHexLen {
 			_, err := hex.Decode(idArr[:], b)
 			if err != nil {
-				return nil, fmt.Errorf("%w: %v", errTraceIDHexDecode, err)
+				return nil, fmt.Errorf("%w: %w", errTraceIDHexDecode, err)
 			}
 			return idArr, nil
-		} else {
+		default:
 			return nil, fmt.Errorf("%w: expected %d or %d bytes, got %d", errTraceIDInvalidLength, traceIDLen, traceIDHexLen, len(b))
 		}
-		return pcommon.TraceID(idArr), nil
-	}, nil
+		return idArr, nil
+	}
 }
