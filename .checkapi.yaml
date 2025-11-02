@@ -6,6 +6,7 @@ ignored_paths:
   - extension/observer
   - extension/encoding
   - extension/opampcustommessages
+  - extension/storage
   - pkg/batchperresourceattr
   - pkg/batchpersignal
   - pkg/core/xidutils
@@ -67,6 +68,13 @@ allowed_functions:
     classes:
       - scraper
     return_types: [scraper.Factory]
+  # Allow any functions under pkg
+  - name: "*"
+    classes:
+      - pkg
+  # Allow no functions under cmd
+  - classes:
+      - cmd
 
 ignored_functions:
   - ^Test.*
