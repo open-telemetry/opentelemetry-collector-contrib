@@ -4,6 +4,7 @@
 package connection
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,11 +48,11 @@ func TestClient_DetectOSType(t *testing.T) {
 			// Test OS detection logic directly
 			var result string
 			switch {
-			case contains(tt.output, "Cisco IOS XE"):
+			case strings.Contains(tt.output, "Cisco IOS XE"):
 				result = "IOS XE"
-			case contains(tt.output, "Cisco Nexus") || contains(tt.output, "NX-OS"):
+			case strings.Contains(tt.output, "Cisco Nexus") || strings.Contains(tt.output, "NX-OS"):
 				result = "NX-OS"
-			case contains(tt.output, "Cisco IOS Software"):
+			case strings.Contains(tt.output, "Cisco IOS Software"):
 				result = "IOS"
 			default:
 				result = "IOS XE"
@@ -60,17 +61,4 @@ func TestClient_DetectOSType(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && findSubstring(s, substr))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

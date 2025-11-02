@@ -242,6 +242,13 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `replace_all_matches(attributes, Concat(["*","/","*"],""), "test")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
+				tCtx.GetLogRecord().Attributes().PutStr("http.url", "test")
+			},
+		},
+		{
 			statement: `replace_all_patterns(attributes, "key", "^http", "test")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().Remove("http.method")
@@ -260,6 +267,19 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `replace_match(attributes["http.path"], Concat(["*","/","*"],""), "test")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
+			},
+		},
+		{
+			statement: `replace_all_patterns(attributes, "value", Concat(["/","health"],""), "@")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@")
+				tCtx.GetLogRecord().Attributes().PutStr("http.url", "http://localhost@")
+			},
+		},
+		{
 			statement: `replace_match(attributes["http.path"], "*/*", "test")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
@@ -269,6 +289,12 @@ func Test_e2e_editors(t *testing.T) {
 			statement: `replace_pattern(attributes["http.path"], "/", "@")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@health")
+			},
+		},
+		{
+			statement: `replace_pattern(attributes["http.path"], Concat(["/","health"],""), "@")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@")
 			},
 		},
 		{
@@ -486,9 +512,21 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["decoded_base64"], Decode("cGFzcw==", attributes["encoding"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("decoded_base64", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Concat(["A","B"], attributes["val"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "Aval2B")
 			},
 		},
 		{
@@ -613,7 +651,26 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ExtractPatterns("aa123bb", Concat(["(?P", "<numbers>", "\\d+)"], "")))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("numbers", "123")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", "%{ELB_URI}", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("url.scheme", "http")
+				m.PutStr("url.username", "user")
+				m.PutStr("url.domain", "example.com")
+				m.PutInt("url.port", 80)
+				m.PutStr("url.path", "/path")
+				m.PutStr("url.query", "query=string")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", Concat(["%{", "ELB_URI", "}"], ""), true))`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutStr("url.scheme", "http")
@@ -972,6 +1029,15 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Sort(Split(attributes["flags"], attributes["split_delimiter"]), "desc"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				s.AppendEmpty().SetStr("C")
+				s.AppendEmpty().SetStr("B")
+				s.AppendEmpty().SetStr("A")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Sort([true, false, false]))`,
 			want: func(tCtx ottllog.TransformContext) {
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
@@ -1292,6 +1358,12 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "d447b1ea40e6988b")
 			},
 		},
+		{
+			statement: `set(attributes["test"], XXH128("hello world"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "df8d09e93f874900a99b8775cc15b6c7")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1357,8 +1429,22 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "Using HasPrefix with dynamic prefix",
+			statement: `set(attributes["test"], "pass") where HasPrefix(body, attributes["dynamicprefix"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			name:      "Using HasSuffix",
 			statement: `set(attributes["test"], "pass") where HasSuffix(body, "tionA")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "Using HasSuffix with dynamic suffix",
+			statement: `set(attributes["test"], "pass") where HasSuffix(body, attributes["dynamicsuffix"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -1373,6 +1459,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "where clause without comparator",
 			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause without comparator dynamic pattern",
+			statement: `set(attributes["test"], "pass") where IsMatch(body, Concat(["operation", "[AC]"], ""))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -1813,7 +1906,11 @@ func constructLogTransformContext() ottllog.TransformContext {
 	logRecord.SetSeverityNumber(1)
 	logRecord.SetTraceID(traceID)
 	logRecord.SetSpanID(spanID)
+	logRecord.Attributes().PutStr("encoding", "base64")
 	logRecord.Attributes().PutStr("http.method", "get")
+	logRecord.Attributes().PutStr("split_delimiter", "|")
+	logRecord.Attributes().PutStr("dynamicprefix", "operation")
+	logRecord.Attributes().PutStr("dynamicsuffix", "tionA")
 	logRecord.Attributes().PutStr("http.path", "/health")
 	logRecord.Attributes().PutStr("http.url", "http://localhost/health")
 	logRecord.Attributes().PutStr("flags", "A|B|C")

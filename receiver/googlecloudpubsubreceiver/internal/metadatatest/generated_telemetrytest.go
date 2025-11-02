@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualReceiverGooglecloudpubsubEncodingError(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver.googlecloudpubsub.encoding_error",
-		Description: "Number of times a message couldn't be decoded by the configured encoder [development]",
+		Description: "Number of times a message couldn't be decoded by the configured encoder [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualReceiverGooglecloudpubsubEncodingError(t *testing.T, tt *compone
 func AssertEqualReceiverGooglecloudpubsubStreamRestarts(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver.googlecloudpubsub.stream_restarts",
-		Description: "Number of times the stream (re)starts due to a Pub/Sub servers connection close [development]",
+		Description: "Number of times the stream (re)starts due to a Pub/Sub servers connection close [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
