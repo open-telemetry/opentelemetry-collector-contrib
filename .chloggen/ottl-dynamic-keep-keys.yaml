@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support dynamic keys in `keep_keys` and `keep_matching_keys` functions, allowing the keys to be specified at runtime.
+note: Support paths and expressions as keys in `keep_keys` and `keep_matching_keys`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43555]
