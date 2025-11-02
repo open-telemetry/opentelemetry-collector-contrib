@@ -1,0 +1,67 @@
+default:
+all_set:
+  metrics:
+    system.network.errors:
+      enabled: true
+    system.network.interface.status:
+      enabled: true
+    system.network.io:
+      enabled: true
+    system.network.packet.count:
+      enabled: true
+    system.network.packet.dropped:
+      enabled: true
+  resource_attributes:
+    host.ip:
+      enabled: true
+    hw.type:
+      enabled: true
+    os.name:
+      enabled: true
+none_set:
+  metrics:
+    system.network.errors:
+      enabled: false
+    system.network.interface.status:
+      enabled: false
+    system.network.io:
+      enabled: false
+    system.network.packet.count:
+      enabled: false
+    system.network.packet.dropped:
+      enabled: false
+  resource_attributes:
+    host.ip:
+      enabled: false
+    hw.type:
+      enabled: false
+    os.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    host.ip:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    hw.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    os.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    host.ip:
+      enabled: true
+      metrics_exclude:
+        - strict: "host.ip-val"
+    hw.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "hw.type-val"
+    os.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "os.name-val"
