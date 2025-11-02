@@ -64,7 +64,7 @@ type tailSamplingSpanProcessor struct {
 	host component.Host
 
 	newPolicyChan chan newPolicyCmd
-	workChan      chan tracesCmd
+	workChan      chan []traceBatch
 	doneChan      chan struct{}
 
 	// tickChan triggers ticks and responds on the provided channel when the tick is complete.
@@ -108,7 +108,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
 		// Similar to the id batcher, allow a batch per CPU to be buffered before blocking ConsumeTraces.
-		workChan: make(chan tracesCmd, runtime.NumCPU()),
+		workChan: make(chan []traceBatch, runtime.NumCPU()),
 		// We need to buffer one new policy command so that external callers can
 		// queue up new policies without blocking on the ticker.
 		newPolicyChan: make(chan newPolicyCmd, 1),
@@ -162,17 +162,21 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 // ConsumeTraces is required by the processor.Traces interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	for _, rss := range td.ResourceSpans().All() {
-		batch := tracesCmd{
-			rss: rss,
-		}
+		// First group all spans by trace.
 		idToSpansAndScope := groupSpansByTraceKey(rss)
+
+		// Then, create a new ptrace.ResourceSpans for each trace copying all
+		// data. Paying this cost upfront allows the inner loop of the TSP to
+		// be more efficient on its single goroutine.
+		batch := []traceBatch{}
 		for traceID, spans := range idToSpansAndScope {
-			batch.traces = append(batch.traces, traceInfo{
-				id:    traceID,
-				spans: spans,
+			batch = append(batch, traceBatch{
+				id:        traceID,
+				rss:       newResourceSpanFromSpanAndScopes(rss, spans),
+				spanCount: int64(len(spans)),
 			})
 		}
-		if len(batch.traces) > 0 {
+		if len(batch) > 0 {
 			tsp.workChan <- batch
 		}
 	}
@@ -234,14 +238,11 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 	return slices.Concat(dropPolicies, policies), nil
 }
 
-type tracesCmd struct {
-	rss    ptrace.ResourceSpans
-	traces []traceInfo
-}
-
-type traceInfo struct {
-	id    pcommon.TraceID
-	spans []spanAndScope
+// traceBatch contains all spans from a single batch for a single trace.
+type traceBatch struct {
+	id        pcommon.TraceID
+	rss       ptrace.ResourceSpans
+	spanCount int64
 }
 
 type newPolicyCmd struct {
@@ -400,12 +401,12 @@ func (tsp *tailSamplingSpanProcessor) loop() {
 	}
 }
 
-func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <-chan tracesCmd) bool {
+func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <-chan []traceBatch) bool {
 	select {
 	case <-tsp.ctx.Done():
 		// If the context is done then we can't send anything anymore so just exit.
 		return false
-	case td, ok := <-workChan:
+	case batch, ok := <-workChan:
 		// No more traces to process as we are shutting down. Clear the queue and make decisions for all batches based on the current data.
 		if !ok {
 			// Stop the batcher so that we can read all batches without creating new ones.
@@ -419,9 +420,9 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 			return false
 		}
 
-		for _, trace := range td.traces {
+		for _, trace := range batch {
 			// Short circuit if the trace has already been sampled or dropped.
-			if tsp.processCachedTrace(trace.id, td.rss, trace.spans) {
+			if tsp.processCachedTrace(trace.id, trace.rss, trace.spanCount) {
 				continue
 			}
 
@@ -430,7 +431,7 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 				tsp.waitForSpace(tickChan)
 			}
 
-			tsp.processTrace(td.rss, trace.id, trace.spans)
+			tsp.processTrace(trace.id, trace.rss, trace.spanCount)
 		}
 	case cmd := <-tsp.newPolicyChan:
 		tsp.policies = cmd.policies
@@ -447,24 +448,24 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 // processCachedTrace checks if a given trace has already been sampled (or
 // dropped) and forwards the span appropriately. It returns true if the trace
 // was cached and false if regular processing must be done.
-func (tsp *tailSamplingSpanProcessor) processCachedTrace(traceID pcommon.TraceID, rss ptrace.ResourceSpans, spans []spanAndScope) bool {
+func (tsp *tailSamplingSpanProcessor) processCachedTrace(traceID pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64) bool {
 	if _, ok := tsp.sampledIDCache.Get(traceID); ok {
 		tsp.logger.Debug("Trace ID is in the sampled cache", zap.Stringer("id", traceID))
 		traceTd := ptrace.NewTraces()
-		appendToTraces(traceTd, rss, spans)
+		appendToTraces(traceTd, rss)
 		if tsp.recordPolicy {
 			sampling.SetBoolAttrOnScopeSpans(traceTd, "tailsampling.cached_decision", true)
 		}
 		tsp.forwardSpans(tsp.ctx, traceTd)
 		tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
-			Add(tsp.ctx, int64(len(spans)), attrSampledTrue)
+			Add(tsp.ctx, spanCount, attrSampledTrue)
 		return true
 	}
 
 	if _, ok := tsp.nonSampledIDCache.Get(traceID); ok {
 		tsp.logger.Debug("Trace ID is in the non-sampled cache", zap.Stringer("id", traceID))
 		tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
-			Add(tsp.ctx, int64(len(spans)), attrSampledFalse)
+			Add(tsp.ctx, spanCount, attrSampledFalse)
 		return true
 	}
 
@@ -651,7 +652,7 @@ func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceI
 	return idToSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) processTrace(resourceSpans ptrace.ResourceSpans, id pcommon.TraceID, spans []spanAndScope) {
+func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64) {
 	currTime := time.Now()
 
 	var newTraceIDs int64
@@ -660,13 +661,11 @@ func (tsp *tailSamplingSpanProcessor) processTrace(resourceSpans ptrace.Resource
 		tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
 	}()
 
-	lenSpans := int64(len(spans))
-
 	actualData, ok := tsp.idToTrace[id]
 	if !ok {
 		actualData = &samplingpolicy.TraceData{
 			ArrivalTime:     currTime,
-			SpanCount:       lenSpans,
+			SpanCount:       spanCount,
 			ReceivedBatches: ptrace.NewTraces(),
 		}
 
@@ -679,7 +678,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(resourceSpans ptrace.Resource
 			tsp.deleteTraceQueue.PushBack(id)
 		}
 	} else {
-		actualData.SpanCount += lenSpans
+		actualData.SpanCount += spanCount
 	}
 
 	finalDecision := actualData.FinalDecision
@@ -687,14 +686,14 @@ func (tsp *tailSamplingSpanProcessor) processTrace(resourceSpans ptrace.Resource
 	if finalDecision == samplingpolicy.Unspecified {
 		// If the final decision hasn't been made, add the new spans to the
 		// existing trace.
-		appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
+		appendToTraces(actualData.ReceivedBatches, rss)
 		return
 	}
 
 	switch finalDecision {
 	case samplingpolicy.Sampled:
 		traceTd := ptrace.NewTraces()
-		appendToTraces(traceTd, resourceSpans, spans)
+		appendToTraces(traceTd, rss)
 		tsp.forwardSpans(tsp.ctx, traceTd)
 	case samplingpolicy.NotSampled:
 		tsp.releaseNotSampledTrace(id)
@@ -775,8 +774,13 @@ func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID)
 	}
 }
 
-func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) {
+func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans) {
 	rs := dest.ResourceSpans().AppendEmpty()
+	rss.MoveTo(rs)
+}
+
+func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) ptrace.ResourceSpans {
+	rs := ptrace.NewResourceSpans()
 	rss.Resource().CopyTo(rs.Resource())
 
 	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
@@ -794,4 +798,5 @@ func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spanAndScopes 
 			spanAndScope.span.CopyTo(sp)
 		}
 	}
+	return rs
 }
