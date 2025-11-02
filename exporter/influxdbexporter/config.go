@@ -74,6 +74,9 @@ type Config struct {
 	PayloadMaxLines int `mapstructure:"payload_max_lines"`
 	// PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
 	PayloadMaxBytes int `mapstructure:"payload_max_bytes"`
+
+	// Precision is the timestamp precision for writing data to InfluxDB.
+	Precision string `mapstructure:"precision"`
 }
 
 func (cfg *Config) Validate() error {
@@ -103,6 +106,20 @@ func (cfg *Config) Validate() error {
 	if len(duplicateLogRecordDimensions) > 0 {
 		return fmt.Errorf("duplicate log record dimension(s) configured: %s",
 			strings.Join(maps.Keys(duplicateLogRecordDimensions), ","))
+	}
+
+	// Validate precision
+	validPrecisions := []string{"ns", "ms", "s", "us"}
+	validPrecision := false
+	for _, p := range validPrecisions {
+		if cfg.Precision == p {
+			validPrecision = true
+			break
+		}
+	}
+	if !validPrecision {
+		return fmt.Errorf("invalid precision %q, must be one of: %s",
+			cfg.Precision, strings.Join(validPrecisions, ", "))
 	}
 
 	return nil
