@@ -1,0 +1,69 @@
+type: streamingaggregation
+
+status:
+  class: processor
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [open-telemetry/collector-contrib-approvers]
+
+resource_attributes:
+
+attributes:
+
+telemetry:
+  metrics:
+    streamingaggregation_metrics_received:
+      enabled: true
+      description: Total number of metrics received by the processor
+      unit: "{metrics}"
+      gauge:
+        value_type: int
+
+    streamingaggregation_metrics_processed:
+      enabled: true
+      description: Total number of metrics successfully processed
+      unit: "{metrics}"
+      gauge:
+        value_type: int
+
+    streamingaggregation_metrics_dropped:
+      enabled: true
+      description: Total number of metrics dropped due to backpressure
+      unit: "{metrics}"
+      gauge:
+        value_type: int
+
+    streamingaggregation_memory_usage_bytes:
+      enabled: true
+      description: Current memory usage of the processor
+      unit: "By"
+      gauge:
+        value_type: int
+
+    streamingaggregation_series_active:
+      enabled: true
+      description: Number of active metric series being tracked
+      unit: "{series}"
+      gauge:
+        value_type: int
+
+    streamingaggregation_windows_exported:
+      enabled: true
+      description: Total number of aggregation windows exported
+      unit: "{windows}"
+      gauge:
+        value_type: int
+
+    streamingaggregation_aggregation_latency:
+      enabled: true
+      description: Latency of aggregation operations
+      unit: "s"
+      histogram:
+        value_type: double
+        bucket_boundaries:
+          [0.000001, 0.000005, 0.00001, 0.00005, 0.0001, 0.0005, 0.001, 0.005, 0.01]
+
+tests:
+  config:

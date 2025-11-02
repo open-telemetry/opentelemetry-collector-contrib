@@ -1,0 +1,18 @@
+# Use the official OpenTelemetry Collector Contrib image as base
+FROM otel/opentelemetry-collector-contrib:0.96.0
+
+# Switch to root to install additional components
+USER root
+
+# Copy the custom processor code (for reference, not actually used in this approach)
+COPY processor/streamingaggregationprocessor /processor
+
+# Note: In a real scenario, you would need to build a custom collector with your processor
+# For demo purposes, we'll simulate the aggregation using existing processors
+
+# Switch back to non-root user
+USER 10001
+
+# The config will be mounted at runtime
+ENTRYPOINT ["/otelcol-contrib"]
+CMD ["--config", "/etc/otel-config.yaml"]

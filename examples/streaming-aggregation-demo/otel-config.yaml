@@ -1,0 +1,132 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4318 # Port for aggregated metrics
+
+processors:
+  streamingaggregation:
+    window_size: 30s # Aggregate over 30-second windows
+    max_memory_mb: 100 # Memory limit
+    stale_data_threshold: 2m # Reset cumulative state after 2 minutes of no data
+    metrics:
+      - match: "temperature_celsius"
+        aggregate_type: "average"
+        labels:
+          type: "keep"
+          names: ["datacenter", "location"]
+
+      # Counter aggregation examples
+      # - match: "http_requests_total"
+      #   aggregate_type: "sum"  # Total requests across all instances
+      #   labels:
+      #     type: "remove"
+      #     names: ["instance"]  # Remove instance-specific labels, keep method/status/endpoint
+
+      # Uncomment to test other counter strategies:
+      # - match: "http_requests_total"
+      #   aggregate_type: "average" # Average requests per instance
+      #   labels:
+      #     type: "keep"
+      #     names: ["method", "status_code"] # Keep only HTTP semantics
+
+      - match: "^http_requests_total$" # Use explicit regex anchors
+        aggregate_type: "rate" # Requests per second (exported as gauge)
+        labels:
+          type: "remove"
+          names: ["instance", "endpoint"] # Service-level rate by method/status
+
+      # UpDownCounter aggregation examples
+      # - match: "^active_connections$"
+      #   aggregate_type: "sum"  # Total connections across all instances
+      #   labels:
+      #     type: "remove"
+      #     names: ["instance"]  # Service-level total by service/region/protocol
+
+      # Uncomment to test other UpDownCounter strategies:
+      # - match: "^active_connections$"
+      #   aggregate_type: "average" # Average connections per instance
+      #   labels:
+      #     type: "keep"
+      #     names: ["service", "region"] # Per service-region average
+
+      - match: "^active_connections$"
+        aggregate_type: "max" # Peak connections (capacity monitoring)
+        labels:
+          type: "remove"
+          names: ["instance", "protocol"] # Peak per service-region
+
+      # Histogram aggregation examples
+      # - match: "^http_response_time_ms$"
+      #   aggregate_type: "p95" # 95th percentile response time (exported as gauge)
+      #   labels:
+      #     type: "remove"
+      #     names: ["instance"] # Per-endpoint P95 across all instances
+
+      # Uncomment to test other histogram strategies:
+      # - match: "^http_response_time_ms$"
+      #   aggregate_type: "sum" # Sum histogram buckets (exported as histogram)
+      #   labels:
+      #     type: "keep"
+      #     names: ["endpoint"] # Keep only endpoint, remove instance and other labels
+
+      - match: "^http_response_time_ms$"
+        aggregate_type: "sum" # Sum histogram buckets
+        labels:
+          type: "drop_all" # Global histogram across all endpoints and instances
+
+      # Enhanced Exponential Histogram Features - Testing Implementation
+      # Enhanced exponential histogram with sum aggregation and remove method+status_code
+      - match: "^request_duration_seconds$"
+        aggregate_type: "sum"
+        labels:
+          type: "remove"
+          names: ["method", "status_code"] # Remove method and status_code, keep endpoint
+
+  metricstransform:
+    transforms:
+      - include: ".*"
+        match_type: regexp
+        action: update
+        new_name: "aggregated_$$0"
+
+  # Batch processor for efficiency (matches native-histogram-otel)
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+    send_batch_max_size: 200
+
+exporters:
+  # Use prometheusremotewrite for proper native histogram support
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
+    tls:
+      insecure: true
+    resource_to_telemetry_conversion:
+      enabled: true
+    timeout: 60s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 120s
+    add_metric_suffixes: false
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [streamingaggregation, metricstransform, batch]
+      exporters: [prometheusremotewrite]
+
+  telemetry:
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
