@@ -8,46 +8,19 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 )
 
 // Config defines configuration for Cisco OS receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Device                         DeviceConfig                        `mapstructure:"device"`
+	Device                         connection.DeviceConfig             `mapstructure:"device"`
 	Scrapers                       map[component.Type]component.Config `mapstructure:"-"`
-}
-
-// DeviceConfig represents configuration for a single Cisco device using semantic conventions
-type DeviceConfig struct {
-	Device DeviceInfo `mapstructure:"device"`
-	Auth   AuthConfig `mapstructure:"auth"`
-}
-
-// DeviceInfo follows semantic conventions for device identification
-type DeviceInfo struct {
-	// DO NOT USE unkeyed struct initialization
-	_ struct{} `mapstructure:"-"`
-
-	Host HostInfo `mapstructure:"host"`
-}
-
-// HostInfo contains host-specific information
-type HostInfo struct {
-	Name string `mapstructure:"name"`
-	IP   string `mapstructure:"ip"`
-	Port int    `mapstructure:"port"`
-}
-
-// AuthConfig represents authentication configuration
-type AuthConfig struct {
-	Username string              `mapstructure:"username"`
-	Password configopaque.String `mapstructure:"password"`
-	KeyFile  string              `mapstructure:"key_file"`
 }
 
 var (
