@@ -289,7 +289,7 @@ func newIngester(cfg *Config, logger *zap.Logger) *ingester {
 	return i
 }
 
-func NewMemoryManager(cfg MemoryConfig) *MemoryManager {
+func newMemoryManager(cfg MemoryConfig) *MemoryManager {
 	mm := &MemoryManager{
 		cfg:            cfg,
 		lastScaleCheck: time.Now(),
