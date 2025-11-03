@@ -377,9 +377,9 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | user_agent                | `user_agent.original`                                         |
 | domain_name               | `url.domain`                                                  |
 | target:port               | `destination.address`, `destination.port`                     |
-| request_processing_time   | `aws.alb.request_processing_time_ms`                          |
-| target_processing_time    | `aws.elb.target_processing_time_ms`                           |
-| response_processing_time  | `aws.elb.response_processing_time_ms`                         |
+| request_processing_time   | `aws.alb.request_processing_time`                             |
+| target_processing_time    | `aws.elb.target_processing_time`                              |
+| response_processing_time  | `aws.elb.response_processing_time`                            |
 | target_status_code        | `aws.elb.backend.status.code`                                 |
 | target_group_arn          | `aws.elb.target_group_arn`                                    |
 | "trace_id"                | `aws.elb.aws_trace_id`                                        |
