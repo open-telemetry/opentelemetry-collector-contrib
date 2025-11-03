@@ -215,4 +215,16 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 		}
 	})
+
+	t.Run("effectiveLookBackTime", func(t *testing.T) {
+		factory := NewFactory()
+		config := factory.CreateDefaultConfig().(*Config)
+
+		config.ControllerConfig.CollectionInterval = 10 * time.Second
+		assert.Equal(t, 2*10*time.Second, config.EffectiveLookbackTime(), "By default the 'EffectiveLookbackTime' value should should be 2 * 'CollectionInterval'")
+
+		config.TopQueryCollection.LookbackTime = 60 * time.Second
+		assert.Equal(t, 60*time.Second, config.EffectiveLookbackTime(), "'EffectiveLookbackTime' should return the user provided 'LookbackTime' if any.")
+
+	})
 }

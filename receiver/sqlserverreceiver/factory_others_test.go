@@ -95,8 +95,6 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.NotEmpty(t, scrapers)
 
 				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
-				require.Equal(t, 2*sqlScrapers[0].config.ControllerConfig.CollectionInterval.Seconds(), sqlScrapers[0].config.LookbackTime.Seconds(),
-					"By default the value of 'LookbackTime' should be twice the effective value of 'CollectionInterval'")
 				require.NotEmpty(t, sqlScrapers)
 
 				q := getSQLServerQueryTextAndPlanQuery()

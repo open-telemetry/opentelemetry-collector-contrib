@@ -154,10 +154,6 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		return nil
 	}
 
-	if cfg.LookbackTime.Seconds() <= 0 {
-		cfg.LookbackTime = 2 * cfg.ControllerConfig.CollectionInterval
-	}
-
 	queries := setupLogQueries(cfg)
 
 	if len(queries) == 0 {
