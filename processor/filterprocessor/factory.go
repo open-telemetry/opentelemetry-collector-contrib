@@ -48,7 +48,7 @@ type filterProcessorFactory struct {
 // FactoryOption applies changes to filterProcessorFactory.
 type FactoryOption func(factory *filterProcessorFactory)
 
-// WithResourceFunctions will override the default OTTL datapoint context functions with the provided resourceFunctions in resulting processor.
+// WithResourceFunctions will override the default OTTL resource context functions with the provided resourceFunctions in resulting processor.
 // Subsequent uses of WithResourceFunctions will merge the provided resourceFunctions with the previously registered functions.
 func WithResourceFunctions(resourceFunctions []ottl.Factory[ottlresource.TransformContext]) FactoryOption {
 	return func(factory *filterProcessorFactory) {
