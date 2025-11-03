@@ -7,9 +7,9 @@ const (
 	AttributeELBStatusCode             = "aws.elb.status.code"              // int
 	AttributeELBBackendStatusCode      = "aws.elb.backend.status.code"      // int
 	AttributeTLSListenerResourceID     = "aws.elb.tls.listener.resource_id" // string
-	AttributeELBRequestProcessingTime  = "aws.elb.request_processing_time"  // int
-	AttributeELBResponseProcessingTime = "aws.elb.response_processing_time" // int
-	AttributeELBTargetProcessingTime   = "aws.elb.target_processing_time"   // int
+	AttributeELBRequestProcessingTime  = "aws.elb.request_processing_time"  // float
+	AttributeELBResponseProcessingTime = "aws.elb.response_processing_time" // float
+	AttributeELBTargetProcessingTime   = "aws.elb.target_processing_time"   // float
 	AttributeELBTargetGroupARN         = "aws.elb.target_group_arn"         // string
 	AttributeELBChosenCertARN          = "aws.elb.chosen_cert_arn"          // string
 	AttributeELBActionsExecuted        = "aws.elb.actions_executed"         // string
