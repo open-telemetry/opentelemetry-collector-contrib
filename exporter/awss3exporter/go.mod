@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.9
 	github.com/google/uuid v1.6.0
 	github.com/itchyny/timefmt-go v0.1.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.138.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.139.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v1.45.0
