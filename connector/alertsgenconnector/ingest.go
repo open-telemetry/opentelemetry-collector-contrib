@@ -274,7 +274,7 @@ func newIngesterWithLogger(cfg *Config, logger *zap.Logger) *ingester {
 	return NewIngester(cfg, logger)
 }
 
-func NewIngester(cfg *Config, logger *zap.Logger) *ingester {
+func newIngester(cfg *Config, logger *zap.Logger) *ingester {
 	i := &ingester{cfg: cfg, logger: logger}
 	i.memMgr = NewMemoryManager(cfg.Memory)
 	if cfg.Memory.UseRingBuffers {
