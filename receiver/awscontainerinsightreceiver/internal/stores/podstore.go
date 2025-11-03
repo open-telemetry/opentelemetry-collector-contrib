@@ -322,24 +322,26 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 			cpuRequest += tmpCPUReq
 			tmpMemReq, _ := getResourceSettingForPod(&pod, p.nodeInfo.getMemCapacity(), memoryKey, getRequestForContainer)
 			memRequest += tmpMemReq
-			if coresLimit, coresReq, hasNeuron := p.getNeuronCoresFromPod(&pod); hasNeuron {
-				neuroncoreRequest += coresReq
-				if pod.Status.Phase == corev1.PodRunning {
-					neuroncoreUsageTotal += coresLimit
+			if p.includeEnhancedMetrics && p.enableAcceleratedComputeMetrics {
+				if coresLimit, coresReq, hasNeuron := p.getNeuronCoresFromPod(&pod); hasNeuron {
+					neuroncoreRequest += coresReq
+					if pod.Status.Phase == corev1.PodRunning {
+						neuroncoreUsageTotal += coresLimit
+					}
 				}
-			}
-			if tmpGpuLimit, ok := getResourceSettingForPod(&pod, 0, gpuKey, getLimitForContainer); ok {
-				tmpGpuReq, _ := getResourceSettingForPod(&pod, 0, gpuKey, getRequestForContainer)
-				gpuRequest += tmpGpuReq
-				if pod.Status.Phase == corev1.PodRunning {
-					gpuUsageTotal += tmpGpuLimit
+				if tmpGpuLimit, ok := getResourceSettingForPod(&pod, 0, gpuKey, getLimitForContainer); ok {
+					tmpGpuReq, _ := getResourceSettingForPod(&pod, 0, gpuKey, getRequestForContainer)
+					gpuRequest += tmpGpuReq
+					if pod.Status.Phase == corev1.PodRunning {
+						gpuUsageTotal += tmpGpuLimit
+					}
 				}
-			}
-			if tmpEfaLimit, ok := getResourceSettingForPod(&pod, 0, efaKey, getLimitForContainer); ok {
-				tmpEfaReq, _ := getResourceSettingForPod(&pod, 0, efaKey, getRequestForContainer)
-				efaRequest += tmpEfaReq
-				if pod.Status.Phase == corev1.PodRunning {
-					efaUsageTotal += tmpEfaLimit
+				if tmpEfaLimit, ok := getResourceSettingForPod(&pod, 0, efaKey, getLimitForContainer); ok {
+					tmpEfaReq, _ := getResourceSettingForPod(&pod, 0, efaKey, getRequestForContainer)
+					efaRequest += tmpEfaReq
+					if pod.Status.Phase == corev1.PodRunning {
+						efaUsageTotal += tmpEfaLimit
+					}
 				}
 			}
 		}

@@ -310,10 +310,12 @@ func getPodStoreWithNeuronCapacity() *PodStore {
 	nodeInfo.setCPUCapacity(4000)
 	nodeInfo.setMemCapacity(400 * 1024 * 1024)
 	return &PodStore{
-		cache:            newMapWithExpiry(time.Minute),
-		nodeInfo:         nodeInfo,
-		prevMeasurements: sync.Map{},
-		logger:           zap.NewNop(),
+		cache:                           newMapWithExpiry(time.Minute),
+		nodeInfo:                        nodeInfo,
+		prevMeasurements:                sync.Map{},
+		logger:                          zap.NewNop(),
+		includeEnhancedMetrics:          true,
+		enableAcceleratedComputeMetrics: true,
 	}
 }
 
@@ -1093,6 +1095,8 @@ func TestPodStore_decorateNode(t *testing.T) {
 
 	podStore.includeEnhancedMetrics = true
 	podStore.enableAcceleratedComputeMetrics = true
+	// Need to refresh again after setting the flags so GPU resources are processed
+	podStore.refreshInternal(time.Now(), podList)
 	podStore.decorateNode(metric)
 
 	assert.Equal(t, uint64(1), metric.GetField("node_gpu_request").(uint64))
@@ -1359,10 +1363,12 @@ func getPodStoreWithEfaCapacity() *PodStore {
 	nodeInfo.setCPUCapacity(4000)
 	nodeInfo.setMemCapacity(400 * 1024 * 1024)
 	return &PodStore{
-		cache:            newMapWithExpiry(time.Minute),
-		nodeInfo:         nodeInfo,
-		prevMeasurements: sync.Map{},
-		logger:           zap.NewNop(),
+		cache:                           newMapWithExpiry(time.Minute),
+		nodeInfo:                        nodeInfo,
+		prevMeasurements:                sync.Map{},
+		logger:                          zap.NewNop(),
+		includeEnhancedMetrics:          true,
+		enableAcceleratedComputeMetrics: true,
 	}
 }
 

@@ -96,6 +96,9 @@ func (n *nodeInfo) getNodeStats() nodeStats {
 }
 
 func (n *nodeInfo) getNodeStatusCapacityPods() (uint64, bool) {
+	if n.provider == nil {
+		return 0, false
+	}
 	capacityResources, ok := n.provider.NodeToCapacityMap()[n.nodeName]
 	if !ok {
 		return 0, false
@@ -105,6 +108,9 @@ func (n *nodeInfo) getNodeStatusCapacityPods() (uint64, bool) {
 }
 
 func (n *nodeInfo) getNodeStatusAllocatablePods() (uint64, bool) {
+	if n.provider == nil {
+		return 0, false
+	}
 	allocatableResources, ok := n.provider.NodeToAllocatableMap()[n.nodeName]
 	if !ok {
 		return 0, false
@@ -114,6 +120,9 @@ func (n *nodeInfo) getNodeStatusAllocatablePods() (uint64, bool) {
 }
 
 func (n *nodeInfo) getNodeStatusCapacityGPUs() (uint64, bool) {
+	if n.provider == nil {
+		return 0, false
+	}
 	capacityResources, ok := n.provider.NodeToCapacityMap()[n.nodeName]
 	if !ok {
 		return 0, false
@@ -123,6 +132,9 @@ func (n *nodeInfo) getNodeStatusCapacityGPUs() (uint64, bool) {
 }
 
 func (n *nodeInfo) getNodeStatusCapacityEfas() (uint64, bool) {
+	if n.provider == nil {
+		return 0, false
+	}
 	capacityResources, ok := n.provider.NodeToCapacityMap()[n.nodeName]
 	if !ok {
 		return 0, false
@@ -132,6 +144,9 @@ func (n *nodeInfo) getNodeStatusCapacityEfas() (uint64, bool) {
 }
 
 func (n *nodeInfo) getNeuronResourceCapacity(resourceKey v1.ResourceName) (uint64, bool) {
+	if n.provider == nil {
+		return 0, false
+	}
 	capacityResources, ok := n.provider.NodeToCapacityMap()[n.nodeName]
 	if !ok {
 		return 0, false
@@ -184,6 +199,9 @@ func (n *nodeInfo) getNodeStatusCapacityNeuronCores() (uint64, bool) {
 }
 
 func (n *nodeInfo) getNodeStatusCondition(conditionType v1.NodeConditionType) (uint64, bool) {
+	if n.provider == nil {
+		return 0, false
+	}
 	if nodeConditions, ok := n.provider.NodeToConditionsMap()[n.nodeName]; ok {
 		if conditionStatus, ok := nodeConditions[conditionType]; ok {
 			if conditionStatus == v1.ConditionTrue {
@@ -196,6 +214,9 @@ func (n *nodeInfo) getNodeStatusCondition(conditionType v1.NodeConditionType) (u
 }
 
 func (n *nodeInfo) getNodeConditionUnknown() (uint64, bool) {
+	if n.provider == nil {
+		return 0, false
+	}
 	if nodeConditions, ok := n.provider.NodeToConditionsMap()[n.nodeName]; ok {
 		for _, conditionStatus := range nodeConditions {
 			if conditionStatus == v1.ConditionUnknown {
