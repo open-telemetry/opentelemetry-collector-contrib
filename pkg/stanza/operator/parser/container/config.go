@@ -40,6 +40,7 @@ func NewConfigWithID(operatorID string) *Config {
 		Format:                  "",
 		AddMetadataFromFilePath: true,
 		MaxLogSize:              0,
+		MaxBatchSize:            100,
 	}
 }
 
@@ -50,6 +51,7 @@ type Config struct {
 	Format                  string          `mapstructure:"format"`
 	AddMetadataFromFilePath bool            `mapstructure:"add_metadata_from_filepath"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	MaxBatchSize            uint            `mapstructure:"max_batch_size,omitempty"`
 }
 
 // Build will build a Container parser operator.
@@ -80,7 +82,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		criConsumers:            &wg,
 	}
 
-	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries)
+	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries, helper.WithMaxBatchSize(c.MaxBatchSize))
 	p.criLogEmitter = cLogEmitter
 	recombineParser, err := createRecombine(set, c, cLogEmitter)
 	if err != nil {
