@@ -34,6 +34,7 @@ func (h handler) OnAdd(obj any, _ bool) {
 	var ok bool
 
 	switch object := obj.(type) {
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	case *corev1.Endpoints:
 		ok, endpoints = convertToEndpoints(h.returnNames, object)
 		if !ok {
@@ -60,7 +61,9 @@ func (h handler) OnAdd(obj any, _ bool) {
 
 func (h handler) OnUpdate(oldObj, newObj any) {
 	switch oldEps := oldObj.(type) {
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	case *corev1.Endpoints:
+		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 		newEps, ok := newObj.(*corev1.Endpoints)
 		if !ok {
 			h.logger.Warn("Got an unexpected Kubernetes data type during the update of the pods for a service", zap.Any("obj", newObj))
@@ -114,6 +117,7 @@ func (h handler) OnDelete(obj any) {
 	case *cache.DeletedFinalStateUnknown:
 		h.OnDelete(object.Obj)
 		return
+	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 	case *corev1.Endpoints:
 		if object != nil {
 			ok, endpoints = convertToEndpoints(h.returnNames, object)
@@ -136,6 +140,7 @@ func (h handler) OnDelete(obj any) {
 	}
 }
 
+//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
 func convertToEndpoints(retNames bool, eps ...*corev1.Endpoints) (bool, map[string]bool) {
 	res := map[string]bool{}
 	for _, ep := range eps {
