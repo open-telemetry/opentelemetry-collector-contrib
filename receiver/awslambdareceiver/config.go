@@ -15,6 +15,8 @@ type Config struct {
 	// If you have objects with multiple different encodings to handle, you should deploy
 	// separate Lambda functions with different configurations.
 	S3Encoding string `mapstructure:"s3_encoding"`
+
+	_ struct{} // Prevent unkeyed literal initialization
 }
 
 var _ component.Config = (*Config)(nil)
