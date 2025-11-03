@@ -1,19 +1,27 @@
 filter/ottl:
   error_mode: ignore
   traces:
+    resource:
+      - 'attributes["test"] == "pass"'
     span:
       - 'attributes["test"] == "pass"'
     spanevent:
       - 'attributes["test"] == "pass"'
   metrics:
+    resource:
+      - 'attributes["test"] == "pass"'
     metric:
       - 'name == "pass"'
     datapoint:
       - 'attributes["test"] == "pass"'
   logs:
+    resource:
+      - 'attributes["test"] == "pass"'
     log_record:
       - 'attributes["test"] == "pass"'
   profiles:
+    resource:
+      - 'attributes["test"] == "pass"'
     profile:
       - 'attributes["test"] == "pass"'
 filter/multiline:

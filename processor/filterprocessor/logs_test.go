@@ -705,15 +705,27 @@ var (
 func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name             string
-		conditions       []string
+		conditions       LogFilters
 		filterEverything bool
 		want             func(ld plog.Logs)
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop resource",
+			conditions: LogFilters{
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
 			name: "drop logs",
-			conditions: []string{
-				`body == "operationA"`,
+			conditions: LogFilters{
+				LogConditions: []string{
+					`body == "operationA"`,
+				},
 			},
 			want: func(ld plog.Logs) {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
@@ -727,25 +739,31 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		},
 		{
 			name: "drop everything by dropping all logs",
-			conditions: []string{
-				`IsMatch(body, "operation.*")`,
+			conditions: LogFilters{
+				LogConditions: []string{
+					`IsMatch(body, "operation.*")`,
+				},
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
-			conditions: []string{
-				`IsMatch(body, "wrong name")`,
-				`IsMatch(body, "operation.*")`,
+			conditions: LogFilters{
+				LogConditions: []string{
+					`IsMatch(body, "wrong name")`,
+					`IsMatch(body, "operation.*")`,
+				},
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "with error conditions",
-			conditions: []string{
-				`Substring("", 0, 100) == "test"`,
+			conditions: LogFilters{
+				LogConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
 			},
 			want:      func(_ plog.Logs) {},
 			errorMode: ottl.IgnoreError,
@@ -753,7 +771,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Logs: LogFilters{LogConditions: tt.conditions}, logFunctions: defaultLogFunctionsMap()}
+			cfg := &Config{Logs: tt.conditions, logFunctions: defaultLogFunctionsMap()}
 			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 

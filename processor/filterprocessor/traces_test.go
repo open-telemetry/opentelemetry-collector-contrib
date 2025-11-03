@@ -202,6 +202,16 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop resource",
+			conditions: TraceFilters{
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
 			name: "drop spans",
 			conditions: TraceFilters{
 				SpanConditions: []string{

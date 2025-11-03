@@ -71,15 +71,27 @@ func requireNotPanicsProfiles(t *testing.T, profiles pprofile.Profiles) {
 func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name             string
-		conditions       []string
+		conditions       ProfileFilters
 		filterEverything bool
 		want             func(pprofile.Profiles)
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop resource",
+			conditions: ProfileFilters{
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
 			name: "drop profiles",
-			conditions: []string{
-				`original_payload_format == "legacy"`,
+			conditions: ProfileFilters{
+				ProfileConditions: []string{
+					`original_payload_format == "legacy"`,
+				},
 			},
 			want: func(ld pprofile.Profiles) {
 				ld.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().RemoveIf(func(profile pprofile.Profile) bool {
@@ -93,25 +105,31 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 		},
 		{
 			name: "drop everything by dropping all profiles",
-			conditions: []string{
-				`IsMatch(original_payload_format, ".*legacy")`,
+			conditions: ProfileFilters{
+				ProfileConditions: []string{
+					`IsMatch(original_payload_format, ".*legacy")`,
+				},
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
-			conditions: []string{
-				`IsMatch(original_payload_format, "wrong name")`,
-				`IsMatch(original_payload_format, ".*legacy")`,
+			conditions: ProfileFilters{
+				ProfileConditions: []string{
+					`IsMatch(original_payload_format, "wrong name")`,
+					`IsMatch(original_payload_format, ".*legacy")`,
+				},
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "with error conditions",
-			conditions: []string{
-				`Substring("", 0, 100) == "test"`,
+			conditions: ProfileFilters{
+				ProfileConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
 			},
 			want:      func(_ pprofile.Profiles) {},
 			errorMode: ottl.IgnoreError,
@@ -119,7 +137,7 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Profiles: ProfileFilters{ProfileConditions: tt.conditions}, profileFunctions: defaultProfileFunctionsMap()}
+			cfg := &Config{Profiles: tt.conditions, profileFunctions: defaultProfileFunctionsMap()}
 			processor, err := newFilterProfilesProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 

@@ -874,6 +874,9 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
 				Traces: TraceFilters{
+					ResourceConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
 					},
@@ -882,6 +885,9 @@ func TestLoadingConfigOTTL(t *testing.T) {
 					},
 				},
 				Metrics: MetricFilters{
+					ResourceConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 					MetricConditions: []string{
 						`name == "pass"`,
 					},
@@ -890,11 +896,17 @@ func TestLoadingConfigOTTL(t *testing.T) {
 					},
 				},
 				Logs: LogFilters{
+					ResourceConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 					LogConditions: []string{
 						`attributes["test"] == "pass"`,
 					},
 				},
 				Profiles: ProfileFilters{
+					ResourceConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 					ProfileConditions: []string{
 						`attributes["test"] == "pass"`,
 					},
