@@ -66,7 +66,7 @@ func TestVSANMetricsFromMetadata(t *testing.T) {
 }
 
 type MetadataYAML struct {
-	Metrics map[string]interface{} `yaml:"metrics"`
+	Metrics map[string]any `yaml:"metrics"`
 }
 
 func getVSANMetricsFromMetadataYAML(t *testing.T) []string {

@@ -89,7 +89,7 @@ func newVcenterScrapeData() *vcenterScrapeData {
 }
 
 func (v *vcenterMetricScraper) hasEnabledVSANMetrics() bool {
-	metrics := v.config.MetricsBuilderConfig.Metrics
+	metrics := v.config.Metrics
 
 	// Check cluster vSAN metrics
 	if metrics.VcenterClusterVsanCongestions.Enabled ||
