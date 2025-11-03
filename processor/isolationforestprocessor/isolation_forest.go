@@ -43,6 +43,38 @@ type onlineIsolationForest struct {
 	// Random number generation
 	rng      *rand.Rand // Random number generator for reproducible results
 	rngMutex sync.Mutex // Protects RNG access
+
+	// Adaptive window sizing components
+	adaptiveConfig    *AdaptiveWindowConfig // Configuration for adaptive sizing
+	currentWindowSize int                   // Current actual window size (may differ from windowSize)
+	velocityTracker   *velocityTracker      // Tracks samples/sec for growth decisions
+	memoryMonitor     *memoryMonitor        // Monitors memory usage for shrinking
+	stabilityChecker  *stabilityChecker     // Evaluates model accuracy for expansion
+	adaptiveMutex     sync.RWMutex          // Protects adaptive window operations
+}
+
+// velocityTracker monitors data ingestion rate for adaptive window growth
+type velocityTracker struct {
+	sampleTimes []time.Time // Recent sample timestamps
+	mutex       sync.RWMutex
+	maxSamples  int // Maximum samples to track
+}
+
+// memoryMonitor tracks memory usage for adaptive window shrinking
+type memoryMonitor struct {
+	currentMemoryMB float64   // Current estimated memory usage
+	lastCheckTime   time.Time // Last time memory was checked
+	memoryLimitMB   int       // Memory limit for shrinking
+	mutex           sync.RWMutex
+}
+
+// stabilityChecker evaluates model accuracy for adaptive window expansion
+type stabilityChecker struct {
+	recentPredictions []float64     // Recent anomaly scores
+	lastCheckTime     time.Time     // Last stability check
+	checkInterval     time.Duration // How often to check stability
+	accuracyThreshold float64       // Minimum accuracy for expansion
+	mutex             sync.RWMutex
 }
 
 // OnlineIsolationTree represents a single tree that can be updated incrementally.
@@ -83,6 +115,12 @@ type onlineForestStatistics struct {
 	CurrentThreshold  float64 // Current adaptive threshold
 	WindowUtilization float64 // How full the sliding window is
 	ActiveTrees       int     // Number of active trees
+
+	// Adaptive window statistics
+	CurrentWindowSize int     // Current adaptive window size
+	AdaptiveEnabled   bool    // Whether adaptive sizing is enabled
+	VelocitySamples   float64 // Current samples per second
+	MemoryUsageMB     float64 // Current estimated memory usage
 }
 
 // newOnlineIsolationForest creates a new online isolation forest with the specified parameters.
@@ -112,11 +150,54 @@ func newOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolati
 	return forest
 }
 
+// newOnlineIsolationForestWithAdaptive creates a forest with adaptive window sizing
+func newOnlineIsolationForestWithAdaptive(numTrees, windowSize, maxDepth int, adaptiveConfig *AdaptiveWindowConfig) *onlineIsolationForest {
+	forest := newOnlineIsolationForest(numTrees, windowSize, maxDepth)
+
+	if adaptiveConfig != nil && adaptiveConfig.Enabled {
+		forest.adaptiveConfig = adaptiveConfig
+		forest.currentWindowSize = adaptiveConfig.MinWindowSize // Start with minimum size
+
+		// Initialize adaptive components
+		forest.velocityTracker = &velocityTracker{
+			sampleTimes: make([]time.Time, 0, 1000),
+			maxSamples:  1000, // Track up to 1000 recent timestamps
+		}
+
+		forest.memoryMonitor = &memoryMonitor{
+			memoryLimitMB: adaptiveConfig.MemoryLimitMB,
+			lastCheckTime: time.Now(),
+		}
+
+		checkInterval, _ := time.ParseDuration(adaptiveConfig.StabilityCheckInterval)
+		if checkInterval == 0 {
+			checkInterval = 5 * time.Minute // Default
+		}
+
+		forest.stabilityChecker = &stabilityChecker{
+			recentPredictions: make([]float64, 0, 100),
+			checkInterval:     checkInterval,
+			accuracyThreshold: 0.85, // Minimum 85% accuracy for expansion
+			lastCheckTime:     time.Now(),
+		}
+
+		// Resize data structures to match adaptive window
+		forest.resizeDataStructures()
+	}
+
+	return forest
+}
+
 // ProcessSample processes a single data point, updating the forest incrementally
 // and returning an anomaly score immediately.
 func (oif *onlineIsolationForest) ProcessSample(sample []float64) (float64, bool) {
 	if len(sample) == 0 {
 		return 0.0, false
+	}
+
+	// Update velocity tracker if adaptive sizing is enabled
+	if oif.adaptiveConfig != nil && oif.adaptiveConfig.Enabled {
+		oif.updateVelocityTracker()
 	}
 
 	// Calculate anomaly score using current trees
@@ -136,8 +217,13 @@ func (oif *onlineIsolationForest) ProcessSample(sample []float64) (float64, bool
 	}
 	oif.statsMutex.Unlock()
 
-	// Update the forest with this new sample (asynchronous to avoid blocking)
-	go oif.updateForest(sample, anomalyScore)
+	// Update stability checker if adaptive sizing is enabled
+	if oif.adaptiveConfig != nil && oif.adaptiveConfig.Enabled {
+		oif.updateStabilityChecker(anomalyScore, isAnomaly)
+	}
+
+	// FIX: Remove 'go' keyword to prevent race condition
+	oif.updateForest(sample, anomalyScore) // Synchronous call
 
 	return anomalyScore, isAnomaly
 }
@@ -189,6 +275,11 @@ func (oif *onlineIsolationForest) updateForest(sample []float64, anomalyScore fl
 	// Update adaptive threshold
 	oif.updateAdaptiveThreshold(anomalyScore)
 
+	// Check if adaptive window size should be adjusted
+	if oif.adaptiveConfig != nil && oif.adaptiveConfig.Enabled {
+		oif.checkAdaptiveWindowResize()
+	}
+
 	// Incrementally update a subset of trees to distribute computational load
 	oif.updateTreesIncremental(sample)
 }
@@ -202,9 +293,17 @@ func (oif *onlineIsolationForest) updateSlidingWindow(sample []float64) {
 	sampleCopy := make([]float64, len(sample))
 	copy(sampleCopy, sample)
 
+	// Use current window size instead of static windowSize
+	currentSize := oif.getCurrentWindowSize()
+
+	// Ensure dataWindow is properly sized
+	if len(oif.dataWindow) != currentSize {
+		oif.resizeDataWindow(currentSize)
+	}
+
 	// Add to circular buffer
 	oif.dataWindow[oif.windowIndex] = sampleCopy
-	oif.windowIndex = (oif.windowIndex + 1) % oif.windowSize
+	oif.windowIndex = (oif.windowIndex + 1) % currentSize
 	if oif.windowIndex == 0 {
 		oif.windowFull = true
 	}
@@ -218,8 +317,18 @@ func (oif *onlineIsolationForest) updateAdaptiveThreshold(score float64) {
 	// Add score to history
 	oif.scoreHistory = append(oif.scoreHistory, score)
 
+	// Get current window size WITHOUT locking adaptiveMutex (to avoid deadlock)
+	var currentSize int
+	if oif.adaptiveConfig != nil && oif.adaptiveConfig.Enabled {
+		oif.adaptiveMutex.RLock()
+		currentSize = oif.currentWindowSize
+		oif.adaptiveMutex.RUnlock()
+	} else {
+		currentSize = oif.windowSize
+	}
+
 	// Maintain bounded history size
-	if len(oif.scoreHistory) > oif.windowSize {
+	if len(oif.scoreHistory) > currentSize {
 		oif.scoreHistory = oif.scoreHistory[1:]
 	}
 
@@ -413,16 +522,18 @@ func (*onlineIsolationTree) estimateRemainingPath(sampleCount int) float64 {
 // getWindowData returns a copy of current window data.
 func (oif *onlineIsolationForest) getWindowData() [][]float64 {
 	var result [][]float64
+	currentSize := oif.getCurrentWindowSize()
+
 	if !oif.windowFull {
 		// Window not full yet, return data from start to current index
-		for i := 0; i < oif.windowIndex; i++ {
+		for i := 0; i < oif.windowIndex && i < len(oif.dataWindow); i++ {
 			if oif.dataWindow[i] != nil {
 				result = append(result, oif.dataWindow[i])
 			}
 		}
 	} else {
 		// Window is full, return all data
-		for i := 0; i < oif.windowSize; i++ {
+		for i := 0; i < currentSize && i < len(oif.dataWindow); i++ {
 			if oif.dataWindow[i] != nil {
 				result = append(result, oif.dataWindow[i])
 			}
@@ -458,7 +569,9 @@ func (oif *onlineIsolationForest) GetStatistics() onlineForestStatistics {
 	oif.thresholdMutex.RUnlock()
 
 	oif.windowMutex.RLock()
-	windowUtilization := float64(len(oif.getWindowData())) / float64(oif.windowSize)
+	windowData := oif.getWindowData()
+	currentSize := oif.getCurrentWindowSize()
+	windowUtilization := float64(len(windowData)) / float64(currentSize)
 	oif.windowMutex.RUnlock()
 
 	anomalyRate := float64(0)
@@ -466,14 +579,240 @@ func (oif *onlineIsolationForest) GetStatistics() onlineForestStatistics {
 		anomalyRate = float64(oif.anomalyCount) / float64(oif.totalSamples)
 	}
 
-	return onlineForestStatistics{
+	stats := onlineForestStatistics{
 		TotalSamples:      oif.totalSamples,
 		AnomalyCount:      oif.anomalyCount,
 		AnomalyRate:       anomalyRate,
 		CurrentThreshold:  currentThreshold,
 		WindowUtilization: windowUtilization,
 		ActiveTrees:       len(oif.trees),
+		CurrentWindowSize: currentSize,
+		AdaptiveEnabled:   oif.adaptiveConfig != nil && oif.adaptiveConfig.Enabled,
 	}
+
+	// NEW: Add adaptive window statistics
+	if oif.adaptiveConfig != nil && oif.adaptiveConfig.Enabled {
+		stats.VelocitySamples = oif.getCurrentVelocity()
+		stats.MemoryUsageMB = oif.getCurrentMemoryUsage()
+	}
+
+	return stats
+}
+
+// Adaptive window sizing methods
+
+// getCurrentWindowSize returns the current window size (adaptive or static)
+func (oif *onlineIsolationForest) getCurrentWindowSize() int {
+	if oif.adaptiveConfig != nil && oif.adaptiveConfig.Enabled {
+		oif.adaptiveMutex.RLock()
+		defer oif.adaptiveMutex.RUnlock()
+		return oif.currentWindowSize
+	}
+	return oif.windowSize
+}
+
+// updateVelocityTracker updates the velocity tracker with current timestamp
+func (oif *onlineIsolationForest) updateVelocityTracker() {
+	if oif.velocityTracker == nil {
+		return
+	}
+
+	oif.velocityTracker.mutex.Lock()
+	defer oif.velocityTracker.mutex.Unlock()
+
+	now := time.Now()
+	oif.velocityTracker.sampleTimes = append(oif.velocityTracker.sampleTimes, now)
+
+	// Keep only recent samples (last minute)
+	cutoff := now.Add(-time.Minute)
+	start := 0
+	for i, t := range oif.velocityTracker.sampleTimes {
+		if t.After(cutoff) {
+			start = i
+			break
+		}
+	}
+	if start > 0 {
+		oif.velocityTracker.sampleTimes = oif.velocityTracker.sampleTimes[start:]
+	}
+
+	// Limit buffer size
+	if len(oif.velocityTracker.sampleTimes) > oif.velocityTracker.maxSamples {
+		excess := len(oif.velocityTracker.sampleTimes) - oif.velocityTracker.maxSamples
+		oif.velocityTracker.sampleTimes = oif.velocityTracker.sampleTimes[excess:]
+	}
+}
+
+// getCurrentVelocity returns current samples per second
+func (oif *onlineIsolationForest) getCurrentVelocity() float64 {
+	if oif.velocityTracker == nil {
+		return 0.0
+	}
+
+	oif.velocityTracker.mutex.RLock()
+	defer oif.velocityTracker.mutex.RUnlock()
+
+	if len(oif.velocityTracker.sampleTimes) < 2 {
+		return 0.0
+	}
+
+	// Count samples in last 10 seconds for more stable velocity
+	now := time.Now()
+	cutoff := now.Add(-10 * time.Second)
+	recentCount := 0
+	for _, t := range oif.velocityTracker.sampleTimes {
+		if t.After(cutoff) {
+			recentCount++
+		}
+	}
+
+	return float64(recentCount) / 10.0 // samples per second
+}
+
+// updateStabilityChecker updates the stability checker with recent predictions
+func (oif *onlineIsolationForest) updateStabilityChecker(score float64, _ bool) {
+	if oif.stabilityChecker == nil {
+		return
+	}
+
+	oif.stabilityChecker.mutex.Lock()
+	defer oif.stabilityChecker.mutex.Unlock()
+
+	oif.stabilityChecker.recentPredictions = append(oif.stabilityChecker.recentPredictions, score)
+
+	// Keep only recent predictions
+	if len(oif.stabilityChecker.recentPredictions) > 100 {
+		oif.stabilityChecker.recentPredictions = oif.stabilityChecker.recentPredictions[1:]
+	}
+}
+
+// getCurrentMemoryUsage estimates current memory usage in MB
+func (oif *onlineIsolationForest) getCurrentMemoryUsage() float64 {
+	if oif.memoryMonitor == nil {
+		return 0.0
+	}
+
+	oif.memoryMonitor.mutex.Lock()
+	defer oif.memoryMonitor.mutex.Unlock()
+
+	// Get scoreHistory length safely
+	oif.thresholdMutex.RLock()
+	scoreHistorySize := float64(len(oif.scoreHistory)) * 8
+	oif.thresholdMutex.RUnlock()
+
+	// Simple estimation based on data structures
+	windowDataSize := float64(len(oif.dataWindow)) * float64(10) * 8 // Assume 10 features, 8 bytes per float64
+	treeMemory := float64(oif.numTrees) * 1024                       // Rough estimate per tree in bytes
+
+	totalBytes := windowDataSize + scoreHistorySize + treeMemory
+	oif.memoryMonitor.currentMemoryMB = totalBytes / (1024 * 1024) // Convert to MB
+
+	return oif.memoryMonitor.currentMemoryMB
+}
+
+// checkAdaptiveWindowResize evaluates whether window size should be adjusted
+func (oif *onlineIsolationForest) checkAdaptiveWindowResize() {
+	if oif.adaptiveConfig == nil || !oif.adaptiveConfig.Enabled {
+		return
+	}
+
+	oif.adaptiveMutex.Lock()
+	defer oif.adaptiveMutex.Unlock()
+
+	currentSize := oif.currentWindowSize
+	targetSize := currentSize
+
+	// Check velocity for growth
+	velocity := oif.getCurrentVelocity()
+	if velocity > oif.adaptiveConfig.VelocityThreshold {
+		// High traffic - consider growing
+		newSize := int(float64(currentSize) * (1.0 + oif.adaptiveConfig.AdaptationRate))
+		if newSize <= oif.adaptiveConfig.MaxWindowSize {
+			targetSize = newSize
+		}
+	}
+
+	// Check memory usage for shrinking
+	memoryUsage := oif.getCurrentMemoryUsage()
+	if memoryUsage > float64(oif.adaptiveConfig.MemoryLimitMB) {
+		// Memory pressure - shrink window
+		newSize := int(float64(currentSize) * (1.0 - oif.adaptiveConfig.AdaptationRate))
+		if newSize >= oif.adaptiveConfig.MinWindowSize {
+			targetSize = newSize
+		}
+	}
+
+	// Apply gradual adjustment
+	if targetSize != currentSize {
+		// Limit rate of change
+		maxChange := int(float64(currentSize) * oif.adaptiveConfig.AdaptationRate)
+		if maxChange < 1 {
+			maxChange = 1
+		}
+
+		if targetSize > currentSize {
+			oif.currentWindowSize = minInt(currentSize+maxChange, targetSize)
+		} else {
+			oif.currentWindowSize = maxInt(currentSize-maxChange, targetSize)
+		}
+
+		// Resize data structures if needed
+		oif.resizeDataStructures()
+	}
+}
+
+// resizeDataStructures adjusts data structures to match current window size
+func (oif *onlineIsolationForest) resizeDataStructures() {
+	newSize := oif.currentWindowSize
+
+	// Resize data window
+	oif.resizeDataWindow(newSize)
+
+	// Resize score history if needed
+	if len(oif.scoreHistory) > newSize {
+		excess := len(oif.scoreHistory) - newSize
+		oif.scoreHistory = oif.scoreHistory[excess:]
+	}
+}
+
+// resizeDataWindow adjusts the data window to a new size
+func (oif *onlineIsolationForest) resizeDataWindow(newSize int) {
+	if len(oif.dataWindow) == newSize {
+		return
+	}
+
+	if newSize > len(oif.dataWindow) {
+		// Growing - extend the array
+		extension := make([][]float64, newSize-len(oif.dataWindow))
+		oif.dataWindow = append(oif.dataWindow, extension...)
+	} else {
+		// Shrinking - keep most recent data
+		if oif.windowFull {
+			// Copy in correct order when window is full
+			newWindow := make([][]float64, newSize)
+			for i := 0; i < newSize; i++ {
+				srcIndex := (oif.windowIndex - newSize + i + len(oif.dataWindow)) % len(oif.dataWindow)
+				newWindow[i] = oif.dataWindow[srcIndex]
+			}
+			oif.dataWindow = newWindow
+			oif.windowIndex = 0
+			oif.windowFull = true
+		} else {
+			// Window not full - just truncate
+			if oif.windowIndex > newSize {
+				oif.windowIndex = newSize
+			}
+			oif.dataWindow = oif.dataWindow[:newSize]
+		}
+	}
+}
+
+// Utility functions
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // Utility functions
