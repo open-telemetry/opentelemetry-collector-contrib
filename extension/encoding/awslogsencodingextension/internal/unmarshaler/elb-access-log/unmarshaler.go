@@ -258,7 +258,9 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 	if albRecord.ResponseProcessingTime >= 0 {
 		recordLog.Attributes().PutInt(AttributeELBResponseProcessingTimeMs, albRecord.ResponseProcessingTime)
 	}
-
+	if albRecord.TraceID != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBAWSTraceId, albRecord.TraceID)
+	}
 	if albRecord.TargetStatusCode != unknownField {
 		statusCode, e := safeConvertStrToInt(albRecord.TargetStatusCode)
 		if e == nil {

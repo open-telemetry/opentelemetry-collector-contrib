@@ -382,7 +382,7 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | response_processing_time  | `aws.elb.response_processing_time_ms`                         |
 | target_status_code        | `aws.elb.backend.status.code`                                 |
 | target_group_arn          | `aws.elb.target_group_arn`                                    |
-| "trace_id"                | _Currently not supported_                                     |
+| "trace_id"                | `aws.elb.aws_trace_id`                                        |
 | "chosen_cert_arn"         | `aws.elb.chosen_cert_arn`                                     |
 | matched_rule_priority     | _Currently not supported_                                     |
 | request_creation_time     | _Currently not supported_                                     |
