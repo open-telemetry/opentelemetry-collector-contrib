@@ -269,7 +269,7 @@ func TestCollectorResourceAttributesAreSortedAndDeduped(t *testing.T) {
 
 	// Verify sorted order
 	for i := 1; i < len(ext.otelCollectorMetadata.CollectorResourceAttributes); i++ {
-		assert.True(t, ext.otelCollectorMetadata.CollectorResourceAttributes[i-1] < ext.otelCollectorMetadata.CollectorResourceAttributes[i],
+		assert.Less(t, ext.otelCollectorMetadata.CollectorResourceAttributes[i-1], ext.otelCollectorMetadata.CollectorResourceAttributes[i],
 			"attributes not sorted: %v", ext.otelCollectorMetadata.CollectorResourceAttributes)
 	}
 
