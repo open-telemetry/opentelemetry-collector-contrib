@@ -54,7 +54,7 @@ type ingestStats struct {
 
 // ---- Buffers ----
 
-type DataBuffer interface {
+type dataBuffer interface {
 	Add(item interface{}) bool
 	Pop() (interface{}, bool)
 	Len() int
