@@ -216,7 +216,7 @@ func (rb *RingBuffer) Resize(newSize int64) {
 
 // ---- Memory manager ----
 
-type MemoryManager struct {
+type memoryManager struct {
 	cfg MemoryConfig
 
 	maxMemoryLimit int64
