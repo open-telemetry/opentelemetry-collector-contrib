@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/carbon
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added support for the Carbon Pickle protocol in the Carbon receiver, in addition to existing plaintext support."
+note: "Added support for the Carbon Pickle protocol in the Carbon receiver, in addition to existing plaintext support."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43601]
@@ -16,10 +16,11 @@ issues: [43601]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This enhancement allows the Carbon receiver to accept metrics sent using the
-  Pickle protocol, improving compatibility with Carbon clients and enabling
-  more efficient metric ingestion.
-  Please note that this change also affects the receiver/wavefront component.
+  The Pickle protocol is more efficient than plaintext protocol, it supports sending 
+  metrics in batches. This enhancement allows the Carbon receiver to accept metrics sent using the
+  Pickle protocol, improving compatibility with Carbon clients and enabling more efficient metric ingestion.
+  Please note that this change also affects the receiver/wavefront component, The Parse interface (see carbonreceiver/parser.go) 
+  has been improved to support binary data as input to handle Pickle data.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
