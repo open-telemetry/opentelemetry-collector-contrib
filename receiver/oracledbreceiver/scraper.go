@@ -133,19 +133,21 @@ type oracleScraper struct {
 	obfuscator                 *obfuscator
 	querySampleCfg             QuerySample
 	serviceInstanceID          string
+	lastExecutionTimestamp     time.Time
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
 	s := &oracleScraper{
-		mb:                   metricsBuilder,
-		metricsBuilderConfig: metricsBuilderConfig,
-		scrapeCfg:            scrapeCfg,
-		logger:               logger,
-		dbProviderFunc:       providerFunc,
-		clientProviderFunc:   clientProviderFunc,
-		instanceName:         instanceName,
-		hostName:             hostName,
-		serviceInstanceID:    getInstanceID(instanceName, logger),
+		mb:                     metricsBuilder,
+		metricsBuilderConfig:   metricsBuilderConfig,
+		scrapeCfg:              scrapeCfg,
+		logger:                 logger,
+		dbProviderFunc:         providerFunc,
+		clientProviderFunc:     clientProviderFunc,
+		instanceName:           instanceName,
+		hostName:               hostName,
+		serviceInstanceID:      getInstanceID(instanceName, logger),
+		lastExecutionTimestamp: time.Unix(0, 0),
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -529,9 +531,11 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	var scrapeErrors []error
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
-		topNCollectionErrors := s.collectTopNMetricData(ctx, logs)
-		if topNCollectionErrors != nil {
-			scrapeErrors = append(scrapeErrors, topNCollectionErrors)
+		if s.isTopNMetricsCollectionDue() {
+			topNCollectionErrors := s.collectTopNMetricData(ctx, logs)
+			if topNCollectionErrors != nil {
+				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
+			}
 		}
 	}
 
@@ -543,6 +547,10 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	}
 
 	return logs, errors.Join(scrapeErrors...)
+}
+
+func (s *oracleScraper) isTopNMetricsCollectionDue() bool {
+
 }
 
 func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs) error {
