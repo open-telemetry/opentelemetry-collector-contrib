@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) connector.Settings {
 func AssertEqualGrafanacloudDatapointCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_datapoint_count",
-		Description: "Number of datapoints sent to Grafana Cloud [development]",
+		Description: "Number of datapoints sent to Grafana Cloud [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualGrafanacloudDatapointCount(t *testing.T, tt *componenttest.Telem
 func AssertEqualGrafanacloudFlushCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_flush_count",
-		Description: "Number of metrics flushes [development]",
+		Description: "Number of metrics flushes [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualGrafanacloudFlushCount(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualGrafanacloudHostCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_host_count",
-		Description: "Number of unique hosts [development]",
+		Description: "Number of unique hosts [Development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
