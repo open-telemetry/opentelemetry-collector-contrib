@@ -40,4 +40,6 @@ Percentage of memory bytes in use.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| cisco.device.ip | The IP address of the Cisco network device | Any Str | true |
+| host.ip | The IP address of the Cisco network device | Any Str | true |
+| hw.type | Type of the physical hardware component | Any Str | true |
+| os.name | The operating system type of the Cisco device | Any Str | true |
