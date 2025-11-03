@@ -65,7 +65,7 @@ func TestVSANMetricsFromMetadata(t *testing.T) {
 	}
 }
 
-type MetadataYAML struct {
+type metadataYAML struct {
 	Metrics map[string]any `yaml:"metrics"`
 }
 
