@@ -57,7 +57,10 @@ resourceLogs:
                   intValue: "80"
               - key: aws.elb.actions_executed
                 value:
-                  stringValue: "authenticate,forward"
+                  arrayValue:
+                    values:
+                      - stringValue: "authenticate"
+                      - stringValue: "forward"
               - key: aws.elb.backend.status.code
                 value:
                   intValue: "200"
@@ -132,7 +135,10 @@ resourceLogs:
                   intValue: "80"
               - key: aws.elb.actions_executed
                 value:
-                  stringValue: "authenticate,forward"
+                  arrayValue:
+                    values:
+                      - stringValue: "authenticate"
+                      - stringValue: "forward"
               - key: aws.elb.backend.status.code
                 value:
                   intValue: "200"
@@ -207,7 +213,10 @@ resourceLogs:
                   intValue: "80"
               - key: aws.elb.actions_executed
                 value:
-                  stringValue: "authenticate,forward"
+                  arrayValue:
+                    values:
+                      - stringValue: "authenticate"
+                      - stringValue: "forward"
               - key: aws.elb.backend.status.code
                 value:
                   intValue: "200"

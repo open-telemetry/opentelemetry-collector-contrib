@@ -248,7 +248,7 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 		recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), albRecord.TargetPort)
 	}
 
-	// ALB time specific attributes
+	// Times are expressed in seconds with a precision of 3 decimal places in logs. Here we convert them to milliseconds.
 	if albRecord.RequestProcessingTime >= 0 {
 		recordLog.Attributes().PutInt(AttributeELBRequestProcessingTimeMs, albRecord.RequestProcessingTime)
 	}
@@ -258,6 +258,7 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 	if albRecord.ResponseProcessingTime >= 0 {
 		recordLog.Attributes().PutInt(AttributeELBResponseProcessingTimeMs, albRecord.ResponseProcessingTime)
 	}
+
 	if albRecord.TraceID != unknownField {
 		recordLog.Attributes().PutStr(AttributeELBAWSTraceId, albRecord.TraceID)
 	}
@@ -274,7 +275,10 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 		recordLog.Attributes().PutStr(AttributeELBChosenCertARN, albRecord.ChosenCertARN)
 	}
 	if albRecord.ActionsExecuted != unknownField {
-		recordLog.Attributes().PutStr(AttributeELBActionsExecuted, albRecord.ActionsExecuted)
+		actions := recordLog.Attributes().PutEmptySlice(AttributeELBActionsExecuted)
+		for _, action := range strings.Split(albRecord.ActionsExecuted, ",") {
+			actions.AppendEmpty().SetStr(action)
+		}
 	}
 	if albRecord.RedirectURL != unknownField {
 		recordLog.Attributes().PutStr(AttributeELBRedirectURL, albRecord.RedirectURL)
