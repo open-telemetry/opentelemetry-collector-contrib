@@ -5,6 +5,7 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.uber.org/zap"
@@ -49,11 +51,12 @@ type configs struct {
 }
 
 type info struct {
-	host           source.Source
-	hostnameSource string
-	uuid           string
-	build          component.BuildInfo
-	modules        service.ModuleInfos
+	host               source.Source
+	hostnameSource     string
+	uuid               string
+	build              component.BuildInfo
+	modules            service.ModuleInfos
+	resourceAttributes []string
 }
 
 type payloadSender struct {
@@ -119,6 +122,9 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		fullConfig,
 		buildInfo,
 	)
+
+	// Populate resource attributes collected from TelemetrySettings.Resource
+	otelCollectorPayload.CollectorResourceAttributes = e.info.resourceAttributes
 
 	// Populate the full list of components available in the collector build
 	moduleInfoJSON, err := componentchecker.PopulateFullComponentsJSON(e.info.modules, e.configs.collector)
@@ -313,6 +319,26 @@ func newExtension(
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
 
+	// Collect resource attributes from TelemetrySettings.Resource
+	// Format: ["key:value", ...]
+	resourceList := []string{}
+	if attrs := set.Resource.Attributes(); attrs.Len() > 0 {
+		resourceMap := make(map[string]string, attrs.Len())
+		attrs.Range(func(k string, v pcommon.Value) bool {
+			resourceMap[k] = v.Str()
+			return true
+		})
+		keys := make([]string, 0, len(resourceMap))
+		for k := range resourceMap {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		resourceList = make([]string, 0, len(keys))
+		for _, k := range keys {
+			resourceList = append(resourceList, k+":"+resourceMap[k])
+		}
+	}
+
 	// configure payloadSender struct
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	ticker := time.NewTicker(payloadSendingInterval)
@@ -323,11 +349,12 @@ func newExtension(
 		logger:     set.Logger,
 		serializer: serializer,
 		info: &info{
-			host:           host,
-			hostnameSource: hostnameSource,
-			uuid:           uuidProvider.NewString(),
-			build:          set.BuildInfo,
-			modules:        service.ModuleInfos{}, // moduleInfos will be populated in Start()
+			host:               host,
+			hostnameSource:     hostnameSource,
+			uuid:               uuidProvider.NewString(),
+			build:              set.BuildInfo,
+			modules:            service.ModuleInfos{}, // moduleInfos will be populated in Start()
+			resourceAttributes: resourceList,
 		},
 		payloadSender: &payloadSender{
 			ctx:     ctxWithCancel,
