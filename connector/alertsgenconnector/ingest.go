@@ -63,7 +63,7 @@ type dataBuffer interface {
 	EstimateMemoryUsage() int64
 }
 
-type SliceBuffer struct {
+type sliceBuffer struct {
 	mu       sync.RWMutex
 	data     []interface{}
 	maxSize  int64
