@@ -93,7 +93,7 @@ func createMetricsToMetrics(
 		return nil, err
 	}
 
-	// NEW: only require TSDB when explicitly enabled
+	// only require TSDB when explicitly enabled
 	c, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config type %T", cfg)
