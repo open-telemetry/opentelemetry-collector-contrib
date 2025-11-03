@@ -436,6 +436,10 @@ component_management:
     name: extension_sumologic
     paths:
     - extension/sumologicextension/**
+  - component_id: extension_tailsampling_examplesampler
+    name: extension_tailsampling_examplesampler
+    paths:
+    - extension/tailsampling/examplesampler/**
   - component_id: processor_attributes
     name: processor_attributes
     paths:

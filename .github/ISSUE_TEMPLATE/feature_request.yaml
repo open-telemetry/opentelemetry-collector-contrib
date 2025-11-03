@@ -131,6 +131,7 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
+      - extension/tailsampling/examplesampler
       - internal/aws
       - internal/collectd
       - internal/common

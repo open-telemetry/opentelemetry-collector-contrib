@@ -1,0 +1,27 @@
+type: examplesampler
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [portertech, Logiraptor]
+
+attributes:
+  policy:
+    description: Name of the policy
+    type: string
+
+telemetry:
+  metrics:
+    extension_tail_sampling_evaluations_count:
+      description: How many traces have been evaluated
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy]
+      stability: 
+        level: development
