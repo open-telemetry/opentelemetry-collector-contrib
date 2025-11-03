@@ -18,7 +18,7 @@ The number of errors encountered
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | development |
+| {errors} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -36,7 +36,7 @@ Interface operational status (1 = up, 0 = down)
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -53,7 +53,7 @@ The number of bytes transmitted and received
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -71,7 +71,7 @@ The number of packets transmitted or received, categorized by type
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -89,7 +89,7 @@ The number of packets dropped
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
