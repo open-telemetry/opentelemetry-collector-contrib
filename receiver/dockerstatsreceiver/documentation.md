@@ -20,7 +20,7 @@ More docs for [cgroups v1](https://www.kernel.org/doc/Documentation/cgroup-v1/bl
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -36,7 +36,7 @@ Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all con
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.usage.total
 
@@ -44,7 +44,7 @@ Total CPU time consumed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.usage.usermode
 
@@ -52,7 +52,7 @@ Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all conta
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.utilization
 
@@ -60,7 +60,7 @@ Percent of CPU used by the container.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### container.memory.file
 
@@ -70,7 +70,7 @@ Amount of memory used to cache filesystem data, including tmpfs and shared memor
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.percent
 
@@ -78,7 +78,7 @@ Percentage of memory used. Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### container.memory.total_cache
 
@@ -86,7 +86,7 @@ Total amount of memory used by the processes of this cgroup (and descendants) th
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.usage.limit
 
@@ -94,7 +94,7 @@ Memory limit of the container. Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.usage.total
 
@@ -102,7 +102,7 @@ Memory usage of the container. This excludes the cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.network.io.usage.rx_bytes
 
@@ -110,7 +110,7 @@ Bytes received by the container.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -124,7 +124,7 @@ Incoming packets dropped.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -138,7 +138,7 @@ Bytes sent.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -152,7 +152,7 @@ Outgoing packets dropped.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -178,7 +178,7 @@ Number of bios/requests merged into requests belonging to this cgroup and its de
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -196,7 +196,7 @@ Number of requests queued up for this cgroup and its descendant cgroups (Only av
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -214,7 +214,7 @@ Total amount of time in nanoseconds between request dispatch and request complet
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -232,7 +232,7 @@ Number of IOs (bio) issued to the disk by the group and descendant groups (Only 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -250,7 +250,7 @@ Disk time allocated to cgroup (and descendant cgroups) per device in millisecond
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -268,7 +268,7 @@ Total amount of time the IOs for this cgroup (and descendant cgroups) spent wait
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -286,7 +286,7 @@ Number of sectors transferred to/from disk by the group and descendant groups (O
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {sectors} | Sum | Int | Cumulative | true | development |
+| {sectors} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -304,7 +304,7 @@ This metric is only reported if the container has limits set with -cpus, -cpuset
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {cpus} | Gauge | Double | development |
+| {cpus} | Gauge | Double | Development |
 
 ### container.cpu.logical.count
 
@@ -312,7 +312,7 @@ Number of cores available to the container.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {cpus} | Gauge | Int | development |
+| {cpus} | Gauge | Int | Development |
 
 ### container.cpu.shares
 
@@ -320,7 +320,7 @@ CPU shares set for the container.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### container.cpu.throttling_data.periods
 
@@ -328,7 +328,7 @@ Number of periods with throttling active.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {periods} | Sum | Int | Cumulative | true | development |
+| {periods} | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.throttling_data.throttled_periods
 
@@ -336,7 +336,7 @@ Number of periods when the container hits its throttling limit.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {periods} | Sum | Int | Cumulative | true | development |
+| {periods} | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.throttling_data.throttled_time
 
@@ -344,7 +344,7 @@ Aggregate time the container was throttled.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.usage.percpu
 
@@ -352,7 +352,7 @@ Per-core CPU usage by the container (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -368,7 +368,7 @@ Note this is the usage for the system, not the container.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.active_anon
 
@@ -376,7 +376,7 @@ The amount of anonymous memory that has been identified as active by the kernel.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.active_file
 
@@ -386,7 +386,7 @@ Cache memory that has been identified as active by the kernel.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.anon
 
@@ -396,7 +396,7 @@ Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.cache
 
@@ -404,7 +404,7 @@ The amount of memory used by the processes of this control group that can be ass
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.dirty
 
@@ -412,7 +412,7 @@ Bytes that are waiting to get written back to the disk, from this cgroup (Only a
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.fails
 
@@ -420,7 +420,7 @@ Number of times the memory limit was hit.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {fails} | Sum | Int | Cumulative | true | development |
+| {fails} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.hierarchical_memory_limit
 
@@ -428,7 +428,7 @@ The maximum amount of physical memory that can be used by the processes of this 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.hierarchical_memsw_limit
 
@@ -436,7 +436,7 @@ The maximum amount of RAM + swap that can be used by the processes of this contr
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.inactive_anon
 
@@ -444,7 +444,7 @@ The amount of anonymous memory that has been identified as inactive by the kerne
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.inactive_file
 
@@ -454,7 +454,7 @@ Cache memory that has been identified as inactive by the kernel.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.mapped_file
 
@@ -462,7 +462,7 @@ Indicates the amount of memory mapped by the processes in the control group (Onl
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.pgfault
 
@@ -470,7 +470,7 @@ Indicate the number of times that a process of the cgroup triggered a page fault
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {faults} | Sum | Int | Cumulative | true | development |
+| {faults} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.pgmajfault
 
@@ -478,7 +478,7 @@ Indicate the number of times that a process of the cgroup triggered a major faul
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {faults} | Sum | Int | Cumulative | true | development |
+| {faults} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.pgpgin
 
@@ -488,7 +488,7 @@ Number of pages read from disk by the cgroup (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.pgpgout
 
@@ -498,7 +498,7 @@ Number of pages written to disk by the cgroup (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.rss
 
@@ -506,7 +506,7 @@ The amount of memory that doesn’t correspond to anything on disk: stacks, heap
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.rss_huge
 
@@ -514,7 +514,7 @@ Number of bytes of anonymous transparent hugepages in this cgroup (Only availabl
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_active_anon
 
@@ -522,7 +522,7 @@ The amount of anonymous memory that has been identified as active by the kernel.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_active_file
 
@@ -532,7 +532,7 @@ Cache memory that has been identified as active by the kernel. Includes descenda
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_dirty
 
@@ -540,7 +540,7 @@ Bytes that are waiting to get written back to the disk, from this cgroup and des
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_inactive_anon
 
@@ -548,7 +548,7 @@ The amount of anonymous memory that has been identified as inactive by the kerne
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_inactive_file
 
@@ -558,7 +558,7 @@ Cache memory that has been identified as inactive by the kernel. Includes descen
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_mapped_file
 
@@ -566,7 +566,7 @@ Indicates the amount of memory mapped by the processes in the control group and 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_pgfault
 
@@ -574,7 +574,7 @@ Indicate the number of times that a process of the cgroup (or descendant cgroups
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {faults} | Sum | Int | Cumulative | true | development |
+| {faults} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.total_pgmajfault
 
@@ -582,7 +582,7 @@ Indicate the number of times that a process of the cgroup (or descendant cgroups
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {faults} | Sum | Int | Cumulative | true | development |
+| {faults} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.total_pgpgin
 
@@ -590,7 +590,7 @@ Number of pages read from disk by the cgroup and descendant groups (Only availab
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.total_pgpgout
 
@@ -598,7 +598,7 @@ Number of pages written to disk by the cgroup and descendant groups (Only availa
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.total_rss
 
@@ -606,7 +606,7 @@ The amount of memory that doesn’t correspond to anything on disk: stacks, heap
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_rss_huge
 
@@ -614,7 +614,7 @@ Number of bytes of anonymous transparent hugepages in this cgroup and descendant
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_unevictable
 
@@ -622,7 +622,7 @@ The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.total_writeback
 
@@ -630,7 +630,7 @@ Number of bytes of file/anon cache that are queued for syncing to disk in this c
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.unevictable
 
@@ -638,7 +638,7 @@ The amount of memory that cannot be reclaimed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.usage.max
 
@@ -646,7 +646,7 @@ Maximum memory usage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.writeback
 
@@ -654,7 +654,7 @@ Number of bytes of file/anon cache that are queued for syncing to disk in this c
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.network.io.usage.rx_errors
 
@@ -662,7 +662,7 @@ Received errors. Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | development |
+| {errors} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -676,7 +676,7 @@ Packets received.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -690,7 +690,7 @@ Sent errors. Not supported on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | development |
+| {errors} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -704,7 +704,7 @@ Packets sent.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -720,7 +720,7 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {pids} | Sum | Int | Cumulative | false | development |
+| {pids} | Sum | Int | Cumulative | false | Development |
 
 ### container.pids.limit
 
@@ -730,7 +730,7 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {pids} | Sum | Int | Cumulative | false | development |
+| {pids} | Sum | Int | Cumulative | false | Development |
 
 ### container.restarts
 
@@ -738,7 +738,7 @@ Number of restarts for the container.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {restarts} | Sum | Int | Cumulative | true | development |
+| {restarts} | Sum | Int | Cumulative | true | Development |
 
 ### container.uptime
 
@@ -746,7 +746,7 @@ Time elapsed since container start time.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 ## Resource Attributes
 
