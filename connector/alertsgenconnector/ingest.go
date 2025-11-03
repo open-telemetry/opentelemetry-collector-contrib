@@ -43,7 +43,7 @@ type metricRow struct {
 	attrs map[string]string
 }
 
-type IngestStats struct {
+type ingestStats struct {
 	DroppedTraces        int64
 	DroppedLogs          int64
 	DroppedMetrics       int64
