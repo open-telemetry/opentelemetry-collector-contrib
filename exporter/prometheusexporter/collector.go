@@ -194,8 +194,10 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 
 // defaultZeroThreshold matches the remote-write translator's default for native histograms
 // when an explicit zero threshold is not provided in the datapoint.
-const defaultZeroThreshold = 1e-128
-const CBNHScale = -53
+const (
+	defaultZeroThreshold = 1e-128
+	CBNHScale            = -53
+)
 
 func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) map[int]int64 {
 	counts := buckets.BucketCounts()
