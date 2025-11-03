@@ -304,6 +304,11 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 			return
 		}
 
+		if !done {
+    		time.Sleep(2 * time.Second)
+		}
+
+
 		// need to restart with a fresh resource version
 		cfgCopy.ResourceVersion = ""
 	}, 0)
@@ -394,7 +399,11 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 			if !ok {
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly",
 					zap.String("resource", config.gvr.String()))
-				return true
+
+				kr.setting.Logger.Info("Restarting watch after unexpected channel close",
+    				zap.String("resource", config.gvr.String()))
+
+				return false
 			}
 
 			if config.exclude[data.Type] {
