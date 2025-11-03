@@ -249,12 +249,12 @@ require (
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/build-tools v0.28.1 // indirect
-	go.opentelemetry.io/collector/component v1.44.1-0.20251030084003-6f29b34c24f6 // indirect
-	go.opentelemetry.io/collector/confmap v1.44.1-0.20251030084003-6f29b34c24f6 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.44.1-0.20251030084003-6f29b34c24f6 // indirect
-	go.opentelemetry.io/collector/featuregate v1.44.1-0.20251030084003-6f29b34c24f6 // indirect
+	go.opentelemetry.io/collector/component v1.45.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.45.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.45.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.45.0 // indirect
 	go.opentelemetry.io/collector/filter v0.138.1-0.20251030084003-6f29b34c24f6 // indirect
-	go.opentelemetry.io/collector/pdata v1.44.1-0.20251030084003-6f29b34c24f6 // indirect
+	go.opentelemetry.io/collector/pdata v1.45.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
