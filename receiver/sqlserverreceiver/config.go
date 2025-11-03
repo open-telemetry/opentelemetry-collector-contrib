@@ -67,6 +67,10 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
+	if cfg.LookbackTime < 0 {
+		return errors.New("lookback_time cannot have negative values")
+	}
+
 	if cfg.MaxQuerySampleCount > 10000 {
 		return errors.New("`max_query_sample_count` must be between 0 and 10000")
 	}
@@ -102,4 +106,11 @@ func directDBConnectionEnabled(config *Config) (bool, error) {
 
 	// It is a valid direct connection configuration
 	return true, nil
+}
+
+func (cfg *Config) EffectiveLookbackTime() time.Duration {
+	if cfg.LookbackTime == 0 {
+		return 2 * cfg.ControllerConfig.CollectionInterval
+	}
+	return cfg.LookbackTime
 }
