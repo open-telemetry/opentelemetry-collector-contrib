@@ -21,5 +21,5 @@ const (
 	AttributeELBTransformedHost        = "aws.elb.transformed_host"         // string
 	AttributeELBTransformedURI         = "aws.elb.transformed_uri"          // string
 	AttributeELBRequestTransformStatus = "aws.elb.request_transform_status" // string
-	AttributeELBAWSTraceId             = "aws.elb.aws_trace_id"             // string
+	AttributeELBAWSTraceID             = "aws.elb.aws_trace_id"             // string
 )

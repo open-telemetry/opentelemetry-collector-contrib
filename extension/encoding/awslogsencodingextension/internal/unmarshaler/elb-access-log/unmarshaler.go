@@ -269,7 +269,7 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 	}
 
 	if albRecord.TraceID != unknownField {
-		recordLog.Attributes().PutStr(AttributeELBAWSTraceId, albRecord.TraceID)
+		recordLog.Attributes().PutStr(AttributeELBAWSTraceID, albRecord.TraceID)
 	}
 	if albRecord.TargetStatusCode != unknownField {
 		statusCode, e := safeConvertStrToInt(albRecord.TargetStatusCode)
