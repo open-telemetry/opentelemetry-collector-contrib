@@ -550,13 +550,17 @@ func downscaleBucketSide(offset int32, counts []uint64, fromScale, targetScale i
 	newOffset := floorDivInt32(first, factor)
 	newLast := floorDivInt32(last, factor)
 	newLen := int(newLast - newOffset + 1)
-	out := make([]uint64, newLen)
 	for i := range counts {
 		k := offset + int32(i)
 		nk := floorDivInt32(k, factor)
-		out[nk-newOffset] += counts[i]
+		if k%factor == 0 {
+			counts[nk-newOffset] = counts[i]
+		} else {
+			counts[nk-newOffset] += counts[i]
+		}
+
 	}
-	return newOffset, out
+	return newOffset, counts[:newLen]
 }
 
 func mergeBuckets(offsetA int32, countsA []uint64, offsetB int32, countsB []uint64) (int32, []uint64) {
