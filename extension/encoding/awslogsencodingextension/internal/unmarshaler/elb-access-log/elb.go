@@ -237,9 +237,9 @@ type ALBAccessLogRecord struct {
 	TargetIPPort           string // Target IP:Port or -
 	TargetIP               string // Target IP
 	TargetPort             int64  // Target port
-	RequestProcessingTime  int64  // Time taken to process the request in milliseconds
-	TargetProcessingTime   int64  // Time taken for the target to process the request in milliseconds
-	ResponseProcessingTime int64  // Time taken to send the response to the client in milliseconds
+	RequestProcessingTime  string // Time taken to process the request in milliseconds
+	TargetProcessingTime   string // Time taken for the target to process the request in milliseconds
+	ResponseProcessingTime string // Time taken to send the response to the client in milliseconds
 	ELBStatusCode          int64  // Status code from the load balancer
 	TargetStatusCode       string // Status code from the target
 	ReceivedBytes          int64  // Size of the request in bytes
@@ -283,6 +283,9 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 		Time:                   fields[1],
 		ELB:                    fields[2],
 		TargetIPPort:           fields[4],
+		RequestProcessingTime:  fields[5],
+		TargetProcessingTime:   fields[6],
+		ResponseProcessingTime: fields[7],
 		TargetStatusCode:       fields[9],
 		UserAgent:              fields[13],
 		SSLCipher:              fields[14],
@@ -340,27 +343,6 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 	}
 	if record.SentBytes, err = safeConvertStrToInt(fields[11]); err != nil {
 		return record, fmt.Errorf("could not convert sent bytes to integer: %w", err)
-	}
-	if fields[5] != unknownField {
-		rpt, e := safeConvertStrToFloat(fields[5])
-		if e != nil {
-			return record, fmt.Errorf("could not convert response processing time to float: %w", e)
-		}
-		record.ResponseProcessingTime = int64(rpt * 1000)
-	}
-	if fields[6] != unknownField {
-		tpt, e := safeConvertStrToFloat(fields[6])
-		if e != nil {
-			return record, fmt.Errorf("could not convert target processing time to float: %w", e)
-		}
-		record.TargetProcessingTime = int64(tpt * 1000)
-	}
-	if fields[7] != unknownField {
-		rpt, e := safeConvertStrToFloat(fields[7])
-		if e != nil {
-			return record, fmt.Errorf("could not convert request processing time to float: %w", e)
-		}
-		record.RequestProcessingTime = int64(rpt * 1000)
 	}
 
 	if record.RequestMethod, record.RequestURI, record.ProtocolName, record.ProtocolVersion, err = parseRequestField(fields[12]); err != nil {

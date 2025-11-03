@@ -73,15 +73,15 @@ resourceLogs:
               - key: aws.elb.connection_trace_id
                 value:
                   stringValue: TID_1234abcd5678ef90
-              - key: aws.elb.request_processing_time_ms
+              - key: aws.elb.request_processing_time
                 value:
-                  intValue: "37"
-              - key: aws.elb.response_processing_time_ms
+                  doubleValue: "0.086"
+              - key: aws.elb.target_processing_time
                 value:
-                  intValue: "86"
-              - key: aws.elb.target_processing_time_ms
+                  doubleValue: "0.048"
+              - key: aws.elb.response_processing_time
                 value:
-                  intValue: "48"
+                  doubleValue: "0.037"
               - key: aws.elb.target_group_arn
                 value:
                   stringValue: arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067
@@ -151,15 +151,15 @@ resourceLogs:
               - key: aws.elb.connection_trace_id
                 value:
                   stringValue: TID_1234abcd5678ef90
-              - key: aws.elb.request_processing_time_ms
+              - key: aws.elb.request_processing_time
                 value:
-                  intValue: "37"
-              - key: aws.elb.response_processing_time_ms
+                  doubleValue: "0.086"
+              - key: aws.elb.target_processing_time
                 value:
-                  intValue: "86"
-              - key: aws.elb.target_processing_time_ms
+                  doubleValue: "0.048"
+              - key: aws.elb.response_processing_time
                 value:
-                  intValue: "48"
+                  doubleValue: "0.037"
               - key: aws.elb.target_group_arn
                 value:
                   stringValue: arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067
@@ -229,15 +229,15 @@ resourceLogs:
               - key: aws.elb.connection_trace_id
                 value:
                   stringValue: TID_1234abcd5678ef90
-              - key: aws.elb.request_processing_time_ms
+              - key: aws.elb.request_processing_time
                 value:
-                  intValue: "37"
-              - key: aws.elb.response_processing_time_ms
+                  doubleValue: "0.086"
+              - key: aws.elb.target_processing_time
                 value:
-                  intValue: "86"
-              - key: aws.elb.target_processing_time_ms
+                  doubleValue: "0.048"
+              - key: aws.elb.response_processing_time
                 value:
-                  intValue: "48"
+                  doubleValue: "0.037"
               - key: aws.elb.target_group_arn
                 value:
                   stringValue: arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067

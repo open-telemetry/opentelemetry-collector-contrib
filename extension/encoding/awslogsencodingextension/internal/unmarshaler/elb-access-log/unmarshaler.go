@@ -249,14 +249,23 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 	}
 
 	// Times are expressed in seconds with a precision of 3 decimal places in logs. Here we convert them to milliseconds.
-	if albRecord.RequestProcessingTime >= 0 {
-		recordLog.Attributes().PutInt(AttributeELBRequestProcessingTimeMs, albRecord.RequestProcessingTime)
+	if albRecord.RequestProcessingTime != unknownField {
+		rpt, e := safeConvertStrToFloat(albRecord.RequestProcessingTime)
+		if e == nil {
+			recordLog.Attributes().PutDouble(AttributeELBRequestProcessingTime, rpt)
+		}
 	}
-	if albRecord.TargetProcessingTime >= 0 {
-		recordLog.Attributes().PutInt(AttributeELBTargetProcessingTimeMs, albRecord.TargetProcessingTime)
+	if albRecord.TargetProcessingTime != unknownField {
+		tpt, e := safeConvertStrToFloat(albRecord.TargetProcessingTime)
+		if e == nil {
+			recordLog.Attributes().PutDouble(AttributeELBTargetProcessingTime, tpt)
+		}
 	}
-	if albRecord.ResponseProcessingTime >= 0 {
-		recordLog.Attributes().PutInt(AttributeELBResponseProcessingTimeMs, albRecord.ResponseProcessingTime)
+	if albRecord.ResponseProcessingTime != unknownField {
+		rpt, e := safeConvertStrToFloat(albRecord.ResponseProcessingTime)
+		if e == nil {
+			recordLog.Attributes().PutDouble(AttributeELBResponseProcessingTime, rpt)
+		}
 	}
 
 	if albRecord.TraceID != unknownField {
