@@ -127,7 +127,7 @@ func (sb *SliceBuffer) Resize(newSize int64) {
 	}
 }
 
-type RingBuffer struct {
+type ringBuffer struct {
 	mu        sync.RWMutex
 	data      []interface{}
 	head      int
