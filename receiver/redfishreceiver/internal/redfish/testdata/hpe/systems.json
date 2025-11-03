@@ -1,0 +1,127 @@
+{
+  "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+  "@odata.id": "/redfish/v1/Systems/S7",
+  "@odata.type": "#ComputerSystem.v1_17_0.ComputerSystem",
+  "Id": "S7",
+  "Actions": {
+    "#ComputerSystem.Reset": {
+      "ResetType@Redfish.AllowableValues": [
+        "On",
+        "ForceOff",
+        "GracefulShutdown",
+        "ForceRestart",
+        "Nmi",
+        "PushPowerButton",
+        "GracefulRestart"
+      ],
+      "target": "/redfish/v1/Systems/1/Actions/ComputerSystem.Reset"
+    }
+  },
+  "AssetTag": "",
+  "Bios": {
+    "@odata.id": "/redfish/v1/systems/1/bios"
+  },
+  "BiosVersion": "U60 v1.60 (07/14/2022)",
+  "Boot": {
+    "BootOptions": {
+      "@odata.id": "/redfish/v1/Systems/1/BootOptions"
+    },
+    "BootOrder": [
+      "Boot0002",
+      "Boot000F",
+      "Boot0010",
+      "Boot0013",
+      "Boot0014",
+      "Boot0011",
+      "Boot0012"
+    ],
+    "BootSourceOverrideEnabled": "Disabled",
+    "BootSourceOverrideMode": "UEFI",
+    "BootSourceOverrideTarget": "None",
+    "BootSourceOverrideTarget@Redfish.AllowableValues": [
+      "None",
+      "Cd",
+      "Hdd",
+      "Usb",
+      "SDCard",
+      "Utilities",
+      "Diags",
+      "BiosSetup",
+      "Pxe",
+      "UefiShell",
+      "UefiHttp",
+      "UefiTarget"
+    ],
+    "UefiTargetBootSourceOverride": "None",
+    "UefiTargetBootSourceOverride@Redfish.AllowableValues": [
+      "PciRoot(0x0)/Pci(0x17,0x0)/Sata(0x8,0x0,0x0)",
+      "PciRoot(0x0)/Pci(0x17,0x0)/Sata(0x9,0x0,0x0)"
+    ]
+  },
+  "EthernetInterfaces": {
+    "@odata.id": "/redfish/v1/Systems/S7/EthernetInterfaces"
+  },
+  "HostName": "otel-test-host",
+  "IndicatorLED": "Off",
+  "Links": {
+    "ManagedBy": [
+      {
+        "@odata.id": "/redfish/v1/Managers/S7"
+      }
+    ],
+    "Chassis": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/S7"
+      }
+    ]
+  },
+  "LocationIndicatorActive": false,
+  "LogServices": {
+    "@odata.id": "/redfish/v1/Systems/S7/LogServices"
+  },
+  "Manufacturer": "HPE",
+  "Memory": {
+    "@odata.id": "/redfish/v1/Systems/S7/Memory"
+  },
+  "MemoryDomains": {
+    "@odata.id": "/redfish/v1/Systems/S7/MemoryDomains"
+  },
+  "MemorySummary": {
+    "Status": {
+      "HealthRollup": "OK"
+    },
+    "TotalSystemMemoryGiB": 32,
+    "TotalSystemPersistentMemoryGiB": 0
+  },
+  "Model": "ProLiant DL20 Gen10 Plus",
+  "Name": "Computer System",
+  "NetworkInterfaces": {
+    "@odata.id": "/redfish/v1/Systems/S7/NetworkInterfaces"
+  },
+  "PowerState": "On",
+  "ProcessorSummary": {
+    "Count": 1,
+    "Model": "Intel(R) Xeon(R) E-2334 CPU @ 3.40GHz",
+    "Status": {
+      "HealthRollup": "OK"
+    }
+  },
+  "Processors": {
+    "@odata.id": "/redfish/v1/Systems/S7/Processors"
+  },
+  "SKU": "P45678-B21",
+  "SecureBoot": {
+    "@odata.id": "/redfish/v1/Systems/S7/SecureBoot"
+  },
+  "SerialNumber": "1M331XX2H0",
+  "Status": {
+    "Health": "OK",
+    "HealthRollup": "OK",
+    "State": "Enabled"
+  },
+  "Storage": {
+    "@odata.id": "/redfish/v1/Systems/S7/Storage"
+  },
+  "SystemType": "Physical",
+  "UUID": "31398950-2222-4D32-3678-313456789830"
+}
