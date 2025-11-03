@@ -481,13 +481,13 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 
 func accumulateExponentialHistogramValues(prev, current, dest pmetric.ExponentialHistogramDataPoint) {
 	if current.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
-		dest.SetStartTimestamp(prev.StartTimestamp())
-		current.Attributes().CopyTo(dest.Attributes())
-		dest.SetTimestamp(current.Timestamp())
-	} else {
 		dest.SetStartTimestamp(current.StartTimestamp())
 		prev.Attributes().CopyTo(dest.Attributes())
 		dest.SetTimestamp(prev.Timestamp())
+	} else {
+		dest.SetStartTimestamp(prev.StartTimestamp())
+		current.Attributes().CopyTo(dest.Attributes())
+		dest.SetTimestamp(current.Timestamp())
 	}
 
 	targetScale := min(current.Scale(), prev.Scale())
