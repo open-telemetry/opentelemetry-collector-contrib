@@ -38,8 +38,10 @@ The following settings can be optionally configured and have default values:
   - metrics_format (default `2006/01/02/metrics_15_04_05.json`): blob name format. The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
   - logs_format (default `2006/01/02/logs_15_04_05.json`): blob name format.
   - traces_format (default `2006/01/02/traces_15_04_05.json`): blob name format.
-  - serial_num_range (default `10000`): a range of random number to be appended after blob_name. e.g. `blob_name_{serial_num}`.
+  - serial_num_enabled (default `true`): toggles whether a random serial number is appended to the blob name.
+  - serial_num_range (default `10000`): a range of random number to be appended after blob_name. e.g. `blob_name_{serial_num}`. the number will be in `[0, serial_num_range)`.
   - serial_num_before_extension (default `false`): places the serial number before the file extension if there is one. e.g `blob_name_{serial_num}.json` instead of `blob_name.json_{serial_num}`
+  - time_parser_enabled (default `true`): controls whether the exporter interprets the format string as a Go time layout. When `false`, values such as `2006` or `15_04_05` are treated as literal text.
 - format (default `json`): `json` or `proto`. which present otel json or otel protobuf format, the file extension will be `json` or `pb`.
 - encodings (default using encoding specified in `format`, which is `json`): if specified, uses the encoding extension to encode telemetry data. Overrides format.
   - logs (default `nil`): encoding component id.
@@ -95,6 +97,8 @@ exporter:
       metrics_format: `{{ getResourceMetricAttr . 0 "service.name" }}/2006/01/02/metrics.json`
       logs_format: `{{ getScopeLogAttr . 0 0 "scope.name" }}/2006/01/02/logs.json`
       traces_format: `{{ (getSpan . 0 0 0).Name }}/2006/01/02/traces.json`
+      serial_num_enabled: true
+      time_parser_enabled: true
     auth:
       type: "connection_string"
       connection_string: "DefaultEndpointsProtocol=https;AccountName=<your-acount>;AccountKey=<account-key>;EndpointSuffix=core.windows.net"
