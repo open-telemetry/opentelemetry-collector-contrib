@@ -77,7 +77,7 @@ func getVSANMetricsFromMetadataYAML(t *testing.T) []string {
 		t.Fatalf("Failed to read metadata.yaml: %v", err)
 	}
 
-	var metadata MetadataYAML
+	var metadata metadataYAML
 	if err := yaml.Unmarshal(data, &metadata); err != nil {
 		t.Fatalf("Failed to parse metadata.yaml: %v", err)
 	}
