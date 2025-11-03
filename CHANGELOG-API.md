@@ -7,6 +7,19 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.139.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/opampsupervisor`: Remove common package, moving code where it is used instead. (#43885)
+- `extension/sumologic`: Move api and credentials packages to internal (#43789)
+- `pkg/translator/zipkin`: Unexport ToTranslator (#43852)
+- `receiver/aerospike`: Unexport mocks (#43788)
+- `receiver/azuremonitor`: unexport NewMutexMapImpl and NewSyncMapImpl (#43925)
+- `receiver/jmx`: unexport InsertDefault (#43965)
+
+<!-- previous-version -->
+
 ## v0.138.0
 
 ### 🛑 Breaking changes 🛑
