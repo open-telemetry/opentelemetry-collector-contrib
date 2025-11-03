@@ -34,14 +34,14 @@ func BenchmarkSampling(b *testing.B) {
 	defer func() {
 		require.NoError(b, tsp.Shutdown(b.Context()))
 	}()
-	metrics := &policyMetrics{}
+	metrics := newPolicyMetrics(len(cfg.PolicyCfgs))
 	sampleBatches := make([]*samplingpolicy.TraceData, 0, len(batches))
 
-	for range batches {
+	for _, batch := range batches {
 		sampleBatches = append(sampleBatches, &samplingpolicy.TraceData{
-			ArrivalTime: time.Now(),
-			// SpanCount:       spanCount,
-			ReceivedBatches: ptrace.NewTraces(),
+			ArrivalTime:     time.Now(),
+			SpanCount:       0,
+			ReceivedBatches: batch,
 		})
 	}
 
