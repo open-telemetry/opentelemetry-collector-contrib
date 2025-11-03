@@ -63,7 +63,8 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 		return nil, err
 	}
 	var filetype string
-	if util.IsGzipFile(file) {
+
+	if f.Compression != "" && util.IsGzipFile(file) {
 		filetype = gzipExtension
 	}
 
