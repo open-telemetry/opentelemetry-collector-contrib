@@ -26,11 +26,11 @@ import (
 // The type PathParserHelper implements the common code for parsers that differ
 // only by the way that they handle the <metric_path>.
 type pathParser interface {
-	// ParsePath parses the <metric_path> of a Carbon line (see Parse function
+	// parsePath parses the <metric_path> of a Carbon line (see Parse function
 	// for description of the full line). The results of parsing the path are
 	// stored on the parsedPath struct. Implementers of the interface can assume
 	// that the PathParserHelper will never pass nil when calling this method.
-	ParsePath(path string, parsedPath *parsedPath) error
+	parsePath(path string, parsedPath *parsedPath) error
 }
 
 // parsedPath holds the result of parsing the <metric_path> with the ParsePath
@@ -100,7 +100,7 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 	timestampStr := parts[2]
 
 	pp := parsedPath{}
-	err := pph.pathParser.ParsePath(path, &pp)
+	err := pph.pathParser.parsePath(path, &pp)
 	if err != nil {
 		return pmetric.Metric{}, fmt.Errorf("invalid carbon metric [%s]: %w", line, err)
 	}

@@ -203,7 +203,7 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &plaintextPathParser{}
 			got := parsedPath{}
-			err := p.ParsePath(tt.path, &got)
+			err := p.parsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

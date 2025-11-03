@@ -26,7 +26,7 @@ func (*PlaintextConfig) BuildParser() (Parser, error) {
 // treating tags per spec at https://graphite.readthedocs.io/en/latest/tags.html#carbon.
 type plaintextPathParser struct{}
 
-// ParsePath converts the <metric_path> of a Carbon line (see Parse function for
+// parsePath converts the <metric_path> of a Carbon line (see Parse function for
 // description of the full line). The metric path is expected to be in the
 // following format:
 //
@@ -37,7 +37,7 @@ type plaintextPathParser struct{}
 //
 // tag is of the form "key=val", where key can contain any char except ";!^=" and
 // val can contain any char except ";~".
-func (*plaintextPathParser) ParsePath(path string, parsedPath *parsedPath) error {
+func (*plaintextPathParser) parsePath(path string, parsedPath *parsedPath) error {
 	parts := strings.SplitN(path, ";", 2)
 	if len(parts) < 1 || parts[0] == "" {
 		return fmt.Errorf("empty metric name extracted from path [%s]", path)

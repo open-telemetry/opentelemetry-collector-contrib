@@ -163,7 +163,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parsedPath{}
-			err := rp.ParsePath(tt.path, &got)
+			err := rp.parsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -232,7 +232,7 @@ func Test_regexParser_parsePath_simple_unnamed_group(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parsedPath{}
-			err := rp.ParsePath(tt.path, &got)
+			err := rp.parsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -305,7 +305,7 @@ func Test_regexParser_parsePath_key_inside_unnamed_group(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parsedPath{}
-			err := rp.ParsePath(tt.path, &got)
+			err := rp.parsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -325,7 +325,7 @@ var res struct {
 	err        error
 }
 
-func Benchmark_regexPathParser_ParsePath(b *testing.B) {
+func Benchmark_regexPathParser_parsePath(b *testing.B) {
 	config := RegexParserConfig{
 		Rules: []*RegexRule{
 			{
@@ -357,7 +357,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	}
 
 	got := parsedPath{}
-	err := rp.ParsePath(tests[0], &got)
+	err := rp.parsePath(tests[0], &got)
 	res.name = got.MetricName
 	res.attributes = got.Attributes
 	res.metricType = got.MetricType
@@ -365,7 +365,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 
 	for b.Loop() {
 		for i := range tests {
-			err = rp.ParsePath(tests[i], &got)
+			err = rp.parsePath(tests[i], &got)
 		}
 	}
 

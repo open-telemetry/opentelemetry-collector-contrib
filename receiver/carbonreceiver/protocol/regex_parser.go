@@ -156,10 +156,10 @@ type regexPathParser struct {
 	plaintextPathParser plaintextPathParser
 }
 
-// ParsePath converts the <metric_path> of a Carbon line (see PathParserHelper
+// parsePath converts the <metric_path> of a Carbon line (see PathParserHelper
 // a full description of the line format) according to the RegexParserConfig
 // settings.
-func (rpp *regexPathParser) ParsePath(path string, parsedPath *parsedPath) error {
+func (rpp *regexPathParser) parsePath(path string, parsedPath *parsedPath) error {
 	for _, rule := range rpp.rules {
 		if !rule.compRegexp.MatchString(path) {
 			continue
@@ -213,7 +213,7 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *parsedPath) error
 		return nil
 	}
 
-	return rpp.plaintextPathParser.ParsePath(path, parsedPath)
+	return rpp.plaintextPathParser.parsePath(path, parsedPath)
 }
 
 func regexDefaultConfig() ParserConfig {
