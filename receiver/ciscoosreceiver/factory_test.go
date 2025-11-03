@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/interfacesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/systemscraper"
@@ -45,15 +46,15 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	// Add a device and scraper to make config valid
 	config := cfg.(*Config)
-	config.Device = DeviceConfig{
-		Device: DeviceInfo{
-			Host: HostInfo{
+	config.Device = connection.DeviceConfig{
+		Device: connection.DeviceInfo{
+			Host: connection.HostInfo{
 				Name: "test-device",
 				IP:   "192.168.1.1",
 				Port: 22,
 			},
 		},
-		Auth: AuthConfig{
+		Auth: connection.AuthConfig{
 			Username: "admin",
 			Password: configopaque.String("password"),
 		},
@@ -85,15 +86,15 @@ func TestCreateMetricsReceiverWithInterfacesScraper(t *testing.T) {
 
 	// Add a device and interfaces scraper
 	config := cfg.(*Config)
-	config.Device = DeviceConfig{
-		Device: DeviceInfo{
-			Host: HostInfo{
+	config.Device = connection.DeviceConfig{
+		Device: connection.DeviceInfo{
+			Host: connection.HostInfo{
 				Name: "test-device",
 				IP:   "192.168.1.1",
 				Port: 22,
 			},
 		},
-		Auth: AuthConfig{
+		Auth: connection.AuthConfig{
 			Username: "admin",
 			Password: configopaque.String("password"),
 		},
@@ -118,15 +119,15 @@ func TestCreateMetricsReceiverWithBothScrapers(t *testing.T) {
 
 	// Add a device and both scrapers
 	config := cfg.(*Config)
-	config.Device = DeviceConfig{
-		Device: DeviceInfo{
-			Host: HostInfo{
+	config.Device = connection.DeviceConfig{
+		Device: connection.DeviceInfo{
+			Host: connection.HostInfo{
 				Name: "test-device",
 				IP:   "192.168.1.1",
 				Port: 22,
 			},
 		},
-		Auth: AuthConfig{
+		Auth: connection.AuthConfig{
 			Username: "admin",
 			Password: configopaque.String("password"),
 		},

@@ -25,12 +25,12 @@ func BenchmarkConcurrentMapImpl(b *testing.B) {
 }
 
 func BenchmarkSyncMapImpl(b *testing.B) {
-	m := NewSyncMapImpl[int]()
+	m := newSyncMapImpl[int]()
 	benchmarkMapImpl(b, m)
 }
 
 func BenchmarkMutexMapImpl(b *testing.B) {
-	m := NewMutexMapImpl[int]()
+	m := newMutexMapImpl[int]()
 	benchmarkMapImpl(b, m)
 }
 
@@ -63,11 +63,11 @@ func BenchmarkConcurrentMapImplLarge(b *testing.B) {
 }
 
 func BenchmarkSyncMapImplLarge(b *testing.B) {
-	m := NewSyncMapImpl[int]()
+	m := newSyncMapImpl[int]()
 	benchmarkMapImplLarge(b, m)
 }
 
 func BenchmarkMutexMapImplLarge(b *testing.B) {
-	m := NewMutexMapImpl[int]()
+	m := newMutexMapImpl[int]()
 	benchmarkMapImplLarge(b, m)
 }
