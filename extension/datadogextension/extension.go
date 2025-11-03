@@ -5,7 +5,6 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"sort"
 	"sync"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -323,20 +323,12 @@ func newExtension(
 	// Format: ["key:value", ...]
 	resourceList := []string{}
 	if attrs := set.Resource.Attributes(); attrs.Len() > 0 {
-		resourceMap := make(map[string]string, attrs.Len())
 		attrs.Range(func(k string, v pcommon.Value) bool {
-			resourceMap[k] = v.Str()
+			resourceList = append(resourceList, k+":"+v.Str())
 			return true
 		})
-		keys := make([]string, 0, len(resourceMap))
-		for k := range resourceMap {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		resourceList = make([]string, 0, len(keys))
-		for _, k := range keys {
-			resourceList = append(resourceList, k+":"+resourceMap[k])
-		}
+		// Sort and deduplicate the resource attributes
+		resourceList = utils.UniqInPlace(resourceList)
 	}
 
 	// configure payloadSender struct

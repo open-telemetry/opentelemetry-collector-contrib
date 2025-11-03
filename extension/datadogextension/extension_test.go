@@ -219,6 +219,64 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	assert.NoError(t, ext.Shutdown(t.Context()))
 }
 
+func TestCollectorResourceAttributesAreSortedAndDeduped(t *testing.T) {
+	// Prepare TelemetrySettings with Resource attributes (including duplicates)
+	tel := componenttest.NewNopTelemetrySettings()
+	res := pcommon.NewResource()
+	// Add attributes in non-sorted order with duplicates
+	res.Attributes().PutStr("env", "prod")
+	res.Attributes().PutStr("team", "backend")
+	res.Attributes().PutStr("env", "prod") // duplicate - should be deduped
+	res.Attributes().PutStr("region", "us-east")
+	res.Attributes().PutStr("team", "backend") // duplicate - should be deduped
+	tel.Resource = res
+
+	set := extension.Settings{
+		TelemetrySettings: tel,
+		BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+	}
+	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+	cfg := &Config{
+		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		HTTPConfig: &httpserver.Config{
+			ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+			Path:         "/test-path",
+		},
+	}
+
+	ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+	require.NoError(t, err)
+	ext.serializer = &mockSerializer{}
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+	// Minimal config to trigger NotifyConfig
+	conf := confmap.NewFromStringMap(map[string]any{})
+	err = ext.NotifyConfig(t.Context(), conf)
+	require.NoError(t, err)
+
+	// Expect sorted and deduped ["env:prod", "region:us-east", "team:backend"]
+	require.NotNil(t, ext.otelCollectorMetadata)
+	expected := []string{"env:prod", "region:us-east", "team:backend"}
+	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
+
+	// Verify no duplicates
+	seen := make(map[string]bool)
+	for _, attr := range ext.otelCollectorMetadata.CollectorResourceAttributes {
+		assert.False(t, seen[attr], "duplicate attribute found: %s", attr)
+		seen[attr] = true
+	}
+
+	// Verify sorted order
+	for i := 1; i < len(ext.otelCollectorMetadata.CollectorResourceAttributes); i++ {
+		assert.True(t, ext.otelCollectorMetadata.CollectorResourceAttributes[i-1] < ext.otelCollectorMetadata.CollectorResourceAttributes[i],
+			"attributes not sorted: %v", ext.otelCollectorMetadata.CollectorResourceAttributes)
+	}
+
+	// Cleanup
+	assert.NoError(t, ext.Shutdown(t.Context()))
+}
+
 func TestComponentStatusChanged(t *testing.T) {
 	ext := &datadogExtension{}
 
