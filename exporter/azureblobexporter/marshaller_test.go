@@ -26,7 +26,7 @@ func TestNewMarshaller(t *testing.T) {
 			name: "valid json format",
 			config: &Config{
 				FormatType: formatTypeJSON,
-				Encodings:  &Encodings{},
+				Encodings:  Encodings{},
 			},
 			shouldError: false,
 		},
@@ -34,7 +34,7 @@ func TestNewMarshaller(t *testing.T) {
 			name: "valid proto format",
 			config: &Config{
 				FormatType: formatTypeProto,
-				Encodings:  &Encodings{},
+				Encodings:  Encodings{},
 			},
 			shouldError: false,
 		},
@@ -42,7 +42,7 @@ func TestNewMarshaller(t *testing.T) {
 			name: "invalid format",
 			config: &Config{
 				FormatType: "invalid",
-				Encodings:  &Encodings{},
+				Encodings:  Encodings{},
 			},
 			shouldError: true,
 		},
@@ -83,7 +83,7 @@ func TestMarshalTraces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := newMarshaller(&Config{FormatType: tt.formatType, Encodings: &Encodings{}}, componenttest.NewNopHost())
+			m, err := newMarshaller(&Config{FormatType: tt.formatType, Encodings: Encodings{}}, componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			data, err := m.marshalTraces(tt.traces)
@@ -114,7 +114,7 @@ func TestMarshalMetrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := newMarshaller(&Config{FormatType: tt.formatType, Encodings: &Encodings{}}, componenttest.NewNopHost())
+			m, err := newMarshaller(&Config{FormatType: tt.formatType, Encodings: Encodings{}}, componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			data, err := m.marshalMetrics(tt.metrics)
@@ -145,7 +145,7 @@ func TestMarshalLogs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := newMarshaller(&Config{FormatType: tt.formatType, Encodings: &Encodings{}}, componenttest.NewNopHost())
+			m, err := newMarshaller(&Config{FormatType: tt.formatType, Encodings: Encodings{}}, componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			data, err := m.marshalLogs(tt.logs)

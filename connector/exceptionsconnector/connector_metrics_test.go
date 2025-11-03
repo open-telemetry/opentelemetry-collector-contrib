@@ -5,7 +5,6 @@ package exceptionsconnector
 
 import (
 	"bytes"
-	"context"
 	"testing"
 	"time"
 
@@ -72,7 +71,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 
 			p := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
 
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			err := p.Start(ctx, componenttest.NewNopHost())
 			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
@@ -93,7 +92,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 		p := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
 		p.config.Exemplars.Enabled = false
 
-		ctx := metadata.NewIncomingContext(context.Background(), nil)
+		ctx := metadata.NewIncomingContext(t.Context(), nil)
 		err := p.Start(ctx, componenttest.NewNopHost())
 		defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 		require.NoError(t, err)
@@ -114,8 +113,8 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	traces := buildSampleTrace()
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
-	for n := 0; n < b.N; n++ {
+	ctx := metadata.NewIncomingContext(b.Context(), nil)
+	for b.Loop() {
 		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
 	}
 }
@@ -189,7 +188,7 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, numCumulati
 	assert.True(tb, m.At(0).Sum().IsMonotonic())
 	callsDps := m.At(0).Sum().DataPoints()
 	require.Equal(tb, 3, callsDps.Len())
-	for dpi := 0; dpi < 3; dpi++ {
+	for dpi := range 3 {
 		dp := callsDps.At(dpi)
 		assert.Equal(tb, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/kind combination")
 		assert.NotZero(tb, dp.StartTimestamp(), "StartTimestamp should be set")

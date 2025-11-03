@@ -4,7 +4,6 @@
 package azure
 
 import (
-	"context"
 	"errors"
 	"regexp"
 	"testing"
@@ -37,6 +36,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
 		VMScaleSetName:    "myScaleset",
+		AvailabilityZone:  "availabilityZone",
 		TagsList: []azure.ComputeTagsListMetadata{
 			{
 				Name:  "tag1key",
@@ -56,7 +56,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		},
 		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mp.AssertExpectations(t)
@@ -91,7 +91,7 @@ func TestDetectError(t *testing.T) {
 		logger:   zap.NewNop(),
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
-	res, _, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(t.Context())
 	assert.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 }

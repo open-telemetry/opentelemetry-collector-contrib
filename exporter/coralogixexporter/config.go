@@ -4,11 +4,16 @@
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -18,34 +23,67 @@ import (
 const (
 	cxAppNameAttrName       = "cx.application.name"
 	cxSubsystemNameAttrName = "cx.subsystem.name"
+	httpProtocol            = "http"
+	grpcProtocol            = "grpc"
 )
 
-// Config defines by Coralogix.
+// TransportConfig extends configgrpc.ClientConfig with additional HTTP-specific settings
+type TransportConfig struct {
+	// Embed the gRPC configuration to ensure backward compatibility
+	configgrpc.ClientConfig `mapstructure:",squash"`
+
+	// The following fields are only used when protocol is "http"
+	ProxyURL string        `mapstructure:"proxy_url,omitempty"` // Used only if protocol is http
+	Timeout  time.Duration `mapstructure:"timeout,omitempty"`   // Used only if protocol is http
+}
+
+func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	headers := c.Headers
+	if headers == nil {
+		headers = make(map[string]configopaque.String)
+	}
+	headers["Content-Type"] = "application/x-protobuf"
+
+	httpClientConfig := confighttp.ClientConfig{
+		ProxyURL:        c.ProxyURL,
+		TLS:             c.TLS,
+		ReadBufferSize:  c.ReadBufferSize,
+		WriteBufferSize: c.WriteBufferSize,
+		Timeout:         c.Timeout,
+		Headers:         headers,
+		Compression:     c.Compression,
+	}
+	return httpClientConfig.ToClient(ctx, host, settings)
+}
+
+// Config defines configuration for Coralogix exporter.
 type Config struct {
 	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 
+	// Protocol to use for communication. Options: "grpc" (default), "http"
+	Protocol string `mapstructure:"protocol"`
+
 	// Coralogix domain
 	Domain string `mapstructure:"domain"`
-	// GRPC Settings used with Domain
-	DomainSettings configgrpc.ClientConfig `mapstructure:"domain_settings"`
 
-	// Deprecated: [v0.60.0] Coralogix jaeger based trace endpoint
-	// will be removed in the next version
-	// Please use OTLP endpoint using traces.endpoint
-	configgrpc.ClientConfig `mapstructure:",squash"`
+	// Transport settings used with Domain (supports both gRPC and HTTP)
+	DomainSettings TransportConfig `mapstructure:"domain_settings"`
 
-	// Coralogix traces ingress endpoint
-	Traces configgrpc.ClientConfig `mapstructure:"traces"`
+	// Use AWS PrivateLink for the domain
+	PrivateLink bool `mapstructure:"private_link"`
 
-	// The Coralogix metrics ingress endpoint
-	Metrics configgrpc.ClientConfig `mapstructure:"metrics"`
+	// Coralogix traces ingress endpoint (supports both gRPC and HTTP)
+	Traces TransportConfig `mapstructure:"traces"`
 
-	// The Coralogix logs ingress endpoint
-	Logs configgrpc.ClientConfig `mapstructure:"logs"`
+	// The Coralogix metrics ingress endpoint (supports both gRPC and HTTP)
+	Metrics TransportConfig `mapstructure:"metrics"`
 
-	// The Coralogix profiles ingress endpoint
+	// The Coralogix logs ingress endpoint (supports both gRPC and HTTP)
+	Logs TransportConfig `mapstructure:"logs"`
+
+	// The Coralogix profiles ingress endpoint (gRPC only)
 	Profiles configgrpc.ClientConfig `mapstructure:"profiles"`
 
 	// Your Coralogix private key (sensitive) for authentication
@@ -78,6 +116,10 @@ func isEmpty(endpoint string) bool {
 }
 
 func (c *Config) Validate() error {
+	if c.Protocol != grpcProtocol && c.Protocol != httpProtocol && c.Protocol != "" {
+		return fmt.Errorf("protocol must be %s or %s", grpcProtocol, httpProtocol)
+	}
+
 	// validate that at least one endpoint is set up correctly
 	if isEmpty(c.Domain) &&
 		isEmpty(c.Traces.Endpoint) &&
@@ -93,12 +135,6 @@ func (c *Config) Validate() error {
 		return errors.New("`application_name` not specified, please fix the configuration")
 	}
 
-	if len(c.Headers) == 0 {
-		c.Headers = make(map[string]configopaque.String)
-	}
-	c.Headers["ACCESS_TOKEN"] = c.PrivateKey
-	c.Headers["appName"] = configopaque.String(c.AppName)
-
 	if c.RateLimiter.Enabled {
 		if c.RateLimiter.Threshold <= 0 {
 			return errors.New("`rate_limiter.threshold` must be greater than 0")
@@ -107,6 +143,12 @@ func (c *Config) Validate() error {
 			return errors.New("`rate_limiter.duration` must be greater than 0")
 		}
 	}
+
+	// Validate that HTTP protocol is not used with profiles
+	if c.Protocol == httpProtocol && !isEmpty(c.Profiles.Endpoint) {
+		return errors.New("profiles signal is not supported with HTTP protocol, use gRPC protocol (default) instead")
+	}
+
 	return nil
 }
 
@@ -152,7 +194,73 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 }
 
 func (c *Config) getDomainGrpcSettings() *configgrpc.ClientConfig {
-	settings := c.DomainSettings
-	settings.Endpoint = fmt.Sprintf("ingress.%s:443", c.Domain)
+	settings := c.DomainSettings.ClientConfig
+	domain := c.Domain
+
+	// If PrivateLink is enabled, use the private link endpoint.
+	// However, if the domain already contains "private", don't add it again.
+	if c.PrivateLink && !strings.Contains(domain, "private.") {
+		settings.Endpoint = fmt.Sprintf("ingress.private.%s:443", domain)
+	} else {
+		settings.Endpoint = fmt.Sprintf("ingress.%s:443", domain)
+	}
+
 	return &settings
+}
+
+// getMergedTransportConfig returns a TransportConfig that merges signal-specific settings with domain settings.
+// Signal-specific settings take precedence over domain settings.
+func (c *Config) getMergedTransportConfig(signalConfig *TransportConfig) *TransportConfig {
+	merged := c.DomainSettings
+
+	if signalConfig.ProxyURL != "" {
+		merged.ProxyURL = signalConfig.ProxyURL
+	}
+	if signalConfig.Timeout != 0 {
+		merged.Timeout = signalConfig.Timeout
+	}
+
+	if signalConfig.Compression != "" {
+		merged.Compression = signalConfig.Compression
+	}
+	if signalConfig.TLS.Insecure || signalConfig.TLS.InsecureSkipVerify || signalConfig.TLS.CAFile != "" {
+		merged.TLS = signalConfig.TLS
+	}
+	if len(signalConfig.Headers) > 0 {
+		// Deep-copy domain headers to avoid mutating the shared map
+		headers := make(map[string]configopaque.String)
+		for k, v := range merged.Headers {
+			headers[k] = v
+		}
+		for k, v := range signalConfig.Headers {
+			headers[k] = v
+		}
+		merged.Headers = headers
+	}
+	if signalConfig.WriteBufferSize > 0 {
+		merged.WriteBufferSize = signalConfig.WriteBufferSize
+	}
+	if signalConfig.ReadBufferSize > 0 {
+		merged.ReadBufferSize = signalConfig.ReadBufferSize
+	}
+	if signalConfig.WaitForReady {
+		merged.WaitForReady = signalConfig.WaitForReady
+	}
+	if signalConfig.BalancerName != "" {
+		merged.BalancerName = signalConfig.BalancerName
+	}
+	if signalConfig.Keepalive.HasValue() {
+		merged.Keepalive = signalConfig.Keepalive
+	}
+	if signalConfig.Auth.HasValue() {
+		merged.Auth = signalConfig.Auth
+	}
+
+	if isEmpty(signalConfig.Endpoint) {
+		merged.Endpoint = c.getDomainGrpcSettings().Endpoint
+	} else {
+		merged.Endpoint = signalConfig.Endpoint
+	}
+
+	return &merged
 }

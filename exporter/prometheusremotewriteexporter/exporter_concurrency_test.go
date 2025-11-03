@@ -36,7 +36,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	n := 1000
 	ms := make([]pmetric.Metrics, n)
 	testIDKey := "test_id"
-	for i := 0; i < n; i++ {
+	for i := range n {
 		m := testdata.GenerateMetricsOneMetric()
 		dps := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints()
 		for j := 0; j < dps.Len(); j++ {
@@ -108,7 +108,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		ClientConfig:      clientConfig,
 		MaxBatchSizeBytes: 3000000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
-		TargetInfo: &TargetInfo{
+		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
 		BackOffConfig:       retrySettings,
@@ -120,7 +120,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	prwe, nErr := newPRWExporter(cfg, set)
 
 	require.NoError(t, nErr)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
 	defer func() {

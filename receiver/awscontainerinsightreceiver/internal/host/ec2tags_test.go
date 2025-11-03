@@ -59,7 +59,7 @@ func TestEC2TagsForEKS(t *testing.T) {
 				refreshInterval:       time.Millisecond,
 				logger:                zap.NewNop(),
 			}
-			et.refresh(context.Background())
+			et.refresh(t.Context())
 			assert.Equal(t, "cluster-name", et.getClusterName())
 			assert.Equal(t, "asg", et.getAutoScalingGroupName())
 		})
@@ -98,7 +98,7 @@ func TestEC2TagsForECS(t *testing.T) {
 				refreshInterval:       time.Millisecond,
 				logger:                zap.NewNop(),
 			}
-			et.refresh(context.Background())
+			et.refresh(t.Context())
 			assert.Equal(t, "asg", et.getAutoScalingGroupName())
 		})
 	}

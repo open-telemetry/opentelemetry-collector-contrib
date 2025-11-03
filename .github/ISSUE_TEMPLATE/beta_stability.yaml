@@ -1,6 +1,6 @@
 name: Beta stability promotion
 description: Promote a component to beta stability
-labels: ["needs triage"]
+labels: ["needs triage", "promote-beta"]
 body:
   - type: markdown
     attributes:
@@ -35,6 +35,7 @@ body:
       - connector/routing
       - connector/servicegraph
       - connector/signaltometrics
+      - connector/slowsql
       - connector/spanmetrics
       - connector/sum
       - exporter/alertmanager
@@ -60,6 +61,7 @@ body:
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
+      - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
@@ -68,7 +70,6 @@ body:
       - exporter/logicmonitor
       - exporter/logzio
       - exporter/mezmo
-      - exporter/opencensus
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -139,9 +140,11 @@ body:
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
+      - internal/healthcheck
       - internal/k8sconfig
       - internal/kafka
       - internal/kubelet
@@ -168,6 +171,7 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/stanza/operator/input/journald
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
@@ -206,19 +210,26 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
+      - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
-      - processor/routing
+      - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/openstack/nova
+      - processor/resourcedetection/internal/oraclecloud
+      - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/upcloud
+      - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
       - receiver/apachespark
       - receiver/awscloudwatch
-      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
@@ -230,6 +241,8 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/ciscoos
+      - receiver/ciscoos/internal/scraper/systemscraper
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
@@ -264,6 +277,7 @@ body:
       - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces
+      - receiver/icmpcheck
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
@@ -287,7 +301,6 @@ body:
       - receiver/nginx
       - receiver/nsxt
       - receiver/ntp
-      - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
       - receiver/otelarrow
@@ -302,10 +315,10 @@ body:
       - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
+      - receiver/redfish
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/sapm
       - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
@@ -371,6 +384,10 @@ body:
       options:
         - label: The component describes the resource attributes.
         - label: The component documents the name, description, type, attributes, and unit of each metric.
+  - type: input
+    attributes:
+      label: Reviewer(s)
+      description: The name of one or more contrib approvers who are reviewing and signing off on the promotion
   - type: dropdown
     attributes:
       label: Tip
@@ -378,7 +395,3 @@ body:
       options:
         - <sub>[React](https://github.blog/news-insights/product-news/add-reactions-to-pull-requests-issues-and-comments/) with 👍 to help prioritize this issue. Please use comments to provide useful context, avoiding `+1` or `me too`, to help us triage it. Learn more [here](https://opentelemetry.io/community/end-user/issue-participation/).</sub>
       default: 0
-  - type: input
-    attributes:
-      label: Reviewer(s)
-      description: The name of one or more contrib approvers who are reviewing and signing off on the promotion

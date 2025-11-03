@@ -144,8 +144,8 @@ func BenchmarkProcessor(gb *testing.B) {
 			b.ResetTimer()
 			b.StopTimer()
 
-			ctx := context.Background()
-			for range b.N {
+			ctx := gb.Context()
+			for b.Loop() {
 				for i := range ms.Len() {
 					cs.next(ms.At(i))
 				}
@@ -234,7 +234,7 @@ func Benchmark(b *testing.B) {
 		// block until all others have too and recordings are reset
 		<-wait
 
-		ctx := context.Background()
+		ctx := b.Context()
 		for n := 0; pb.Next(); n++ {
 			for _, m := range ms {
 				// re-using output as input, so reset temporality to delta
@@ -279,7 +279,7 @@ func maxCPUs() int {
 		return cpus
 	}
 
-	for _, s := range strings.Split(list.Value.String(), ",") {
+	for s := range strings.SplitSeq(list.Value.String(), ",") {
 		n, err := strconv.Atoi(s)
 		if err != nil {
 			panic(err)

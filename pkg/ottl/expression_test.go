@@ -111,17 +111,19 @@ func basicSliceByte() (ExprFunc[any], error) {
 
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
-		name string
-		val  value
-		ctx  any
-		want any
+		name        string
+		val         value
+		ctx         any
+		want        any
+		wantLiteral bool
 	}{
 		{
 			name: "string literal",
 			val: value{
 				String: ottltest.Strp("str"),
 			},
-			want: "str",
+			want:        "str",
+			wantLiteral: true,
 		},
 		{
 			name: "float literal",
@@ -130,7 +132,8 @@ func Test_newGetter(t *testing.T) {
 					Float: ottltest.Floatp(1.2),
 				},
 			},
-			want: 1.2,
+			want:        1.2,
+			wantLiteral: true,
 		},
 		{
 			name: "int literal",
@@ -139,28 +142,32 @@ func Test_newGetter(t *testing.T) {
 					Int: ottltest.Intp(12),
 				},
 			},
-			want: int64(12),
+			want:        int64(12),
+			wantLiteral: true,
 		},
 		{
 			name: "bytes literal",
 			val: value{
 				Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 			},
-			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
+			want:        []byte{1, 2, 3, 4, 5, 6, 7, 8},
+			wantLiteral: true,
 		},
 		{
 			name: "nil literal",
 			val: value{
 				IsNil: (*isNil)(ottltest.Boolp(true)),
 			},
-			want: nil,
+			want:        nil,
+			wantLiteral: true,
 		},
 		{
 			name: "bool literal",
 			val: value{
 				Bool: (*boolean)(ottltest.Boolp(true)),
 			},
-			want: true,
+			want:        true,
+			wantLiteral: true,
 		},
 		{
 			name: "path expression",
@@ -387,7 +394,8 @@ func Test_newGetter(t *testing.T) {
 			val: value{
 				Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
 			},
-			want: int64(1),
+			want:        int64(1),
+			wantLiteral: true,
 		},
 		{
 			name: "empty list",
@@ -396,7 +404,8 @@ func Test_newGetter(t *testing.T) {
 					Values: []value{},
 				},
 			},
-			want: []any{},
+			want:        []any{},
+			wantLiteral: false,
 		},
 		{
 			name: "string list",
@@ -412,7 +421,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{"test0", "test1"},
+			want:        []any{"test0", "test1"},
+			wantLiteral: true,
 		},
 		{
 			name: "int list",
@@ -432,7 +442,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{int64(1), int64(2)},
+			want:        []any{int64(1), int64(2)},
+			wantLiteral: true,
 		},
 		{
 			name: "float list",
@@ -452,7 +463,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{1.2, 2.4},
+			want:        []any{1.2, 2.4},
+			wantLiteral: true,
 		},
 		{
 			name: "bool list",
@@ -468,7 +480,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{true, false},
+			want:        []any{true, false},
+			wantLiteral: true,
 		},
 		{
 			name: "byte slice list",
@@ -484,7 +497,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{[]byte{1, 2, 3, 4, 5, 6, 7, 8}, []byte{9, 8, 7, 6, 5, 4, 3, 2}},
+			want:        []any{[]byte{1, 2, 3, 4, 5, 6, 7, 8}, []byte{9, 8, 7, 6, 5, 4, 3, 2}},
+			wantLiteral: true,
 		},
 		{
 			name: "path expression",
@@ -539,7 +553,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{nil, nil},
+			want:        []any{nil, nil},
+			wantLiteral: true,
 		},
 		{
 			name: "heterogeneous slice",
@@ -557,7 +572,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{"test0", int64(1)},
+			want:        []any{"test0", int64(1)},
+			wantLiteral: true,
 		},
 		{
 			name: "map",
@@ -712,17 +728,22 @@ func Test_newGetter(t *testing.T) {
 				tCtx = tt.ctx
 			}
 
-			val, err := reader.Get(context.Background(), tCtx)
-			assert.NoError(t, err)
+			valueComparator := NewValueComparator()
+			litGetter, isLiteralGetter := reader.(literalGetter)
 
-			switch v := val.(type) {
-			case pcommon.Map:
-				// need to compare the raw map here as require.EqualValues can not seem to handle
-				// the comparison of pcommon.Map
-				assert.EqualValues(t, tt.want, v.AsRaw())
-			default:
-				assert.Equal(t, tt.want, v)
+			var val any
+			if tt.wantLiteral {
+				require.True(t, litGetter.isLiteral())
+				val, err = litGetter.getLiteral()
+				require.NoError(t, err)
+			} else {
+				if isLiteralGetter {
+					require.False(t, litGetter.isLiteral())
+				}
+				val, err = reader.Get(t.Context(), tCtx)
+				require.NoError(t, err)
 			}
+			assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
 		})
 	}
 
@@ -887,7 +908,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := p.newGetter(tt.val)
 			assert.NoError(t, err)
-			_, err = reader.Get(context.Background(), nil)
+			_, err = reader.Get(t.Context(), nil)
 			assert.Equal(t, tt.err, err)
 		})
 	}
@@ -945,7 +966,7 @@ func Test_StandardStringGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -1050,7 +1071,7 @@ func Test_FunctionGetter(t *testing.T) {
 			fn, err := editorArgs.Function.Get(&FuncArgs{Input: editorArgs.Replacement})
 			if tt.valid {
 				var result any
-				result, err = fn.Eval(context.Background(), nil)
+				result, err = fn.Eval(t.Context(), nil)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, result.(string))
 			} else {
@@ -1067,7 +1088,7 @@ func Test_StandardStringGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1191,7 +1212,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -1214,7 +1235,7 @@ func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1272,7 +1293,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -1291,7 +1312,7 @@ func Test_StandardFloatGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1445,7 +1466,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -1468,7 +1489,7 @@ func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1526,7 +1547,7 @@ func Test_StandardIntGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -1545,7 +1566,7 @@ func Test_StandardIntGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1699,7 +1720,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -1722,7 +1743,7 @@ func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1898,7 +1919,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -1921,7 +1942,7 @@ func Test_StandardByteSliceLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1979,7 +2000,7 @@ func Test_StandardBoolGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -1998,7 +2019,7 @@ func Test_StandardBoolGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2131,7 +2152,7 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				if tt.want == nil {
@@ -2154,7 +2175,7 @@ func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2332,7 +2353,7 @@ func Test_StandardPSliceGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -2350,7 +2371,7 @@ func Test_StandardPSliceGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	var typeError TypeError
 	assert.ErrorAs(t, err, &typeError)
@@ -2418,7 +2439,7 @@ func Test_StandardPMapGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -2437,7 +2458,7 @@ func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2524,7 +2545,7 @@ func Test_StandardDurationGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
@@ -2542,7 +2563,7 @@ func Test_StandardDurationGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2610,7 +2631,7 @@ func Test_StandardTimeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(context.Background(), nil)
+			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				var want time.Time
@@ -2631,8 +2652,879 @@ func Test_StandardTimeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(context.Background(), nil)
+	_, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
+}
+
+type mockedGetter[K any] struct{}
+
+func (mockedGetter[K]) Get(_ context.Context, _ K) (any, error) {
+	return nil, nil
+}
+
+func Test_newStandardStringGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardStringGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardStringGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return "foo", nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         "foo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardStringGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
+}
+
+func Test_newStandardStringLikeGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardStringLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardStringLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return "foo", nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         "foo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardStringLikeGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, *val.(*string))
+			}
+		})
+	}
+}
+
+func Test_newStandardIntGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardIntGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardIntGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return int64(1), nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         int64(1),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardIntGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
+}
+
+func Test_newStandardIntLikeGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardIntLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardIntLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return int64(1), nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         int64(1),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardIntLikeGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, *(val.(*int64)))
+			}
+		})
+	}
+}
+
+func Test_newStandardFloatGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardFloatGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardFloatGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return float64(1), nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         float64(1),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardFloatGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
+}
+
+func Test_newStandardFloatLikeGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardFloatLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardFloatLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return float64(1), nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         float64(1),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardFloatLikeGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, *(val.(*float64)))
+			}
+		})
+	}
+}
+
+func Test_newStandardBoolGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardBoolGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardBoolGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return true, nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardBoolGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
+}
+
+func Test_newStandardBoolLikeGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardBoolLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardBoolLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return true, nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardBoolLikeGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, *(val.(*bool)))
+			}
+		})
+	}
+}
+
+func Test_newStandardDurationGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardDurationGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardDurationGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return 100 * time.Millisecond, nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         100 * time.Millisecond,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardDurationGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
+}
+
+func Test_newStandardTimeGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	currentTime := time.Now()
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardTimeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardTimeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return currentTime, nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         currentTime,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardTimeGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
+}
+
+func Test_newStandardByteSliceLikeGetterGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardByteSliceLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardByteSliceLikeGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return []byte{0, 1}, nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         []byte{0, 1},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardByteSliceLikeGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
+}
+
+func Test_newStandardPMapGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	m := pcommon.NewMap()
+	m.PutStr("foo", "bar")
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardPMapGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardPMapGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return m, nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         m,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardPMapGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
+}
+
+func Test_newStandardPSliceGetter(t *testing.T) {
+	type args[K any] struct {
+		getter Getter[K]
+	}
+	type testCase[K any] struct {
+		name            string
+		args            args[K]
+		wantLiteralTrue bool
+		wantErr         string
+		wantVal         any
+	}
+
+	s := pcommon.NewSlice()
+	s.AppendEmpty().SetStr("foo")
+
+	tests := []testCase[any]{
+		{
+			name: "getter does not implement literalGetter",
+			args: args[any]{
+				getter: &mockedGetter[any]{},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardPSliceGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, no literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: false,
+				},
+			},
+			wantLiteralTrue: false,
+			wantErr:         "StandardPSliceGetter value is not a literal",
+		},
+		{
+			name: "getter implements literalGetter, literal value",
+			args: args[any]{
+				getter: &mockLiteralGetter[any, any]{
+					literal: true,
+					valueGetter: func(_ context.Context, _ any) (any, error) {
+						return s, nil
+					},
+				},
+			},
+			wantLiteralTrue: true,
+			wantVal:         s,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newStandardPSliceGetter(tt.args.getter)
+			require.NotNil(t, g)
+			require.NotNil(t, g.Getter)
+			assert.Equal(t, tt.wantLiteralTrue, g.isLiteral())
+
+			val, err := g.getLiteral()
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, val)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantVal, val)
+			}
+		})
+	}
 }

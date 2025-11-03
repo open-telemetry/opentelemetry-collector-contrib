@@ -201,7 +201,7 @@ func TestPathExpressionParser(t *testing.T) {
 				return
 			}
 
-			val, err := getter.Get(context.Background(), testContext{})
+			val, err := getter.Get(t.Context(), testContext{})
 			require.NoError(t, err)
 
 			switch tt.expectedType {

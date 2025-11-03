@@ -192,6 +192,6 @@ func Test_ContainsValue_Error(t *testing.T) {
 	}
 
 	exprFunc := containsValue(target, item)
-	_, err := exprFunc(context.Background(), nil)
+	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

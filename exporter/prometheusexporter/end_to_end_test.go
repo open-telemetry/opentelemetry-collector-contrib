@@ -51,7 +51,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	srvURL, err := url.Parse(dropWizardServer.URL)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
@@ -72,7 +72,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 
 	// 3. Create the Prometheus receiver scraping from the DropWizard mock server and
 	// it'll feed scraped and converted metrics then pass them to the Prometheus exporter.
-	yamlConfig := []byte(fmt.Sprintf(`
+	yamlConfig := fmt.Appendf(nil, `
         global:
           scrape_interval: 2ms
           
@@ -82,7 +82,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
               scrape_timeout: 50ms
               static_configs:
                 - targets: ['%s']
-        `, srvURL.Host))
+        `, srvURL.Host)
 	receiverConfig := new(prometheusreceiver.PromConfig)
 	require.NoError(t, yaml.Unmarshal(yamlConfig, receiverConfig))
 

@@ -4,7 +4,6 @@
 package openshift
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -31,13 +30,13 @@ func TestQueryEndpointFailed(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	_, err := provider.OpenShiftClusterVersion(context.Background())
+	_, err := provider.OpenShiftClusterVersion(t.Context())
 	assert.Error(t, err)
 
-	_, err = provider.K8SClusterVersion(context.Background())
+	_, err = provider.K8SClusterVersion(t.Context())
 	assert.Error(t, err)
 
-	_, err = provider.Infrastructure(context.Background())
+	_, err = provider.Infrastructure(t.Context())
 	assert.Error(t, err)
 }
 
@@ -54,7 +53,7 @@ func TestQueryEndpointMalformed(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	_, err := provider.Infrastructure(context.Background())
+	_, err := provider.Infrastructure(t.Context())
 	assert.Error(t, err)
 }
 
@@ -81,7 +80,7 @@ func TestQueryEndpointCorrectK8SClusterVersion(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	got, err := provider.K8SClusterVersion(context.Background())
+	got, err := provider.K8SClusterVersion(t.Context())
 	require.NoError(t, err)
 	expect := "v1.21.11"
 	assert.Equal(t, expect, got)
@@ -106,7 +105,7 @@ func TestQueryEndpointCorrectOpenShiftClusterVersion(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	got, err := provider.OpenShiftClusterVersion(context.Background())
+	got, err := provider.OpenShiftClusterVersion(t.Context())
 	require.NoError(t, err)
 	expect := "4.8.51"
 	assert.Equal(t, expect, got)
@@ -139,7 +138,7 @@ func TestQueryEndpointCorrectInfrastructureAWS(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	got, err := provider.Infrastructure(context.Background())
+	got, err := provider.Infrastructure(t.Context())
 	require.NoError(t, err)
 	expect := InfrastructureAPIResponse{
 		Status: InfrastructureStatus{
@@ -184,7 +183,7 @@ func TestQueryEndpointCorrectInfrastructureAzure(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	got, err := provider.Infrastructure(context.Background())
+	got, err := provider.Infrastructure(t.Context())
 	require.NoError(t, err)
 	expect := InfrastructureAPIResponse{
 		Status: InfrastructureStatus{
@@ -227,7 +226,7 @@ func TestQueryEndpointCorrectInfrastructureGCP(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	got, err := provider.Infrastructure(context.Background())
+	got, err := provider.Infrastructure(t.Context())
 	require.NoError(t, err)
 	expect := InfrastructureAPIResponse{
 		Status: InfrastructureStatus{
@@ -270,7 +269,7 @@ func TestQueryEndpointCorrectInfrastructureIBMCloud(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	got, err := provider.Infrastructure(context.Background())
+	got, err := provider.Infrastructure(t.Context())
 	require.NoError(t, err)
 	expect := InfrastructureAPIResponse{
 		Status: InfrastructureStatus{
@@ -313,7 +312,7 @@ func TestQueryEndpointCorrectInfrastructureOpenstack(t *testing.T) {
 		client:  &http.Client{},
 	}
 
-	got, err := provider.Infrastructure(context.Background())
+	got, err := provider.Infrastructure(t.Context())
 	require.NoError(t, err)
 	expect := InfrastructureAPIResponse{
 		Status: InfrastructureStatus{

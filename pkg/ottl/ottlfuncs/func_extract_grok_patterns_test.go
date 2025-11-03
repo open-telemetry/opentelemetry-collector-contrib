@@ -113,7 +113,7 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 			exprFunc, err := extractGrokPatterns(target, tt.pattern, nco, patternDefinitionOptional)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 
 			resultMap, ok := result.(pcommon.Map)

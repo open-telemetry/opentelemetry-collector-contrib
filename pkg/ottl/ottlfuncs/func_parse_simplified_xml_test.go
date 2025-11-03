@@ -250,7 +250,7 @@ func Test_ParseSimplifiedXML(t *testing.T) {
 				},
 			}
 			exprFunc := parseSimplifiedXML(target)
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -273,6 +273,6 @@ func TestCreateParseSimplifiedXMLFunc(t *testing.T) {
 		})
 	assert.NoError(t, err)
 	assert.NotNil(t, exprFunc)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

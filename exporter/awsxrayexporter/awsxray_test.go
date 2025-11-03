@@ -4,7 +4,6 @@
 package awsxrayexporter
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
@@ -29,7 +28,7 @@ import (
 
 func TestTraceExport(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
-	ctx := context.Background()
+	ctx := t.Context()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
@@ -45,7 +44,7 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
-	ctx := context.Background()
+	ctx := t.Context()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
@@ -77,9 +76,9 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter, err := newTracesExporter(context.Background(), cfg, set, registry)
+	traceExporter, err := newTracesExporter(t.Context(), cfg, set, registry)
 	assert.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
 	td := constructSpanData()
 	err = traceExporter.ConsumeTraces(ctx, td)
@@ -98,7 +97,7 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		ctx := context.Background()
+		ctx := b.Context()
 		td := constructSpanData()
 		b.StartTimer()
 		err := traceExporter.ConsumeTraces(ctx, td)
@@ -108,7 +107,7 @@ func BenchmarkForTracesExporter(b *testing.B) {
 
 func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	tb.Helper()
-	traceExporter, err := newTracesExporter(context.Background(), exporterConfig, exportertest.NewNopSettings(metadata.Type), registry)
+	traceExporter, err := newTracesExporter(tb.Context(), exporterConfig, exportertest.NewNopSettings(metadata.Type), registry)
 	if err != nil {
 		panic(err)
 	}

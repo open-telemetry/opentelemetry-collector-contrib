@@ -7,7 +7,6 @@
 package proxy
 
 import (
-	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -16,7 +15,9 @@ import (
 	"testing"
 	"time"
 
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -44,7 +45,7 @@ func TestHappyCase(t *testing.T) {
 		_ = srv.ListenAndServe()
 	}()
 	defer func() {
-		assert.NoError(t, srv.Shutdown(context.Background()))
+		assert.NoError(t, srv.Shutdown(t.Context()))
 	}()
 
 	assert.Eventuallyf(t, func() bool {

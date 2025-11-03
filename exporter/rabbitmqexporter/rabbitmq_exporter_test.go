@@ -35,11 +35,11 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
-	err := exporter.start(context.Background(), componenttest.NewNopHost())
+	err := exporter.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	pub.On("Close").Return(nil)
-	err = exporter.shutdown(context.Background())
+	err = exporter.shutdown(t.Context())
 	require.NoError(t, err)
 
 	pub.AssertExpectations(t)
@@ -57,10 +57,10 @@ func TestStart_UnknownMarshallerEncoding(t *testing.T) {
 	cfg.EncodingExtensionID = &unknownExtensionID
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
-	err := exporter.start(context.Background(), componenttest.NewNopHost())
+	err := exporter.start(t.Context(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "unknown encoding \"invalid_encoding\"")
 
-	err = exporter.shutdown(context.Background())
+	err = exporter.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -72,10 +72,10 @@ func TestStart_PublisherCreationErr(t *testing.T) {
 	}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
-	err := exporter.start(context.Background(), componenttest.NewNopHost())
+	err := exporter.start(t.Context(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "simulating error creating publisher")
 
-	err = exporter.shutdown(context.Background())
+	err = exporter.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -91,10 +91,10 @@ func TestStart_TLSError(t *testing.T) {
 	}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, tlsFactory, routingKey, connectionName)
 
-	err := exporter.start(context.Background(), componenttest.NewNopHost())
+	err := exporter.start(t.Context(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "simulating tls config error")
 
-	err = exporter.shutdown(context.Background())
+	err = exporter.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -104,7 +104,7 @@ func TestPublishMetrics(t *testing.T) {
 	pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
 		return message.RoutingKey == routingKey && len(message.Body) > 0 && message.Exchange == ""
 	})).Return(nil)
-	err := exporter.publishMetrics(context.Background(), testdata.GenerateMetricsOneMetric())
+	err := exporter.publishMetrics(t.Context(), testdata.GenerateMetricsOneMetric())
 
 	require.NoError(t, err)
 	pub.AssertExpectations(t)
@@ -116,7 +116,7 @@ func TestPublishTraces(t *testing.T) {
 	pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
 		return message.RoutingKey == routingKey && len(message.Body) > 0 && message.Exchange == ""
 	})).Return(nil)
-	err := exporter.publishTraces(context.Background(), testdata.GenerateTracesOneSpan())
+	err := exporter.publishTraces(t.Context(), testdata.GenerateTracesOneSpan())
 
 	require.NoError(t, err)
 	pub.AssertExpectations(t)
@@ -128,7 +128,7 @@ func TestPublishLogs(t *testing.T) {
 	pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
 		return message.RoutingKey == routingKey && len(message.Body) > 0 && message.Exchange == ""
 	})).Return(nil)
-	err := exporter.publishLogs(context.Background(), testdata.GenerateLogsOneLogRecord())
+	err := exporter.publishLogs(t.Context(), testdata.GenerateLogsOneLogRecord())
 
 	require.NoError(t, err)
 	pub.AssertExpectations(t)
@@ -143,7 +143,7 @@ func exporterForPublishing(t *testing.T) (*mockPublisher, *rabbitmqExporter) {
 	}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
-	err := exporter.start(context.Background(), componenttest.NewNopHost())
+	err := exporter.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	return &pub, exporter

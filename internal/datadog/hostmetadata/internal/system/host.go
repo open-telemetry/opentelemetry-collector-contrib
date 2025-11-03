@@ -9,8 +9,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +35,7 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 		logger.Warn("Could not get OS Hostname", zap.Error(err))
 	}
 
-	return
+	return hostInfo
 }
 
 // GetHostname gets the hostname provided by the system

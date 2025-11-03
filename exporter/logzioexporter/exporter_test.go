@@ -6,7 +6,6 @@ package logzioexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -89,16 +88,16 @@ func generateLogsOneEmptyTimestamp() plog.Logs {
 func testLogsExporter(t *testing.T, ld plog.Logs, cfg *Config) error {
 	var err error
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := createLogsExporter(context.Background(), params, cfg)
+	exporter, err := createLogsExporter(t.Context(), params, cfg)
 	if err != nil {
 		return err
 	}
-	err = exporter.Start(context.Background(), componenttest.NewNopHost())
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		return err
 	}
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exporter.ConsumeLogs(ctx, ld)
 	if err != nil {
 		return err
@@ -112,12 +111,12 @@ func testLogsExporter(t *testing.T, ld plog.Logs, cfg *Config) error {
 // Traces
 func newTestTracesWithAttributes() ptrace.Traces {
 	td := ptrace.NewTraces()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		s.SetName(fmt.Sprintf("%s-%d", testOperation, i))
 		s.SetTraceID(pcommon.TraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 		s.SetSpanID(pcommon.SpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
-		for j := 0; j < 5; j++ {
+		for j := range 5 {
 			s.Attributes().PutStr(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
 		}
 		s.SetKind(ptrace.SpanKindServer)
@@ -137,16 +136,16 @@ func newTestTraces() ptrace.Traces {
 
 func testTracesExporter(t *testing.T, td ptrace.Traces, cfg *Config) error {
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := createTracesExporter(context.Background(), params, cfg)
+	exporter, err := createTracesExporter(t.Context(), params, cfg)
 	if err != nil {
 		return err
 	}
-	err = exporter.Start(context.Background(), componenttest.NewNopHost())
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		return err
 	}
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exporter.ConsumeTraces(ctx, td)
 	if err != nil {
 		return err
@@ -212,15 +211,15 @@ func gUnzipData(data []byte) (resData []byte, err error) {
 	var r io.Reader
 	r, err = gzip.NewReader(b)
 	if err != nil {
-		return
+		return resData, err
 	}
 	var resB bytes.Buffer
 	_, err = resB.ReadFrom(r)
 	if err != nil {
-		return
+		return resData, err
 	}
 	resData = resB.Bytes()
-	return
+	return resData, err
 }
 
 func TestPushTraceData(tester *testing.T) {

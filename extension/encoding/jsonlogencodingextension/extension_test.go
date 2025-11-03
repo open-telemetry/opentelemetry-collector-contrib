@@ -4,7 +4,6 @@
 package jsonlogencodingextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,8 +12,8 @@ import (
 
 func TestExtension_Start_Shutdown(t *testing.T) {
 	j := &jsonLogExtension{}
-	err := j.Start(context.Background(), componenttest.NewNopHost())
+	err := j.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	err = j.Shutdown(context.Background())
+	err = j.Shutdown(t.Context())
 	require.NoError(t, err)
 }

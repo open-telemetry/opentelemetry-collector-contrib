@@ -5,7 +5,6 @@ package faroreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -71,9 +70,9 @@ func TestFaroReceiver_Start(t *testing.T) {
 	receiver.RegisterTracesConsumer(nextTraces)
 	receiver.RegisterLogsConsumer(nextLogs)
 
-	err = receiver.Start(context.Background(), componenttest.NewNopHost())
+	err = receiver.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer func() { require.NoError(t, receiver.Shutdown(context.Background())) }()
+	defer func() { require.NoError(t, receiver.Shutdown(t.Context())) }()
 
 	server := httptest.NewServer(http.HandlerFunc(receiver.handleFaroRequest))
 	defer server.Close()
@@ -108,7 +107,7 @@ func TestFaroReceiver_Start(t *testing.T) {
 				require.Len(t, logs, 1)
 				expected, err := golden.ReadLogs(tc.expectedLogs)
 				require.NoError(t, err)
-				require.NoError(t, plogtest.CompareLogs(expected, logs[0]))
+				require.NoError(t, plogtest.CompareLogs(expected, logs[0], plogtest.IgnoreObservedTimestamp()))
 			}
 		})
 	}

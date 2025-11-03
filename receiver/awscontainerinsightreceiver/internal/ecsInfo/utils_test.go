@@ -5,7 +5,6 @@ package ecsinfo
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -61,7 +60,7 @@ func TestRequestSuccessWithKnownLength(t *testing.T) {
 		err:      nil,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
@@ -84,7 +83,7 @@ func TestRequestSuccessWithUnknownLength(t *testing.T) {
 		err:      nil,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
@@ -108,7 +107,7 @@ func TestRequestWithFailedStatus(t *testing.T) {
 		err:      errors.New(""),
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
@@ -131,7 +130,7 @@ func TestRequestWithLargeContentLength(t *testing.T) {
 		err:      nil,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 

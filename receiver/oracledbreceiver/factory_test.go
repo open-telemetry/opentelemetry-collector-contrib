@@ -4,7 +4,6 @@
 package oracledbreceiver
 
 import (
-	"context"
 	"net/url"
 	"testing"
 
@@ -21,7 +20,7 @@ import (
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receiver.Settings{
 			ID:                component.NewID(metadata.Type),
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
@@ -33,7 +32,7 @@ func TestNewFactory(t *testing.T) {
 
 	config := factory.CreateDefaultConfig().(*Config)
 	_, logsErr := factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receiver.Settings{
 			ID:                component.NewID(metadata.Type),
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),

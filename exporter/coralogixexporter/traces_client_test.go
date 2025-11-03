@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -46,8 +47,10 @@ func TestNewTracesExporter(t *testing.T) {
 		{
 			name: "Valid traces endpoint config",
 			cfg: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint: "localhost:4317",
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: "localhost:4317",
+					},
 				},
 				PrivateKey: "test-key",
 			},
@@ -80,31 +83,9 @@ func TestTracesExporter_Start(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Traces: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-		},
-	}
-
-	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
-	require.NoError(t, err)
-
-	err = exp.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	assert.NotNil(t, exp.clientConn)
-	assert.NotNil(t, exp.traceExporter)
-	assert.Contains(t, exp.config.Traces.Headers, "Authorization")
-
-	err = exp.shutdown(context.Background())
-	require.NoError(t, err)
-}
-
-func TestTracesExporter_EnhanceContext(t *testing.T) {
-	cfg := &Config{
-		Domain:     "test.domain.com",
-		PrivateKey: "test-key",
-		Traces: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{
-				"test-header": "test-value",
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Headers: map[string]configopaque.String{},
 			},
 		},
 	}
@@ -112,7 +93,33 @@ func TestTracesExporter_EnhanceContext(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	err = exp.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	assert.NotNil(t, exp.clientConn)
+	assert.NotNil(t, exp.grpcTracesExporter)
+	assert.Contains(t, exp.config.Traces.Headers, "Authorization")
+
+	err = exp.shutdown(t.Context())
+	require.NoError(t, err)
+}
+
+func TestTracesExporter_EnhanceContext(t *testing.T) {
+	cfg := &Config{
+		Domain:     "test.domain.com",
+		PrivateKey: "test-key",
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Headers: map[string]configopaque.String{
+					"test-header": "test-value",
+				},
+			},
+		},
+	}
+
+	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	ctx := t.Context()
 	enhancedCtx := exp.enhanceContext(ctx)
 	assert.NotEqual(t, ctx, enhancedCtx)
 }
@@ -121,18 +128,20 @@ func TestTracesExporter_PushTraces(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Traces: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Headers: map[string]configopaque.String{},
+			},
 		},
 	}
 
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -143,7 +152,7 @@ func TestTracesExporter_PushTraces(t *testing.T) {
 	resource := rs.Resource()
 	resource.Attributes().PutStr("service.name", "test-service")
 
-	err = exp.pushTraces(context.Background(), traces)
+	err = exp.pushTraces(t.Context(), traces)
 	assert.Error(t, err)
 }
 
@@ -167,8 +176,10 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
-				Traces: configgrpc.ClientConfig{
-					Headers: map[string]configopaque.String{},
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Headers: map[string]configopaque.String{},
+					},
 				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.configEnabled,
@@ -180,10 +191,10 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 			require.NoError(t, err)
 
-			err = exp.start(context.Background(), componenttest.NewNopHost())
+			err = exp.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() {
-				err = exp.shutdown(context.Background())
+				err = exp.shutdown(t.Context())
 				require.NoError(t, err)
 			}()
 
@@ -197,7 +208,7 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			resource := rs.Resource()
 			resource.Attributes().PutStr("service.name", "test-service")
 
-			err = exp.pushTraces(context.Background(), traces)
+			err = exp.pushTraces(t.Context(), traces)
 			assert.Error(t, err)
 			if tt.configEnabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
@@ -270,12 +281,14 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+				Headers: map[string]configopaque.String{},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 	}
@@ -283,10 +296,10 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -321,7 +334,7 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 	logger := zap.New(core)
 	exp.settings.Logger = logger
 
-	err = exp.pushTraces(context.Background(), traces)
+	err = exp.pushTraces(t.Context(), traces)
 	require.NoError(t, err)
 
 	entries := observed.All()
@@ -359,12 +372,14 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+				Headers: map[string]configopaque.String{},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 	}
@@ -373,12 +388,12 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to create traces exporter: %v", err)
 	}
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(b.Context(), componenttest.NewNopHost())
 	if err != nil {
 		b.Fatalf("failed to start traces exporter: %v", err)
 	}
 	defer func() {
-		_ = exp.shutdown(context.Background())
+		_ = exp.shutdown(b.Context())
 	}()
 
 	testCases := []int{
@@ -391,19 +406,19 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	}
 	for _, numTraces := range testCases {
 		b.Run("numTraces="+fmt.Sprint(numTraces), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				traces := ptrace.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
 				rs.Resource().Attributes().PutStr("service.name", "benchmark-service")
 				ss := rs.ScopeSpans().AppendEmpty()
-				for j := 0; j < numTraces; j++ {
+				for j := range numTraces {
 					span := ss.Spans().AppendEmpty()
 					span.SetTraceID(getTraceID(fmt.Sprintf("trace%d", j)))
 					span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 					span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 					span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 				}
-				_ = exp.pushTraces(context.Background(), traces)
+				_ = exp.pushTraces(b.Context(), traces)
 			}
 		})
 	}
@@ -411,16 +426,23 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 }
 
 func TestTracesExporter_PushTraces_Performance(t *testing.T) {
+	isIntegrationTest := os.Getenv("INTEGRATION_TEST")
+	if isIntegrationTest != "true" {
+		t.Skip("Skipping E2E test: INTEGRATION_TEST not set")
+	}
+
 	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(t)
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+				Headers: map[string]configopaque.String{},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 		RateLimiter: RateLimiterConfig{
@@ -433,10 +455,10 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -448,7 +470,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		ss := rs.ScopeSpans().AppendEmpty()
 
 		spanCount := 3000
-		for i := 0; i < spanCount; i++ {
+		for i := range spanCount {
 			span := ss.Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("test_span_%d", i))
 			span.SetTraceID(getTraceID(fmt.Sprintf("trace%d", i)))
@@ -458,7 +480,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -469,7 +491,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			exp.EnableRateLimit()
 		}
 
@@ -479,7 +501,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		ss := rs.ScopeSpans().AppendEmpty()
 
 		spanCount := 7000
-		for i := 0; i < spanCount; i++ {
+		for i := range spanCount {
 			span := ss.Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("test_span_%d", i))
 			span.SetTraceID(getTraceID(fmt.Sprintf("trace%d", i)))
@@ -489,7 +511,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		duration := time.Since(start)
 
 		assert.Error(t, err)
@@ -510,7 +532,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 			testSpan.SetName("test-span")
 			testSpan.SetTraceID(getTraceID("test-trace"))
 
-			errPush := exp.pushTraces(context.Background(), testTraces)
+			errPush := exp.pushTraces(t.Context(), testTraces)
 			return errPush == nil
 		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
 
@@ -523,7 +545,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		ss := rs.ScopeSpans().AppendEmpty()
 
 		spanCount := 3000
-		for i := 0; i < spanCount; i++ {
+		for i := range spanCount {
 			span := ss.Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("test_span_%d", i))
 			span.SetTraceID(getTraceID(fmt.Sprintf("trace%d", i)))
@@ -533,7 +555,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		}
 
 		start := time.Now()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		duration := time.Since(start)
 
 		require.NoError(t, err)
@@ -547,12 +569,14 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+				Headers: map[string]configopaque.String{},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 		RateLimiter: RateLimiterConfig{
@@ -565,14 +589,14 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		exp.EnableRateLimit()
 	}
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
@@ -587,13 +611,13 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetName("test-span")
 
-	err = exp.pushTraces(context.Background(), traces)
+	err = exp.pushTraces(t.Context(), traces)
 	assert.Error(t, err)
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
 	assert.Equal(t, 0, srv.recvCount)
 
 	require.Eventually(t, func() bool {
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		return err == nil &&
 			exp.rateError.errorCount.Load() == 0 &&
 			srv.recvCount == 1
@@ -605,10 +629,12 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
 		},
 		PrivateKey: "test-key",
@@ -622,10 +648,10 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -644,14 +670,14 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Initial successful push", func(t *testing.T) {
 		traces := createTestTraces()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 1, srv.recvCount)
 	})
 
 	t.Run("Trigger errors below threshold", func(t *testing.T) {
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			exp.EnableRateLimit()
 		}
 		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())
@@ -660,7 +686,7 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Successful push after errors", func(t *testing.T) {
 		traces := createTestTraces()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 2, srv.recvCount)
@@ -668,7 +694,7 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Verify error count stays at 0", func(t *testing.T) {
 		traces := createTestTraces()
-		err = exp.pushTraces(context.Background(), traces)
+		err = exp.pushTraces(t.Context(), traces)
 		require.NoError(t, err)
 		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
 		assert.Equal(t, 3, srv.recvCount)

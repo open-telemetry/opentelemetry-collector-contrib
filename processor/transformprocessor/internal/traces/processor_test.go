@@ -66,7 +66,7 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -107,7 +107,7 @@ func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -148,7 +148,7 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -189,7 +189,7 @@ func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -489,7 +489,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -789,7 +789,7 @@ func Test_ProcessTraces_InferredTraceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -819,7 +819,7 @@ func Test_ProcessTraces_SpanEventContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -849,7 +849,7 @@ func Test_ProcessTraces_InferredSpanEventContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -966,7 +966,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -1002,7 +1002,7 @@ func Test_ProcessTraces_ErrorMode(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON(1))`}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.Error(t, err)
 		})
 	}
@@ -1103,7 +1103,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 			td := constructTraces()
 			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -1261,7 +1261,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -1318,7 +1318,7 @@ func Test_ProcessTraces_InferredContextFromConditions(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -1534,9 +1534,9 @@ func BenchmarkTwoSpans(b *testing.B) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(b, err)
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				td := constructTraces()
-				_, err = processor.ProcessTraces(context.Background(), td)
+				_, err = processor.ProcessTraces(b.Context(), td)
 				assert.NoError(b, err)
 			}
 		})
@@ -1564,7 +1564,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 			statements: func() []string {
 				var statements []string
 				statements = append(statements, `set(status.code, 1) where name == "operationA"`)
-				for i := 0; i < 99; i++ {
+				for range 99 {
 					statements = append(statements, `keep_keys(attributes, ["http.method"]) where name == "unknownOperation"`)
 				}
 				return statements
@@ -1576,9 +1576,9 @@ func BenchmarkHundredSpans(b *testing.B) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(b, err)
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				td := constructTracesNum(100)
-				_, err = processor.ProcessTraces(context.Background(), td)
+				_, err = processor.ProcessTraces(b.Context(), td)
 				assert.NoError(b, err)
 			}
 		})
@@ -1602,7 +1602,7 @@ func constructTracesNum(num int) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
-	for i := 0; i < num; i++ {
+	for range num {
 		fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	}
 	return td

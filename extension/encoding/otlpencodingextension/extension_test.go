@@ -3,7 +3,6 @@
 
 package otlpencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -30,7 +29,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "otlp_json"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 
@@ -40,7 +39,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "otlp_proto"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 	}
@@ -52,7 +51,7 @@ func TestExtension_Start(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			err = ext.Start(context.Background(), componenttest.NewNopHost())
+			err = ext.Start(t.Context(), componenttest.NewNopHost())
 			if test.expectedErr != "" && err != nil {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
@@ -141,7 +140,7 @@ func TestOTLPProtoUnmarshal(t *testing.T) {
 func createAndExtension0(t *testing.T, c *Config) *otlpExtension {
 	ex, err := newExtension(c)
 	require.NoError(t, err)
-	err = ex.Start(context.TODO(), nil)
+	err = ex.Start(t.Context(), nil)
 	require.NoError(t, err)
 	return ex
 }
@@ -152,7 +151,7 @@ func generateTraces() ptrace.Traces {
 	md := ptrace.NewTraces()
 	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 	ilm.Spans().EnsureCapacity(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		im := ilm.Spans().AppendEmpty()
 		im.SetName("test_name")
 		im.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
@@ -166,7 +165,7 @@ func generateLogs() plog.Logs {
 	md := plog.NewLogs()
 	ilm := md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	ilm.LogRecords().EnsureCapacity(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		im := ilm.LogRecords().AppendEmpty()
 		im.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	}
@@ -182,7 +181,7 @@ func generateMetrics() pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		im := ilm.Metrics().AppendEmpty()
 		im.SetName("test_name")
 		idp := im.SetEmptySum().DataPoints().AppendEmpty()
@@ -199,7 +198,7 @@ func generateProfiles() pprofile.Profiles {
 	pd := pprofile.NewProfiles()
 	ilm := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
 	ilm.Profiles().EnsureCapacity(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		im := ilm.Profiles().AppendEmpty()
 		im.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
 		im.SetTime(pcommon.NewTimestampFromTime(now))

@@ -6,7 +6,6 @@ package datasetexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -683,7 +682,9 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 	ld.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
 	ld.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(1686235113, 0)))
 
+	oldVal := testLEventRaw.Ts
 	testLEventRaw.Ts = "1686235113000000000"
+	defer func() { testLEventRaw.Ts = oldVal }()
 	// 2023-06-08 14:38:33 +0000 UTC
 	testLEventRaw.Attrs["sca:observedTime"] = "1686235113000000000"
 	delete(testLEventRaw.Attrs, "timestamp")
@@ -721,7 +722,9 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 	ld.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
 	ld.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
 
+	oldVal := testLEventRaw.Ts
 	testLEventRaw.Ts = strconv.FormatInt(currentTime.UnixNano(), 10)
+	defer func() { testLEventRaw.Ts = oldVal }()
 	delete(testLEventRaw.Attrs, "timestamp")
 	delete(testLEventRaw.Attrs, "sca:observedTime")
 	delete(testLEventRaw.Attrs, "resource-attr")
@@ -853,16 +856,16 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	lr4.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(3))
 	lr5.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(4))
 
-	logs, err := createLogsExporter(context.Background(), createSettings, config)
+	logs, err := createLogsExporter(t.Context(), createSettings, config)
 	if assert.NoError(t, err) {
-		err = logs.Start(context.Background(), componenttest.NewNopHost())
+		err = logs.Start(t.Context(), componenttest.NewNopHost())
 		assert.NoError(t, err)
 
 		assert.NotNil(t, logs)
-		err = logs.ConsumeLogs(context.Background(), ld)
+		err = logs.ConsumeLogs(t.Context(), ld)
 		assert.NoError(t, err)
 		time.Sleep(time.Second)
-		err = logs.Shutdown(context.Background())
+		err = logs.Shutdown(t.Context())
 		assert.NoError(t, err)
 	}
 

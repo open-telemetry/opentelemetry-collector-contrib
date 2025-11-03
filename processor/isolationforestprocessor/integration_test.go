@@ -5,13 +5,11 @@
 package isolationforestprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -92,7 +90,7 @@ func baseConfigEnrich(t *testing.T) *Config {
 }
 
 func TestTraces_Enrich_AddsAttributes(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := baseConfigEnrich(t)
 
@@ -124,7 +122,7 @@ func TestTraces_Enrich_AddsAttributes(t *testing.T) {
 }
 
 func TestLogs_Enrich_AddsAttributes(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := baseConfigEnrich(t)
 
@@ -156,7 +154,7 @@ func TestLogs_Enrich_AddsAttributes(t *testing.T) {
 }
 
 func TestMetrics_Enrich_AddsAttributes(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := baseConfigEnrich(t)
 
@@ -183,7 +181,7 @@ func TestMetrics_Enrich_AddsAttributes(t *testing.T) {
 	switch m.Type() {
 	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
-		require.True(t, dps.Len() > 0)
+		require.Positive(t, dps.Len())
 		attrs := dps.At(0).Attributes()
 
 		_, ok := attrs.Get(cfg.ScoreAttribute)

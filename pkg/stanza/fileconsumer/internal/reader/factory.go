@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"sync"
 	"time"
@@ -134,9 +135,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		return nil, err
 	}
 	// Copy attributes into existing map to avoid overwriting header attributes
-	for k, v := range attributes {
-		r.FileAttributes[k] = v
-	}
+	maps.Copy(r.FileAttributes, attributes)
 
 	return r, nil
 }

@@ -4,7 +4,6 @@
 package tencentcloudlogserviceexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -25,7 +24,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	rl.ScopeLogs().AppendEmpty() // Add an empty ScopeLogs
 	sl := rl.ScopeLogs().AppendEmpty()
 
-	for i := 0; i < numberOfLogs; i++ {
+	for i := range numberOfLogs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("mylog")
@@ -51,7 +50,7 @@ func TestNewLogsExporter(t *testing.T) {
 
 	// This will put log data to send buffer and return success.
 	// Tip: Unit tests require valid access credential.
-	_ = got.ConsumeLogs(context.Background(), createSimpleLogData(3))
+	_ = got.ConsumeLogs(t.Context(), createSimpleLogData(3))
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {

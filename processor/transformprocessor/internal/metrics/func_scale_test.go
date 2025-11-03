@@ -170,7 +170,7 @@ func TestScale(t *testing.T) {
 			)
 
 			expressionFunc, _ := Scale(tt.args)
-			_, err := expressionFunc(context.Background(), target)
+			_, err := expressionFunc(t.Context(), target)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -193,7 +193,7 @@ func getTestScalingHistogramMetric(count uint64, sum, minVal, maxVal float64, bo
 	histogramDatapoint.SetMax(maxVal)
 	histogramDatapoint.ExplicitBounds().FromRaw(bounds)
 	histogramDatapoint.BucketCounts().FromRaw(bucketCounts)
-	for i := 0; i < len(exemplars); i++ {
+	for i := range exemplars {
 		exemplar := histogramDatapoint.Exemplars().AppendEmpty()
 		exemplar.SetTimestamp(1)
 		exemplar.SetDoubleValue(exemplars[i])

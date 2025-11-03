@@ -4,7 +4,6 @@
 package cloudfoundryreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +27,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	params := receivertest.NewNopSettings(metadata.Type)
-	tReceiver, err := factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "metrics receiver creation failed")
 }
@@ -38,7 +37,7 @@ func TestCreateLogs(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	params := receivertest.NewNopSettings(metadata.Type)
-	tReceiver, err := factory.CreateLogs(context.Background(), params, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateLogs(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "logs receiver creation failed")
 }

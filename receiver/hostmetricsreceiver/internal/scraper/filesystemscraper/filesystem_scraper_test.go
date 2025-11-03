@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -389,10 +390,8 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			envMap := common.EnvMap{}
-			for k, v := range test.osEnv {
-				envMap[k] = v
-			}
-			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
+			maps.Copy(envMap, test.osEnv)
+			ctx := context.WithValue(t.Context(), common.EnvKey, envMap)
 			test.config.SetRootPath(test.rootPath)
 			scraper, err := newFileSystemScraper(ctx, scrapertest.NewNopSettings(metadata.Type), &test.config)
 			if test.newErrRegex != "" {

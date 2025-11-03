@@ -4,7 +4,6 @@
 package time
 
 import (
-	"context"
 	"math"
 	"testing"
 	"time"
@@ -132,7 +131,7 @@ func TestProcess(t *testing.T) {
 
 			require.True(t, op.CanOutput(), "expected test operator CanOutput to return true")
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
 		})

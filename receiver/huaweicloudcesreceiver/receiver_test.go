@@ -66,7 +66,7 @@ func TestListMetricDefinitionsSuccess(t *testing.T) {
 		config: createDefaultConfig().(*Config),
 	}
 
-	metrics, err := receiver.listMetricDefinitions(context.Background())
+	metrics, err := receiver.listMetricDefinitions(t.Context())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, metrics)
@@ -86,7 +86,7 @@ func TestListMetricDefinitionsFailure(t *testing.T) {
 		config: createDefaultConfig().(*Config),
 	}
 
-	metrics, err := receiver.listMetricDefinitions(context.Background())
+	metrics, err := receiver.listMetricDefinitions(t.Context())
 
 	assert.Error(t, err)
 	assert.Empty(t, metrics)
@@ -115,7 +115,7 @@ func TestListDataPointsForMetricBackOffWIthDefaultConfig(t *testing.T) {
 		},
 	}, nil)
 
-	resp, err := receiver.listDataPointsForMetric(context.Background(), time.Now().Add(10*time.Minute), time.Now(), model.MetricInfoList{
+	resp, err := receiver.listDataPointsForMetric(t.Context(), time.Now().Add(10*time.Minute), time.Now(), model.MetricInfoList{
 		Namespace:  "SYS.ECS",
 		MetricName: "cpu_util",
 		Dimensions: []model.MetricsDimension{
@@ -145,7 +145,7 @@ func TestListDataPointsForMetricBackOffFails(t *testing.T) {
 
 	mockCes.On("ShowMetricData", mock.Anything).Return(nil, errors.New(requestThrottledErrMsg)).Times(4)
 
-	resp, err := receiver.listDataPointsForMetric(context.Background(), time.Now().Add(10*time.Minute), time.Now(), model.MetricInfoList{
+	resp, err := receiver.listDataPointsForMetric(t.Context(), time.Now().Add(10*time.Minute), time.Now(), model.MetricInfoList{
 		Namespace:  "SYS.ECS",
 		MetricName: "cpu_util",
 		Dimensions: []model.MetricsDimension{
@@ -195,7 +195,7 @@ func TestPollMetricsAndConsumeSuccess(t *testing.T) {
 		},
 	}, nil)
 
-	err := receiver.pollMetricsAndConsume(context.Background())
+	err := receiver.pollMetricsAndConsume(t.Context())
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, next.DataPointCount())
@@ -267,7 +267,7 @@ func TestStartReadingMetrics(t *testing.T) {
 				nextConsumer: next,
 				lastSeenTs:   make(map[string]time.Time),
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 			defer cancel()
 			r.startReadingMetrics(ctx)
 

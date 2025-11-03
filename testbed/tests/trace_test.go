@@ -10,7 +10,6 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -38,15 +37,6 @@ func TestTrace10kSPS(t *testing.T) {
 		receiver     testbed.DataReceiver
 		resourceSpec testbed.ResourceSpec
 	}{
-		{
-			"OpenCensus",
-			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 39,
-				ExpectedMaxRAM: 100,
-			},
-		},
 		{
 			"OTLP-gRPC",
 			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
@@ -264,7 +254,7 @@ func verifySingleSpan(
 	span.SetName(spanName)
 
 	sender := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.TraceDataSender)
-	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
+	require.NoError(t, sender.ConsumeTraces(t.Context(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the
 	// counter since it is used in final reports.

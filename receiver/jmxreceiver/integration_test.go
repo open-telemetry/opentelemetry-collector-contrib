@@ -6,7 +6,6 @@
 package jmxreceiver
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +15,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
@@ -53,29 +51,32 @@ var jmxJarReleases = map[string]integrationConfig{
 	},
 }
 
-type jmxIntegrationSuite struct {
-	suite.Suite
-	VersionToJar map[string]string
-}
-
 // It is recommended that this test be run locally with a longer timeout than the default 30s
 // go test -timeout 60s -run ^TestJMXIntegration$ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
 func TestJMXIntegration(t *testing.T) {
-	suite.Run(t, new(jmxIntegrationSuite))
-}
+	versionToJar := setupJARs(t)
+	t.Cleanup(func() {
+		cleanupJARs(t, versionToJar)
+	})
 
-func (suite *jmxIntegrationSuite) SetupSuite() {
-	suite.VersionToJar = make(map[string]string)
-	for version, config := range jmxJarReleases {
-		jarPath, err := downloadJMXJAR(suite.T(), config.downloadURL)
-		suite.VersionToJar[version] = jarPath
-		suite.Require().NoError(err)
+	for version, jar := range versionToJar {
+		t.Run(version, integrationTest(version, jar, jmxJarReleases[version].jmxConfig))
 	}
 }
 
-func (suite *jmxIntegrationSuite) TearDownSuite() {
-	for _, path := range suite.VersionToJar {
-		suite.Require().NoError(os.Remove(path))
+func setupJARs(t *testing.T) map[string]string {
+	versionToJar := make(map[string]string)
+	for version, config := range jmxJarReleases {
+		jarPath, err := downloadJMXJAR(t, config.downloadURL)
+		require.NoError(t, err)
+		versionToJar[version] = jarPath
+	}
+	return versionToJar
+}
+
+func cleanupJARs(t *testing.T, versionToJar map[string]string) {
+	for _, path := range versionToJar {
+		require.NoError(t, os.Remove(path))
 	}
 }
 
@@ -94,12 +95,6 @@ func downloadJMXJAR(t *testing.T, url string) (string, error) {
 	defer file.Close()
 	_, err = io.Copy(file, resp.Body)
 	return file.Name(), err
-}
-
-func (suite *jmxIntegrationSuite) TestJMXReceiverHappyPath() {
-	for version, jar := range suite.VersionToJar {
-		suite.T().Run(version, integrationTest(version, jar, jmxJarReleases[version].jmxConfig))
-	}
 }
 
 func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
@@ -175,9 +170,9 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	receiver := newJMXMetricReceiver(params, cfg, consumertest.NewNop())
 	require.NotNil(t, receiver)
 	defer func() {
-		require.EqualError(t, receiver.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")
+		require.EqualError(t, receiver.Shutdown(t.Context()), "no subprocess.cancel().  Has it been started properly?")
 	}()
 
-	err := receiver.Start(context.Background(), componenttest.NewNopHost())
+	err := receiver.Start(t.Context(), componenttest.NewNopHost())
 	require.ErrorContains(t, err, "listen tcp: lookup <invalid>:")
 }

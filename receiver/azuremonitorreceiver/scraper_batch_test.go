@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
+
 import (
 	"context"
 	"net/http"
@@ -55,11 +56,11 @@ func newMockMetricsQueryResponse(metricsByParam []queryResourcesResponseMock) fu
 		for _, param := range metricsByParam {
 			if param.params.Evaluate(subscriptionID, metricNamespace, metricNames, resourceIDs) {
 				resp.SetResponse(http.StatusOK, param.response, nil)
-				return
+				return resp, errResp
 			}
 		}
 		errResp.SetResponseError(http.StatusNotImplemented, "error from tests")
-		return
+		return resp, errResp
 	}
 }
 
@@ -248,7 +249,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				cfg: cfg,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -257,7 +258,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				cfg: cfgTagsEnabled,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -266,7 +267,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				cfg: cfgTagsSelective,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -275,7 +276,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				cfg: cfgTagsCaseInsensitive,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 	}
@@ -295,29 +296,18 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 
 			s := &azureBatchScraper{
 				cfg:                   tt.fields.cfg,
-				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mbs:                   newConcurrentMapImpl[*metadata.MetricsBuilder](),
 				mutex:                 &sync.Mutex{},
 				time:                  getTimeMock(),
 				clientOptionsResolver: optionsResolver,
+				receiverSettings:      settings,
 				settings:              settings.TelemetrySettings,
 
 				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{
-					"subscriptionId1": {SubscriptionID: "subscriptionId1"},
-					"subscriptionId3": {SubscriptionID: "subscriptionId3"},
-				},
-				resources: map[string]map[string]*azureResource{
-					"subscriptionId1": {},
-					"subscriptionId3": {},
-				},
-				regions: map[string]map[string]struct{}{
-					"subscriptionId1": {"location1": {}},
-					"subscriptionId3": {"location1": {}},
-				},
-				resourceTypes: map[string]map[string]*azureType{
-					"subscriptionId1": {},
-					"subscriptionId3": {},
-				},
+				subscriptions: map[string]*azureSubscription{},
+				resources:     map[string]map[string]*azureResource{},
+				regions:       map[string]map[string]struct{}{},
+				resourceTypes: map[string]map[string]*azureType{},
 			}
 
 			metrics, err := s.scrape(tt.args.ctx)

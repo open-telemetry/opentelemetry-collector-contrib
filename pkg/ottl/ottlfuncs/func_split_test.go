@@ -77,6 +77,6 @@ func Test_Split_Error(t *testing.T) {
 		},
 	}
 	exprFunc := split[any](target, ",")
-	_, err := exprFunc(context.Background(), nil)
+	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

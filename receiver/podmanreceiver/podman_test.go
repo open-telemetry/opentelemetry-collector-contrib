@@ -84,10 +84,10 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	shouldHaveTaken := time.Now().Add(100 * time.Millisecond).UnixNano()
 
-	err = cli.loadContainerList(context.Background())
+	err = cli.loadContainerList(t.Context())
 	require.Error(t, err)
 
-	ctx, fetchCancel := context.WithTimeout(context.Background(), config.Timeout)
+	ctx, fetchCancel := context.WithTimeout(t.Context(), config.Timeout)
 	defer fetchCancel()
 
 	container, err := cli.fetchContainerStats(ctx, container{})
@@ -132,16 +132,16 @@ func TestEventLoopHandlesError(t *testing.T) {
 	cli := newContainerScraper(client, zap.New(observed), config)
 	assert.NotNil(t, cli)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	go cli.containerEventLoop(ctx)
 	defer cancel()
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		for _, l := range logs.All() {
-			assert.Contains(t, l.Message, "Error watching podman container events")
-			assert.Contains(t, l.ContextMap()["error"], "EOF")
+			assert.Contains(tt, l.Message, "Error watching podman container events")
+			assert.Contains(tt, l.ContextMap()["error"], "EOF")
 		}
-		return len(logs.All()) > 0
+		assert.NotEmpty(tt, logs.All())
 	}, 1*time.Second, 1*time.Millisecond, "failed to find desired error logs.")
 
 	finished := make(chan struct{})
@@ -176,24 +176,24 @@ func TestEventLoopHandles(t *testing.T) {
 
 	assert.Empty(t, cli.containers)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	go cli.containerEventLoop(ctx)
 	defer cancel()
 
 	eventChan <- event{ID: "c1", Status: "start"}
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		cli.containersLock.Lock()
 		defer cli.containersLock.Unlock()
-		return assert.Len(t, cli.containers, 1)
+		assert.Len(tt, cli.containers, 1)
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 
 	eventChan <- event{ID: "c1", Status: "died"}
 
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		cli.containersLock.Lock()
 		defer cli.containersLock.Unlock()
-		return assert.Empty(t, cli.containers)
+		assert.Empty(tt, cli.containers)
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 }
 
@@ -210,7 +210,7 @@ func TestInspectAndPersistContainer(t *testing.T) {
 
 	assert.Empty(t, cli.containers)
 
-	stats, ok := cli.inspectAndPersistContainer(context.Background(), "c1")
+	stats, ok := cli.inspectAndPersistContainer(t.Context(), "c1")
 	assert.True(t, ok)
 	assert.NotNil(t, stats)
 	assert.Len(t, cli.containers, 1)

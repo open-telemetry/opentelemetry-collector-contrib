@@ -231,7 +231,7 @@ func TestDetectFromIMDS(t *testing.T) {
 				}),
 				ra: metadata.ResourceAttributesConfig{K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true}},
 			}
-			res, schema, err := d.detectFromIMDS(context.Background())
+			res, schema, err := d.detectFromIMDS(t.Context())
 			if tt.expectedError {
 				assert.Error(t, err)
 				if tt.errMsg != "" {
@@ -335,7 +335,7 @@ func TestDetectFromAPI(t *testing.T) {
 					HostID:         metadata.ResourceAttributeConfig{Enabled: true},
 				}),
 			}
-			res, schema, err := d.detectFromAPI(context.Background())
+			res, schema, err := d.detectFromAPI(t.Context())
 			assert.Equal(t, conventions.SchemaURL, schema)
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -449,7 +449,7 @@ func TestDetect(t *testing.T) {
 				logger:         set.Logger,
 				imdsAccessible: tt.imdsAccessible,
 			}
-			res, schema, err := det.Detect(context.Background())
+			res, schema, err := det.Detect(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, conventions.SchemaURL, schema)
 			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())

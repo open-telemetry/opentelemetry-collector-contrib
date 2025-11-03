@@ -146,12 +146,14 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+				QueueSettings: func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.Enabled = true
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return queue
+				}(),
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
 				},
 				LogDimensionUpdates: true,
@@ -459,6 +461,15 @@ func TestConfigValidateErrors(t *testing.T) {
 					Enabled:   true,
 					QueueSize: -1,
 				},
+			},
+		},
+		{
+			name: "Invalid root_path",
+			cfg: &Config{
+				Realm:            "us0",
+				AccessToken:      "access_token",
+				RootPath:         "/foobar",
+				SyncHostMetadata: true,
 			},
 		},
 	}

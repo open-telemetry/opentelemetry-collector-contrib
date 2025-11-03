@@ -284,7 +284,7 @@ flowControlLoop:
 		flowControlCount++
 		s.telemetryBuilder.SolacereceiverReceiverFlowControlRecentRetries.Record(ctx, flowControlCount, metric.WithAttributeSet(s.metricAttrs))
 		// Backpressure scenario. For now, we are only delayed retry, eventually we may need to handle this
-		delayTimer := time.NewTimer(s.config.Flow.DelayedRetry.Delay)
+		delayTimer := time.NewTimer(s.config.Flow.DelayedRetry.Get().Delay)
 		select {
 		case <-delayTimer.C:
 			continue flowControlLoop

@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
@@ -50,7 +50,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	commonTestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 )
@@ -90,7 +90,7 @@ func TestIntegration(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -152,6 +152,7 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 		factories otelcol.Factories
 		err       error
 	)
+	factories.Telemetry = otelconftelemetry.NewFactory()
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
@@ -219,7 +220,7 @@ func waitForReadiness(app *otelcol.Collector) {
 }
 
 func sendTraces(t *testing.T, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set up OTel-Go SDK and exporter
 	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(endpoint))
@@ -244,7 +245,7 @@ func sendTraces(t *testing.T, endpoint string) {
 	}()
 
 	tracer := otel.Tracer("test-tracer")
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindClient))
 
 		if i == 3 {
@@ -288,7 +289,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -388,7 +389,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 }
 
 func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set up OTel-Go SDK and exporter
 	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(endpoint))
@@ -413,7 +414,7 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 	}()
 
 	tracer := otel.Tracer("test-tracer")
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		var spanKind apitrace.SpanKind
 		switch i {
 		case 0, 1:
@@ -481,7 +482,7 @@ func TestIntegrationLogs(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -537,7 +538,7 @@ func TestIntegrationLogs(t *testing.T) {
 }
 
 func sendLogs(t *testing.T, numLogs int, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logExporter, err := otlploghttp.New(ctx, otlploghttp.WithInsecure(), otlploghttp.WithEndpoint(endpoint))
 	assert.NoError(t, err)
 	lr := make([]log.Record, numLogs)
@@ -545,11 +546,11 @@ func sendLogs(t *testing.T, numLogs int, endpoint string) {
 }
 
 func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
 	}()
 
@@ -569,11 +570,11 @@ func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
 }
 
 func TestIntegrationHostMetrics_WithoutRemapping_LegacyMetricClient(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), true))
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), true))
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
 	}()
 
@@ -587,11 +588,11 @@ func TestIntegrationHostMetrics_WithoutRemapping_LegacyMetricClient(t *testing.T
 }
 
 func TestIntegrationHostMetrics_WithRemapping_Serializer(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
 
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 	}()
 
 	expectedMetrics := map[string]struct{}{
@@ -610,10 +611,10 @@ func TestIntegrationHostMetrics_WithRemapping_Serializer(t *testing.T) {
 }
 
 func TestIntegrationHostMetrics_WithoutRemapping_Serializer(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), true))
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 	}()
 
 	expectedMetrics := map[string]struct{}{
@@ -638,7 +639,7 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -788,7 +789,7 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -843,7 +844,7 @@ func TestIntegrationLogsHostMetadata(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {

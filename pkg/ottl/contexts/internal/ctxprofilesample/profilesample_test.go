@@ -4,13 +4,13 @@
 package ctxprofilesample // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilesample"
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -24,14 +24,6 @@ func TestPathGetSetter(t *testing.T) {
 		val  any
 		keys []ottl.Key[*profileSampleContext]
 	}{
-		{
-			path: "locations_start_index",
-			val:  int64(42),
-		},
-		{
-			path: "locations_length",
-			val:  int64(43),
-		},
 		{
 			path: "values",
 			val:  []int64{73, 74, 75},
@@ -71,10 +63,10 @@ func TestPathGetSetter(t *testing.T) {
 			accessor, err := PathGetSetter(path)
 			require.NoError(t, err)
 
-			err = accessor.Set(context.Background(), newProfileSampleContext(sample, dictionary), tt.val)
+			err = accessor.Set(t.Context(), newProfileSampleContext(sample, dictionary), tt.val)
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), newProfileSampleContext(sample, dictionary))
+			got, err := accessor.Get(t.Context(), newProfileSampleContext(sample, dictionary))
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)
@@ -95,6 +87,13 @@ func (p *profileSampleContext) GetProfileSample() pprofile.Sample {
 	return p.sample
 }
 
+func (p *profileSampleContext) AttributeIndices() pcommon.Int32Slice {
+	return p.sample.AttributeIndices()
+}
+
 func newProfileSampleContext(sample pprofile.Sample, dictionary pprofile.ProfilesDictionary) *profileSampleContext {
-	return &profileSampleContext{sample: sample, dictionary: dictionary}
+	return &profileSampleContext{
+		sample:     sample,
+		dictionary: dictionary,
+	}
 }

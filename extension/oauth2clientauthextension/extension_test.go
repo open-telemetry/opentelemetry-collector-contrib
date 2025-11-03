@@ -4,7 +4,6 @@
 package oauth2clientauthextension
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -100,7 +99,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLS.LoadTLSConfig(context.Background())
+			tlsTestSettingConfig, err := test.settings.TLS.LoadTLSConfig(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
@@ -297,7 +296,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	credential, err := oauth2Authenticator.PerRPCCredentials()
 	require.NoError(t, err)
 
-	_, err = credential.GetRequestMetadata(context.Background())
+	_, err = credential.GetRequestMetadata(t.Context())
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
 	assert.ErrorContains(t, err, serverURL.String())
 

@@ -429,7 +429,7 @@ func Test_Append(t *testing.T) {
 			assert.NoError(t, err)
 
 			res := pcommon.NewSlice()
-			result, err := exprFunc(context.Background(), res)
+			result, err := exprFunc(t.Context(), res)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
 			assert.NotNil(t, res)
@@ -636,7 +636,7 @@ func TestTargetType(t *testing.T) {
 			assert.NoError(t, err)
 
 			res := pcommon.NewSlice()
-			result, err := exprFunc(context.Background(), res)
+			result, err := exprFunc(t.Context(), res)
 
 			if tc.expectedError {
 				assert.Error(t, err)

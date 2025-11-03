@@ -66,12 +66,12 @@ func TestNodeUID(t *testing.T) {
 				k8snodeClient: client,
 				nodeName:      tt.nodeName,
 			}
-			nodeUID, err := k8snodeP.NodeUID(context.Background())
+			nodeUID, err := k8snodeP.NodeUID(t.Context())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {
 				assert.Equal(t, nodeUID, tt.nodeUID)
-				nodeName, err := k8snodeP.NodeName(context.Background())
+				nodeName, err := k8snodeP.NodeName(t.Context())
 				assert.NoError(t, err)
 				assert.Equal(t, nodeName, tt.nodeName)
 			}
@@ -80,7 +80,7 @@ func TestNodeUID(t *testing.T) {
 }
 
 func setupNodes(client *fake.Clientset) error {
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		n := &corev1.Node{
 			ObjectMeta: metav1.ObjectMeta{
 				UID:  types.UID("node" + strconv.Itoa(i)),

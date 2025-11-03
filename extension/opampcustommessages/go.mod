@@ -1,7 +1,7 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages
 
-go 1.23.0
+go 1.24.0
 
-require github.com/open-telemetry/opamp-go v0.20.0
+require github.com/open-telemetry/opamp-go v0.22.0
 
-require google.golang.org/protobuf v1.36.6 // indirect
+require google.golang.org/protobuf v1.36.7 // indirect

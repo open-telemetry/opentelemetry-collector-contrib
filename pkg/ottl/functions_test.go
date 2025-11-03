@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -534,10 +535,17 @@ func Test_NewFunctionCall(t *testing.T) {
 		WithEnumParser[any](testParseEnum),
 	)
 
+	testMap := pcommon.NewMap()
+	testMap.PutStr("foo", "bar")
+
+	testSlice := pcommon.NewSlice()
+	testSlice.AppendEmpty().SetStr("test")
+
 	tests := []struct {
-		name string
-		inv  editor
-		want any
+		name      string
+		inv       editor
+		want      any
+		wantError string
 	}{
 		{
 			name: "no arguments",
@@ -1731,9 +1739,11 @@ func Test_NewFunctionCall(t *testing.T) {
 			fn, err := p.newFunctionCall(tt.inv)
 			assert.NoError(t, err)
 
+			result, err := fn.Eval(t.Context(), nil)
 			if tt.want != nil {
-				result, _ := fn.Eval(context.Background(), nil)
 				assert.Equal(t, tt.want, result)
+			} else if tt.wantError != "" {
+				assert.ErrorContains(t, err, tt.wantError)
 			}
 		})
 	}
@@ -1815,12 +1825,12 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 
 	fn, err := p.newFunctionCall(invWithOptArg)
 	require.NoError(t, err)
-	res, _ := fn.Eval(context.Background(), nil)
+	res, _ := fn.Eval(t.Context(), nil)
 	require.Equal(t, 4, res)
 
 	fn, err = p.newFunctionCall(invWithoutOptArg)
 	require.NoError(t, err)
-	res, _ = fn.Eval(context.Background(), nil)
+	res, _ = fn.Eval(t.Context(), nil)
 	require.Equal(t, 2, res)
 
 	assert.Zero(t, args.OptionalArg)
@@ -2658,10 +2668,10 @@ func Test_newPath(t *testing.T) {
 	assert.Equal(t, "body.string[key]", p.String())
 	assert.Nil(t, p.Next())
 	assert.Len(t, p.Keys(), 1)
-	v, err := p.Keys()[0].String(context.Background(), struct{}{})
+	v, err := p.Keys()[0].String(t.Context(), struct{}{})
 	assert.NoError(t, err)
 	assert.Equal(t, "key", *v)
-	i, err := p.Keys()[0].Int(context.Background(), struct{}{})
+	i, err := p.Keys()[0].Int(t.Context(), struct{}{})
 	assert.NoError(t, err)
 	assert.Nil(t, i)
 }
@@ -2760,10 +2770,10 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 			}
 			assert.Nil(t, p.Next())
 			assert.Len(t, p.Keys(), 1)
-			v, err := p.Keys()[0].String(context.Background(), struct{}{})
+			v, err := p.Keys()[0].String(t.Context(), struct{}{})
 			assert.NoError(t, err)
 			assert.Equal(t, "key", *v)
-			i, err := p.Keys()[0].Int(context.Background(), struct{}{})
+			i, err := p.Keys()[0].Int(t.Context(), struct{}{})
 			assert.NoError(t, err)
 			assert.Nil(t, i)
 		})
@@ -2774,7 +2784,7 @@ func Test_baseKey_String(t *testing.T) {
 	bp := baseKey[any]{
 		s: ottltest.Strp("test"),
 	}
-	s, err := bp.String(context.Background(), nil)
+	s, err := bp.String(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "test", *s)
@@ -2784,7 +2794,7 @@ func Test_baseKey_Int(t *testing.T) {
 	bp := baseKey[any]{
 		i: ottltest.Intp(1),
 	}
-	i, err := bp.Int(context.Background(), nil)
+	i, err := bp.Int(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, i)
 	assert.Equal(t, int64(1), *i)
@@ -2810,11 +2820,11 @@ func Test_newKey(t *testing.T) {
 
 	assert.Len(t, ks, 2)
 
-	s, err := ks[0].String(context.Background(), nil)
+	s, err := ks[0].String(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "foo", *s)
-	s, err = ks[1].String(context.Background(), nil)
+	s, err = ks[1].String(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "bar", *s)
@@ -2839,4 +2849,46 @@ func Test_Optional_GetOr(t *testing.T) {
 
 	setOpt := NewTestingOptional[string]("foo")
 	assert.Equal(t, "foo", setOpt.GetOr("bar"))
+}
+
+// nonLiteralStringGetter implements typedGetter but NOT literalGetter.
+// Used to verify GetLiteralValue returns false when literalGetter isn't implemented.
+type nonLiteralStringGetter[K any] struct{ v string }
+
+func (g nonLiteralStringGetter[K]) Get(_ context.Context, _ K) (string, error) { return g.v, nil }
+
+func TestGetLiteralValue(t *testing.T) {
+	t.Run("getter does not implement literalGetter", func(t *testing.T) {
+		val, ok := GetLiteralValue[any, string](nonLiteralStringGetter[any]{v: "val"})
+		require.False(t, ok)
+		require.Empty(t, val)
+	})
+
+	t.Run("getter does not contain literal", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return "value", nil },
+			literal:     false,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.False(t, ok)
+		require.Nil(t, val)
+	})
+	t.Run("getter contains literal", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return "value", nil },
+			literal:     true,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.True(t, ok)
+		require.Equal(t, "value", val)
+	})
+	t.Run("getter returns error", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return nil, errors.New("err") },
+			literal:     true,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.False(t, ok)
+		require.Nil(t, val)
+	})
 }

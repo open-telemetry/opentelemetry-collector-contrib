@@ -4,7 +4,6 @@
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -43,56 +41,48 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				Protocol:      "grpc",
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				DomainSettings: configgrpc.ClientConfig{
-					Compression: configcompression.TypeGzip,
-				},
-				Metrics: configgrpc.ClientConfig{
-					Endpoint:        "https://",
-					Compression:     configcompression.TypeGzip,
-					WriteBufferSize: 512 * 1024,
-				},
-				Logs: configgrpc.ClientConfig{
-					Endpoint:    "https://",
-					Compression: configcompression.TypeGzip,
-				},
-				Traces: configgrpc.ClientConfig{
-					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.TypeGzip,
-					TLS: configtls.ClientConfig{
-						Config:             configtls.Config{},
-						Insecure:           false,
-						InsecureSkipVerify: false,
-						ServerName:         "",
+				DomainSettings: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Compression: configcompression.TypeGzip,
 					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 0,
-					WaitForReady:    false,
-					BalancerName:    "",
 				},
-				ClientConfig: configgrpc.ClientConfig{
-					Endpoint: "https://",
-					TLS: configtls.ClientConfig{
-						Config:             configtls.Config{},
-						Insecure:           false,
-						InsecureSkipVerify: false,
-						ServerName:         "",
+				Metrics: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:        "https://",
+						Compression:     configcompression.TypeGzip,
+						WriteBufferSize: 512 * 1024,
 					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 0,
-					WaitForReady:    false,
-					Headers: map[string]configopaque.String{
-						"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-						"appName":      "APP_NAME",
+				},
+				Logs: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    "https://",
+						Compression: configcompression.TypeGzip,
 					},
-					BalancerName: "",
+				},
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Compression: configcompression.TypeGzip,
+						TLS: configtls.ClientConfig{
+							Config:             configtls.Config{},
+							Insecure:           false,
+							InsecureSkipVerify: false,
+							ServerName:         "",
+						},
+						ReadBufferSize:  0,
+						WriteBufferSize: 0,
+						WaitForReady:    false,
+						BalancerName:    "",
+					},
 				},
 				RateLimiter: RateLimiterConfig{
-					Enabled:   false,
+					Enabled:   true,
 					Threshold: 10,
 					Duration:  time.Minute,
 				},
@@ -103,58 +93,50 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				Protocol:      "grpc",
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				DomainSettings: configgrpc.ClientConfig{
-					Compression: configcompression.TypeGzip,
-				},
-				Metrics: configgrpc.ClientConfig{
-					Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression:     configcompression.TypeGzip,
-					WriteBufferSize: 512 * 1024,
-				},
-				Logs: configgrpc.ClientConfig{
-					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.TypeGzip,
-				},
-				Traces: configgrpc.ClientConfig{
-					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.TypeGzip,
-					TLS: configtls.ClientConfig{
-						Config:             configtls.Config{},
-						Insecure:           false,
-						InsecureSkipVerify: false,
-						ServerName:         "",
+				DomainSettings: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Compression: configcompression.TypeGzip,
 					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 0,
-					WaitForReady:    false,
-					BalancerName:    "",
+				},
+				Metrics: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Compression:     configcompression.TypeGzip,
+						WriteBufferSize: 512 * 1024,
+					},
+				},
+				Logs: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Compression: configcompression.TypeGzip,
+					},
+				},
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Compression: configcompression.TypeGzip,
+						TLS: configtls.ClientConfig{
+							Config:             configtls.Config{},
+							Insecure:           false,
+							InsecureSkipVerify: false,
+							ServerName:         "",
+						},
+						ReadBufferSize:  0,
+						WriteBufferSize: 0,
+						WaitForReady:    false,
+						BalancerName:    "",
+					},
 				},
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
-				ClientConfig: configgrpc.ClientConfig{
-					Endpoint: "https://",
-					TLS: configtls.ClientConfig{
-						Config:             configtls.Config{},
-						Insecure:           false,
-						InsecureSkipVerify: false,
-						ServerName:         "",
-					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 0,
-					WaitForReady:    false,
-					Headers: map[string]configopaque.String{
-						"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-						"appName":      "APP_NAME",
-					},
-					BalancerName: "",
-				},
 				RateLimiter: RateLimiterConfig{
-					Enabled:   false,
+					Enabled:   true,
 					Threshold: 10,
 					Duration:  time.Minute,
 				},
@@ -191,8 +173,8 @@ func TestTraceExporter(t *testing.T) {
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
-	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, te.shutdown(context.Background()))
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(t.Context()))
 }
 
 func TestMetricsExporter(t *testing.T) {
@@ -211,8 +193,8 @@ func TestMetricsExporter(t *testing.T) {
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
-	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.shutdown(context.Background()))
+	require.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(t.Context()))
 }
 
 func TestLogsExporter(t *testing.T) {
@@ -231,8 +213,8 @@ func TestLogsExporter(t *testing.T) {
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
-	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, le.shutdown(context.Background()))
+	require.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(t.Context()))
 }
 
 func TestDomainWithAllExporters(t *testing.T) {
@@ -249,20 +231,20 @@ func TestDomainWithAllExporters(t *testing.T) {
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
-	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, te.shutdown(context.Background()))
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(t.Context()))
 
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
-	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.shutdown(context.Background()))
+	require.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(t.Context()))
 
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
-	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, le.shutdown(context.Background()))
+	require.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(t.Context()))
 }
 
 func TestEndpointsAndDomainWithAllExporters(t *testing.T) {
@@ -279,20 +261,20 @@ func TestEndpointsAndDomainWithAllExporters(t *testing.T) {
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
-	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, te.shutdown(context.Background()))
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(t.Context()))
 
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
-	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.shutdown(context.Background()))
+	require.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(t.Context()))
 
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
-	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, le.shutdown(context.Background()))
+	require.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(t.Context()))
 }
 
 func TestGetMetadataFromResource(t *testing.T) {
@@ -328,6 +310,99 @@ func TestGetMetadataFromResource(t *testing.T) {
 	assert.Equal(t, "subsystem", subSystemName)
 }
 
+func TestGetDomainGrpcSettings(t *testing.T) {
+	tests := []struct {
+		name             string
+		domain           string
+		privateLink      bool
+		expectedEndpoint string
+	}{
+		{
+			name:             "Standard domain without PrivateLink",
+			domain:           "coralogix.com",
+			privateLink:      false,
+			expectedEndpoint: "ingress.coralogix.com:443",
+		},
+		{
+			name:             "Standard domain with PrivateLink",
+			domain:           "coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.com:443",
+		},
+		{
+			name:             "EU2 domain without PrivateLink",
+			domain:           "eu2.coralogix.com",
+			privateLink:      false,
+			expectedEndpoint: "ingress.eu2.coralogix.com:443",
+		},
+		{
+			name:             "EU2 domain with PrivateLink",
+			domain:           "eu2.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.eu2.coralogix.com:443",
+		},
+		{
+			name:             "AP1 domain without PrivateLink",
+			domain:           "coralogix.in",
+			privateLink:      false,
+			expectedEndpoint: "ingress.coralogix.in:443",
+		},
+		{
+			name:             "AP1 domain with PrivateLink",
+			domain:           "coralogix.in",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.in:443",
+		},
+		{
+			name:             "US1 domain with PrivateLink",
+			domain:           "coralogix.us",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.us:443",
+		},
+		{
+			name:             "Domain already contains private prefix with PrivateLink",
+			domain:           "private.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.com:443",
+		},
+		{
+			name:             "Domain already contains private prefix without PrivateLink",
+			domain:           "private.coralogix.com",
+			privateLink:      false,
+			expectedEndpoint: "ingress.private.coralogix.com:443",
+		},
+		{
+			name:             "EU2 domain already contains private with PrivateLink",
+			domain:           "private.eu2.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.eu2.coralogix.com:443",
+		},
+		{
+			name:             "Domain contains private in middle with PrivateLink",
+			domain:           "eu2.private.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.eu2.private.coralogix.com:443",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Domain:      tt.domain,
+				PrivateLink: tt.privateLink,
+				DomainSettings: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Compression: configcompression.TypeGzip,
+					},
+				},
+			}
+
+			settings := cfg.getDomainGrpcSettings()
+			assert.Equal(t, tt.expectedEndpoint, settings.Endpoint)
+		})
+	}
+}
+
 func TestCreateExportersWithBatcher(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -343,7 +418,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	// Test traces exporter
 	t.Run("traces_with_batcher", func(t *testing.T) {
 		set := exportertest.NewNopSettings(metadata.Type)
-		exp, err := factory.CreateTraces(context.Background(), set, cfg)
+		exp, err := factory.CreateTraces(t.Context(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})
@@ -351,7 +426,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	// Test metrics exporter
 	t.Run("metrics_with_batcher", func(t *testing.T) {
 		set := exportertest.NewNopSettings(metadata.Type)
-		exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+		exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})
@@ -359,8 +434,89 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	// Test logs exporter
 	t.Run("logs_with_batcher", func(t *testing.T) {
 		set := exportertest.NewNopSettings(metadata.Type)
-		exp, err := factory.CreateLogs(context.Background(), set, cfg)
+		exp, err := factory.CreateLogs(t.Context(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})
+}
+
+func TestConfigValidation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		config      *Config
+		expectedErr string
+	}{
+		{
+			name: "valid_grpc_config",
+			config: &Config{
+				Protocol:   "grpc",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Profiles: configgrpc.ClientConfig{
+					Endpoint: "ingress.coralogix.com:443",
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "no_protocol_defaults_to_grpc",
+			config: &Config{
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Profiles: configgrpc.ClientConfig{
+					Endpoint: "ingress.coralogix.com:443",
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "invalid_protocol",
+			config: &Config{
+				Protocol:   "tcp",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+			},
+			expectedErr: "protocol must be grpc or http",
+		},
+		{
+			name: "invalid_http_with_profiles",
+			config: &Config{
+				Protocol:   "http",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Profiles: configgrpc.ClientConfig{
+					Endpoint: "ingress.coralogix.com:443",
+				},
+			},
+			expectedErr: "profiles signal is not supported with HTTP protocol",
+		},
+		{
+			name: "valid_http_without_profiles",
+			config: &Config{
+				Protocol:   "http",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+			},
+			expectedErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectedErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
+			}
+		})
+	}
 }

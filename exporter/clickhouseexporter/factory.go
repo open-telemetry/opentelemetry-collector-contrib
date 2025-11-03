@@ -37,23 +37,12 @@ func createLogsExporter(
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
 
+	var exp anyLogsExporter
 	if featureGateJSON.IsEnabled() {
-		exp := newLogsJSONExporter(set.Logger, c)
-
-		return exporterhelper.NewLogs(
-			ctx,
-			set,
-			cfg,
-			exp.pushLogsData,
-			exporterhelper.WithStart(exp.start),
-			exporterhelper.WithShutdown(exp.shutdown),
-			exporterhelper.WithTimeout(c.TimeoutSettings),
-			exporterhelper.WithQueue(c.QueueSettings),
-			exporterhelper.WithRetry(c.BackOffConfig),
-		)
+		exp = newLogsJSONExporter(set.Logger, c)
+	} else {
+		exp = newLogsExporter(set.Logger, c)
 	}
-
-	exp := newLogsExporter(set.Logger, c)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -76,23 +65,12 @@ func createTracesExporter(
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
 
+	var exp anyTracesExporter
 	if featureGateJSON.IsEnabled() {
-		exp := newTracesJSONExporter(set.Logger, c)
-
-		return exporterhelper.NewTraces(
-			ctx,
-			set,
-			cfg,
-			exp.pushTraceData,
-			exporterhelper.WithStart(exp.start),
-			exporterhelper.WithShutdown(exp.shutdown),
-			exporterhelper.WithTimeout(c.TimeoutSettings),
-			exporterhelper.WithQueue(c.QueueSettings),
-			exporterhelper.WithRetry(c.BackOffConfig),
-		)
+		exp = newTracesJSONExporter(set.Logger, c)
+	} else {
+		exp = newTracesExporter(set.Logger, c)
 	}
-
-	exp := newTracesExporter(set.Logger, c)
 
 	return exporterhelper.NewTraces(
 		ctx,

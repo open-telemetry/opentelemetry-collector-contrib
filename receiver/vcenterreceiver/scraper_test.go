@@ -20,7 +20,7 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mockServer := mock.MockServer(t, false)
 	defer mockServer.Close()
 
@@ -35,7 +35,7 @@ func TestScrape(t *testing.T) {
 }
 
 func TestScrapeConfigsEnabled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mockServer := mock.MockServer(t, false)
 	defer mockServer.Close()
 
@@ -58,7 +58,7 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 }
 
 func TestScrape_TLS(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mockServer := mock.MockServer(t, true)
 	defer mockServer.Close()
 
@@ -113,7 +113,7 @@ func setResourcePoolMemoryUsageAttrFeatureGate(t *testing.T, val bool) {
 }
 
 func TestScrape_NoClient(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	scraper := &vcenterMetricScraper{
 		client: nil,
 		config: &Config{
@@ -148,7 +148,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, tc := range cases {
 		scraper := newVmwareVcenterScraper(zap.NewNop(), tc.cfg, receivertest.NewNopSettings(metadata.Type))
 		err := scraper.Start(ctx, nil)

@@ -4,7 +4,6 @@
 package netstats
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -171,8 +170,8 @@ func testNetStatsExporter(t *testing.T, level configtelemetry.Level, expect map[
 			require.NoError(t, err)
 			handler := enr.Handler()
 
-			ctx := context.Background()
-			for i := 0; i < 10; i++ {
+			ctx := t.Context()
+			for range 10 {
 				if apiDirect {
 					// use the direct API
 					enr.CountSend(ctx, SizesStruct{
@@ -250,7 +249,7 @@ func TestNetStatsSetSpanAttrs(t *testing.T) {
 			}
 
 			tp := sdktrace.NewTracerProvider()
-			ctx, sp := tp.Tracer("test/span").Start(context.Background(), "test-op")
+			ctx, sp := tp.Tracer("test/span").Start(t.Context(), "test-op")
 
 			var sized SizesStruct
 			sized.Method = "test"
@@ -311,8 +310,8 @@ func testNetStatsReceiver(t *testing.T, level configtelemetry.Level, expect map[
 			require.NoError(t, err)
 			handler := rer.Handler()
 
-			ctx := context.Background()
-			for i := 0; i < 10; i++ {
+			ctx := t.Context()
+			for range 10 {
 				if apiDirect {
 					// use the direct API
 					rer.CountReceive(ctx, SizesStruct{
@@ -365,8 +364,8 @@ func TestUncompressedSizeBypass(t *testing.T) {
 	require.NoError(t, err)
 	handler := enr.Handler()
 
-	ctx := context.Background()
-	for i := 0; i < 10; i++ {
+	ctx := t.Context()
+	for range 10 {
 		// simulate the RPC path
 		handler.HandleRPC(handler.TagRPC(ctx, &stats.RPCTagInfo{
 			FullMethodName: "my.arrow.v1.method",

@@ -5,6 +5,7 @@ package pod
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -193,9 +194,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 					got, exists := actual[key]
 					require.True(t, exists)
 
-					for k, v := range commonPodMetadata {
-						item.Metadata[k] = v
-					}
+					maps.Copy(item.Metadata, commonPodMetadata)
 					require.Equal(t, *item, *got)
 
 					if testCase.logMessage != "" {
@@ -301,7 +300,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 
 	switch to.kind {
 	case "Job":
-		ms.Setup(gvk.Job, store)
+		ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, store)
 		if !to.emptyCache {
 			if to.withParentOR {
 				store.Cache["test-namespace/test-job-0"] = testutils.WithOwnerReferences(
@@ -319,7 +318,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 		}
 		return ms
 	case "ReplicaSet":
-		ms.Setup(gvk.ReplicaSet, store)
+		ms.Setup(gvk.ReplicaSet, metadata.ClusterWideInformerKey, store)
 		if !to.emptyCache {
 			if to.withParentOR {
 				store.Cache["test-namespace/test-replicaset-0"] = testutils.WithOwnerReferences(
@@ -355,7 +354,8 @@ func podWithOwnerReference(kind string) *corev1.Pod {
 }
 
 func TestTransform(t *testing.T) {
-	containerState := corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}}
+	waitingContainerState := corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "ImagePullBackOff"}}
+	runningContainerState := corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}}
 	originalPod := &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "my-pod",
@@ -385,6 +385,34 @@ func TestTransform(t *testing.T) {
 				FSGroup:    func() *int64 { gid := int64(3000); return &gid }(),
 			},
 			Containers: []corev1.Container{
+				{
+					Name:            "my-failing-container",
+					Image:           "redis:latest",
+					ImagePullPolicy: corev1.PullAlways,
+					Ports: []corev1.ContainerPort{
+						{
+							Name:          "http",
+							ContainerPort: 6379,
+							Protocol:      corev1.ProtocolTCP,
+						},
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "MY_ENV",
+							Value: "my-value",
+						},
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("1Gi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("1"),
+							corev1.ResourceMemory: resource.MustParse("2Gi"),
+						},
+					},
+				},
 				{
 					Name:            "my-container",
 					Image:           "nginx:latest",
@@ -428,9 +456,11 @@ func TestTransform(t *testing.T) {
 			StartTime: &v1.Time{Time: v1.Now().Add(-5 * time.Minute)},
 			ContainerStatuses: []corev1.ContainerStatus{
 				{
-					Name:         "invalid-container",
+					Name:         "my-failing-container",
 					Image:        "redis:latest",
 					RestartCount: 1,
+					Ready:        false,
+					State:        waitingContainerState,
 				},
 				{
 					Name:         "my-container",
@@ -438,7 +468,7 @@ func TestTransform(t *testing.T) {
 					ContainerID:  "abc12345",
 					RestartCount: 2,
 					Ready:        true,
-					State:        containerState,
+					State:        runningContainerState,
 				},
 			},
 		},
@@ -455,6 +485,19 @@ func TestTransform(t *testing.T) {
 		Spec: corev1.PodSpec{
 			NodeName: "node-1",
 			Containers: []corev1.Container{
+				{
+					Name: "my-failing-container",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("1Gi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("1"),
+							corev1.ResourceMemory: resource.MustParse("2Gi"),
+						},
+					},
+				},
 				{
 					Name: "my-container",
 					Resources: corev1.ResourceRequirements{
@@ -475,12 +518,20 @@ func TestTransform(t *testing.T) {
 			Reason: "Evicted",
 			ContainerStatuses: []corev1.ContainerStatus{
 				{
+					Name:         "my-failing-container",
+					Image:        "redis:latest",
+					ContainerID:  "",
+					RestartCount: 1,
+					Ready:        false,
+					State:        waitingContainerState,
+				},
+				{
 					Name:         "my-container",
 					Image:        "nginx:latest",
 					ContainerID:  "abc12345",
 					RestartCount: 2,
 					Ready:        true,
-					State:        containerState,
+					State:        runningContainerState,
 				},
 			},
 		},
@@ -552,13 +603,148 @@ func TestPodMetadata(t *testing.T) {
 			podMeta := meta["test-pod-0-uid"].Metadata
 
 			allExpectedMetadata := make(map[string]string)
-			for key, value := range commonPodMetadata {
-				allExpectedMetadata[key] = value
-			}
-			for key, value := range tt.expectedMetadata {
-				allExpectedMetadata[key] = value
-			}
+			maps.Copy(allExpectedMetadata, commonPodMetadata)
+			maps.Copy(allExpectedMetadata, tt.expectedMetadata)
 			assert.Equal(t, allExpectedMetadata, podMeta)
 		})
 	}
+}
+
+func TestPodContainerStateMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("container-name"),
+		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
+	)
+
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics.K8sContainerStatusState.Enabled = true
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	m := mb.Emit()
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_container_state.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+}
+
+func TestPodContainerReasonMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("container-name"),
+		&corev1.PodStatus{
+			Phase: corev1.PodSucceeded,
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name:        "container-name",
+					Image:       "container-image-name",
+					ContainerID: containerIDWithPrefix("container-id"),
+					State: corev1.ContainerState{
+						Waiting: &corev1.ContainerStateWaiting{Reason: "ImagePullBackOff"},
+					},
+				},
+			},
+		},
+	)
+
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics.K8sContainerStatusReason.Enabled = true
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	m := mb.Emit()
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_container_reason.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+}
+
+func TestGetIDForCache(t *testing.T) {
+	ns := "namespace"
+	resName := "resName"
+
+	actual := getIDForCache(ns, resName)
+
+	require.Equal(t, ns+"/"+resName, actual)
+}
+
+func TestGetObjectFromStore_ObjectInClusterWideStore(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.NotNil(t, obj)
+}
+
+func TestGetObjectFromStore_ObjectInNamespacedStore(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, "test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.NotNil(t, obj)
+}
+
+func TestGetObjectFromStore_ObjectNotFound(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, "other-test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.Nil(t, obj)
+}
+
+func TestGetObjectFromStore_ReturnsError(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	store.WantErr = true
+
+	ms.Setup(gvk.Job, "test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.Error(t, err)
+	require.Nil(t, obj)
 }

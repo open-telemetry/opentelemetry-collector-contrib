@@ -4,7 +4,6 @@
 package ecsmock
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -18,7 +17,7 @@ import (
 )
 
 func TestCluster_ListTasks(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewClusterWithName("c1")
 	count := DefaultPageLimit().ListTaskOutput*2 + 1
 	c.SetTasks(GenTasks("p", count, nil))
@@ -57,7 +56,7 @@ func TestCluster_ListTasks(t *testing.T) {
 }
 
 func TestCluster_DescribeTasks(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewClusterWithName("c1")
 	count := 10
 	c.SetTasks(GenTasks("p", count, func(_ int, task *ecstypes.Task) {
@@ -103,7 +102,7 @@ func TestCluster_DescribeTasks(t *testing.T) {
 }
 
 func TestCluster_DescribeTaskDefinition(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewClusterWithName("c1")
 	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, nil)) // accept nil
 	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, func(_ int, def *ecstypes.TaskDefinition) {
@@ -129,7 +128,7 @@ func TestCluster_DescribeTaskDefinition(t *testing.T) {
 }
 
 func TestCluster_DescribeInstances(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewCluster()
 	count := 10000
 	c.SetEc2Instances(GenEc2Instances("i-", count, nil))
@@ -163,7 +162,7 @@ func TestCluster_DescribeInstances(t *testing.T) {
 	t.Run("get by id", func(t *testing.T) {
 		nIDs := 100
 		ids := make([]string, 0, nIDs)
-		for i := 0; i < nIDs; i++ {
+		for i := range nIDs {
 			ids = append(ids, fmt.Sprintf("i-%d", i*10))
 		}
 		req := &ec2.DescribeInstancesInput{InstanceIds: ids}
@@ -186,7 +185,7 @@ func TestCluster_DescribeInstances(t *testing.T) {
 }
 
 func TestCluster_DescribeContainerInstances(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewClusterWithName("c1")
 	count := 10
 	c.SetContainerInstances(GenContainerInstances("foo", count, nil))
@@ -203,7 +202,7 @@ func TestCluster_DescribeContainerInstances(t *testing.T) {
 	t.Run("get by id", func(t *testing.T) {
 		nIDs := count
 		ids := make([]string, 0, nIDs)
-		for i := 0; i < nIDs; i++ {
+		for i := range nIDs {
 			ids = append(ids, fmt.Sprintf("foo%d", i))
 		}
 		req := &ecs.DescribeContainerInstancesInput{ContainerInstances: ids}
@@ -222,7 +221,7 @@ func TestCluster_DescribeContainerInstances(t *testing.T) {
 }
 
 func TestCluster_ListServices(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewClusterWithName("c1")
 	count := 100
 	c.SetServices(GenServices("s", count, nil))
@@ -267,7 +266,7 @@ func TestCluster_ListServices(t *testing.T) {
 }
 
 func TestCluster_DescribeServices(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewClusterWithName("c1")
 	count := 100
 	c.SetServices(GenServices("s", count, nil))

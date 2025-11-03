@@ -89,15 +89,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRefCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", AttributeVcsRefHeadTypeBranch)
+			mb.RecordVcsRefCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", AttributeVcsRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRefLinesDeltaDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch, AttributeVcsLineChangeTypeAdded)
+			mb.RecordVcsRefLinesDeltaDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch, "vcs.ref.base.name-val", AttributeVcsRefBaseTypeBranch, AttributeVcsLineChangeTypeAdded)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRefRevisionsDeltaDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch, AttributeVcsRevisionDeltaDirectionAhead)
+			mb.RecordVcsRefRevisionsDeltaDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch, "vcs.ref.base.name-val", AttributeVcsRefBaseTypeBranch, AttributeVcsRevisionDeltaDirectionAhead)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -108,8 +108,8 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcsRepositoryCountDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
-			rb.SetOrganizationName("organization.name-val")
-			rb.SetVcsVendorName("vcs.vendor.name-val")
+			rb.SetVcsOwnerName("vcs.owner.name-val")
+			rb.SetVcsProviderName("vcs.provider.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
@@ -255,7 +255,7 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
 					assert.True(t, ok)
 					assert.Equal(t, "vcs.repository.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.ref.head.type")
+					attrVal, ok = dp.Attributes().Get("vcs.ref.type")
 					assert.True(t, ok)
 					assert.Equal(t, "branch", attrVal.Str())
 				case "vcs.ref.lines_delta":
@@ -280,6 +280,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ok)
 					assert.Equal(t, "vcs.ref.head.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("vcs.ref.head.type")
+					assert.True(t, ok)
+					assert.Equal(t, "branch", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.base.name")
+					assert.True(t, ok)
+					assert.Equal(t, "vcs.ref.base.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.base.type")
 					assert.True(t, ok)
 					assert.Equal(t, "branch", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("vcs.line_change.type")
@@ -309,6 +315,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("vcs.ref.head.type")
 					assert.True(t, ok)
 					assert.Equal(t, "branch", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.base.name")
+					assert.True(t, ok)
+					assert.Equal(t, "vcs.ref.base.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.base.type")
+					assert.True(t, ok)
+					assert.Equal(t, "branch", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("vcs.revision_delta.direction")
 					assert.True(t, ok)
 					assert.Equal(t, "ahead", attrVal.Str())
@@ -317,7 +329,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcs.ref.time"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.", ms.At(i).Description())
+					assert.Equal(t, "Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.type` attribute will always be `branch`.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

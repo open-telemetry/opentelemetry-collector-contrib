@@ -156,7 +156,7 @@ func BenchmarkFileInput(b *testing.B) {
 	// and to reduce the amount of syscalls in the benchmark.
 	uniqueLines := 10
 	severalLines := ""
-	for i := 0; i < uniqueLines; i++ {
+	for range uniqueLines {
 		severalLines += string(filetest.TokenWithLength(999)) + "\n"
 	}
 
@@ -276,7 +276,7 @@ func BenchmarkConsumeFiles(b *testing.B) {
 	// and to reduce the amount of syscalls in the benchmark.
 	uniqueLines := 10
 	severalLines := ""
-	for i := 0; i < uniqueLines; i++ {
+	for range uniqueLines {
 		severalLines += string(filetest.TokenWithLength(999)) + "\n"
 	}
 
@@ -294,7 +294,7 @@ func BenchmarkConsumeFiles(b *testing.B) {
 				// Initialize the file to ensure a unique fingerprint
 				_, err := f.WriteString(f.Name() + "\n")
 				require.NoError(b, err)
-				for i := 0; i < b.N; i++ {
+				for b.Loop() {
 					_, err := f.WriteString(severalLines)
 					require.NoError(b, err)
 				}
@@ -329,10 +329,10 @@ func BenchmarkConsumeFiles(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for len(consumePaths) > op.maxBatchFiles {
-				op.consume(context.Background(), consumePaths[:op.maxBatchFiles])
+				op.consume(b.Context(), consumePaths[:op.maxBatchFiles])
 				consumePaths = consumePaths[op.maxBatchFiles:]
 			}
-			op.consume(context.Background(), consumePaths)
+			op.consume(b.Context(), consumePaths)
 			<-doneChan
 		})
 	}

@@ -4,7 +4,6 @@
 package logdedupprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -95,7 +94,7 @@ func Test_logAggregatorReset(t *testing.T) {
 	require.NoError(t, err)
 
 	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		resource := pcommon.NewResource()
 		resource.Attributes().PutInt("i", int64(i))
 		key := getResourceKey(resource)
@@ -136,12 +135,10 @@ func Test_logAggregatorExport(t *testing.T) {
 
 	scope := pcommon.NewInstrumentationScope()
 
-	logRecord := generateTestLogRecord(t, "body string")
-
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord)
+	aggregator.Add(resource, scope, generateTestLogRecord(t, "body string"))
 
-	exportedLogs := aggregator.Export(context.Background())
+	exportedLogs := aggregator.Export(t.Context())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
 	require.Equal(t, 1, exportedLogs.ResourceLogs().Len())
 
@@ -157,15 +154,17 @@ func Test_logAggregatorExport(t *testing.T) {
 	require.Equal(t, 1, sl.LogRecords().Len())
 	actualLogRecord := sl.LogRecords().At(0)
 
+	expectedLogRecord := generateTestLogRecord(t, "body string")
+
 	// Check logRecord
-	require.Equal(t, logRecord.Body().AsString(), actualLogRecord.Body().AsString())
-	require.Equal(t, logRecord.SeverityNumber(), actualLogRecord.SeverityNumber())
-	require.Equal(t, logRecord.SeverityText(), actualLogRecord.SeverityText())
+	require.Equal(t, expectedLogRecord.Body().AsString(), actualLogRecord.Body().AsString())
+	require.Equal(t, expectedLogRecord.SeverityNumber(), actualLogRecord.SeverityNumber())
+	require.Equal(t, expectedLogRecord.SeverityText(), actualLogRecord.SeverityText())
 	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.ObservedTimestamp().AsTime().UnixMilli())
 	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.Timestamp().AsTime().UnixMilli())
 
 	actualRawAttrs := actualLogRecord.Attributes().AsRaw()
-	for key, val := range logRecord.Attributes().AsRaw() {
+	for key, val := range expectedLogRecord.Attributes().AsRaw() {
 		actualVal, ok := actualRawAttrs[key]
 		require.True(t, ok)
 		require.Equal(t, val, actualVal)

@@ -6,7 +6,7 @@
 | Stability     | [development]: metrics, logs   |
 |               | [alpha]: traces   |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Acmd%2Ftelemetrygen%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Acmd%2Ftelemetrygen) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Acmd%2Ftelemetrygen%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Acmd%2Ftelemetrygen) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@codeboten](https://www.github.com/codeboten), [@Erog38](https://www.github.com/Erog38) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@codeboten](https://www.github.com/codeboten), [@Erog38](https://www.github.com/Erog38), [@bogdan-st](https://www.github.com/bogdan-st) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -46,9 +46,6 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317
 
-processors:
-  batch:
-
 exporters:
   debug:
     verbosity: detailed
@@ -57,15 +54,12 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug]
     metrics:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug]
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug]
 ```
 
@@ -88,6 +82,12 @@ Or, to generate a specific number of traces:
 
 ```console
 telemetrygen traces --otlp-insecure --traces 1
+```
+
+Or, to generate traces continuously every 10 seconds:
+
+```console
+telemetrygen traces --otlp-insecure --continuous --rate 0.1
 ```
 
 To send traces in secure connection, see [examples/secure-tracing](../../examples/secure-tracing/)

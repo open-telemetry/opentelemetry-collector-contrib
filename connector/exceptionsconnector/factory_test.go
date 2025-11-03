@@ -4,7 +4,6 @@
 package exceptionsconnector
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -49,7 +48,7 @@ func TestNewConnector(t *testing.T) {
 			cfg.Dimensions = tc.dimensions
 
 			// Test Metrics
-			traceMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+			traceMetricsConnector, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
 			smc := traceMetricsConnector.(*metricsConnector)
 
 			assert.NoError(t, err)
@@ -57,7 +56,7 @@ func TestNewConnector(t *testing.T) {
 			assert.Equal(t, tc.wantDimensions, smc.dimensions)
 
 			// Test Logs
-			traceLogsConnector, err := factory.CreateTracesToLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
+			traceLogsConnector, err := factory.CreateTracesToLogs(t.Context(), creationParams, cfg, consumertest.NewNop())
 			slc := traceLogsConnector.(*logsConnector)
 
 			assert.NoError(t, err)

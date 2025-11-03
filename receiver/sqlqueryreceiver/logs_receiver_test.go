@@ -4,7 +4,6 @@
 package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -38,7 +37,7 @@ func TestLogsQueryReceiver_Collect(t *testing.T) {
 			},
 		},
 	}
-	logs, err := queryReceiver.collect(context.Background())
+	logs, err := queryReceiver.collect(t.Context())
 	assert.NoError(t, err)
 	assert.NotNil(t, logs)
 	assert.Equal(t, 2, logs.LogRecordCount())
@@ -75,7 +74,7 @@ func TestLogsQueryReceiver_MissingColumnInResultSet(t *testing.T) {
 			},
 		},
 	}
-	_, err := queryReceiver.collect(context.Background())
+	_, err := queryReceiver.collect(t.Context())
 	assert.ErrorContains(t, err, "rowToLog: attribute_column 'expected_column' not found in result set")
 	assert.ErrorContains(t, err, "rowToLog: attribute_column 'expected_column_2' not found in result set")
 	assert.ErrorContains(t, err, "rowToLog: body_column 'expected_body_column' not found in result set")
@@ -83,7 +82,7 @@ func TestLogsQueryReceiver_MissingColumnInResultSet(t *testing.T) {
 
 func TestLogsQueryReceiver_BothDatasourceFields(t *testing.T) {
 	createReceiver := createLogsReceiverFunc(fakeDBConnect, mkFakeClient)
-	ctx := context.Background()
+	ctx := t.Context()
 	receiver, err := createReceiver(
 		ctx,
 		receivertest.NewNopSettings(metadata.Type),

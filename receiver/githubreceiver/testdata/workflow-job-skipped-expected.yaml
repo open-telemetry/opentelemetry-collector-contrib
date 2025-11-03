@@ -7,13 +7,13 @@ resourceSpans:
         - key: vcs.repository.name
           value:
             stringValue: opentelemetry-collector-contrib
-        - key: vcs.vendor.name
+        - key: vcs.provider.name
           value:
             stringValue: github
         - key: vcs.ref.head
           value:
             stringValue: main
-        - key: vcs.ref.head.type
+        - key: vcs.ref.type
           value:
             stringValue: branch
         - key: vcs.ref.head.revision

@@ -4,7 +4,6 @@
 package googlecloudspannerreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +30,7 @@ func TestCreateMetrics(t *testing.T) {
 	receiverConfig := cfg.(*Config)
 
 	receiver, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		receiverConfig,
 		consumertest.NewNop(),

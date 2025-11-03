@@ -4,7 +4,6 @@
 package libhoneyreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,26 +18,26 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := receivertest.NewNopSettings(metadata.Type)
-	tReceiver, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(t.Context(), set, cfg, consumertest.NewNop())
 
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	assert.NoError(t, tReceiver.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, tReceiver.Shutdown(context.Background()))
+	assert.NoError(t, tReceiver.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, tReceiver.Shutdown(t.Context()))
 }
 
 func TestCreateLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := receivertest.NewNopSettings(metadata.Type)
-	lReceiver, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
+	lReceiver, err := factory.CreateLogs(t.Context(), set, cfg, consumertest.NewNop())
 
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
-	assert.NoError(t, lReceiver.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, lReceiver.Shutdown(context.Background()))
+	assert.NoError(t, lReceiver.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, lReceiver.Shutdown(t.Context()))
 }
 
 func TestType(t *testing.T) {

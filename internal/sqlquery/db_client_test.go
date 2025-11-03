@@ -20,7 +20,7 @@ func TestDBSQLClient_SingleRow(t *testing.T) {
 		Logger: zap.NewNop(),
 		SQL:    "",
 	}
-	rows, err := cl.QueryRows(context.Background())
+	rows, err := cl.QueryRows(t.Context())
 	require.NoError(t, err)
 	assert.Len(t, rows, 1)
 	assert.EqualValues(t, map[string]string{
@@ -41,7 +41,7 @@ func TestDBSQLClient_MultiRow(t *testing.T) {
 		Logger: zap.NewNop(),
 		SQL:    "",
 	}
-	rows, err := cl.QueryRows(context.Background())
+	rows, err := cl.QueryRows(t.Context())
 	require.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.EqualValues(t, map[string]string{
@@ -68,7 +68,7 @@ func TestDBSQLClient_Nulls(t *testing.T) {
 		Logger: zap.NewNop(),
 		SQL:    "",
 	}
-	rows, err := cl.QueryRows(context.Background())
+	rows, err := cl.QueryRows(t.Context())
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrNullValueWarning)
 	assert.Len(t, rows, 1)
@@ -87,7 +87,7 @@ func TestDBSQLClient_Nulls_MultiRow(t *testing.T) {
 		Logger: zap.NewNop(),
 		SQL:    "",
 	}
-	rows, err := cl.QueryRows(context.Background())
+	rows, err := cl.QueryRows(t.Context())
 	assert.Error(t, err)
 
 	var e interface{ Unwrap() []error }

@@ -8,7 +8,6 @@ Contains tests for logexporter.go and log_to_envelope.go
 */
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -16,10 +15,13 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
 )
 
 const (
@@ -118,7 +120,7 @@ func TestExporterLogDataCallback(t *testing.T) {
 
 	logs := getTestLogs()
 
-	assert.NoError(t, exporter.consumeLogs(context.Background(), logs))
+	assert.NoError(t, exporter.consumeLogs(t.Context(), logs))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 4)
 }
@@ -185,6 +187,7 @@ func getLogsExporter(config *Config, transportChannel appinsights.TelemetryChann
 	return &azureMonitorExporter{
 		config,
 		transportChannel,
+		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
 	}

@@ -175,7 +175,7 @@ func Test_toKeyValueString(t *testing.T) {
 			exprFunc, err := toKeyValueString[any](tt.target, tt.delimiter, tt.pairDelimiter, ottl.NewTestingOptional[bool](true))
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 
 			actual, ok := result.(string)
@@ -215,7 +215,7 @@ func Test_toKeyValueString_bad_target(t *testing.T) {
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
@@ -229,7 +229,7 @@ func Test_toKeyValueString_empty_target(t *testing.T) {
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
 	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 

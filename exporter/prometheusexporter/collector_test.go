@@ -11,6 +11,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
+	"github.com/prometheus/otlptranslator"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -382,7 +383,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -402,7 +403,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -424,7 +425,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -446,7 +447,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -468,7 +469,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -490,7 +491,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -511,7 +512,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 	}
@@ -646,7 +647,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				if withStartTime {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
-				return
+				return metric
 			},
 		},
 	}
@@ -760,7 +761,7 @@ func TestAccumulateSummary(t *testing.T) {
 				fillQuantileValue(0.50, 190, sp.QuantileValues().AppendEmpty())
 				fillQuantileValue(0.99, 817, sp.QuantileValues().AppendEmpty())
 
-				return
+				return metric
 			},
 		},
 	}
@@ -836,4 +837,35 @@ func TestAccumulateSummary(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestNormalizeNamespaceEmpty(t *testing.T) {
+	logger := zap.NewNop()
+	labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
+
+	ns := normalizeNamespace("", labelNamer, logger)
+	require.Empty(t, ns, "empty configNamespace should yield empty namespace")
+}
+
+func TestNormalizeNamespaceInvalid(t *testing.T) {
+	logger := zap.NewNop()
+	labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
+
+	ns := normalizeNamespace("----", labelNamer, logger)
+	require.Empty(t, ns, "configNamespace with no valid characters should yield empty namespace")
+}
+
+func TestNormalizeNamespaceSanitizes(t *testing.T) {
+	logger := zap.NewNop()
+
+	// With UTF-8 not allowed, chars like '.' should be mapped to '_'
+	labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
+	ns1 := normalizeNamespace("my_namespace.1", labelNamer, logger)
+	require.Equal(t, "my_namespace_1", ns1, "UTF-8 not allowed should sanitize '.' to '_'")
+
+	// With UTF-8 allowed, ASCII characters remain unchanged
+	labelNamerUTF8 := otlptranslator.LabelNamer{UTF8Allowed: true}
+	ns2 := normalizeNamespace("my_namespace.1", labelNamerUTF8, logger)
+
+	require.Equal(t, "my_namespace.1", ns2, "UTF-8 allowed should not sanitize ASCII characters")
 }
