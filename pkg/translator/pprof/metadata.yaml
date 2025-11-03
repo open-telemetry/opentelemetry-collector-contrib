@@ -2,4 +2,4 @@ status:
   disable_codecov_badge: true
   class: "pkg"
   codeowners:
-    active: [ open-telemetry/collector-approvers, florianl ]
+    active: [ open-telemetry/collector-contrib-approvers, florianl ]
