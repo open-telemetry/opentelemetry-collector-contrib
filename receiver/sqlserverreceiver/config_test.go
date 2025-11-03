@@ -106,6 +106,19 @@ func TestValidate(t *testing.T) {
 			},
 			expectedSuccess: false,
 		},
+		{
+			desc: "config with invalid LookbackTime",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				TopQueryCollection: TopQueryCollection{
+					MaxQuerySampleCount: 100,
+					TopQueryCount:       200000,
+					LookbackTime:        -1,
+				},
+			},
+			expectedSuccess: false,
+		},
 	}
 
 	for _, tc := range testCases {
