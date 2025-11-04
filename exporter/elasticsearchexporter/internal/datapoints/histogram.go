@@ -65,7 +65,7 @@ func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric) (pco
 	values := m.PutEmptySlice("values")
 
 	if explicitBounds.Len() == 0 {
-		// It is possible for explict bounds to be nil. In this case create
+		// It is possible for explicit bounds to be nil. In this case create
 		// a bucket using the count and sum which are required to be present.
 		// See https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram
 		counts.AppendEmpty().SetInt(safeUint64ToInt64(dp.Count()))
