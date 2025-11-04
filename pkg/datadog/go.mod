@@ -5,18 +5,26 @@ go 1.24.0
 require (
 	github.com/DataDog/datadog-agent/comp/core/config v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/comp/core/log/def v0.73.0-rc.2
+	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.73.0-rc.2
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.72.0
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/config/model v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.73.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/serializer v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/util/compression v0.73.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/util/option v0.73.0-rc.2
+	github.com/DataDog/datadog-go/v5 v5.8.1
+	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.139.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.45.0
@@ -55,7 +63,6 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/status v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/def v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.73.0-rc.2 // indirect
@@ -76,7 +83,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.73.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.73.0-rc.2 // indirect
@@ -91,7 +98,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/http v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/json v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/option v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.2 // indirect
@@ -150,13 +156,11 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/mock v1.7.0-rc.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-tpm v0.9.6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect

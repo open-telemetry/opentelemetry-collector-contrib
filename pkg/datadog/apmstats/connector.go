@@ -13,7 +13,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 
 	"github.com/DataDog/datadog-agent/comp/core/tagger/types"
-	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
 	"github.com/DataDog/datadog-agent/pkg/util/option"
 	"github.com/DataDog/datadog-go/v5/statsd"
 
@@ -91,7 +90,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	oconf.Redis.Enabled = true
 
 	if concentrator == nil {
-		statsWriter := statsprocessor.NewOtelStatsWriter(statsout)
+		statsWriter := &otelStatsWriter{statsout}
 		concentrator = stats.NewConcentrator(tcfg, statsWriter, time.Now(), metricsClient)
 	}
 
@@ -231,4 +230,13 @@ func (c *traceToMetricConnector) run() {
 			return
 		}
 	}
+}
+
+type otelStatsWriter struct {
+	out chan *pb.StatsPayload
+}
+
+// Write this payload to the `out` channel
+func (a *otelStatsWriter) Write(payload *pb.StatsPayload) {
+	a.out <- payload
 }
