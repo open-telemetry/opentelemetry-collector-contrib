@@ -40,8 +40,8 @@ ignored_paths:
   - testbed/mockdatasenders/mockdatadogagentexporter
   - extension/sumologicextension # 40655
   - extension/k8sleaderelector # 43992
-  - processor/filterprocessor
-  - processor/transformprocessor
+  - processor/filterprocessor # 43994
+  - processor/transformprocessor # 43994
   - receiver/aerospikereceiver
   - receiver/prometheusreceiver
   - receiver/carbonreceiver
