@@ -20,13 +20,13 @@ Aggregate of MongoDB Metrics DATABASE_EXTENT_COUNT, DATABASE_VIEW_COUNT, DATABAS
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {objects} | Gauge | Double | development |
+| {objects} | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| object_type | MongoDB object type | Str: ``collection``, ``index``, ``extent``, ``object``, ``view``, ``storage``, ``data`` | false |
+| object_type | MongoDB object type | Str: ``collection``, ``index``, ``extent``, ``object``, ``view``, ``storage``, ``data`` | Recommended |
 
 ### mongodbatlas.db.size
 
@@ -36,13 +36,13 @@ Aggregate of MongoDB Metrics DATABASE_DATA_SIZE, DATABASE_STORAGE_SIZE, DATABASE
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| object_type | MongoDB object type | Str: ``collection``, ``index``, ``extent``, ``object``, ``view``, ``storage``, ``data`` | false |
+| object_type | MongoDB object type | Str: ``collection``, ``index``, ``extent``, ``object``, ``view``, ``storage``, ``data`` | Recommended |
 
 ### mongodbatlas.disk.partition.iops.average
 
@@ -52,13 +52,13 @@ Aggregate of MongoDB Metrics DISK_PARTITION_IOPS_READ, DISK_PARTITION_IOPS_WRITE
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {ops}/s | Gauge | Double | development |
+| {ops}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | false |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
 
 ### mongodbatlas.disk.partition.iops.max
 
@@ -68,13 +68,13 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_IOPS_WRITE, MAX_DISK_PARTITION_I
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {ops}/s | Gauge | Double | development |
+| {ops}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | false |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
 
 ### mongodbatlas.disk.partition.latency.average
 
@@ -84,13 +84,13 @@ Aggregate of MongoDB Metrics DISK_PARTITION_LATENCY_WRITE, DISK_PARTITION_LATENC
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | development |
+| ms | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | false |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
 
 ### mongodbatlas.disk.partition.latency.max
 
@@ -100,13 +100,13 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_LATENCY_WRITE, MAX_DISK_PARTITIO
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | development |
+| ms | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | false |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
 
 ### mongodbatlas.disk.partition.space.average
 
@@ -116,13 +116,13 @@ Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USE
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_status | Disk measurement type | Str: ``free``, ``used`` | false |
+| disk_status | Disk measurement type | Str: ``free``, ``used`` | Recommended |
 
 ### mongodbatlas.disk.partition.space.max
 
@@ -132,13 +132,13 @@ Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USE
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_status | Disk measurement type | Str: ``free``, ``used`` | false |
+| disk_status | Disk measurement type | Str: ``free``, ``used`` | Recommended |
 
 ### mongodbatlas.disk.partition.usage.average
 
@@ -148,13 +148,13 @@ Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_S
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_status | Disk measurement type | Str: ``free``, ``used`` | false |
+| disk_status | Disk measurement type | Str: ``free``, ``used`` | Recommended |
 
 ### mongodbatlas.disk.partition.usage.max
 
@@ -164,13 +164,13 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PAR
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_status | Disk measurement type | Str: ``free``, ``used`` | false |
+| disk_status | Disk measurement type | Str: ``free``, ``used`` | Recommended |
 
 ### mongodbatlas.disk.partition.utilization.average
 
@@ -180,7 +180,7 @@ MongoDB Metrics DISK_PARTITION_UTILIZATION
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### mongodbatlas.disk.partition.utilization.max
 
@@ -190,7 +190,7 @@ MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### mongodbatlas.process.asserts
 
@@ -200,13 +200,13 @@ Aggregate of MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WAR
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {assertions}/s | Gauge | Double | development |
+| {assertions}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| assert_type | MongoDB assertion type | Str: ``regular``, ``warning``, ``msg``, ``user`` | false |
+| assert_type | MongoDB assertion type | Str: ``regular``, ``warning``, ``msg``, ``user`` | Recommended |
 
 ### mongodbatlas.process.background_flush
 
@@ -216,7 +216,7 @@ MongoDB Metric BACKGROUND_FLUSH_AVG
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### mongodbatlas.process.cache.io
 
@@ -226,13 +226,13 @@ Aggregate of MongoDB Metrics CACHE_BYTES_READ_INTO, CACHE_BYTES_WRITTEN_FROM
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_direction | Whether read into or written from | Str: ``read_into``, ``written_from`` | false |
+| cache_direction | Whether read into or written from | Str: ``read_into``, ``written_from`` | Recommended |
 
 ### mongodbatlas.process.cache.size
 
@@ -242,13 +242,13 @@ Aggregate of MongoDB Metrics CACHE_USED_BYTES, CACHE_DIRTY_BYTES
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Double | Cumulative | false | development |
+| By | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_status | Cache status | Str: ``dirty``, ``used`` | false |
+| cache_status | Cache status | Str: ``dirty``, ``used`` | Recommended |
 
 ### mongodbatlas.process.connections
 
@@ -258,7 +258,7 @@ MongoDB Metric CONNECTIONS
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Double | Cumulative | false | development |
+| {connections} | Sum | Double | Cumulative | false | Development |
 
 ### mongodbatlas.process.cpu.children.normalized.usage.average
 
@@ -268,13 +268,13 @@ Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, PROCESS_NOR
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.process.cpu.children.normalized.usage.max
 
@@ -284,13 +284,13 @@ Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, MAX_PRO
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.process.cpu.children.usage.average
 
@@ -300,13 +300,13 @@ Aggregate of MongoDB Metrics PROCESS_CPU_CHILDREN_KERNEL, PROCESS_CPU_CHILDREN_U
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.process.cpu.children.usage.max
 
@@ -316,13 +316,13 @@ Aggregate of MongoDB Metrics MAX_PROCESS_CPU_CHILDREN_USER, MAX_PROCESS_CPU_CHIL
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.process.cpu.normalized.usage.average
 
@@ -332,13 +332,13 @@ Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_KERNEL, PROCESS_NORMALIZED_C
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.process.cpu.normalized.usage.max
 
@@ -348,13 +348,13 @@ Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_USER, MAX_PROCESS_NORMAL
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.process.cpu.usage.average
 
@@ -364,13 +364,13 @@ Aggregate of MongoDB Metrics PROCESS_CPU_KERNEL, PROCESS_CPU_USER
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.process.cpu.usage.max
 
@@ -380,13 +380,13 @@ Aggregate of MongoDB Metrics MAX_PROCESS_CPU_KERNEL, MAX_PROCESS_CPU_USER
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.process.cursors
 
@@ -396,13 +396,13 @@ Aggregate of MongoDB Metrics CURSORS_TOTAL_OPEN, CURSORS_TOTAL_TIMED_OUT
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {cursors} | Gauge | Double | development |
+| {cursors} | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cursor_state | Whether cursor is open or timed out | Str: ``timed_out``, ``open`` | false |
+| cursor_state | Whether cursor is open or timed out | Str: ``timed_out``, ``open`` | Recommended |
 
 ### mongodbatlas.process.db.document.rate
 
@@ -412,13 +412,13 @@ Aggregate of MongoDB Metrics DOCUMENT_METRICS_UPDATED, DOCUMENT_METRICS_DELETED,
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {documents}/s | Gauge | Double | development |
+| {documents}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| document_status | Status of documents in the database | Str: ``returned``, ``inserted``, ``updated``, ``deleted`` | false |
+| document_status | Status of documents in the database | Str: ``returned``, ``inserted``, ``updated``, ``deleted`` | Recommended |
 
 ### mongodbatlas.process.db.operations.rate
 
@@ -428,14 +428,14 @@ Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOU
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {operations}/s | Gauge | Double | development |
+| {operations}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | Type of database operation | Str: ``cmd``, ``query``, ``update``, ``delete``, ``getmore``, ``insert``, ``scan_and_order``, ``ttl_deleted`` | false |
-| cluster_role | Whether process is acting as replica or primary | Str: ``primary``, ``replica`` | false |
+| operation | Type of database operation | Str: ``cmd``, ``query``, ``update``, ``delete``, ``getmore``, ``insert``, ``scan_and_order``, ``ttl_deleted`` | Recommended |
+| cluster_role | Whether process is acting as replica or primary | Str: ``primary``, ``replica`` | Recommended |
 
 ### mongodbatlas.process.db.operations.time
 
@@ -445,13 +445,13 @@ Aggregate of MongoDB Metrics OP_EXECUTION_TIME_WRITES, OP_EXECUTION_TIME_COMMAND
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Double | Cumulative | true | development |
+| ms | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| execution_type | Type of command | Str: ``reads``, ``writes``, ``commands`` | false |
+| execution_type | Type of command | Str: ``reads``, ``writes``, ``commands`` | Recommended |
 
 ### mongodbatlas.process.db.query_executor.scanned
 
@@ -461,13 +461,13 @@ Aggregate of MongoDB Metrics QUERY_EXECUTOR_SCANNED_OBJECTS, QUERY_EXECUTOR_SCAN
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {objects}/s | Gauge | Double | development |
+| {objects}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| scanned_type | Objects or indexes scanned during query | Str: ``index_items``, ``objects`` | false |
+| scanned_type | Objects or indexes scanned during query | Str: ``index_items``, ``objects`` | Recommended |
 
 ### mongodbatlas.process.db.query_targeting.scanned_per_returned
 
@@ -477,13 +477,13 @@ Aggregate of MongoDB Metrics QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED, QUERY
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {scanned}/{returned} | Gauge | Double | development |
+| {scanned}/{returned} | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| scanned_type | Objects or indexes scanned during query | Str: ``index_items``, ``objects`` | false |
+| scanned_type | Objects or indexes scanned during query | Str: ``index_items``, ``objects`` | Recommended |
 
 ### mongodbatlas.process.db.storage
 
@@ -493,13 +493,13 @@ Aggregate of MongoDB Metrics DB_INDEX_SIZE_TOTAL, DB_DATA_SIZE_TOTAL_WO_SYSTEM, 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| storage_status | Views on database size | Str: ``total``, ``data_size``, ``index_size``, ``data_size_wo_system`` | false |
+| storage_status | Views on database size | Str: ``total``, ``data_size``, ``index_size``, ``data_size_wo_system`` | Recommended |
 
 ### mongodbatlas.process.global_lock
 
@@ -509,13 +509,13 @@ Aggregate of MongoDB Metrics GLOBAL_LOCK_CURRENT_QUEUE_WRITERS, GLOBAL_LOCK_CURR
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {locks} | Gauge | Double | development |
+| {locks} | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| global_lock_state | Which queue is locked | Str: ``current_queue_total``, ``current_queue_readers``, ``current_queue_writers`` | false |
+| global_lock_state | Which queue is locked | Str: ``current_queue_total``, ``current_queue_readers``, ``current_queue_writers`` | Recommended |
 
 ### mongodbatlas.process.index.btree_miss_ratio
 
@@ -525,7 +525,7 @@ MongoDB Metric INDEX_COUNTERS_BTREE_MISS_RATIO
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### mongodbatlas.process.index.counters
 
@@ -535,13 +535,13 @@ Aggregate of MongoDB Metrics INDEX_COUNTERS_BTREE_MISSES, INDEX_COUNTERS_BTREE_A
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {indexes} | Gauge | Double | development |
+| {indexes} | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| btree_counter_type | Database index effectiveness | Str: ``accesses``, ``hits``, ``misses`` | false |
+| btree_counter_type | Database index effectiveness | Str: ``accesses``, ``hits``, ``misses`` | Recommended |
 
 ### mongodbatlas.process.journaling.commits
 
@@ -551,7 +551,7 @@ MongoDB Metric JOURNALING_COMMITS_IN_WRITE_LOCK
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {commits} | Gauge | Double | development |
+| {commits} | Gauge | Double | Development |
 
 ### mongodbatlas.process.journaling.data_files
 
@@ -561,7 +561,7 @@ MongoDB Metric JOURNALING_WRITE_DATA_FILES_MB
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| MiBy | Gauge | Double | development |
+| MiBy | Gauge | Double | Development |
 
 ### mongodbatlas.process.journaling.written
 
@@ -571,7 +571,7 @@ MongoDB Metric JOURNALING_MB
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| MiBy | Gauge | Double | development |
+| MiBy | Gauge | Double | Development |
 
 ### mongodbatlas.process.memory.usage
 
@@ -581,13 +581,13 @@ Aggregate of MongoDB Metrics MEMORY_MAPPED, MEMORY_VIRTUAL, COMPUTED_MEMORY, MEM
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | false |
+| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Recommended |
 
 ### mongodbatlas.process.network.io
 
@@ -597,13 +597,13 @@ Aggregate of MongoDB Metrics NETWORK_BYTES_OUT, NETWORK_BYTES_IN
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | development |
+| By/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Network traffic direction | Str: ``receive``, ``transmit`` | false |
+| direction | Network traffic direction | Str: ``receive``, ``transmit`` | Recommended |
 
 ### mongodbatlas.process.network.requests
 
@@ -613,7 +613,7 @@ MongoDB Metric NETWORK_NUM_REQUESTS
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Double | Cumulative | true | development |
+| {requests} | Sum | Double | Cumulative | true | Development |
 
 ### mongodbatlas.process.oplog.rate
 
@@ -623,7 +623,7 @@ MongoDB Metric OPLOG_RATE_GB_PER_HOUR
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| GiBy/h | Gauge | Double | development |
+| GiBy/h | Gauge | Double | Development |
 
 ### mongodbatlas.process.oplog.time
 
@@ -633,13 +633,13 @@ Aggregate of MongoDB Metrics OPLOG_MASTER_TIME, OPLOG_SLAVE_LAG_MASTER_TIME, OPL
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| oplog_type | Oplog type | Str: ``slave_lag_master_time``, ``master_time``, ``master_lag_time_diff`` | false |
+| oplog_type | Oplog type | Str: ``slave_lag_master_time``, ``master_time``, ``master_lag_time_diff`` | Recommended |
 
 ### mongodbatlas.process.page_faults
 
@@ -649,13 +649,13 @@ Aggregate of MongoDB Metrics GLOBAL_PAGE_FAULT_EXCEPTIONS_THROWN, EXTRA_INFO_PAG
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {faults}/s | Gauge | Double | development |
+| {faults}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_issue_type | Type of memory issue encountered | Str: ``extra_info``, ``global_accesses_not_in_memory``, ``exceptions_thrown`` | false |
+| memory_issue_type | Type of memory issue encountered | Str: ``extra_info``, ``global_accesses_not_in_memory``, ``exceptions_thrown`` | Recommended |
 
 ### mongodbatlas.process.restarts
 
@@ -665,7 +665,7 @@ Aggregate of MongoDB Metrics RESTARTS_IN_LAST_HOUR
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {restarts}/h | Gauge | Double | development |
+| {restarts}/h | Gauge | Double | Development |
 
 ### mongodbatlas.process.tickets
 
@@ -675,13 +675,13 @@ Aggregate of MongoDB Metrics TICKETS_AVAILABLE_WRITE, TICKETS_AVAILABLE_READS
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {tickets} | Gauge | Double | development |
+| {tickets} | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| ticket_type | Type of ticket available | Str: ``available_reads``, ``available_writes`` | false |
+| ticket_type | Type of ticket available | Str: ``available_reads``, ``available_writes`` | Recommended |
 
 ### mongodbatlas.system.cpu.normalized.usage.average
 
@@ -691,13 +691,13 @@ Aggregate of MongoDB Metrics SYSTEM_NORMALIZED_CPU_IOWAIT, SYSTEM_NORMALIZED_CPU
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.system.cpu.normalized.usage.max
 
@@ -707,13 +707,13 @@ Aggregate of MongoDB Metrics MAX_SYSTEM_NORMALIZED_CPU_USER, MAX_SYSTEM_NORMALIZ
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.system.cpu.usage.average
 
@@ -723,13 +723,13 @@ Aggregate of MongoDB Metrics SYSTEM_CPU_USER, SYSTEM_CPU_GUEST, SYSTEM_CPU_SOFTI
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.system.cpu.usage.max
 
@@ -739,13 +739,13 @@ Aggregate of MongoDB Metrics MAX_SYSTEM_CPU_SOFTIRQ, MAX_SYSTEM_CPU_IRQ, MAX_SYS
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.system.fts.cpu.normalized.usage
 
@@ -755,13 +755,13 @@ Aggregate of MongoDB Metrics FTS_PROCESS_NORMALIZED_CPU_USER, FTS_PROCESS_NORMAL
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.system.fts.cpu.usage
 
@@ -771,13 +771,13 @@ Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | false |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` | Recommended |
 
 ### mongodbatlas.system.fts.disk.used
 
@@ -787,7 +787,7 @@ MongoDB Metric FTS_DISK_USAGE
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 ### mongodbatlas.system.fts.memory.usage
 
@@ -797,13 +797,13 @@ Aggregate of MongoDB Metrics FTS_MEMORY_MAPPED, FTS_PROCESS_SHARED_MEMORY, FTS_P
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| MiBy | Sum | Double | Cumulative | true | development |
+| MiBy | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | false |
+| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Recommended |
 
 ### mongodbatlas.system.memory.usage.average
 
@@ -813,13 +813,13 @@ Aggregate of MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, SYSTEM_MEMORY_BUFFERS, SYS
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KiBy | Gauge | Double | development |
+| KiBy | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_status | Memory measurement type | Str: ``available``, ``buffers``, ``cached``, ``free``, ``shared``, ``used`` | false |
+| memory_status | Memory measurement type | Str: ``available``, ``buffers``, ``cached``, ``free``, ``shared``, ``used`` | Recommended |
 
 ### mongodbatlas.system.memory.usage.max
 
@@ -829,13 +829,13 @@ Aggregate of MongoDB Metrics MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILAB
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KiBy | Gauge | Double | development |
+| KiBy | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_status | Memory measurement type | Str: ``available``, ``buffers``, ``cached``, ``free``, ``shared``, ``used`` | false |
+| memory_status | Memory measurement type | Str: ``available``, ``buffers``, ``cached``, ``free``, ``shared``, ``used`` | Recommended |
 
 ### mongodbatlas.system.network.io.average
 
@@ -845,13 +845,13 @@ Aggregate of MongoDB Metrics SYSTEM_NETWORK_IN, SYSTEM_NETWORK_OUT
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | development |
+| By/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Network traffic direction | Str: ``receive``, ``transmit`` | false |
+| direction | Network traffic direction | Str: ``receive``, ``transmit`` | Recommended |
 
 ### mongodbatlas.system.network.io.max
 
@@ -861,13 +861,13 @@ Aggregate of MongoDB Metrics MAX_SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_IN
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | development |
+| By/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Network traffic direction | Str: ``receive``, ``transmit`` | false |
+| direction | Network traffic direction | Str: ``receive``, ``transmit`` | Recommended |
 
 ### mongodbatlas.system.paging.io.average
 
@@ -877,13 +877,13 @@ Aggregate of MongoDB Metrics SWAP_IO_IN, SWAP_IO_OUT
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {pages}/s | Gauge | Double | development |
+| {pages}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Network traffic direction | Str: ``receive``, ``transmit`` | false |
+| direction | Network traffic direction | Str: ``receive``, ``transmit`` | Recommended |
 
 ### mongodbatlas.system.paging.io.max
 
@@ -893,13 +893,13 @@ Aggregate of MongoDB Metrics MAX_SWAP_IO_IN, MAX_SWAP_IO_OUT
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {pages}/s | Gauge | Double | development |
+| {pages}/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | Network traffic direction | Str: ``receive``, ``transmit`` | false |
+| direction | Network traffic direction | Str: ``receive``, ``transmit`` | Recommended |
 
 ### mongodbatlas.system.paging.usage.average
 
@@ -909,13 +909,13 @@ Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KiBy | Gauge | Double | development |
+| KiBy | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | false |
+| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Recommended |
 
 ### mongodbatlas.system.paging.usage.max
 
@@ -925,13 +925,13 @@ Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KiBy | Gauge | Double | development |
+| KiBy | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | false |
+| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Recommended |
 
 ## Optional Metrics
 
@@ -951,7 +951,7 @@ Aggregate of MongoDB Metrics DISK_QUEUE_DEPTH
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### mongodbatlas.disk.partition.throughput
 
@@ -961,13 +961,13 @@ Aggregate of MongoDB Metrics DISK_PARTITION_THROUGHPUT_READ, DISK_PARTITION_THRO
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | development |
+| By/s | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | false |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
 
 ### mongodbatlas.process.cache.ratio
 
@@ -977,13 +977,13 @@ Aggregate of MongoDB Metrics CACHE_FILL_RATIO, DIRTY_FILL_RATIO
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_ratio_type | Cache ratio type | Str: ``cache_fill``, ``dirty_fill`` | false |
+| cache_ratio_type | Cache ratio type | Str: ``cache_fill``, ``dirty_fill`` | Recommended |
 
 ## Resource Attributes
 

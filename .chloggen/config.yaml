@@ -24,6 +24,7 @@ components:
     - connector/routing
     - connector/servicegraph
     - connector/signaltometrics
+    - connector/slowsql
     - connector/spanmetrics
     - connector/sum
     - exporter/alertmanager
@@ -127,8 +128,8 @@ components:
     - internal/common
     - internal/coreinternal
     - internal/datadog
+    - internal/datadog/e2e
     - internal/docker
-    - internal/e2e
     - internal/exp/metrics
     - internal/filter
     - internal/grpcutil
@@ -225,6 +226,7 @@ components:
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
+    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azureblob
@@ -233,7 +235,7 @@ components:
     - receiver/bigip
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoosreceiver
+    - receiver/ciscoos
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
@@ -296,6 +298,7 @@ components:
     - receiver/purefb
     - receiver/rabbitmq
     - receiver/receiver_creator
+    - receiver/redfish
     - receiver/redis
     - receiver/riak
     - receiver/saphana
@@ -328,6 +331,7 @@ components:
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/interfaces
     - scraper/load
     - scraper/memory
     - scraper/network
@@ -335,6 +339,7 @@ components:
     - scraper/paging
     - scraper/process
     - scraper/processes
+    - scraper/system
     - scraper/system
     - scraper/zookeeper
     - testbed
