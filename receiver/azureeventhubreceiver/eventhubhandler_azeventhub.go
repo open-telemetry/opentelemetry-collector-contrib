@@ -6,7 +6,6 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +17,9 @@ import (
 )
 
 type checkpointSeqNumber struct {
-	SequenceNumber int64 `json:"sequenceNumber"`
+	// Offset only used for backwards compatibility
+	Offset         string `json:"offset"`
+	SequenceNumber int64  `json:"sequenceNumber"`
 }
 
 type azPartitionClient interface {
@@ -56,7 +57,7 @@ func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error)
 }
 
 func getStorageCheckpointPersister(storageClient storage.Client) *storageCheckpointPersister[checkpointSeqNumber] {
-	if storageClient != nil {
+	if storageClient == nil {
 		return nil
 	}
 	return &storageCheckpointPersister[checkpointSeqNumber]{
@@ -222,16 +223,14 @@ func (h *hubWrapperAzeventhubImpl) getStartPos(
 		startPos = azeventhubs.StartPosition{Offset: &h.config.Offset}
 	}
 	if h.storage != nil {
-		fmt.Println("hi")
 		checkpoint, readErr := h.storage.Read(
 			namespace,
 			eventHubName,
 			consumerGroup,
 			partitionID,
 		)
-		fmt.Println(checkpoint, readErr)
 		// Only apply the checkpoint seq number offset if we have one saved
-		if readErr == nil && checkpoint.SequenceNumber != -1 {
+		if readErr == nil && checkpoint.SequenceNumber != -1 && checkpoint.Offset != "@latest" {
 			startPos = azeventhubs.StartPosition{
 				SequenceNumber: &checkpoint.SequenceNumber,
 			}
