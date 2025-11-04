@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.45.0
 	go.opentelemetry.io/collector/pdata v1.45.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.139.0
-	go.opentelemetry.io/ebpf-profiler v0.0.202540
+	go.opentelemetry.io/ebpf-profiler v0.0.202545
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/metric v1.38.0
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
@@ -48,7 +48,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/cilium/ebpf v0.19.0 // indirect
+	github.com/cilium/ebpf v0.20.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.7.0 // indirect
 	github.com/elastic/go-sysinfo v1.15.3 // indirect
