@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/core/tagger/types"
-	"github.com/DataDog/datadog-agent/pkg/util/option"
-
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
+	"github.com/DataDog/datadog-agent/pkg/util/option"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -46,7 +45,7 @@ func NewConnectorFactoryForAgent(tagger types.TaggerClient, hostGetter SourcePro
 		Type,
 		createDefaultConfig,
 		connector.WithTracesToMetrics(f.createTracesToMetricsConnector, TracesToMetricsStability),
-		connector.WithTracesToTraces(f.createTracesToTracesConnector, TracesToTracesStability))
+		connector.WithTracesToTraces(createTracesToTracesConnector, TracesToTracesStability))
 }
 
 // NewConnectorFactory creates a factory for datadog connector.
@@ -85,6 +84,6 @@ func (f *factory) createTracesToMetricsConnector(_ context.Context, params conne
 	return c, nil
 }
 
-func (f *factory) createTracesToTracesConnector(_ context.Context, params connector.Settings, _ component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
+func createTracesToTracesConnector(_ context.Context, params connector.Settings, _ component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
 	return newTraceToTraceConnector(params.Logger, nextConsumer), nil
 }
