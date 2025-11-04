@@ -112,6 +112,9 @@ func lookupSearchJobReturn(r *http.Request) []byte {
 		return []byte(`error`)
 	}
 	vals, err := url.ParseQuery(string(bodyBytes))
+	if err != nil {
+		return []byte(`error`)
+	}
 
 	switch r.URL.String() {
 	case "/services/search/v2/jobs/1/results":
