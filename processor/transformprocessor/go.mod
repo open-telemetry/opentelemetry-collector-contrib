@@ -4,8 +4,8 @@ go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.139.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.138.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.138.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.139.0
