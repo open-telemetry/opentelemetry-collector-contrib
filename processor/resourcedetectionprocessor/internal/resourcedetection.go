@@ -146,6 +146,19 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pc
 
 	res, schemaURL, err := p.detectResource(ctx)
 	p.mu.Lock()
+	prev := p.detectedResource
+
+	// Check if we have a previous successfully snapshot
+	hadPrevSuccess := prev != nil && prev.err == nil && !IsEmptyResource(prev.resource)
+
+	// If this refresh failed (partial) AND we had a previous success, keep the old one.
+	if err != nil && hadPrevSuccess {
+		p.mu.Unlock()
+		// Return the last good snapshot; do not overwrite.
+		return prev.resource, prev.schemaURL, prev.err
+	}
+
+	// Otherwise, accept the new snapshot (first attempt or successful refresh).
 	p.detectedResource = &resourceResult{resource: res, schemaURL: schemaURL, err: err}
 	p.mu.Unlock()
 	return res, schemaURL, err
@@ -174,7 +187,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 			for {
 				r, schemaURL, err := detector.Detect(ctx)
 				if err == nil {
-					ch <- resourceResult{resource: r, schemaURL: schemaURL, err: nil}
+					ch <- resourceResult{resource: r, schemaURL: schemaURL}
 					return
 				}
 
@@ -182,7 +195,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 
 				next := sleep.NextBackOff()
 				if next == backoff.Stop {
-					ch <- resourceResult{resource: pcommon.NewResource(), schemaURL: "", err: err}
+					ch <- resourceResult{err: err}
 					return
 				}
 
@@ -191,7 +204,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 				case <-ctx.Done():
 					p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
 					timer.Stop()
-					ch <- resourceResult{resource: pcommon.NewResource(), schemaURL: "", err: err}
+					ch <- resourceResult{err: err}
 					return
 				case <-timer.C:
 					// retry
