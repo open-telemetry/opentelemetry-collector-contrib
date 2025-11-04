@@ -39,7 +39,7 @@ ignored_paths:
   - exporter/elasticsearchexporter/integrationtest
   - testbed/mockdatasenders/mockdatadogagentexporter
   - extension/sumologicextension # 40655
-  - extension/k8sleaderelector
+  - extension/k8sleaderelector # 43992
   - processor/filterprocessor
   - processor/transformprocessor
   - receiver/aerospikereceiver
