@@ -1444,6 +1444,11 @@ func TestLocalRootConsumer(t *testing.T) {
 	// Checks these values are the same for both
 	assert.Equal(t, segments[0].StartTime, segments[1].StartTime)
 	assert.Equal(t, segments[0].EndTime, segments[1].EndTime)
+
+	// Check that segment EndTime matches span's EndTime
+	expectedEndTime := float64(span.EndTimestamp()) / float64(time.Second)
+	assert.Equal(t, expectedEndTime, *segments[0].EndTime)
+	assert.Equal(t, expectedEndTime, *segments[1].EndTime)
 }
 
 func TestNonLocalRootConsumerProcess(t *testing.T) {
