@@ -36,6 +36,12 @@ type HydrolixMetric struct {
     Sum                    float64        `json:"sum,omitempty"`
     MetricAttributes       []TagValue     `json:"tags"`
     ResourceAttributes     []TagValue     `json:"serviceTags"`
+    ResourceSchemaUrl      string         `json:"resource_schema_url,omitempty"`
+    ScopeName              string         `json:"scope_name,omitempty"`
+    ScopeVersion           string         `json:"scope_version,omitempty"`
+    ScopeAttributes        []TagValue     `json:"scope_attributes,omitempty"`
+    ScopeDroppedAttrCount  uint32         `json:"scope_dropped_attr_count,omitempty"`
+    ScopeSchemaUrl         string         `json:"scope_schema_url,omitempty"`
     Scale                  int32          `json:"scale,omitempty"`
     ZeroCount              uint64         `json:"zero_count,omitempty"`
     Positive               string         `json:"positive,omitempty"`
@@ -43,6 +49,9 @@ type HydrolixMetric struct {
     Exemplars              []Exemplar     `json:"exemplars,omitempty"`
     Flags                  uint32         `json:"flags,omitempty"`
     AggregationTemporality int32          `json:"aggregation_temporality,omitempty"`
+    IsMonotonic            bool           `json:"is_monotonic,omitempty"`
+    Quantiles              []float64      `json:"quantiles,omitempty"`
+    QuantileValues         []float64      `json:"quantile_values,omitempty"`
     ServiceName            string         `json:"serviceName,omitempty"`
     HTTPStatusCode         string         `json:"httpStatusCode,omitempty"`
     HTTPRoute              string         `json:"httpRoute,omitempty"`
@@ -103,24 +112,29 @@ func (e *metricsExporter) convertToHydrolixMetrics(md pmetric.Metrics) []Hydroli
         rm := md.ResourceMetrics().At(i)
         resource := rm.Resource()
         resourceAttrs := convertAttributes(resource.Attributes())
+        resourceSchemaUrl := rm.SchemaUrl()
 
         serviceName := extractStringAttr(resource.Attributes(), "service.name")
 
         for j := 0; j < rm.ScopeMetrics().Len(); j++ {
             sm := rm.ScopeMetrics().At(j)
+            scope := sm.Scope()
+            scopeAttrs := convertAttributes(scope.Attributes())
 
             for k := 0; k < sm.Metrics().Len(); k++ {
                 metric := sm.Metrics().At(k)
 
                 switch metric.Type() {
                 case pmetric.MetricTypeGauge:
-                    metrics = append(metrics, e.convertGauge(metric, resourceAttrs, serviceName)...)
+                    metrics = append(metrics, e.convertGauge(metric, resourceAttrs, resourceSchemaUrl, scopeAttrs, scope, sm.SchemaUrl(), serviceName)...)
                 case pmetric.MetricTypeSum:
-                    metrics = append(metrics, e.convertSum(metric, resourceAttrs, serviceName)...)
+                    metrics = append(metrics, e.convertSum(metric, resourceAttrs, resourceSchemaUrl, scopeAttrs, scope, sm.SchemaUrl(), serviceName)...)
                 case pmetric.MetricTypeHistogram:
-                    metrics = append(metrics, e.convertHistogram(metric, resourceAttrs, serviceName)...)
+                    metrics = append(metrics, e.convertHistogram(metric, resourceAttrs, resourceSchemaUrl, scopeAttrs, scope, sm.SchemaUrl(), serviceName)...)
                 case pmetric.MetricTypeExponentialHistogram:
-                    metrics = append(metrics, e.convertExponentialHistogram(metric, resourceAttrs, serviceName)...)
+                    metrics = append(metrics, e.convertExponentialHistogram(metric, resourceAttrs, resourceSchemaUrl, scopeAttrs, scope, sm.SchemaUrl(), serviceName)...)
+                case pmetric.MetricTypeSummary:
+                    metrics = append(metrics, e.convertSummary(metric, resourceAttrs, resourceSchemaUrl, scopeAttrs, scope, sm.SchemaUrl(), serviceName)...)
                 }
             }
         }
@@ -129,7 +143,7 @@ func (e *metricsExporter) convertToHydrolixMetrics(md pmetric.Metrics) []Hydroli
     return metrics
 }
 
-func (e *metricsExporter) convertGauge(metric pmetric.Metric, resourceAttrs []TagValue, serviceName string) []HydrolixMetric {
+func (e *metricsExporter) convertGauge(metric pmetric.Metric, resourceAttrs []TagValue, resourceSchemaUrl string, scopeAttrs []TagValue, scope pcommon.InstrumentationScope, scopeSchemaUrl string, serviceName string) []HydrolixMetric {
     var metrics []HydrolixMetric
 
     gauge := metric.Gauge()
@@ -137,20 +151,26 @@ func (e *metricsExporter) convertGauge(metric pmetric.Metric, resourceAttrs []Ta
         dp := gauge.DataPoints().At(i)
 
         hdxMetric := HydrolixMetric{
-            Name:               metric.Name(),
-            Description:        metric.Description(),
-            Unit:               metric.Unit(),
-            MetricType:         "gauge",
-            Timestamp:          uint64(dp.Timestamp()),
-            StartTime:          uint64(dp.StartTimestamp()),
-            MetricAttributes:   convertAttributes(dp.Attributes()),
-            ResourceAttributes: resourceAttrs,
-            Exemplars:          convertExemplars(dp.Exemplars()),
-            Flags:              uint32(dp.Flags()),
-            ServiceName:        serviceName,
-            HTTPStatusCode:     extractStringAttr(dp.Attributes(), "http.response.status_code"),
-            HTTPRoute:          extractStringAttr(dp.Attributes(), "http.route"),
-            HTTPMethod:         extractStringAttr(dp.Attributes(), "http.request.method"),
+            Name:                  metric.Name(),
+            Description:           metric.Description(),
+            Unit:                  metric.Unit(),
+            MetricType:            "gauge",
+            Timestamp:             uint64(dp.Timestamp()),
+            StartTime:             uint64(dp.StartTimestamp()),
+            MetricAttributes:      convertAttributes(dp.Attributes()),
+            ResourceAttributes:    resourceAttrs,
+            ResourceSchemaUrl:     resourceSchemaUrl,
+            ScopeName:             scope.Name(),
+            ScopeVersion:          scope.Version(),
+            ScopeAttributes:       scopeAttrs,
+            ScopeDroppedAttrCount: scope.DroppedAttributesCount(),
+            ScopeSchemaUrl:        scopeSchemaUrl,
+            Exemplars:             convertExemplars(dp.Exemplars()),
+            Flags:                 uint32(dp.Flags()),
+            ServiceName:           serviceName,
+            HTTPStatusCode:        extractStringAttr(dp.Attributes(), "http.response.status_code"),
+            HTTPRoute:             extractStringAttr(dp.Attributes(), "http.route"),
+            HTTPMethod:            extractStringAttr(dp.Attributes(), "http.request.method"),
         }
 
         switch dp.ValueType() {
@@ -166,7 +186,7 @@ func (e *metricsExporter) convertGauge(metric pmetric.Metric, resourceAttrs []Ta
     return metrics
 }
 
-func (e *metricsExporter) convertSum(metric pmetric.Metric, resourceAttrs []TagValue, serviceName string) []HydrolixMetric {
+func (e *metricsExporter) convertSum(metric pmetric.Metric, resourceAttrs []TagValue, resourceSchemaUrl string, scopeAttrs []TagValue, scope pcommon.InstrumentationScope, scopeSchemaUrl string, serviceName string) []HydrolixMetric {
     var metrics []HydrolixMetric
 
     sum := metric.Sum()
@@ -182,9 +202,16 @@ func (e *metricsExporter) convertSum(metric pmetric.Metric, resourceAttrs []TagV
             StartTime:              uint64(dp.StartTimestamp()),
             MetricAttributes:       convertAttributes(dp.Attributes()),
             ResourceAttributes:     resourceAttrs,
+            ResourceSchemaUrl:      resourceSchemaUrl,
+            ScopeName:              scope.Name(),
+            ScopeVersion:           scope.Version(),
+            ScopeAttributes:        scopeAttrs,
+            ScopeDroppedAttrCount:  scope.DroppedAttributesCount(),
+            ScopeSchemaUrl:         scopeSchemaUrl,
             Exemplars:              convertExemplars(dp.Exemplars()),
             Flags:                  uint32(dp.Flags()),
             AggregationTemporality: int32(sum.AggregationTemporality()),
+            IsMonotonic:            sum.IsMonotonic(),
             ServiceName:            serviceName,
             HTTPStatusCode:         extractStringAttr(dp.Attributes(), "http.response.status_code"),
             HTTPRoute:              extractStringAttr(dp.Attributes(), "http.route"),
@@ -204,7 +231,7 @@ func (e *metricsExporter) convertSum(metric pmetric.Metric, resourceAttrs []TagV
     return metrics
 }
 
-func (e *metricsExporter) convertHistogram(metric pmetric.Metric, resourceAttrs []TagValue, serviceName string) []HydrolixMetric {
+func (e *metricsExporter) convertHistogram(metric pmetric.Metric, resourceAttrs []TagValue, resourceSchemaUrl string, scopeAttrs []TagValue, scope pcommon.InstrumentationScope, scopeSchemaUrl string, serviceName string) []HydrolixMetric {
     var metrics []HydrolixMetric
 
     histogram := metric.Histogram()
@@ -226,6 +253,12 @@ func (e *metricsExporter) convertHistogram(metric pmetric.Metric, resourceAttrs 
             ExplicitBounds:         convertExplicitBounds(dp.ExplicitBounds()),
             MetricAttributes:       convertAttributes(dp.Attributes()),
             ResourceAttributes:     resourceAttrs,
+            ResourceSchemaUrl:      resourceSchemaUrl,
+            ScopeName:              scope.Name(),
+            ScopeVersion:           scope.Version(),
+            ScopeAttributes:        scopeAttrs,
+            ScopeDroppedAttrCount:  scope.DroppedAttributesCount(),
+            ScopeSchemaUrl:         scopeSchemaUrl,
             Exemplars:              convertExemplars(dp.Exemplars()),
             Flags:                  uint32(dp.Flags()),
             AggregationTemporality: int32(histogram.AggregationTemporality()),
@@ -241,7 +274,7 @@ func (e *metricsExporter) convertHistogram(metric pmetric.Metric, resourceAttrs 
     return metrics
 }
 
-func (e *metricsExporter) convertExponentialHistogram(metric pmetric.Metric, resourceAttrs []TagValue, serviceName string) []HydrolixMetric {
+func (e *metricsExporter) convertExponentialHistogram(metric pmetric.Metric, resourceAttrs []TagValue, resourceSchemaUrl string, scopeAttrs []TagValue, scope pcommon.InstrumentationScope, scopeSchemaUrl string, serviceName string) []HydrolixMetric {
     var metrics []HydrolixMetric
 
     expHistogram := metric.ExponentialHistogram()
@@ -275,6 +308,12 @@ func (e *metricsExporter) convertExponentialHistogram(metric pmetric.Metric, res
             Negative:               string(negative),
             MetricAttributes:       convertAttributes(dp.Attributes()),
             ResourceAttributes:     resourceAttrs,
+            ResourceSchemaUrl:      resourceSchemaUrl,
+            ScopeName:              scope.Name(),
+            ScopeVersion:           scope.Version(),
+            ScopeAttributes:        scopeAttrs,
+            ScopeDroppedAttrCount:  scope.DroppedAttributesCount(),
+            ScopeSchemaUrl:         scopeSchemaUrl,
             Exemplars:              convertExemplars(dp.Exemplars()),
             Flags:                  uint32(dp.Flags()),
             AggregationTemporality: int32(expHistogram.AggregationTemporality()),
@@ -282,6 +321,54 @@ func (e *metricsExporter) convertExponentialHistogram(metric pmetric.Metric, res
             HTTPStatusCode:         extractStringAttr(dp.Attributes(), "http.response.status_code"),
             HTTPRoute:              extractStringAttr(dp.Attributes(), "http.route"),
             HTTPMethod:             extractStringAttr(dp.Attributes(), "http.request.method"),
+        }
+
+        metrics = append(metrics, hdxMetric)
+    }
+
+    return metrics
+}
+
+func (e *metricsExporter) convertSummary(metric pmetric.Metric, resourceAttrs []TagValue, resourceSchemaUrl string, scopeAttrs []TagValue, scope pcommon.InstrumentationScope, scopeSchemaUrl string, serviceName string) []HydrolixMetric {
+    var metrics []HydrolixMetric
+
+    summary := metric.Summary()
+    for i := 0; i < summary.DataPoints().Len(); i++ {
+        dp := summary.DataPoints().At(i)
+
+        // Convert quantiles
+        quantiles := make([]float64, dp.QuantileValues().Len())
+        quantileValues := make([]float64, dp.QuantileValues().Len())
+        for j := 0; j < dp.QuantileValues().Len(); j++ {
+            qv := dp.QuantileValues().At(j)
+            quantiles[j] = qv.Quantile()
+            quantileValues[j] = qv.Value()
+        }
+
+        hdxMetric := HydrolixMetric{
+            Name:                  metric.Name(),
+            Description:           metric.Description(),
+            Unit:                  metric.Unit(),
+            MetricType:            "summary",
+            Timestamp:             uint64(dp.Timestamp()),
+            StartTime:             uint64(dp.StartTimestamp()),
+            Count:                 dp.Count(),
+            Sum:                   dp.Sum(),
+            Quantiles:             quantiles,
+            QuantileValues:        quantileValues,
+            MetricAttributes:      convertAttributes(dp.Attributes()),
+            ResourceAttributes:    resourceAttrs,
+            ResourceSchemaUrl:     resourceSchemaUrl,
+            ScopeName:             scope.Name(),
+            ScopeVersion:          scope.Version(),
+            ScopeAttributes:       scopeAttrs,
+            ScopeDroppedAttrCount: scope.DroppedAttributesCount(),
+            ScopeSchemaUrl:        scopeSchemaUrl,
+            Flags:                 uint32(dp.Flags()),
+            ServiceName:           serviceName,
+            HTTPStatusCode:        extractStringAttr(dp.Attributes(), "http.response.status_code"),
+            HTTPRoute:             extractStringAttr(dp.Attributes(), "http.route"),
+            HTTPMethod:            extractStringAttr(dp.Attributes(), "http.request.method"),
         }
 
         metrics = append(metrics, hdxMetric)

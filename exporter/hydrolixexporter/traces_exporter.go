@@ -143,7 +143,7 @@ package hydrolixexporter
 
          log := TraceLog{
              Name:      event.Name(),
-             Timestamp: uint64(event.Timestamp()) / 1000, // Convert to milliseconds
+             Timestamp: uint64(event.Timestamp()),
              Field:     convertAttributes(event.Attributes()),
          }
 
