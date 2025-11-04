@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("ciscoosreceiver")
+	Type      = component.MustNewType("ciscoos")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver"
 )
 

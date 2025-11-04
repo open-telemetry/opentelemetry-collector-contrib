@@ -234,7 +234,7 @@ components:
     - receiver/bigip
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoosreceiver
+    - receiver/ciscoos
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
