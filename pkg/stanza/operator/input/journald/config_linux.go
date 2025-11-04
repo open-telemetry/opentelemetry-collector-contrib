@@ -68,7 +68,7 @@ func (c Config) validate() error {
 
 		info, err := os.Stat(c.RootPath)
 		if err != nil {
-			return fmt.Errorf("root_path %q not found: %w", c.RootPath, err)
+			return fmt.Errorf("cannot access root_path %q: %w", c.RootPath, err)
 		}
 
 		if !info.IsDir() {
