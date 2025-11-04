@@ -54,7 +54,7 @@ type Factory struct {
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
-	return fingerprint.NewFromFile(file, f.FingerprintSize, f.Compression != "", f.TelemetrySettings.Logger)
+	return fingerprint.NewFromFile(file, f.FingerprintSize, f.Compression != "", f.Logger)
 }
 
 func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
@@ -64,7 +64,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	}
 	var filetype string
 
-	if f.Compression != "" && util.IsGzipFile(file, f.TelemetrySettings.Logger) {
+	if f.Compression != "" && util.IsGzipFile(file, f.Logger) {
 		filetype = gzipExtension
 	}
 
