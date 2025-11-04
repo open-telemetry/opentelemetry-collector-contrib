@@ -23,13 +23,13 @@ import (
 // See https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol,
 // for more information.
 //
-// The type PathParserHelper implements the common code for parsers that differ
+// The type pathParserHelper implements the common code for parsers that differ
 // only by the way that they handle the <metric_path>.
 type pathParser interface {
 	// parsePath parses the <metric_path> of a Carbon line (see Parse function
 	// for description of the full line). The results of parsing the path are
 	// stored on the parsedPath struct. Implementers of the interface can assume
-	// that the PathParserHelper will never pass nil when calling this method.
+	// that the pathParserHelper will never pass nil when calling this method.
 	parsePath(path string, parsedPath *parsedPath) error
 }
 
@@ -54,13 +54,13 @@ const (
 	CumulativeMetricType = TargetMetricType("cumulative")
 )
 
-// PathParserHelper implements the common code to parse a Carbon line taking a
+// pathParserHelper implements the common code to parse a Carbon line taking a
 // pathParser to implement a full parser.
-type PathParserHelper struct {
+type pathParserHelper struct {
 	pathParser pathParser
 }
 
-var _ Parser = (*PathParserHelper)(nil)
+var _ Parser = (*pathParserHelper)(nil)
 
 // newParser creates a new Parser instance that receives plaintext
 // Carbon data.
@@ -68,7 +68,7 @@ func newParser(pathParser pathParser) (Parser, error) {
 	if pathParser == nil {
 		return nil, errors.New("nil pathParser")
 	}
-	return &PathParserHelper{
+	return &pathParserHelper{
 		pathParser: pathParser,
 	}, nil
 }
@@ -89,7 +89,7 @@ func newParser(pathParser pathParser) (Parser, error) {
 //
 // The <metric_timestamp> is the Unix time text of when the measurement was
 // made.
-func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
+func (pph *pathParserHelper) Parse(line string) (pmetric.Metric, error) {
 	parts := strings.SplitN(line, " ", 4)
 	if len(parts) != 3 {
 		return pmetric.Metric{}, fmt.Errorf("invalid carbon metric [%s]", line)
