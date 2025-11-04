@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (ptrace.Traces, error) {
+func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent, rawPayload []byte) (ptrace.Traces, error) {
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
 
@@ -35,7 +35,7 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 		gtr.logger.Sugar().Error("failed to generate trace ID", zap.Error(err))
 	}
 
-	err = gtr.createRootSpan(r, e, traceID)
+	err = gtr.createRootSpan(r, e, traceID, rawPayload)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create root span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create root span")
@@ -46,7 +46,7 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 // handleWorkflowJob handles the creation of spans for a GitHub Workflow Job
 // events, including the underlying steps within each job. A `job` maps to the
 // semantic conventions for a `cicd.pipeline.task`.
-func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent) (ptrace.Traces, error) {
+func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent, rawPayload []byte) (ptrace.Traces, error) {
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
 
@@ -62,7 +62,7 @@ func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent) (
 		gtr.logger.Sugar().Error("failed to generate trace ID", zap.Error(err))
 	}
 
-	parentID, err := gtr.createParentSpan(r, e, traceID)
+	parentID, err := gtr.createParentSpan(r, e, traceID, rawPayload)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create parent span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create parent span")
@@ -127,6 +127,7 @@ func (gtr *githubTracesReceiver) createRootSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowRunEvent,
 	traceID pcommon.TraceID,
+	rawPayload []byte,
 ) error {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
@@ -154,6 +155,14 @@ func (gtr *githubTracesReceiver) createRootSpan(
 
 	span.Status().SetMessage(event.GetWorkflowRun().GetConclusion())
 
+	// Attach raw event as span event if configured
+	if gtr.cfg.WebHook.IncludeSpanEvents {
+		spanEvent := span.Events().AppendEmpty()
+		spanEvent.SetName("github.workflow_run.event")
+		spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowRun().GetRunStartedAt().Time))
+		spanEvent.Attributes().PutStr("event.payload", string(rawPayload))
+	}
+
 	// Attempt to link to previous trace ID if applicable
 	if event.GetWorkflowRun().GetPreviousAttemptURL() != "" && event.GetWorkflowRun().GetRunAttempt() > 1 {
 		gtr.logger.Debug("Linking to previous trace ID for WorkflowRunEvent")
@@ -173,10 +182,11 @@ func (gtr *githubTracesReceiver) createRootSpan(
 
 // createParentSpan creates a parent span based on the provided event, associated
 // with the deterministic traceID.
-func (*githubTracesReceiver) createParentSpan(
+func (gtr *githubTracesReceiver) createParentSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,
+	rawPayload []byte,
 ) (pcommon.SpanID, error) {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
@@ -210,6 +220,14 @@ func (*githubTracesReceiver) createParentSpan(
 	}
 
 	span.Status().SetMessage(event.GetWorkflowJob().GetConclusion())
+
+	// Attach raw event as span event if configured
+	if gtr.cfg.WebHook.IncludeSpanEvents {
+		spanEvent := span.Events().AppendEmpty()
+		spanEvent.SetName("github.workflow_job.event")
+		spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time))
+		spanEvent.Attributes().PutStr("event.payload", string(rawPayload))
+	}
 
 	return jobSpanID, nil
 }
