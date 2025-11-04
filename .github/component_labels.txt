@@ -325,6 +325,7 @@ receiver/webhookeventreceiver receiver/webhookevent
 receiver/windowseventlogreceiver receiver/windowseventlog
 receiver/windowsperfcountersreceiver receiver/windowsperfcounters
 receiver/windowsservicereceiver receiver/windowsservice
+receiver/yanggrpcreceiver receiver/yanggrpc
 receiver/zipkinreceiver receiver/zipkin
 receiver/zookeeperreceiver receiver/zookeeper
 scraper/zookeeperscraper scraper/zookeeper

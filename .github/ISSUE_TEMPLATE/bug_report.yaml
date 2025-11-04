@@ -348,6 +348,7 @@ body:
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/windowsservice
+      - receiver/yanggrpc
       - receiver/zipkin
       - receiver/zookeeper
       - scraper/zookeeperscraper
