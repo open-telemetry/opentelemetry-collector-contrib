@@ -3,58 +3,22 @@ type: icmpcheckreceiver
 status:
   class: receiver
   stability:
-    development: [ metrics ]
-  distributions: [ ]
+    development: [metrics]
+  distributions: []
   codeowners:
-    active: [ atoulme, jkoronaAtCisco ]
+    active: [atoulme, jkoronaAtCisco]
 
 resource_attributes:
-
-attributes:
   net.peer.ip:
+    enabled: true
     description: The IP address of the host being pinged.
     type: string
   net.peer.name:
+    enabled: true
     description: The hostname of the host being pinged.
     type: string
 
 metrics:
-  ping.rtt.min:
-    description: Minimum round-trip time in milliseconds.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: ms
-    attributes: [ net.peer.ip, net.peer.name ]
-  ping.rtt.max:
-    description: Maximum round-trip time in milliseconds.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: ms
-    attributes: [ net.peer.ip, net.peer.name ]
-  ping.rtt.avg:
-    description: Average round-trip time in milliseconds.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: ms
-    attributes: [ net.peer.ip, net.peer.name ]
-  ping.rtt.stddev:
-    description: Standard deviation of round-trip time in milliseconds.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: ms
-    attributes: [ net.peer.ip, net.peer.name ]
   ping.loss.ratio:
     description: The percentage of lost packets.
     enabled: true
@@ -63,4 +27,35 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
-    attributes: [ net.peer.ip, net.peer.name ]
+  ping.rtt.avg:
+    description: Average round-trip time in milliseconds.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: ms
+  ping.rtt.max:
+    description: Maximum round-trip time in milliseconds.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: ms
+  ping.rtt.min:
+    description: Minimum round-trip time in milliseconds.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: ms
+  ping.rtt.stddev:
+    description: Standard deviation of round-trip time in milliseconds.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: ms

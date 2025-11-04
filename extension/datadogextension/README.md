@@ -63,5 +63,5 @@ extensions:
 - `tls`: TLS settings for outbound connections.
 
 ## Notes
-- The extension is in active development. Functionality and configuration options may change as Datadog infrastructure monitoring features evolve.
-- For the latest updates and UI changes, watch the [Datadog Monitor blog](https://www.datadoghq.com/blog/) and the [OpenTelemetry Collector Contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib).
+- The extension is in active development. Functionality and configuration options may change as Datadog OpenTelemetry monitoring features evolve.
+- Please see [official documentation on Datadog's website](https://docs.datadoghq.com/opentelemetry/integrations/datadog_extension/) for more details.

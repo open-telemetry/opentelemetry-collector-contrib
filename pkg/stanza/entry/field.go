@@ -21,11 +21,15 @@ const (
 // It is deserialized from JSON dot notation.
 type Field struct {
 	FieldInterface
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // RootableField is a Field that may refer directly to "attributes" or "resource"
 type RootableField struct {
 	Field
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // FieldInterface is a field on an entry.
