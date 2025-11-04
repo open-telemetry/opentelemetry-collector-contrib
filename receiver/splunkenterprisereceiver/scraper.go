@@ -189,9 +189,6 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
-		if sr.Fields == nil {
-			continue
-		}
 		if err != nil {
 			errs <- err
 		}
@@ -448,7 +445,6 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 		if err != nil {
 			errs <- err
 		}
-
 		res.Body.Close()
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
@@ -568,7 +564,6 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 		if err != nil {
 			errs <- err
 		}
-
 		res.Body.Close()
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
@@ -949,9 +944,6 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
-		if sr.Fields == nil {
-			continue
-		}
 		if err != nil {
 			errs <- err
 		}
@@ -1038,9 +1030,6 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
-		if sr.Fields == nil {
-			continue
-		}
 		if err != nil {
 			errs <- err
 		}
@@ -1127,9 +1116,6 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
-		if sr.Fields == nil { // first pass just gets the job id
-			continue
-		}
 		if err != nil {
 			errs <- err
 		}
@@ -1999,12 +1985,8 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 		return
 	}
 
-	var fields []*field
-
 	sr := searchResponse{
 		search: searchDict[`SplunkSearch`],
-		count:  100,
-		offset: 0,
 	}
 
 	var (
@@ -2055,16 +2037,9 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if (sr.Return == http.StatusCreated && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
-			fields = append(fields, sr.Fields...)
+		if sr.Return == http.StatusCreated && sr.Jobid != nil {
 			break
-		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
-			// get the next page
-			fields = append(fields, sr.Fields...)
-			sr.offset += sr.count
-		}
-
-		if sr.Return == http.StatusAccepted && sr.Jobid == nil {
+		} else if sr.Return == http.StatusCreated && sr.Jobid == nil {
 			time.Sleep(2 * time.Second)
 		}
 
