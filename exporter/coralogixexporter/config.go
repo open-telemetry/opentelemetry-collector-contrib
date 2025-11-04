@@ -38,11 +38,7 @@ type TransportConfig struct {
 }
 
 func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	headers := c.Headers
-	if headers == nil {
-		headers = make(map[string]configopaque.String)
-	}
-	headers["Content-Type"] = "application/x-protobuf"
+	c.Headers.Set("Content-Type", "application/x-protobuf")
 
 	httpClientConfig := confighttp.ClientConfig{
 		ProxyURL:        c.ProxyURL,
@@ -50,7 +46,7 @@ func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host,
 		ReadBufferSize:  c.ReadBufferSize,
 		WriteBufferSize: c.WriteBufferSize,
 		Timeout:         c.Timeout,
-		Headers:         headers,
+		Headers:         c.Headers,
 		Compression:     c.Compression,
 	}
 	return httpClientConfig.ToClient(ctx, host, settings)
@@ -227,15 +223,10 @@ func (c *Config) getMergedTransportConfig(signalConfig *TransportConfig) *Transp
 		merged.TLS = signalConfig.TLS
 	}
 	if len(signalConfig.Headers) > 0 {
-		// Deep-copy domain headers to avoid mutating the shared map
-		headers := make(map[string]configopaque.String)
-		for k, v := range merged.Headers {
-			headers[k] = v
+		// MapList.Set copies the backing array, so this does not mutate c.DomainSettings
+		for k, v := range signalConfig.Headers.Iter {
+			merged.Headers.Set(k, v)
 		}
-		for k, v := range signalConfig.Headers {
-			headers[k] = v
-		}
-		merged.Headers = headers
 	}
 	if signalConfig.WriteBufferSize > 0 {
 		merged.WriteBufferSize = signalConfig.WriteBufferSize
