@@ -63,6 +63,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("things")
 				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
 				tCtx.GetLogRecord().Attributes().Remove("conflict")
+				tCtx.GetLogRecord().Attributes().Remove("slice2")
 			},
 		},
 		{
@@ -93,6 +94,12 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutInt("things.0.value", 2)
 				tCtx.GetLogRecord().Attributes().PutStr("things.1.name", "bar")
 				tCtx.GetLogRecord().Attributes().PutInt("things.1.value", 5)
+
+				tCtx.GetLogRecord().Attributes().Remove("slice2")
+				tCtx.GetLogRecord().Attributes().PutStr("slice2.0", "val")
+				tCtx.GetLogRecord().Attributes().PutStr("slice2.1", "foo")
+				tCtx.GetLogRecord().Attributes().PutStr("slice2.2", "bar")
+				tCtx.GetLogRecord().Attributes().PutStr("slice2.3", "baz")
 			},
 		},
 		{
@@ -117,6 +124,11 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutInt("test.things.0.value", 2)
 				m.PutStr("test.things.1.name", "bar")
 				m.PutInt("test.things.1.value", 5)
+
+				m.PutStr("test.slice2.0", "val")
+				m.PutStr("test.slice2.1", "foo")
+				m.PutStr("test.slice2.2", "bar")
+				m.PutStr("test.slice2.3", "baz")
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
@@ -145,6 +157,11 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("test.things.1.name", "bar")
 				m.PutInt("test.things.1.value", 5)
 
+				m.PutStr("test.slice2", "val")
+				m.PutStr("test.slice2.0", "foo")
+				m.PutStr("test.slice2.1", "bar")
+				m.PutStr("test.slice2.2", "baz")
+
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
@@ -161,6 +178,10 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("foo.flags", "pass")
 				m.PutStr("foo.bar", "pass")
 				m.PutStr("foo.flags", "pass")
+				m.PutStr("slice2.0", "val")
+				m.PutStr("slice2.1", "foo")
+				m.PutStr("slice2.2", "bar")
+				m.PutStr("slice2.3", "baz")
 				m.PutEmptySlice("foo.slice").AppendEmpty().SetStr("val")
 				m.PutStr("conflict.conflict1.conflict2", "nopass")
 				mm := m.PutEmptyMap("conflict.conflict1")
@@ -189,6 +210,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("things")
 				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
 				tCtx.GetLogRecord().Attributes().Remove("conflict")
+				tCtx.GetLogRecord().Attributes().Remove("slice2")
 			},
 		},
 		{
@@ -206,6 +228,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("things")
 				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
 				tCtx.GetLogRecord().Attributes().Remove("conflict")
+				tCtx.GetLogRecord().Attributes().Remove("slice2")
 			},
 		},
 		{
@@ -391,6 +414,47 @@ func Test_e2e_editors(t *testing.T) {
 				s := v.Map().PutEmptySlice("new_slice")
 				s.AppendEmpty().SetInt(5)
 				s.AppendEmpty().SetInt(6)
+			},
+		},
+		{
+			statement: `delete(attributes["slice2"], 0)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
+				s := v.Slice()
+				// :ToDo: Implement RemoveAt and RemoveRange in pcommon.Slice
+				s.RemoveIf(func(v pcommon.Value) bool {
+					return v.Str() == "val"
+				})
+			},
+		},
+		{
+			statement: `delete(attributes["slice2"], Len(attributes["slice2"]) - 1)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
+				s := v.Slice()
+				s.RemoveIf(func(v pcommon.Value) bool {
+					return v.Str() == "baz"
+				})
+			},
+		},
+		{
+			statement: `delete(attributes["slice2"], 1, length=2)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
+				s := v.Slice()
+				s.RemoveIf(func(v pcommon.Value) bool {
+					return (v.Str() == "foo" || v.Str() == "bar")
+				})
+			},
+		},
+		{
+			statement: `delete(attributes["slice2"], Index(attributes["slice2"], "foo"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
+				s := v.Slice()
+				s.RemoveIf(func(v pcommon.Value) bool {
+					return v.Str() == "foo"
+				})
 			},
 		},
 	}
@@ -2153,6 +2217,12 @@ func constructLogTransformContextEditors() *ottllog.TransformContext {
 	thing2 := s2.AppendEmpty().SetEmptyMap()
 	thing2.PutStr("name", "bar")
 	thing2.PutInt("value", 5)
+
+	s3 := logRecord.Attributes().PutEmptySlice("slice2")
+	s3.AppendEmpty().SetStr("val")
+	s3.AppendEmpty().SetStr("foo")
+	s3.AppendEmpty().SetStr("bar")
+	s3.AppendEmpty().SetStr("baz")
 
 	return ottllog.NewTransformContextPtr(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
