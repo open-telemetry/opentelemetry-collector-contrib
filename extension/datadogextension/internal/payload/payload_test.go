@@ -55,7 +55,7 @@ func TestOtelCollectorResourceAttributesJSON(t *testing.T) {
 		Timestamp: time.Now().UnixNano(),
 		UUID:      "test-uuid",
 		Metadata: OtelCollector{
-			CollectorResourceAttributes: []string{"key1:value1", "key2:value2"},
+			CollectorResourceAttributes: map[string]string{"key1": "value1", "key2": "value2"},
 		},
 	}
 

@@ -29,9 +29,9 @@ To add custom resource attributes to the Collector's internal telemetry signals 
 service:
   telemetry:
     resource:
-      environment: 'production'
-      team: 'platform'
-      cluster_name: 'us-east-1'
+      deployment.environment.name: 'production'
+      team.name: 'platform'
+      k8s.cluster.name: 'prod-us-east1-cluster-a'
 ```
 
 **Note:** The following resource attributes are automatically attached to the Collector's internal telemetry:

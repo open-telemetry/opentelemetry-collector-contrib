@@ -24,7 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -56,7 +55,7 @@ type info struct {
 	uuid               string
 	build              component.BuildInfo
 	modules            service.ModuleInfos
-	resourceAttributes []string
+	resourceAttributes map[string]string
 }
 
 type payloadSender struct {
@@ -320,15 +319,13 @@ func newExtension(
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
 
 	// Collect resource attributes from TelemetrySettings.Resource
-	// Format: ["key:value", ...]
-	resourceList := []string{}
+	// Format: map[string]string
+	resourceMap := make(map[string]string)
 	if attrs := set.Resource.Attributes(); attrs.Len() > 0 {
 		attrs.Range(func(k string, v pcommon.Value) bool {
-			resourceList = append(resourceList, k+":"+v.Str())
+			resourceMap[k] = v.AsString()
 			return true
 		})
-		// Sort and deduplicate the resource attributes
-		resourceList = utils.UniqInPlace(resourceList)
 	}
 
 	// configure payloadSender struct
@@ -346,7 +343,7 @@ func newExtension(
 			uuid:               uuidProvider.NewString(),
 			build:              set.BuildInfo,
 			modules:            service.ModuleInfos{}, // moduleInfos will be populated in Start()
-			resourceAttributes: resourceList,
+			resourceAttributes: resourceMap,
 		},
 		payloadSender: &payloadSender{
 			ctx:     ctxWithCancel,

@@ -35,7 +35,7 @@ type OtelCollector struct {
 	BuildInfo                   CustomBuildInfo    `json:"build_info"`
 	FullConfiguration           string             `json:"full_configuration"` // JSON passed as string
 	HealthStatus                string             `json:"health_status"`      // JSON passed as string
-	CollectorResourceAttributes []string           `json:"collector_resource_attributes"`
+	CollectorResourceAttributes map[string]string  `json:"collector_resource_attributes"`
 }
 
 type CollectorModule struct {

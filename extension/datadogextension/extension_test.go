@@ -211,24 +211,22 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	err = ext.NotifyConfig(t.Context(), conf)
 	require.NoError(t, err)
 
-	// Expect sorted ["a_key:1", "b_key:2"]
+	// Expect map with keys and values
 	require.NotNil(t, ext.otelCollectorMetadata)
-	assert.Equal(t, []string{"a_key:1", "b_key:2"}, ext.otelCollectorMetadata.CollectorResourceAttributes)
+	expected := map[string]string{"a_key": "1", "b_key": "2"}
+	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
 
 	// Cleanup
 	assert.NoError(t, ext.Shutdown(t.Context()))
 }
 
-func TestCollectorResourceAttributesAreSortedAndDeduped(t *testing.T) {
-	// Prepare TelemetrySettings with Resource attributes (including duplicates)
+func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
+	// Prepare TelemetrySettings with multiple Resource attributes
 	tel := componenttest.NewNopTelemetrySettings()
 	res := pcommon.NewResource()
-	// Add attributes in non-sorted order with duplicates
-	res.Attributes().PutStr("env", "prod")
-	res.Attributes().PutStr("team", "backend")
-	res.Attributes().PutStr("env", "prod") // duplicate - should be deduped
-	res.Attributes().PutStr("region", "us-east")
-	res.Attributes().PutStr("team", "backend") // duplicate - should be deduped
+	res.Attributes().PutStr("deployment.environment.name", "prod")
+	res.Attributes().PutStr("team.name", "backend")
+	res.Attributes().PutStr("cloud.region", "us-east")
 	tel.Resource = res
 
 	set := extension.Settings{
@@ -255,23 +253,14 @@ func TestCollectorResourceAttributesAreSortedAndDeduped(t *testing.T) {
 	err = ext.NotifyConfig(t.Context(), conf)
 	require.NoError(t, err)
 
-	// Expect sorted and deduped ["env:prod", "region:us-east", "team:backend"]
+	// Verify all resource attributes are collected
 	require.NotNil(t, ext.otelCollectorMetadata)
-	expected := []string{"env:prod", "region:us-east", "team:backend"}
+	expected := map[string]string{
+		"deployment.environment.name": "prod",
+		"cloud.region":                "us-east",
+		"team.name":                   "backend",
+	}
 	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
-
-	// Verify no duplicates
-	seen := make(map[string]bool)
-	for _, attr := range ext.otelCollectorMetadata.CollectorResourceAttributes {
-		assert.False(t, seen[attr], "duplicate attribute found: %s", attr)
-		seen[attr] = true
-	}
-
-	// Verify sorted order
-	for i := 1; i < len(ext.otelCollectorMetadata.CollectorResourceAttributes); i++ {
-		assert.Less(t, ext.otelCollectorMetadata.CollectorResourceAttributes[i-1], ext.otelCollectorMetadata.CollectorResourceAttributes[i],
-			"attributes not sorted: %v", ext.otelCollectorMetadata.CollectorResourceAttributes)
-	}
 
 	// Cleanup
 	assert.NoError(t, ext.Shutdown(t.Context()))
