@@ -166,11 +166,11 @@ func (m *mockStorageClient) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-func (m *mockStorageClient) Batch(_ context.Context, _ ...*storage.Operation) error {
+func (*mockStorageClient) Batch(_ context.Context, _ ...*storage.Operation) error {
 	return nil
 }
 
-func (m *mockStorageClient) Close(_ context.Context) error {
+func (*mockStorageClient) Close(_ context.Context) error {
 	return nil
 }
 
