@@ -345,6 +345,7 @@ receiver/webhookeventreceiver/                                   @open-telemetry
 receiver/windowseventlogreceiver/                                @open-telemetry/collector-contrib-approvers @armstrmi @pjanotti
 receiver/windowsperfcountersreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 receiver/windowsservicereceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti @shalper2
+receiver/yanggrpcreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme
 receiver/zipkinreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock @akats7
 scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock @akats7
