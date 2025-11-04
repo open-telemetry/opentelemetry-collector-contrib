@@ -22,7 +22,7 @@ import (
 
 var useOTTLBridge = featuregate.GlobalRegistry().MustRegister(
 	"filter.filterspan.useOTTLBridge",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, filterspan will convert filterspan configuration to OTTL and use filterottl evaluation"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642"),
 )

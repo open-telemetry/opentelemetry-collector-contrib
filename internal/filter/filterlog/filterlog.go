@@ -19,7 +19,7 @@ import (
 
 var useOTTLBridge = featuregate.GlobalRegistry().MustRegister(
 	"filter.filterlog.useOTTLBridge",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, filterlog will convert filterlog configuration to OTTL and use filterottl evaluation"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642"),
 )
