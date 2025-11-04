@@ -81,7 +81,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		return nil, fmt.Errorf("failed to create metrics translator: %w", err)
 	}
 
-	tcfg := getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator, tagger, hostnameOpt)
+	tcfg := getTraceAgentCfg(set.Logger, cfg.(*datadogconfig.ConnectorComponentConfig).Traces, attributesTranslator, tagger, hostnameOpt)
 	oconf := tcfg.Obfuscation.Export(tcfg)
 	oconf.Statsd = metricsClient
 	oconf.Redis.Enabled = true
@@ -95,7 +95,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		logger:          set.Logger,
 		translator:      trans,
 		tcfg:            tcfg,
-		ctagKeys:        cfg.(*Config).Traces.ResourceAttributesAsContainerTags,
+		ctagKeys:        cfg.(*datadogconfig.ConnectorComponentConfig).Traces.ResourceAttributesAsContainerTags,
 		peerTagKeys:     tcfg.ConfiguredPeerTags(),
 		concentrator:    concentrator,
 		statsout:        statsout,
@@ -228,6 +228,8 @@ func (c *traceToMetricConnector) run() {
 		}
 	}
 }
+
+var _ stats.Writer = (*otelStatsWriter)(nil)
 
 type otelStatsWriter struct {
 	out chan *pb.StatsPayload

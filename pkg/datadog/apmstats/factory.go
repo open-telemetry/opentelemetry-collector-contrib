@@ -48,14 +48,8 @@ func NewConnectorFactoryForAgent(tagger types.TaggerClient, hostGetter SourcePro
 		connector.WithTracesToTraces(createTracesToTracesConnector, TracesToTracesStability))
 }
 
-// NewConnectorFactory creates a factory for datadog connector.
-func NewConnectorFactory() connector.Factory {
-	//  OTel connector factory to make a factory for connectors
-	return NewConnectorFactoryForAgent(nil, nil, nil)
-}
-
 func createDefaultConfig() component.Config {
-	return &Config{
+	return &datadogconfig.ConnectorComponentConfig{
 		Traces: datadogconfig.TracesConnectorConfig{
 			TracesConfig: datadogconfig.TracesConfig{
 				IgnoreResources:        []string{},

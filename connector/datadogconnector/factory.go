@@ -26,5 +26,5 @@ var NativeIngestFeatureGate = featuregate.GlobalRegistry().MustRegister(
 // NewFactory creates a factory for datadog connector.
 func NewFactory() connector.Factory {
 	//  OTel connector factory to make a factory for connectors
-	return apmstats.NewConnectorFactory()
+	return apmstats.NewConnectorFactoryForAgent(nil, nil, nil)
 }
