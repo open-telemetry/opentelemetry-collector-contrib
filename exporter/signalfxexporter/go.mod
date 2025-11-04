@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.139.0
-	github.com/shirou/gopsutil/v4 v4.25.9
+	github.com/shirou/gopsutil/v4 v4.25.10
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.45.0
@@ -38,7 +38,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.44.0
-	golang.org/x/sys v0.36.0
+	golang.org/x/sys v0.37.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
