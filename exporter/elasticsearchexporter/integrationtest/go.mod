@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.139.0
-	github.com/shirou/gopsutil/v4 v4.25.9
+	github.com/shirou/gopsutil/v4 v4.25.10
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.45.0
 	go.opentelemetry.io/collector/component/componentstatus v0.139.0
