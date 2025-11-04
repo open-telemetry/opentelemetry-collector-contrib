@@ -42,7 +42,7 @@ ignored_paths:
   - extension/k8sleaderelector # 43992
   - processor/filterprocessor # 43994
   - processor/transformprocessor # 43994
-  - receiver/aerospikereceiver
+  - receiver/aerospikereceiver # 43995
   - receiver/prometheusreceiver
   - receiver/carbonreceiver
   - receiver/statsdreceiver
