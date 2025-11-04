@@ -18,7 +18,7 @@ Minimum percentage of contiguous disk space free to the namespace across all dev
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Int | development |
+| % | Gauge | Int | Development |
 
 ### aerospike.namespace.geojson.region_query_cells
 
@@ -28,7 +28,7 @@ Number of cell coverings for query region queried. Aerospike metric geo_region_q
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cells} | Sum | Int | Cumulative | true | development |
+| {cells} | Sum | Int | Cumulative | true | Development |
 
 ### aerospike.namespace.geojson.region_query_false_positive
 
@@ -38,7 +38,7 @@ Total query result points is geo_region_query_points + geo_region_query_falsepos
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {points} | Sum | Int | Cumulative | true | development |
+| {points} | Sum | Int | Cumulative | true | Development |
 
 ### aerospike.namespace.geojson.region_query_points
 
@@ -48,7 +48,7 @@ Total query result points is geo_region_query_points + geo_region_query_falsepos
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {points} | Sum | Int | Cumulative | true | development |
+| {points} | Sum | Int | Cumulative | true | Development |
 
 ### aerospike.namespace.geojson.region_query_requests
 
@@ -58,7 +58,7 @@ Number of geojson queries on the system since the uptime of the node. Aerospike 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {queries} | Sum | Int | Cumulative | true | development |
+| {queries} | Sum | Int | Cumulative | true | Development |
 
 ### aerospike.namespace.memory.free
 
@@ -68,7 +68,7 @@ Aerospike metric memory_free_pct
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Int | development |
+| % | Gauge | Int | Development |
 
 ### aerospike.namespace.memory.usage
 
@@ -78,7 +78,7 @@ Aggregate of Aerospike Metrics memory_used_data_bytes, memory_used_index_bytes, 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -94,7 +94,7 @@ Aggregate of Aerospike Metrics query_aggr_abort, query_aggr_complete, query_aggr
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {queries} | Sum | Int | Cumulative | true | development |
+| {queries} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -112,7 +112,7 @@ Aggregate of Aerospike Metrics scan_aggr_abort, scan_aggr_complete, scan_aggr_er
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {scans} | Sum | Int | Cumulative | true | development |
+| {scans} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -129,7 +129,7 @@ Aggregate of Aerospike Metrics client_delete_error, client_delete_filtered_out, 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {transactions} | Sum | Int | Cumulative | true | development |
+| {transactions} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -146,7 +146,7 @@ Aggregate of Aerospike Metrics client_connections_closed, client_connections_ope
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | true | development |
+| {connections} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -163,7 +163,7 @@ Aggregate of Aerospike Metrics client_connections, fabric_connections, heartbeat
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -179,7 +179,7 @@ Aerospike Metric system_free_mem_pct
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Int | development |
+| % | Gauge | Int | Development |
 
 ### aerospike.node.query.tracked
 
@@ -189,7 +189,7 @@ Number of queries which ran more than query untracked_time (default 1 sec), Aero
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {queries} | Sum | Int | Cumulative | true | development |
+| {queries} | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 

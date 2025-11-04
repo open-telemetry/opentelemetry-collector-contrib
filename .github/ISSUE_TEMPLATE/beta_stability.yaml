@@ -233,6 +233,7 @@ body:
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awslambda
       - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
@@ -242,6 +243,7 @@ body:
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos
+      - receiver/ciscoos/internal/scraper/interfacesscraper
       - receiver/ciscoos/internal/scraper/systemscraper
       - receiver/cloudflare
       - receiver/cloudfoundry
