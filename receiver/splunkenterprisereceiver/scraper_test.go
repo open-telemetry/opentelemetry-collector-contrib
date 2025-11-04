@@ -68,7 +68,7 @@ func mockIndexerClusterMangerStatus(w http.ResponseWriter, _ *http.Request) {
 
 // first call to jobs api which gets the jobid
 func mockJobsSearch(w http.ResponseWriter, r *http.Request) {
-	status := http.StatusOK
+	status := http.StatusCreated
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(status)
 	_, _ = w.Write(getJobsSearchResponse(r))
