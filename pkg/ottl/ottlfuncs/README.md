@@ -46,6 +46,7 @@ Editors:
 Available Editors:
 
 - [append](#append)
+- [delete](#delete)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_matching_keys](#keep_matching_keys)
@@ -72,6 +73,22 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
+
+### delete
+
+`delete(target, index, Optional[length])`
+
+The `delete` function deletes elements starting at `index` to `index + length` from target array/slice. If lengh is not provided, only element at `target[index]` will be deleted. If `index` is calculated using `Index(target, value)` and there's no match in the slice, `target` array won't be changed.
+
+Examples:
+
+- `delete(attributes["tags"], 0)` # delete first
+
+- `delete(attributes["tags"], Len(attributes["tags"]) - 1)` # delete last
+
+- `delete(attributes["tags"], 0, 3)` # delete indexes 0, 1 & 2
+
+- `delete(attributes["tags"], Index(attributes["tags"], "unparsed"))` # delete first occurrence of "unparsed"
 
 ### delete_key
 
