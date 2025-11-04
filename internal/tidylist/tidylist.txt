@@ -236,6 +236,7 @@ receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver
 receiver/awsfirehosereceiver
+receiver/awslambdareceiver
 receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver
