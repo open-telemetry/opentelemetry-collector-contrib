@@ -85,6 +85,8 @@ exporters:
     traces_index: "otel-traces-%{service.name}"
     traces_index_fallback: "default-service"
     traces_index_time_format: "yyyy.MM.dd"
+    sending_queue:
+      batch:
 ```
 
 This configuration will create:
@@ -198,11 +200,12 @@ exporters:
       endpoint: https://opensearch.example.com:9200
       auth:
         authenticator: basicauth/client
+    sending_queue:
+      batch:
 # ······
 service:
   pipelines:
     traces:
       receivers: [otlp]
       exporters: [opensearch/trace]
-      processors: [batch]
 ```
