@@ -189,6 +189,9 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
+		if sr.Fields == nil {
+			continue
+		}
 		if err != nil {
 			errs <- err
 		}
@@ -957,6 +960,9 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
+		if sr.Fields == nil {
+			continue
+		}
 		if err != nil {
 			errs <- err
 		}
@@ -1044,6 +1050,9 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
+		if sr.Fields == nil {
+			continue
+		}
 		if err != nil {
 			errs <- err
 		}
@@ -1131,6 +1140,9 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
+		if sr.Fields == nil { // first pass just gets the job id
+			continue
+		}
 		if err != nil {
 			errs <- err
 		}
