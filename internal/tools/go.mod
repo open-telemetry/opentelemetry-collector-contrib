@@ -22,11 +22,11 @@ require (
 	go.opentelemetry.io/collector/cmd/builder v0.139.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.139.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/tools v0.37.0
+	golang.org/x/tools v0.38.0
 	golang.org/x/tools/gopls v0.20.0
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.13.0
-	mvdan.cc/gofumpt v0.9.1
+	mvdan.cc/gofumpt v0.9.2
 )
 
 require (
