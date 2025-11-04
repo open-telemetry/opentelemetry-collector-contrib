@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9/maintnotifications"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -39,6 +40,10 @@ func newRedisScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, 
 		Username: cfg.Username,
 		Password: string(cfg.Password),
 		Network:  string(cfg.Transport),
+		// Avoid background goroutines that trigger goleak in tests and on shutdown races.
+		MaintNotificationsConfig: &maintnotifications.Config{
+			Mode: maintnotifications.ModeDisabled,
+		},
 	}
 
 	var err error
