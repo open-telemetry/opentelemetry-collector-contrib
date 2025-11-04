@@ -31,8 +31,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0/go.mod h1:HKpQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.171 h1:o9vSLDPNeg5PSpVUciSVnGOvfzQ3Uw7ucp0TPv60oN4=
-github.com/DataDog/agent-payload/v5 v5.0.171/go.mod h1:9PtvPKsgZVTTvqgYtcwB4bjXAkxYzC2wzSXSadPRHv8=
+github.com/DataDog/agent-payload/v5 v5.0.173 h1:Al+YWaTjm2hZuoLBe3d3d7OoNZvdRSf/Ce29C2yhnBw=
+github.com/DataDog/agent-payload/v5 v5.0.173/go.mod h1:9PtvPKsgZVTTvqgYtcwB4bjXAkxYzC2wzSXSadPRHv8=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.73.0-devel.0.20251030121902-cd89eab046d6 h1:9u/NSru6Cbs1X0UwY+BX5Z70zGSloGRc/7VsZc43oeI=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.73.0-devel.0.20251030121902-cd89eab046d6/go.mod h1:Y8NNf3UfsAWmmeMuRGlz9u3OXQMFgIWeB+xl72fpOTQ=
 github.com/DataDog/datadog-agent/comp/core/config v0.73.0-devel.0.20251030121902-cd89eab046d6 h1:wNTDdJa4RNoxOIC289IdSrSbX2AH26I1Abu0/mnbFFI=
@@ -243,8 +243,8 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.73.0-devel.0.20251030121902
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.73.0-devel.0.20251030121902-cd89eab046d6/go.mod h1:sVLDTbgf5SUiDUwXYDbdrMw//E5L5XXa+p6sbh+Y6R4=
 github.com/DataDog/datadog-agent/pkg/version v0.73.0-devel.0.20251030121902-cd89eab046d6 h1:CA0UezdSmKT/CHu8ehd2S8d6dT39UnARytlJBYhu/1c=
 github.com/DataDog/datadog-agent/pkg/version v0.73.0-devel.0.20251030121902-cd89eab046d6/go.mod h1:6NoHdUrJ/ttav4SSas6XiDLfYbF4Ulx0D0cBpbk4vvI=
-github.com/DataDog/datadog-api-client-go/v2 v2.48.0 h1:OcVkuSh1+R2BK38pXWHZsKlzAglgJwlS600zTwkwvbs=
-github.com/DataDog/datadog-api-client-go/v2 v2.48.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.49.0 h1:44ltl4mpJCtUdBLvOvXcCcvNewB+beDesZaoQYZqjCc=
+github.com/DataDog/datadog-api-client-go/v2 v2.49.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.8.1 h1:+GOES5W9zpKlhwHptZVW2C0NLVf7ilr7pHkDcbNvpIc=
 github.com/DataDog/datadog-go/v5 v5.8.1/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
@@ -597,8 +597,8 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb h1:PGufWXXDq9yaev6xX1YQauaO1MV90e6Mpoq1I7Lz/VM=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb/go.mod h1:QiyDdbZLaJ/mZP4Zwc9g2QsfaEA4o7XvvgZegSci5/E=
-github.com/hetznercloud/hcloud-go/v2 v2.28.0 h1:xX8Wq39MdZ5B9Cgvd8nKLbS+UVDpQoaYAVUeN4gCUxk=
-github.com/hetznercloud/hcloud-go/v2 v2.28.0/go.mod h1:XBU4+EDH2KVqu2KU7Ws0+ciZcX4ygukQl/J0L5GS8P8=
+github.com/hetznercloud/hcloud-go/v2 v2.29.0 h1:LzNFw5XLBfftyu3WM1sdSLjOZBlWORtz2hgGydHaYV8=
+github.com/hetznercloud/hcloud-go/v2 v2.29.0/go.mod h1:XBU4+EDH2KVqu2KU7Ws0+ciZcX4ygukQl/J0L5GS8P8=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=
@@ -813,8 +813,8 @@ github.com/prometheus/otlptranslator v1.0.0/go.mod h1:vRYWnXvI6aWGpsdY/mOT/cbeVR
 github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
 github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsTZCD3I8kEA=
 github.com/prometheus/procfs v0.0.8/go.mod h1:7Qr8sr6344vo1JqZ6HhLceV9o3AJ1Ff+GxbHq6oeK9A=
-github.com/prometheus/procfs v0.19.1 h1:QVtROpTkphuXuNlnCv3m1ut3JytkXHtQ3xvck/YmzMM=
-github.com/prometheus/procfs v0.19.1/go.mod h1:M0aotyiemPhBCM0z5w87kL22CxfcH05ZpYlu+b4J7mw=
+github.com/prometheus/procfs v0.19.2 h1:zUMhqEW66Ex7OXIiDkll3tl9a1ZdilUOd/F6ZXw4Vws=
+github.com/prometheus/procfs v0.19.2/go.mod h1:M0aotyiemPhBCM0z5w87kL22CxfcH05ZpYlu+b4J7mw=
 github.com/prometheus/prometheus v0.307.1 h1:Hh3kRMFn+xpQGLe/bR6qpUfW4GXQO0spuYeY7f2JZs4=
 github.com/prometheus/prometheus v0.307.1/go.mod h1:/7YQG/jOLg7ktxGritmdkZvezE1fa6aWDj0MGDIZvcY=
 github.com/prometheus/sigv4 v0.2.1 h1:hl8D3+QEzU9rRmbKIRwMKRwaFGyLkbPdH5ZerglRHY0=
