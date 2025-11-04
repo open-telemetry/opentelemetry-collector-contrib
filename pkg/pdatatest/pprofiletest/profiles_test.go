@@ -654,16 +654,14 @@ func TestCompareProfile(t *testing.T) {
 						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
 						DefaultSampleType: ValueType{
-							Typ:                    "samples",
-							Unit:                   "count",
-							AggregationTemporality: pprofile.AggregationTemporalityDelta,
+							Typ:  "samples",
+							Unit: "count",
 						},
 						Period: 1,
 						SampleType: []ValueType{
 							{
-								Typ:                    "cpu",
-								Unit:                   "nanoseconds",
-								AggregationTemporality: pprofile.AggregationTemporalityCumulative,
+								Typ:  "cpu",
+								Unit: "nanoseconds",
 							},
 						},
 						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
@@ -680,16 +678,14 @@ func TestCompareProfile(t *testing.T) {
 						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
 						DefaultSampleType: ValueType{
-							Typ:                    "samples",
-							Unit:                   "count",
-							AggregationTemporality: pprofile.AggregationTemporalityDelta,
+							Typ:  "samples",
+							Unit: "count",
 						},
 						Period: 1,
 						SampleType: []ValueType{
 							{
-								Typ:                    "cpu",
-								Unit:                   "nanoseconds",
-								AggregationTemporality: pprofile.AggregationTemporalityCumulative,
+								Typ:  "cpu",
+								Unit: "nanoseconds",
 							},
 						},
 						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
@@ -709,16 +705,14 @@ func TestCompareProfile(t *testing.T) {
 						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
 						DefaultSampleType: ValueType{
-							Typ:                    "samples",
-							Unit:                   "count",
-							AggregationTemporality: pprofile.AggregationTemporalityDelta,
+							Typ:  "samples",
+							Unit: "count",
 						},
 						Period: 1,
 						SampleType: []ValueType{
 							{
-								Typ:                    "cpu",
-								Unit:                   "nanoseconds",
-								AggregationTemporality: pprofile.AggregationTemporalityCumulative,
+								Typ:  "cpu",
+								Unit: "nanoseconds",
 							},
 						},
 						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
@@ -735,16 +729,14 @@ func TestCompareProfile(t *testing.T) {
 						Attributes:             []Attribute{{Key: "key1", Value: "val1"}},
 						DroppedAttributesCount: 2,
 						DefaultSampleType: ValueType{
-							Typ:                    "samples1",
-							Unit:                   "count1",
-							AggregationTemporality: pprofile.AggregationTemporalityDelta,
+							Typ:  "samples1",
+							Unit: "count1",
 						},
 						Period: 2,
 						SampleType: []ValueType{
 							{
-								Typ:                    "cpu1",
-								Unit:                   "nanoseconds1",
-								AggregationTemporality: pprofile.AggregationTemporalityCumulative,
+								Typ:  "cpu1",
+								Unit: "nanoseconds1",
 							},
 						},
 						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu2", Value: "", Unit: "nanoseconds2"}},
@@ -756,7 +748,7 @@ func TestCompareProfile(t *testing.T) {
 			err: multierr.Combine(
 				errors.New(`attributes don't match expected: map[key:val], actual: map[key1:val1]`),
 				errors.New(`period does not match expected '1', actual '2'`),
-				fmt.Errorf(`sampleType: %w`, errors.New(`expected valueType "unit: 4, type: 3, aggregationTemporality: 1",got "unit: 6, type: 5, aggregationTemporality: 1"`)),
+				fmt.Errorf(`sampleType: %w`, errors.New(`expected valueType "unit: 4, type: 3",got "unit: 6, type: 5"`)),
 			),
 		},
 	}
@@ -793,14 +785,12 @@ func TestCompareProfileValueType(t *testing.T) {
 				l := pprofile.NewValueType()
 				l.SetTypeStrindex(1)
 				l.SetUnitStrindex(1)
-				l.SetAggregationTemporality(1)
 				return l
 			}(),
 			actual: func() pprofile.ValueType {
 				l := pprofile.NewValueType()
 				l.SetTypeStrindex(1)
 				l.SetUnitStrindex(1)
-				l.SetAggregationTemporality(1)
 				return l
 			}(),
 		},
@@ -810,18 +800,16 @@ func TestCompareProfileValueType(t *testing.T) {
 				l := pprofile.NewValueType()
 				l.SetTypeStrindex(1)
 				l.SetUnitStrindex(1)
-				l.SetAggregationTemporality(1)
 				return l
 			}(),
 			actual: func() pprofile.ValueType {
 				l := pprofile.NewValueType()
-				l.SetTypeStrindex(1)
-				l.SetUnitStrindex(1)
-				l.SetAggregationTemporality(2)
+				l.SetTypeStrindex(2)
+				l.SetUnitStrindex(3)
 				return l
 			}(),
 			err: multierr.Combine(
-				errors.New(`expected valueType "unit: 1, type: 1, aggregationTemporality: 1",got "unit: 1, type: 1, aggregationTemporality: 2"`),
+				errors.New(`expected valueType "unit: 1, type: 1",got "unit: 3, type: 2"`),
 			),
 		},
 	}
@@ -1501,7 +1489,7 @@ func TestCompareProfileLocation(t *testing.T) {
 				l.SetAddress(2)
 				l.SetMappingIndex(4)
 				l.AttributeIndices().Append(1, 2, 3)
-				l.Line().AppendEmpty().Line()
+				l.Lines().AppendEmpty().Line()
 				return l
 			}(),
 			actual: func() pprofile.Location {
@@ -1509,7 +1497,7 @@ func TestCompareProfileLocation(t *testing.T) {
 				l.SetAddress(2)
 				l.SetMappingIndex(4)
 				l.AttributeIndices().Append(1, 2, 3)
-				l.Line().AppendEmpty()
+				l.Lines().AppendEmpty()
 				return l
 			}(),
 		},
@@ -1520,7 +1508,7 @@ func TestCompareProfileLocation(t *testing.T) {
 				l.SetAddress(3)
 				l.SetMappingIndex(2)
 				l.AttributeIndices().Append(1, 2, 3, 4)
-				l.Line().AppendEmpty().SetFunctionIndex(3)
+				l.Lines().AppendEmpty().SetFunctionIndex(3)
 				return l
 			}(),
 			actual: func() pprofile.Location {
@@ -1528,7 +1516,7 @@ func TestCompareProfileLocation(t *testing.T) {
 				l.SetAddress(2)
 				l.SetMappingIndex(4)
 				l.AttributeIndices().Append(1, 2, 3)
-				l.Line().AppendEmpty().Line()
+				l.Lines().AppendEmpty().Line()
 				return l
 			}(),
 			err: multierr.Combine(

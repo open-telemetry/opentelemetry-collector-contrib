@@ -119,7 +119,7 @@ func TestSerializeProfile(t *testing.T) {
 
 				profile.AttributeIndices().Append(2)
 
-				sample := profile.Sample().AppendEmpty()
+				sample := profile.Samples().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
 				sample.AttributeIndices().Append(3)
 				sample.SetStackIndex(0)
