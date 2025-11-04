@@ -39,6 +39,13 @@ ignored_paths:
   - exporter/elasticsearchexporter/integrationtest
   - testbed/mockdatasenders/mockdatadogagentexporter
   - extension/sumologicextension # 40655
+  - extension/k8sleaderelector # 43992
+  - processor/filterprocessor # 43994
+  - processor/transformprocessor # 43994
+  - receiver/aerospikereceiver # 43995
+  - receiver/prometheusreceiver # 43996
+  - receiver/carbonreceiver
+  - receiver/statsdreceiver
 allowed_functions:
   - name: NewFactory
     classes:
@@ -80,6 +87,7 @@ ignored_functions:
   - ^Test.*
   - ^Benchmark.*
   - ^Fuzz.*
+  - ^Example.*
 
 unkeyed_literal_initialization:
   enabled: true
