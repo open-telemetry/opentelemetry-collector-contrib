@@ -3,6 +3,7 @@ package hydrolixexporter
 import (
     "bytes"
     "context"
+    "encoding/hex"
     "encoding/json"
     "fmt"
     "net/http"
@@ -20,28 +21,40 @@ type metricsExporter struct {
 }
 
 type HydrolixMetric struct {
-    Name               string     `json:"name"`
-    Description        string     `json:"description,omitempty"`
-    Unit               string     `json:"unit,omitempty"`
-    MetricType         string     `json:"metric_type"`
-    Timestamp          uint64     `json:"timestamp"`
-    StartTime          uint64     `json:"start_time,omitempty"`
-    Count              uint64     `json:"count,omitempty"`
-    Value              float64    `json:"value,omitempty"`
-    BucketCounts       []uint64   `json:"bucket_counts,omitempty"`
-    ExplicitBounds     []float64  `json:"explicit_bounds,omitempty"`
-    Min                float64    `json:"min,omitempty"`
-    Max                float64    `json:"max,omitempty"`
-    Sum                float64    `json:"sum,omitempty"`
-    MetricAttributes   []TagValue `json:"tags"`
-    ResourceAttributes []TagValue `json:"serviceTags"`
-    Scale              int32      `json:"scale,omitempty"`
-    Positive           string     `json:"positive,omitempty"`
-    Negative           string     `json:"negative,omitempty"`
-    ServiceName        string     `json:"serviceName,omitempty"`
-    HTTPStatusCode     string     `json:"httpStatusCode,omitempty"`
-    HTTPRoute          string     `json:"httpRoute,omitempty"`
-    HTTPMethod         string     `json:"httpMethod,omitempty"`
+    Name                   string         `json:"name"`
+    Description            string         `json:"description,omitempty"`
+    Unit                   string         `json:"unit,omitempty"`
+    MetricType             string         `json:"metric_type"`
+    Timestamp              uint64         `json:"timestamp"`
+    StartTime              uint64         `json:"start_time,omitempty"`
+    Count                  uint64         `json:"count,omitempty"`
+    Value                  float64        `json:"value,omitempty"`
+    BucketCounts           []uint64       `json:"bucket_counts,omitempty"`
+    ExplicitBounds         []float64      `json:"explicit_bounds,omitempty"`
+    Min                    float64        `json:"min,omitempty"`
+    Max                    float64        `json:"max,omitempty"`
+    Sum                    float64        `json:"sum,omitempty"`
+    MetricAttributes       []TagValue     `json:"tags"`
+    ResourceAttributes     []TagValue     `json:"serviceTags"`
+    Scale                  int32          `json:"scale,omitempty"`
+    ZeroCount              uint64         `json:"zero_count,omitempty"`
+    Positive               string         `json:"positive,omitempty"`
+    Negative               string         `json:"negative,omitempty"`
+    Exemplars              []Exemplar     `json:"exemplars,omitempty"`
+    Flags                  uint32         `json:"flags,omitempty"`
+    AggregationTemporality int32          `json:"aggregation_temporality,omitempty"`
+    ServiceName            string         `json:"serviceName,omitempty"`
+    HTTPStatusCode         string         `json:"httpStatusCode,omitempty"`
+    HTTPRoute              string         `json:"httpRoute,omitempty"`
+    HTTPMethod             string         `json:"httpMethod,omitempty"`
+}
+
+type Exemplar struct {
+    FilteredAttributes map[string]string `json:"filtered_attributes"`
+    Timestamp          uint64            `json:"timestamp"`
+    Value              float64           `json:"value"`
+    SpanID             string            `json:"span_id"`
+    TraceID            string            `json:"trace_id"`
 }
 
 func newMetricsExporter(config *Config, set exporter.Settings) *metricsExporter {
@@ -129,8 +142,11 @@ func (e *metricsExporter) convertGauge(metric pmetric.Metric, resourceAttrs []Ta
             Unit:               metric.Unit(),
             MetricType:         "gauge",
             Timestamp:          uint64(dp.Timestamp()),
+            StartTime:          uint64(dp.StartTimestamp()),
             MetricAttributes:   convertAttributes(dp.Attributes()),
             ResourceAttributes: resourceAttrs,
+            Exemplars:          convertExemplars(dp.Exemplars()),
+            Flags:              uint32(dp.Flags()),
             ServiceName:        serviceName,
             HTTPStatusCode:     extractStringAttr(dp.Attributes(), "http.response.status_code"),
             HTTPRoute:          extractStringAttr(dp.Attributes(), "http.route"),
@@ -158,18 +174,21 @@ func (e *metricsExporter) convertSum(metric pmetric.Metric, resourceAttrs []TagV
         dp := sum.DataPoints().At(i)
 
         hdxMetric := HydrolixMetric{
-            Name:               metric.Name(),
-            Description:        metric.Description(),
-            Unit:               metric.Unit(),
-            MetricType:         "sum",
-            Timestamp:          uint64(dp.Timestamp()),
-            StartTime:          uint64(dp.StartTimestamp()),
-            MetricAttributes:   convertAttributes(dp.Attributes()),
-            ResourceAttributes: resourceAttrs,
-            ServiceName:        serviceName,
-            HTTPStatusCode:     extractStringAttr(dp.Attributes(), "http.response.status_code"),
-            HTTPRoute:          extractStringAttr(dp.Attributes(), "http.route"),
-            HTTPMethod:         extractStringAttr(dp.Attributes(), "http.request.method"),
+            Name:                   metric.Name(),
+            Description:            metric.Description(),
+            Unit:                   metric.Unit(),
+            MetricType:             "sum",
+            Timestamp:              uint64(dp.Timestamp()),
+            StartTime:              uint64(dp.StartTimestamp()),
+            MetricAttributes:       convertAttributes(dp.Attributes()),
+            ResourceAttributes:     resourceAttrs,
+            Exemplars:              convertExemplars(dp.Exemplars()),
+            Flags:                  uint32(dp.Flags()),
+            AggregationTemporality: int32(sum.AggregationTemporality()),
+            ServiceName:            serviceName,
+            HTTPStatusCode:         extractStringAttr(dp.Attributes(), "http.response.status_code"),
+            HTTPRoute:              extractStringAttr(dp.Attributes(), "http.route"),
+            HTTPMethod:             extractStringAttr(dp.Attributes(), "http.request.method"),
         }
 
         switch dp.ValueType() {
@@ -193,24 +212,27 @@ func (e *metricsExporter) convertHistogram(metric pmetric.Metric, resourceAttrs 
         dp := histogram.DataPoints().At(i)
 
         hdxMetric := HydrolixMetric{
-            Name:               metric.Name(),
-            Description:        metric.Description(),
-            Unit:               metric.Unit(),
-            MetricType:         "histogram",
-            Timestamp:          uint64(dp.Timestamp()),
-            StartTime:          uint64(dp.StartTimestamp()),
-            Count:              dp.Count(),
-            Sum:                dp.Sum(),
-            Min:                dp.Min(),
-            Max:                dp.Max(),
-            BucketCounts:       convertBucketCounts(dp.BucketCounts()),
-            ExplicitBounds:     convertExplicitBounds(dp.ExplicitBounds()),
-            MetricAttributes:   convertAttributes(dp.Attributes()),
-            ResourceAttributes: resourceAttrs,
-            ServiceName:        serviceName,
-            HTTPStatusCode:     extractStringAttr(dp.Attributes(), "http.response.status_code"),
-            HTTPRoute:          extractStringAttr(dp.Attributes(), "http.route"),
-            HTTPMethod:         extractStringAttr(dp.Attributes(), "http.request.method"),
+            Name:                   metric.Name(),
+            Description:            metric.Description(),
+            Unit:                   metric.Unit(),
+            MetricType:             "histogram",
+            Timestamp:              uint64(dp.Timestamp()),
+            StartTime:              uint64(dp.StartTimestamp()),
+            Count:                  dp.Count(),
+            Sum:                    dp.Sum(),
+            Min:                    dp.Min(),
+            Max:                    dp.Max(),
+            BucketCounts:           convertBucketCounts(dp.BucketCounts()),
+            ExplicitBounds:         convertExplicitBounds(dp.ExplicitBounds()),
+            MetricAttributes:       convertAttributes(dp.Attributes()),
+            ResourceAttributes:     resourceAttrs,
+            Exemplars:              convertExemplars(dp.Exemplars()),
+            Flags:                  uint32(dp.Flags()),
+            AggregationTemporality: int32(histogram.AggregationTemporality()),
+            ServiceName:            serviceName,
+            HTTPStatusCode:         extractStringAttr(dp.Attributes(), "http.response.status_code"),
+            HTTPRoute:              extractStringAttr(dp.Attributes(), "http.route"),
+            HTTPMethod:             extractStringAttr(dp.Attributes(), "http.request.method"),
         }
 
         metrics = append(metrics, hdxMetric)
@@ -227,41 +249,86 @@ func (e *metricsExporter) convertExponentialHistogram(metric pmetric.Metric, res
         dp := expHistogram.DataPoints().At(i)
 
         positive, _ := json.Marshal(map[string]interface{}{
-            "offset":       dp.Positive().Offset(),
+            "offset":        dp.Positive().Offset(),
             "bucket_counts": convertBucketCounts(dp.Positive().BucketCounts()),
         })
 
         negative, _ := json.Marshal(map[string]interface{}{
-            "offset":       dp.Negative().Offset(),
+            "offset":        dp.Negative().Offset(),
             "bucket_counts": convertBucketCounts(dp.Negative().BucketCounts()),
         })
 
         hdxMetric := HydrolixMetric{
-            Name:               metric.Name(),
-            Description:        metric.Description(),
-            Unit:               metric.Unit(),
-            MetricType:         "exponentialHistogram",
-            Timestamp:          uint64(dp.Timestamp()),
-            StartTime:          uint64(dp.StartTimestamp()),
-            Count:              dp.Count(),
-            Sum:                dp.Sum(),
-            Min:                dp.Min(),
-            Max:                dp.Max(),
-            Scale:              dp.Scale(),
-            Positive:           string(positive),
-            Negative:           string(negative),
-            MetricAttributes:   convertAttributes(dp.Attributes()),
-            ResourceAttributes: resourceAttrs,
-            ServiceName:        serviceName,
-            HTTPStatusCode:     extractStringAttr(dp.Attributes(), "http.response.status_code"),
-            HTTPRoute:          extractStringAttr(dp.Attributes(), "http.route"),
-            HTTPMethod:         extractStringAttr(dp.Attributes(), "http.request.method"),
+            Name:                   metric.Name(),
+            Description:            metric.Description(),
+            Unit:                   metric.Unit(),
+            MetricType:             "exponentialHistogram",
+            Timestamp:              uint64(dp.Timestamp()),
+            StartTime:              uint64(dp.StartTimestamp()),
+            Count:                  dp.Count(),
+            Sum:                    dp.Sum(),
+            Min:                    dp.Min(),
+            Max:                    dp.Max(),
+            Scale:                  dp.Scale(),
+            ZeroCount:              dp.ZeroCount(),
+            Positive:               string(positive),
+            Negative:               string(negative),
+            MetricAttributes:       convertAttributes(dp.Attributes()),
+            ResourceAttributes:     resourceAttrs,
+            Exemplars:              convertExemplars(dp.Exemplars()),
+            Flags:                  uint32(dp.Flags()),
+            AggregationTemporality: int32(expHistogram.AggregationTemporality()),
+            ServiceName:            serviceName,
+            HTTPStatusCode:         extractStringAttr(dp.Attributes(), "http.response.status_code"),
+            HTTPRoute:              extractStringAttr(dp.Attributes(), "http.route"),
+            HTTPMethod:             extractStringAttr(dp.Attributes(), "http.request.method"),
         }
 
         metrics = append(metrics, hdxMetric)
     }
 
     return metrics
+}
+
+func convertExemplars(exemplars pmetric.ExemplarSlice) []Exemplar {
+    if exemplars.Len() == 0 {
+        return nil
+    }
+
+    result := make([]Exemplar, 0, exemplars.Len())
+    for i := 0; i < exemplars.Len(); i++ {
+        exemplar := exemplars.At(i)
+
+        // Convert filtered attributes
+        attrs := make(map[string]string)
+        exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
+            attrs[k] = v.AsString()
+            return true
+        })
+
+        // Get value based on type
+        var value float64
+        switch exemplar.ValueType() {
+        case pmetric.ExemplarValueTypeDouble:
+            value = exemplar.DoubleValue()
+        case pmetric.ExemplarValueTypeInt:
+            value = float64(exemplar.IntValue())
+        }
+
+        // Convert trace and span IDs to hex strings
+        traceID := exemplar.TraceID()
+        spanID := exemplar.SpanID()
+
+        result = append(result, Exemplar{
+            FilteredAttributes: attrs,
+            Timestamp:          uint64(exemplar.Timestamp()),
+            Value:              value,
+            SpanID:             hex.EncodeToString(spanID[:]),
+            TraceID:            hex.EncodeToString(traceID[:]),
+        })
+    }
+
+    return result
 }
 
 func convertBucketCounts(bc pcommon.UInt64Slice) []uint64 {
