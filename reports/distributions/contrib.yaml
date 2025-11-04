@@ -76,7 +76,6 @@ components:
         - db_storage
         - docker_observer
         - ecs_observer
-        - ecs_task_observer
         - file_storage
         - googleclientauth
         - googlecloudlogentry_encoding
