@@ -1,0 +1,13 @@
+type: yanggrpc
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [atoulme]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
