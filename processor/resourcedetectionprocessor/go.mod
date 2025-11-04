@@ -13,14 +13,14 @@ require (
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/hetznercloud/hcloud-go/v2 v2.28.0
+	github.com/hetznercloud/hcloud-go/v2 v2.29.0
 	github.com/linode/go-metadata v0.2.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.139.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35
-	github.com/shirou/gopsutil/v4 v4.25.9
+	github.com/shirou/gopsutil/v4 v4.25.10
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.45.0
 	go.opentelemetry.io/collector/component/componenttest v0.139.0
