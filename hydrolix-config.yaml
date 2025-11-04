@@ -31,8 +31,7 @@ processors:
 exporters:
   # Your Hydrolix exporter
   hydrolix/metrics:
-    endpoint: https://argus.hydrolix.live/ingest/event
-      #    https://your-hydrolix-cluster.hydrolix.io/ingest
+    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest
     hdx_table: cicd.metrics
     hdx_transform: tf_metrics
     hdx_username: ${env:HYDROLIX_USERNAME}
@@ -40,8 +39,7 @@ exporters:
     timeout: 30s
 
   hydrolix/traces:
-    endpoint: https://argus.hydrolix.live/ingest/event
-    #    https://your-hydrolix-cluster.hydrolix.io/ingest
+    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest
     hdx_table: cicd.spans
     hdx_transform: tf_spans
     hdx_username: ${env:HYDROLIX_USERNAME}
