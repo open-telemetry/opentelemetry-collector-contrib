@@ -1,7 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//revive:disable:unused-parameter
 //go:build windows
 
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
@@ -11,44 +10,66 @@ import (
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
-/*
-* Functions and structs which are used to interact with the Windows service api.
-*
-* Primary functions are connecting to the Service Control Manager (SCM) to gather service information on scrape.
-*
-* Docs may be found at https://learn.microsoft.com/en-us/windows/win32/services/services
-* and "https://learn.microsoft.com/en-us/windows/win32/api/winsvc/"
-**/
+type State uint32
 
-// service manager "client"
-//
-//nolint:unused
+const (
+	StateStopped         State = 1
+	StateStartPending    State = 2
+	StateStopPending     State = 3
+	StateRunning         State = 4
+	StateContinuePending State = 5
+	StatePausePending    State = 6
+	StatePaused          State = 7
+)
+
+type StartType uint32
+
+const (
+	StartBoot      StartType = 0
+	StartSystem    StartType = 1
+	StartAutomatic StartType = 2
+	StartManual    StartType = 3
+	StartDisabled  StartType = 4
+)
+
+type configEx struct {
+	StartType        StartType
+	DelayedAutoStart bool
+}
+
 type serviceManager struct {
-	handle windows.Handle // handle to SCM database
+	svcmgr *mgr.Mgr
 }
 
-// get SCM database handle
-//
-//nolint:unused,unparam
-func scmConnect() (*serviceManager, error) {
-	var h windows.Handle
-	return &serviceManager{
-		h,
-	}, nil
-}
-
-//nolint:unused
-func (*serviceManager) disconnect() error {
+func (sm *serviceManager) connect() error {
+	m, err := mgr.Connect()
+	if err != nil {
+		return err
+	}
+	sm.svcmgr = m
 	return nil
 }
 
-//nolint:unused
-func (*serviceManager) listServices() ([]string, error) {
-	var s []string
-	return s, nil
+func (sm *serviceManager) disconnect() error {
+	if sm.svcmgr != nil {
+		return sm.svcmgr.Disconnect()
+	}
+	return nil
 }
 
-//nolint:unused
-func (*serviceManager) openService() (*mgr.Service, error) {
-	return nil, nil
+func (sm *serviceManager) listServices() ([]string, error) {
+	if sm.svcmgr == nil {
+		return []string{}, nil
+	}
+	return sm.svcmgr.ListServices()
+}
+
+func (sm *serviceManager) openService(name string) (*mgr.Service, error) {
+	if sm.svcmgr == nil {
+		return nil, windows.ERROR_INVALID_HANDLE
+	}
+	if name == "" {
+		return nil, windows.ERROR_INVALID_PARAMETER
+	}
+	return sm.svcmgr.OpenService(name)
 }
