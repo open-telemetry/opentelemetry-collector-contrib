@@ -6,7 +6,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.139.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.133.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.139.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.45.0
 	go.opentelemetry.io/collector/component/componenttest v0.139.0
