@@ -189,13 +189,13 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
+		if sr.Fields == nil {
+			continue
+		}
 		if err != nil {
 			errs <- err
 		}
 		res.Body.Close()
-		if sr.Jobid != nil && sr.Fields == nil {
-			continue
-		}
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
@@ -305,7 +305,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -390,7 +390,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 	}
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -481,7 +481,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 	// Record the results
 	var host string
 	var ps int64
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -602,7 +602,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 	var host string
 	var searchable string
 	var bc int64
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -692,7 +692,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 	// Record the results
 	var indexer string
 	var bc int64
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "title":
 			indexer = f.Value
@@ -808,7 +808,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -894,7 +894,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -983,7 +983,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -1072,7 +1072,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -1161,7 +1161,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -2055,11 +2055,12 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == http.StatusCreated && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
-				break
-			}
+			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
 			sr.offset += sr.count
 		}
 
