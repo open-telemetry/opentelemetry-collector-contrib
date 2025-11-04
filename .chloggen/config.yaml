@@ -234,7 +234,7 @@ components:
     - receiver/bigip
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoosreceiver
+    - receiver/ciscoos
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
@@ -330,6 +330,7 @@ components:
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/interfaces
     - scraper/load
     - scraper/memory
     - scraper/network

@@ -10,7 +10,7 @@ require (
 	github.com/google/addlicense v1.2.0
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.138.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.139.0
 	github.com/rhysd/actionlint v1.7.8
 	go.opentelemetry.io/build-tools/checkapi v0.26.2
 	go.opentelemetry.io/build-tools/checkfile v0.28.1
@@ -19,8 +19,8 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.28.1
 	go.opentelemetry.io/build-tools/issuegenerator v0.28.1
 	go.opentelemetry.io/build-tools/multimod v0.28.1
-	go.opentelemetry.io/collector/cmd/builder v0.138.1-0.20251028105454-507664fb82dc
-	go.opentelemetry.io/collector/cmd/mdatagen v0.138.1-0.20251028105454-507664fb82dc
+	go.opentelemetry.io/collector/cmd/builder v0.139.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.139.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.36.0
 	golang.org/x/tools/gopls v0.20.0
@@ -249,12 +249,12 @@ require (
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/build-tools v0.28.1 // indirect
-	go.opentelemetry.io/collector/component v1.44.1-0.20251028105454-507664fb82dc // indirect
-	go.opentelemetry.io/collector/confmap v1.44.1-0.20251028105454-507664fb82dc // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.44.1-0.20251028105454-507664fb82dc // indirect
-	go.opentelemetry.io/collector/featuregate v1.44.1-0.20251028105454-507664fb82dc // indirect
-	go.opentelemetry.io/collector/filter v0.138.1-0.20251028105454-507664fb82dc // indirect
-	go.opentelemetry.io/collector/pdata v1.44.1-0.20251028105454-507664fb82dc // indirect
+	go.opentelemetry.io/collector/component v1.45.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.45.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.45.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.45.0 // indirect
+	go.opentelemetry.io/collector/filter v0.139.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.45.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
@@ -280,9 +280,6 @@ require (
 	honnef.co/go/tools v0.7.0-0.dev.0.20250523013057-bbc2f4dd71ea // indirect
 	mvdan.cc/unparam v0.0.0-20250301125049-0df0534333a4 // indirect
 )
-
-// openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
-replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
 
 retract (
 	v0.76.2

@@ -18,7 +18,7 @@ Device availability (1 = up, 0 = down)
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### system.cpu.utilization
 
@@ -26,7 +26,7 @@ Percentage of CPU time in use.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### system.memory.utilization
 
@@ -34,10 +34,12 @@ Percentage of memory bytes in use.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| cisco.device.ip | The IP address of the Cisco network device | Any Str | true |
+| host.ip | The IP address of the Cisco network device | Any Str | true |
+| hw.type | Type of the physical hardware component | Any Str | true |
+| os.name | The operating system type of the Cisco device | Any Str | true |
