@@ -177,6 +177,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
 		r.cfg.enableNativeHistograms,
+		!r.cfg.ignoreMetadata,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
 	)

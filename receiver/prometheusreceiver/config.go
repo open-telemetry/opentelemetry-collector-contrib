@@ -50,6 +50,8 @@ type Config struct {
 
 	// From feature gate.
 	enableNativeHistograms bool
+	// For testing only.
+	ignoreMetadata bool
 }
 
 // Validate checks the receiver configuration is valid.
