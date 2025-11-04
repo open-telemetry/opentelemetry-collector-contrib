@@ -1,7 +1,7 @@
 FROM alpine:latest@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412 AS certs
 RUN apk --update add ca-certificates
 
-FROM golang:latest@sha256:6bac879c5b77e0fc9c556a5ed8920e89dab1709bd510a854903509c828f67f96
+FROM golang:latest@sha256:0afe9b553123ec160b8282154b7156241ebf43c9033ea2bf9528c6c58c17e89d
 
 ARG USER_UID=10001
 USER ${USER_UID}
