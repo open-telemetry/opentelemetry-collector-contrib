@@ -54,7 +54,7 @@ type Factory struct {
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
-	return fingerprint.NewFromFile(file, f.FingerprintSize, f.Compression != "")
+	return fingerprint.NewFromFile(file, f.FingerprintSize, f.Compression != "", f.TelemetrySettings.Logger)
 }
 
 func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
@@ -64,7 +64,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	}
 	var filetype string
 
-	if f.Compression != "" && util.IsGzipFile(file) {
+	if f.Compression != "" && util.IsGzipFile(file, f.TelemetrySettings.Logger) {
 		filetype = gzipExtension
 	}
 
@@ -101,7 +101,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 
 	if r.Fingerprint.Len() > r.fingerprintSize {
 		// User has reconfigured fingerprint_size
-		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize, r.compression != "")
+		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize, r.compression != "", r.set.Logger)
 		if rereadErr != nil {
 			return nil, fmt.Errorf("reread fingerprint: %w", rereadErr)
 		}

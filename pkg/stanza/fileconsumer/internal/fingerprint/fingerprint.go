@@ -12,8 +12,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 )
 
 const DefaultSize = 1000 // bytes
@@ -40,11 +42,11 @@ func New(first []byte) *Fingerprint {
 
 // NewFromFile computes fingerprint of the given file using first 'N' bytes
 // Set decompressData to true to compute fingerprint of compressed files by decompressing its data first
-func NewFromFile(file *os.File, size int, decompressData bool) (*Fingerprint, error) {
+func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logger) (*Fingerprint, error) {
 	buf := make([]byte, size)
 	if DecompressedFingerprintFeatureGate.IsEnabled() {
 		if decompressData {
-			if util.IsGzipFile(file) {
+			if util.IsGzipFile(file, logger) {
 				// If the file is of compressed type, uncompress the data before creating its fingerprint
 				uncompressedData, err := gzip.NewReader(file)
 				if err != nil {

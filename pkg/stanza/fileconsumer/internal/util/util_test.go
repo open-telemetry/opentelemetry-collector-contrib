@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestIsGzipFile(t *testing.T) {
@@ -26,5 +27,5 @@ func TestIsGzipFile(t *testing.T) {
 	_, err = temp.Seek(0, io.SeekStart)
 	require.NoError(t, err)
 
-	require.True(t, IsGzipFile(temp))
+	require.True(t, IsGzipFile(temp, zap.NewNop()))
 }
