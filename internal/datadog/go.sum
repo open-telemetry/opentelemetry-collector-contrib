@@ -69,6 +69,8 @@ github.com/DataDog/datadog-agent/pkg/version v0.73.0-devel.0.20251030121902-cd89
 github.com/DataDog/datadog-agent/pkg/version v0.73.0-devel.0.20251030121902-cd89eab046d6/go.mod h1:6NoHdUrJ/ttav4SSas6XiDLfYbF4Ulx0D0cBpbk4vvI=
 github.com/DataDog/datadog-api-client-go/v2 v2.48.0 h1:OcVkuSh1+R2BK38pXWHZsKlzAglgJwlS600zTwkwvbs=
 github.com/DataDog/datadog-api-client-go/v2 v2.48.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.49.0 h1:44ltl4mpJCtUdBLvOvXcCcvNewB+beDesZaoQYZqjCc=
+github.com/DataDog/datadog-api-client-go/v2 v2.49.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee h1:tXibLZk3G6HncIFJKaNItsdzcrk4YqILNDZlXPTNt4k=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee/go.mod h1:nTot/Iy0kW16bXgXr6blEc8gFeAS7vTqYlhAxh+dbc0=
 github.com/DataDog/sketches-go v1.4.7 h1:eHs5/0i2Sdf20Zkj0udVFWuCrXGRFig2Dcfm5rtcTxc=
