@@ -20,17 +20,16 @@ import (
 )
 
 func basicProfiles() pprofiletest.Profiles {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("key1", "value1")
 	return pprofiletest.Profiles{
 		ResourceProfiles: []pprofiletest.ResourceProfile{
 			{
-				Resource: pprofiletest.Resource{
-					Attributes: []pprofiletest.Attribute{
-						{Key: "key1", Value: "value1"},
-					},
-				},
+				Resource: r,
 				ScopeProfiles: []pprofiletest.ScopeProfile{
 					{
-						Profile: []pprofiletest.Profile{
+						Scope: pcommon.NewInstrumentationScope(),
+						Profiles: []pprofiletest.Profile{
 							{
 								SampleType: []pprofiletest.ValueType{
 									{Typ: "samples", Unit: "count"},

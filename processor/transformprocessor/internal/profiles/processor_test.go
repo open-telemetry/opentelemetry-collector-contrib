@@ -1295,19 +1295,19 @@ func constructProfiles() pprofile.Profiles {
 }
 
 func constructTestProfiles() pprofiletest.Profiles {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("host.name", "localhost")
+	s := pcommon.NewInstrumentationScope()
+	s.SetName("scope")
 	return pprofiletest.Profiles{
 		ResourceProfiles: []pprofiletest.ResourceProfile{
 			{
-				Resource: pprofiletest.Resource{
-					Attributes: []pprofiletest.Attribute{{Key: "host.name", Value: "localhost"}},
-				},
+				Resource: r,
 				ScopeProfiles: []pprofiletest.ScopeProfile{
 					{
 						SchemaURL: "test_schema_url",
-						Scope: pprofiletest.Scope{
-							Name: "scope",
-						},
-						Profile: []pprofiletest.Profile{
+						Scope:     s,
+						Profiles: []pprofiletest.Profile{
 							{
 								Attributes: []pprofiletest.Attribute{
 									{Key: "http.method", Value: "get"},

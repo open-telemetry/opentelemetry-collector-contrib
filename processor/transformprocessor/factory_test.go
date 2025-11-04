@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -322,15 +323,20 @@ func TestFactoryCreateLogProcessor(t *testing.T) {
 }
 
 func basicProfiles() pprofiletest.Profiles {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("host.name", "localhost")
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("scope-name")
+
 	return pprofiletest.Profiles{
 		ResourceProfiles: []pprofiletest.ResourceProfile{
 			{
-				Resource: pprofiletest.Resource{
-					Attributes: []pprofiletest.Attribute{{Key: "host.name", Value: "localhost"}},
-				},
+				Resource: r,
 				ScopeProfiles: []pprofiletest.ScopeProfile{
 					{
-						Profile: []pprofiletest.Profile{
+						Scope: scope,
+						Profiles: []pprofiletest.Profile{
 							{
 								OriginalPayloadFormat: "operationA",
 							},
@@ -356,7 +362,7 @@ func TestFactoryCreateProfileProcessor(t *testing.T) {
 			statements: []string{`set(attributes["test"], "pass")`},
 			want: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].Attributes = []pprofiletest.Attribute{{Key: "test", Value: "pass"}}
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles[0].Attributes = []pprofiletest.Attribute{{Key: "test", Value: "pass"}}
 				return p.Transform()
 			},
 			createProfiles: basicProfiles().Transform,
