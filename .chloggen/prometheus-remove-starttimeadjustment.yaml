@@ -17,7 +17,7 @@ issues: [43656]
 # Use pipe (|) for multiline entries.
 subtext: Disable the receiver.prometheusreceiver.RemoveStartTimeAdjustment |
     feature gate to temporarily re-enable this functionality. Users that need |
-    this functionality should to migrate to the metricstarttime processor, |
+    this functionality should migrate to the metricstarttime processor, |
     and use the true_reset strategy for equivalent behavior.
 
 # If your change doesn't affect end users or the exported elements of any package,
