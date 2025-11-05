@@ -97,6 +97,15 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 			// for connection to be established. We have to cancel the
 			// connection attempt (and the whole connection if it raced us and
 			// managed to connect - we will reconnect later again in that case).
+			select {
+			case <-connectionAttemptDone:
+				// Connection attempt already finished, nothing to do. This can happen
+				// if <-ctx.Done() above selects sooner than <-connectionAttemptDone.
+				// That is ok, we are done.
+				return
+			default:
+			}
+
 			s.logger.Debug("Canceling connection context because Create() caller cancelled.")
 			connCancel()
 		case <-connectionAttemptDone:
