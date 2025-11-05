@@ -91,7 +91,6 @@ components:
     - extension/db_storage
     - extension/docker_observer
     - extension/ecs_observer
-    - extension/ecs_task_observer
     - extension/encoding
     - extension/file_storage
     - extension/googleclientauth
@@ -326,6 +325,7 @@ components:
     - receiver/windowseventlog
     - receiver/windowsperfcounters
     - receiver/windowsservice
+    - receiver/yanggrpc
     - receiver/zipkin
     - receiver/zookeeper
     - scraper/cpu
