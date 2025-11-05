@@ -191,10 +191,10 @@ func constructProfiles() pprofile.Profiles {
 
 func fillProfileOne(profile pprofile.Profile) {
 	profile.SetOriginalPayloadFormat("legacy")
-	profile.Sample().AppendEmpty()
+	profile.Samples().AppendEmpty()
 }
 
 func fillProfileTwo(profile pprofile.Profile) {
 	profile.SetOriginalPayloadFormat("non-legacy")
-	profile.Sample().AppendEmpty()
+	profile.Samples().AppendEmpty()
 }
