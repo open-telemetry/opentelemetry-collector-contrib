@@ -15,6 +15,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.139.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tinylib/msgp v1.5.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
