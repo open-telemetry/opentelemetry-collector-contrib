@@ -95,7 +95,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `receiver/postgresql`: Change the unit of the metric `postgresql.table.vacuum.count` to be `vacuum` instead of vacuums (#43272)
 - `receiver/prometheus`: Fix missing staleness tracking leading to missing no recorded value data points. (#43893)
 - `receiver/prometheusremotewrite`: Fixed a concurrency bug in the Prometheus remote write receiver where concurrent requests with identical job/instance labels would return empty responses after the first successful request. (#42159)
-- `receiver/pulsar`: Fix the oauth2 flow for pulsar exporter by adding additional configuration fields (#435960)
+- `receiver/pulsar`: Fix the oauth2 flow for pulsar exporter by adding additional configuration fields (#43596)
   Fixes the oauth2 authentication flow in pulsar receiver by exposing additional configuration like `private_key` and `scope`.
   
 - `receiver/receiver_creator`: Fix annotation-discovery config unmarshaling for nested configs (#43730)
