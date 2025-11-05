@@ -18,7 +18,6 @@ var (
 	errReadTimeoutExceedsMaxValue  = errors.New("the duration specified for read_timeout exceeds the maximum allowed value of 10s")
 	errWriteTimeoutExceedsMaxValue = errors.New("the duration specified for write_timeout exceeds the maximum allowed value of 10s")
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
-	errMaxRequestBodyBytes         = errors.New("max_request_body_bytes must be greater than 1 kb")
 	errHeaderAttributeRegexCompile = errors.New("regex for header_attribute_regex failed to compile")
 )
 
@@ -79,7 +78,6 @@ func (cfg *Config) Validate() error {
 		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
 	} else if cfg.MaxRequestBodyBytes < bufio.MaxScanTokenSize {
 		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
-		// errs = multierr.Append(errs, errMaxRequestBodyBytes)
 	}
 
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
