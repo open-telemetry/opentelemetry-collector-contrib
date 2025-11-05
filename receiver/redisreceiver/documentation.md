@@ -437,7 +437,7 @@ Redis server mode
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {mode} | Gauge | Int | development |
+| {mode} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -473,7 +473,7 @@ Number of masters monitored by Sentinel.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {master} | Gauge | Int | development |
+| {master} | Gauge | Int | Development |
 
 ### redis.sentinel.running_scripts
 
@@ -481,7 +481,7 @@ Number of running Sentinel scripts.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {script} | Gauge | Int | development |
+| {script} | Gauge | Int | Development |
 
 ### redis.sentinel.scripts_queue_length
 
@@ -489,7 +489,7 @@ Length of Sentinel scripts queue.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {script} | Gauge | Int | development |
+| {script} | Gauge | Int | Development |
 
 ### redis.sentinel.simulate_failure_flags
 
@@ -497,7 +497,7 @@ Simulated failure flags bitmask.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {flag} | Gauge | Int | development |
+| {flag} | Gauge | Int | Development |
 
 ### redis.sentinel.tilt_since_seconds
 
@@ -505,7 +505,7 @@ Duration in seconds of current TILT, or -1 if not in TILT mode.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 ### redis.sentinel.total_tilt
 
@@ -513,7 +513,7 @@ Total TILT occurrences since start.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {event} | Sum | Int | Cumulative | true | development |
+| {event} | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 
