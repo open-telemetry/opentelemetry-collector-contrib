@@ -215,6 +215,7 @@ receiver/awscloudwatchreceiver receiver/awscloudwatch
 receiver/awscontainerinsightreceiver receiver/awscontainerinsight
 receiver/awsecscontainermetricsreceiver receiver/awsecscontainermetrics
 receiver/awsfirehosereceiver receiver/awsfirehose
+receiver/awslambdareceiver receiver/awslambda
 receiver/awss3receiver receiver/awss3
 receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
@@ -325,6 +326,7 @@ receiver/webhookeventreceiver receiver/webhookevent
 receiver/windowseventlogreceiver receiver/windowseventlog
 receiver/windowsperfcountersreceiver receiver/windowsperfcounters
 receiver/windowsservicereceiver receiver/windowsservice
+receiver/yanggrpcreceiver receiver/yanggrpc
 receiver/zipkinreceiver receiver/zipkin
 receiver/zookeeperreceiver receiver/zookeeper
 scraper/zookeeperscraper scraper/zookeeper
@@ -335,6 +337,5 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/carbonexporter exporter/carbon
-extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon
