@@ -180,8 +180,11 @@ func TestHandleReq(t *testing.T) {
 				gzipWriter := gzip.NewWriter(&msg)
 				_, err = gzipWriter.Write(msgJSON)
 				require.NoError(t, err, "Gzip writer failed")
+				err = gzipWriter.Close()
+				require.NoError(t, err, "Gzip writer failed to close")
 
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", &msg)
+				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
 		},

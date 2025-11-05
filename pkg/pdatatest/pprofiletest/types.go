@@ -11,6 +11,8 @@ import (
 
 type Profiles struct {
 	ResourceProfiles []ResourceProfile
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (p Profiles) Transform() pprofile.Profiles {
@@ -23,7 +25,10 @@ func (p Profiles) Transform() pprofile.Profiles {
 
 type ResourceProfile struct {
 	ScopeProfiles []ScopeProfile
-	Resource      Resource
+	Resource      pcommon.Resource
+	SchemaURL     string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (rp ResourceProfile) Transform(pp pprofile.Profiles) pprofile.ResourceProfiles {
@@ -31,57 +36,31 @@ func (rp ResourceProfile) Transform(pp pprofile.Profiles) pprofile.ResourceProfi
 	for _, sp := range rp.ScopeProfiles {
 		sp.Transform(pp.Dictionary(), prp)
 	}
-	for _, a := range rp.Resource.Attributes {
-		if prp.Resource().Attributes().PutEmpty(a.Key).FromRaw(a.Value) != nil {
-			panic(fmt.Sprintf("unsupported resource attribute value: {%s: %v (type %T)}",
-				a.Key, a.Value, a.Value))
-		}
-	}
+
+	rp.Resource.Attributes().CopyTo(prp.Resource().Attributes())
+
 	return prp
 }
 
-type Resource struct {
-	Attributes []Attribute
-}
-
 type ScopeProfile struct {
-	Profile   []Profile
-	Scope     Scope
+	Profiles  []Profile
+	Scope     pcommon.InstrumentationScope
 	SchemaURL string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (sp ScopeProfile) Transform(dic pprofile.ProfilesDictionary, prp pprofile.ResourceProfiles) pprofile.ScopeProfiles {
 	psp := prp.ScopeProfiles().AppendEmpty()
-	for i := range sp.Profile {
-		p := &sp.Profile[i]
+	for i := range sp.Profiles {
+		p := &sp.Profiles[i]
 		p.Transform(dic, psp)
 	}
-	sp.Scope.Transform(psp)
 	psp.SetSchemaUrl(sp.SchemaURL)
 
+	sp.Scope.CopyTo(psp.Scope())
+
 	return psp
-}
-
-type Scope struct {
-	Attributes             []Attribute
-	Name                   string
-	Version                string
-	DroppedAttributesCount uint32
-}
-
-func (sc Scope) Transform(psp pprofile.ScopeProfiles) pcommon.InstrumentationScope {
-	psc := psp.Scope()
-	for _, a := range sc.Attributes {
-		if psc.Attributes().PutEmpty(a.Key).FromRaw(a.Value) != nil {
-			panic(fmt.Sprintf("unsupported scope attribute value: {%s: %v (type %T)}",
-				a.Key, a.Value, a.Value))
-		}
-	}
-	psc.SetName(sc.Name)
-	psc.SetVersion(sc.Version)
-	psc.SetDroppedAttributesCount(sc.DroppedAttributesCount)
-
-	return psc
 }
 
 type Profile struct {
@@ -194,6 +173,8 @@ type Sample struct {
 	Locations          []Location
 	Attributes         []Attribute
 	TimestampsUnixNano []uint64
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (sa *Sample) Transform(dic pprofile.ProfilesDictionary, pp pprofile.Profile) {
@@ -236,11 +217,15 @@ type Location struct {
 	Line       []Line
 	IsFolded   bool
 	Attributes []Attribute
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Link struct {
 	TraceID pcommon.TraceID
 	SpanID  pcommon.SpanID
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (l *Link) Transform(dic pprofile.ProfilesDictionary) int32 {
@@ -256,6 +241,8 @@ type Mapping struct {
 	FileOffset  uint64
 	Filename    string
 	Attributes  []Attribute
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (m *Mapping) Transform(dic pprofile.ProfilesDictionary) {
@@ -272,6 +259,8 @@ func (m *Mapping) Transform(dic pprofile.ProfilesDictionary) {
 type Attribute struct {
 	Key   string
 	Value any
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type attributable interface {
@@ -302,6 +291,8 @@ type KeyValueAndUnit struct {
 	Key   string
 	Value any
 	Unit  string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (a *KeyValueAndUnit) Transform(dic pprofile.ProfilesDictionary) int32 {
@@ -316,6 +307,8 @@ type Line struct {
 	Line     int64
 	Column   int64
 	Function Function
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Function struct {
@@ -323,6 +316,8 @@ type Function struct {
 	SystemName string
 	Filename   string
 	StartLine  int64
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (f *Function) Transform(dic pprofile.ProfilesDictionary) int32 {
