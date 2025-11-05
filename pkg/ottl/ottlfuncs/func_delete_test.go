@@ -326,13 +326,6 @@ func TestDelete_Errors(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name:        "target is nil",
-			target:      nil,
-			index:       getIntGetter(0),
-			length:      nilOptional,
-			expectedErr: "target is nil",
-		},
-		{
 			name: "cannot get target",
 			target: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
@@ -399,7 +392,7 @@ func TestDelete_Errors(t *testing.T) {
 			},
 			index:       getIntGetter(0),
 			length:      nilOptional,
-			expectedErr: "target is not a slice, got pcommon.Value of type",
+			expectedErr: "target must be a slice type, got pcommon.Value",
 		},
 		{
 			name: "index out of bounds",

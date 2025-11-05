@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -35,13 +34,18 @@ func createDeleteFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 
 func deleteFrom[K any](target ottl.GetSetter[K], indexGetter ottl.IntGetter[K], lengthGetter ottl.Optional[ottl.IntGetter[K]]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		if target == nil {
-			return nil, errors.New("target is nil")
-		}
-
 		t, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
+		}
+
+		targetSlice, ok := t.(pcommon.Slice)
+		if !ok {
+			targetValue, ok := t.(pcommon.Value)
+			if !ok || targetValue.Type() != pcommon.ValueTypeSlice {
+				return nil, fmt.Errorf("target must be a slice type, got %T", t)
+			}
+			targetSlice = targetValue.Slice()
 		}
 
 		index, err := indexGetter.Get(ctx, tCtx)
@@ -51,8 +55,9 @@ func deleteFrom[K any](target ottl.GetSetter[K], indexGetter ottl.IntGetter[K], 
 
 		if index == -1 {
 			// If we get -1 as index, do nothing and return nil.
-			// Example: Calling delete with 'Index(log.attributes["tags"], "error")'
-			// as index input value will result in -1 index, that means nothing to delete.
+			// Example: If we execute 'delete(attributes["tags"], Index(attributes["tags"], "error"))' statement
+			// and 'error' is not found in tags, Index func will return -1, To avoid errors on this scenario,
+			//  in this case delete function will be a no-op.
 			return nil, target.Set(ctx, tCtx, t)
 		}
 
@@ -64,21 +69,7 @@ func deleteFrom[K any](target ottl.GetSetter[K], indexGetter ottl.IntGetter[K], 
 			}
 		}
 
-		var sourceSlice []any
-		switch targetType := t.(type) {
-		case pcommon.Slice:
-			sourceSlice = targetType.AsRaw()
-		case pcommon.Value:
-			if targetType.Type() == pcommon.ValueTypeSlice {
-				sourceSlice = targetType.Slice().AsRaw()
-			} else {
-				return nil, fmt.Errorf("target is not a slice, got pcommon.Value of type %q", targetType.Type())
-			}
-		default:
-			return nil, fmt.Errorf("target must be a slice type, got %T", t)
-		}
-
-		sliceLen := int64(len(sourceSlice))
+		sliceLen := int64(targetSlice.Len())
 		if index < -1 || index >= sliceLen {
 			return nil, fmt.Errorf("index %d out of bounds for slice of length %d", index, sliceLen)
 		}
@@ -92,12 +83,12 @@ func deleteFrom[K any](target ottl.GetSetter[K], indexGetter ottl.IntGetter[K], 
 			endIndex = sliceLen
 		}
 
-		res := slices.Delete(slices.Clone(sourceSlice), int(index), int(endIndex))
-
-		// Convert back to pcommon.Slice
 		resSlice := pcommon.NewSlice()
-		if err := resSlice.FromRaw(res); err != nil {
-			return nil, err
+		resSlice.EnsureCapacity(int(sliceLen - (endIndex - index)))
+		for i := int64(0); i < sliceLen; i++ {
+			if i < index || i >= endIndex {
+				targetSlice.At(int(i)).MoveTo(resSlice.AppendEmpty())
+			}
 		}
 
 		return nil, target.Set(ctx, tCtx, resSlice)
