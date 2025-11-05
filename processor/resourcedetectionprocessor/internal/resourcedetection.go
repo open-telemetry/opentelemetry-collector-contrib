@@ -146,21 +146,20 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pc
 
 	res, schemaURL, err := p.detectResource(ctx)
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	prev := p.detectedResource
 
 	// Check if we have a previous successfully snapshot
 	hadPrevSuccess := prev != nil && prev.err == nil && !IsEmptyResource(prev.resource)
 
-	// If this refresh failed (partial) AND we had a previous success, keep the old one.
-	if err != nil && hadPrevSuccess {
-		p.mu.Unlock()
-		// Return the last good snapshot; do not overwrite.
+	// Keep the last good snapshot if the refresh errored OR returned an empty resource.
+	if hadPrevSuccess && (err != nil || IsEmptyResource(res)) {
+		p.logger.Warn("resource refresh yielded empty or error; keeping previous snapshot", zap.Error(err))
 		return prev.resource, prev.schemaURL, prev.err
 	}
 
-	// Otherwise, accept the new snapshot (first attempt or successful refresh).
+	// Otherwise, accept the new snapshot.
 	p.detectedResource = &resourceResult{resource: res, schemaURL: schemaURL, err: err}
-	p.mu.Unlock()
 	return res, schemaURL, err
 }
 
@@ -168,6 +167,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 	res := pcommon.NewResource()
 	mergedSchemaURL := ""
 	var joinedErr error
+	successes := 0
 
 	p.logger.Info("began detecting resource information")
 
@@ -219,10 +219,11 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 			if allowErrorPropagationFeatureGate.IsEnabled() {
 				joinedErr = errors.Join(joinedErr, result.err)
 			}
-		} else {
-			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
-			MergeResource(res, result.resource, false)
+			continue
 		}
+		successes++
+		mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
+		MergeResource(res, result.resource, false)
 	}
 
 	droppedAttributes := filterAttributes(res.Attributes(), p.attributesToKeep)
@@ -232,7 +233,21 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
 
-	return res, mergedSchemaURL, joinedErr
+	// Only fail if ALL detectors failed.
+	if successes == 0 {
+		if allowErrorPropagationFeatureGate.IsEnabled() {
+			if joinedErr == nil {
+				joinedErr = errors.New("resource detection failed: no detectors succeeded")
+			}
+			return pcommon.NewResource(), "", joinedErr
+		}
+
+		// If the feature gate is disabled, do NOT propagate the error.
+		// Return an empty resource and nil error so the processor can still start.
+		p.logger.Warn("resource detection failed but error propagation is disabled")
+		return pcommon.NewResource(), "", nil
+	}
+	return res, mergedSchemaURL, nil
 }
 
 func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {

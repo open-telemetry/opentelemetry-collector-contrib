@@ -360,21 +360,38 @@ func TestProcessor_RefreshInterval_UpdatesResource(t *testing.T) {
 func TestProcessor_RefreshInterval_KeepsLastGoodOnFailure(t *testing.T) {
 	factory := &factory{providers: map[component.ID]*internal.ResourceProvider{}}
 
-	// Mock detector that returns success, failure, success
-	md := &mockDetector{}
+	// Prepare resources.
 	res1 := pcommon.NewResource()
 	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"k": "v1"}))
 	res2 := pcommon.NewResource()
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"k": "v2"}))
 
-	// 1st call succeeds
+	// Gates to coordinate 2nd (fail) and 3rd (success) detections.
+	failGate := make(chan struct{})
+	successGate := make(chan struct{})
+
+	// Mock detector:
+	//  1) first call -> res1 (startup)
+	//  2) second call -> block until failGate is closed, then return error (refresh keeps last good)
+	//  3) third call -> block until successGate is closed, then return res2 (refresh updates)
+	md := &mockDetector{}
+	// 1) first call -> res1 (startup)
 	md.On("Detect").Return(res1, nil).Once()
-	// 2nd call fails
-	md.On("Detect").Return(pcommon.NewResource(), errors.New("boom")).Once()
-	// 3rd and later calls succeed (allow retries)
+
+	// 2) second call -> block, then fail
+	md.On("Detect").
+		Run(func(_ mock.Arguments) { <-failGate }).
+		Return(pcommon.NewResource(), errors.New("boom")).Once()
+
+	// 3) third call -> block, then succeed
+	md.On("Detect").
+		Run(func(_ mock.Arguments) { <-successGate }).
+		Return(res2, nil).Once()
+
+	// 4) any extra calls (ticker may fire again) -> return last good value
 	md.On("Detect").Return(res2, nil).Maybe()
 
-	// Hook detector into factory
+	// Wire detector into factory.
 	factory.resourceProviderFactory = internal.NewProviderFactory(
 		map[internal.DetectorType]internal.DetectorFactory{
 			"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
@@ -385,48 +402,65 @@ func TestProcessor_RefreshInterval_KeepsLastGoodOnFailure(t *testing.T) {
 
 	cfg := &Config{
 		Detectors:       []string{"mock"},
-		ClientConfig:    confighttp.ClientConfig{Timeout: 300 * time.Millisecond},
-		RefreshInterval: 60 * time.Millisecond, // short to trigger multiple refreshes
+		ClientConfig:    confighttp.ClientConfig{Timeout: 500 * time.Millisecond},
+		RefreshInterval: 25 * time.Millisecond,
 	}
 
-	// Create metrics processor
+	// Create and start a metrics processor so we can observe the applied resource.
 	msink := new(consumertest.MetricsSink)
 	mp, err := factory.createMetricsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, msink)
 	require.NoError(t, err)
 	require.NoError(t, mp.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, mp.Shutdown(t.Context())) }()
 
-	// First batch → should see res1
-	md1 := pmetric.NewMetrics()
-	require.NoError(t, md1.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
-	require.NoError(t, mp.ConsumeMetrics(t.Context(), md1))
+	// Helper to push one metrics batch and return the resource attrs of that batch.
+	getAttrsAfterConsume := func() map[string]any {
+		md := pmetric.NewMetrics()
+		require.NoError(t, md.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
+		require.NoError(t, mp.ConsumeMetrics(t.Context(), md))
 
-	require.Eventually(t, func() bool { return len(msink.AllMetrics()) >= 1 }, time.Second, 20*time.Millisecond)
-	got1 := msink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
-	assert.Equal(t, map[string]any{"k": "v1"}, got1)
+		// Wait until sink has one more entry and return the last one's attrs.
+		var out map[string]any
+		require.Eventually(t, func() bool {
+			all := msink.AllMetrics()
+			if len(all) == 0 {
+				return false
+			}
+			last := all[len(all)-1]
+			out = last.ResourceMetrics().At(0).Resource().Attributes().AsRaw()
+			return true
+		}, time.Second, 10*time.Millisecond)
+		return out
+	}
 
-	// Wait for a failing refresh cycle
-	time.Sleep(150 * time.Millisecond)
+	// 1) After startup, first detection applied -> expect v1.
+	got := getAttrsAfterConsume()
+	assert.Equal(t, map[string]any{"k": "v1"}, got)
 
-	// Send another batch — resource should still be res1 (unchanged)
-	md2 := pmetric.NewMetrics()
-	require.NoError(t, md2.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
-	require.NoError(t, mp.ConsumeMetrics(t.Context(), md2))
+	// 2) Let the next refresh run BUT keep it blocked on failGate.
+	//    While blocked, a consume should still see v1.
+	//    (The refresh goroutine is waiting; state must not change.)
+	time.Sleep(2 * cfg.RefreshInterval) // give the loop a chance to enter Detect and block
+	got = getAttrsAfterConsume()
+	assert.Equal(t, map[string]any{"k": "v1"}, got)
 
-	require.Eventually(t, func() bool { return len(msink.AllMetrics()) >= 2 }, time.Second, 20*time.Millisecond)
-	got2 := msink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
-	assert.Equal(t, map[string]any{"k": "v1"}, got2)
+	// 3) Release the failure; refresh completes with error => last good (v1) must be kept.
+	close(failGate)
+	// Give the loop a brief moment to finish that failed refresh.
+	time.Sleep(2 * cfg.RefreshInterval)
+	got = getAttrsAfterConsume()
+	assert.Equal(t, map[string]any{"k": "v1"}, got)
 
-	// Wait for a successful refresh after failure
-	time.Sleep(150 * time.Millisecond)
+	// 4) Now allow the next refresh to succeed (return res2).
+	close(successGate)
+	// Give the loop a moment to complete the successful refresh.
+	require.Eventually(t, func() bool {
+		attrs := getAttrsAfterConsume()
+		return assert.ObjectsAreEqual(map[string]any{"k": "v2"}, attrs)
+	}, time.Second, 10*time.Millisecond)
 
-	md3 := pmetric.NewMetrics()
-	require.NoError(t, md3.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
-	require.NoError(t, mp.ConsumeMetrics(t.Context(), md3))
-
-	require.Eventually(t, func() bool { return len(msink.AllMetrics()) >= 3 }, time.Second, 20*time.Millisecond)
-	got3 := msink.AllMetrics()[2].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
-	assert.Equal(t, map[string]any{"k": "v2"}, got3)
+	// Verify the mock saw exactly 3 Detect calls in the order we expected.
+	md.AssertExpectations(t)
 }
 
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
