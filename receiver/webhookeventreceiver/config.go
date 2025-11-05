@@ -81,7 +81,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Set HTTP server body size limit to match scanner limit
-	cfg.ServerConfig.MaxRequestBodySize = int64(cfg.MaxRequestBodyBytes)
+	cfg.MaxRequestBodySize = int64(cfg.MaxRequestBodyBytes)
 
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
 		errs = multierr.Append(errs, errRequiredHeader)
