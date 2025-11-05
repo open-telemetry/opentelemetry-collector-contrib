@@ -40,8 +40,16 @@ func NewConfigWithID(operatorID string) *Config {
 		Format:                  "",
 		AddMetadataFromFilePath: true,
 		MaxLogSize:              0,
-		MaxBatchSize:            100,
+		Recombine: RecombineConfig{
+			MaxBatchSize:          1000,
+			MaxUnmatchedBatchSize: 100,
+		},
 	}
+}
+
+type RecombineConfig struct {
+	MaxBatchSize          int `mapstructure:"max_batch_size,omitempty"`
+	MaxUnmatchedBatchSize int `mapstructure:"max_unmatched_batch_size,omitempty"`
 }
 
 // Config is the configuration of a Container parser operator.
@@ -51,7 +59,7 @@ type Config struct {
 	Format                  string          `mapstructure:"format"`
 	AddMetadataFromFilePath bool            `mapstructure:"add_metadata_from_filepath"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	MaxBatchSize            uint            `mapstructure:"max_batch_size,omitempty"`
+	Recombine               RecombineConfig `mapstructure:"recombine,omitempty"`
 }
 
 // Build will build a Container parser operator.
@@ -82,7 +90,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		criConsumers:            &wg,
 	}
 
-	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries, helper.WithMaxBatchSize(c.MaxBatchSize))
+	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries)
 	p.criLogEmitter = cLogEmitter
 	recombineParser, err := createRecombine(set, c, cLogEmitter)
 	if err != nil {
@@ -126,5 +134,7 @@ func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg.CombineWith = ""
 	recombineParserCfg.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
 	recombineParserCfg.MaxLogSize = c.MaxLogSize
+	recombineParserCfg.MaxBatchSize = c.Recombine.MaxBatchSize
+	recombineParserCfg.MaxUnmatchedBatchSize = c.Recombine.MaxUnmatchedBatchSize
 	return recombineParserCfg
 }
