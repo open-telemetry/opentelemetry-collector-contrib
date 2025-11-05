@@ -187,7 +187,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 
 func createProfileSampleTelemetry() (pprofile.Sample, pprofile.Profile) {
 	profile := pprofile.NewProfile()
-	sample := profile.Sample().AppendEmpty()
+	sample := profile.Samples().AppendEmpty()
 	sample.SetLinkIndex(42)
 
 	timestamps := sample.TimestampsUnixNano()

@@ -40,8 +40,6 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 		return accessPeriodType[K](path)
 	case "period":
 		return accessPeriod[K](), nil
-	case "comment_string_indices":
-		return accessCommentStringIndices[K](), nil
 	case "profile_id":
 		nextPath := path.Next()
 		if nextPath != nil {
@@ -75,11 +73,11 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 func accessSample[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().Sample(), nil
+			return tCtx.GetProfile().Samples(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if v, ok := val.(pprofile.SampleSlice); ok {
-				v.CopyTo(tCtx.GetProfile().Sample())
+				v.CopyTo(tCtx.GetProfile().Samples())
 			}
 			return nil
 		},
@@ -159,17 +157,6 @@ func accessPeriod[K Context]() ottl.StandardGetSetter[K] {
 				tCtx.GetProfile().SetPeriod(i)
 			}
 			return nil
-		},
-	}
-}
-
-func accessCommentStringIndices[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return ctxutil.GetCommonIntSliceValues[int32](tCtx.GetProfile().CommentStrindices()), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			return ctxutil.SetCommonIntSliceValues[int32](tCtx.GetProfile().CommentStrindices(), val)
 		},
 	}
 }
