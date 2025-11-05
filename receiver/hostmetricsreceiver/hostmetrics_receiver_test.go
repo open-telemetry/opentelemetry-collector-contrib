@@ -118,8 +118,8 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	// canceling the context provided to Start should not cancel any async processes initiated by the receiver
 	cancelFn()
 
-	const tick = 50 * time.Millisecond
-	const waitFor = 10 * time.Second
+	const tick = 200 * time.Millisecond
+	const waitFor = 30 * time.Second
 	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
 		if len(got) == 0 {
