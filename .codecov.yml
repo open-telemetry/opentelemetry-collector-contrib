@@ -372,10 +372,6 @@ component_management:
     name: extension_observer_ecsobserver
     paths:
     - extension/observer/ecsobserver/**
-  - component_id: extension_observer_ecstaskobserver
-    name: extension_observer_ecstaskobserver
-    paths:
-    - extension/observer/ecstaskobserver/**
   - component_id: extension_observer_hostobserver
     name: extension_observer_hostobserver
     paths:
