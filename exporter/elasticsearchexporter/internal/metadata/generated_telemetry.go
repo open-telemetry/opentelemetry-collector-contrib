@@ -66,44 +66,44 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ElasticsearchBulkRequestsCount, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.bulk_requests.count",
-		metric.WithDescription("Count of the completed bulk requests. [alpha]"),
+		metric.WithDescription("Count of the completed bulk requests. [Alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchBulkRequestsLatency, err = builder.meter.Float64Histogram(
 		"otelcol.elasticsearch.bulk_requests.latency",
-		metric.WithDescription("Latency of Elasticsearch bulk operations in seconds. [alpha]"),
+		metric.WithDescription("Latency of Elasticsearch bulk operations in seconds. [Alpha]"),
 		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsProcessed, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.processed",
-		metric.WithDescription("Count of documents flushed to Elasticsearch. [alpha]"),
+		metric.WithDescription("Count of documents flushed to Elasticsearch. [Alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsReceived, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.received",
-		metric.WithDescription("Count of Elasticsearch documents successfully received to be buffered. [alpha]"),
+		metric.WithDescription("Count of Elasticsearch documents successfully received to be buffered. [Alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsRetried, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.retried",
-		metric.WithDescription("Count of document retries. [alpha]"),
+		metric.WithDescription("Count of document retries. [Alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchFlushedBytes, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.flushed.bytes",
-		metric.WithDescription("Number of bytes flushed by the indexer. [alpha]"),
+		metric.WithDescription("Number of bytes flushed by the indexer. [Alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchFlushedUncompressedBytes, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.flushed.uncompressed_bytes",
-		metric.WithDescription("Number of uncompressed bytes flushed by the indexer. [alpha]"),
+		metric.WithDescription("Number of uncompressed bytes flushed by the indexer. [Alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
