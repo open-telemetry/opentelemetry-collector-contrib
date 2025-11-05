@@ -2,8 +2,9 @@ type: googlecloudstorage
 
 status:
   class: exporter
+  distributions: [contrib]
   stability:
-    development: [logs]
+    alpha: [logs]
   codeowners:
     active: [constanca-m, braydonk]
     seeking_new: true
