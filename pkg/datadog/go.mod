@@ -38,8 +38,8 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.45.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/confmap v1.45.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/confmap/xconfmap v0.139.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/connector v0.139.0
-	go.opentelemetry.io/collector/connector/connectortest v0.139.0
+	go.opentelemetry.io/collector/connector v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/connector/connectortest v0.139.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/consumer v1.45.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/consumer/consumertest v0.139.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.139.1-0.20251105131800-09a271914bdc
@@ -223,7 +223,7 @@ require (
 	go.opentelemetry.io/collector/client v1.45.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.45.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.45.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/connector/xconnector v0.139.0 // indirect
+	go.opentelemetry.io/collector/connector/xconnector v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/exporter v1.45.1-0.20251105131800-09a271914bdc // indirect
@@ -231,11 +231,11 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.45.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.139.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.139.0 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/pipeline v1.45.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.139.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
