@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.139.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/extension/extensiontest v0.139.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/otelcol v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/pdata v1.45.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/service v0.139.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/service/hostcapabilities v0.139.1-0.20251105131800-09a271914bdc
 	go.uber.org/zap v1.27.0
@@ -232,7 +233,6 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.45.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.139.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/pdata v1.45.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.139.1-0.20251105131800-09a271914bdc // indirect
