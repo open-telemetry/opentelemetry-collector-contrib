@@ -28,7 +28,7 @@ type factory struct {
 type SourceProviderFunc func(context.Context) (string, error)
 
 // NewConnectorFactory creates a factory for datadog connector for use in OTel agent
-func NewConnectorFactory(componentType component.Type, metricsStability component.StabilityLevel, traceStability component.StabilityLevel, tagger types.TaggerClient, hostGetter SourceProviderFunc, concentrator *stats.Concentrator) connector.Factory {
+func NewConnectorFactory(componentType component.Type, metricsStability, traceStability component.StabilityLevel, tagger types.TaggerClient, hostGetter SourceProviderFunc, concentrator *stats.Concentrator) connector.Factory {
 	f := &factory{
 		tagger:       tagger,
 		concentrator: concentrator,
