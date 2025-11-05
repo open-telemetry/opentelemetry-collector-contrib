@@ -32,13 +32,13 @@ func (dp Number) Value() (pcommon.Value, error) {
 	case pmetric.NumberDataPointValueTypeDouble:
 		value := dp.DoubleValue()
 		if math.IsNaN(value) || math.IsInf(value, 0) {
-			return pcommon.Value{}, fmt.Errorf("invalid number data point %q", dp.metric.Name())
+			return pcommon.Value{}, fmt.Errorf("invalid double value in number data point %q, either NaN or Inf", dp.metric.Name())
 		}
 		return pcommon.NewValueDouble(value), nil
 	case pmetric.NumberDataPointValueTypeInt:
 		return pcommon.NewValueInt(dp.IntValue()), nil
 	}
-	return pcommon.Value{}, fmt.Errorf("invalid number data point %q", dp.metric.Name())
+	return pcommon.Value{}, fmt.Errorf("invalid number data point %q, wrong ValueType %s", dp.metric.Name(), dp.ValueType())
 }
 
 func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
