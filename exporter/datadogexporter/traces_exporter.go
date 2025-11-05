@@ -137,7 +137,7 @@ func (exp *traceExporter) consumeTraces(
 		var src source.Source
 		src, err = exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header, exp.gatewayUsage)
 		if err != nil {
-			return
+			return err
 		}
 		switch src.Kind {
 		case source.HostnameKind:
