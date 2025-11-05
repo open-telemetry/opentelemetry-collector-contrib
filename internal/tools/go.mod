@@ -13,12 +13,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.139.0
 	github.com/rhysd/actionlint v1.7.8
 	go.opentelemetry.io/build-tools/checkapi v0.29.0
-	go.opentelemetry.io/build-tools/checkfile v0.28.1
-	go.opentelemetry.io/build-tools/chloggen v0.28.1
-	go.opentelemetry.io/build-tools/crosslink v0.28.1
-	go.opentelemetry.io/build-tools/githubgen v0.28.1
-	go.opentelemetry.io/build-tools/issuegenerator v0.28.1
-	go.opentelemetry.io/build-tools/multimod v0.28.1
+	go.opentelemetry.io/build-tools/checkfile v0.29.0
+	go.opentelemetry.io/build-tools/chloggen v0.29.0
+	go.opentelemetry.io/build-tools/crosslink v0.29.0
+	go.opentelemetry.io/build-tools/githubgen v0.29.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.29.0
+	go.opentelemetry.io/build-tools/multimod v0.29.0
 	go.opentelemetry.io/collector/cmd/builder v0.139.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.139.0
 	go.uber.org/goleak v1.3.0
@@ -97,7 +97,7 @@ require (
 	github.com/go-critic/go-critic v0.13.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
-	github.com/go-git/go-git/v5 v5.16.2 // indirect
+	github.com/go-git/go-git/v5 v5.16.3 // indirect
 	github.com/go-json-experiment/json v0.0.0-20250813233538-9b1f9ea2e11b // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
@@ -122,7 +122,7 @@ require (
 	github.com/golangci/revgrep v0.8.0 // indirect
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/go-github/v75 v75.0.0 // indirect
+	github.com/google/go-github/v76 v76.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/gordonklaus/ineffassign v0.1.0 // indirect
@@ -220,7 +220,7 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sivchari/containedctx v1.0.3 // indirect
-	github.com/skeema/knownhosts v1.3.1 // indirect
+	github.com/skeema/knownhosts v1.3.2 // indirect
 	github.com/sonatard/noctx v0.1.0 // indirect
 	github.com/sourcegraph/go-diff v0.7.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
@@ -254,7 +254,7 @@ require (
 	go-simpler.org/musttag v0.13.1 // indirect
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
-	go.opentelemetry.io/build-tools v0.28.1 // indirect
+	go.opentelemetry.io/build-tools v0.29.0 // indirect
 	go.opentelemetry.io/collector/component v1.45.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.45.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.45.0 // indirect
@@ -273,7 +273,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/mod v0.29.0 // indirect
 	golang.org/x/net v0.46.0 // indirect
-	golang.org/x/oauth2 v0.31.0 // indirect
+	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/telemetry v0.0.0-20251008203120-078029d740a8 // indirect
