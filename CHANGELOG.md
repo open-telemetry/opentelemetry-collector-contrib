@@ -67,10 +67,6 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   Supports Cisco IOS, IOS-XE, and NX-OS devices with SSH-based metric collection.
   Initial implementation includes system scraper for device availability and connection metrics.
   
-- `receiver/ciscoosreceiver`: `ciscoosreceiver`: Add new receiver for collecting metrics from Cisco network devices via SSH (#42647)
-  Supports Cisco IOS, IOS-XE, and NX-OS devices with SSH-based metric collection.
-  Initial implementation includes system scraper for device availability and connection metrics.
-  
 - `receiver/gitlab`: Promote GitLab receiver to Alpha stability (#41592)
 - `receiver/jmx`: Add JMX metrics gatherer version 1.51.0-alpha (#43666)
 - `receiver/jmx`: Add JMX scraper version 1.51.0-alpha (#43667)
