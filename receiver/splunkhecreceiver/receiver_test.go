@@ -147,6 +147,108 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 		},
 		{
+			name: "multiple events",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+
+				msgBytes2, err := json.Marshal(splunkMsg2)
+				require.NoError(t, err)
+
+				combined := strings.Join([]string{string(msgBytes), string(msgBytes2)}, "")
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{
+					"text": "Success",
+					"code": float64(0),
+				}, body)
+			},
+		},
+		{
+			name: "JSON array",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+
+				messages := []*splunk.Event{splunkMsg, splunkMsg2}
+
+				msgBytes, err := json.Marshal(messages)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{
+					"text": "Success",
+					"code": float64(0),
+				}, body)
+			},
+		},
+		{
+			name: "multiple JSON array",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
+
+				messages1 := []*splunk.Event{splunkMsg, splunkMsg2}
+				messages2 := []*splunk.Event{splunkMsg3}
+
+				msgBytes, err := json.Marshal(messages1)
+				require.NoError(t, err)
+
+				msgBytes2, err := json.Marshal(messages2)
+				require.NoError(t, err)
+
+				combined := strings.Join([]string{string(msgBytes), string(msgBytes2)}, "")
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{"code": float64(6), "text": "Invalid data format"}, body)
+			},
+		},
+		{
+			name: "JSON array with objects",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
+
+				messages := []*splunk.Event{splunkMsg, splunkMsg2}
+
+				msgBytes, err := json.Marshal(messages)
+				require.NoError(t, err)
+
+				msgBytes2, err := json.Marshal(splunkMsg3)
+				require.NoError(t, err)
+
+				combined := strings.Join([]string{string(msgBytes), string(msgBytes2)}, "")
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{"code": float64(6), "text": "Invalid data format"}, body)
+			},
+		},
+		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", nil)
