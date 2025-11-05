@@ -285,19 +285,19 @@ func TestHandleMetadata(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodGet, "/metadata", http.NoBody)
 			r.Header.Set("Content-Type", "application/json")
-		srv := &Server{
-			logger:     logger,
-			serializer: serializer,
-			payload: &payload.OtelCollectorPayload{
-				Hostname: "test-hostname",
-				UUID:     "test-uuid",
-				Metadata: payload.OtelCollector{
-					FullComponents:              []payload.CollectorModule{},
-					ActiveComponents:            []payload.ServiceComponent{},
-					CollectorResourceAttributes: map[string]string{},
+			srv := &Server{
+				logger:     logger,
+				serializer: serializer,
+				payload: &payload.OtelCollectorPayload{
+					Hostname: "test-hostname",
+					UUID:     "test-uuid",
+					Metadata: payload.OtelCollector{
+						FullComponents:              []payload.CollectorModule{},
+						ActiveComponents:            []payload.ServiceComponent{},
+						CollectorResourceAttributes: map[string]string{},
+					},
 				},
-			},
-		}
+			}
 			srv.HandleMetadata(w, r)
 
 			assert.Equal(t, tt.expectedCode, w.Code)
