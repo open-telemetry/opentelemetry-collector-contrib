@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewConnectorFactoryForAgent(nil, nil, nil)
+	factory := NewConnectorFactory(component.MustNewType("datadog"), component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil)
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t,

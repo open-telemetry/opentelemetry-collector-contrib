@@ -38,11 +38,13 @@ import (
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
+var datadogComponentType = component.MustNewType("datadog")
+
 // create test to create a connector, check that basic code compiles
 func TestNewConnector(t *testing.T) {
-	factory := NewConnectorFactoryForAgent(nil, nil, nil)
+	factory := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil)
 
-	creationParams := connectortest.NewNopSettings(Type)
+	creationParams := connectortest.NewNopSettings(datadogComponentType)
 	cfg := factory.CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
 
 	tconn, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
@@ -53,9 +55,9 @@ func TestNewConnector(t *testing.T) {
 }
 
 func TestTraceToTraceConnector(t *testing.T) {
-	factory := NewConnectorFactoryForAgent(nil, nil, nil)
+	factory := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil)
 
-	creationParams := connectortest.NewNopSettings(Type)
+	creationParams := connectortest.NewNopSettings(datadogComponentType)
 	cfg := factory.CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
 
 	tconn, err := factory.CreateTracesToTraces(t.Context(), creationParams, cfg, consumertest.NewNop())
@@ -66,7 +68,7 @@ func TestTraceToTraceConnector(t *testing.T) {
 }
 
 func createConnector(t *testing.T) (*traceToMetricConnector, *consumertest.MetricsSink) {
-	cfg := NewConnectorFactoryForAgent(nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
+	cfg := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
 	cfg.Traces.ResourceAttributesAsContainerTags = []string{string(semconv.CloudAvailabilityZoneKey), string(semconv.CloudRegionKey), "az"}
 	return createConnectorCfg(t, cfg)
 }
@@ -76,11 +78,11 @@ const (
 )
 
 func createConnectorCfg(t *testing.T, cfg *datadogconfig.ConnectorComponentConfig) (*traceToMetricConnector, *consumertest.MetricsSink) {
-	factory := NewConnectorFactoryForAgent(testutil.NewTestTaggerClient(), func(_ context.Context) (string, error) {
+	factory := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, testutil.NewTestTaggerClient(), func(_ context.Context) (string, error) {
 		return fallBackHostname, nil
 	}, nil)
 
-	creationParams := connectortest.NewNopSettings(Type)
+	creationParams := connectortest.NewNopSettings(datadogComponentType)
 	metricsSink := &consumertest.MetricsSink{}
 
 	cfg.Traces.BucketInterval = 1 * time.Second
@@ -282,7 +284,7 @@ func testMeasuredAndClientKind(t *testing.T, enableOperationAndResourceNameV2 bo
 	if err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", enableOperationAndResourceNameV2); err != nil {
 		t.Fatal(err)
 	}
-	cfg := NewConnectorFactoryForAgent(nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
+	cfg := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
 	cfg.Traces.ComputeTopLevelBySpanKind = true
 	connector, metricsSink := createConnectorCfg(t, cfg)
 	err := connector.Start(t.Context(), componenttest.NewNopHost())
@@ -409,7 +411,7 @@ func testMeasuredAndClientKind(t *testing.T, enableOperationAndResourceNameV2 bo
 }
 
 func TestObfuscate(t *testing.T) {
-	cfg := NewConnectorFactoryForAgent(nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
+	cfg := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
 	cfg.Traces.BucketInterval = time.Second
 
 	prevVal := featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled()
@@ -531,11 +533,11 @@ func (es *errorSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) err
 }
 
 func TestError(t *testing.T) {
-	factory := NewConnectorFactoryForAgent(nil, nil, nil)
+	factory := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil)
 	cfg := factory.CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
 	cfg.Traces.BucketInterval = time.Millisecond * 100
 	metricsSink := &errorSink{}
-	conn, err := factory.CreateTracesToMetrics(t.Context(), connectortest.NewNopSettings(Type), cfg, metricsSink)
+	conn, err := factory.CreateTracesToMetrics(t.Context(), connectortest.NewNopSettings(datadogComponentType), cfg, metricsSink)
 	require.NoError(t, err)
 
 	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))

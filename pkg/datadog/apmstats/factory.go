@@ -27,8 +27,8 @@ type factory struct {
 // SourceProviderFunc is a function that returns the source of the host.
 type SourceProviderFunc func(context.Context) (string, error)
 
-// NewConnectorFactoryForAgent creates a factory for datadog connector for use in OTel agent
-func NewConnectorFactoryForAgent(tagger types.TaggerClient, hostGetter SourceProviderFunc, concentrator *stats.Concentrator) connector.Factory {
+// NewConnectorFactory creates a factory for datadog connector for use in OTel agent
+func NewConnectorFactory(componentType component.Type, metricsStability component.StabilityLevel, traceStability component.StabilityLevel, tagger types.TaggerClient, hostGetter SourceProviderFunc, concentrator *stats.Concentrator) connector.Factory {
 	f := &factory{
 		tagger:       tagger,
 		concentrator: concentrator,
@@ -42,10 +42,10 @@ func NewConnectorFactoryForAgent(tagger types.TaggerClient, hostGetter SourcePro
 
 	//  OTel connector factory to make a factory for connectors
 	return connector.NewFactory(
-		Type,
+		componentType,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(f.createTracesToMetricsConnector, TracesToMetricsStability),
-		connector.WithTracesToTraces(createTracesToTracesConnector, TracesToTracesStability))
+		connector.WithTracesToMetrics(f.createTracesToMetricsConnector, metricsStability),
+		connector.WithTracesToTraces(createTracesToTracesConnector, traceStability))
 }
 
 func createDefaultConfig() component.Config {

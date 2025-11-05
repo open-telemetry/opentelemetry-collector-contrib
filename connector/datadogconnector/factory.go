@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apmstats"
 )
 
@@ -26,5 +27,5 @@ var NativeIngestFeatureGate = featuregate.GlobalRegistry().MustRegister(
 // NewFactory creates a factory for datadog connector.
 func NewFactory() connector.Factory {
 	//  OTel connector factory to make a factory for connectors
-	return apmstats.NewConnectorFactoryForAgent(nil, nil, nil)
+	return apmstats.NewConnectorFactory(metadata.Type, metadata.TracesToMetricsStability, metadata.TracesToTracesStability, nil, nil, nil)
 }
