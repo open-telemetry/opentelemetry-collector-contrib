@@ -235,6 +235,7 @@ body:
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awslambda
       - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
@@ -347,6 +348,7 @@ body:
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/windowsservice
+      - receiver/yanggrpc
       - receiver/zipkin
       - receiver/zookeeper
       - scraper/zookeeperscraper

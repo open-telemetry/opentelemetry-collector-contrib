@@ -588,6 +588,10 @@ component_management:
     name: receiver_awsfirehose
     paths:
     - receiver/awsfirehosereceiver/**
+  - component_id: receiver_awslambda
+    name: receiver_awslambda
+    paths:
+    - receiver/awslambdareceiver/**
   - component_id: receiver_awss3
     name: receiver_awss3
     paths:
@@ -984,6 +988,10 @@ component_management:
     name: receiver_windowsservice
     paths:
     - receiver/windowsservicereceiver/**
+  - component_id: receiver_yanggrpc
+    name: receiver_yanggrpc
+    paths:
+    - receiver/yanggrpcreceiver/**
   - component_id: receiver_zipkin
     name: receiver_zipkin
     paths:
