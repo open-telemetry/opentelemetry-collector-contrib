@@ -14,11 +14,11 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewConnectorFactory()
+	factory := NewConnectorFactoryForAgent(nil, nil, nil)
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t,
-		&Config{
+		&datadogconfig.ConnectorComponentConfig{
 			Traces: datadogconfig.TracesConnectorConfig{
 				TracesConfig: datadogconfig.TracesConfig{
 					IgnoreResources:        []string{},
