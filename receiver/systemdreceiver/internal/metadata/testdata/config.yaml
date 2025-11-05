@@ -1,0 +1,27 @@
+default:
+all_set:
+  metrics:
+    systemd.unit.state:
+      enabled: true
+  resource_attributes:
+    systemd.unit.name:
+      enabled: true
+none_set:
+  metrics:
+    systemd.unit.state:
+      enabled: false
+  resource_attributes:
+    systemd.unit.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    systemd.unit.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    systemd.unit.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "systemd.unit.name-val"
