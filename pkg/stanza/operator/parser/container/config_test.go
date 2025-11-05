@@ -87,6 +87,22 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "recombine_defaults",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					return cfg
+				}(),
+			},
+			{
+				Name: "recombine_custom",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Recombine.MaxBatchSize = 2000
+					cfg.Recombine.MaxUnmatchedBatchSize = 500
+					return cfg
+				}(),
+			},
+			{
 				Name: "parse_to_attributes",
 				Expect: func() *Config {
 					p := NewConfig()

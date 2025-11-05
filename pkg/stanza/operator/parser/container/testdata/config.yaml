@@ -42,3 +42,10 @@ timestamp:
     parse_from: body.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
+recombine_defaults:
+  type: container
+recombine_custom:
+  type: container
+  recombine:
+    max_batch_size: 2000
+    max_unmatched_batch_size: 500
