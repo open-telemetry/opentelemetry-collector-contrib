@@ -212,6 +212,89 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: splunk.io.avg.iops
             unit: '{iops}'
+          - description: Gauge tracking the indexed license usage per index
+            gauge:
+              dataPoints:
+                - asInt: "101"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "101"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "100"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "101"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "100"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "100"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.license.index.usage
+            unit: By
           - description: Gauge tracking the average runtime of scheduled searches
             gauge:
               dataPoints:
