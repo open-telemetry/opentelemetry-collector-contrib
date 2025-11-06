@@ -351,62 +351,72 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	switch req.Header.Get("Content-Type") {
 	case "application/x-msgpack", "application/msgpack":
 		// The custom UnmarshalMsgpack will handle timestamp normalization
-		decoder := msgpack.NewDecoder(bytes.NewReader(body))
-		decoder.UseLooseInterfaceDecoding(true)
-		
-		// Try to decode as a single event first (single object)
-		var rawEvent map[string]any
-		err = decoder.Decode(&rawEvent)
-		if err == nil {
-			// Apply headers for single event (X-Honeycomb-Event-Time, X-Honeycomb-Samplerate)
-			// Only apply if not already present in the body
-			if eventTimeHeader := req.Header.Get("X-Honeycomb-Event-Time"); eventTimeHeader != "" {
-				if _, hasTime := rawEvent["time"]; !hasTime {
-					rawEvent["time"] = eventTimeHeader
-				}
-			}
-			if samplerateHeader := req.Header.Get("X-Honeycomb-Samplerate"); samplerateHeader != "" {
-				if _, hasSamplerate := rawEvent["samplerate"]; !hasSamplerate {
-					// Convert string to number for JSON compatibility
-					var samplerate any
-					if sr, err := json.Number(samplerateHeader).Int64(); err == nil {
-						samplerate = sr
-					} else if sr, err := json.Number(samplerateHeader).Float64(); err == nil {
-						samplerate = sr
-					} else {
-						samplerate = samplerateHeader // Fallback to string
-					}
-					rawEvent["samplerate"] = samplerate
-				}
-			}
-			
-			// Successfully decoded as single object - check if it needs wrapping
-			if _, hasData := rawEvent["data"]; !hasData {
-				// Flat event format - wrap all fields into data
-				wrappedEvent := make(map[string]any)
-				wrappedEvent["data"] = rawEvent
-				// Preserve time and samplerate if they exist
-				if t, ok := rawEvent["time"]; ok {
-					wrappedEvent["time"] = t
-					delete(rawEvent, "time")
-				}
-				if sr, ok := rawEvent["samplerate"]; ok {
-					wrappedEvent["samplerate"] = sr
-					delete(rawEvent, "samplerate")
-				}
-				rawEvent = wrappedEvent
-			}
-			// Now unmarshal the structured event
-			rawBytes, _ := msgpack.Marshal(rawEvent)
-			var singleEvent libhoneyevent.LibhoneyEvent
-			err = msgpack.Unmarshal(rawBytes, &singleEvent)
-			if err == nil {
-				libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
-			}
+		// Check msgpack type by peeking at first byte to avoid double-decoding
+		// msgpack format: 0x80-0x8f = fixmap, 0xde = map16, 0xdf = map32
+		//                 0x90-0x9f = fixarray, 0xdc = array16, 0xdd = array32
+		isSingleObject := false
+		if len(body) > 0 {
+			firstByte := body[0]
+			// Check if it's a map type
+			isSingleObject = (firstByte >= 0x80 && firstByte <= 0x8f) || firstByte == 0xde || firstByte == 0xdf
 		}
-		// If single object decode failed, try as array
-		if err != nil || len(libhoneyevents) == 0 {
-			decoder = msgpack.NewDecoder(bytes.NewReader(body))
+		
+		if isSingleObject {
+			// Single object - decode as map
+			var rawEvent map[string]any
+			decoder := msgpack.NewDecoder(bytes.NewReader(body))
+			decoder.UseLooseInterfaceDecoding(true)
+			err = decoder.Decode(&rawEvent)
+			if err == nil {
+				// Apply headers for single event (X-Honeycomb-Event-Time, X-Honeycomb-Samplerate)
+				// Only apply if not already present in the body
+				if eventTimeHeader := req.Header.Get("X-Honeycomb-Event-Time"); eventTimeHeader != "" {
+					if _, hasTime := rawEvent["time"]; !hasTime {
+						rawEvent["time"] = eventTimeHeader
+					}
+				}
+				if samplerateHeader := req.Header.Get("X-Honeycomb-Samplerate"); samplerateHeader != "" {
+					if _, hasSamplerate := rawEvent["samplerate"]; !hasSamplerate {
+						// Convert string to number for msgpack compatibility
+						var samplerate any
+						if sr, err := json.Number(samplerateHeader).Int64(); err == nil {
+							samplerate = sr
+						} else if sr, err := json.Number(samplerateHeader).Float64(); err == nil {
+							samplerate = sr
+						} else {
+							samplerate = samplerateHeader // Fallback to string
+						}
+						rawEvent["samplerate"] = samplerate
+					}
+				}
+				
+				// Successfully decoded as single object - check if it needs wrapping
+				if _, hasData := rawEvent["data"]; !hasData {
+					// Flat event format - wrap all fields into data
+					wrappedEvent := make(map[string]any)
+					wrappedEvent["data"] = rawEvent
+					// Preserve time and samplerate if they exist
+					if t, ok := rawEvent["time"]; ok {
+						wrappedEvent["time"] = t
+						delete(rawEvent, "time")
+					}
+					if sr, ok := rawEvent["samplerate"]; ok {
+						wrappedEvent["samplerate"] = sr
+						delete(rawEvent, "samplerate")
+					}
+					rawEvent = wrappedEvent
+				}
+				// Now unmarshal the structured event
+				rawBytes, _ := msgpack.Marshal(rawEvent)
+				var singleEvent libhoneyevent.LibhoneyEvent
+				err = msgpack.Unmarshal(rawBytes, &singleEvent)
+				if err == nil {
+					libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
+				}
+			}
+		} else {
+			// Array format - decode as array
+			decoder := msgpack.NewDecoder(bytes.NewReader(body))
 			decoder.UseLooseInterfaceDecoding(true)
 			err = decoder.Decode(&libhoneyevents)
 		}
