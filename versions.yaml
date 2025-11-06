@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.138.0
+    version: v0.139.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -221,6 +221,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
@@ -322,6 +323,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper
