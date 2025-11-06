@@ -35,6 +35,7 @@ func TestK8sResolve(t *testing.T) {
 		resolver  *k8sResolver
 	}
 	hostname := "pod-0"
+	hostname1 := "pod-1"
 	setupSuite := func(t *testing.T, args args) (*suiteContext, func(*testing.T)) {
 		service, defaultNs, ports, returnHostnames := args.service, args.namespace, args.ports, args.returnHostnames
 		endpoint := &discoveryv1.EndpointSlice{
@@ -96,7 +97,6 @@ func TestK8sResolve(t *testing.T) {
 				require.NoError(t, res.shutdown(t.Context()))
 			}
 	}
-	//hostname1 := "pod-1"
 	tests := []struct {
 		name              string
 		args              args
@@ -131,101 +131,101 @@ func TestK8sResolve(t *testing.T) {
 				"192.168.10.100:9090",
 			},
 		},
-		// {
-		// 	name: "simulate re-list that does not change endpoints",
-		// 	args: args{
-		// 		logger:    zap.NewNop(),
-		// 		service:   "lb",
-		// 		namespace: "default",
-		// 		ports:     []int32{8080, 9090},
-		// 	},
-		// 	simulateFn: func(suiteCtx *suiteContext, args args) error {
-		// 		exist := suiteCtx.endpoint.DeepCopy()
-		// 		patch := client.MergeFrom(exist)
-		// 		data, err := patch.Data(exist)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-		// 			Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
-		// 		return err
-		// 	},
-		// 	onChangeFn: func([]string) {
-		// 		assert.Fail(t, "should not call onChange")
-		// 	},
-		// 	expectedEndpoints: []string{
-		// 		"192.168.10.100:8080",
-		// 		"192.168.10.100:9090",
-		// 	},
-		// },
-		// {
-		// 	name: "add new hostname to existing backends",
-		// 	args: args{
-		// 		logger:          zap.NewNop(),
-		// 		service:         "lb",
-		// 		namespace:       "default",
-		// 		ports:           []int32{8080, 9090},
-		// 		returnHostnames: true,
-		// 	},
-		// 	simulateFn: func(suiteCtx *suiteContext, args args) error {
-		// 		endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
-		// 		endpoint.Endpoints = append(endpoint.Endpoints, discoveryv1.Endpoint{Addresses: []string{"10.10.0.11"}, Hostname: &hostname1})
-		// 		patch := client.MergeFrom(exist)
-		// 		data, err := patch.Data(endpoint)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-		// 			Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
-		// 		return err
-		// 	},
-		// 	expectedEndpoints: []string{
-		// 		"pod-0.lb.default:8080",
-		// 		"pod-0.lb.default:9090",
-		// 		"pod-1.lb.default:8080",
-		// 		"pod-1.lb.default:9090",
-		// 	},
-		// },
-		// {
-		// 	name: "change existing backend ip address",
-		// 	args: args{
-		// 		logger:    zap.NewNop(),
-		// 		service:   "lb",
-		// 		namespace: "default",
-		// 		ports:     []int32{4317},
-		// 	},
-		// 	simulateFn: func(suiteCtx *suiteContext, args args) error {
-		// 		endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
-		// 		endpoint.Endpoints = []discoveryv1.Endpoint{
-		// 			{Addresses: []string{"10.10.0.11"}},
-		// 		}
-		// 		patch := client.MergeFrom(exist)
-		// 		data, err := patch.Data(endpoint)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-		// 			Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
-		// 		return err
-		// 	},
-		// 	expectedEndpoints: []string{
-		// 		"10.10.0.11:4317",
-		// 	},
-		// },
-		// {
-		// 	name: "simulate deletion of backends",
-		// 	args: args{
-		// 		logger:    zap.NewNop(),
-		// 		service:   "lb",
-		// 		namespace: "default",
-		// 		ports:     []int32{8080, 9090},
-		// 	},
-		// 	simulateFn: func(suiteCtx *suiteContext, args args) error {
-		// 		return suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-		// 			Delete(t.Context(), args.service, metav1.DeleteOptions{})
-		// 	},
-		// 	expectedEndpoints: nil,
-		// },
+		{
+			name: "simulate re-list that does not change endpoints",
+			args: args{
+				logger:    zap.NewNop(),
+				service:   "lb",
+				namespace: "default",
+				ports:     []int32{8080, 9090},
+			},
+			simulateFn: func(suiteCtx *suiteContext, args args) error {
+				exist := suiteCtx.endpoint.DeepCopy()
+				patch := client.MergeFrom(exist)
+				data, err := patch.Data(exist)
+				if err != nil {
+					return err
+				}
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				return err
+			},
+			onChangeFn: func([]string) {
+				assert.Fail(t, "should not call onChange")
+			},
+			expectedEndpoints: []string{
+				"192.168.10.100:8080",
+				"192.168.10.100:9090",
+			},
+		},
+		{
+			name: "add new hostname to existing backends",
+			args: args{
+				logger:          zap.NewNop(),
+				service:         "lb",
+				namespace:       "default",
+				ports:           []int32{8080, 9090},
+				returnHostnames: true,
+			},
+			simulateFn: func(suiteCtx *suiteContext, args args) error {
+				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
+				endpoint.Endpoints = append(endpoint.Endpoints, discoveryv1.Endpoint{Addresses: []string{"10.10.0.11"}, Hostname: &hostname1})
+				patch := client.MergeFrom(exist)
+				data, err := patch.Data(endpoint)
+				if err != nil {
+					return err
+				}
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				return err
+			},
+			expectedEndpoints: []string{
+				"pod-0.lb.default:8080",
+				"pod-0.lb.default:9090",
+				"pod-1.lb.default:8080",
+				"pod-1.lb.default:9090",
+			},
+		},
+		{
+			name: "change existing backend ip address",
+			args: args{
+				logger:    zap.NewNop(),
+				service:   "lb",
+				namespace: "default",
+				ports:     []int32{4317},
+			},
+			simulateFn: func(suiteCtx *suiteContext, args args) error {
+				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
+				endpoint.Endpoints = []discoveryv1.Endpoint{
+					{Addresses: []string{"10.10.0.11"}},
+				}
+				patch := client.MergeFrom(exist)
+				data, err := patch.Data(endpoint)
+				if err != nil {
+					return err
+				}
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				return err
+			},
+			expectedEndpoints: []string{
+				"10.10.0.11:4317",
+			},
+		},
+		{
+			name: "simulate deletion of backends",
+			args: args{
+				logger:    zap.NewNop(),
+				service:   "lb",
+				namespace: "default",
+				ports:     []int32{8080, 9090},
+			},
+			simulateFn: func(suiteCtx *suiteContext, args args) error {
+				return suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Delete(t.Context(), args.service, metav1.DeleteOptions{})
+			},
+			expectedEndpoints: nil,
+		},
 	}
 
 	for _, tt := range tests {
