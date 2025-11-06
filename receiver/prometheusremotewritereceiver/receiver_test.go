@@ -1499,6 +1499,76 @@ func TestTranslateV2(t *testing.T) {
 				return metrics
 			}(),
 		},
+		{
+			name: "unspecified NHCB",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__",
+					"test_hncb_histogram",
+					"job",
+					"test",
+					"instance",
+					"localhost:8080",
+					"seconds",
+					"Test NHCB histogram",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_hncb_histogram, job=test, instance=localhost:8080
+						CreatedTimestamp: 123456000,
+						Metadata:         writev2.Metadata{},
+						Histograms: []writev2.Histogram{
+							{
+								Timestamp:    123456789,
+								Schema:       -53, // NHCB schema
+								Sum:          100.5,
+								Count:        &writev2.Histogram_CountInt{CountInt: 180},
+								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 0, Length: 5}, // 5 buckets: 4 custom + 1 overflow
+								},
+								PositiveDeltas: []int64{10, 15, 20, 5, 0}, // Delta counts for each bucket
+							},
+						},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "localhost:8080")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("test_hncb_histogram")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				m1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
+				hist := m1.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.Timestamp(123456000 * int64(time.Millisecond)))
+				dp.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
+				dp.SetSum(100.5)
+				dp.SetCount(180)
+				dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50})
+
+				return metrics
+			}(),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test

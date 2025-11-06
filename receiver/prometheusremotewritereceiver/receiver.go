@@ -514,9 +514,10 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
 			metricCache[metricIDHash] = histMetric
-			if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM {
+			switch ts.Metadata.Type {
+			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 				histMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
-			} else {
+			default:
 				histMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
 			}
 		} else if len(histMetric.Description()) < len(description) {
