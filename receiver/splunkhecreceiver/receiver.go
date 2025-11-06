@@ -435,6 +435,12 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 			return
 		}
+
+		if len(events) == 0 {
+			r.failRequest(resp, http.StatusBadRequest, noDataRespBody, nil)
+			return
+		}
+
 		for _, item := range events {
 			unfiltered = append(unfiltered, &item)
 		}

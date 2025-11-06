@@ -202,7 +202,48 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 		},
 		{
-			name: "JSON array",
+			name: "empty JSON array",
+			req: func() *http.Request {
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte("[]")))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{
+					"text": "No data",
+					"code": float64(5),
+				}, body)
+			},
+		},
+		{
+			name: "one object in JSON array",
+			req: func() *http.Request {
+				messages := []*splunk.Event{splunkMsg}
+
+				msgBytes, err := json.Marshal(messages)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{
+					"text": "Success",
+					"code": float64(0),
+				}, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Len(t, sink.AllLogs(), 1)
+				assert.Equal(t, sink.LogRecordCount(), 1)
+			},
+		},
+		{
+			name: "multiple objects in JSON array",
 			req: func() *http.Request {
 				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
 				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
