@@ -54,7 +54,7 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ott
 	// retrieve the mapping as a literal PMap and use it for all evaluations
 	mappingLiteral, ok := ottl.GetLiteralValue(mapping)
 	if !ok {
-		return func(ctx context.Context, tCtx K) (any, error) {
+		return func(_ context.Context, _ K) (any, error) {
 			return nil, errors.New("severity mapping must be a literal PMap")
 		}
 	}
@@ -67,20 +67,20 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ott
 		severityMapping[logLevel] = []criteria{}
 		criteriaList, ok := criteriaListObj.([]any)
 		if !ok {
-			return func(_ context.Context, tCtx K) (any, error) {
+			return func(_ context.Context, _ K) (any, error) {
 				return nil, errors.New("severity mapping criteria must be []any")
 			}
 		}
 		for _, critObj := range criteriaList {
 			critMap, ok := critObj.(map[string]any)
 			if !ok {
-				return func(_ context.Context, tCtx K) (any, error) {
+				return func(_ context.Context, _ K) (any, error) {
 					return nil, errors.New("severity mapping criteria items must be map[string]any")
 				}
 			}
 			c, err := newCriteriaFromMap(critMap)
 			if err != nil {
-				return func(_ context.Context, tCtx K) (any, error) {
+				return func(_ context.Context, _ K) (any, error) {
 					return nil, fmt.Errorf("invalid severity mapping criteria: %w", err)
 				}
 			}
