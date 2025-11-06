@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("google")
+	Type      = component.MustNewType("googlepubsubpush")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlepubsubpushreceiver"
 )
 
