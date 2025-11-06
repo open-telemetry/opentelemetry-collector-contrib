@@ -19,7 +19,7 @@ func Test_parseSeverity(t *testing.T) {
 	tests := []struct {
 		name           string
 		target         ottl.Getter[any]
-		mapping        ottl.PMapGetter[any]
+		mapping        any
 		expected       string
 		expectErrorMsg string
 	}{
@@ -30,11 +30,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(400), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getTestSeverityMapping(), nil
-				},
-			},
+			mapping:  getTestingGetter(),
 			expected: "error",
 		},
 		{
@@ -44,11 +40,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(100), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getTestSeverityMapping(), nil
-				},
-			},
+			mapping:  getTestingGetter(),
 			expected: "debug",
 		},
 		{
@@ -58,14 +50,14 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(200), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					mapping := m.PutEmptySlice("info")
 					mapping.AppendEmpty().SetEmptyMap().PutStr("range", "2xx")
 					return m, nil
 				},
-			},
+			}),
 			expected: "info",
 		},
 		{
@@ -75,11 +67,7 @@ func Test_parseSeverity(t *testing.T) {
 					return "inf", nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getTestSeverityMapping(), nil
-				},
-			},
+			mapping:  getTestingGetter().(ottl.PMapGetter[any]),
 			expected: "info",
 		},
 		{
@@ -89,11 +77,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(200), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getTestSeverityMapping(), nil
-				},
-			},
+			mapping:  getTestingGetter().(ottl.PMapGetter[any]),
 			expected: "info",
 		},
 		{
@@ -103,7 +87,7 @@ func Test_parseSeverity(t *testing.T) {
 					return "inf", nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s1 := m.PutEmptySlice("error")
@@ -118,17 +102,17 @@ func Test_parseSeverity(t *testing.T) {
 
 					return m, nil
 				},
-			},
+			}),
 			expected: "info",
 		},
 		{
-			name: "no match",
+			name: "invalid mapping format",
 			target: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return "foo", nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("info")
@@ -137,8 +121,8 @@ func Test_parseSeverity(t *testing.T) {
 
 					return m, nil
 				},
-			},
-			expectErrorMsg: "could not map log level: no matching log level found for value 'foo'",
+			}),
+			expectErrorMsg: "severity mapping criteria items must be map[string]any",
 		},
 		{
 			name: "unexpected type in criteria",
@@ -147,14 +131,14 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(400), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					m.PutStr("error", "invalid")
 					return m, nil
 				},
-			},
-			expectErrorMsg: "could not map log level: criteria for mapping log level must be []any",
+			}),
+			expectErrorMsg: "severity mapping criteria must be []any",
 		},
 		{
 			name: "unexpected type in range criteria (min), no match",
@@ -163,7 +147,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(400), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("error")
@@ -173,8 +157,8 @@ func Test_parseSeverity(t *testing.T) {
 
 					return m, nil
 				},
-			},
-			expectErrorMsg: "could not evaluate log level of value '400': min must be int64, but got string",
+			}),
+			expectErrorMsg: "invalid severity mapping criteria: min must be an int64",
 		},
 		{
 			name: "unexpected type in target, no match",
@@ -183,7 +167,7 @@ func Test_parseSeverity(t *testing.T) {
 					return map[string]any{"foo": "bar"}, nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("warn")
@@ -193,8 +177,8 @@ func Test_parseSeverity(t *testing.T) {
 
 					return m, nil
 				},
-			},
-			expectErrorMsg: "log level must be either string or int64, but got map[string]interface {}",
+			}),
+			expectErrorMsg: "could not map log level: could not evaluate log level of value 'map[foo:bar]",
 		},
 		{
 			name: "error in acquiring target, no match",
@@ -203,7 +187,7 @@ func Test_parseSeverity(t *testing.T) {
 					return nil, errors.New("oops")
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("warn")
@@ -213,7 +197,7 @@ func Test_parseSeverity(t *testing.T) {
 
 					return m, nil
 				},
-			},
+			}),
 			expectErrorMsg: "could not get log level: oops",
 		},
 		{
@@ -223,7 +207,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(400), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("error")
@@ -233,8 +217,8 @@ func Test_parseSeverity(t *testing.T) {
 
 					return m, nil
 				},
-			},
-			expectErrorMsg: "could not evaluate log level of value '400': max must be int64, but got string",
+			}),
+			expectErrorMsg: "invalid severity mapping criteria: max must be an int64",
 		},
 		{
 			name: "missing min in range, no match",
@@ -243,7 +227,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(400), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("error")
@@ -252,8 +236,8 @@ func Test_parseSeverity(t *testing.T) {
 
 					return m, nil
 				},
-			},
-			expectErrorMsg: "could not map log level: could not evaluate log level of value '400': range criteria must contain min and max values",
+			}),
+			expectErrorMsg: "invalid severity mapping criteria: range must have a min value",
 		},
 		{
 			name: "missing max in range, no match",
@@ -262,7 +246,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(400), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("error")
@@ -271,8 +255,8 @@ func Test_parseSeverity(t *testing.T) {
 
 					return m, nil
 				},
-			},
-			expectErrorMsg: "could not map log level: could not evaluate log level of value '400': range criteria must contain min and max values",
+			}),
+			expectErrorMsg: "invalid severity mapping criteria: range must have a max value",
 		},
 		{
 			name: "incorrect format of severity mapping, no match",
@@ -281,18 +265,18 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(400), nil
 				},
 			},
-			mapping: ottl.StandardPMapGetter[any]{
+			mapping: ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return "invalid", nil
 				},
-			},
-			expectErrorMsg: "cannot get severity mapping: expected pcommon.Map but got string",
+			}),
+			expectErrorMsg: "severity mapping must be a literal PMap",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := parseSeverity[any](tt.target, tt.mapping)
+			exprFunc := parseSeverity[any](tt.target, tt.mapping.(ottl.PMapGetter[any]))
 
 			result, err := exprFunc(t.Context(), nil)
 			if tt.expectErrorMsg != "" {
@@ -308,6 +292,14 @@ func Test_parseSeverity(t *testing.T) {
 			assert.Equal(t, tt.expected, resultString)
 		})
 	}
+}
+
+func getTestingGetter() any {
+	return ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return getTestSeverityMapping(), nil
+		},
+	})
 }
 
 func getTestSeverityMapping() pcommon.Map {
@@ -339,84 +331,4 @@ func getTestSeverityMapping() pcommon.Map {
 	rangeMap5.PutInt("max", 599)
 
 	return m
-}
-
-func Test_parseValueRangePlaceholder(t *testing.T) {
-	type args struct {
-		crit any
-	}
-	tests := []struct {
-		name        string
-		args        args
-		wantMapping map[string]any
-		wantOk      bool
-	}{
-		{
-			name: "2xx",
-			args: args{
-				crit: http2xx,
-			},
-			wantMapping: map[string]any{
-				"min": int64(200),
-				"max": int64(299),
-			},
-			wantOk: true,
-		},
-		{
-			name: "3xx",
-			args: args{
-				crit: http3xx,
-			},
-			wantMapping: map[string]any{
-				"min": int64(300),
-				"max": int64(399),
-			},
-			wantOk: true,
-		},
-		{
-			name: "4xx",
-			args: args{
-				crit: http4xx,
-			},
-			wantMapping: map[string]any{
-				"min": int64(400),
-				"max": int64(499),
-			},
-			wantOk: true,
-		},
-		{
-			name: "5xx",
-			args: args{
-				crit: http5xx,
-			},
-			wantMapping: map[string]any{
-				"min": int64(500),
-				"max": int64(599),
-			},
-			wantOk: true,
-		},
-		{
-			name: "unknown",
-			args: args{
-				crit: "unknown",
-			},
-			wantMapping: nil,
-			wantOk:      false,
-		},
-		{
-			name: "not a string",
-			args: args{
-				crit: 1,
-			},
-			wantMapping: nil,
-			wantOk:      false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := parseValueRangePlaceholder(tt.args.crit)
-			assert.Equalf(t, tt.wantMapping, got, "parseValueRangePlaceholder(%v)", tt.args.crit)
-			assert.Equalf(t, tt.wantOk, got1, "parseValueRangePlaceholder(%v)", tt.args.crit)
-		})
-	}
 }

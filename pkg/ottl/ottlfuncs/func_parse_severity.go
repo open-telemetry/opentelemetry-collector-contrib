@@ -51,18 +51,51 @@ func createParseSeverityFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 }
 
 func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (any, error) {
-		severityMap, err := mapping.Get(ctx, tCtx)
-		if err != nil {
-			return nil, fmt.Errorf("cannot get severity mapping: %w", err)
+	// retrieve the mapping as a literal PMap and use it for all evaluations
+	mappingLiteral, ok := ottl.GetLiteralValue(mapping)
+	if !ok {
+		return func(ctx context.Context, tCtx K) (any, error) {
+			return nil, errors.New("severity mapping must be a literal PMap")
 		}
+	}
 
+	severityMapping := map[string]criteriaSet{}
+
+	//convert the mapping to criteria objects to validate its structure
+	severityMap := mappingLiteral.AsRaw()
+	for logLevel, criteriaListObj := range severityMap {
+		severityMapping[logLevel] = []criteria{}
+		criteriaList, ok := criteriaListObj.([]any)
+		if !ok {
+			return func(ctx context.Context, tCtx K) (any, error) {
+				return nil, errors.New("severity mapping criteria must be []any")
+			}
+		}
+		for _, critObj := range criteriaList {
+			critMap, ok := critObj.(map[string]any)
+			if !ok {
+				return func(ctx context.Context, tCtx K) (any, error) {
+					return nil, errors.New("severity mapping criteria items must be map[string]any")
+				}
+			}
+			c, err := newCriteriaFromMap(critMap)
+			if err != nil {
+				return func(ctx context.Context, tCtx K) (any, error) {
+					return nil, fmt.Errorf("invalid severity mapping criteria: %w", err)
+				}
+			}
+
+			severityMapping[logLevel] = append(severityMapping[logLevel], *c)
+		}
+	}
+
+	return func(ctx context.Context, tCtx K) (any, error) {
 		value, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, fmt.Errorf("could not get log level: %w", err)
 		}
 
-		logLevel, err := evaluateSeverity(value, severityMap.AsRaw())
+		logLevel, err := evaluateSeverity(value, severityMapping)
 		if err != nil {
 			return nil, fmt.Errorf("could not map log level: %w", err)
 		}
@@ -71,13 +104,9 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ott
 	}
 }
 
-func evaluateSeverity(value any, severities map[string]any) (string, error) {
-	for level, criteria := range severities {
-		criteriaList, ok := criteria.([]any)
-		if !ok {
-			return "", errors.New("criteria for mapping log level must be []any")
-		}
-		match, err := evaluateSeverityMapping(value, criteriaList)
+func evaluateSeverity(value any, severities map[string]criteriaSet) (string, error) {
+	for level, cs := range severities {
+		match, err := cs.evaluate(value)
 		if err != nil {
 			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
 		}
@@ -88,113 +117,106 @@ func evaluateSeverity(value any, severities map[string]any) (string, error) {
 	return "", fmt.Errorf("no matching log level found for value '%v'", value)
 }
 
-func evaluateSeverityMapping(value any, criteria []any) (bool, error) {
-	switch v := value.(type) {
-	case string:
-		return evaluateSeverityStringMapping(v, criteria), nil
-	case int64:
-		return evaluateSeverityNumberMapping(v, criteria)
-	default:
-		return false, fmt.Errorf("log level must be either string or int64, but got %T", v)
-	}
-}
+type criteriaSet []criteria
 
-func evaluateSeverityNumberMapping(value int64, criteria []any) (bool, error) {
-	for _, crit := range criteria {
-		criteriaItem, ok := crit.(map[string]any)
-		if !ok {
-			continue
+func (cs criteriaSet) evaluate(value any) (bool, error) {
+	for _, crit := range cs {
+		match, err := crit.evaluate(value)
+		if err != nil {
+			return false, err
 		}
-
-		// right now, we only have a "range" criteria for numeric log levels, so we specifically check for this here
-		rangeMapObj, ok := criteriaItem[rangeKey]
-		if !ok {
-			continue
-		}
-
-		// if we have a numeric severity number, we need to match with number ranges
-		rangeMap, ok := rangeMapObj.(map[string]any)
-		if !ok {
-			rangeMap, ok = parseValueRangePlaceholder(rangeMapObj)
-			if !ok {
-				continue
-			}
-		}
-		rangeMin, gotMin := rangeMap[minKey]
-		rangeMax, gotMax := rangeMap[maxKey]
-		if !gotMin || !gotMax {
-			return false, errors.New("range criteria must contain min and max values")
-		}
-		rangeMinInt, ok := rangeMin.(int64)
-		if !ok {
-			return false, fmt.Errorf("min must be int64, but got %T", rangeMin)
-		}
-		rangeMaxInt, ok := rangeMax.(int64)
-		if !ok {
-			return false, fmt.Errorf("max must be int64, but got %T", rangeMax)
-		}
-
-		if rangeMinInt <= value && rangeMaxInt >= value {
+		if match {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func parseValueRangePlaceholder(crit any) (map[string]any, bool) {
-	placeholder, ok := crit.(string)
-	if !ok {
-		return nil, false
-	}
+type criteria struct {
+	Equals []string
+	Range  *valueRange
+}
 
-	switch placeholder {
-	case http2xx:
-		return map[string]any{
-			"min": int64(200),
-			"max": int64(299),
-		}, true
-	case http3xx:
-		return map[string]any{
-			"min": int64(300),
-			"max": int64(399),
-		}, true
-	case http4xx:
-		return map[string]any{
-			"min": int64(400),
-			"max": int64(499),
-		}, true
-	case http5xx:
-		return map[string]any{
-			"min": int64(500),
-			"max": int64(599),
-		}, true
+type valueRange struct {
+	Min int64
+	Max int64
+}
+
+func (c *criteria) evaluate(value any) (bool, error) {
+	switch v := value.(type) {
+	case string:
+		for _, eq := range c.Equals {
+			if v == eq {
+				return true, nil
+			}
+		}
+		return false, nil
+	case int64:
+		if c.Range != nil {
+			if v >= c.Range.Min && v <= c.Range.Max {
+				return true, nil
+			}
+		}
+		return false, nil
 	default:
-		return nil, false
+		return false, fmt.Errorf("unsupported value type: %T", v)
 	}
 }
 
-func evaluateSeverityStringMapping(value string, criteria []any) bool {
-	for _, crit := range criteria {
-		criteriaItem, ok := crit.(map[string]any)
-		if !ok {
-			return false
-		}
-		criteriaEquals, ok := criteriaItem[equalsKey]
-		if !ok {
-			return false
-		}
+func newCriteriaFromMap(m map[string]any) (*criteria, error) {
+	crit := &criteria{}
 
-		equalsObjs, ok := criteriaEquals.([]any)
+	if equalsObj, ok := m[equalsKey]; ok {
+		equalsList, ok := equalsObj.([]any)
 		if !ok {
-			return false
+			return nil, errors.New("equals must be a list")
 		}
-		for _, equals := range equalsObjs {
-			if equalsStr, ok := equals.(string); ok {
-				if equalsStr == value {
-					return true
-				}
+		for _, eq := range equalsList {
+			eqStr, ok := eq.(string)
+			if !ok {
+				return nil, errors.New("equals values must be strings")
 			}
+			crit.Equals = append(crit.Equals, eqStr)
 		}
 	}
-	return false
+	if rangeObj, ok := m[rangeKey]; ok {
+		if rangeMap, ok := rangeObj.(map[string]any); ok {
+			minObj, ok := rangeMap[minKey]
+			if !ok {
+				return nil, errors.New("range must have a min value")
+			}
+			maxObj, ok := rangeMap[maxKey]
+			if !ok {
+				return nil, errors.New("range must have a max value")
+			}
+			minInt, ok := minObj.(int64)
+			if !ok {
+				return nil, errors.New("min must be an int64")
+			}
+			maxInt, ok := maxObj.(int64)
+			if !ok {
+				return nil, errors.New("max must be an int64")
+			}
+			crit.Range = &valueRange{
+				Min: minInt,
+				Max: maxInt,
+			}
+		} else if rangeStr, ok := rangeObj.(string); ok {
+			switch rangeStr {
+			case http2xx:
+				crit.Range = &valueRange{Min: 200, Max: 299}
+			case http3xx:
+				crit.Range = &valueRange{Min: 300, Max: 399}
+			case http4xx:
+				crit.Range = &valueRange{Min: 400, Max: 499}
+			case http5xx:
+				crit.Range = &valueRange{Min: 500, Max: 599}
+			default:
+				return nil, fmt.Errorf("unknown range placeholder: %s", rangeStr)
+			}
+		} else {
+			return nil, errors.New("range must be a map or a known placeholder string")
+		}
+	}
+	return crit, nil
 }
