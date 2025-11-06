@@ -298,6 +298,7 @@ body:
       - receiver/kubeletstats
       - receiver/libhoney
       - receiver/loki
+      - receiver/macosunifiedlogging
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
