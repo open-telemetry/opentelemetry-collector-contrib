@@ -170,7 +170,6 @@ extension/observer/cfgardenobserver
 internal/docker
 extension/observer/dockerobserver
 extension/observer/ecsobserver
-extension/observer/ecstaskobserver
 extension/observer/hostobserver
 pkg/xk8stest
 extension/observer/k8sobserver
@@ -236,6 +235,7 @@ receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver
 receiver/awsfirehosereceiver
+receiver/awslambdareceiver
 receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver
@@ -324,5 +324,6 @@ receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
 receiver/windowsservicereceiver
+receiver/yanggrpcreceiver
 scraper/zookeeperscraper
 receiver/zookeeperreceiver
