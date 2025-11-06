@@ -752,8 +752,8 @@ func (r *malformedZstdReader) Read(p []byte) (n int, err error) {
 	return n, nil
 }
 
-// TestLibhoneyReceiver_ZstdDecompressionIntegration tests with full HTTP server
-// to exactly replicate the middleware stack from the error logs
+// TestLibhoneyReceiver_ZstdDecompressionIntegration tests zstd decompression
+// with the full handler to verify the middleware integration
 func TestLibhoneyReceiver_ZstdDecompressionIntegration(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	getOrInsertDefault(t, &cfg.HTTP)
@@ -765,12 +765,7 @@ func TestLibhoneyReceiver_ZstdDecompressionIntegration(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	r.registerLogConsumer(sink)
 
-	// Start the actual HTTP server with middleware
-	err = r.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer func() { _ = r.Shutdown(t.Context()) }()
-
-	// Create malformed zstd payload
+	// Create valid event data
 	events := []libhoneyevent.LibhoneyEvent{
 		{
 			Time:       time.Now().Format(time.RFC3339),
@@ -781,7 +776,7 @@ func TestLibhoneyReceiver_ZstdDecompressionIntegration(t *testing.T) {
 	jsonData, err := json.Marshal(events)
 	require.NoError(t, err)
 
-	// Create corrupted zstd data that might trigger the nil pointer
+	// Create properly compressed zstd data
 	var buf bytes.Buffer
 	writer, err := zstd.NewWriter(&buf)
 	require.NoError(t, err)
@@ -789,29 +784,17 @@ func TestLibhoneyReceiver_ZstdDecompressionIntegration(t *testing.T) {
 	writer.Close()
 
 	compressed := buf.Bytes()
-	// Corrupt the compressed data to trigger decompression issues
-	if len(compressed) > 15 {
-		// Introduce corruption that might cause nil pointer in nextBlockSync
-		compressed[8] = 0x00
-		compressed[9] = 0x00
-		compressed[10] = 0xFF
-		compressed[11] = 0xFF
-	}
 
-	// Get the server endpoint
-	if r.server == nil {
-		t.Skip("HTTP server not started - skipping integration test")
-		return
-	}
+	// Test with valid zstd compressed data
+	req := httptest.NewRequest(http.MethodPost, "/1/events/test", bytes.NewReader(compressed))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "zstd")
 
-	// Note: This test demonstrates the setup but won't actually make HTTP calls
-	// since we'd need the actual server address. In a real scenario, this would
-	// make an HTTP request to the running server with the corrupted payload.
-	t.Logf("Integration test setup complete. Corrupted payload size: %d bytes", len(compressed))
+	resp := httptest.NewRecorder()
+	r.handleEvent(resp, req)
 
-	// The actual HTTP request would be:
-	// resp, err := http.Post(serverURL+"/1/events/test", "application/json", bytes.NewReader(compressed))
-	// With header: Content-Encoding: zstd
+	assert.Equal(t, http.StatusOK, resp.Code, "Valid zstd compressed data should succeed")
+	assert.Positive(t, sink.LogRecordCount(), "Event should be processed")
 }
 
 // TestIssue44010_UncompressedRequest verifies that uncompressed requests work without Content-Encoding header
@@ -819,14 +802,14 @@ func TestLibhoneyReceiver_ZstdDecompressionIntegration(t *testing.T) {
 func TestIssue44010_UncompressedRequest(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	getOrInsertDefault(t, &cfg.HTTP)
-	
+
 	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := newLibhoneyReceiver(cfg, &set)
 	require.NoError(t, err)
-	
+
 	sink := &consumertest.LogsSink{}
 	recv.registerLogConsumer(sink)
-	
+
 	// Create a request without Content-Encoding header (uncompressed)
 	body := []byte(`[{
 		"method": "GET",
@@ -834,20 +817,20 @@ func TestIssue44010_UncompressedRequest(t *testing.T) {
 		"shard": "users",
 		"duration_ms": 32
 	}]`)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/events/test_dataset", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	// Intentionally NOT setting Content-Encoding header
-	
+
 	resp := httptest.NewRecorder()
 	recv.handleEvent(resp, req)
-	
+
 	// Should return 200 OK, not 400 Bad Request with "unsupported Content-Encoding:" error
 	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for uncompressed request, got %d: %s", resp.Code, resp.Body.String())
 	assert.NotContains(t, resp.Body.String(), "unsupported Content-Encoding", "Should not return Content-Encoding error for uncompressed requests")
-	
+
 	// Verify the event was processed
-	var responseArray []map[string]interface{}
+	var responseArray []map[string]any
 	err = json.Unmarshal(resp.Body.Bytes(), &responseArray)
 	require.NoError(t, err, "Response should be valid JSON array")
 	assert.Len(t, responseArray, 1, "Should have one response entry")
@@ -860,14 +843,14 @@ func TestIssue44010_UncompressedRequest(t *testing.T) {
 func TestIssue44026_SingleEventOnEventsEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	getOrInsertDefault(t, &cfg.HTTP)
-	
+
 	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := newLibhoneyReceiver(cfg, &set)
 	require.NoError(t, err)
-	
+
 	sink := &consumertest.LogsSink{}
 	recv.registerLogConsumer(sink)
-	
+
 	// Test single event object (NOT an array) with attributes at top level (no "data" wrapper)
 	// This is the format used by libhoney single event API
 	singleEventBody := []byte(`{
@@ -876,44 +859,44 @@ func TestIssue44026_SingleEventOnEventsEndpoint(t *testing.T) {
 		"shard": "users",
 		"duration_ms": 32
 	}`)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/events/browser", bytes.NewReader(singleEventBody))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp := httptest.NewRecorder()
 	recv.handleEvent(resp, req)
-	
+
 	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for single event, got %d: %s", resp.Code, resp.Body.String())
-	
+
 	// Verify response format
-	var responseArray []map[string]interface{}
+	var responseArray []map[string]any
 	err = json.Unmarshal(resp.Body.Bytes(), &responseArray)
 	require.NoError(t, err, "Response should be valid JSON array")
 	assert.Len(t, responseArray, 1, "Should have one response entry for single event")
 	assert.Equal(t, float64(202), responseArray[0]["status"], "Event should be accepted")
-	
+
 	// Verify that the event was actually processed and attributes were extracted
-	require.Greater(t, sink.LogRecordCount(), 0, "Event should have been processed as log")
+	require.Positive(t, sink.LogRecordCount(), "Event should have been processed as log")
 	logs := sink.AllLogs()
-	require.Greater(t, logs[0].LogRecordCount(), 0, "Should have at least one log record")
-	
+	require.Positive(t, logs[0].LogRecordCount(), "Should have at least one log record")
+
 	// Get the first log record and verify attributes were extracted
 	logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	attrs := logRecord.Attributes()
-	
+
 	// Verify the attributes from the flat event structure are present
 	methodVal, methodExists := attrs.Get("method")
 	assert.True(t, methodExists, "method attribute should be extracted")
 	assert.Equal(t, "GET", methodVal.AsString(), "method value should match")
-	
+
 	endpointVal, endpointExists := attrs.Get("endpoint")
 	assert.True(t, endpointExists, "endpoint attribute should be extracted")
 	assert.Equal(t, "/foo", endpointVal.AsString(), "endpoint value should match")
-	
+
 	shardVal, shardExists := attrs.Get("shard")
 	assert.True(t, shardExists, "shard attribute should be extracted")
 	assert.Equal(t, "users", shardVal.AsString(), "shard value should match")
-	
+
 	durationVal, durationExists := attrs.Get("duration_ms")
 	assert.True(t, durationExists, "duration_ms attribute should be extracted")
 	// JSON numbers are unmarshaled as float64
@@ -928,14 +911,14 @@ func TestIssue44026_SingleEventOnEventsEndpoint(t *testing.T) {
 func TestIssue44026_ArrayOnEventsEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	getOrInsertDefault(t, &cfg.HTTP)
-	
+
 	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := newLibhoneyReceiver(cfg, &set)
 	require.NoError(t, err)
-	
+
 	sink := &consumertest.LogsSink{}
 	recv.registerLogConsumer(sink)
-	
+
 	// Test array on /events endpoint (for backwards compatibility)
 	arrayBody := []byte(`[{
 		"method": "GET",
@@ -943,13 +926,13 @@ func TestIssue44026_ArrayOnEventsEndpoint(t *testing.T) {
 		"shard": "users",
 		"duration_ms": 32
 	}]`)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/events/browser", bytes.NewReader(arrayBody))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp := httptest.NewRecorder()
 	recv.handleEvent(resp, req)
-	
+
 	assert.Equal(t, http.StatusOK, resp.Code, "Array on /events should still work for backwards compatibility")
 }
 
@@ -957,14 +940,14 @@ func TestIssue44026_ArrayOnEventsEndpoint(t *testing.T) {
 func TestIssue44026_ArrayOnBatchEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	getOrInsertDefault(t, &cfg.HTTP)
-	
+
 	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := newLibhoneyReceiver(cfg, &set)
 	require.NoError(t, err)
-	
+
 	sink := &consumertest.LogsSink{}
 	recv.registerLogConsumer(sink)
-	
+
 	// Test array on /batch endpoint
 	arrayBody := []byte(`[{
 		"method": "GET",
@@ -972,13 +955,13 @@ func TestIssue44026_ArrayOnBatchEndpoint(t *testing.T) {
 		"shard": "users",
 		"duration_ms": 32
 	}]`)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/batch/browser", bytes.NewReader(arrayBody))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp := httptest.NewRecorder()
 	recv.handleEvent(resp, req)
-	
+
 	assert.Equal(t, http.StatusOK, resp.Code, "Array on /batch endpoint should work")
 }
 
@@ -987,14 +970,14 @@ func TestIssue44026_ArrayOnBatchEndpoint(t *testing.T) {
 func TestSingleEventWithHeaders(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	getOrInsertDefault(t, &cfg.HTTP)
-	
+
 	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := newLibhoneyReceiver(cfg, &set)
 	require.NoError(t, err)
-	
+
 	sink := &consumertest.LogsSink{}
 	recv.registerLogConsumer(sink)
-	
+
 	// Test single event with headers (no time or samplerate in body)
 	singleEventBody := []byte(`{
 		"method": "GET",
@@ -1002,23 +985,23 @@ func TestSingleEventWithHeaders(t *testing.T) {
 		"shard": "users",
 		"duration_ms": 32
 	}`)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/events/browser", bytes.NewReader(singleEventBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Honeycomb-Event-Time", "1234567890")
 	req.Header.Set("X-Honeycomb-Samplerate", "10")
-	
+
 	resp := httptest.NewRecorder()
 	recv.handleEvent(resp, req)
-	
+
 	if resp.Code != http.StatusOK {
 		t.Logf("Response body: %s", resp.Body.String())
 	}
 	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for single event with headers")
-	
+
 	// Verify the event was processed
-	require.Greater(t, sink.LogRecordCount(), 0, "Event should have been processed as log")
-	
+	require.Positive(t, sink.LogRecordCount(), "Event should have been processed as log")
+
 	// Note: Detailed verification of time/samplerate would require inspecting the parsed event,
 	// but the main point is that the request succeeds and processes correctly
 }
@@ -1027,14 +1010,14 @@ func TestSingleEventWithHeaders(t *testing.T) {
 func TestSingleEventHeadersDontOverrideBody(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	getOrInsertDefault(t, &cfg.HTTP)
-	
+
 	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := newLibhoneyReceiver(cfg, &set)
 	require.NoError(t, err)
-	
+
 	sink := &consumertest.LogsSink{}
 	recv.registerLogConsumer(sink)
-	
+
 	// Test single event with time in body - header should not override
 	singleEventBody := []byte(`{
 		"time": "2023-01-01T00:00:00Z",
@@ -1042,18 +1025,254 @@ func TestSingleEventHeadersDontOverrideBody(t *testing.T) {
 		"method": "GET",
 		"endpoint": "/foo"
 	}`)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/events/browser", bytes.NewReader(singleEventBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Honeycomb-Event-Time", "1234567890")
 	req.Header.Set("X-Honeycomb-Samplerate", "10")
-	
+
 	resp := httptest.NewRecorder()
 	recv.handleEvent(resp, req)
-	
+
 	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK")
-	require.Greater(t, sink.LogRecordCount(), 0, "Event should have been processed")
-	
+	require.Positive(t, sink.LogRecordCount(), "Event should have been processed")
+
 	// The event should use body values (5) not header values (10)
 	// This is verified by the fact that the event processes successfully
+}
+
+// TestMsgpackSingleFlatEvent verifies that msgpack single flat events are properly wrapped and decoded
+func TestMsgpackSingleFlatEvent(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	getOrInsertDefault(t, &cfg.HTTP)
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	recv, err := newLibhoneyReceiver(cfg, &set)
+	require.NoError(t, err)
+
+	sink := &consumertest.LogsSink{}
+	recv.registerLogConsumer(sink)
+
+	// Create a flat msgpack event (no "data" wrapper)
+	flatEvent := map[string]any{
+		"method":       "GET",
+		"endpoint":     "/whoopie",
+		"duration_ms":  int64(32),
+		"service.name": "test-service",
+	}
+
+	msgpackBody, err := msgpack.Marshal(flatEvent)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/events/telemetrygen", bytes.NewReader(msgpackBody))
+	req.Header.Set("Content-Type", "application/msgpack")
+
+	resp := httptest.NewRecorder()
+	recv.handleEvent(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for flat msgpack event")
+	require.Positive(t, sink.LogRecordCount(), "Event should have been processed")
+
+	// Verify attributes were extracted
+	logRecord := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := logRecord.Attributes()
+
+	methodVal, methodExists := attrs.Get("method")
+	assert.True(t, methodExists, "method attribute should be extracted")
+	assert.Equal(t, "GET", methodVal.AsString())
+
+	endpointVal, endpointExists := attrs.Get("endpoint")
+	assert.True(t, endpointExists, "endpoint attribute should be extracted")
+	assert.Equal(t, "/whoopie", endpointVal.AsString())
+
+	durationVal, durationExists := attrs.Get("duration_ms")
+	assert.True(t, durationExists, "duration_ms attribute should be extracted")
+	assert.Equal(t, int64(32), durationVal.Int())
+}
+
+// TestMsgpackSingleFlatEventWithHeaders verifies that headers are applied to msgpack single events
+func TestMsgpackSingleFlatEventWithHeaders(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	getOrInsertDefault(t, &cfg.HTTP)
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	recv, err := newLibhoneyReceiver(cfg, &set)
+	require.NoError(t, err)
+
+	sink := &consumertest.LogsSink{}
+	recv.registerLogConsumer(sink)
+
+	// Create a flat msgpack event without time/samplerate
+	flatEvent := map[string]any{
+		"method":   "GET",
+		"endpoint": "/with-headers",
+	}
+
+	msgpackBody, err := msgpack.Marshal(flatEvent)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/events/telemetrygen", bytes.NewReader(msgpackBody))
+	req.Header.Set("Content-Type", "application/msgpack")
+	req.Header.Set("X-Honeycomb-Event-Time", "1234567890")
+	req.Header.Set("X-Honeycomb-Samplerate", "10")
+
+	resp := httptest.NewRecorder()
+	recv.handleEvent(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for msgpack event with headers")
+	require.Positive(t, sink.LogRecordCount(), "Event should have been processed")
+
+	// Verify samplerate from header was applied
+	logRecord := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := logRecord.Attributes()
+
+	samplerateVal, samplerateExists := attrs.Get("SampleRate")
+	assert.True(t, samplerateExists, "SampleRate should be present")
+	assert.Equal(t, int64(10), samplerateVal.Int(), "SampleRate should match header value")
+}
+
+// TestMsgpackArrayWithStructuredEvents verifies that msgpack arrays with structured events work
+func TestMsgpackArrayWithStructuredEvents(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	getOrInsertDefault(t, &cfg.HTTP)
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	recv, err := newLibhoneyReceiver(cfg, &set)
+	require.NoError(t, err)
+
+	sink := &consumertest.LogsSink{}
+	recv.registerLogConsumer(sink)
+
+	// Create an array of structured events (with "data" wrapper)
+	events := []map[string]any{
+		{
+			"samplerate": int64(1),
+			"time":       "2025-11-06T00:00:00Z",
+			"data": map[string]any{
+				"method":      "GET",
+				"endpoint":    "/foo",
+				"duration_ms": int64(32),
+			},
+		},
+		{
+			"samplerate": int64(1),
+			"time":       "2025-11-06T00:00:01Z",
+			"data": map[string]any{
+				"method":      "POST",
+				"endpoint":    "/bar",
+				"duration_ms": int64(45),
+			},
+		},
+	}
+
+	msgpackBody, err := msgpack.Marshal(events)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/batch/telemetrygen", bytes.NewReader(msgpackBody))
+	req.Header.Set("Content-Type", "application/msgpack")
+
+	resp := httptest.NewRecorder()
+	recv.handleEvent(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for msgpack array")
+	require.Equal(t, 2, sink.LogRecordCount(), "Should have processed 2 events")
+
+	// Verify first event
+	logRecord0 := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs0 := logRecord0.Attributes()
+
+	method0, _ := attrs0.Get("method")
+	assert.Equal(t, "GET", method0.AsString())
+	endpoint0, _ := attrs0.Get("endpoint")
+	assert.Equal(t, "/foo", endpoint0.AsString())
+	duration0, _ := attrs0.Get("duration_ms")
+	assert.Equal(t, int64(32), duration0.Int())
+
+	// Verify second event
+	logRecord1 := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
+	attrs1 := logRecord1.Attributes()
+
+	method1, _ := attrs1.Get("method")
+	assert.Equal(t, "POST", method1.AsString())
+	endpoint1, _ := attrs1.Get("endpoint")
+	assert.Equal(t, "/bar", endpoint1.AsString())
+	duration1, _ := attrs1.Get("duration_ms")
+	assert.Equal(t, int64(45), duration1.Int())
+}
+
+// TestMsgpackTraceEvent verifies that msgpack trace events are properly processed
+func TestMsgpackTraceEvent(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	getOrInsertDefault(t, &cfg.HTTP)
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	recv, err := newLibhoneyReceiver(cfg, &set)
+	require.NoError(t, err)
+
+	sink := &consumertest.TracesSink{}
+	recv.registerTraceConsumer(sink)
+
+	// Create a trace event
+	events := []map[string]any{
+		{
+			"samplerate": int64(1),
+			"time":       "2025-11-06T00:00:00Z",
+			"data": map[string]any{
+				"meta.signal_type": "trace",
+				"trace.trace_id":   "1234567890abcdef1234567890abcdef",
+				"trace.span_id":    "abcdef1234567890",
+				"trace.parent_id":  "1234567890abcdef",
+				"name":             "test-span",
+				"service.name":     "test-service",
+				"duration_ms":      100.5,
+			},
+		},
+	}
+
+	msgpackBody, err := msgpack.Marshal(events)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/batch/telemetrygen", bytes.NewReader(msgpackBody))
+	req.Header.Set("Content-Type", "application/msgpack")
+
+	resp := httptest.NewRecorder()
+	recv.handleEvent(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for msgpack trace event")
+	require.Equal(t, 1, sink.SpanCount(), "Should have processed 1 span")
+
+	// Verify span attributes
+	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Equal(t, "test-span", span.Name())
+
+	attrs := span.Attributes()
+	signalType, _ := attrs.Get("meta.signal_type")
+	assert.Equal(t, "trace", signalType.AsString())
+}
+
+// TestMsgpackEmptyArray verifies that empty msgpack arrays are handled gracefully
+func TestMsgpackEmptyArray(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	getOrInsertDefault(t, &cfg.HTTP)
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	recv, err := newLibhoneyReceiver(cfg, &set)
+	require.NoError(t, err)
+
+	sink := &consumertest.LogsSink{}
+	recv.registerLogConsumer(sink)
+
+	// Create an empty array
+	events := []map[string]any{}
+
+	msgpackBody, err := msgpack.Marshal(events)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/batch/telemetrygen", bytes.NewReader(msgpackBody))
+	req.Header.Set("Content-Type", "application/msgpack")
+
+	resp := httptest.NewRecorder()
+	recv.handleEvent(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for empty array")
 }

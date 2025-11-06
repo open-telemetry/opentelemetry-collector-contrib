@@ -349,7 +349,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
-	
+
 	switch req.Header.Get("Content-Type") {
 	case "application/x-msgpack", "application/msgpack":
 		// The custom UnmarshalMsgpack will handle timestamp normalization
@@ -362,7 +362,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			// Check if it's a map type
 			isSingleObject = (firstByte >= 0x80 && firstByte <= 0x8f) || firstByte == 0xde || firstByte == 0xdf
 		}
-		
+
 		if isSingleObject {
 			// Single object - decode as map
 			var rawEvent map[string]any
@@ -381,9 +381,9 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 					if _, hasSamplerate := rawEvent["samplerate"]; !hasSamplerate {
 						// Convert string to number for msgpack compatibility
 						var samplerate any
-						if sr, err := json.Number(samplerateHeader).Int64(); err == nil {
+						if sr, convErr := json.Number(samplerateHeader).Int64(); convErr == nil {
 							samplerate = sr
-						} else if sr, err := json.Number(samplerateHeader).Float64(); err == nil {
+						} else if sr, convErr := json.Number(samplerateHeader).Float64(); convErr == nil {
 							samplerate = sr
 						} else {
 							samplerate = samplerateHeader // Fallback to string
@@ -391,7 +391,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 						rawEvent["samplerate"] = samplerate
 					}
 				}
-				
+
 				// Successfully decoded as single object - check if it needs wrapping
 				if _, hasData := rawEvent["data"]; !hasData {
 					// Flat event format - wrap all fields into data
@@ -402,11 +402,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 							dataCopy[k] = v
 						}
 					}
-					
-					r.settings.Logger.Debug("Wrapping flat event",
-						zap.Any("original", rawEvent),
-						zap.Any("dataCopy", dataCopy))
-					
+
 					wrappedEvent := make(map[string]any)
 					wrappedEvent["data"] = dataCopy
 					// Preserve time and samplerate at top level if they exist
@@ -416,10 +412,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 					if sr, ok := rawEvent["samplerate"]; ok {
 						wrappedEvent["samplerate"] = sr
 					}
-					
-					r.settings.Logger.Debug("Wrapped event",
-						zap.Any("wrappedEvent", wrappedEvent))
-					
+
 					rawEvent = wrappedEvent
 				}
 				// Construct LibhoneyEvent directly from the map to avoid re-marshaling issues
@@ -427,7 +420,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 					Samplerate: 1, // default
 					Data:       make(map[string]any),
 				}
-				
+
 				// Extract samplerate
 				if sr, ok := rawEvent["samplerate"]; ok {
 					switch v := sr.(type) {
@@ -439,7 +432,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 						singleEvent.Samplerate = int(v)
 					}
 				}
-				
+
 				// Extract time
 				if t, ok := rawEvent["time"]; ok {
 					switch v := t.(type) {
@@ -455,15 +448,12 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 					tnow := time.Now()
 					singleEvent.MsgPackTimestamp = &tnow
 				}
-				
+
 				// Extract data
 				if data, ok := rawEvent["data"].(map[string]any); ok {
 					singleEvent.Data = data
 				}
-				
-				r.settings.Logger.Debug("Constructed single event",
-					zap.Any("singleEvent", singleEvent))
-				
+
 				libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
 			}
 		} else {
@@ -483,7 +473,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 						Samplerate: 1, // default
 						Data:       make(map[string]any),
 					}
-					
+
 					// Extract samplerate
 					if sr, ok := rawEvent["samplerate"]; ok {
 						switch v := sr.(type) {
@@ -495,7 +485,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 							event.Samplerate = int(v)
 						}
 					}
-					
+
 					// Extract time
 					if t, ok := rawEvent["time"]; ok {
 						switch v := t.(type) {
@@ -511,17 +501,17 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 						tnow := time.Now()
 						event.MsgPackTimestamp = &tnow
 					}
-					
+
 					// Extract data (arrays should always have structured events with data field)
 					if data, ok := rawEvent["data"].(map[string]any); ok {
 						event.Data = data
 					}
-					
+
 					libhoneyevents = append(libhoneyevents, event)
 				}
 			}
 		}
-		
+
 		if err != nil {
 			r.settings.Logger.Info("messagepack decoding failed")
 			writeLibhoneyError(resp, enc, "failed to unmarshal msgpack")
@@ -551,9 +541,9 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 					if _, hasSamplerate := rawEvent["samplerate"]; !hasSamplerate {
 						// Convert string to number for JSON compatibility
 						var samplerate any
-						if sr, err := json.Number(samplerateHeader).Int64(); err == nil {
+						if sr, convErr := json.Number(samplerateHeader).Int64(); convErr == nil {
 							samplerate = sr
-						} else if sr, err := json.Number(samplerateHeader).Float64(); err == nil {
+						} else if sr, convErr := json.Number(samplerateHeader).Float64(); convErr == nil {
 							samplerate = sr
 						} else {
 							samplerate = samplerateHeader // Fallback to string
@@ -561,7 +551,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 						rawEvent["samplerate"] = samplerate
 					}
 				}
-				
+
 				// If the event doesn't have a "data" field, wrap all fields into data
 				if _, hasData := rawEvent["data"]; !hasData {
 					// Flat event format - wrap all fields into data
@@ -572,7 +562,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 							dataCopy[k] = v
 						}
 					}
-					
+
 					wrappedEvent := make(map[string]any)
 					wrappedEvent["data"] = dataCopy
 					// Preserve time and samplerate at top level if they exist
@@ -596,7 +586,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			// Array format - unmarshal directly
 			err = json.Unmarshal(body, &libhoneyevents)
 		}
-		
+
 		if err != nil {
 			writeLibhoneyError(resp, enc, "failed to unmarshal JSON")
 			return
