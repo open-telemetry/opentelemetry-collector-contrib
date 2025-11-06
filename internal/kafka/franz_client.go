@@ -58,6 +58,7 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		// the legacy compatibility sarama hashing to avoid hashing to different
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
+		kgo.ProducerLinger(cfg.Linger),
 	)...)
 	if err != nil {
 		return nil, err
