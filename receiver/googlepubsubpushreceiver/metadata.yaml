@@ -1,0 +1,8 @@
+type: google
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [axw, constanca-m]

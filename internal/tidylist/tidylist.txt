@@ -260,6 +260,7 @@ receiver/gitlabreceiver
 receiver/googlecloudmonitoringreceiver
 receiver/googlecloudpubsubreceiver
 receiver/googlecloudspannerreceiver
+receiver/googlepubsubpushreceiver
 receiver/haproxyreceiver
 receiver/httpcheckreceiver
 receiver/huaweicloudcesreceiver

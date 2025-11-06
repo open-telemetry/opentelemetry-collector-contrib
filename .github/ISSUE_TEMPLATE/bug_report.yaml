@@ -266,6 +266,7 @@ body:
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
+      - receiver/googlepubsubpush
       - receiver/haproxy
       - receiver/hostmetrics
       - receiver/hostmetrics/internal/scraper/cpuscraper
