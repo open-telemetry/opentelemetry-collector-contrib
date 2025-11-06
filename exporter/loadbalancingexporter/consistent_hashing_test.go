@@ -199,6 +199,7 @@ func TestEqual(t *testing.T) {
 		[]ringItem{
 			{pos: position(123), endpoint: "endpoint-1"},
 		},
+		[]string{"endpoint-1"},
 	}
 
 	for _, tt := range []struct {
@@ -208,7 +209,7 @@ func TestEqual(t *testing.T) {
 	}{
 		{
 			"empty",
-			&hashRing{[]ringItem{}},
+			&hashRing{[]ringItem{}, []string{}},
 			false,
 		},
 		{
@@ -222,6 +223,7 @@ func TestEqual(t *testing.T) {
 				[]ringItem{
 					{pos: position(123), endpoint: "endpoint-1"},
 				},
+				[]string{"endpoint-1"},
 			},
 			true,
 		},
@@ -232,6 +234,7 @@ func TestEqual(t *testing.T) {
 					{pos: position(123), endpoint: "endpoint-1"},
 					{pos: position(124), endpoint: "endpoint-2"},
 				},
+				[]string{"endpoint-1", "endpoint-2"},
 			},
 			false,
 		},
@@ -241,6 +244,7 @@ func TestEqual(t *testing.T) {
 				[]ringItem{
 					{pos: position(124), endpoint: "endpoint-1"},
 				},
+				[]string{"endpoint-1"},
 			},
 			false,
 		},
@@ -250,6 +254,7 @@ func TestEqual(t *testing.T) {
 				[]ringItem{
 					{pos: position(123), endpoint: "endpoint-2"},
 				},
+				[]string{"endpoint-2"},
 			},
 			false,
 		},

@@ -28,14 +28,16 @@ type ringItem struct {
 // hashRing is a consistent hash ring following Karger et al.
 type hashRing struct {
 	// ringItems holds all the positions, used for the lookup the position for the closest next ring item
-	items []ringItem
+	items     []ringItem
+	endpoints []string
 }
 
 // newHashRing builds a new immutable consistent hash ring based on the given endpoints.
 func newHashRing(endpoints []string) *hashRing {
 	items := positionsForEndpoints(endpoints, defaultWeight)
 	return &hashRing{
-		items: items,
+		items:     items,
+		endpoints: endpoints,
 	}
 }
 
