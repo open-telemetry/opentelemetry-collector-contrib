@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
@@ -176,6 +177,93 @@ func TestNotifyConfig(t *testing.T) {
 		// Ensure shutdown works cleanly
 		assert.NoError(t, ext.Shutdown(t.Context()))
 	})
+}
+
+func TestCollectorResourceAttributesArePopulated(t *testing.T) {
+	// Prepare TelemetrySettings with Resource attributes
+	tel := componenttest.NewNopTelemetrySettings()
+	res := pcommon.NewResource()
+	res.Attributes().PutStr("b_key", "2")
+	res.Attributes().PutStr("a_key", "1")
+	tel.Resource = res
+
+	set := extension.Settings{
+		TelemetrySettings: tel,
+		BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+	}
+	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+	cfg := &Config{
+		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		HTTPConfig: &httpserver.Config{
+			ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+			Path:         "/test-path",
+		},
+	}
+
+	ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+	require.NoError(t, err)
+	ext.serializer = &mockSerializer{}
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+	// Minimal config to trigger NotifyConfig
+	conf := confmap.NewFromStringMap(map[string]any{})
+	err = ext.NotifyConfig(t.Context(), conf)
+	require.NoError(t, err)
+
+	// Expect map with keys and values
+	require.NotNil(t, ext.otelCollectorMetadata)
+	expected := map[string]string{"a_key": "1", "b_key": "2"}
+	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
+
+	// Cleanup
+	assert.NoError(t, ext.Shutdown(t.Context()))
+}
+
+func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
+	// Prepare TelemetrySettings with multiple Resource attributes
+	tel := componenttest.NewNopTelemetrySettings()
+	res := pcommon.NewResource()
+	res.Attributes().PutStr("deployment.environment.name", "prod")
+	res.Attributes().PutStr("team.name", "backend")
+	res.Attributes().PutStr("cloud.region", "us-east")
+	tel.Resource = res
+
+	set := extension.Settings{
+		TelemetrySettings: tel,
+		BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+	}
+	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+	cfg := &Config{
+		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		HTTPConfig: &httpserver.Config{
+			ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+			Path:         "/test-path",
+		},
+	}
+
+	ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+	require.NoError(t, err)
+	ext.serializer = &mockSerializer{}
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+	// Minimal config to trigger NotifyConfig
+	conf := confmap.NewFromStringMap(map[string]any{})
+	err = ext.NotifyConfig(t.Context(), conf)
+	require.NoError(t, err)
+
+	// Verify all resource attributes are collected
+	require.NotNil(t, ext.otelCollectorMetadata)
+	expected := map[string]string{
+		"deployment.environment.name": "prod",
+		"cloud.region":                "us-east",
+		"team.name":                   "backend",
+	}
+	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
+
+	// Cleanup
+	assert.NoError(t, ext.Shutdown(t.Context()))
 }
 
 func TestComponentStatusChanged(t *testing.T) {
