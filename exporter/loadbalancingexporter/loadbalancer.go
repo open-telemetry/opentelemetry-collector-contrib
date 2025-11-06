@@ -289,8 +289,8 @@ func (lb *loadBalancer) exporterAndEndpoint(identifier []byte) (*wrappedExporter
 	return exp, endpoint, nil
 }
 
-// nextExporterAndEndpoint returns the next exporter and endpoint in the ring after the given position.
-func (lb *loadBalancer) nextExporterAndEndpoint(pos position) (*wrappedExporter, string, error) {
+// exporterAndEndpointByPosition returns the exporter and endpoint in the ring at the given position.
+func (lb *loadBalancer) exporterAndEndpointByPosition(pos position) (*wrappedExporter, string, error) {
 	lb.updateLock.RLock()
 	defer lb.updateLock.RUnlock()
 
@@ -325,9 +325,9 @@ func (lb *loadBalancer) consumeWithRetryAndQuarantine(identifier []byte, exp *wr
 	currentPos := getPosition(identifier)
 
 	// Try until we've used all available endpoints
-	for len(tried) < len(lb.exporters) {
+	for len(tried) < len(lb.ring.endpoints) {
 		// retryExp, retryEndpoint, retryErr := lb.exporterAndEndpoint(identifier)
-		retryExp, retryEndpoint, retryErr := lb.nextExporterAndEndpoint(currentPos)
+		retryExp, retryEndpoint, retryErr := lb.exporterAndEndpointByPosition(currentPos)
 		if retryErr != nil {
 			// Return original error if we can't get a new endpoint
 			return err
