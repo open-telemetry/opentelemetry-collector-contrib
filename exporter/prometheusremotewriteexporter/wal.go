@@ -227,12 +227,12 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	var logger *zap.Logger
 	logger, err = loggerFromContext(ctx)
 	if err != nil {
-		return
+		return err
 	}
 
 	if err = prweWAL.retrieveWALIndices(); err != nil {
 		logger.Error("unable to start write-ahead log", zap.Error(err))
-		return
+		return err
 	}
 
 	runCtx, cancel := context.WithCancel(ctx)

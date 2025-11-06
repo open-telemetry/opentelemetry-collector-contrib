@@ -54,7 +54,7 @@ func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, erro
 	m := mock{sn: sess}
 	getEC2Region = m.getEC2Region
 	newAWSSession = m.newAWSSession
-	return
+	return f1, f2
 }
 
 func tearDownMock(

@@ -63,25 +63,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ExporterRequestsBytes, err = builder.meter.Int64Counter(
 		"otelcol_exporter_requests_bytes",
-		metric.WithDescription("Total size of requests (in bytes) [development]"),
+		metric.WithDescription("Total size of requests (in bytes) [Development]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterRequestsDuration, err = builder.meter.Int64Counter(
 		"otelcol_exporter_requests_duration",
-		metric.WithDescription("Duration of HTTP requests (in milliseconds) [development]"),
+		metric.WithDescription("Duration of HTTP requests (in milliseconds) [Development]"),
 		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterRequestsRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_requests_records",
-		metric.WithDescription("Total size of requests (in number of records) [development]"),
+		metric.WithDescription("Total size of requests (in number of records) [Development]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterRequestsSent, err = builder.meter.Int64Counter(
 		"otelcol_exporter_requests_sent",
-		metric.WithDescription("Number of requests [development]"),
+		metric.WithDescription("Number of requests [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

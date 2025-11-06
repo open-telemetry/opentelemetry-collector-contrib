@@ -18,13 +18,13 @@ Availability of the node.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | false |
+| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | Recommended |
 
 ### bigip.node.connection.count
 
@@ -32,7 +32,7 @@ Current number of connections to the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.node.data.transmitted
 
@@ -40,13 +40,13 @@ Amount of data transmitted to and from the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of data. | Str: ``sent``, ``received`` | false |
+| direction | The direction of data. | Str: ``sent``, ``received`` | Recommended |
 
 ### bigip.node.enabled
 
@@ -54,13 +54,13 @@ Enabled state of of the node.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The enabled status. | Str: ``disabled``, ``enabled`` | false |
+| status | The enabled status. | Str: ``disabled``, ``enabled`` | Recommended |
 
 ### bigip.node.packet.count
 
@@ -68,13 +68,13 @@ Number of packets transmitted to and from the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of data. | Str: ``sent``, ``received`` | false |
+| direction | The direction of data. | Str: ``sent``, ``received`` | Recommended |
 
 ### bigip.node.request.count
 
@@ -82,7 +82,7 @@ Number of requests to the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### bigip.node.session.count
 
@@ -90,7 +90,7 @@ Current number of sessions for the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {sessions} | Sum | Int | Cumulative | false | development |
+| {sessions} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.pool.availability
 
@@ -98,13 +98,13 @@ Availability of the pool.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | false |
+| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | Recommended |
 
 ### bigip.pool.connection.count
 
@@ -112,7 +112,7 @@ Current number of connections to the pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.pool.data.transmitted
 
@@ -120,13 +120,13 @@ Amount of data transmitted to and from the pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of data. | Str: ``sent``, ``received`` | false |
+| direction | The direction of data. | Str: ``sent``, ``received`` | Recommended |
 
 ### bigip.pool.enabled
 
@@ -134,13 +134,13 @@ Enabled state of of the pool.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The enabled status. | Str: ``disabled``, ``enabled`` | false |
+| status | The enabled status. | Str: ``disabled``, ``enabled`` | Recommended |
 
 ### bigip.pool.member.count
 
@@ -148,13 +148,13 @@ Total number of pool members.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {members} | Sum | Int | Cumulative | false | development |
+| {members} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The active status. | Str: ``active``, ``inactive`` | false |
+| status | The active status. | Str: ``active``, ``inactive`` | Recommended |
 
 ### bigip.pool.packet.count
 
@@ -162,13 +162,13 @@ Number of packets transmitted to and from the pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of data. | Str: ``sent``, ``received`` | false |
+| direction | The direction of data. | Str: ``sent``, ``received`` | Recommended |
 
 ### bigip.pool.request.count
 
@@ -176,7 +176,7 @@ Number of requests to the pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### bigip.pool_member.availability
 
@@ -184,13 +184,13 @@ Availability of the pool member.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | false |
+| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | Recommended |
 
 ### bigip.pool_member.connection.count
 
@@ -198,7 +198,7 @@ Current number of connections to the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.pool_member.data.transmitted
 
@@ -206,13 +206,13 @@ Amount of data transmitted to and from the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of data. | Str: ``sent``, ``received`` | false |
+| direction | The direction of data. | Str: ``sent``, ``received`` | Recommended |
 
 ### bigip.pool_member.enabled
 
@@ -220,13 +220,13 @@ Enabled state of of the pool member.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The enabled status. | Str: ``disabled``, ``enabled`` | false |
+| status | The enabled status. | Str: ``disabled``, ``enabled`` | Recommended |
 
 ### bigip.pool_member.packet.count
 
@@ -234,13 +234,13 @@ Number of packets transmitted to and from the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of data. | Str: ``sent``, ``received`` | false |
+| direction | The direction of data. | Str: ``sent``, ``received`` | Recommended |
 
 ### bigip.pool_member.request.count
 
@@ -248,7 +248,7 @@ Number of requests to the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### bigip.pool_member.session.count
 
@@ -256,7 +256,7 @@ Current number of sessions for the pool member.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {sessions} | Sum | Int | Cumulative | false | development |
+| {sessions} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.virtual_server.availability
 
@@ -264,13 +264,13 @@ Availability of the virtual server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | false |
+| status | The availability status. | Str: ``offline``, ``unknown``, ``available`` | Recommended |
 
 ### bigip.virtual_server.connection.count
 
@@ -278,7 +278,7 @@ Current number of connections to the virtual server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### bigip.virtual_server.data.transmitted
 
@@ -286,13 +286,13 @@ Amount of data transmitted to and from the virtual server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of data. | Str: ``sent``, ``received`` | false |
+| direction | The direction of data. | Str: ``sent``, ``received`` | Recommended |
 
 ### bigip.virtual_server.enabled
 
@@ -300,13 +300,13 @@ Enabled state of of the virtual server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The enabled status. | Str: ``disabled``, ``enabled`` | false |
+| status | The enabled status. | Str: ``disabled``, ``enabled`` | Recommended |
 
 ### bigip.virtual_server.packet.count
 
@@ -314,13 +314,13 @@ Number of packets transmitted to and from the virtual server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| direction | The direction of data. | Str: ``sent``, ``received`` | false |
+| direction | The direction of data. | Str: ``sent``, ``received`` | Recommended |
 
 ### bigip.virtual_server.request.count
 
@@ -328,7 +328,7 @@ Number of requests to the virtual server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 
