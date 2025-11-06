@@ -4,3 +4,5 @@ status:
   class: receiver
   stability:
     development: [logs]
+  codeowners:
+    active: [Caleb-Hurshman]
