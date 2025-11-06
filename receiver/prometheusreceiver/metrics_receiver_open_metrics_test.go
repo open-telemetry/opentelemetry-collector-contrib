@@ -464,7 +464,7 @@ var (
 	expectedST          = pcommon.Timestamp(expectedSTSecsPart*int64(time.Second) + expectedSTNanosPart)
 )
 
-func verifyCreatedTimeMetric(o verifyOpts) func(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
+func verifyCreatedTimeMetric(o verifyOpts) func(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
 	return func(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
 		wantCounter, wantSummary, wantHisto := o.wantCounter, o.wantSummary, o.wantHisto
 		require.NotEmpty(t, mds, "At least one resource metric should be present")

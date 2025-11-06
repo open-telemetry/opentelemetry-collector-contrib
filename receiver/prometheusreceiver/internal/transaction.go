@@ -255,9 +255,7 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 
 	if !ok {
 		fn := mn
-		if isOMCounter {
-			fn = normalizedName
-		} else if _, ok := t.mc.GetMetadata(mn); !ok {
+		if _, ok := t.mc.GetMetadata(mn); !ok {
 			fn = normalizedName
 		}
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
@@ -266,7 +264,8 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 			curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
 			mfKey = metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}
 			if isOMCounter {
-				mfKey.name = fn
+				// we want to key the mf and mg of this append to the normalized name if it came from an om counter line
+				mfKey.name = normalizedName
 			}
 			t.families[key][scope][mfKey] = curMf
 			return curMf
@@ -276,6 +275,11 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 	return curMf
 }
 
+// isOMCounterLine determines whether a metric is a counter appended by an om-text parser
+// these assumptions are made
+// 1. the metric name of an OM counter line would always have either _total or _created as a suffix
+// 2. the omptextarser stores metadata of every om text line using the counter's normalized name (i.e foo_total => foo)
+// 3. the promtextparser stores metadata without normalization of metric name
 func (t *transaction) isOMCounterLine(metricName, normalizedName string) bool {
 	if len(metricName) <= len(normalizedName) {
 		return false
@@ -283,8 +287,12 @@ func (t *transaction) isOMCounterLine(metricName, normalizedName string) bool {
 	if !strings.HasSuffix(metricName, metricSuffixTotal) && !strings.HasSuffix(metricName, metricSuffixCreated) {
 		return false
 	}
-	_, k := t.mc.GetMetadata(normalizedName)
-	return k
+	_, k := t.mc.GetMetadata(metricName)
+	if k {
+		return false
+	}
+	md, k := t.mc.GetMetadata(normalizedName)
+	return k && md.Type == model.MetricTypeCounter
 }
 
 func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
