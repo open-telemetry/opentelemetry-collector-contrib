@@ -336,11 +336,14 @@ test_counter_total 12
 test_counter_created 1.55555e+09
 `
 
+// shuffle the order of _created and _total lines
+// with an orphaned _created line {foo=bar3} that should not produce a Sum datapoint
 var counterMultiPayload = `# TYPE test_counter counter
+test_counter_created{foo="bar2"} 1
 test_counter_total{foo="bar1"} 12
 test_counter_created{foo="bar1"} 1.55555e+09
+test_counter_created{foo="bar3"} 100
 test_counter_total{foo="bar2"} 100
-test_counter_created{foo="bar2"} 1
 `
 
 var counterReversePayload = `# TYPE test_counter counter
@@ -465,7 +468,7 @@ var (
 )
 
 func verifyCreatedTimeMetric(o verifyOpts) func(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
-	return func(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
+	return func(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
 		wantCounter, wantSummary, wantHisto := o.wantCounter, o.wantSummary, o.wantHisto
 		require.NotEmpty(t, mds, "At least one resource metric should be present")
 		metrics := getMetrics(mds[0])
