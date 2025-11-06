@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlepubsubpushreceiver
 
-go 1.25.4
+go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.139.0
