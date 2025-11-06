@@ -107,7 +107,8 @@ func TestDetect(t *testing.T) {
 			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
-			got, _, err := p.Get(t.Context(), &http.Client{Timeout: 10 * time.Second})
+			// Perform initial detection
+			got, _, err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedResource, got.Attributes().AsRaw())
@@ -152,7 +153,7 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
-	_, _, err = p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
+	_, _, err = p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "err1")
 	require.Contains(t, err.Error(), "err2")
@@ -171,7 +172,7 @@ func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
-	_, _, err := p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
+	_, _, err := p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.NoError(t, err)
 }
 
@@ -223,8 +224,8 @@ func (p *mockParallelDetector) Detect(_ context.Context) (pcommon.Resource, stri
 	return args.Get(0).(pcommon.Resource), args.String(1), args.Error(2)
 }
 
-// TestDetectResource_Parallel validates that Detect is only called once, even if there
-// are multiple calls to ResourceProvider.Get
+// TestDetectResource_Parallel validates that multiple concurrent calls to Get
+// return the cached result after initial Refresh
 func TestDetectResource_Parallel(t *testing.T) {
 	const iterations = 5
 
@@ -242,7 +243,22 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
-	// call p.Get multiple times
+	// Perform initial detection
+	go func() {
+		time.Sleep(5 * time.Millisecond)
+		md1.ch <- struct{}{}
+		md2.ch <- struct{}{}
+	}()
+
+	detected, _, err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+	require.NoError(t, err)
+	require.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
+
+	// Verify Detect was called once during Refresh
+	md1.AssertNumberOfCalls(t, "Detect", 1)
+	md2.AssertNumberOfCalls(t, "Detect", 1)
+
+	// Now call Get multiple times concurrently - should return cached value
 	wg := &sync.WaitGroup{}
 	wg.Add(iterations)
 	for range iterations {
@@ -254,15 +270,9 @@ func TestDetectResource_Parallel(t *testing.T) {
 		}()
 	}
 
-	// wait until all goroutines are blocked
-	time.Sleep(5 * time.Millisecond)
-
-	// detector.Detect should only be called once, so we only need to notify each channel once
-	md1.ch <- struct{}{}
-	md2.ch <- struct{}{}
-
-	// then wait until all goroutines are finished, and ensure p.Detect was only called once
 	wg.Wait()
+
+	// Verify Detect still only called once (not called again by Get)
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
 }
@@ -284,7 +294,7 @@ func TestDetectResource_Reconnect(t *testing.T) {
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
-	detected, _, err := p.Get(t.Context(), &http.Client{Timeout: 15 * time.Second})
+	detected, _, err := p.Refresh(t.Context(), &http.Client{Timeout: 15 * time.Second})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 
@@ -305,8 +315,8 @@ func TestResourceProvider_RefreshInterval(t *testing.T) {
 
 	p := NewResourceProvider(zap.NewNop(), 1*time.Second, nil, md)
 
-	// Initial detection (triggers initOnce)
-	got, _, err := p.Get(t.Context(), &http.Client{Timeout: time.Second})
+	// Initial detection
+	got, _, err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"a": "1"}, got.Attributes().AsRaw())
 

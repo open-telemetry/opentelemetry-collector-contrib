@@ -342,18 +342,47 @@ func TestProcessor_RefreshInterval_UpdatesResource(t *testing.T) {
 	got1 := msink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
 	assert.Equal(t, map[string]any{"k": "v1"}, got1)
 
-	// Wait for refresh loop to replace detector result.
-	time.Sleep(150 * time.Millisecond)
+	// Verify Detect was called once (initial detection).
+	md.AssertNumberOfCalls(t, "Detect", 1)
 
-	// Send another batch → should see res2.
+	// Wait for refresh loop to trigger and update resource.
+	// Use Eventually to poll until the resource actually changes.
+	require.Eventually(t, func() bool {
+		// Keep sending metrics and check if resource has changed
+		mdTemp := pmetric.NewMetrics()
+		require.NoError(t, mdTemp.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
+		require.NoError(t, mp.ConsumeMetrics(t.Context(), mdTemp))
+
+		// Check the latest metrics
+		allMetrics := msink.AllMetrics()
+		if len(allMetrics) == 0 {
+			return false
+		}
+		latestAttrs := allMetrics[len(allMetrics)-1].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
+
+		// Return true if we see v2 (refresh happened)
+		if v, ok := latestAttrs["k"]; ok && v == "v2" {
+			return true
+		}
+		return false
+	}, 500*time.Millisecond, 20*time.Millisecond, "refresh loop did not update resource from v1 to v2")
+
+	// Verify Detect was called at least twice (initial + at least one refresh).
+	assert.GreaterOrEqual(t, len(md.Calls), 2, "Detect should have been called at least twice")
+
+	// Send final batch to confirm resource is now res2.
 	md2 := pmetric.NewMetrics()
 	require.NoError(t, md2.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
 	require.NoError(t, mp.ConsumeMetrics(t.Context(), md2))
 
 	require.Eventually(t, func() bool {
-		return len(msink.AllMetrics()) >= 2
+		allMetrics := msink.AllMetrics()
+		return len(allMetrics) >= 2
 	}, time.Second, 20*time.Millisecond)
-	got2 := msink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
+
+	// Check the latest metric has v2
+	allMetrics := msink.AllMetrics()
+	got2 := allMetrics[len(allMetrics)-1].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
 	assert.Equal(t, map[string]any{"k": "v2"}, got2)
 }
 

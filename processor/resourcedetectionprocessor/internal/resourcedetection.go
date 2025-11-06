@@ -99,8 +99,12 @@ type ResourceProvider struct {
 	detectors        []Detector
 	detectedResource *resourceResult
 	mu               sync.RWMutex
-	initOnce         sync.Once
 	attributesToKeep map[string]struct{}
+
+	// Refresh loop control
+	refreshInterval time.Duration
+	stopCh          chan struct{}
+	wg              sync.WaitGroup
 }
 
 type resourceResult struct {
@@ -115,28 +119,25 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesTo
 		timeout:          timeout,
 		detectors:        detectors,
 		attributesToKeep: attributesToKeep,
+		refreshInterval:  0, // No periodic refresh by default
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
-	p.mu.RLock()
-	res := p.detectedResource
-	p.mu.RUnlock()
-
-	if res != nil {
-		return res.resource, res.schemaURL, res.err
-	}
-
-	// First access: ensure only one goroutine computes.
-	p.initOnce.Do(func() { _, _, _ = p.Refresh(ctx, client) })
-
+func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resource, string, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	res = p.detectedResource
-	if res == nil {
-		return pcommon.NewResource(), "", nil
+
+	resource := pcommon.NewResource()
+	schemaURL := ""
+	var err error
+
+	if p.detectedResource != nil {
+		resource = p.detectedResource.resource
+		schemaURL = p.detectedResource.schemaURL
+		err = p.detectedResource.err
 	}
-	return res.resource, res.schemaURL, res.err
+
+	return resource, schemaURL, err
 }
 
 // Refresh recomputes the resource, replacing any previous result.
@@ -155,7 +156,8 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pc
 	// Keep the last good snapshot if the refresh errored OR returned an empty resource.
 	if hadPrevSuccess && (err != nil || IsEmptyResource(res)) {
 		p.logger.Warn("resource refresh yielded empty or error; keeping previous snapshot", zap.Error(err))
-		return prev.resource, prev.schemaURL, prev.err
+		// Return nil error since we're successfully returning the cached resource
+		return prev.resource, prev.schemaURL, nil
 	}
 
 	// Otherwise, accept the new snapshot.
@@ -233,7 +235,8 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
 
-	// Only fail if ALL detectors failed.
+	// Partial success is acceptable - return merged resources from successful detectors.
+	// Only propagate an error if ALL detectors failed, ensuring graceful degradation.
 	if successes == 0 {
 		if allowErrorPropagationFeatureGate.IsEnabled() {
 			if joinedErr == nil {
@@ -299,4 +302,42 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 
 func IsEmptyResource(res pcommon.Resource) bool {
 	return res.Attributes().Len() == 0
+}
+
+// StartRefreshing begins periodic resource refresh if refreshInterval > 0
+func (p *ResourceProvider) StartRefreshing(refreshInterval time.Duration, client *http.Client) {
+	p.refreshInterval = refreshInterval
+	if p.refreshInterval <= 0 {
+		return
+	}
+
+	p.stopCh = make(chan struct{})
+	p.wg.Add(1)
+	go p.refreshLoop(client)
+}
+
+// StopRefreshing stops the periodic refresh goroutine
+func (p *ResourceProvider) StopRefreshing() {
+	if p.stopCh != nil {
+		close(p.stopCh)
+		p.wg.Wait()
+	}
+}
+
+func (p *ResourceProvider) refreshLoop(client *http.Client) {
+	defer p.wg.Done()
+	ticker := time.NewTicker(p.refreshInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			_, _, err := p.Refresh(context.Background(), client)
+			if err != nil {
+				p.logger.Warn("resource refresh failed", zap.Error(err))
+			}
+		case <-p.stopCh:
+			return
+		}
+	}
 }

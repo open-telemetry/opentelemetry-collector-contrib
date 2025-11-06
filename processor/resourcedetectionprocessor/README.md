@@ -886,11 +886,13 @@ resourcedetection:
 
 The `refresh_interval` option allows resource attributes to be periodically refreshed without restarting the Collector.
 
-- It may take some time for newly detected resource attributes to be applied.
-- Changes to resource attributes can result in the creation of new metric time series.
-- Frequent refreshes can increase resource usage and should be configured carefully.
+**Important considerations:**
 
-In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector’s lifetime.
+- **Latency**: Newly detected resource attributes will be applied after the next refresh cycle completes (up to `refresh_interval` duration).
+- **Metric cardinality**: Changes to resource attributes create new metric time series, which can significantly increase storage costs and query complexity.
+- **Performance impact**: Each refresh re-runs all configured detectors. Values below 5 minutes can increase CPU and memory usage. There is no enforced minimum, but intervals below 1 minute are strongly discouraged.
+
+**Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
 
 ## Ordering
 
