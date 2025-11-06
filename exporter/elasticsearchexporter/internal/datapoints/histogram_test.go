@@ -20,6 +20,25 @@ func TestHistogramValue(t *testing.T) {
 		expected    func(t *testing.T) pcommon.Value
 	}{
 		{
+			name: "empty",
+			histogramDP: func() pmetric.HistogramDataPoint {
+				now := time.Now()
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				return dp
+			}(),
+			expected: func(t *testing.T) pcommon.Value {
+				t.Helper()
+				v := pcommon.NewValueMap()
+				require.NoError(t, v.FromRaw(map[string]any{
+					"counts": []any{},
+					"values": []any{},
+				}))
+				return v
+			},
+		},
+		{
 			name: "required_fields_only",
 			histogramDP: func() pmetric.HistogramDataPoint {
 				now := time.Now()
