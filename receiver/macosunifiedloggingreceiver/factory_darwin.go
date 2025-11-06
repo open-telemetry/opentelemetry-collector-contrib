@@ -36,5 +36,5 @@ func createLogsReceiverDarwin(
 		return nil, err
 	}
 
-	return newReceiver(oCfg, set.Logger, consumer), nil
+	return newUnifiedLoggingReceiver(oCfg, set.Logger, consumer), nil
 }

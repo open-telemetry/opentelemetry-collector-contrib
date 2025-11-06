@@ -6,7 +6,6 @@ toolchain go1.24.10
 
 require (
 	github.com/bmatcuk/doublestar/v4 v4.9.1
-	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.44.0
 	go.opentelemetry.io/collector/component/componenttest v0.138.0
@@ -52,6 +51,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
+	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.42.0 // indirect

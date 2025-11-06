@@ -103,7 +103,6 @@ var validOperators = []string{
 
 // Validate checks the Config is valid
 func (cfg *Config) Validate() error {
-
 	// Set default format if not specified
 	if cfg.Format == "" {
 		cfg.Format = "default"

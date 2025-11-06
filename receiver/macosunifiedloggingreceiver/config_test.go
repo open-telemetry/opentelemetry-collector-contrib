@@ -148,8 +148,8 @@ func TestLoadConfigFromYAML(t *testing.T) {
 	logsArchive := filepath.Join(testdataDir, "logs.logarchive")
 
 	// Create directories if they don't exist
-	_ = os.MkdirAll(systemLogsArchive, 0755)
-	_ = os.MkdirAll(logsArchive, 0755)
+	_ = os.MkdirAll(systemLogsArchive, 0o755)
+	_ = os.MkdirAll(logsArchive, 0o755)
 	defer func() {
 		_ = os.RemoveAll(systemLogsArchive)
 		_ = os.RemoveAll(logsArchive)
