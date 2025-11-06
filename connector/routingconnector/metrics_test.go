@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutiltest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -329,7 +328,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rmetric := defaultSink.AllMetrics()[0].ResourceMetrics().At(0)
 		attr, ok := rmetric.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exist")
-		assert.Equal(t, attr.Double(), float64(-1.0))
+		assert.Equal(t, float64(-1.0), attr.Double())
 	})
 
 	t.Run("metric matched by one expression, multiple pipelines", func(t *testing.T) {
@@ -453,9 +452,9 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isResourceString := `IsString(attributes["resourceName"]) == true`
-	require.Contains(t, common.StandardFunctions[ottlresource.TransformContext](), "IsString")
+	require.Contains(t, standardFunctions[ottlresource.TransformContext](), "IsString")
 	isAttributesMap := `IsMap(attributes) == true`
-	require.Contains(t, common.StandardFunctions[ottlresource.TransformContext](), "IsMap")
+	require.Contains(t, standardFunctions[ottlresource.TransformContext](), "IsMap")
 
 	isMetricE := `name == "metricE"`
 	isMetricF := `name == "metricF"`

@@ -100,6 +100,8 @@ func converters[K any]() []ottl.Factory[K] {
 		NewTimeFactory[K](),
 		NewFormatTimeFactory[K](),
 		NewTrimFactory[K](),
+		NewTrimPrefixFactory[K](),
+		NewTrimSuffixFactory[K](),
 		NewToKeyValueStringFactory[K](),
 		NewToCamelCaseFactory[K](),
 		NewToLowerCaseFactory[K](),

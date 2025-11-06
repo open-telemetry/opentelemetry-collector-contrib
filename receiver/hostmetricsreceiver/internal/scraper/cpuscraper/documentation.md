@@ -18,7 +18,7 @@ Total seconds each logical CPU spent on each mode.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
@@ -43,7 +43,7 @@ Current frequency of the CPU core in Hz.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| Hz | Gauge | Double | development |
+| Hz | Gauge | Double | Development |
 
 #### Attributes
 
@@ -57,7 +57,7 @@ Number of available logical CPUs.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cpu} | Sum | Int | Cumulative | false | development |
+| {cpu} | Sum | Int | Cumulative | false | Development |
 
 ### system.cpu.physical.count
 
@@ -65,7 +65,7 @@ Number of available physical CPUs.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cpu} | Sum | Int | Cumulative | false | development |
+| {cpu} | Sum | Int | Cumulative | false | Development |
 
 ### system.cpu.utilization
 
@@ -73,7 +73,7 @@ Difference in system.cpu.time since the last measurement per logical CPU, divide
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
@@ -129,6 +131,8 @@ service:
               prometheus:
                 host: '127.0.0.1'
                 port: %d
+    logs:
+      level: "debug"
   extensions:
   pipelines:
     %s:
@@ -190,6 +194,14 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 	return defs, err
 }
 
+func newDbgLogger() *zap.Logger {
+	logger, err := zap.NewDevelopment(zap.Fields(zap.String("type", "testbed")))
+	if err != nil {
+		panic("Cannot create logger " + err.Error())
+	}
+	return logger
+}
+
 // ConstructTraceSender creates a testbed trace sender from the passed-in trace sender identifier.
 func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 	var sender testbed.DataSender
@@ -213,7 +225,9 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 	case "otlp":
 		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "stef":
-		sender = datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+		s := datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+		s.Logger = newDbgLogger()
+		sender = s
 	case "prometheus":
 		sender = datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	default:
@@ -229,7 +243,9 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	case "otlp":
 		receiver = testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	case "stef":
-		receiver = datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t))
+		r := datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t))
+		r.Logger = newDbgLogger()
+		receiver = r
 	case "jaeger":
 		receiver = datareceivers.NewJaegerDataReceiver(testutil.GetAvailablePort(t))
 	case "zipkin":
