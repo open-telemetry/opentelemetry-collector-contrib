@@ -362,7 +362,7 @@ func (kr *k8sobjectsreceiver) sendInitialState(ctx context.Context, config *K8sO
 
 // doWatch returns true when watching is done, false when watching should be restarted.
 func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsConfig, resourceVersion string, watchFunc cache.WatchFuncWithContext, stopperChan chan struct{}) bool {
-	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFuncWithContext: watchFunc})
+	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFuncWithContext: watchFunc})
 	if err != nil {
 		kr.setting.Logger.Error("error in watching object",
 			zap.String("resource", config.gvr.String()),
