@@ -1,6 +1,8 @@
-module github.com/observiq/bindplane-otel-collector/receiver/macosunifiedloggingreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver
 
 go 1.24.4
+
+toolchain go1.24.10
 
 require (
 	github.com/bmatcuk/doublestar/v4 v4.9.1
