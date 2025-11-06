@@ -347,12 +347,70 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
+	
 	switch req.Header.Get("Content-Type") {
 	case "application/x-msgpack", "application/msgpack":
 		// The custom UnmarshalMsgpack will handle timestamp normalization
 		decoder := msgpack.NewDecoder(bytes.NewReader(body))
 		decoder.UseLooseInterfaceDecoding(true)
-		err = decoder.Decode(&libhoneyevents)
+		
+		// Try to decode as a single event first (single object)
+		var rawEvent map[string]any
+		err = decoder.Decode(&rawEvent)
+		if err == nil {
+			// Apply headers for single event (X-Honeycomb-Event-Time, X-Honeycomb-Samplerate)
+			// Only apply if not already present in the body
+			if eventTimeHeader := req.Header.Get("X-Honeycomb-Event-Time"); eventTimeHeader != "" {
+				if _, hasTime := rawEvent["time"]; !hasTime {
+					rawEvent["time"] = eventTimeHeader
+				}
+			}
+			if samplerateHeader := req.Header.Get("X-Honeycomb-Samplerate"); samplerateHeader != "" {
+				if _, hasSamplerate := rawEvent["samplerate"]; !hasSamplerate {
+					// Convert string to number for JSON compatibility
+					var samplerate any
+					if sr, err := json.Number(samplerateHeader).Int64(); err == nil {
+						samplerate = sr
+					} else if sr, err := json.Number(samplerateHeader).Float64(); err == nil {
+						samplerate = sr
+					} else {
+						samplerate = samplerateHeader // Fallback to string
+					}
+					rawEvent["samplerate"] = samplerate
+				}
+			}
+			
+			// Successfully decoded as single object - check if it needs wrapping
+			if _, hasData := rawEvent["data"]; !hasData {
+				// Flat event format - wrap all fields into data
+				wrappedEvent := make(map[string]any)
+				wrappedEvent["data"] = rawEvent
+				// Preserve time and samplerate if they exist
+				if t, ok := rawEvent["time"]; ok {
+					wrappedEvent["time"] = t
+					delete(rawEvent, "time")
+				}
+				if sr, ok := rawEvent["samplerate"]; ok {
+					wrappedEvent["samplerate"] = sr
+					delete(rawEvent, "samplerate")
+				}
+				rawEvent = wrappedEvent
+			}
+			// Now unmarshal the structured event
+			rawBytes, _ := msgpack.Marshal(rawEvent)
+			var singleEvent libhoneyevent.LibhoneyEvent
+			err = msgpack.Unmarshal(rawBytes, &singleEvent)
+			if err == nil {
+				libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
+			}
+		}
+		// If single object decode failed, try as array
+		if err != nil || len(libhoneyevents) == 0 {
+			decoder = msgpack.NewDecoder(bytes.NewReader(body))
+			decoder.UseLooseInterfaceDecoding(true)
+			err = decoder.Decode(&libhoneyevents)
+		}
+		
 		if err != nil {
 			r.settings.Logger.Info("messagepack decoding failed")
 			writeLibhoneyError(resp, enc, "failed to unmarshal msgpack")
@@ -364,7 +422,63 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
 	case encoder.JSONContentType:
-		err = json.Unmarshal(body, &libhoneyevents)
+		// Check first non-whitespace character to determine structure
+		trimmed := bytes.TrimLeft(body, " \t\n\r")
+		if len(trimmed) > 0 && trimmed[0] == '{' {
+			// Single object - check if it's flat or has data field
+			var rawEvent map[string]any
+			err = json.Unmarshal(body, &rawEvent)
+			if err == nil {
+				// Apply headers for single event (X-Honeycomb-Event-Time, X-Honeycomb-Samplerate)
+				// Only apply if not already present in the body
+				if eventTimeHeader := req.Header.Get("X-Honeycomb-Event-Time"); eventTimeHeader != "" {
+					if _, hasTime := rawEvent["time"]; !hasTime {
+						rawEvent["time"] = eventTimeHeader
+					}
+				}
+				if samplerateHeader := req.Header.Get("X-Honeycomb-Samplerate"); samplerateHeader != "" {
+					if _, hasSamplerate := rawEvent["samplerate"]; !hasSamplerate {
+						// Convert string to number for JSON compatibility
+						var samplerate any
+						if sr, err := json.Number(samplerateHeader).Int64(); err == nil {
+							samplerate = sr
+						} else if sr, err := json.Number(samplerateHeader).Float64(); err == nil {
+							samplerate = sr
+						} else {
+							samplerate = samplerateHeader // Fallback to string
+						}
+						rawEvent["samplerate"] = samplerate
+					}
+				}
+				
+				// If the event doesn't have a "data" field, wrap all fields into data
+				if _, hasData := rawEvent["data"]; !hasData {
+					wrappedEvent := make(map[string]any)
+					wrappedEvent["data"] = rawEvent
+					// Preserve time and samplerate if they exist
+					if t, ok := rawEvent["time"]; ok {
+						wrappedEvent["time"] = t
+						delete(rawEvent, "time")
+					}
+					if sr, ok := rawEvent["samplerate"]; ok {
+						wrappedEvent["samplerate"] = sr
+						delete(rawEvent, "samplerate")
+					}
+					rawEvent = wrappedEvent
+				}
+				// Now unmarshal the structured event
+				rawBytes, _ := json.Marshal(rawEvent)
+				var singleEvent libhoneyevent.LibhoneyEvent
+				err = json.Unmarshal(rawBytes, &singleEvent)
+				if err == nil {
+					libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
+				}
+			}
+		} else {
+			// Array format - unmarshal directly
+			err = json.Unmarshal(body, &libhoneyevents)
+		}
+		
 		if err != nil {
 			writeLibhoneyError(resp, enc, "failed to unmarshal JSON")
 			return
