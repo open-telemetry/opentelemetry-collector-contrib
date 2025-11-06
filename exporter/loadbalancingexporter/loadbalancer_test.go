@@ -436,7 +436,7 @@ func newNopMockExporter() *wrappedExporter {
 	return newWrappedExporter(mockComponent{}, "mock")
 }
 
-func TestNextExporterAndEndpoint(t *testing.T) {
+func TestExporterAndEndpointByPosition(t *testing.T) {
 	// prepare
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
@@ -461,7 +461,7 @@ func TestNextExporterAndEndpoint(t *testing.T) {
 	pos := getPosition([]byte("endpoint-2"))
 
 	// find next exporter and endpoint at the position
-	exp, nextEndpoint, err := p.nextExporterAndEndpoint(pos)
+	exp, nextEndpoint, err := p.exporterAndEndpointByPosition(pos)
 
 	// verify
 	assert.NoError(t, err)
@@ -470,7 +470,7 @@ func TestNextExporterAndEndpoint(t *testing.T) {
 	assert.Contains(t, []string{"endpoint-1"}, nextEndpoint)
 }
 
-func TestNextExporterAndEndpointVisitsAllEndpoints(t *testing.T) {
+func TestExporterAndEndpointByPositionVisitsAllEndpoints(t *testing.T) {
 	// prepare
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
@@ -496,7 +496,7 @@ func TestNextExporterAndEndpointVisitsAllEndpoints(t *testing.T) {
 
 	for _, endpoint := range endpoints {
 		pos := getPosition([]byte(endpoint))
-		_, endpoint, err := p.nextExporterAndEndpoint(pos)
+		_, endpoint, err := p.exporterAndEndpointByPosition(pos)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, endpoint)
 		visited[endpoint] = true
@@ -507,7 +507,7 @@ func TestNextExporterAndEndpointVisitsAllEndpoints(t *testing.T) {
 	}
 }
 
-func TestNextExporterAndEndpointEmptyRing(t *testing.T) {
+func TestExporterAndEndpointByPositionEmptyRing(t *testing.T) {
 	// prepare
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{
@@ -533,7 +533,7 @@ func TestNextExporterAndEndpointEmptyRing(t *testing.T) {
 		delete(p.exporters, endpoint)
 	}
 
-	_, _, err = p.nextExporterAndEndpoint(getPosition([]byte("endpoint-1")))
+	_, _, err = p.exporterAndEndpointByPosition(getPosition([]byte("endpoint-1")))
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "couldn't find the exporter")
