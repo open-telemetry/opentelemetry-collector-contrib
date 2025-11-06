@@ -5,9 +5,9 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.46.3
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/goccy/go-json v0.10.5
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger-idl v0.6.0
-	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.139.0
@@ -88,6 +88,7 @@ require (
 	github.com/jcmturner/gofork v1.7.6 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
