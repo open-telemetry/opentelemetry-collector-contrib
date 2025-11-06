@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Config defines configuration for the macOS log command receiver
+// Config defines configuration for the macOS unified logging receiver
 // Separated into a common file that isn't platform specific so that factory_others.go can reference it
 type Config struct {
 	// ArchivePath is a path or glob pattern to .logarchive directory(ies)
@@ -46,10 +46,4 @@ type Config struct {
 
 	// prevent unkeyed literal initialization
 	_ struct{}
-}
-
-// getResolvedArchivePaths returns the resolved archive paths after glob expansion
-// This is used internally by the receiver
-func (cfg *Config) getResolvedArchivePaths() []string {
-	return cfg.resolvedArchivePaths
 }
