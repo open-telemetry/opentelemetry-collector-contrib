@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/vmihailenco/msgpack/v5"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
@@ -393,32 +395,131 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 				// Successfully decoded as single object - check if it needs wrapping
 				if _, hasData := rawEvent["data"]; !hasData {
 					// Flat event format - wrap all fields into data
+					// Make a copy of the map to avoid mutating the original
+					dataCopy := make(map[string]any)
+					for k, v := range rawEvent {
+						if k != "time" && k != "samplerate" {
+							dataCopy[k] = v
+						}
+					}
+					
+					r.settings.Logger.Debug("Wrapping flat event",
+						zap.Any("original", rawEvent),
+						zap.Any("dataCopy", dataCopy))
+					
 					wrappedEvent := make(map[string]any)
-					wrappedEvent["data"] = rawEvent
-					// Preserve time and samplerate if they exist
+					wrappedEvent["data"] = dataCopy
+					// Preserve time and samplerate at top level if they exist
 					if t, ok := rawEvent["time"]; ok {
 						wrappedEvent["time"] = t
-						delete(rawEvent, "time")
 					}
 					if sr, ok := rawEvent["samplerate"]; ok {
 						wrappedEvent["samplerate"] = sr
-						delete(rawEvent, "samplerate")
 					}
+					
+					r.settings.Logger.Debug("Wrapped event",
+						zap.Any("wrappedEvent", wrappedEvent))
+					
 					rawEvent = wrappedEvent
 				}
-				// Now unmarshal the structured event
-				rawBytes, _ := msgpack.Marshal(rawEvent)
-				var singleEvent libhoneyevent.LibhoneyEvent
-				err = msgpack.Unmarshal(rawBytes, &singleEvent)
-				if err == nil {
-					libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
+				// Construct LibhoneyEvent directly from the map to avoid re-marshaling issues
+				singleEvent := libhoneyevent.LibhoneyEvent{
+					Samplerate: 1, // default
+					Data:       make(map[string]any),
 				}
+				
+				// Extract samplerate
+				if sr, ok := rawEvent["samplerate"]; ok {
+					switch v := sr.(type) {
+					case int:
+						singleEvent.Samplerate = v
+					case int64:
+						singleEvent.Samplerate = int(v)
+					case float64:
+						singleEvent.Samplerate = int(v)
+					}
+				}
+				
+				// Extract time
+				if t, ok := rawEvent["time"]; ok {
+					switch v := t.(type) {
+					case string:
+						singleEvent.Time = v
+						propertime := eventtime.GetEventTime(v)
+						singleEvent.MsgPackTimestamp = &propertime
+					case *time.Time:
+						singleEvent.MsgPackTimestamp = v
+					}
+				}
+				if singleEvent.MsgPackTimestamp == nil {
+					tnow := time.Now()
+					singleEvent.MsgPackTimestamp = &tnow
+				}
+				
+				// Extract data
+				if data, ok := rawEvent["data"].(map[string]any); ok {
+					singleEvent.Data = data
+				}
+				
+				r.settings.Logger.Debug("Constructed single event",
+					zap.Any("singleEvent", singleEvent))
+				
+				libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
 			}
 		} else {
-			// Array format - decode as array
+			// Array format - decode as array of maps first
+			var rawEvents []map[string]any
 			decoder := msgpack.NewDecoder(bytes.NewReader(body))
 			decoder.UseLooseInterfaceDecoding(true)
-			err = decoder.Decode(&libhoneyevents)
+			err = decoder.Decode(&rawEvents)
+			if err != nil {
+				r.settings.Logger.Error("Failed to decode msgpack array",
+					zap.Error(err),
+					zap.String("hex", fmt.Sprintf("%x", body[:min(len(body), 100)])))
+			} else {
+				// Convert each map to a LibhoneyEvent
+				for _, rawEvent := range rawEvents {
+					event := libhoneyevent.LibhoneyEvent{
+						Samplerate: 1, // default
+						Data:       make(map[string]any),
+					}
+					
+					// Extract samplerate
+					if sr, ok := rawEvent["samplerate"]; ok {
+						switch v := sr.(type) {
+						case int:
+							event.Samplerate = v
+						case int64:
+							event.Samplerate = int(v)
+						case float64:
+							event.Samplerate = int(v)
+						}
+					}
+					
+					// Extract time
+					if t, ok := rawEvent["time"]; ok {
+						switch v := t.(type) {
+						case string:
+							event.Time = v
+							propertime := eventtime.GetEventTime(v)
+							event.MsgPackTimestamp = &propertime
+						case *time.Time:
+							event.MsgPackTimestamp = v
+						}
+					}
+					if event.MsgPackTimestamp == nil {
+						tnow := time.Now()
+						event.MsgPackTimestamp = &tnow
+					}
+					
+					// Extract data (arrays should always have structured events with data field)
+					if data, ok := rawEvent["data"].(map[string]any); ok {
+						event.Data = data
+					}
+					
+					libhoneyevents = append(libhoneyevents, event)
+				}
+			}
 		}
 		
 		if err != nil {
@@ -463,16 +564,23 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 				
 				// If the event doesn't have a "data" field, wrap all fields into data
 				if _, hasData := rawEvent["data"]; !hasData {
+					// Flat event format - wrap all fields into data
+					// Make a copy of the map to avoid mutating the original
+					dataCopy := make(map[string]any)
+					for k, v := range rawEvent {
+						if k != "time" && k != "samplerate" {
+							dataCopy[k] = v
+						}
+					}
+					
 					wrappedEvent := make(map[string]any)
-					wrappedEvent["data"] = rawEvent
-					// Preserve time and samplerate if they exist
+					wrappedEvent["data"] = dataCopy
+					// Preserve time and samplerate at top level if they exist
 					if t, ok := rawEvent["time"]; ok {
 						wrappedEvent["time"] = t
-						delete(rawEvent, "time")
 					}
 					if sr, ok := rawEvent["samplerate"]; ok {
 						wrappedEvent["samplerate"] = sr
-						delete(rawEvent, "samplerate")
 					}
 					rawEvent = wrappedEvent
 				}
