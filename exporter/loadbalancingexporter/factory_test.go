@@ -4,18 +4,22 @@
 package loadbalancingexporter
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -98,24 +102,75 @@ func TestBuildExporterConfig(t *testing.T) {
 }
 
 func TestBuildExporterSettings(t *testing.T) {
-	// prepare
-	creationParams := exportertest.NewNopSettings(metadata.Type)
-	testEndpoint := "the-endpoint"
-	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
-	creationParams.Logger = zap.New(observedZapCore)
+	otlpType := otlpexporter.NewFactory().Type()
 
-	// test
-	exporterParams := buildExporterSettings(creationParams, testEndpoint)
-	exporterParams.Logger.Info("test")
+	t.Run("without exporter name", func(t *testing.T) {
+		ctx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
+		creationParams := exportertest.NewNopSettings(metadata.Type)
+		creationParams.ID = component.NewID(metadata.Type)
+		telemetry := componenttest.NewTelemetry()
+		t.Cleanup(func() {
+			require.NoError(t, telemetry.Shutdown(ctx))
+		})
+		creationParams.TelemetrySettings = telemetry.NewTelemetrySettings()
+		originalTelemetry := creationParams.TelemetrySettings
+		testEndpoint := "the-endpoint"
+		observedZapCore, observedLogs := observer.New(zap.InfoLevel)
+		creationParams.Logger = zap.New(observedZapCore)
+		originalLogger := creationParams.Logger
 
-	assert.Equal(t, creationParams.ID, exporterParams.ID)
+		exporterParams := buildExporterSettings(otlpType, creationParams, testEndpoint)
+		exporterParams.Logger.Info("test")
 
-	allLogs := observedLogs.All()
-	require.Equal(t, 1, observedLogs.Len())
-	assert.Contains(t,
-		allLogs[0].Context,
-		zap.String(zapEndpointKey, testEndpoint),
-	)
+		assert.Equal(t, component.NewID(otlpType), exporterParams.ID)
+		assert.IsType(t, metricnoop.NewMeterProvider(), exporterParams.MeterProvider)
+		assert.IsType(t, tracenoop.NewTracerProvider(), exporterParams.TracerProvider)
+
+		assert.Same(t, originalTelemetry.MeterProvider, creationParams.MeterProvider)
+		assert.Same(t, originalTelemetry.TracerProvider, creationParams.TracerProvider)
+		assert.Same(t, originalLogger, creationParams.Logger)
+
+		allLogs := observedLogs.All()
+		require.Equal(t, 1, observedLogs.Len())
+		assert.Contains(t,
+			allLogs[0].Context,
+			zap.String(zapEndpointKey, testEndpoint),
+		)
+	})
+
+	t.Run("with exporter name", func(t *testing.T) {
+		ctx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
+		creationParams := exportertest.NewNopSettings(metadata.Type)
+		creationParams.ID = component.NewIDWithName(metadata.Type, "custom")
+		telemetry := componenttest.NewTelemetry()
+		t.Cleanup(func() {
+			require.NoError(t, telemetry.Shutdown(ctx))
+		})
+		creationParams.TelemetrySettings = telemetry.NewTelemetrySettings()
+		originalTelemetry := creationParams.TelemetrySettings
+		testEndpoint := "the-endpoint"
+		observedZapCore, observedLogs := observer.New(zap.InfoLevel)
+		creationParams.Logger = zap.New(observedZapCore)
+		originalLogger := creationParams.Logger
+
+		exporterParams := buildExporterSettings(otlpType, creationParams, testEndpoint)
+		exporterParams.Logger.Info("test")
+
+		assert.Equal(t, component.NewIDWithName(otlpType, "custom"), exporterParams.ID)
+		assert.IsType(t, metricnoop.NewMeterProvider(), exporterParams.MeterProvider)
+		assert.IsType(t, tracenoop.NewTracerProvider(), exporterParams.TracerProvider)
+
+		assert.Same(t, originalTelemetry.MeterProvider, creationParams.MeterProvider)
+		assert.Same(t, originalTelemetry.TracerProvider, creationParams.TracerProvider)
+		assert.Same(t, originalLogger, creationParams.Logger)
+
+		allLogs := observedLogs.All()
+		require.Equal(t, 1, observedLogs.Len())
+		assert.Contains(t,
+			allLogs[0].Context,
+			zap.String(zapEndpointKey, testEndpoint),
+		)
+	})
 }
 
 func TestWrappedExporterHasEndpointAttribute(t *testing.T) {
