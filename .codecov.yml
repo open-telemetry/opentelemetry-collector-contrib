@@ -700,6 +700,10 @@ component_management:
     name: receiver_googlecloudspanner
     paths:
     - receiver/googlecloudspannerreceiver/**
+  - component_id: receiver_googlepubsubpush
+    name: receiver_googlepubsubpush
+    paths:
+    - receiver/googlepubsubpushreceiver/**
   - component_id: receiver_haproxy
     name: receiver_haproxy
     paths:

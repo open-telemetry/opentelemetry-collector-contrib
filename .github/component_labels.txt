@@ -244,6 +244,7 @@ receiver/gitlabreceiver receiver/gitlab
 receiver/googlecloudmonitoringreceiver receiver/googlecloudmonitoring
 receiver/googlecloudpubsubreceiver receiver/googlecloudpubsub
 receiver/googlecloudspannerreceiver receiver/googlecloudspanner
+receiver/googlepubsubpushreceiver receiver/googlepubsubpush
 receiver/haproxyreceiver receiver/haproxy
 receiver/hostmetricsreceiver receiver/hostmetrics
 receiver/hostmetricsreceiver/internal/scraper/cpuscraper receiver/hostmetrics/internal/scraper/cpuscraper
