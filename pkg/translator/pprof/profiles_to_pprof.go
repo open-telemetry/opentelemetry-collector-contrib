@@ -112,7 +112,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 		// pprof.Profile.sample
 		for _, sample := range src.Sample {
-			s := p.Sample().AppendEmpty()
+			s := p.Samples().AppendEmpty()
 
 			// pprof.Sample.location_id
 			stackIdx := lts.getIdxForStack(sample.Location)
@@ -191,10 +191,8 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		p.SetPeriod(src.Period)
 
 		// pprof.Profile.comment
-		for _, c := range src.Comments {
-			idx := lts.getIdxForString(c)
-			p.CommentStrindices().Append(idx)
-		}
+		// TODO: refactor lookupTables to allow string[] to be held
+		p.AttributeIndices().Append(lts.getIdxForAttributeWithUnit("pprof.profile.comment", "", strings.Join(src.Comments, ",")))
 
 		// pprof.Profile.default_sample_type
 		// As OTel pprofile uses a single Sample Type, it is implicit its default type.
@@ -470,7 +468,7 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 			return err
 		}
 		for _, ln := range lines {
-			newLine := dic.LocationTable().At(int(id)).Line().AppendEmpty()
+			newLine := dic.LocationTable().At(int(id)).Lines().AppendEmpty()
 			newLine.SetLine(ln.Line())
 			newLine.SetColumn(ln.Column())
 			newLine.SetFunctionIndex(ln.FunctionIndex())

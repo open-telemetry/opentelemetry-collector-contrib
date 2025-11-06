@@ -3,24 +3,24 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3r
 go 1.24.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.39.5
-	github.com/aws/aws-sdk-go-v2/config v1.31.16
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.89.1
-	github.com/aws/aws-sdk-go-v2/service/sqs v1.42.12
+	github.com/aws/aws-sdk-go-v2 v1.39.6
+	github.com/aws/aws-sdk-go-v2/config v1.31.17
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.3
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.89.2
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.42.13
 	github.com/open-telemetry/opamp-go v0.22.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.139.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.45.0
-	go.opentelemetry.io/collector/component/componenttest v0.139.0
-	go.opentelemetry.io/collector/confmap v1.45.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.139.0
-	go.opentelemetry.io/collector/consumer v1.45.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.139.0
-	go.opentelemetry.io/collector/pdata v1.45.0
-	go.opentelemetry.io/collector/receiver v1.45.0
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.139.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.139.0
+	go.opentelemetry.io/collector/component v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/component/componenttest v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/confmap v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/confmap/xconfmap v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/consumer v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/consumer/consumertest v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/pdata v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/receiver v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/receiver/receivertest v0.139.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -28,21 +28,21 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.2 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.20 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.12 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.12 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.12 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.3 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.21 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.13 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.12 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.12 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.12 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.30.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.39.0 // indirect
-	github.com/aws/smithy-go v1.23.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.30.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.39.1 // indirect
+	github.com/aws/smithy-go v1.23.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -61,12 +61,12 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.139.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.139.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.45.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.139.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.45.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.139.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.139.1-0.20251105131800-09a271914bdc // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.139.1-0.20251105131800-09a271914bdc // indirect
+	go.opentelemetry.io/collector/featuregate v1.45.1-0.20251105131800-09a271914bdc // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.139.1-0.20251105131800-09a271914bdc // indirect
+	go.opentelemetry.io/collector/pipeline v1.45.1-0.20251105131800-09a271914bdc // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect

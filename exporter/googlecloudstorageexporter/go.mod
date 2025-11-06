@@ -7,17 +7,17 @@ require (
 	cloud.google.com/go/storage v1.57.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.45.0
-	go.opentelemetry.io/collector/component/componenttest v0.139.0
-	go.opentelemetry.io/collector/confmap v1.45.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.139.0
-	go.opentelemetry.io/collector/consumer v1.45.0
-	go.opentelemetry.io/collector/exporter v1.45.0
-	go.opentelemetry.io/collector/extension v1.45.0
-	go.opentelemetry.io/collector/pdata v1.45.0
+	go.opentelemetry.io/collector/component v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/component/componenttest v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/confmap v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/confmap/xconfmap v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/consumer v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/exporter v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/extension v1.45.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/pdata v1.45.1-0.20251105131800-09a271914bdc
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/api v0.254.0
+	google.golang.org/api v0.255.0
 )
 
 require (
@@ -58,8 +58,8 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.45.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.45.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.45.1-0.20251105131800-09a271914bdc // indirect
+	go.opentelemetry.io/collector/pipeline v1.45.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.36.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
@@ -79,7 +79,7 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
 	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
