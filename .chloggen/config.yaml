@@ -253,7 +253,7 @@ components:
     - receiver/gitlab
     - receiver/google
     - receiver/googlecloudmonitoring
-    - receiver/googlecloudpubsub
+    - receiver/googlepubsubpush
     - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/hostmetrics
