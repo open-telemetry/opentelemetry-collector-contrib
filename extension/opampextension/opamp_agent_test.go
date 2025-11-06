@@ -250,6 +250,69 @@ func TestStart(t *testing.T) {
 	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
+func TestStartPrefersCollectorGeneratedInstanceID(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	o, err := newOpampAgent(cfg, set)
+	require.NoError(t, err)
+
+	originalID := o.instanceID
+	require.True(t, o.usedGeneratedUUID)
+	require.NotEmpty(t, originalID.String())
+
+	collectorUUID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), collectorUUID.String())
+	assert.NotEqual(t, originalID, collectorUUID)
+
+	client := &capturingOpAMPClient{}
+	o.opampClient = client
+
+	require.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+
+	assert.Equal(t, collectorUUID, o.instanceID)
+	assert.False(t, o.usedGeneratedUUID)
+
+	value, ok := o.resourceAttrs[string(semconv.ServiceInstanceIDKey)]
+	require.True(t, ok)
+	assert.Equal(t, collectorUUID.String(), value)
+
+	startSettings := client.StartSettings()
+	assert.Equal(t, types.InstanceUid(collectorUUID), startSettings.InstanceUid)
+
+	assert.NoError(t, o.Shutdown(t.Context()))
+}
+
+func TestStartKeepsGeneratedInstanceIDOnInvalidCollectorValue(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	o, err := newOpampAgent(cfg, set)
+	require.NoError(t, err)
+
+	originalID := o.instanceID
+	require.True(t, o.usedGeneratedUUID)
+	require.NotEmpty(t, originalID.String())
+
+	set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "not-a-uuid")
+
+	client := &capturingOpAMPClient{}
+	o.opampClient = client
+
+	require.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+
+	assert.Equal(t, originalID, o.instanceID)
+	assert.True(t, o.usedGeneratedUUID)
+
+	_, ok := o.resourceAttrs[string(semconv.ServiceInstanceIDKey)]
+	assert.False(t, ok)
+
+	startSettings := client.StartSettings()
+	assert.Equal(t, types.InstanceUid(originalID), startSettings.InstanceUid)
+
+	assert.NoError(t, o.Shutdown(t.Context()))
+}
+
 func TestStartAvailableComponents(t *testing.T) {
 	cfg := createDefaultConfig()
 	agentConfig := cfg.(*Config)
@@ -781,6 +844,25 @@ type mockStatusAggregator struct {
 	receivedEvents []eventSourcePair
 	unsubscribed   bool
 	mtx            *sync.RWMutex
+}
+
+type capturingOpAMPClient struct {
+	mockOpAMPClient
+	mu            sync.Mutex
+	startSettings types.StartSettings
+}
+
+func (c *capturingOpAMPClient) Start(_ context.Context, settings types.StartSettings) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.startSettings = settings
+	return nil
+}
+
+func (c *capturingOpAMPClient) StartSettings() types.StartSettings {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.startSettings
 }
 
 func (m *mockStatusAggregator) Subscribe(_ status.Scope, _ status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc) {

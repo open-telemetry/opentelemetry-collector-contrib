@@ -58,8 +58,10 @@ type opampAgent struct {
 	agentType     string
 	agentVersion  string
 	resourceAttrs map[string]string
+	resource      pcommon.Resource
 
-	instanceID uuid.UUID
+	instanceID        uuid.UUID
+	usedGeneratedUUID bool
 
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
@@ -107,6 +109,8 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
 		componentstatus.ReportStatus(host, event)
 	}
+
+	o.adoptCollectorInstanceIDIfNeeded()
 
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
@@ -185,6 +189,44 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.logger.Debug("OpAMP client started")
 
 	return nil
+}
+
+// adoptCollectorInstanceIDIfNeeded swaps the extension-generated UUID with the
+// collector's telemetry UUID when the collector generated one later in startup.
+// This avoids overriding explicit configuration while still aligning with the
+// collector's resource identity when it becomes available.
+func (o *opampAgent) adoptCollectorInstanceIDIfNeeded() {
+	if o.cfg.InstanceUID != "" || !o.usedGeneratedUUID {
+		return
+	}
+
+	sid, ok := o.resource.Attributes().Get(string(semconv.ServiceInstanceIDKey))
+	if !ok {
+		o.logger.Debug("No service.instance.id found in collector's telemetry resource, using extension-generated UUID",
+			zap.String("extension_generated", o.instanceID.String()))
+		return
+	}
+
+	collectorValue := sid.AsString()
+	collectorUID, err := uuid.Parse(collectorValue)
+	if err != nil {
+		o.logger.Warn("Collector's service.instance.id is not a valid UUID, using extension-generated UUID",
+			zap.String("collector_value", collectorValue),
+			zap.String("extension_generated", o.instanceID.String()),
+			zap.Error(err))
+		return
+	}
+
+	if o.instanceID == collectorUID {
+		return
+	}
+
+	o.logger.Info("Using collector's generated service.instance.id instead of extension-generated UUID",
+		zap.String("extension_generated", o.instanceID.String()),
+		zap.String("collector_generated", collectorUID.String()))
+	o.instanceID = collectorUID
+	o.usedGeneratedUUID = false
+	o.resourceAttrs[string(semconv.ServiceInstanceIDKey)] = collectorUID.String()
 }
 
 func (o *opampAgent) Shutdown(ctx context.Context) error {
@@ -299,19 +341,27 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		return nil, fmt.Errorf("could not generate uuidv7: %w", err)
 	}
 
+	// Track whether we generated the UUID or got it from config/resource
+	usedGeneratedUUID := true
+
 	if cfg.InstanceUID != "" {
+		// Instance ID is explicitly configured
 		uid, err = parseInstanceIDString(cfg.InstanceUID)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse configured instance id: %w", err)
 		}
+		usedGeneratedUUID = false
 	} else {
 		sid, ok := set.Resource.Attributes().Get(string(semconv.ServiceInstanceIDKey))
 		if ok {
+			// Instance ID exists in the resource
 			uid, err = uuid.Parse(sid.AsString())
 			if err != nil {
 				return nil, err
 			}
+			usedGeneratedUUID = false
 		}
+		// else: No instance ID in config or resource, use the generated one
 	}
 	resourceAttrs := make(map[string]string, set.Resource.Attributes().Len())
 	set.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
@@ -326,9 +376,11 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		agentType:                agentType,
 		agentVersion:             agentVersion,
 		instanceID:               uid,
+		usedGeneratedUUID:        usedGeneratedUUID,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		resourceAttrs:            resourceAttrs,
+		resource:                 set.Resource,
 		statusSubscriptionWg:     &sync.WaitGroup{},
 		componentHealthWg:        &sync.WaitGroup{},
 		readyCh:                  make(chan struct{}),
