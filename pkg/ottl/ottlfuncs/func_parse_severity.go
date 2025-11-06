@@ -61,26 +61,26 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ott
 
 	severityMapping := map[string]criteriaSet{}
 
-	//convert the mapping to criteria objects to validate its structure
+	// convert the mapping to criteria objects to validate its structure
 	severityMap := mappingLiteral.AsRaw()
 	for logLevel, criteriaListObj := range severityMap {
 		severityMapping[logLevel] = []criteria{}
 		criteriaList, ok := criteriaListObj.([]any)
 		if !ok {
-			return func(ctx context.Context, tCtx K) (any, error) {
+			return func(_ context.Context, tCtx K) (any, error) {
 				return nil, errors.New("severity mapping criteria must be []any")
 			}
 		}
 		for _, critObj := range criteriaList {
 			critMap, ok := critObj.(map[string]any)
 			if !ok {
-				return func(ctx context.Context, tCtx K) (any, error) {
+				return func(_ context.Context, tCtx K) (any, error) {
 					return nil, errors.New("severity mapping criteria items must be map[string]any")
 				}
 			}
 			c, err := newCriteriaFromMap(critMap)
 			if err != nil {
-				return func(ctx context.Context, tCtx K) (any, error) {
+				return func(_ context.Context, tCtx K) (any, error) {
 					return nil, fmt.Errorf("invalid severity mapping criteria: %w", err)
 				}
 			}
@@ -180,12 +180,13 @@ func newCriteriaFromMap(m map[string]any) (*criteria, error) {
 		}
 	}
 	if rangeObj, ok := m[rangeKey]; ok {
-		if rangeMap, ok := rangeObj.(map[string]any); ok {
-			minObj, ok := rangeMap[minKey]
+		switch v := rangeObj.(type) {
+		case map[string]any:
+			minObj, ok := v[minKey]
 			if !ok {
 				return nil, errors.New("range must have a min value")
 			}
-			maxObj, ok := rangeMap[maxKey]
+			maxObj, ok := v[maxKey]
 			if !ok {
 				return nil, errors.New("range must have a max value")
 			}
@@ -201,8 +202,8 @@ func newCriteriaFromMap(m map[string]any) (*criteria, error) {
 				Min: minInt,
 				Max: maxInt,
 			}
-		} else if rangeStr, ok := rangeObj.(string); ok {
-			switch rangeStr {
+		case string:
+			switch v {
 			case http2xx:
 				crit.Range = &valueRange{Min: 200, Max: 299}
 			case http3xx:
@@ -212,9 +213,9 @@ func newCriteriaFromMap(m map[string]any) (*criteria, error) {
 			case http5xx:
 				crit.Range = &valueRange{Min: 500, Max: 599}
 			default:
-				return nil, fmt.Errorf("unknown range placeholder: %s", rangeStr)
+				return nil, fmt.Errorf("unknown range placeholder: %s", v)
 			}
-		} else {
+		default:
 			return nil, errors.New("range must be a map or a known placeholder string")
 		}
 	}
