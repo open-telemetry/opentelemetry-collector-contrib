@@ -8,6 +8,6 @@ import (
 
 var (
 	Type          = component.MustNewType("macosunifiedlogging")
-	ScopeName     = "github.com/observiq/bindplane-otel-collector/receiver/macosunifiedloggingreceiver"
+	ScopeName     = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver"
 	LogsStability = component.StabilityLevelDevelopment
 )
