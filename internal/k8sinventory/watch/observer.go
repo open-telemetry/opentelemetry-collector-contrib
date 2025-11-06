@@ -96,7 +96,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 			return
 		}
 
-		done := o.doWatch(resourceVersion, watchFunc, stopperChan)
+		done := o.doWatch(ctx, resourceVersion, watchFunc, stopperChan)
 		if done {
 			cancel()
 			return
@@ -150,8 +150,8 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 }
 
 // doWatch returns true when watching is done, false when watching should be restarted.
-func (o *Observer) doWatch(resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
-	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
+func (o *Observer) doWatch(ctx context.Context, resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
+	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),
