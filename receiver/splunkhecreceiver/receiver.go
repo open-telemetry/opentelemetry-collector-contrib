@@ -454,6 +454,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	var events []*splunk.Event
 	var metricEvents []*splunk.Event
 
+	// If event is JSON array, there should be no more tokens after the first one
 	if isJsonArray && dec.More() {
 		r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, nil)
 		return
@@ -500,6 +501,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 				r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 				return
 			}
+			unfiltered = append(unfiltered, &msg)
 		}
 
 		unfiltered = unfiltered[1:]

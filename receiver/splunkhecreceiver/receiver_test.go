@@ -150,6 +150,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			name: "multiple events",
 			req: func() *http.Request {
 				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
 
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
@@ -157,7 +158,10 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				msgBytes2, err := json.Marshal(splunkMsg2)
 				require.NoError(t, err)
 
-				combined := strings.Join([]string{string(msgBytes), string(msgBytes2)}, "")
+				msgBytes3, err := json.Marshal(splunkMsg3)
+				require.NoError(t, err)
+
+				combined := strings.Join([]string{string(msgBytes), string(msgBytes2), string(msgBytes3)}, "")
 
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
 				req.Header.Set("Content-Type", "application/not-json")
@@ -171,13 +175,18 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 					"code": float64(0),
 				}, body)
 			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Len(t, sink.AllLogs(), 1)
+				assert.Equal(t, sink.LogRecordCount(), 3)
+			},
 		},
 		{
 			name: "JSON array",
 			req: func() *http.Request {
 				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
 
-				messages := []*splunk.Event{splunkMsg, splunkMsg2}
+				messages := []*splunk.Event{splunkMsg, splunkMsg2, splunkMsg3}
 
 				msgBytes, err := json.Marshal(messages)
 				require.NoError(t, err)
@@ -193,6 +202,10 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 					"text": "Success",
 					"code": float64(0),
 				}, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Len(t, sink.AllLogs(), 1)
+				assert.Equal(t, sink.LogRecordCount(), 3)
 			},
 		},
 		{
