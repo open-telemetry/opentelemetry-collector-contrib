@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package watch // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer/watch"
+package watch // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
 
 import (
 	"context"

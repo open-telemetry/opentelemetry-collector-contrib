@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package pull
+package pull // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
 
 import (
 	"context"
