@@ -1,0 +1,6 @@
+type: macosunifiedlogging
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
