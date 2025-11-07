@@ -12,15 +12,12 @@ if [[ -f "${ENV_FILE}" ]]; then
   set +a
 fi
 
-# Generates VPC flow logs that exercise the Phase 1-2 fields required for
+# Generates VPC flow logs that exercise the fields required for
 # googlecloudlogentryencodingextension fixtures. Specifically, it targets:
-#   * Phase 1 (Round trip + MIG region)
-#       - jsonPayload.round_trip_time.median_msec
 #       - jsonPayload.src_instance.managed_instance_group.region
 #       - jsonPayload.dest_instance.managed_instance_group.region
-#   * Phase 2 (Google service annotations)
-#       - jsonPayload.src_google_service.{type,service_name,connectivity,private_domain}
-#       - jsonPayload.dest_google_service.{type,service_name,connectivity,private_domain}
+#       - jsonPayload.src_google_service.{type,service_name,connectivity}
+#       - jsonPayload.dest_google_service.{type,service_name,connectivity}
 #
 # The script intentionally avoids automatic teardown so resources remain
 # available for manual inspection.

@@ -6,6 +6,7 @@ package googlecloudlogentryencodingextension
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	gojson "github.com/goccy/go-json"
@@ -186,6 +187,16 @@ func TestPayloads(t *testing.T) {
 			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-w-internet-routing-details.json",
 			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-w-internet-routing-details_expected.yaml",
 		},
+		{
+			name:             "vpc flow log - google services",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-google-service.ndjson",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-google-service_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - managed instance mig regions",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-managed-instance.ndjson",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-managed-instance_expected.yaml",
+		},
 	}
 
 	extension := newTestExtension(t, Config{})
@@ -196,9 +207,33 @@ func TestPayloads(t *testing.T) {
 			data, err := os.ReadFile(tt.logFilename)
 			require.NoError(t, err)
 
-			content := bytes.NewBuffer([]byte{})
-			err = gojson.Compact(content, data)
-			require.NoError(t, err)
+			content := bytes.NewBuffer(nil)
+			normalizeNDJSON := func(raw []byte) {
+				lines := bytes.Split(raw, []byte{'\n'})
+				for _, line := range lines {
+					line = bytes.TrimSpace(line)
+					if len(line) == 0 {
+						continue
+					}
+					content.Write(line)
+					content.WriteByte('\n')
+				}
+			}
+
+			isNDJSON := filepath.Ext(tt.logFilename) == ".ndjson"
+			var compactionErr error
+			if !isNDJSON {
+				compactionErr = gojson.Compact(content, data)
+			}
+
+			if isNDJSON || compactionErr != nil {
+				if !isNDJSON {
+					content.Reset()
+				}
+				// NDJSON fixtures contain one JSON object per line, so we strip
+				// whitespace from each line while preserving record boundaries.
+				normalizeNDJSON(data)
+			}
 
 			logs, err := extension.UnmarshalLogs(content.Bytes())
 			require.NoError(t, err)
