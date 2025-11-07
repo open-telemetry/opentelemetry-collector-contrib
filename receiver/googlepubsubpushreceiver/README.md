@@ -15,7 +15,7 @@
 > **NOTE**: Refer to _[Difference to the current google pub sub receiver](#difference-to-the-current-google-pub-sub-receiver)_ if you don't know which receiver to use or just want to understand the differences.
 
 The `googlepubsubpush` receiver ingests OpenTelemetry data through Google Cloud Pub/Sub push subscriptions, supporting two primary data ingestion patterns:
-- Direct Log Ingestion: Processes Pub/Sub messages containing log data directly.
+ - Direct Log Ingestion: Processes Pub/Sub messages containing log data directly.
  - GCS Event Processing: Handles Pub/Sub notifications for new files in Google Cloud Storage.
 
 All received data is parsed into OpenTelemetry format using configurable encoding extensions, enabling flexible and near real-time telemetry collection from multiple Google Cloud sources.
