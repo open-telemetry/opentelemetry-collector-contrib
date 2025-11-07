@@ -26,26 +26,25 @@ func newIndexResolver() *indexResolver {
 }
 
 // ResolveLogIndex resolves the logs index name using placeholders, fallback, and time format
-func (r *indexResolver) ResolveLogIndex(cfg *Config, ld plog.Logs, timestamp time.Time) string {
+func (r *indexResolver) ResolveLogIndex(cfg *Config, resLog plog.ResourceLogs, timestamp time.Time) string {
 	if cfg.LogsIndex == "" {
-		// Use default pattern
 		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_logs")
 		return r.appendTimeFormat(indexName, cfg.LogsIndexTimeFormat, timestamp)
 	}
 
-	attrs := r.collectLogAttributes(ld)
+	attrs := r.collectLogAttributes(resLog)
 	return r.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, cfg.LogsIndexTimeFormat, attrs, timestamp)
 }
 
 // ResolveTraceIndex resolves the traces index name using placeholders, fallback, and time format
-func (r *indexResolver) ResolveTraceIndex(cfg *Config, td ptrace.Traces, timestamp time.Time) string {
+func (r *indexResolver) ResolveTraceIndex(cfg *Config, resSpan ptrace.ResourceSpans, timestamp time.Time) string {
 	if cfg.TracesIndex == "" {
 		// Use default pattern
 		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_traces")
 		return r.appendTimeFormat(indexName, cfg.TracesIndexTimeFormat, timestamp)
 	}
 
-	attrs := r.collectTraceAttributes(td)
+	attrs := r.collectTraceAttributes(resSpan)
 	return r.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, cfg.TracesIndexTimeFormat, attrs, timestamp)
 }
 
@@ -74,81 +73,73 @@ func (*indexResolver) appendTimeFormat(index, timeFormat string, timestamp time.
 }
 
 // collectLogAttributes extracts resource and log record attributes into a flat map for placeholder resolution
-func (*indexResolver) collectLogAttributes(ld plog.Logs) map[string]string {
+func (*indexResolver) collectLogAttributes(resLog plog.ResourceLogs) map[string]string {
 	attrs := make(map[string]string)
-	resLogsSlice := ld.ResourceLogs()
-	for i := 0; i < resLogsSlice.Len(); i++ {
-		resLogs := resLogsSlice.At(i)
-		// Resource attributes
-		resAttrs := resLogs.Resource().Attributes()
-		resAttrs.Range(func(k string, v pcommon.Value) bool {
+	// Resource attributes
+	resAttrs := resLog.Resource().Attributes()
+	resAttrs.Range(func(k string, v pcommon.Value) bool {
+		attrs[k] = v.AsString()
+		return true
+	})
+	logSlice := resLog.ScopeLogs()
+	for j := 0; j < logSlice.Len(); j++ {
+		scopeLogs := logSlice.At(j)
+		// Instrumentation scope attributes
+		if scope := scopeLogs.Scope(); scope.Name() != "" {
+			attrs["scope.name"] = scope.Name()
+		}
+		if scope := scopeLogs.Scope(); scope.Version() != "" {
+			attrs["scope.version"] = scope.Version()
+		}
+		scopeAttrs := scopeLogs.Scope().Attributes()
+		scopeAttrs.Range(func(k string, v pcommon.Value) bool {
 			attrs[k] = v.AsString()
 			return true
 		})
-		logSlice := resLogs.ScopeLogs()
-		for j := 0; j < logSlice.Len(); j++ {
-			scopeLogs := logSlice.At(j)
-			// Instrumentation scope attributes
-			if scope := scopeLogs.Scope(); scope.Name() != "" {
-				attrs["scope.name"] = scope.Name()
-			}
-			if scope := scopeLogs.Scope(); scope.Version() != "" {
-				attrs["scope.version"] = scope.Version()
-			}
-			scopeAttrs := scopeLogs.Scope().Attributes()
-			scopeAttrs.Range(func(k string, v pcommon.Value) bool {
+		logs := scopeLogs.LogRecords()
+		for k := 0; k < logs.Len(); k++ {
+			logAttrs := logs.At(k).Attributes()
+			logAttrs.Range(func(k string, v pcommon.Value) bool {
 				attrs[k] = v.AsString()
 				return true
 			})
-			logs := scopeLogs.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				logAttrs := logs.At(k).Attributes()
-				logAttrs.Range(func(k string, v pcommon.Value) bool {
-					attrs[k] = v.AsString()
-					return true
-				})
-			}
 		}
 	}
 	return attrs
 }
 
 // collectTraceAttributes extracts resource and span attributes into a flat map for placeholder resolution
-func (*indexResolver) collectTraceAttributes(td ptrace.Traces) map[string]string {
+func (*indexResolver) collectTraceAttributes(resSpan ptrace.ResourceSpans) map[string]string {
 	attrs := make(map[string]string)
-	resourceSpans := td.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
-		resSpan := resourceSpans.At(i)
-		// Resource attributes
-		resAttrs := resSpan.Resource().Attributes()
-		resAttrs.Range(func(k string, v pcommon.Value) bool {
+	// Resource attributes
+	resAttrs := resSpan.Resource().Attributes()
+	resAttrs.Range(func(k string, v pcommon.Value) bool {
+		attrs[k] = v.AsString()
+		return true
+	})
+	scopeSpans := resSpan.ScopeSpans()
+	for j := 0; j < scopeSpans.Len(); j++ {
+		scopeSpan := scopeSpans.At(j)
+		// Instrumentation scope attributes
+		if scope := scopeSpan.Scope(); scope.Name() != "" {
+			attrs["scope.name"] = scope.Name()
+		}
+		if scope := scopeSpan.Scope(); scope.Version() != "" {
+			attrs["scope.version"] = scope.Version()
+		}
+		scopeAttrs := scopeSpan.Scope().Attributes()
+		scopeAttrs.Range(func(k string, v pcommon.Value) bool {
 			attrs[k] = v.AsString()
 			return true
 		})
-		scopeSpans := resSpan.ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
-			scopeSpan := scopeSpans.At(j)
-			// Instrumentation scope attributes
-			if scope := scopeSpan.Scope(); scope.Name() != "" {
-				attrs["scope.name"] = scope.Name()
-			}
-			if scope := scopeSpan.Scope(); scope.Version() != "" {
-				attrs["scope.version"] = scope.Version()
-			}
-			scopeAttrs := scopeSpan.Scope().Attributes()
-			scopeAttrs.Range(func(k string, v pcommon.Value) bool {
+		spans := scopeSpan.Spans()
+		for k := 0; k < spans.Len(); k++ {
+			span := spans.At(k)
+			spanAttrs := span.Attributes()
+			spanAttrs.Range(func(k string, v pcommon.Value) bool {
 				attrs[k] = v.AsString()
 				return true
 			})
-			spans := scopeSpan.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				spanAttrs := span.Attributes()
-				spanAttrs.Range(func(k string, v pcommon.Value) bool {
-					attrs[k] = v.AsString()
-					return true
-				})
-			}
 		}
 	}
 	return attrs

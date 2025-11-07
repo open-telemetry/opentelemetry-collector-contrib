@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"slices"
+	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchutil"
@@ -18,15 +19,14 @@ import (
 )
 
 type traceBulkIndexer struct {
-	index       string
 	bulkAction  string
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newTraceBulkIndexer(index, bulkAction string, model mappingModel) *traceBulkIndexer {
-	return &traceBulkIndexer{index: index, bulkAction: bulkAction, model: model, errs: nil, bulkIndexer: nil}
+func newTraceBulkIndexer(bulkAction string, model mappingModel) *traceBulkIndexer {
+	return &traceBulkIndexer{bulkAction: bulkAction, model: model, errs: nil, bulkIndexer: nil}
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
@@ -60,8 +60,8 @@ func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Trace
 	tbi.errs = append(tbi.errs, consumererror.NewTraces(err, trace))
 }
 
-func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces) {
-	forEachSpan(td, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) {
+func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time) {
+	forEachSpan(td, indexResolver, cfg, timestamp, func(indexName string, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) {
 		payload, err := tbi.model.encodeTrace(resource, scope, scopeSchemaURL, span)
 		if err != nil {
 			tbi.appendPermanentError(err)
@@ -71,7 +71,7 @@ func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces) {
 				// selective ACKing in the bulk response.
 				tbi.processItemFailure(resp, itemErr, makeTrace(resource, resourceSchemaURL, scope, scopeSchemaURL, span))
 			}
-			bi := tbi.newBulkIndexerItem(payload)
+			bi := tbi.newBulkIndexerItem(payload, indexName)
 			bi.OnFailure = ItemFailureHandler
 			err = tbi.bulkIndexer.Add(ctx, bi)
 			if err != nil {
@@ -130,9 +130,9 @@ func shouldRetryEvent(status int) bool {
 	return slices.Contains(retryOnStatus, status)
 }
 
-func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
+func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte, indexName string) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: tbi.index, Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: indexName, Body: body}
 	return item
 }
 
@@ -144,10 +144,11 @@ func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(
 	})
 }
 
-func forEachSpan(td ptrace.Traces, visitor func(pcommon.Resource, string, pcommon.InstrumentationScope, string, ptrace.Span)) {
+func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, visitor func(string, pcommon.Resource, string, pcommon.InstrumentationScope, string, ptrace.Span)) {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		il := resourceSpans.At(i)
+		indexName := indexResolver.ResolveTraceIndex(cfg, il, timestamp)
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
@@ -156,7 +157,7 @@ func forEachSpan(td ptrace.Traces, visitor func(pcommon.Resource, string, pcommo
 
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
+				visitor(indexName, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
 			}
 		}
 	}

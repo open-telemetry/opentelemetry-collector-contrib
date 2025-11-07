@@ -24,7 +24,7 @@ func TestIndexResolver_ResolveLogIndex_WithServiceName(t *testing.T) {
 
 	ld := createTestLogData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveLogIndex(cfg, ld, ts)
+	index := resolver.ResolveLogIndex(cfg, ld.ResourceLogs().At(0), ts)
 	expected := "otel-logs-myservice-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -43,7 +43,7 @@ func TestIndexResolver_ResolveLogIndex_MissingServiceName(t *testing.T) {
 
 	ld := createTestLogData("")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveLogIndex(cfg, ld, ts)
+	index := resolver.ResolveLogIndex(cfg, ld.ResourceLogs().At(0), ts)
 	expected := "otel-logs-default-service-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -61,7 +61,7 @@ func TestIndexResolver_ResolveLogIndex_NoTimeFormat(t *testing.T) {
 
 	ld := createTestLogData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveLogIndex(cfg, ld, ts)
+	index := resolver.ResolveLogIndex(cfg, ld.ResourceLogs().At(0), ts)
 	expected := "otel-logs-myservice"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -80,7 +80,7 @@ func TestIndexResolver_ResolveLogIndex_EmptyLogsIndex(t *testing.T) {
 
 	ld := createTestLogData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveLogIndex(cfg, ld, ts)
+	index := resolver.ResolveLogIndex(cfg, ld.ResourceLogs().At(0), ts)
 	expected := "ss4o_logs-default-namespace-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -99,7 +99,7 @@ func TestIndexResolver_ResolveTraceIndex_WithServiceName(t *testing.T) {
 
 	td := createTestTraceData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveTraceIndex(cfg, td, ts)
+	index := resolver.ResolveTraceIndex(cfg, td.ResourceSpans().At(0), ts)
 	expected := "otel-traces-myservice-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -118,7 +118,7 @@ func TestIndexResolver_ResolveTraceIndex_MissingServiceName(t *testing.T) {
 
 	td := createTestTraceData("")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveTraceIndex(cfg, td, ts)
+	index := resolver.ResolveTraceIndex(cfg, td.ResourceSpans().At(0), ts)
 	expected := "otel-traces-default-service-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -136,7 +136,7 @@ func TestIndexResolver_ResolveTraceIndex_NoTimeFormat(t *testing.T) {
 
 	td := createTestTraceData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveTraceIndex(cfg, td, ts)
+	index := resolver.ResolveTraceIndex(cfg, td.ResourceSpans().At(0), ts)
 	expected := "otel-traces-myservice"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -155,7 +155,7 @@ func TestIndexResolver_ResolveTraceIndex_EmptyTracesIndex(t *testing.T) {
 
 	td := createTestTraceData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveTraceIndex(cfg, td, ts)
+	index := resolver.ResolveTraceIndex(cfg, td.ResourceSpans().At(0), ts)
 	expected := "ss4o_traces-default-namespace-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -174,7 +174,7 @@ func TestIndexResolver_ResolveTraceIndex_WithCustomAttribute(t *testing.T) {
 
 	td := createTestTraceDataWithCustomAttribute("myservice", "custom.label", "myapp")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveTraceIndex(cfg, td, ts)
+	index := resolver.ResolveTraceIndex(cfg, td.ResourceSpans().At(0), ts)
 	expected := "otel-traces-myapp-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
@@ -193,10 +193,70 @@ func TestIndexResolver_ResolveTraceIndex_UnknownPlaceholder(t *testing.T) {
 
 	td := createTestTraceData("myservice")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
-	index := resolver.ResolveTraceIndex(cfg, td, ts)
+	index := resolver.ResolveTraceIndex(cfg, td.ResourceSpans().At(0), ts)
 	expected := "otel-traces-unknown-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
+func TestIndexResolver_ResolveLogIndex_MultipleResources(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		LogsIndex:           "%{service.name}-logs",
+		LogsIndexFallback:   "default",
+		LogsIndexTimeFormat: "",
+		Dataset:             "default",
+		Namespace:           "namespace",
+	}
+
+	ld := createTestLogDataMultipleResources("app1", "app2")
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+
+	index1 := resolver.ResolveLogIndex(cfg, ld.ResourceLogs().At(0), ts)
+	index2 := resolver.ResolveLogIndex(cfg, ld.ResourceLogs().At(1), ts)
+
+	expected1 := "app1-logs"
+	expected2 := "app2-logs"
+
+	if index1 != expected1 {
+		t.Errorf("expected %q, got %q", expected1, index1)
+	}
+	if index2 != expected2 {
+		t.Errorf("expected %q, got %q", expected2, index2)
+	}
+	if index1 == index2 {
+		t.Errorf("indices should be different: %q == %q", index1, index2)
+	}
+}
+
+func TestIndexResolver_ResolveTraceIndex_MultipleResources(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		TracesIndex:           "%{service.name}-traces",
+		TracesIndexFallback:   "default",
+		TracesIndexTimeFormat: "",
+		Dataset:               "default",
+		Namespace:             "namespace",
+	}
+
+	td := createTestTraceDataMultipleResources("svc1", "svc2")
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+
+	index1 := resolver.ResolveTraceIndex(cfg, td.ResourceSpans().At(0), ts)
+	index2 := resolver.ResolveTraceIndex(cfg, td.ResourceSpans().At(1), ts)
+
+	expected1 := "svc1-traces"
+	expected2 := "svc2-traces"
+
+	if index1 != expected1 {
+		t.Errorf("expected %q, got %q", expected1, index1)
+	}
+	if index2 != expected2 {
+		t.Errorf("expected %q, got %q", expected2, index2)
+	}
+	if index1 == index2 {
+		t.Errorf("indices should be different: %q == %q", index1, index2)
 	}
 }
 
@@ -269,5 +329,39 @@ func createTestTraceDataWithCustomAttribute(serviceName, attrKey, attrValue stri
 	ss := rs.ScopeSpans().AppendEmpty()
 	span := ss.Spans().AppendEmpty()
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return td
+}
+
+func createTestLogDataMultipleResources(serviceName1, serviceName2 string) plog.Logs {
+	ld := plog.NewLogs()
+	rl1 := ld.ResourceLogs().AppendEmpty()
+	rl1.Resource().Attributes().PutStr("service.name", serviceName1)
+	sl1 := rl1.ScopeLogs().AppendEmpty()
+	logRecord1 := sl1.LogRecords().AppendEmpty()
+	logRecord1.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	rl2 := ld.ResourceLogs().AppendEmpty()
+	rl2.Resource().Attributes().PutStr("service.name", serviceName2)
+	sl2 := rl2.ScopeLogs().AppendEmpty()
+	logRecord2 := sl2.LogRecords().AppendEmpty()
+	logRecord2.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	return ld
+}
+
+func createTestTraceDataMultipleResources(serviceName1, serviceName2 string) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs1 := td.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutStr("service.name", serviceName1)
+	ss1 := rs1.ScopeSpans().AppendEmpty()
+	span1 := ss1.Spans().AppendEmpty()
+	span1.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	rs2 := td.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutStr("service.name", serviceName2)
+	ss2 := rs2.ScopeSpans().AppendEmpty()
+	span2 := ss2.Spans().AppendEmpty()
+	span2.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
 	return td
 }
