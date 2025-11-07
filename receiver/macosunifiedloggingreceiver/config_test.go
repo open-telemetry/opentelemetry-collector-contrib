@@ -463,7 +463,7 @@ func TestResolveArchivePathWithGlob(t *testing.T) {
 
 	// Create a non-directory file that should be skipped
 	filePath := filepath.Join(tmpDir, "not_an_archive.logarchive")
-	require.NoError(t, os.WriteFile(filePath, []byte("not a directory"), 0o644))
+	require.NoError(t, os.WriteFile(filePath, []byte("not a directory"), 0o600))
 
 	testCases := []struct {
 		name        string
@@ -587,7 +587,7 @@ func TestResolveArchivePathSkipsInvalidMatches(t *testing.T) {
 
 	// Create a file (not a directory) that matches the pattern
 	invalidArchive := filepath.Join(tmpDir, "invalid.logarchive")
-	require.NoError(t, os.WriteFile(invalidArchive, []byte("not a directory"), 0o644))
+	require.NoError(t, os.WriteFile(invalidArchive, []byte("not a directory"), 0o600))
 
 	// Create a non-existent path that would match glob but doesn't exist
 	nonexistentArchive := filepath.Join(tmpDir, "nonexistent.logarchive")
