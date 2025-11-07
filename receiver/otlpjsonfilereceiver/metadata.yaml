@@ -7,7 +7,7 @@ status:
     development: [profiles]
   distributions: [contrib]
   codeowners:
-    active: [atoulme]
+    active: [atoulme, paulojmdias]
     seeking_new: true
 tests:
   config:
