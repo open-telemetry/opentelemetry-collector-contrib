@@ -1,6 +1,6 @@
 change_type: bug_fix
-component: receiver/libhoneyreceiver
-note: Allow single events and uncompresed requests
+component: receiver/libhoney
+note: Allow single events and uncompressed requests
 issues: [44026, 44010]
 subtext: |
   The receiver required events to be wrapped in an array before. The single-event format
