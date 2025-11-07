@@ -7,14 +7,14 @@ require (
 	github.com/redis/go-redis/v9 v9.16.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.45.1-0.20251106125304-a6a176660925
-	go.opentelemetry.io/collector/component/componenttest v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/component/componenttest v0.139.1-0.20251106125304-a6a176660925
 	go.opentelemetry.io/collector/config/configopaque v1.45.1-0.20251106125304-a6a176660925
 	go.opentelemetry.io/collector/config/configtls v1.45.1-0.20251106125304-a6a176660925
 	go.opentelemetry.io/collector/confmap v1.45.1-0.20251106125304-a6a176660925
-	go.opentelemetry.io/collector/confmap/xconfmap v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/confmap/xconfmap v0.139.1-0.20251106125304-a6a176660925
 	go.opentelemetry.io/collector/extension v1.45.1-0.20251106125304-a6a176660925
-	go.opentelemetry.io/collector/extension/extensiontest v0.139.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/extension/xextension v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/extension/extensiontest v0.139.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/extension/xextension v0.139.1-0.20251106125304-a6a176660925
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
