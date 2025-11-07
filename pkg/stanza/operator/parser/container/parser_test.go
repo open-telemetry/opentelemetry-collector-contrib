@@ -78,11 +78,8 @@ func TestFormatDetectionFailure(t *testing.T) {
 
 func TestInternalRecombineCfg(t *testing.T) {
 	cfg := createRecombineConfig(Config{
-		MaxLogSize: 102400,
-		Recombine: RecombineConfig{
-			MaxBatchSize:          1000,
-			MaxUnmatchedBatchSize: 100,
-		},
+		MaxLogSize:   102400,
+		MaxBatchSize: 1000,
 	})
 	expected := recombine.NewConfigWithID(recombineInternalID)
 	expected.IsLastEntry = "attributes.logtag == 'F'"
@@ -91,7 +88,7 @@ func TestInternalRecombineCfg(t *testing.T) {
 	expected.SourceIdentifier = entry.NewAttributeField(attrs.LogFilePath)
 	expected.MaxLogSize = 102400
 	expected.MaxBatchSize = 1000
-	expected.MaxUnmatchedBatchSize = 100
+	expected.MaxUnmatchedBatchSize = 0
 	require.Equal(t, expected, cfg)
 }
 
