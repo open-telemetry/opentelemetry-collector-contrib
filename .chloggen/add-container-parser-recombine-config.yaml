@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/filelog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add configurable recombine settings to container parser for handling large multiline logs
+note: Add configurable batch size settings to container parser and increase default max log size
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43982]
@@ -16,11 +16,12 @@ issues: [43982]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The container parser now supports a `recombine` configuration section with two parameters:
-  - `max_batch_size`: Controls batching for CRI/containerd logs with P/F tags (default: 1000)
-  - `max_unmatched_batch_size`: Controls batching for Docker logs without P/F tags (default: 100)
+  The container parser now supports configurable batch size settings for handling large multiline logs:
+  - `max_batch_size`: Controls batching for CRI/containerd logs with P/F tags (default: 0, unlimited)
 
-  This fixes an issue where multiline logs were truncated at 1.6 MB when they exceeded the hardcoded limits. Users can now configure these values for applications that produce very long multiline logs such as large stack traces, JSON payloads, or single-line logs that span multiple Docker JSON entries.
+  The default `max_log_size` has been increased from 100KB to 10MB to prevent truncation of large logs while still allowing users to override it.
+
+  This addresses issues where multiline logs were truncated when they exceeded the previous limits. Users can now configure these values for applications that produce very long multiline logs such as large stack traces or JSON payloads.
 
   Example configuration:
   ```yaml
@@ -29,9 +30,7 @@ subtext: |
       include: ["/var/log/containers/*.log"]
       operators:
         - type: container
-          recombine:
-            max_batch_size: 2000
-            max_unmatched_batch_size: 500
+          max_batch_size: 2000
   ```
 
 # If your change doesn't affect end users or the exported elements of any package,
