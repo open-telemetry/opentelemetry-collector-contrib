@@ -242,6 +242,7 @@ receiver/fluentforwardreceiver receiver/fluentforward
 receiver/githubreceiver receiver/github
 receiver/gitlabreceiver receiver/gitlab
 receiver/googlecloudmonitoringreceiver receiver/googlecloudmonitoring
+receiver/googlecloudpubsubpushreceiver receiver/googlecloudpubsubpush
 receiver/googlecloudpubsubreceiver receiver/googlecloudpubsub
 receiver/googlecloudspannerreceiver receiver/googlecloudspanner
 receiver/haproxyreceiver receiver/haproxy
