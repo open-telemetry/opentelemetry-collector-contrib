@@ -54,11 +54,11 @@ func TestK8sResolve(t *testing.T) {
 			},
 		}
 		var expectInit []string
-		for _, subset := range endpoint.Endpoints {
-			for _, address := range subset.Addresses {
+		for _, endpoint := range endpoint.Endpoints {
+			for _, address := range endpoint.Addresses {
 				for _, port := range args.ports {
 					if returnHostnames {
-						expectInit = append(expectInit, fmt.Sprintf("%s.%s.%s:%d", *subset.Hostname, service, defaultNs, port))
+						expectInit = append(expectInit, fmt.Sprintf("%s.%s.%s:%d", *endpoint.Hostname, service, defaultNs, port))
 					} else {
 						expectInit = append(expectInit, fmt.Sprintf("%s:%d", address, port))
 					}
