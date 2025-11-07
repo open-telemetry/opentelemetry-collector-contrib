@@ -19,10 +19,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -307,6 +310,484 @@ func TestConsumeTraces_DNSResolverRetriesExhausted(t *testing.T) {
 	res := p.ConsumeTraces(t.Context(), simpleTraces())
 	require.Error(t, res)
 	require.EqualError(t, res, "all endpoints were tried and failed: map[endpoint-1:true endpoint-2:true]")
+}
+
+func TestConsumeTraces_DNSResolverQuarantineWithParentExporterBackoffEnabled(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{
+				Hostname: "service-1",
+				Port:     "",
+				Quarantine: QuarantineSettings{
+					Enabled:  true,
+					Duration: 5 * time.Millisecond, // Short quarantine - must be shorter than backoff intervals
+				},
+			}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	// Set up the hash ring with the test endpoints
+	lb.ring = newHashRing([]string{"endpoint-1", "endpoint-2"})
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.loadBalancer = lb
+
+	// Track attempts per endpoint to verify quarantine logic tries all endpoints
+	endpoint1Attempts := &atomic.Int64{}
+	endpoint2Attempts := &atomic.Int64{}
+	totalAttempts := &atomic.Int64{}
+	var attemptTimes []time.Time
+	var timesMutex sync.Mutex
+
+	// Both endpoints return an error to simulate unreachable endpoints
+	lb.exporters = map[string]*wrappedExporter{
+		"endpoint-1:4317": newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+			endpoint1Attempts.Add(1)
+			totalAttempts.Add(1)
+			timesMutex.Lock()
+			attemptTimes = append(attemptTimes, time.Now())
+			timesMutex.Unlock()
+			return errors.New("endpoint unreachable")
+		}), "endpoint-1:4317"),
+		"endpoint-2:4317": newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+			endpoint2Attempts.Add(1)
+			totalAttempts.Add(1)
+			timesMutex.Lock()
+			attemptTimes = append(attemptTimes, time.Now())
+			timesMutex.Unlock()
+			return errors.New("endpoint unreachable")
+		}), "endpoint-2:4317"),
+	}
+
+	// Max elapsed time is 250ms, so it should retry 4 times per endpoint
+	// 10ms, 20ms, 40ms, 80ms
+	// Total time should be 150ms
+	wrappedExporterBackOffConfig := configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     10 * time.Millisecond,
+		RandomizationFactor: 0,
+		Multiplier:          2,
+		MaxInterval:         200 * time.Millisecond,
+		MaxElapsedTime:      250 * time.Millisecond,
+	}
+
+	// Wrap with exporterhelper to enable retry logic with backoff
+	retryExporter, err := exporterhelper.NewTraces(
+		t.Context(),
+		ts,
+		cfg,
+		p.ConsumeTraces,
+		exporterhelper.WithStart(p.Start),
+		exporterhelper.WithShutdown(p.Shutdown),
+		exporterhelper.WithCapabilities(p.Capabilities()),
+		exporterhelper.WithRetry(wrappedExporterBackOffConfig),
+	)
+	require.NoError(t, err)
+
+	err = retryExporter.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, retryExporter.Shutdown(t.Context()))
+	}()
+
+	// Test: ConsumeLogs should fail after retrying all endpoints multiple times with backoff
+	start := time.Now()
+	res := retryExporter.ConsumeTraces(t.Context(), simpleTraces())
+	elapsed := time.Since(start)
+
+	// Verify that an error occurred
+	require.Error(t, res)
+	require.Contains(t, res.Error(), "all endpoints were tried and failed")
+
+	t.Logf("Total attempts: %d, Endpoint-1: %d, Endpoint-2: %d, Elapsed: %v",
+		totalAttempts.Load(), endpoint1Attempts.Load(), endpoint2Attempts.Load(), elapsed)
+
+	// Verify quarantine logic: both endpoints should be tried
+	// In the first cycle, quarantine logic should try both endpoints immediately
+	require.Positive(t, endpoint1Attempts.Load(), "endpoint-1 should be tried at least once")
+	require.Positive(t, endpoint2Attempts.Load(), "endpoint-2 should be tried at least once")
+
+	// With backoff and quarantine working together:
+	require.GreaterOrEqual(t, totalAttempts.Load(), int64(2),
+		"quarantine logic should try both endpoints at least in the initial cycle")
+
+	if totalAttempts.Load() > 2 {
+		t.Logf("Backoff retry occurred: multiple retry cycles observed")
+
+		// Verify that backoff timing was applied by checking the time between first and last attempts
+		timesMutex.Lock()
+		if len(attemptTimes) > 2 {
+			firstAttempt := attemptTimes[0]
+			lastAttempt := attemptTimes[len(attemptTimes)-1]
+			timeBetween := lastAttempt.Sub(firstAttempt)
+			t.Logf("Time between first and last attempt: %v", timeBetween)
+			// We expect multiple retry cycles around ~150ms total elapsed time
+			require.Greater(t, timeBetween.Milliseconds(), int64(125),
+				"should have backoff delay between retry cycles")
+		}
+		timesMutex.Unlock()
+	}
+
+	// The total elapsed time should reflect backoff delays if retries occurred
+	t.Logf("Total elapsed time: %v", elapsed)
+}
+
+func TestConsumeTraces_DNSResolverQuarantineWithParentExporterBackoffDisabled(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{
+				Hostname: "service-1",
+				Port:     "",
+				Quarantine: QuarantineSettings{
+					Enabled:  true,
+					Duration: 5 * time.Millisecond, // Short quarantine - must be shorter than backoff intervals
+				},
+			}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	// Set up the hash ring with the test endpoints
+	lb.ring = newHashRing([]string{"endpoint-1", "endpoint-2"})
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.loadBalancer = lb
+
+	// Track attempts per endpoint to verify quarantine logic tries all endpoints
+	endpoint1Attempts := &atomic.Int64{}
+	endpoint2Attempts := &atomic.Int64{}
+	totalAttempts := &atomic.Int64{}
+	var attemptTimes []time.Time
+	var timesMutex sync.Mutex
+
+	// Both endpoints return an error to simulate unreachable endpoints
+	lb.exporters = map[string]*wrappedExporter{
+		"endpoint-1:4317": newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+			endpoint1Attempts.Add(1)
+			totalAttempts.Add(1)
+			timesMutex.Lock()
+			attemptTimes = append(attemptTimes, time.Now())
+			timesMutex.Unlock()
+			return errors.New("endpoint unreachable")
+		}), "endpoint-1:4317"),
+		"endpoint-2:4317": newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+			endpoint2Attempts.Add(1)
+			totalAttempts.Add(1)
+			timesMutex.Lock()
+			attemptTimes = append(attemptTimes, time.Now())
+			timesMutex.Unlock()
+			return errors.New("endpoint unreachable")
+		}), "endpoint-2:4317"),
+	}
+
+	// Wrap with exporterhelper without backoff
+	retryExporter, err := exporterhelper.NewTraces(
+		t.Context(),
+		ts,
+		cfg,
+		p.ConsumeTraces,
+		exporterhelper.WithStart(p.Start),
+		exporterhelper.WithShutdown(p.Shutdown),
+		exporterhelper.WithCapabilities(p.Capabilities()),
+	)
+	require.NoError(t, err)
+
+	err = retryExporter.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, retryExporter.Shutdown(t.Context()))
+	}()
+
+	// Test: ConsumeLogs should fail after retrying all endpoints multiple times with backoff
+	start := time.Now()
+	res := retryExporter.ConsumeTraces(t.Context(), simpleTraces())
+	elapsed := time.Since(start)
+
+	// Verify that an error occurred
+	require.Error(t, res)
+	require.Contains(t, res.Error(), "all endpoints were tried and failed")
+
+	t.Logf("Total attempts: %d, Endpoint-1: %d, Endpoint-2: %d, Elapsed: %v",
+		totalAttempts.Load(), endpoint1Attempts.Load(), endpoint2Attempts.Load(), elapsed)
+
+	// Verify quarantine logic: both endpoints should be tried
+	require.Equal(t, int64(1), endpoint1Attempts.Load(), "endpoint-1 should be tried once")
+	require.Equal(t, int64(1), endpoint2Attempts.Load(), "endpoint-2 should be tried once")
+	require.Equal(t, int64(2), totalAttempts.Load(),
+		"quarantine logic should try both endpoints once")
+}
+
+// TestConsumeLogs_DNSResolverQuarantineWithParentExporterBackoffConfig_PartialRecovery tests the scenario
+// where some endpoints recover after being quarantined
+func TestConsumeTraces_DNSResolverQuarantineWithParentExporterBackoffEnabled_PartialRecovery(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{
+				Hostname: "service-1",
+				Port:     "",
+				Quarantine: QuarantineSettings{
+					Enabled:  true,
+					Duration: 100 * time.Millisecond, // Short quarantine for testing
+				},
+			}),
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	// Set up the hash ring with the test endpoints
+	lb.ring = newHashRing([]string{"endpoint-1", "endpoint-2"})
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.loadBalancer = lb
+
+	// Endpoint-1 fails initially but recovers after 150ms
+	// Endpoint-2 always fails
+	endpoint1Attempts := &atomic.Int64{}
+	endpoint2Attempts := &atomic.Int64{}
+	var startTime time.Time
+
+	lb.exporters = map[string]*wrappedExporter{
+		"endpoint-1:4317": newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+			endpoint1Attempts.Add(1)
+			// Simulate recovery after 150ms
+			if time.Since(startTime) > 150*time.Millisecond {
+				t.Log("endpoint-1 recovered")
+				return nil
+			}
+			t.Log("endpoint-1 temporarily unreachable")
+			return errors.New("endpoint temporarily unreachable")
+		}), "endpoint-1:4317"),
+		"endpoint-2:4317": newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+			endpoint2Attempts.Add(1)
+			return errors.New("endpoint unreachable")
+		}), "endpoint-2:4317"),
+	}
+
+	wrappedExporterBackOffConfig := configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     10 * time.Millisecond,
+		RandomizationFactor: 0,
+		Multiplier:          2,
+		MaxInterval:         200 * time.Millisecond,
+		MaxElapsedTime:      250 * time.Millisecond,
+	}
+
+	// Wrap with exporterhelper to enable retry logic with backoff
+	retryExporter, err := exporterhelper.NewTraces(
+		t.Context(),
+		ts,
+		cfg,
+		p.ConsumeTraces,
+		exporterhelper.WithStart(p.Start),
+		exporterhelper.WithShutdown(p.Shutdown),
+		exporterhelper.WithCapabilities(p.Capabilities()),
+		exporterhelper.WithRetry(wrappedExporterBackOffConfig),
+	)
+	require.NoError(t, err)
+
+	err = retryExporter.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, retryExporter.Shutdown(t.Context()))
+	}()
+
+	// Test: ConsumeLogs should eventually succeed when endpoint-1 recovers
+	// Set startTime just before the call to ensure consistent timing across platforms
+	startTime = time.Now()
+	res := retryExporter.ConsumeTraces(t.Context(), simpleTraces())
+
+	// Should succeed after endpoint-1 recovers
+	require.NoError(t, res, "should succeed after endpoint-1 recovers")
+
+	t.Logf("Endpoint-1 attempts: %d, Endpoint-2 attempts: %d",
+		endpoint1Attempts.Load(), endpoint2Attempts.Load())
+
+	// Both endpoints should have been tried (quarantine logic)
+	require.Greater(t, endpoint1Attempts.Load(), int64(1), "endpoint-1 should be retried after quarantine period")
+	require.Positive(t, endpoint2Attempts.Load(), "endpoint-2 should be tried at least once")
+}
+
+func TestConsumeTraces_DNSResolverQuarantineWithSubExporterBackoffEnabled(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNS: configoptional.Some(DNSResolver{
+				Hostname: "service-1",
+				Port:     "",
+				Quarantine: QuarantineSettings{
+					Enabled:  true,
+					Duration: 60 * time.Second, // Long quarantine - must be longer than backoff intervals
+				},
+			}),
+		},
+		Protocol: Protocol{
+			OTLP: otlpexporter.Config{
+				// Max elapsed time is 250ms, so it should retry 4 times per endpoint
+				RetryConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     10 * time.Millisecond,
+					RandomizationFactor: 0,
+					Multiplier:          2,
+					MaxInterval:         200 * time.Millisecond,
+					MaxElapsedTime:      250 * time.Millisecond,
+				},
+			},
+		},
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	// Set up the hash ring with the test endpoints
+	lb.ring = newHashRing([]string{"endpoint-1", "endpoint-2"})
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.loadBalancer = lb
+
+	// Track attempts per endpoint to verify quarantine logic tries all endpoints
+	endpoint1Attempts := &atomic.Int64{}
+	endpoint2Attempts := &atomic.Int64{}
+	totalAttempts := &atomic.Int64{}
+	var attemptTimes []time.Time
+	var timesMutex sync.Mutex
+
+	// Both endpoints return an error to simulate unreachable endpoints
+	// Create mock exporters with retry logic applied via exporterhelper
+	mockExporter1 := newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+		endpoint1Attempts.Add(1)
+		totalAttempts.Add(1)
+		timesMutex.Lock()
+		attemptTimes = append(attemptTimes, time.Now())
+		timesMutex.Unlock()
+		return errors.New("endpoint unreachable")
+	})
+	mockExporter2 := newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+		endpoint2Attempts.Add(1)
+		totalAttempts.Add(1)
+		timesMutex.Lock()
+		attemptTimes = append(attemptTimes, time.Now())
+		timesMutex.Unlock()
+		return errors.New("endpoint unreachable")
+	})
+
+	// Wrap with exporterhelper to apply retry configuration from cfg.Protocol.OTLP.RetryConfig
+	wrappedExp1, err := exporterhelper.NewTraces(
+		t.Context(),
+		exporter.Settings{
+			ID:                component.NewIDWithName(component.MustNewType("otlp"), "endpoint-1"),
+			TelemetrySettings: ts.TelemetrySettings,
+		},
+		&cfg.Protocol.OTLP,
+		mockExporter1.ConsumeTraces,
+		exporterhelper.WithRetry(cfg.Protocol.OTLP.RetryConfig),
+		exporterhelper.WithStart(mockExporter1.Start),
+		exporterhelper.WithShutdown(mockExporter1.Shutdown),
+	)
+	require.NoError(t, err)
+
+	wrappedExp2, err := exporterhelper.NewTraces(
+		t.Context(),
+		exporter.Settings{
+			ID:                component.NewIDWithName(component.MustNewType("otlp"), "endpoint-2"),
+			TelemetrySettings: ts.TelemetrySettings,
+		},
+		&cfg.Protocol.OTLP,
+		mockExporter2.ConsumeTraces,
+		exporterhelper.WithRetry(cfg.Protocol.OTLP.RetryConfig),
+		exporterhelper.WithStart(mockExporter2.Start),
+		exporterhelper.WithShutdown(mockExporter2.Shutdown),
+	)
+	require.NoError(t, err)
+
+	// Add the wrapped exporters to the load balancer
+	lb.exporters = map[string]*wrappedExporter{
+		"endpoint-1:4317": newWrappedExporter(wrappedExp1, "endpoint-1:4317"),
+		"endpoint-2:4317": newWrappedExporter(wrappedExp2, "endpoint-2:4317"),
+	}
+
+	host := componenttest.NewNopHost()
+
+	// Start the load balancer exporter
+	err = p.Start(t.Context(), host)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Test: ConsumeLogs should fail after retrying all endpoints multiple times with backoff
+	start := time.Now()
+	res := p.ConsumeTraces(t.Context(), simpleTraces())
+	elapsed := time.Since(start)
+
+	// Verify that an error occurred
+	require.Error(t, res)
+	require.Contains(t, res.Error(), "all endpoints were tried and failed")
+
+	t.Logf("Total attempts: %d, Endpoint-1: %d, Endpoint-2: %d, Elapsed: %v",
+		totalAttempts.Load(), endpoint1Attempts.Load(), endpoint2Attempts.Load(), elapsed)
+
+	// Verify quarantine logic: both endpoints should be tried
+	// In the first cycle, quarantine logic should try both endpoints immediately
+	require.Positive(t, endpoint1Attempts.Load(), "endpoint-1 should be tried at least once")
+	require.Positive(t, endpoint2Attempts.Load(), "endpoint-2 should be tried at least once")
+
+	// With backoff and quarantine working together:
+	require.GreaterOrEqual(t, totalAttempts.Load(), int64(2),
+		"quarantine logic should try both endpoints at least in the initial cycle")
+
+	if totalAttempts.Load() > 2 {
+		t.Logf("Backoff retry occurred: multiple retry cycles observed")
+
+		// Verify that backoff timing was applied by checking the time between first and last attempts
+		timesMutex.Lock()
+		if len(attemptTimes) > 2 {
+			firstAttempt := attemptTimes[0]
+			lastAttempt := attemptTimes[len(attemptTimes)-1]
+			timeBetween := lastAttempt.Sub(firstAttempt)
+			t.Logf("Time between first and last attempt: %v", timeBetween)
+			// we expect multiple retry cycles around ~310ms total elapsed time
+			require.Greater(t, timeBetween.Milliseconds(), int64(275),
+				"should have backoff delay between retry cycles")
+		}
+		timesMutex.Unlock()
+	}
+
+	// The total elapsed time should reflect backoff delays if retries occurred
+	t.Logf("Total elapsed time: %v", elapsed)
 }
 
 func TestConsumeTracesServiceBased(t *testing.T) {
