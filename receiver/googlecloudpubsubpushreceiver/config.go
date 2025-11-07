@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package googlepubsubpushreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlepubsubpushreceiver"
+package googlecloudpubsubpushreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver"
 
 import (
 	"errors"

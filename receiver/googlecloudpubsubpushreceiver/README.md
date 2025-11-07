@@ -5,8 +5,8 @@
 | ------------- |-----------|
 | Stability     | [development]: logs   |
 | Distributions | [] |
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgooglepubsubpush%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgooglepubsubpush) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgooglepubsubpush%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgooglepubsubpush) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_googlepubsubpush)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_googlepubsubpush&displayType=list) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgooglecloudpubsubpush%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgooglecloudpubsubpush) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgooglecloudpubsubpush%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgooglecloudpubsubpush) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_googlecloudpubsubpush)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_googlecloudpubsubpush&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -14,7 +14,7 @@
 
 > **NOTE**: Refer to _[Difference to the current google pub sub receiver](#difference-to-the-current-google-pub-sub-receiver)_ if you don't know which receiver to use or just want to understand the differences.
 
-The `googlepubsubpush` receiver ingests OpenTelemetry data through Google Cloud Pub/Sub push subscriptions, supporting two primary data ingestion patterns:
+The `googlecloudpubsubpush` receiver ingests OpenTelemetry data through Google Cloud Pub/Sub push subscriptions, supporting two primary data ingestion patterns:
  - Direct Log Ingestion: Processes Pub/Sub messages containing log data directly.
  - GCS Event Processing: Handles Pub/Sub notifications for new files in Google Cloud Storage.
 
@@ -24,7 +24,7 @@ All received data is parsed into OpenTelemetry format using configurable encodin
 
 ```yaml
 receivers:
-  googlepubsubpush:
+  googlecloudpubsubpush:
     endpoint: :8080
     encoding: googlecloudlogentry_encoding
 
@@ -36,7 +36,7 @@ extensions:
 
 The main difference between the current [`googlecloudpubsub` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/googlecloudpubsubreceiver) and the proposed new receiver lies in how they receive messages from Google Pub/Sub: pull vs. push subscriptions. The table below summarizes their differences:
 
-|    Component     |                  `googlecloudpubsub`                  |           `googlepubsubpush`  (this receiver)           |
+|    Component     |                  `googlecloudpubsub`                  |        `googlecloudpubsubpush`  (this receiver)         |
 |:----------------:|:-----------------------------------------------------:|:-------------------------------------------------------:|
 | **Subscription** |                         Pull                          |                          Push                           |
 |  **Data Flow**   | The receiver _polls_ Pub/Sub to ask for new messages. | Pub/Sub actively *pushes* new messages to the receiver. |

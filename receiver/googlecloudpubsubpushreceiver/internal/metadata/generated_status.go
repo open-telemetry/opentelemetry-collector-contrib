@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("googlepubsubpush")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlepubsubpushreceiver"
+	Type      = component.MustNewType("googlecloudpubsubpush")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver"
 )
 
 const (

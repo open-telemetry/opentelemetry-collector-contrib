@@ -1,4 +1,4 @@
-type: googlepubsubpush
+type: googlecloudpubsubpush
 
 status:
   class: receiver

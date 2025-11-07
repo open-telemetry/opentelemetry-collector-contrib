@@ -259,8 +259,8 @@ body:
       - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
+      - receiver/googlecloudpubsubpush
       - receiver/googlecloudspanner
-      - receiver/googlepubsubpush
       - receiver/haproxy
       - receiver/hostmetrics
       - receiver/hostmetrics/internal/scraper/cpuscraper
