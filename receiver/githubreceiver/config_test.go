@@ -164,3 +164,32 @@ func TestConfig_Unmarshal(t *testing.T) {
 		})
 	}
 }
+
+func TestIncludeSpanEventsConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *Config
+		expected bool
+	}{
+		{
+			name:     "default config has span events disabled",
+			config:   createDefaultConfig().(*Config),
+			expected: false,
+		},
+		{
+			name: "span events can be enabled",
+			config: &Config{
+				WebHook: WebHook{
+					IncludeSpanEvents: true,
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.config.WebHook.IncludeSpanEvents)
+		})
+	}
+}

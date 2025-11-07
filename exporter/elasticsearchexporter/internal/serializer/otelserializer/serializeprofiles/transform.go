@@ -78,9 +78,9 @@ func checkProfileType(dic pprofile.ProfilesDictionary, profile pprofile.Profile)
 // stackPayloads creates a slice of StackPayloads from the given ResourceProfiles,
 // ScopeProfiles, and ProfileContainer.
 func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
-	unsymbolizedLeafFramesSet := make(map[frameID]struct{}, profile.Sample().Len())
+	unsymbolizedLeafFramesSet := make(map[frameID]struct{}, profile.Samples().Len())
 	unsymbolizedExecutablesSet := make(map[libpf.FileID]struct{})
-	stackPayload := make([]StackPayload, 0, profile.Sample().Len())
+	stackPayload := make([]StackPayload, 0, profile.Samples().Len())
 
 	hostMetadata := newHostMetadata(dic, resource, scope, profile)
 
@@ -92,7 +92,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 		frequency = 1
 	}
 
-	for _, sample := range profile.Sample().All() {
+	for _, sample := range profile.Samples().All() {
 		frames, frameTypes, leafFrame, err := stackFrames(dic, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
@@ -279,7 +279,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 	locations := getLocations(dic, stack)
 	totalFrames := 0
 	for _, location := range locations {
-		totalFrames += location.Line().Len()
+		totalFrames += location.Lines().Len()
 	}
 	frameTypes := make([]libpf.FrameType, 0, totalFrames)
 
@@ -296,11 +296,11 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 		}
 		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
 
-		functionNames := make([]string, 0, location.Line().Len())
-		fileNames := make([]string, 0, location.Line().Len())
-		lineNumbers := make([]int32, 0, location.Line().Len())
+		functionNames := make([]string, 0, location.Lines().Len())
+		fileNames := make([]string, 0, location.Lines().Len())
+		lineNumbers := make([]int32, 0, location.Lines().Len())
 
-		for _, line := range location.Line().All() {
+		for _, line := range location.Lines().All() {
 			if line.FunctionIndex() < int32(dic.FunctionTable().Len()) {
 				functionNames = append(functionNames, getString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).NameStrindex())))
 				fileNames = append(fileNames, getString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).FilenameStrindex())))
@@ -339,7 +339,7 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *fr
 	if fileID.IsZero() {
 		// Synthesize a file ID if the htlhash build ID is not available.
 		hasher := xxhash.New()
-		for _, line := range location.Line().All() {
+		for _, line := range location.Lines().All() {
 			f := getFunction(dic, int(line.FunctionIndex()))
 			_, _ = hasher.WriteString(getString(dic, int(f.NameStrindex())))
 			_, _ = hasher.WriteString(getString(dic, int(f.FilenameStrindex())))
@@ -353,8 +353,8 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *fr
 	var addressOrLineno uint64
 	if location.Address() > 0 {
 		addressOrLineno = location.Address()
-	} else if location.Line().Len() > 0 {
-		addressOrLineno = uint64(location.Line().At(location.Line().Len() - 1).Line())
+	} else if location.Lines().Len() > 0 {
+		addressOrLineno = uint64(location.Lines().At(location.Lines().Len() - 1).Line())
 	}
 
 	fID := newFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))

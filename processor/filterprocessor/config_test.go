@@ -787,10 +787,16 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "ottl"),
 			expected: createConfig(func(cfg *Config) {
 				cfg.ErrorMode = ottl.IgnoreError
+				cfg.Traces.ResourceConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
 				cfg.Traces.SpanConditions = []string{
 					`attributes["test"] == "pass"`,
 				}
 				cfg.Traces.SpanEventConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
+				cfg.Metrics.ResourceConditions = []string{
 					`attributes["test"] == "pass"`,
 				}
 				cfg.Metrics.MetricConditions = []string{
@@ -799,7 +805,13 @@ func TestLoadingConfigOTTL(t *testing.T) {
 				cfg.Metrics.DataPointConditions = []string{
 					`attributes["test"] == "pass"`,
 				}
+				cfg.Logs.ResourceConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
 				cfg.Logs.LogConditions = []string{
+					`attributes["test"] == "pass"`,
+				}
+				cfg.Profiles.ResourceConditions = []string{
 					`attributes["test"] == "pass"`,
 				}
 				cfg.Profiles.ProfileConditions = []string{

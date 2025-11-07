@@ -144,7 +144,18 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			s.processSpanEvents(ctx, span.Events())
 
 			if s.shouldRedactSpanName(&span) {
-				span.SetName(s.urlSanitizer.SanitizeURL(span.Name()))
+				name := span.Name()
+				if s.urlSanitizer != nil {
+					name = s.urlSanitizer.SanitizeURL(name)
+				}
+				if s.dbObfuscator.HasObfuscators() {
+					var err error
+					name, err = s.dbObfuscator.Obfuscate(name)
+					if err != nil {
+						s.logger.Error(err.Error())
+					}
+				}
+				span.SetName(name)
 			}
 		}
 	}
@@ -426,7 +437,7 @@ func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) 
 		strVal = s.urlSanitizer.SanitizeAttributeURL(strVal, attributeKey)
 	}
 
-	if s.dbObfuscator != nil {
+	if s.dbObfuscator.HasObfuscators() {
 		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey)
 		if err != nil {
 			return strVal
@@ -450,7 +461,7 @@ func (s *redaction) processStringValueForLogBody(strVal string) string {
 		strVal = s.urlSanitizer.SanitizeURL(strVal)
 	}
 
-	if s.dbObfuscator != nil {
+	if s.dbObfuscator.HasObfuscators() {
 		obfuscatedQuery, err := s.dbObfuscator.Obfuscate(strVal)
 		if err != nil {
 			return strVal
@@ -498,7 +509,7 @@ func (s *redaction) shouldRedactKey(k string) bool {
 }
 
 func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
-	if s.urlSanitizer == nil {
+	if s.urlSanitizer == nil && !s.dbObfuscator.HasObfuscators() {
 		return false
 	}
 	spanKind := span.Kind()
@@ -507,7 +518,7 @@ func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
 	}
 
 	spanName := span.Name()
-	if !strings.Contains(spanName, "/") {
+	if !strings.Contains(spanName, "/") && !s.dbObfuscator.HasObfuscators() {
 		return false
 	}
 	return !s.shouldAllowValue(spanName)
