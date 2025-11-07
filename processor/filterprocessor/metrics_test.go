@@ -567,6 +567,17 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "keep resource",
+			conditions: MetricFilters{
+				Action: keepAction,
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			want:      func(_ pmetric.Metrics) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop metrics",
 			conditions: MetricFilters{
 				Action: dropAction,

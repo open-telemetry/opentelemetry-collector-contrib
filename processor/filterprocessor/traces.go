@@ -48,6 +48,7 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 			if err != nil {
 				return nil, err
 			}
+			fsp.skipResourceExpr = applyActionToExpr(fsp.skipResourceExpr, cfg.Traces.Action)
 		}
 
 		if cfg.Traces.SpanConditions != nil {

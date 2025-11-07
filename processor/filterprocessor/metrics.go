@@ -52,6 +52,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 			if err != nil {
 				return nil, err
 			}
+			fsp.skipResourceExpr = applyActionToExpr(fsp.skipResourceExpr, cfg.Metrics.Action)
 		}
 
 		if cfg.Metrics.MetricConditions != nil {

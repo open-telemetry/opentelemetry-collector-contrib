@@ -88,6 +88,17 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "keep resource",
+			conditions: ProfileFilters{
+				Action: keepAction,
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			want:      func(_ pprofile.Profiles) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop profiles",
 			conditions: ProfileFilters{
 				Action: dropAction,
@@ -135,7 +146,7 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
-			name:   "keep everything",
+			name: "keep everything",
 			conditions: ProfileFilters{
 				Action: keepAction,
 				ProfileConditions: []string{
@@ -158,7 +169,7 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
-			name:   "multiple conditions keep everything",
+			name: "multiple conditions keep everything",
 			conditions: ProfileFilters{
 				Action: keepAction,
 				ProfileConditions: []string{
@@ -181,7 +192,7 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
-			name:   "keep action with error conditions should not keep anything",
+			name: "keep action with error conditions should not keep anything",
 			conditions: ProfileFilters{
 				Action: keepAction,
 				ProfileConditions: []string{

@@ -722,6 +722,17 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "keep resource",
+			conditions: LogFilters{
+				Action: keepAction,
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			want:      func(_ plog.Logs) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop logs",
 			conditions: LogFilters{
 				Action: dropAction,
@@ -740,7 +751,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
-			name:   "keep logs",
+			name: "keep logs",
 			conditions: LogFilters{
 				Action: keepAction,
 				LogConditions: []string{
@@ -769,7 +780,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
-			name:   "keep everything",
+			name: "keep everything",
 			conditions: LogFilters{
 				Action: keepAction,
 				LogConditions: []string{
@@ -792,7 +803,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
-			name:   "multiple conditions keep everything",
+			name: "multiple conditions keep everything",
 			conditions: LogFilters{
 				Action: keepAction,
 				LogConditions: []string{
@@ -815,10 +826,12 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
-			name:   "keep action with error conditions should not keep anything",
-			action: keepAction,
-			conditions: []string{
-				`Substring("", 0, 100) == "test"`,
+			name: "keep action with error conditions should not keep anything",
+			conditions: LogFilters{
+				Action: keepAction,
+				LogConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
