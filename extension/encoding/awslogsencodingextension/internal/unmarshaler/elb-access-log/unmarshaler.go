@@ -358,6 +358,16 @@ func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttri
 	recordLog.Attributes().PutStr(AttributeTLSListenerResourceID, nlbRecord.Listener)
 	recordLog.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), nlbRecord.TLSProtocolVersion)
 	recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), nlbRecord.TLSCipher)
+	recordLog.Attributes().PutInt(AttributeELBConnectionTime, nlbRecord.ConnectionTime)
+	recordLog.Attributes().PutInt(AttributeELBTLSHandshakeTime, nlbRecord.TLSHandshakeTime)
+	recordLog.Attributes().PutStr(AttributeELBIncomingTLSAlert, nlbRecord.IncomingTLSAlert)
+	recordLog.Attributes().PutStr(AttributeELBTLSNamedGroup, nlbRecord.TLSNamedGroup)
+	recordLog.Attributes().PutStr(AttributeELBChosenCertARN, nlbRecord.ChosenCertARN)
+	recordLog.Attributes().PutStr(AttributeELBChosenCertSerial, nlbRecord.ChosenCertSerial)
+	recordLog.Attributes().PutStr(AttributeALPNFeProtocol, nlbRecord.ALPNFeProtocol)
+	recordLog.Attributes().PutStr(AttributeALPNBeProtocol, nlbRecord.ALPNBeProtocol)
+	recordLog.Attributes().PutStr(AttributeALPNClientPreferenceList, nlbRecord.ALPNClientPreferenceList)
+	recordLog.Attributes().PutStr(AttributeELBTLSConnectionCreationTime, nlbRecord.TLSConnectionCreationTime)
 	if nlbRecord.DomainName != unknownField {
 		recordLog.Attributes().PutStr(string(conventions.URLDomainKey), nlbRecord.DomainName)
 	}
