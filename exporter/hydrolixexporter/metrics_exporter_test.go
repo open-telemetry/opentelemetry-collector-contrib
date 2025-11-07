@@ -271,36 +271,3 @@ func TestMetricsExporter_TraceContext(t *testing.T) {
 	assert.Equal(t, "fd700fd4e084e765d90a54a0412616b7", result[0].TraceID)
 	assert.Equal(t, "53e89fb8c3aaac01", result[0].SpanID)
 }
-
-func TestMetricsExporter_FilterZeroTraceContext(t *testing.T) {
-	metrics := pmetric.NewMetrics()
-	rm := metrics.ResourceMetrics().AppendEmpty()
-	sm := rm.ScopeMetrics().AppendEmpty()
-	metric := sm.Metrics().AppendEmpty()
-
-	metric.SetName("test.metric")
-	gauge := metric.SetEmptyGauge()
-	dp := gauge.DataPoints().AppendEmpty()
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	dp.SetDoubleValue(42.5)
-	// Set zero trace IDs (invalid)
-	dp.Attributes().PutStr("trace_id", "00000000000000000000000000000000")
-	dp.Attributes().PutStr("span_id", "0000000000000000")
-
-	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "http://localhost:8080",
-		},
-	}
-
-	exporter := newMetricsExporter(cfg, exportertest.NewNopSettings(component.MustNewType("hydrolix")))
-	result := exporter.convertToHydrolixMetrics(metrics)
-
-	require.Len(t, result, 1)
-	// Zero trace IDs should be filtered out (empty strings)
-	assert.Equal(t, "", result[0].TraceID)
-	assert.Equal(t, "", result[0].SpanID)
-
-	// But they should still be in the tags array (as attributes)
-	assert.Greater(t, len(result[0].MetricAttributes), 0)
-}

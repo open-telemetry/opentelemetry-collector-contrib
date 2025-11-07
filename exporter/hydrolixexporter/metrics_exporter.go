@@ -154,27 +154,12 @@ func (e *metricsExporter) convertToHydrolixMetrics(md pmetric.Metrics) []Hydroli
 	return metrics
 }
 
-// extractValidTraceContext extracts trace_id and span_id from attributes, returning empty strings if invalid
-func extractValidTraceContext(attrs pcommon.Map) (string, string) {
-	traceID := extractStringAttr(attrs, "trace_id")
-	if !isValidTraceID(traceID) {
-		traceID = ""
-	}
-	spanID := extractStringAttr(attrs, "span_id")
-	if !isValidTraceID(spanID) {
-		spanID = ""
-	}
-	return traceID, spanID
-}
-
 func (e *metricsExporter) convertGauge(metric pmetric.Metric, resourceAttrs []map[string]interface{}, resourceSchemaUrl string, scopeAttrs []map[string]interface{}, scope pcommon.InstrumentationScope, scopeSchemaUrl string, serviceName string) []HydrolixMetric {
 	var metrics []HydrolixMetric
 
 	gauge := metric.Gauge()
 	for i := 0; i < gauge.DataPoints().Len(); i++ {
 		dp := gauge.DataPoints().At(i)
-
-		traceID, spanID := extractValidTraceContext(dp.Attributes())
 
 		hdxMetric := HydrolixMetric{
 			Name:                  metric.Name(),
@@ -197,8 +182,8 @@ func (e *metricsExporter) convertGauge(metric pmetric.Metric, resourceAttrs []ma
 			HTTPStatusCode:        extractStringAttr(dp.Attributes(), "http.response.status_code"),
 			HTTPRoute:             extractStringAttr(dp.Attributes(), "http.route"),
 			HTTPMethod:            extractStringAttr(dp.Attributes(), "http.request.method"),
-			TraceID:               traceID,
-			SpanID:                spanID,
+			TraceID:               extractStringAttr(dp.Attributes(), "trace_id"),
+			SpanID:                extractStringAttr(dp.Attributes(), "span_id"),
 		}
 
 		switch dp.ValueType() {
@@ -220,8 +205,6 @@ func (e *metricsExporter) convertSum(metric pmetric.Metric, resourceAttrs []map[
 	sum := metric.Sum()
 	for i := 0; i < sum.DataPoints().Len(); i++ {
 		dp := sum.DataPoints().At(i)
-
-		traceID, spanID := extractValidTraceContext(dp.Attributes())
 
 		hdxMetric := HydrolixMetric{
 			Name:                   metric.Name(),
@@ -246,8 +229,8 @@ func (e *metricsExporter) convertSum(metric pmetric.Metric, resourceAttrs []map[
 			HTTPStatusCode:         extractStringAttr(dp.Attributes(), "http.response.status_code"),
 			HTTPRoute:              extractStringAttr(dp.Attributes(), "http.route"),
 			HTTPMethod:             extractStringAttr(dp.Attributes(), "http.request.method"),
-			TraceID:                traceID,
-			SpanID:                 spanID,
+			TraceID:                extractStringAttr(dp.Attributes(), "trace_id"),
+			SpanID:                 extractStringAttr(dp.Attributes(), "span_id"),
 		}
 
 		switch dp.ValueType() {
@@ -269,8 +252,6 @@ func (e *metricsExporter) convertHistogram(metric pmetric.Metric, resourceAttrs 
 	histogram := metric.Histogram()
 	for i := 0; i < histogram.DataPoints().Len(); i++ {
 		dp := histogram.DataPoints().At(i)
-
-		traceID, spanID := extractValidTraceContext(dp.Attributes())
 
 		hdxMetric := HydrolixMetric{
 			Name:                   metric.Name(),
@@ -300,8 +281,8 @@ func (e *metricsExporter) convertHistogram(metric pmetric.Metric, resourceAttrs 
 			HTTPStatusCode:         extractStringAttr(dp.Attributes(), "http.response.status_code"),
 			HTTPRoute:              extractStringAttr(dp.Attributes(), "http.route"),
 			HTTPMethod:             extractStringAttr(dp.Attributes(), "http.request.method"),
-			TraceID:                traceID,
-			SpanID:                 spanID,
+			TraceID:                extractStringAttr(dp.Attributes(), "trace_id"),
+			SpanID:                 extractStringAttr(dp.Attributes(), "span_id"),
 		}
 
 		metrics = append(metrics, hdxMetric)
@@ -326,8 +307,6 @@ func (e *metricsExporter) convertExponentialHistogram(metric pmetric.Metric, res
 			"offset":        dp.Negative().Offset(),
 			"bucket_counts": convertBucketCounts(dp.Negative().BucketCounts()),
 		})
-
-		traceID, spanID := extractValidTraceContext(dp.Attributes())
 
 		hdxMetric := HydrolixMetric{
 			Name:                   metric.Name(),
@@ -359,8 +338,8 @@ func (e *metricsExporter) convertExponentialHistogram(metric pmetric.Metric, res
 			HTTPStatusCode:         extractStringAttr(dp.Attributes(), "http.response.status_code"),
 			HTTPRoute:              extractStringAttr(dp.Attributes(), "http.route"),
 			HTTPMethod:             extractStringAttr(dp.Attributes(), "http.request.method"),
-			TraceID:                traceID,
-			SpanID:                 spanID,
+			TraceID:                extractStringAttr(dp.Attributes(), "trace_id"),
+			SpanID:                 extractStringAttr(dp.Attributes(), "span_id"),
 		}
 
 		metrics = append(metrics, hdxMetric)
@@ -384,8 +363,6 @@ func (e *metricsExporter) convertSummary(metric pmetric.Metric, resourceAttrs []
 			quantiles[j] = qv.Quantile()
 			quantileValues[j] = qv.Value()
 		}
-
-		traceID, spanID := extractValidTraceContext(dp.Attributes())
 
 		hdxMetric := HydrolixMetric{
 			Name:                  metric.Name(),
@@ -411,8 +388,8 @@ func (e *metricsExporter) convertSummary(metric pmetric.Metric, resourceAttrs []
 			HTTPStatusCode:        extractStringAttr(dp.Attributes(), "http.response.status_code"),
 			HTTPRoute:             extractStringAttr(dp.Attributes(), "http.route"),
 			HTTPMethod:            extractStringAttr(dp.Attributes(), "http.request.method"),
-			TraceID:               traceID,
-			SpanID:                spanID,
+			TraceID:               extractStringAttr(dp.Attributes(), "trace_id"),
+			SpanID:                extractStringAttr(dp.Attributes(), "span_id"),
 		}
 
 		metrics = append(metrics, hdxMetric)

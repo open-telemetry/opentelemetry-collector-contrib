@@ -46,15 +46,3 @@ func extractStringAttr(attrs pcommon.Map, key string) string {
     }
     return ""
 }
-
-// isValidTraceID checks if a trace ID is valid (not empty or all zeros)
-func isValidTraceID(traceID string) bool {
-    if traceID == "" {
-        return false
-    }
-    // Check if it's all zeros (32 chars for trace ID, 16 for span ID)
-    if traceID == "00000000000000000000000000000000" || traceID == "0000000000000000" {
-        return false
-    }
-    return true
-}
