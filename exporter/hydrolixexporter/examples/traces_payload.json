@@ -1,0 +1,450 @@
+[
+  {
+    "traceId": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+    "spanId": "1a2b3c4d5e6f7g8h",
+    "name": "HTTP GET /api/users",
+    "parentSpanId": "",
+    "serviceName": "api-gateway",
+    "duration": 245000000,
+    "tags": [
+      {
+        "http.method": "GET"
+      },
+      {
+        "http.url": "https://api.example.com/api/users"
+      },
+      {
+        "http.target": "/api/users"
+      },
+      {
+        "http.host": "api.example.com"
+      },
+      {
+        "http.scheme": "https"
+      },
+      {
+        "http.flavor": "2.0"
+      },
+      {
+        "http.user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+      },
+      {
+        "net.peer.ip": "192.168.1.100"
+      },
+      {
+        "net.peer.port": "443"
+      },
+      {
+        "user.id": "user-12345"
+      },
+      {
+        "request.id": "req-abc123xyz789"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "api-gateway"
+      },
+      {
+        "service.version": "1.2.3"
+      },
+      {
+        "deployment.environment": "production"
+      },
+      {
+        "host.name": "api-server-01"
+      },
+      {
+        "cloud.provider": "aws"
+      },
+      {
+        "cloud.region": "us-east-1"
+      },
+      {
+        "cloud.availability_zone": "us-east-1a"
+      }
+    ],
+    "httpStatusCode": "200",
+    "spanKind": "2",
+    "spanKindString": "Server",
+    "timestamp": 1762471640031414000,
+    "startTime": 1762471640031414000,
+    "endTime": 1762471640276414000,
+    "httpRoute": "/api/users",
+    "logs": [
+      {
+        "name": "request.received",
+        "timestamp": 1762471640031414000,
+        "field": [
+          {
+            "message": "Incoming request received"
+          },
+          {
+            "request.size": "1234"
+          }
+        ]
+      },
+      {
+        "name": "authentication.success",
+        "timestamp": 1762471640050414000,
+        "field": [
+          {
+            "message": "User authenticated successfully"
+          },
+          {
+            "user.id": "user-12345"
+          },
+          {
+            "auth.duration_ms": "19"
+          }
+        ]
+      },
+      {
+        "name": "response.sent",
+        "timestamp": 1762471640276414000,
+        "field": [
+          {
+            "message": "Response sent to client"
+          },
+          {
+            "response.size": "5678"
+          }
+        ]
+      }
+    ],
+    "statusCodeString": "Ok",
+    "statusCode": "1",
+    "statusMessage": "",
+    "httpMethod": "GET"
+  },
+  {
+    "traceId": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+    "spanId": "2b3c4d5e6f7g8h9i",
+    "name": "query users table",
+    "parentSpanId": "1a2b3c4d5e6f7g8h",
+    "serviceName": "postgres",
+    "duration": 125000000,
+    "tags": [
+      {
+        "db.system": "postgresql"
+      },
+      {
+        "db.name": "users_db"
+      },
+      {
+        "db.statement": "SELECT * FROM users WHERE status = $1 LIMIT 100"
+      },
+      {
+        "db.operation": "SELECT"
+      },
+      {
+        "db.sql.table": "users"
+      },
+      {
+        "db.connection_string": "postgresql://prod-db:5432/users_db"
+      },
+      {
+        "db.user": "app_user"
+      },
+      {
+        "net.peer.name": "prod-db.example.com"
+      },
+      {
+        "net.peer.port": "5432"
+      },
+      {
+        "db.rows_affected": "87"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "postgres"
+      },
+      {
+        "service.version": "14.5"
+      },
+      {
+        "deployment.environment": "production"
+      }
+    ],
+    "httpStatusCode": "",
+    "spanKind": "3",
+    "spanKindString": "Client",
+    "timestamp": 1762471640050414000,
+    "startTime": 1762471640050414000,
+    "endTime": 1762471640175414000,
+    "httpRoute": "",
+    "logs": [
+      {
+        "name": "query.start",
+        "timestamp": 1762471640050414000,
+        "field": [
+          {
+            "message": "Executing database query"
+          }
+        ]
+      },
+      {
+        "name": "query.complete",
+        "timestamp": 1762471640175414000,
+        "field": [
+          {
+            "message": "Query executed successfully"
+          },
+          {
+            "rows.returned": "87"
+          },
+          {
+            "query.duration_ms": "125"
+          }
+        ]
+      }
+    ],
+    "statusCodeString": "Ok",
+    "statusCode": "1",
+    "statusMessage": "",
+    "httpMethod": ""
+  },
+  {
+    "traceId": "b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7",
+    "spanId": "3c4d5e6f7g8h9i0j",
+    "name": "POST /api/orders",
+    "parentSpanId": "",
+    "serviceName": "order-service",
+    "duration": 1850000000,
+    "tags": [
+      {
+        "http.method": "POST"
+      },
+      {
+        "http.url": "https://api.example.com/api/orders"
+      },
+      {
+        "http.target": "/api/orders"
+      },
+      {
+        "http.status_code": "500"
+      },
+      {
+        "error": "true"
+      },
+      {
+        "error.type": "DatabaseError"
+      },
+      {
+        "error.message": "Connection timeout"
+      },
+      {
+        "order.id": "ORD-12345"
+      },
+      {
+        "user.id": "user-67890"
+      },
+      {
+        "order.amount": "299.99"
+      },
+      {
+        "order.currency": "USD"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "order-service"
+      },
+      {
+        "service.version": "2.1.0"
+      },
+      {
+        "deployment.environment": "production"
+      },
+      {
+        "host.name": "order-server-03"
+      }
+    ],
+    "httpStatusCode": "500",
+    "spanKind": "2",
+    "spanKindString": "Server",
+    "timestamp": 1762471641031414000,
+    "startTime": 1762471641031414000,
+    "endTime": 1762471642881414000,
+    "httpRoute": "/api/orders",
+    "logs": [
+      {
+        "name": "error",
+        "timestamp": 1762471642850414000,
+        "field": [
+          {
+            "event": "error"
+          },
+          {
+            "error.type": "DatabaseError"
+          },
+          {
+            "error.message": "Connection timeout after 30s"
+          },
+          {
+            "exception.stacktrace": "DatabaseError: Connection timeout\\n  at ConnectionPool.getConnection (connection.js:45)\\n  at OrderService.createOrder (orders.js:123)"
+          }
+        ]
+      },
+      {
+        "name": "retry.attempt",
+        "timestamp": 1762471642000414000,
+        "field": [
+          {
+            "message": "Retrying database connection"
+          },
+          {
+            "retry.attempt": "1"
+          }
+        ]
+      },
+      {
+        "name": "retry.attempt",
+        "timestamp": 1762471642500414000,
+        "field": [
+          {
+            "message": "Retrying database connection"
+          },
+          {
+            "retry.attempt": "2"
+          }
+        ]
+      }
+    ],
+    "statusCodeString": "Error",
+    "statusCode": "2",
+    "statusMessage": "Connection timeout after 30s",
+    "httpMethod": "POST"
+  },
+  {
+    "traceId": "c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8",
+    "spanId": "4d5e6f7g8h9i0j1k",
+    "name": "redis.get",
+    "parentSpanId": "5e6f7g8h9i0j1k2l",
+    "serviceName": "cache-service",
+    "duration": 5000000,
+    "tags": [
+      {
+        "db.system": "redis"
+      },
+      {
+        "db.operation": "GET"
+      },
+      {
+        "db.redis.key": "user:profile:12345"
+      },
+      {
+        "db.redis.database_index": "0"
+      },
+      {
+        "net.peer.name": "redis-prod.example.com"
+      },
+      {
+        "net.peer.port": "6379"
+      },
+      {
+        "cache.hit": "false"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "cache-service"
+      },
+      {
+        "service.version": "1.0.0"
+      },
+      {
+        "deployment.environment": "production"
+      }
+    ],
+    "httpStatusCode": "",
+    "spanKind": "3",
+    "spanKindString": "Client",
+    "timestamp": 1762471642031414000,
+    "startTime": 1762471642031414000,
+    "endTime": 1762471642036414000,
+    "httpRoute": "",
+    "logs": [],
+    "statusCodeString": "Ok",
+    "statusCode": "1",
+    "statusMessage": "",
+    "httpMethod": ""
+  },
+  {
+    "traceId": "d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9",
+    "spanId": "6f7g8h9i0j1k2l3m",
+    "name": "message.publish",
+    "parentSpanId": "7g8h9i0j1k2l3m4n",
+    "serviceName": "notification-service",
+    "duration": 45000000,
+    "tags": [
+      {
+        "messaging.system": "kafka"
+      },
+      {
+        "messaging.destination": "user.notifications"
+      },
+      {
+        "messaging.destination_kind": "topic"
+      },
+      {
+        "messaging.protocol": "kafka"
+      },
+      {
+        "messaging.protocol_version": "3.3.0"
+      },
+      {
+        "messaging.message_id": "msg-abc123xyz789"
+      },
+      {
+        "messaging.kafka.partition": "2"
+      },
+      {
+        "messaging.kafka.message_key": "user-12345"
+      },
+      {
+        "net.peer.name": "kafka-prod.example.com"
+      },
+      {
+        "net.peer.port": "9092"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "notification-service"
+      },
+      {
+        "service.version": "1.5.0"
+      },
+      {
+        "deployment.environment": "production"
+      }
+    ],
+    "httpStatusCode": "",
+    "spanKind": "4",
+    "spanKindString": "Producer",
+    "timestamp": 1762471643031414000,
+    "startTime": 1762471643031414000,
+    "endTime": 1762471643076414000,
+    "httpRoute": "",
+    "logs": [
+      {
+        "name": "message.sent",
+        "timestamp": 1762471643076414000,
+        "field": [
+          {
+            "message": "Message published to Kafka"
+          },
+          {
+            "message.size": "2048"
+          }
+        ]
+      }
+    ],
+    "statusCodeString": "Ok",
+    "statusCode": "1",
+    "statusMessage": "",
+    "httpMethod": ""
+  }
+]

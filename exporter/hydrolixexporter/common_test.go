@@ -24,7 +24,9 @@ func TestConvertAttributes(t *testing.T) {
 	// Create a map for easy lookup
 	attrMap := make(map[string]interface{})
 	for _, tag := range result {
-		attrMap[tag.Key] = tag.Value
+		for k, v := range tag {
+			attrMap[k] = v
+		}
 	}
 
 	assert.Equal(t, "string_value", attrMap["string_key"])
@@ -156,7 +158,9 @@ func TestConvertAttributesWithSpecialCharacters(t *testing.T) {
 
 	attrMap := make(map[string]interface{})
 	for _, tag := range result {
-		attrMap[tag.Key] = tag.Value
+		for k, v := range tag {
+			attrMap[k] = v
+		}
 	}
 
 	assert.Equal(t, "special/value", attrMap["special.key"])
@@ -171,6 +175,6 @@ func TestConvertAttributesWithLargeValues(t *testing.T) {
 	result := convertAttributes(attrs)
 
 	assert.Len(t, result, 1)
-	assert.Equal(t, "large_key", result[0].Key)
-	assert.Equal(t, largeString, result[0].Value)
+	assert.Contains(t, result[0], "large_key")
+	assert.Equal(t, largeString, result[0]["large_key"])
 }

@@ -31,17 +31,25 @@ processors:
 exporters:
   # Your Hydrolix exporter
   hydrolix/metrics:
-    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest
-    hdx_table: cicd.metrics
-    hdx_transform: tf_metrics
+    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest/event
+    hdx_table: cicd.metricsV2
+    hdx_transform: tf_cicd_metricsV2
     hdx_username: ${env:HYDROLIX_USERNAME}
     hdx_password: ${env:HYDROLIX_PASSWORD}
     timeout: 30s
 
   hydrolix/traces:
-    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest
-    hdx_table: cicd.spans
-    hdx_transform: tf_spans
+    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest/event
+    hdx_table: cicd.span
+    hdx_transform: tf_cicd_span
+    hdx_username: ${env:HYDROLIX_USERNAME}
+    hdx_password: ${env:HYDROLIX_PASSWORD}
+    timeout: 30s
+
+  hydrolix/logs:
+    endpoint: https://your-hydrolix-cluster.hydrolix.io/ingest/event
+    hdx_table: cicd.otel_logs_test
+    hdx_transform: otel_logs_test
     hdx_username: ${env:HYDROLIX_USERNAME}
     hdx_password: ${env:HYDROLIX_PASSWORD}
     timeout: 30s
@@ -61,3 +69,8 @@ service:
       receivers: [otlp]
       processors: [batch, resource]
       exporters: [hydrolix/metrics, debug]
+
+    logs:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [hydrolix/logs, debug]
