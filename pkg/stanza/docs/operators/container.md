@@ -9,10 +9,8 @@ The `container` operator parses logs in `docker`, `cri-o` and `containerd` forma
 | `id`                         | `container`      | A unique identifier for the operator.                                                                                                                                                                                                 |
 | `format`                     | ``               | The container log format to use if it is known. Users can choose between `docker`, `crio` and `containerd`. If not set, the format will be automatically detected.                                                                    |
 | `add_metadata_from_filepath` | `true`           | Set if k8s metadata should be added from the file path. Requires the `log.file.path` field to be present.                                                                                                                             |
-| `max_log_size`               | `0`              | The maximum bytes size of the recombined log when parsing partial logs. Once the size exceeds the limit, all received entries of the source will be combined and flushed. "0" of max_log_size means no limit.                         |
-| `recombine`                  |                  | Configuration for the internal recombine operator that handles multiline log recombination.                                                                                                                                         |
-| `recombine.max_batch_size`   | `1000`           | The maximum number of log entries to batch before flushing when parsing CRI/containerd logs with P/F tags. Increase this value if you have very long multiline logs (e.g., large stack traces) that exceed 1000 partial log entries. |
-| `recombine.max_unmatched_batch_size` | `100`       | The maximum number of log entries to batch before flushing when parsing Docker logs without P/F tags. Increase this value if you have very long single-line logs that are split across multiple Docker JSON entries. |
+| `max_log_size`               | `10485760`       | The maximum bytes size of the recombined log when parsing partial logs. Once the size exceeds the limit, all received entries of the source will be combined and flushed. "0" of max_log_size means no limit.                         |
+| `max_batch_size`             | `0`              | The maximum number of log entries to batch before flushing when parsing CRI/containerd logs with P/F tags. Increase this value if you have very long multiline logs (e.g., large stack traces). "0" means no limit. |
 | `output`                     | Next in pipeline | The connected operator(s) that will receive all outbound entries.                                                                                                                                                                     |
 | `parse_from`                 | `body`           | The [field](../types/field.md) from which the value will be parsed.                                                                                                                                                                   |
 | `parse_to`                   | `attributes`     | The [field](../types/field.md) to which the value will be parsed.                                                                                                                                                                     |
@@ -245,6 +243,16 @@ Configuration:
 </td>
 </tr>
 </table>
+
+#### Configure batch sizes for large multiline logs
+
+For applications that produce very long multiline logs (such as large stack traces or JSON payloads), you can configure the batch size limits:
+
+Configuration:
+```yaml
+- type: container
+  max_batch_size: 2000
+```
 
 
 #### Parse multiline logs and recombine into a single one
