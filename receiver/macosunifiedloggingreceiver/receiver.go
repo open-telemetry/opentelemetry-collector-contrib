@@ -34,7 +34,7 @@ func newUnifiedLoggingReceiver(
 func (r *unifiedLoggingReceiver) Start(ctx context.Context, _ component.Host) error {
 	r.logger.Info("Starting macOS unified logging receiver")
 
-	ctx, cancel := context.WithCancel(ctx)
+	_, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 	return nil
 }
