@@ -5,6 +5,7 @@ package hydrolixexporter
      "context"
      "encoding/json"
      "fmt"
+     "io"
      "net/http"
 
      "go.opentelemetry.io/collector/exporter"
@@ -19,32 +20,32 @@ package hydrolixexporter
  }
 
  type HydrolixSpan struct {
-     TraceID            string        `json:"traceId"`
-     SpanID             string        `json:"spanId"`
-     Name               string        `json:"name"`
-     ParentSpanID       string        `json:"parentSpanId,omitempty"`
-     ServiceName        string        `json:"serviceName,omitempty"`
-     Duration           uint64        `json:"duration"`
-     SpanAttributes     []TagValue    `json:"tags"`
-     ResourceAttributes []TagValue    `json:"serviceTags"`
-     HTTPStatusCode     string        `json:"httpStatusCode,omitempty"`
-     SpanKind           string        `json:"spanKind"`
-     SpanKindString     string        `json:"spanKindString"`
-     Timestamp          uint64        `json:"timestamp"`
-     StartTime          uint64        `json:"startTime"`
-     EndTime            uint64        `json:"endTime"`
-     HTTPRoute          string        `json:"httpRoute,omitempty"`
-     Logs               []TraceLog    `json:"logs,omitempty"`
-     StatusCodeString   string        `json:"statusCodeString"`
-     StatusCode         string        `json:"statusCode"`
-     StatusMessage      string        `json:"statusMessage,omitempty"`
-     HTTPMethod         string        `json:"httpMethod,omitempty"`
+     TraceID            string                   `json:"traceId"`
+     SpanID             string                   `json:"spanId"`
+     Name               string                   `json:"name"`
+     ParentSpanID       string                   `json:"parentSpanId,omitempty"`
+     ServiceName        string                   `json:"serviceName,omitempty"`
+     Duration           uint64                   `json:"duration"`
+     SpanAttributes     []map[string]interface{} `json:"tags"`
+     ResourceAttributes []map[string]interface{} `json:"serviceTags"`
+     HTTPStatusCode     string                   `json:"httpStatusCode,omitempty"`
+     SpanKind           string                   `json:"spanKind"`
+     SpanKindString     string                   `json:"spanKindString"`
+     Timestamp          uint64                   `json:"timestamp"`
+     StartTime          uint64                   `json:"startTime"`
+     EndTime            uint64                   `json:"endTime"`
+     HTTPRoute          string                   `json:"httpRoute,omitempty"`
+     Logs               []TraceLog               `json:"logs,omitempty"`
+     StatusCodeString   string                   `json:"statusCodeString"`
+     StatusCode         string                   `json:"statusCode"`
+     StatusMessage      string                   `json:"statusMessage,omitempty"`
+     HTTPMethod         string                   `json:"httpMethod,omitempty"`
  }
 
  type TraceLog struct {
-     Name      string      `json:"name,omitempty"`
-     Timestamp uint64      `json:"timestamp"`
-     Field     []TagValue  `json:"field"`
+     Name      string                   `json:"name,omitempty"`
+     Timestamp uint64                   `json:"timestamp"`
+     Field     []map[string]interface{} `json:"field"`
  }
 
  func newTracesExporter(config *Config, set exporter.Settings) *tracesExporter {
@@ -184,7 +185,7 @@ package hydrolixexporter
  func (e *tracesExporter) sendToHydrolix(ctx context.Context, data []byte, table, transform string) error {
      req, err := http.NewRequestWithContext(ctx, "POST", e.config.Endpoint, bytes.NewBuffer(data))
      if err != nil {
-         return err
+         return fmt.Errorf("failed to create request: %w", err)
      }
 
      req.Header.Set("Content-Type", "application/json")
@@ -194,13 +195,21 @@ package hydrolixexporter
 
      resp, err := e.client.Do(req)
      if err != nil {
-         return err
+         return fmt.Errorf("failed to send request to Hydrolix: %w", err)
      }
      defer resp.Body.Close()
 
      if resp.StatusCode >= 300 {
-         return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+         body, readErr := io.ReadAll(resp.Body)
+         if readErr != nil {
+             return fmt.Errorf("unexpected status code: %d (failed to read response body: %v)", resp.StatusCode, readErr)
+         }
+         return fmt.Errorf("unexpected status code: %d, response: %s", resp.StatusCode, string(body))
      }
+
+     e.logger.Debug("successfully sent traces to Hydrolix",
+         zap.String("table", table),
+         zap.String("transform", transform))
 
      return nil
  }

@@ -1,0 +1,272 @@
+[
+  {
+    "name": "http_request_duration",
+    "description": "HTTP request duration in milliseconds",
+    "unit": "ms",
+    "metric_type": "histogram",
+    "timestamp": 1762471640031414000,
+    "start_time": 1762471630031414000,
+    "count": 150,
+    "sum": 45678.5,
+    "min": 12.3,
+    "max": 1234.5,
+    "bucket_counts": [10, 25, 40, 35, 20, 15, 5],
+    "explicit_bounds": [50, 100, 200, 500, 1000, 2000],
+    "tags": [
+      {
+        "http.method": "GET"
+      },
+      {
+        "http.route": "/api/users"
+      },
+      {
+        "http.status_code": "200"
+      },
+      {
+        "trace_id": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+      },
+      {
+        "span_id": "1a2b3c4d5e6f7g8h"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "api-gateway"
+      },
+      {
+        "service.version": "1.2.3"
+      },
+      {
+        "deployment.environment": "production"
+      },
+      {
+        "host.name": "api-server-01"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "http-instrumentation",
+    "scope_version": "1.0.0",
+    "scope_attributes": [
+      {
+        "instrumentation.provider": "opentelemetry"
+      }
+    ],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "exemplars": [
+      {
+        "filtered_attributes": {
+          "user_id": "12345",
+          "endpoint": "/api/users/profile"
+        },
+        "timestamp": 1762471635031414000,
+        "value": 234.5,
+        "span_id": "1a2b3c4d5e6f7g8h",
+        "trace_id": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+      },
+      {
+        "filtered_attributes": {
+          "user_id": "67890",
+          "endpoint": "/api/users/settings"
+        },
+        "timestamp": 1762471638031414000,
+        "value": 567.8,
+        "span_id": "9i8h7g6f5e4d3c2b",
+        "trace_id": "p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1"
+      }
+    ],
+    "flags": 1,
+    "aggregation_temporality": 2,
+    "serviceName": "api-gateway",
+    "httpStatusCode": "200",
+    "httpRoute": "/api/users",
+    "httpMethod": "GET",
+    "traceId": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+    "spanId": "1a2b3c4d5e6f7g8h"
+  },
+  {
+    "name": "api_requests_total",
+    "description": "Total number of API requests",
+    "unit": "1",
+    "metric_type": "sum",
+    "timestamp": 1762471640031414000,
+    "start_time": 1762471630031414000,
+    "value": 1542,
+    "tags": [
+      {
+        "http.method": "POST"
+      },
+      {
+        "http.route": "/api/orders"
+      },
+      {
+        "http.status_code": "201"
+      },
+      {
+        "trace_id": "xyz123abc456def789ghi012jkl345mn"
+      },
+      {
+        "span_id": "abc123def456"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "order-service"
+      },
+      {
+        "service.version": "2.1.0"
+      },
+      {
+        "deployment.environment": "production"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "order-metrics",
+    "scope_version": "2.0.0",
+    "scope_attributes": [],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "exemplars": [
+      {
+        "filtered_attributes": {
+          "order_id": "ORD-9876",
+          "customer_type": "premium"
+        },
+        "timestamp": 1762471637031414000,
+        "value": 1,
+        "span_id": "abc123def456",
+        "trace_id": "xyz123abc456def789ghi012jkl345mn"
+      }
+    ],
+    "flags": 1,
+    "aggregation_temporality": 2,
+    "is_monotonic": true,
+    "serviceName": "order-service",
+    "httpStatusCode": "201",
+    "httpRoute": "/api/orders",
+    "httpMethod": "POST",
+    "traceId": "xyz123abc456def789ghi012jkl345mn",
+    "spanId": "abc123def456"
+  },
+  {
+    "name": "memory_usage",
+    "description": "Current memory usage in bytes",
+    "unit": "bytes",
+    "metric_type": "gauge",
+    "timestamp": 1762471640031414000,
+    "value": 524288000,
+    "tags": [
+      {
+        "memory.type": "heap"
+      },
+      {
+        "process.pid": "12345"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "data-processor"
+      },
+      {
+        "service.version": "3.0.1"
+      },
+      {
+        "host.name": "worker-03"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "runtime-metrics",
+    "scope_version": "1.0.0",
+    "scope_attributes": [],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "flags": 0,
+    "serviceName": "data-processor"
+  },
+  {
+    "name": "request_latency",
+    "description": "Request latency distribution using exponential histogram",
+    "unit": "ms",
+    "metric_type": "exponentialHistogram",
+    "timestamp": 1762471640031414000,
+    "start_time": 1762471630031414000,
+    "count": 500,
+    "sum": 12500.75,
+    "min": 5.2,
+    "max": 450.8,
+    "scale": 2,
+    "zero_count": 0,
+    "positive": "{\"offset\":0,\"bucket_counts\":[50,100,150,120,60,20]}",
+    "negative": "{\"offset\":0,\"bucket_counts\":[]}",
+    "tags": [
+      {
+        "endpoint": "/api/v2/search"
+      },
+      {
+        "cache_hit": "false"
+      },
+      {
+        "trace_id": "search123trace456id789"
+      },
+      {
+        "span_id": "span123search"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "search-service"
+      },
+      {
+        "deployment.environment": "production"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "search-metrics",
+    "scope_version": "1.0.0",
+    "scope_attributes": [],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "exemplars": [],
+    "flags": 1,
+    "aggregation_temporality": 2,
+    "serviceName": "search-service",
+    "traceId": "search123trace456id789",
+    "spanId": "span123search"
+  },
+  {
+    "name": "response_time_summary",
+    "description": "Summary of response times with quantiles",
+    "unit": "ms",
+    "metric_type": "summary",
+    "timestamp": 1762471640031414000,
+    "start_time": 1762471630031414000,
+    "count": 1000,
+    "sum": 50000.0,
+    "quantiles": [0.5, 0.9, 0.95, 0.99],
+    "quantile_values": [45.0, 98.0, 145.0, 320.0],
+    "tags": [
+      {
+        "service_tier": "premium"
+      },
+      {
+        "region": "us-east-1"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "cdn-service"
+      },
+      {
+        "service.version": "1.5.2"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "cdn-metrics",
+    "scope_version": "1.0.0",
+    "scope_attributes": [],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "flags": 0,
+    "serviceName": "cdn-service"
+  }
+]

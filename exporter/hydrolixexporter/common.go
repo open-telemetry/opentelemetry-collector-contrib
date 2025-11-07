@@ -6,20 +6,13 @@ import (
     "go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// TagValue represents a key-value pair for tags/attributes
-type TagValue struct {
-    Key   string      `json:"key"`
-    Value interface{} `json:"value"`
-}
-
-// convertAttributes converts OTLP attributes to TagValue slice
-func convertAttributes(attrs pcommon.Map) []TagValue {
-    var tags []TagValue
+// convertAttributes converts OTLP attributes to array of maps
+func convertAttributes(attrs pcommon.Map) []map[string]interface{} {
+    var tags []map[string]interface{}
 
     attrs.Range(func(k string, v pcommon.Value) bool {
-        tag := TagValue{
-            Key:   k,
-            Value: attributeValueToInterface(v),
+        tag := map[string]interface{}{
+            k: attributeValueToInterface(v),
         }
         tags = append(tags, tag)
         return true
@@ -52,4 +45,16 @@ func extractStringAttr(attrs pcommon.Map, key string) string {
         return val.AsString()
     }
     return ""
+}
+
+// isValidTraceID checks if a trace ID is valid (not empty or all zeros)
+func isValidTraceID(traceID string) bool {
+    if traceID == "" {
+        return false
+    }
+    // Check if it's all zeros (32 chars for trace ID, 16 for span ID)
+    if traceID == "00000000000000000000000000000000" || traceID == "0000000000000000" {
+        return false
+    }
+    return true
 }

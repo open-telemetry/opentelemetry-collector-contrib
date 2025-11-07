@@ -14,6 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -42,9 +43,9 @@ func TestTracesExporter_ConvertToHydrolixSpans(t *testing.T) {
 	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Status().SetMessage("success")
 
-	span.Attributes().PutStr("http.method", "GET")
+	span.Attributes().PutStr("http.request.method", "GET")
 	span.Attributes().PutStr("http.route", "/api/test")
-	span.Attributes().PutInt("http.response.status_code", 200)
+	span.Attributes().PutStr("http.response.status_code", "200")
 
 	cfg := &Config{
 		ClientConfig: confighttp.ClientConfig{
@@ -56,7 +57,7 @@ func TestTracesExporter_ConvertToHydrolixSpans(t *testing.T) {
 		HDXPassword:  "pass",
 	}
 
-	exporter := newTracesExporter(cfg, exportertest.NewNopSettings())
+	exporter := newTracesExporter(cfg, exportertest.NewNopSettings(component.MustNewType("hydrolix")))
 	result := exporter.convertToHydrolixSpans(traces)
 
 	require.Len(t, result, 1)
@@ -183,7 +184,7 @@ func TestTracesExporter_PushTraces(t *testing.T) {
 		HDXPassword:  "testpass",
 	}
 
-	exporter := newTracesExporter(cfg, exportertest.NewNopSettings())
+	exporter := newTracesExporter(cfg, exportertest.NewNopSettings(component.MustNewType("hydrolix")))
 
 	// Push traces
 	err := exporter.pushTraces(context.Background(), traces)
@@ -226,7 +227,7 @@ func TestTracesExporter_PushTracesError(t *testing.T) {
 		HDXPassword:  "pass",
 	}
 
-	exporter := newTracesExporter(cfg, exportertest.NewNopSettings())
+	exporter := newTracesExporter(cfg, exportertest.NewNopSettings(component.MustNewType("hydrolix")))
 	err := exporter.pushTraces(context.Background(), traces)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected status code")
@@ -251,7 +252,7 @@ func TestTracesExporter_SpanDurationCalculation(t *testing.T) {
 		},
 	}
 
-	exporter := newTracesExporter(cfg, exportertest.NewNopSettings())
+	exporter := newTracesExporter(cfg, exportertest.NewNopSettings(component.MustNewType("hydrolix")))
 	result := exporter.convertToHydrolixSpans(traces)
 
 	require.Len(t, result, 1)

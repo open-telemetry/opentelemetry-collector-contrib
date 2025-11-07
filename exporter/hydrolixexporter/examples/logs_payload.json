@@ -1,0 +1,273 @@
+[
+  {
+    "timestamp": 1762471640031414000,
+    "observed_timestamp": 1762471640031415000,
+    "traceId": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+    "spanId": "1a2b3c4d5e6f7g8h",
+    "trace_flags": 1,
+    "severity_text": "INFO",
+    "severity_number": 9,
+    "body": "User authentication successful",
+    "tags": [
+      {
+        "user.id": "user-12345"
+      },
+      {
+        "user.email": "john.doe@example.com"
+      },
+      {
+        "auth.method": "oauth2"
+      },
+      {
+        "session.id": "sess-abc123xyz789"
+      },
+      {
+        "http.route": "/auth/login"
+      },
+      {
+        "http.request.method": "POST"
+      },
+      {
+        "http.response.status_code": "200"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "auth-service"
+      },
+      {
+        "service.version": "2.3.1"
+      },
+      {
+        "deployment.environment": "production"
+      },
+      {
+        "host.name": "auth-server-01"
+      },
+      {
+        "cloud.provider": "aws"
+      },
+      {
+        "cloud.region": "us-east-1"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "auth-logger",
+    "scope_version": "1.0.0",
+    "scope_attributes": [
+      {
+        "logger.name": "com.example.auth.AuthService"
+      }
+    ],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "flags": 1,
+    "serviceName": "auth-service",
+    "httpStatusCode": "200",
+    "httpRoute": "/auth/login",
+    "httpMethod": "POST"
+  },
+  {
+    "timestamp": 1762471641031414000,
+    "observed_timestamp": 1762471641031415000,
+    "traceId": "b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7",
+    "spanId": "2b3c4d5e6f7g8h9i",
+    "trace_flags": 1,
+    "severity_text": "ERROR",
+    "severity_number": 17,
+    "body": "Database connection timeout after 30s",
+    "tags": [
+      {
+        "db.system": "postgresql"
+      },
+      {
+        "db.name": "orders_db"
+      },
+      {
+        "db.connection.string": "postgresql://prod-db:5432"
+      },
+      {
+        "error.type": "TimeoutError"
+      },
+      {
+        "error.message": "Connection timeout exceeded"
+      },
+      {
+        "retry.count": "3"
+      },
+      {
+        "http.route": "/api/orders"
+      },
+      {
+        "http.request.method": "GET"
+      },
+      {
+        "http.response.status_code": "503"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "order-service"
+      },
+      {
+        "service.version": "2.1.0"
+      },
+      {
+        "deployment.environment": "production"
+      },
+      {
+        "host.name": "order-server-03"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "database-logger",
+    "scope_version": "1.0.0",
+    "scope_attributes": [
+      {
+        "logger.name": "com.example.db.ConnectionPool"
+      }
+    ],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "flags": 1,
+    "serviceName": "order-service",
+    "httpStatusCode": "503",
+    "httpRoute": "/api/orders",
+    "httpMethod": "GET"
+  },
+  {
+    "timestamp": 1762471642031414000,
+    "observed_timestamp": 1762471642031415000,
+    "traceId": "c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8",
+    "spanId": "3c4d5e6f7g8h9i0j",
+    "trace_flags": 1,
+    "severity_text": "WARN",
+    "severity_number": 13,
+    "body": "Cache miss, fetching from database - performance degradation expected",
+    "tags": [
+      {
+        "cache.key": "user:profile:12345"
+      },
+      {
+        "cache.hit": "false"
+      },
+      {
+        "cache.backend": "redis"
+      },
+      {
+        "fallback.source": "postgresql"
+      },
+      {
+        "operation.duration_ms": "245"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "user-service"
+      },
+      {
+        "service.version": "3.2.0"
+      },
+      {
+        "deployment.environment": "production"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "cache-logger",
+    "scope_version": "1.0.0",
+    "scope_attributes": [],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "flags": 1,
+    "serviceName": "user-service"
+  },
+  {
+    "timestamp": 1762471643031414000,
+    "observed_timestamp": 1762471643031415000,
+    "traceId": "d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9",
+    "spanId": "4d5e6f7g8h9i0j1k",
+    "trace_flags": 1,
+    "severity_text": "DEBUG",
+    "severity_number": 5,
+    "body": "Request validation completed successfully",
+    "tags": [
+      {
+        "validation.fields": "email,password,terms_accepted"
+      },
+      {
+        "validation.duration_ms": "12"
+      },
+      {
+        "request.id": "req-xyz789abc123"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "api-gateway"
+      },
+      {
+        "service.version": "1.0.5"
+      },
+      {
+        "deployment.environment": "staging"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "validation-logger",
+    "scope_version": "1.0.0",
+    "scope_attributes": [],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "flags": 1,
+    "serviceName": "api-gateway"
+  },
+  {
+    "timestamp": 1762471644031414000,
+    "observed_timestamp": 1762471644031415000,
+    "traceId": "e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
+    "spanId": "5e6f7g8h9i0j1k2l",
+    "trace_flags": 1,
+    "severity_text": "FATAL",
+    "severity_number": 21,
+    "body": "Critical system failure: out of memory",
+    "tags": [
+      {
+        "error.type": "OutOfMemoryError"
+      },
+      {
+        "memory.heap.used": "8589934592"
+      },
+      {
+        "memory.heap.max": "8589934592"
+      },
+      {
+        "system.shutdown": "true"
+      },
+      {
+        "alert.triggered": "true"
+      }
+    ],
+    "serviceTags": [
+      {
+        "service.name": "data-processor"
+      },
+      {
+        "service.version": "4.1.2"
+      },
+      {
+        "deployment.environment": "production"
+      },
+      {
+        "host.name": "worker-05"
+      }
+    ],
+    "resource_schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "scope_name": "system-logger",
+    "scope_version": "1.0.0",
+    "scope_attributes": [],
+    "scope_dropped_attr_count": 0,
+    "scope_schema_url": "",
+    "flags": 1,
+    "serviceName": "data-processor"
+  }
+]
