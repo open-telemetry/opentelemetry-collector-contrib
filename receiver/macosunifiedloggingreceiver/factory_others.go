@@ -3,7 +3,7 @@
 
 //go:build !darwin
 
-package macosunifiedloggingreceiver
+package macosunifiedloggingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver"
 
 import (
 	"context"
