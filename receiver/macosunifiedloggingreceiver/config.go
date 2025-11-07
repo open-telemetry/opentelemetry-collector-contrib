@@ -134,7 +134,7 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("failed to resolve archive path: %w", err)
 		}
 		if len(resolvedPaths) == 0 {
-			return fmt.Errorf("no archive paths matched the provided pattern")
+			return errors.New("no archive paths matched the provided pattern")
 		}
 		// Store the resolved paths internally
 		cfg.resolvedArchivePaths = resolvedPaths
@@ -149,7 +149,7 @@ func (cfg *Config) Validate() error {
 
 	if cfg.EndTime != "" {
 		if cfg.ArchivePath == "" {
-			return fmt.Errorf("end_time can only be used with archive_path")
+			return errors.New("end_time can only be used with archive_path")
 		}
 		if _, err := time.Parse("2006-01-02 15:04:05", cfg.EndTime); err != nil {
 			return fmt.Errorf("invalid end_time format (expected: 2006-01-02 15:04:05): %w", err)
