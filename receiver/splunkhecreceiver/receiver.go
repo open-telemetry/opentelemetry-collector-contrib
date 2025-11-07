@@ -509,7 +509,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 		unfiltered = unfiltered[1:]
 	}
-
 	resourceCustomizer := r.createResourceCustomizer(req)
 	if r.logsConsumer != nil && len(events) > 0 {
 		ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
