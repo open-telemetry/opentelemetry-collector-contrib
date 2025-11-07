@@ -10,3 +10,5 @@ status:
 tests:
   # start requires an encoding extension to exist
   skip_lifecycle: true
+  # creating a new receiver requires a storage emulator
+  skip_shutdown: true
