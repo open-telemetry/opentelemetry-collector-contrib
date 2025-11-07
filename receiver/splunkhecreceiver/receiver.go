@@ -418,7 +418,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	var unfiltered []*splunk.Event
 	var firstEvent any
-	var isJsonArray bool
 	firstErr := dec.Decode(&firstEvent)
 
 	if firstErr != nil {
@@ -441,10 +440,15 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 
+		// If event is JSON array, there should be no more tokens after the first one
+		if dec.More() {
+			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, nil)
+			return
+		}
+
 		for _, item := range events {
 			unfiltered = append(unfiltered, &item)
 		}
-		isJsonArray = true
 	default:
 		// Single event
 		eventBytes, _ := jsoniter.Marshal(v)
@@ -454,17 +458,10 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 		unfiltered = append(unfiltered, &event)
-		isJsonArray = false
 	}
 
 	var events []*splunk.Event
 	var metricEvents []*splunk.Event
-
-	// If event is JSON array, there should be no more tokens after the first one
-	if isJsonArray && dec.More() {
-		r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, nil)
-		return
-	}
 
 	for len(unfiltered) > 0 {
 		msg := unfiltered[0]
