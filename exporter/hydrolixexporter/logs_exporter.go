@@ -109,26 +109,12 @@ func (e *logsExporter) convertToHydrolixLogs(ld plog.Logs) []HydrolixLog {
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				logRecord := sl.LogRecords().At(k)
 
-				// Only include trace context if it's valid (not empty/zero)
-				traceID := ""
-				spanID := ""
-				traceFlags := uint32(0)
-
-				if !logRecord.TraceID().IsEmpty() {
-					traceID = logRecord.TraceID().String()
-					traceFlags = uint32(logRecord.Flags())
-				}
-
-				if !logRecord.SpanID().IsEmpty() {
-					spanID = logRecord.SpanID().String()
-				}
-
 				hdxLog := HydrolixLog{
 					Timestamp:             uint64(logRecord.Timestamp()),
 					ObservedTimestamp:     uint64(logRecord.ObservedTimestamp()),
-					TraceID:               traceID,
-					SpanID:                spanID,
-					TraceFlags:            traceFlags,
+					TraceID:               logRecord.TraceID().String(),
+					SpanID:                logRecord.SpanID().String(),
+					TraceFlags:            uint32(logRecord.Flags()),
 					SeverityText:          logRecord.SeverityText(),
 					SeverityNumber:        int32(logRecord.SeverityNumber()),
 					Body:                  logRecord.Body().AsString(),

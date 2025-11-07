@@ -197,34 +197,6 @@ func TestLogsExporter_PushLogsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "unexpected status code")
 }
 
-func TestLogsExporter_FilterEmptyTraceContext(t *testing.T) {
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
-	logRecord := sl.LogRecords().AppendEmpty()
-
-	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
-	logRecord.SetSeverityText("INFO")
-	logRecord.Body().SetStr("Test log message")
-	// TraceID and SpanID are empty by default
-
-	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "http://localhost:8080",
-		},
-	}
-
-	exporter := newLogsExporter(cfg, exportertest.NewNopSettings(component.MustNewType("hydrolix")))
-	result := exporter.convertToHydrolixLogs(logs)
-
-	require.Len(t, result, 1)
-	// Empty trace IDs should result in empty strings (not zero-filled)
-	assert.Equal(t, "", result[0].TraceID)
-	assert.Equal(t, "", result[0].SpanID)
-	assert.Equal(t, uint32(0), result[0].TraceFlags)
-}
-
 func TestLogsExporter_ConvertLogsWithDifferentSeverities(t *testing.T) {
 	severities := []struct {
 		number plog.SeverityNumber
