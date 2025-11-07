@@ -1002,8 +1002,23 @@ func TestSingleEventWithHeaders(t *testing.T) {
 	// Verify the event was processed
 	require.Positive(t, sink.LogRecordCount(), "Event should have been processed as log")
 
-	// Note: Detailed verification of time/samplerate would require inspecting the parsed event,
-	// but the main point is that the request succeeds and processes correctly
+	// Verify time and samplerate from headers were applied
+	logRecord := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := logRecord.Attributes()
+
+	// Check samplerate
+	samplerateVal, samplerateExists := attrs.Get("SampleRate")
+	assert.True(t, samplerateExists, "SampleRate should be present")
+	assert.Equal(t, int64(10), samplerateVal.Int(), "SampleRate should match header value")
+
+	// Check timestamp (1234567890 seconds = 1234567890000000000 nanoseconds)
+	assert.Equal(t, pcommon.Timestamp(1234567890000000000), logRecord.Timestamp(), "Timestamp should match header value")
+
+	// Check the body attributes were preserved
+	methodVal, _ := attrs.Get("method")
+	assert.Equal(t, "GET", methodVal.AsString())
+	endpointVal, _ := attrs.Get("endpoint")
+	assert.Equal(t, "/foo", endpointVal.AsString())
 }
 
 // TestSingleEventHeadersDontOverrideBody verifies that headers don't override values in the body
