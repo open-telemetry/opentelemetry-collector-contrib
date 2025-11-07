@@ -75,7 +75,6 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ### 🧰 Bug fixes 🧰
 
-- `ClickHouse Exporter`: Fix TLS configuration being ignored when only `ca_file` is set. (#43911)
 - `exporter/clickhouse`: Fix a bug in the exporter factory resulting in a nil dereference panic when the clickhouse.json feature gate is enabled (#43733)
 - `exporter/kafka`: franz-go: Fix underreported kafka_exporter_write_latency metric (#43803)
 - `exporter/loadbalancing`: Fix high cardinality issue in loadbalancing exporter by moving endpoint from exporter ID to attributes (#43719)
