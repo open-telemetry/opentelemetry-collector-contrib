@@ -33,6 +33,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.139.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/processor/processortest v0.139.1-0.20251105131800-09a271914bdc
 	go.opentelemetry.io/collector/processor/xprocessor v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/otel v1.38.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 )
 
@@ -75,7 +76,6 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.139.1-0.20251105131800-09a271914bdc // indirect
 	go.opentelemetry.io/collector/pipeline v1.45.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
