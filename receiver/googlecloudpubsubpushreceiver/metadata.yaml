@@ -1,0 +1,12 @@
+type: googlecloudpubsubpush
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [axw, constanca-m]
+
+tests:
+  # start requires an encoding extension to exist
+  skip_lifecycle: true

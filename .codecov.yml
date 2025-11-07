@@ -692,6 +692,10 @@ component_management:
     name: receiver_googlecloudmonitoring
     paths:
     - receiver/googlecloudmonitoringreceiver/**
+  - component_id: receiver_googlecloudpubsubpush
+    name: receiver_googlecloudpubsubpush
+    paths:
+    - receiver/googlecloudpubsubpushreceiver/**
   - component_id: receiver_googlecloudpubsub
     name: receiver_googlecloudpubsub
     paths:
