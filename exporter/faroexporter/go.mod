@@ -97,8 +97,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector/extension/auth v0.121.1-0.20250317165851-432d92d8b366 => go.opentelemetry.io/collector/extension/extensionauth v1.45.1-0.20251105131800-09a271914bdc
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
