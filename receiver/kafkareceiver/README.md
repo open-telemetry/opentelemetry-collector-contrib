@@ -44,15 +44,19 @@ The following settings can be optionally configured:
 - `logs`
   - `topic` (default = otlp\_logs): The name of the Kafka topic from which to consume logs.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
+  - `exclude_topic` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
 - `metrics`
   - `topic` (default = otlp\_metrics): The name of the Kafka topic from which to consume metrics.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
+  - `exclude_topic` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
 - `traces`
   - `topic` (default = otlp\_spans): The name of the Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
+  - `exclude_topic` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
 - `profiles`
   - `topic` (default = otlp\_profiles): The name of the Kafka topic from which to consume profiles.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
+  - `exclude_topic` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
 - `topic` (Deprecated [v0.124.0]: use `logs::topic`, `traces::topic`, or `metrics::topic`).
    If this is set, it will take precedence over the default value for those fields.
 - `encoding` (Deprecated [v0.124.0]: use `logs::encoding`, `traces::encoding`, or `metrics::encoding`).
@@ -217,3 +221,29 @@ attributes with the prefix "kafka.header.", i.e.
 }
 ...
 ```
+
+#### Regex topic patterns with exclusions
+
+When using the `franz-go` client, you can consume from multiple topics using regex patterns
+and exclude specific topics from consumption. This is useful when you want to consume from
+a dynamic set of topics but need to filter out certain ones.
+
+**Note:** Both `topic` and `exclude_topic` must use regex patterns (prefix with `^`) for
+exclusion to work. This feature is only available with the franz-go client.
+
+```yaml
+receivers:
+  kafka:
+    logs:
+      topic: "^logs-.*"                   # Consume from all topics matching logs-*
+      exclude_topic: "^logs-(test|dev)$"  # Exclude logs-test and logs-dev
+    metrics:
+      topic: "^metrics-.*"
+      exclude_topic: "^metrics-internal-.*$"
+```
+
+In the example above:
+- For logs: the receiver will consume from topics like `logs-prod`, `logs-staging`, `logs-app`
+  but will exclude `logs-test` and `logs-dev`
+- For metrics: the receiver will consume from topics like `metrics-app`, `metrics-infra`
+  but will exclude any topics starting with `metrics-internal-`

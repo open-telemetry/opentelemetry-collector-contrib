@@ -135,6 +135,9 @@ type TopicEncodingConfig struct {
 	//
 	// Defaults to "otlp_proto".
 	Encoding string `mapstructure:"encoding"`
+
+	// Optional exclude topic option, used only in regex mode.
+	ExcludeTopic string `mapstructure:"exclude_topic"`
 }
 
 type MessageMarking struct {

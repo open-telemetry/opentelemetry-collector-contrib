@@ -307,6 +307,35 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "regex_topic_with_exclusion"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:        "^logs-.*",
+					ExcludeTopic: "^logs-(test|dev)$",
+					Encoding:     "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:        "^metrics-.*",
+					ExcludeTopic: "^metrics-internal-.*$",
+					Encoding:     "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:        "^traces-.*",
+					ExcludeTopic: "^traces-debug-.*$",
+					Encoding:     "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
