@@ -28,7 +28,7 @@ type prometheusExporter struct {
 	registry     *prometheus.Registry
 	settings     component.TelemetrySettings
 
-	// background metric cleanup 
+	// background metric cleanup
 	cleanupCancel context.CancelFunc
 	cleanupWG     sync.WaitGroup
 }
@@ -89,7 +89,7 @@ func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) er
 		_ = srv.Serve(ln)
 	}()
 
-	interval := pe.config.MetricExpiration / 2
+	interval := max(pe.config.MetricExpiration/2, time.Second*10)
 	cleanupCtx, cancel := context.WithCancel(context.Background())
 	pe.cleanupCancel = cancel
 	pe.cleanupWG.Add(1)
