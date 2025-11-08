@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -1814,7 +1813,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 			currentTime := float64(time.Now().UnixNano()) / 1e6
 			event := buildSplunkHecMsg(currentTime, 3)
 			event.Fields["nested_map"] = tt.field
-			msgBytes, err := jsoniter.Marshal(event)
+			msgBytes, err := json.Marshal(event)
 			require.NoError(t, err)
 			req := httptest.NewRequest(http.MethodPost, "http://localhost/services/collector", bytes.NewReader(msgBytes))
 

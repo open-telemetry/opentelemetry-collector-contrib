@@ -32,7 +32,7 @@ import (
 
 var removeStartTimeAdjustment = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" leave the start time unset. Use the new metricstarttime processor instead."),
 )
@@ -55,6 +55,7 @@ type transaction struct {
 	isNew                  bool
 	trimSuffixes           bool
 	enableNativeHistograms bool
+	useMetadata            bool
 	addingNativeHistogram  bool // true if the last sample was a native histogram.
 	addingNHCB             bool // true if the last sample was a NHCB.
 	ctx                    context.Context
@@ -89,6 +90,7 @@ func newTransaction(
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
 	enableNativeHistograms bool,
+	useMetadata bool,
 ) *transaction {
 	return &transaction{
 		ctx:                    ctx,
@@ -96,6 +98,7 @@ func newTransaction(
 		isNew:                  true,
 		trimSuffixes:           trimSuffixes,
 		enableNativeHistograms: enableNativeHistograms,
+		useMetadata:            useMetadata,
 		sink:                   sink,
 		metricAdjuster:         metricAdjuster,
 		externalLabels:         externalLabels,
@@ -187,9 +190,14 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
 	if err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+		// never return errors, as that fails the while scrape
+		// return ref==0 indicating that the series was not added
+		return 0, nil
 	}
 
-	return 0, nil // never return errors, as that fails the whole scrape
+	// never return errors, as that fails the whole scrape
+	// return ref==1 indicating that the series was added and needs staleness tracking
+	return 1, nil
 }
 
 // detectAndStoreNativeHistogramStaleness returns true if it detects
@@ -246,11 +254,7 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
 		mf, ok := t.families[key][scope][fnKey]
 		if !ok || !mf.includesMetric(mn) {
-			curMf = newMetricFamily(mn, t.mc, t.logger)
-			// Don't convert NHCB to ExponentialHistogram.
-			if curMf.mtype == pmetric.MetricTypeHistogram && mfKey.isExponentialHistogram && !t.addingNHCB {
-				curMf.mtype = pmetric.MetricTypeExponentialHistogram
-			}
+			curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
 			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
 			return curMf
 		}
@@ -350,9 +354,14 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	}
 	if err != nil {
 		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+		// never return errors, as that fails the while scrape
+		// return ref==0 indicating that the series was not added
+		return 0, nil
 	}
 
-	return 0, nil // never return errors, as that fails the whole scrape
+	// never return errors, as that fails the whole scrape
+	// return ref==1 indicating that the series was added and needs staleness tracking
+	return 1, nil
 }
 
 func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
@@ -511,9 +520,13 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 	if !ok {
 		return nil, errors.New("unable to find target in context")
 	}
-	t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
-	if !ok {
-		return nil, errors.New("unable to find MetricMetadataStore in context")
+	if t.useMetadata {
+		t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
+		if !ok {
+			return nil, errors.New("unable to find MetricMetadataStore in context")
+		}
+	} else {
+		t.mc = &emptyMetadataStore{}
 	}
 
 	rKey, err := t.getJobAndInstance(lbs)
