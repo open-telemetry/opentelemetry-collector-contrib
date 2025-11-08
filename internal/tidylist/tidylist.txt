@@ -170,7 +170,6 @@ extension/observer/cfgardenobserver
 internal/docker
 extension/observer/dockerobserver
 extension/observer/ecsobserver
-extension/observer/ecstaskobserver
 extension/observer/hostobserver
 pkg/xk8stest
 extension/observer/k8sobserver
@@ -259,6 +258,7 @@ receiver/fluentforwardreceiver
 receiver/githubreceiver
 receiver/gitlabreceiver
 receiver/googlecloudmonitoringreceiver
+receiver/googlecloudpubsubpushreceiver
 receiver/googlecloudpubsubreceiver
 receiver/googlecloudspannerreceiver
 receiver/haproxyreceiver
