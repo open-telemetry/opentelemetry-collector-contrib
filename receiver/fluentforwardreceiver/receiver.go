@@ -27,7 +27,7 @@ type fluentReceiver struct {
 	conf      *Config
 	logger    *zap.Logger
 	server    *server
-	cancel    context.CancelFunc
+	udpSocket net.PacketConn
 }
 
 func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) (receiver.Logs, error) {
@@ -58,11 +58,8 @@ func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) 
 	}, nil
 }
 
-func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
-	receiverCtx, cancel := context.WithCancel(ctx)
-	r.cancel = cancel
-
-	r.collector.Start(receiverCtx)
+func (r *fluentReceiver) Start(_ context.Context, _ component.Host) error {
+	r.collector.Start()
 
 	listenAddr := r.conf.ListenAddress
 
@@ -84,20 +81,24 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 
 	r.listener = listener
 
-	r.server.Start(receiverCtx, listener)
+	r.server.Start(listener)
 
 	if udpListener != nil {
-		go respondToHeartbeats(receiverCtx, udpListener, r.logger)
+		r.udpSocket = udpListener
+		go respondToHeartbeats(udpListener, r.logger)
 	}
 
 	return nil
 }
 
 func (r *fluentReceiver) Shutdown(context.Context) error {
-	if r.listener == nil {
-		return nil
+	if r.listener != nil {
+		_ = r.listener.Close() // stop TCP traffic
 	}
-	r.listener.Close()
-	r.cancel()
+	if r.udpSocket != nil {
+		_ = r.udpSocket.Close()
+	}
+	r.server.Shutdown() // stop accepting data
+	r.collector.Shutdown()
 	return nil
 }
