@@ -4,7 +4,6 @@
 package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 
 import (
-	"context"
 	"errors"
 	"net"
 	"syscall"
@@ -13,17 +12,12 @@ import (
 )
 
 // See https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#heartbeat-message
-func respondToHeartbeats(ctx context.Context, udpSock net.PacketConn, logger *zap.Logger) {
-	go func() {
-		<-ctx.Done()
-		udpSock.Close()
-	}()
-
+func respondToHeartbeats(udpSock net.PacketConn, logger *zap.Logger) {
 	buf := make([]byte, 1)
 	for {
 		n, addr, err := udpSock.ReadFrom(buf)
 		if err != nil || n == 0 {
-			if ctx.Err() != nil || errors.Is(err, syscall.EINVAL) {
+			if errors.Is(err, syscall.EINVAL) || errors.Is(err, net.ErrClosed) {
 				return
 			}
 			continue

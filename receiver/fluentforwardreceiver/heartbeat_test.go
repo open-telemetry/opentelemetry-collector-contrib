@@ -4,7 +4,6 @@
 package fluentforwardreceiver
 
 import (
-	"context"
 	"net"
 	"testing"
 	"time"
@@ -16,11 +15,9 @@ import (
 func TestUDPHeartbeat(t *testing.T) {
 	udpSock, err := net.ListenPacket("udp", "127.0.0.1:0")
 	require.NoError(t, err)
+	t.Cleanup(func() { _ = udpSock.Close() })
 
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	go respondToHeartbeats(ctx, udpSock, zap.NewNop())
+	go respondToHeartbeats(udpSock, zap.NewNop())
 
 	conn, err := net.Dial("udp", udpSock.LocalAddr().String())
 	require.NoError(t, err)

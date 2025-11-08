@@ -24,6 +24,7 @@ type collector struct {
 	logger           *zap.Logger
 	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
+	doneChan         chan struct{}
 }
 
 func newCollector(eventCh <-chan event, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport, telemetryBuilder *metadata.TelemetryBuilder) *collector {
@@ -33,17 +34,22 @@ func newCollector(eventCh <-chan event, next consumer.Logs, logger *zap.Logger, 
 		logger:           logger,
 		obsrecv:          obsrecv,
 		telemetryBuilder: telemetryBuilder,
+		doneChan:         make(chan struct{}),
 	}
 }
 
-func (c *collector) Start(ctx context.Context) {
-	go c.processEvents(ctx)
+func (c *collector) Start() {
+	go c.processEvents()
 }
 
-func (c *collector) processEvents(ctx context.Context) {
+func (c *collector) Shutdown() {
+	close(c.doneChan)
+}
+
+func (c *collector) processEvents() {
 	for {
 		select {
-		case <-ctx.Done():
+		case <-c.doneChan:
 			return
 		case e := <-c.eventCh:
 			out := plog.NewLogs()
@@ -56,8 +62,8 @@ func (c *collector) processEvents(ctx context.Context) {
 			c.fillBufferUntilChanEmpty(logSlice)
 
 			logRecordCount := out.LogRecordCount()
-			c.telemetryBuilder.FluentRecordsGenerated.Add(ctx, int64(logRecordCount))
-			obsCtx := c.obsrecv.StartLogsOp(ctx)
+			c.telemetryBuilder.FluentRecordsGenerated.Add(context.Background(), int64(logRecordCount))
+			obsCtx := c.obsrecv.StartLogsOp(context.Background())
 			err := c.nextConsumer.ConsumeLogs(obsCtx, out)
 			c.obsrecv.EndLogsOp(obsCtx, "fluent", logRecordCount, err)
 		}
