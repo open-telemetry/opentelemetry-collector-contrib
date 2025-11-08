@@ -84,7 +84,7 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 
 	r.listener = listener
 
-	r.server.Start(receiverCtx, listener)
+	r.server.Start(listener)
 
 	if udpListener != nil {
 		go respondToHeartbeats(receiverCtx, udpListener, r.logger)
@@ -97,7 +97,8 @@ func (r *fluentReceiver) Shutdown(context.Context) error {
 	if r.listener == nil {
 		return nil
 	}
-	r.listener.Close()
-	r.cancel()
+	r.listener.Close() // stop TCP traffic
+	r.server.Shutdown() // stop accepting data
+	r.cancel() // stop processing
 	return nil
 }

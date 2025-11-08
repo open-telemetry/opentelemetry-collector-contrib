@@ -193,7 +193,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 	})
 }
 
-func TestBodyConversion(t *testing.T) {
+func createMessage() []byte {
 	var b []byte
 
 	b = msgp.AppendArrayHeader(b, 3)
@@ -213,14 +213,17 @@ func TestBodyConversion(t *testing.T) {
 	b = msgp.AppendString(b, "d")
 	b = msgp.AppendInt(b, 24)
 	b = msgp.AppendString(b, "o")
-	b, err := msgp.AppendIntf(b, []uint8{99, 100, 101})
+	b, _ = msgp.AppendIntf(b, []uint8{99, 100, 101})
+	return b
+}
 
-	require.NoError(t, err)
+func TestBodyConversion(t *testing.T) {
+	b := createMessage()
 
 	reader := msgp.NewReader(bytes.NewReader(b))
 
 	var event messageEventLogRecord
-	err = event.DecodeMsg(reader)
+	err := event.DecodeMsg(reader)
 	require.NoError(t, err)
 
 	le := event.LogRecords().At(0)
