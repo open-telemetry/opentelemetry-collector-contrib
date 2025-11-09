@@ -124,8 +124,6 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	// Add exclude topics only when regex consumption is enabled
 	if len(excludeTopics) > 0 && isRegex {
 		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
-	} else {
-		logger.Warn("exclude_topic is configured but will be ignored because topic pattern does not use regex (must start with '^')")
 	}
 
 	// Configure session timeout

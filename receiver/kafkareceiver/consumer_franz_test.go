@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
@@ -482,50 +481,4 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 	require.Equal(t, 0, consumedTopics["logs-a"], "logs-a should be excluded")
 	require.Equal(t, 0, consumedTopics["logs-b"], "logs-b should be excluded")
 	require.Equal(t, 1, consumedTopics["logs-c"], "logs-c should be consumed")
-}
-
-// TestExcludeTopicWithoutRegex tests that a warning is logged when exclude_topic
-// is configured but the topic pattern doesn't use regex.
-func TestExcludeTopicWithoutRegex(t *testing.T) {
-	setFranzGo(t, true)
-
-	_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test-topic"))
-	cfg.ConsumerConfig = configkafka.ConsumerConfig{
-		GroupID:       t.Name(),
-		InitialOffset: "earliest",
-		AutoCommit:    configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
-	}
-
-	settings, _, observedLogs := mustNewSettings(t)
-	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
-			return nil
-		}, nil
-	}
-
-	// Create consumer with non-regex topic and exclude_topic
-	c, err := newFranzKafkaConsumer(
-		cfg,
-		settings,
-		[]string{"test-topic"},        // Not a regex pattern
-		[]string{"^exclude-pattern$"}, // Exclude pattern (won't be used)
-		consumeFn,
-	)
-	require.NoError(t, err)
-	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
-
-	// Give it time to start and log the warning
-	time.Sleep(200 * time.Millisecond)
-
-	// Verify warning was logged
-	var foundWarning bool
-	for _, log := range observedLogs.All() {
-		if log.Level == zapcore.WarnLevel &&
-			log.Message == "exclude_topic is configured but will be ignored because topic pattern does not use regex (must start with '^')" {
-			foundWarning = true
-			break
-		}
-	}
-	require.True(t, foundWarning, "expected warning about exclude_topic being ignored without regex")
 }
