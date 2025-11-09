@@ -451,6 +451,11 @@ func getErrorHint(index, errorType string) string {
 	if strings.HasPrefix(index, ".ds-metrics-") && errorType == "version_conflict_engine_exception" {
 		return "check the \"Known issues\" section of Elasticsearch Exporter docs"
 	}
+	// Detect illegal_argument_exception related to require_data_stream when using OTel mapping mode
+	// with Elasticsearch < 8.12. OTel mapping mode indices contain ".otel" in the dataset name.
+	if errorType == "illegal_argument_exception" && strings.Contains(index, ".otel") {
+		return "This error typically occurs when using OTel mapping mode (default from v0.122.0) with Elasticsearch < 8.12. OTel mapping mode requires Elasticsearch 8.12+ (ideally 8.16+). To resolve: upgrade Elasticsearch to 8.12+, or use a different mapping mode (e.g., mapping::mode: ecs or mapping::mode: raw). See the README for more details."
+	}
 	return ""
 }
 
