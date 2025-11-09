@@ -157,9 +157,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
 
-// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-replace cloud.google.com/go v0.54.0 => cloud.google.com/go v0.110.10
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
