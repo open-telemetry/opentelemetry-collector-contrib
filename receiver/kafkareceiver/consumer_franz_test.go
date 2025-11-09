@@ -478,10 +478,10 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	assert.Equal(t, int64(1), called.Load(), "should consume exactly 1 record")
-	assert.Equal(t, 0, consumedTopics["logs-a"], "logs-a should be excluded")
-	assert.Equal(t, 0, consumedTopics["logs-b"], "logs-b should be excluded")
-	assert.Equal(t, 1, consumedTopics["logs-c"], "logs-c should be consumed")
+	require.Equal(t, int64(1), called.Load(), "should consume exactly 1 record")
+	require.Equal(t, 0, consumedTopics["logs-a"], "logs-a should be excluded")
+	require.Equal(t, 0, consumedTopics["logs-b"], "logs-b should be excluded")
+	require.Equal(t, 1, consumedTopics["logs-c"], "logs-c should be consumed")
 }
 
 // TestExcludeTopicWithoutRegex tests that a warning is logged when exclude_topic
@@ -527,5 +527,5 @@ func TestExcludeTopicWithoutRegex(t *testing.T) {
 			break
 		}
 	}
-	assert.True(t, foundWarning, "expected warning about exclude_topic being ignored without regex")
+	require.True(t, foundWarning, "expected warning about exclude_topic being ignored without regex")
 }
