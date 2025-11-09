@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.31.17
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.14
 	github.com/aws/smithy-go v1.23.2
-	github.com/json-iterator/go v1.1.12
+	github.com/goccy/go-json v0.10.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.139.0
@@ -82,6 +82,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect

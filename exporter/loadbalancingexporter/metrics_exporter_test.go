@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -174,7 +174,7 @@ func loadMetricsMap(t *testing.T, path string) map[string]pmetric.Metrics {
 
 	expectedOutput := map[string]pmetric.Metrics{}
 	for key, data := range expectedOutputRaw {
-		b, err = jsoniter.Marshal(data)
+		b, err = json.Marshal(data)
 		require.NoError(t, err)
 
 		unmarshaller := &pmetric.JSONUnmarshaler{}
