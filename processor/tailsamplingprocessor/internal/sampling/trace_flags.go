@@ -30,7 +30,7 @@ func NewTraceFlags(settings component.TelemetrySettings) samplingpolicy.Evaluato
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 // Spans are sampled if any span in the trace has the sampled flag set in the trace flags.
-func (tf *traceFlags) Evaluate(ctx context.Context, tId pcommon.TraceID, td *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+func (tf *traceFlags) Evaluate(_ context.Context, _ pcommon.TraceID, td *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	tf.logger.Debug("Evaluating spans in trace-flags filter")
 
 	td.Lock()
