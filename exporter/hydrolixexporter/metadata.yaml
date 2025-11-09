@@ -3,10 +3,14 @@ type: hydrolix
 status:
   class: exporter
   stability:
-    beta: [traces, metrics]
-  distributions: []
+    development: [metrics, traces, logs]
   codeowners:
-    active: []
+    active: [murphy]
 
 tests:
-  skip_lifecycle: true
+  config:
+    endpoint: http://localhost:8080
+    hdx_table: test_table
+    hdx_transform: test_transform
+    hdx_username: test_user
+    hdx_password: test_pass
