@@ -25,7 +25,7 @@ func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config) (*logs
 	}
 
 	// Create the appropriate strategy based on the failover mode
-	factory := GetFailoverStrategyFactory(cfg.FailoverMode)
+	factory := getFailoverStrategyFactory(cfg.FailoverMode)
 	strategy := factory.CreateLogsStrategy(failover)
 
 	return &logsRouter{
