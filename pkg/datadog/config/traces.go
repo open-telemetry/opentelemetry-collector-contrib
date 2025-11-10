@@ -164,6 +164,10 @@ func (c *TracesConnectorConfig) Validate() error {
 		return err
 	}
 
+	if c.IgnoreMissingDatadogFields {
+		return errors.New("ignore_missing_datadog_fields is not yet supported in the connector")
+	}
+
 	if c.TraceBuffer < 0 {
 		return errors.New("trace buffer must be non-negative")
 	}
@@ -172,4 +176,16 @@ func (c *TracesConnectorConfig) Validate() error {
 		return errors.New("bucket interval must be non-negative")
 	}
 	return nil
+}
+
+// ConnectorComponentConfig defines the configuration for the Datadog connector component
+type ConnectorComponentConfig struct {
+	// Traces defines the Traces specific configuration
+	Traces TracesConnectorConfig `mapstructure:"traces"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+func (c *ConnectorComponentConfig) Validate() error {
+	return c.Traces.Validate()
 }
