@@ -722,8 +722,22 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								scale:           0,
 								positiveOffset:  -1,
 								positiveBuckets: []uint64{10, 10}, // ]0.5, 1], ]1, 2]
-								negativeOffset:  2,                // [-4, -2[
-								negativeBuckets: []uint64{10},
+								negativeOffset:  2,
+								negativeBuckets: []uint64{10}, // [-4, -2[
+							},
+							{
+								// then, nothing
+								startTs:         1,
+								ts:              4,
+								count:           30,
+								sum:             ptr(-10.0),
+								min:             ptr(-4.0),
+								max:             ptr(1.0),
+								scale:           0,
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10, 10}, // ]0.5, 1], ]1, 2]
+								negativeOffset:  2,
+								negativeBuckets: []uint64{10}, // [-4, -2[
 							},
 						},
 					},
@@ -753,6 +767,86 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								positiveOffset:  0,
 								positiveBuckets: []uint64{10},
 								negativeOffset:  2,
+								negativeBuckets: []uint64{10},
+							},
+							{
+								startTs: 3,
+								ts:      4,
+								sum:     ptr(0.0),
+							},
+						},
+					},
+				},
+			}.generateMetrics(now),
+		},
+		{
+			name: "cumulative_to_delta_exponential_histogram_coarsen",
+			inMetrics: testExponentialHistogramMetrics{
+				metrics: []testExponentialHistogramMetric{
+					{
+						name:       "metric_1",
+						cumulative: true,
+						points: []testExponentialHistogramPoint{
+							{
+								// 10 points with value 1
+								startTs:         1,
+								ts:              2,
+								count:           10,
+								sum:             ptr(10.0),
+								min:             ptr(1.0),
+								max:             ptr(1.0),
+								scale:           0, // base == 2
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10}, // ]0.5, 1]
+							},
+							{
+								// additionally, 10 points with value 0.5, 10 points with value 2, and 10 with value -4
+								// zeroThreshold is increased to 1, so the 1 points are now counted as zeros
+								// scale is decreased to -1
+								startTs:         1,
+								ts:              3,
+								count:           40,
+								sum:             ptr(-5.0),
+								min:             ptr(-4.0),
+								max:             ptr(2.0),
+								zeroThreshold:   1.0,
+								zeroCount:       20,
+								scale:           -1,
+								positiveOffset:  0,
+								positiveBuckets: []uint64{10}, // ]1, 4]
+								negativeOffset:  0,
+								negativeBuckets: []uint64{10}, // [-4, -1[
+							},
+						},
+					},
+				},
+			}.generateMetrics(now),
+			outMetrics: testExponentialHistogramMetrics{
+				metrics: []testExponentialHistogramMetric{
+					{
+						name:       "metric_1",
+						cumulative: false,
+						points: []testExponentialHistogramPoint{
+							{
+								startTs:         1,
+								ts:              2,
+								count:           10,
+								sum:             ptr(10.0),
+								scale:           0,
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10},
+							},
+							{
+								startTs:         2,
+								ts:              3,
+								count:           30,
+								sum:             ptr(-15.0),
+								zeroThreshold:   1.0,
+								zeroCount:       10,
+								scale:           -1,
+								positiveOffset:  0,
+								positiveBuckets: []uint64{10},
+								negativeOffset:  0,
 								negativeBuckets: []uint64{10},
 							},
 						},
