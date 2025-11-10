@@ -5,7 +5,11 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
 	"crypto/subtle"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -52,6 +56,9 @@ type bearerTokenAuth struct {
 	authorizationValuesAtomic atomic.Value
 
 	shutdownCH chan struct{}
+
+	encryptionKey  string
+	encryptionType string
 
 	filename string
 	logger   *zap.Logger
@@ -144,6 +151,35 @@ func (b *bearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 	}
 }
 
+func (b *bearerTokenAuth) aesDecrypt(ciphered []byte, key string) ([]byte, error) {
+
+	byteinput := []byte(key)
+	md5Hash := md5.Sum(byteinput)
+	hashedKey := hex.EncodeToString(md5Hash[:])
+
+	aesBlock, err := aes.NewCipher([]byte(hashedKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AES cipher: %w", err)
+	}
+
+	gcmInstance, err := cipher.NewGCM(aesBlock)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GCM instance: %w", err)
+	}
+
+	nonceSize := gcmInstance.NonceSize()
+	//fmt.Printf("ciphered length: %d, nonceSize: %d\n", len(ciphered), nonceSize)
+	if len(ciphered) < nonceSize {
+		return nil, fmt.Errorf("ciphered data is too short: expected at least %d bytes, got %d", nonceSize, len(ciphered))
+	}
+	nonce, ciphered := ciphered[:nonceSize], ciphered[nonceSize:]
+	decodedBytes, err := gcmInstance.Open(nil, nonce, ciphered, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+	}
+	return decodedBytes, nil
+}
+
 // Reloads token from file
 func (b *bearerTokenAuth) refreshToken() {
 	b.logger.Info("refresh token", zap.String("filename", b.filename))
@@ -151,6 +187,15 @@ func (b *bearerTokenAuth) refreshToken() {
 	if err != nil {
 		b.logger.Error(err.Error())
 		return
+	}
+
+	// If AES encryption is specified, decrypt the token
+	if b.encryptionType == "AES" {
+		tokenData, err = b.aesDecrypt(tokenData, b.encryptionKey)
+		if err != nil {
+			b.logger.Error(err.Error())
+			return
+		}
 	}
 
 	tokens := strings.Split(string(tokenData), "\n")

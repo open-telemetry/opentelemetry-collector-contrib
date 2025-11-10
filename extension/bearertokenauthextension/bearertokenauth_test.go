@@ -4,7 +4,13 @@
 package bearertokenauthextension
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -445,4 +451,70 @@ func TestCustomHeaderAuthenticate(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
+
+func encryptAES(plaintext []byte, key string) (string, error) {
+	// Generate MD5 hash of the key
+	byteinput := []byte(key)
+	md5Hash := md5.Sum(byteinput)
+	hashedKey := hex.EncodeToString(md5Hash[:])
+
+	// Create AES cipher block
+	aesBlock, err := aes.NewCipher([]byte(hashedKey))
+	if err != nil {
+		return "", err
+	}
+
+	// Create GCM instance
+	gcm, err := cipher.NewGCM(aesBlock)
+	if err != nil {
+		return "", err
+	}
+
+	// Generate nonce
+	nonce := make([]byte, gcm.NonceSize())
+	_, _ = io.ReadFull(rand.Reader, nonce)
+	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
+	return string(ciphertext), nil
+}
+
+func TestAESDecrypt(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.EncryptionType = "AES"
+	cfg.EncryptionKey = "encryptionkey"
+
+	encryptedText, err := encryptAES([]byte("testdata"), cfg.EncryptionKey)
+	assert.NoError(t, err)
+
+	invalidEncryptedText, err := encryptAES([]byte("testdata"), "invalidencryptionkey")
+	assert.NoError(t, err)
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+	// Test cases
+	tests := []struct {
+		name             string
+		plaintext        string
+		preEncryptedText string
+		key              string
+		expectedError    bool
+	}{
+		{"Valid Decryption", "testdata", encryptedText, cfg.EncryptionKey, false},
+		{"Invalid Decryption", "testdata", invalidEncryptedText, cfg.EncryptionKey, true},
+		{"Invalid Key", "testdata", encryptedText, "invalidencryptionkey", true},
+		{"Empty Ciphertext", "testdata", "", cfg.EncryptionKey, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			decryptedText, err := bauth.aesDecrypt([]byte(tt.preEncryptedText), tt.key)
+			if tt.expectedError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.plaintext, string(decryptedText))
+		})
+	}
 }
