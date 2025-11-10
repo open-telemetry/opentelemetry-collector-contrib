@@ -37,42 +37,24 @@ resourceLogs:
               - key: aws.elb.tls.listener.resource_id
                 value:
                   stringValue: g3d4b5e8bb8464cd
-              - key: tls.protocol.version
-                value:
-                  stringValue: tlsv12
-              - key: tls.cipher
-                value:
-                  stringValue: ECDHE-RSA-AES128-SHA
               - key: aws.elb.connection_time
                 value:
                   intValue: "5"
               - key: aws.elb.tls_handshake_time
                 value:
                   intValue: "2"
-              - key: aws.elb.incoming_tls_alert
-                value:
-                  stringValue: '-'
-              - key: aws.elb.tls_named_group
-                value:
-                  stringValue: '-'
-              - key: aws.elb.chosen_cert_arn
-                value:
-                  stringValue: arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99
-              - key: aws.elb.chosen_cert_serial
-                value:
-                  stringValue: '-'
-              - key: aws.elb.alpn_fe_protocol
-                value:
-                  stringValue: '-'
-              - key: aws.elb.alpn_be_protocol
-                value:
-                  stringValue: '-'
-              - key: aws.elb.alpn_client_preference_list
-                value:
-                  stringValue: '-'
               - key: aws.elb.tls_connection_creation_time
                 value:
                   stringValue: 2018-12-20T02:59:30
+              - key: aws.elb.chosen_cert_arn
+                value:
+                  stringValue: arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-SHA
+              - key: tls.protocol.version
+                value:
+                  stringValue: tlsv12
               - key: url.domain
                 value:
                   stringValue: my-network-loadbalancer-c6e77e28c25b2234.elb.us-east-2.amazonaws.com
@@ -106,30 +88,27 @@ resourceLogs:
               - key: aws.elb.tls.listener.resource_id
                 value:
                   stringValue: g3d4b5e8bb8464cd
-              - key: tls.protocol.version
-                value:
-                  stringValue: tlsv12
-              - key: tls.cipher
-                value:
-                  stringValue: ECDHE-RSA-AES128-SHA
               - key: aws.elb.connection_time
                 value:
                   intValue: "5"
               - key: aws.elb.tls_handshake_time
                 value:
                   intValue: "2"
-              - key: aws.elb.incoming_tls_alert
+              - key: aws.elb.tls_connection_creation_time
                 value:
-                  stringValue: '-'
-              - key: aws.elb.tls_named_group
-                value:
-                  stringValue: '-'
+                  stringValue: ',"http/1.1"'
               - key: aws.elb.chosen_cert_arn
                 value:
                   stringValue: arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99
-              - key: aws.elb.chosen_cert_serial
+              - key: tls.cipher
                 value:
-                  stringValue: '-'
+                  stringValue: ECDHE-RSA-AES128-SHA
+              - key: tls.protocol.version
+                value:
+                  stringValue: tlsv12
+              - key: url.domain
+                value:
+                  stringValue: my-network-loadbalancer-c6e77e28c25b2234.elb.us-east-2.amazonaws.com
               - key: aws.elb.alpn_fe_protocol
                 value:
                   stringValue: h2
@@ -139,12 +118,6 @@ resourceLogs:
               - key: aws.elb.alpn_client_preference_list
                 value:
                   stringValue: h2
-              - key: aws.elb.tls_connection_creation_time
-                value:
-                  stringValue: ',"http/1.1"'
-              - key: url.domain
-                value:
-                  stringValue: my-network-loadbalancer-c6e77e28c25b2234.elb.us-east-2.amazonaws.com
             body: {}
             timeUnixNano: "1585731102000000000"
         scope:
