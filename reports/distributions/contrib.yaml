@@ -123,6 +123,7 @@ components:
         - remotetap
         - resource
         - resourcedetection
+        - logstometricsprocessor
         - span
         - sumologic
         - tail_sampling
