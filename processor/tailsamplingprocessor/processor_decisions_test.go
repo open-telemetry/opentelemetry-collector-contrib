@@ -92,6 +92,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	mpe1.NextDecision = samplingpolicy.InvertSampled
 
 	// Generate and deliver first span
@@ -329,6 +330,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	mpe1.NextDecision = samplingpolicy.InvertNotSampled
 	mpe2.NextDecision = samplingpolicy.Sampled
 
@@ -380,6 +382,7 @@ func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	mpe1.NextDecision = samplingpolicy.InvertNotSampled
 	mpe2.NextDecision = samplingpolicy.Sampled
 
@@ -427,6 +430,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The combined decision from the policies is NotSampled
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	mpe1.NextDecision = samplingpolicy.InvertSampled
 	mpe2.NextDecision = samplingpolicy.NotSampled
 
