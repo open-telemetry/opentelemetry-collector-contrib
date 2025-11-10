@@ -64,6 +64,39 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 	return kube.PodIdentifier{}
 }
 
+// extractPodIDFromAssociation extracts pod identifier for a single association
+// Returns empty identifier if any source in the association is missing/invalid
+func extractPodIDFromAssociation(ctx context.Context, attrs pcommon.Map, asso kube.Association) kube.PodIdentifier {
+	connectionIP := clientutil.Address(client.FromContext(ctx))
+	ret := kube.PodIdentifier{}
+
+	for i, source := range asso.Sources {
+		switch source.From {
+		case kube.ConnectionSource:
+			if connectionIP == "" {
+				return kube.PodIdentifier{} // Skip this association
+			}
+			ret[i] = kube.PodIdentifierAttributeFromConnection(connectionIP)
+		case kube.ResourceSource:
+			attributeValue := stringAttributeFromMap(attrs, source.Name)
+			if attributeValue == "" {
+				return kube.PodIdentifier{} // Skip this association
+			}
+
+			// If association configured by resource_attribute
+			// In k8s environment, host.name label set to a pod IP address.
+			// If the value doesn't represent an IP address, we skip it.
+			if asso.Name == string(conventions.HostNameKey) && net.ParseIP(attributeValue) == nil {
+				return kube.PodIdentifier{} // Skip this association
+			}
+
+			ret[i] = kube.PodIdentifierAttributeFromSource(source, attributeValue)
+		}
+	}
+
+	return ret
+}
+
 // extractPodIds returns pod identifier for first association matching all sources
 func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.PodIdentifier {
 	var podIP, labelIP string
