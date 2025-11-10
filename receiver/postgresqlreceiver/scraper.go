@@ -432,7 +432,9 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		errs.addPartial(err)
 	}
 
-	for tableKey, tm := range tableMetrics {
+	for tableKey := range tableMetrics {
+		tm := tableMetrics[tableKey]
+
 		p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, metadata.AttributeStateDead)
 		p.mb.RecordPostgresqlRowsDataPoint(now, tm.live, metadata.AttributeStateLive)
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.inserts, metadata.AttributeOperationIns)
@@ -455,6 +457,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit)
 		}
+
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(db)
 		if p.separateSchemaAttr {
