@@ -567,16 +567,16 @@ func mergeBuckets(offsetA int32, countsA []uint64, offsetB int32, countsB []uint
 	if len(countsA) == 0 && len(countsB) == 0 {
 		return 0, nil
 	}
-	minOffset := offsetA
-	if len(countsB) > 0 && (len(countsA) == 0 || offsetB < minOffset) {
-		minOffset = offsetB
+	if len(countsA) == 0 {
+		return offsetB, countsB
 	}
+	if len(countsB) == 0 {
+		return offsetA, countsA
+	}
+	minOffset := min(offsetB, offsetA)
 	lastA := offsetA + int32(len(countsA)) - 1
 	lastB := offsetB + int32(len(countsB)) - 1
-	maxLast := lastA
-	if len(countsB) > 0 && (len(countsA) == 0 || lastB > maxLast) {
-		maxLast = lastB
-	}
+	maxLast := max(lastB, lastA)
 	newBucketLen := int(maxLast - minOffset + 1)
 	newBucketCount := make([]uint64, newBucketLen)
 	for i := range countsA {
