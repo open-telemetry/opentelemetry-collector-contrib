@@ -728,25 +728,23 @@ func CompareExponentialHistogramDataPoint(expected, actual pmetric.ExponentialHi
 		errs = multierr.Append(errs, fmt.Errorf("scale doesn't match expected: %v, actual: %v",
 			expected.Scale(), actual.Scale()))
 	}
-	if expected.Negative().BucketCounts().Len() > 0 && actual.Negative().BucketCounts().Len() > 0 {
-		if expected.Negative().Offset() != actual.Negative().Offset() {
-			errs = multierr.Append(errs, fmt.Errorf("negative offset doesn't match expected: %v, "+
-				"actual: %v", expected.Negative().Offset(), actual.Negative().Offset()))
-		}
-		if !reflect.DeepEqual(expected.Negative().BucketCounts(), actual.Negative().BucketCounts()) {
-			errs = multierr.Append(errs, fmt.Errorf("negative bucket counts don't match expected: %v, "+
-				"actual: %v", expected.Negative().BucketCounts().AsRaw(), actual.Negative().BucketCounts().AsRaw()))
-		}
+	if expected.Negative().Offset() != actual.Negative().Offset() {
+		errs = multierr.Append(errs, fmt.Errorf("negative offset doesn't match expected: %v, "+
+			"actual: %v", expected.Negative().Offset(), actual.Negative().Offset()))
 	}
-	if expected.Positive().BucketCounts().Len() > 0 && actual.Positive().BucketCounts().Len() > 0 {
-		if expected.Positive().Offset() != actual.Positive().Offset() {
-			errs = multierr.Append(errs, fmt.Errorf("positive offset doesn't match expected: %v, "+
-				"actual: %v", expected.Positive().Offset(), actual.Positive().Offset()))
-		}
-		if !reflect.DeepEqual(expected.Positive().BucketCounts(), actual.Positive().BucketCounts()) {
-			errs = multierr.Append(errs, fmt.Errorf("positive bucket counts don't match expected: %v, "+
-				"actual: %v", expected.Positive().BucketCounts().AsRaw(), actual.Positive().BucketCounts().AsRaw()))
-		}
+	if expected.Negative().BucketCounts().Len() > 0 && actual.Negative().BucketCounts().Len() > 0 &&
+		!reflect.DeepEqual(expected.Negative().BucketCounts(), actual.Negative().BucketCounts()) {
+		errs = multierr.Append(errs, fmt.Errorf("negative bucket counts don't match expected: %v, "+
+			"actual: %v", expected.Negative().BucketCounts().AsRaw(), actual.Negative().BucketCounts().AsRaw()))
+	}
+	if expected.Positive().Offset() != actual.Positive().Offset() {
+		errs = multierr.Append(errs, fmt.Errorf("positive offset doesn't match expected: %v, "+
+			"actual: %v", expected.Positive().Offset(), actual.Positive().Offset()))
+	}
+	if expected.Positive().BucketCounts().Len() > 0 && actual.Positive().BucketCounts().Len() > 0 &&
+		!reflect.DeepEqual(expected.Positive().BucketCounts(), actual.Positive().BucketCounts()) {
+		errs = multierr.Append(errs, fmt.Errorf("positive bucket counts don't match expected: %v, "+
+			"actual: %v", expected.Positive().BucketCounts().AsRaw(), actual.Positive().BucketCounts().AsRaw()))
 	}
 	errs = multierr.Append(errs, compareExemplarSlice(expected.Exemplars(), actual.Exemplars()))
 	return errs
