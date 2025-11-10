@@ -67,8 +67,6 @@ confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider
 internal/filter
 connector/countconnector
-pkg/sampling
-processor/probabilisticsamplerprocessor
 exporter/datadogexporter
 processor/tailsamplingprocessor
 connector/datadogconnector
@@ -78,6 +76,7 @@ connector/grafanacloudconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
+pkg/sampling
 connector/signaltometricsconnector
 connector/slowsqlconnector
 connector/sumconnector
@@ -171,7 +170,6 @@ extension/observer/cfgardenobserver
 internal/docker
 extension/observer/dockerobserver
 extension/observer/ecsobserver
-extension/observer/ecstaskobserver
 extension/observer/hostobserver
 pkg/xk8stest
 extension/observer/k8sobserver
@@ -192,6 +190,7 @@ internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
 processor/k8sattributesprocessor
+processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
 processor/transformprocessor
 receiver/dockerstatsreceiver
@@ -236,6 +235,7 @@ receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver
 receiver/awsfirehosereceiver
+receiver/awslambdareceiver
 receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver
@@ -258,6 +258,7 @@ receiver/fluentforwardreceiver
 receiver/githubreceiver
 receiver/gitlabreceiver
 receiver/googlecloudmonitoringreceiver
+receiver/googlecloudpubsubpushreceiver
 receiver/googlecloudpubsubreceiver
 receiver/googlecloudspannerreceiver
 receiver/haproxyreceiver
@@ -324,5 +325,6 @@ receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
 receiver/windowsservicereceiver
+receiver/yanggrpcreceiver
 scraper/zookeeperscraper
 receiver/zookeeperreceiver
