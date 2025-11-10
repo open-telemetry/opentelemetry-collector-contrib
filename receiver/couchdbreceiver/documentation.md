@@ -18,7 +18,7 @@ The average duration of a served request.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | development |
+| ms | Gauge | Double | Development |
 
 ### couchdb.database.open
 
@@ -26,7 +26,7 @@ The number of open databases.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {databases} | Sum | Int | Cumulative | false | development |
+| {databases} | Sum | Int | Cumulative | false | Development |
 
 ### couchdb.database.operations
 
@@ -34,13 +34,13 @@ The number of database operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The operation type. | Str: ``writes``, ``reads`` | false |
+| operation | The operation type. | Str: ``writes``, ``reads`` | Recommended |
 
 ### couchdb.file_descriptor.open
 
@@ -48,7 +48,7 @@ The number of open file descriptors.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {files} | Sum | Int | Cumulative | false | development |
+| {files} | Sum | Int | Cumulative | false | Development |
 
 ### couchdb.httpd.bulk_requests
 
@@ -56,7 +56,7 @@ The number of bulk requests.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### couchdb.httpd.requests
 
@@ -64,13 +64,13 @@ The number of HTTP requests by method.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| http.method | An HTTP request method. | Str: ``COPY``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``POST``, ``PUT`` | false |
+| http.method | An HTTP request method. | Str: ``COPY``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``POST``, ``PUT`` | Recommended |
 
 ### couchdb.httpd.responses
 
@@ -78,13 +78,13 @@ The number of each HTTP status code.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {responses} | Sum | Int | Cumulative | true | development |
+| {responses} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| http.status_code | An HTTP status code. | Any Str | false |
+| http.status_code | An HTTP status code. | Any Str | Recommended |
 
 ### couchdb.httpd.views
 
@@ -92,13 +92,13 @@ The number of views read.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {views} | Sum | Int | Cumulative | true | development |
+| {views} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| view | The view type. | Str: ``temporary_view_reads``, ``view_reads`` | false |
+| view | The view type. | Str: ``temporary_view_reads``, ``view_reads`` | Recommended |
 
 ## Resource Attributes
 

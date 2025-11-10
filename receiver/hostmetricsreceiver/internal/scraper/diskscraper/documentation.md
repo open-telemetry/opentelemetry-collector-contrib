@@ -18,14 +18,14 @@ Disk bytes transferred.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the disk. | Any Str | false |
-| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` | false |
+| device | Name of the disk. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` | Recommended |
 
 ### system.disk.io_time
 
@@ -33,13 +33,13 @@ Time disk spent activated. On Windows, this is calculated as the inverse of disk
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the disk. | Any Str | false |
+| device | Name of the disk. | Any Str | Recommended |
 
 ### system.disk.merged
 
@@ -47,14 +47,14 @@ The number of disk reads/writes merged into single physical disk access operatio
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the disk. | Any Str | false |
-| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` | false |
+| device | Name of the disk. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` | Recommended |
 
 ### system.disk.operation_time
 
@@ -62,14 +62,14 @@ Time spent in disk operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the disk. | Any Str | false |
-| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` | false |
+| device | Name of the disk. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` | Recommended |
 
 ### system.disk.operations
 
@@ -77,14 +77,14 @@ Disk operations count.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the disk. | Any Str | false |
-| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` | false |
+| device | Name of the disk. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` | Recommended |
 
 ### system.disk.pending_operations
 
@@ -92,13 +92,13 @@ The queue size of pending I/O operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | false | development |
+| {operations} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the disk. | Any Str | false |
+| device | Name of the disk. | Any Str | Recommended |
 
 ### system.disk.weighted_io_time
 
@@ -106,10 +106,10 @@ Time disk spent activated multiplied by the queue length.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the disk. | Any Str | false |
+| device | Name of the disk. | Any Str | Recommended |

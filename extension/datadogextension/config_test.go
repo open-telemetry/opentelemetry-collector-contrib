@@ -5,7 +5,6 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
@@ -77,22 +77,6 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: datadogconfig.ErrUnsetAPIKey,
 		},
 		{
-			name: "Invalid API key characters",
-			config: Config{
-				API: datadogconfig.APIConfig{
-					Site: datadogconfig.DefaultSite,
-					Key:  "1234567890abcdef1234567890abcdeg",
-				},
-				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
-					},
-					Path: "/metadata",
-				},
-			},
-			wantErr: fmt.Errorf("%w: invalid characters: %s", datadogconfig.ErrAPIKeyFormat, "g"),
-		},
-		{
 			name: "Missing HTTP config",
 			config: Config{
 				API: datadogconfig.APIConfig{
@@ -138,7 +122,8 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 	// Create extension with proxy config
 	set := extension.Settings{
 		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
+			Logger:   zap.NewNop(),
+			Resource: pcommon.NewResource(),
 		},
 	}
 	hostProvider := &mockSourceProvider{

@@ -462,8 +462,8 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 	)
 	pdms := metricSlice(128)
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		for _, pdm := range pdms {
 			_ = proc.ConsumeMetrics(ctx, pdm)
 		}
@@ -472,7 +472,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 
 func metricSlice(numMetrics int) []pmetric.Metrics {
 	var out []pmetric.Metrics
-	for i := 0; i < numMetrics; i++ {
+	for i := range numMetrics {
 		const size = 2
 		out = append(out, pdm(fmt.Sprintf("p%d_", i), size))
 	}
@@ -556,6 +556,16 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		want             func(md pmetric.Metrics)
 		errorMode        ottl.ErrorMode
 	}{
+		{
+			name: "drop resource",
+			conditions: MetricFilters{
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
 		{
 			name: "drop metrics",
 			conditions: MetricFilters{
@@ -784,7 +794,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()
-	rm0.Resource().Attributes().PutStr("host.name", "myhost")
+	rm0.Resource().Attributes().PutStr("host.name", "localhost")
 	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
 	rm0ils0.Scope().SetName("scope")
 	fillMetricOne(rm0ils0.Metrics().AppendEmpty())

@@ -24,7 +24,7 @@ func createJSONFileContent(b *testing.B, filename string, nLogs int) []byte {
 	require.NoError(b, err)
 
 	result := make([][]byte, nLogs)
-	for i := 0; i < nLogs; i++ {
+	for i := range nLogs {
 		result[i] = compacted.Bytes()
 	}
 	return bytes.Join(result, []byte{'\n'})
@@ -54,7 +54,7 @@ func BenchmarkUnmarshalJSONMetrics(b *testing.B) {
 
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, err := u.UnmarshalMetrics(data)
 				require.NoError(b, err)
 			}

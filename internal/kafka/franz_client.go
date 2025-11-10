@@ -58,6 +58,7 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		// the legacy compatibility sarama hashing to avoid hashing to different
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
+		kgo.ProducerLinger(cfg.Linger),
 	)...)
 	if err != nil {
 		return nil, err
@@ -132,6 +133,9 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	}
 	if consumerCfg.DefaultFetchSize > 0 {
 		opts = append(opts, kgo.FetchMaxBytes(consumerCfg.DefaultFetchSize))
+	}
+	if consumerCfg.MaxPartitionFetchSize > 0 {
+		opts = append(opts, kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize))
 	}
 
 	// Configure max fetch wait

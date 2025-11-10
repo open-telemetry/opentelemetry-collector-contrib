@@ -54,10 +54,9 @@ type tailSamplingSpanProcessor struct {
 	logger    *zap.Logger
 
 	nextConsumer       consumer.Traces
-	maxNumTraces       uint64
 	policies           []*policy
 	idToTrace          sync.Map
-	policyTicker       timeutils.TTicker
+	policyTicker       *timeutils.PolicyTicker
 	tickerFrequency    time.Duration
 	decisionBatcher    idbatcher.Batcher
 	sampledIDCache     cache.Cache[bool]
@@ -132,7 +131,6 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		set:                set,
 		telemetry:          telemetry,
 		nextConsumer:       nextConsumer,
-		maxNumTraces:       cfg.NumTraces,
 		sampledIDCache:     sampledDecisions,
 		nonSampledIDCache:  nonSampledDecisions,
 		logger:             telemetrySettings.Logger,
@@ -173,27 +171,6 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 
 	return tsp, nil
-}
-
-// withDecisionBatcher sets the batcher used to batch trace IDs for policy evaluation.
-func withDecisionBatcher(batcher idbatcher.Batcher) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.decisionBatcher = batcher
-	}
-}
-
-// withPolicies sets the sampling policies to be used by the processor.
-func withPolicies(policies []*policy) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.policies = policies
-	}
-}
-
-// withTickerFrequency sets the frequency at which the processor will evaluate the sampling policies.
-func withTickerFrequency(frequency time.Duration) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.tickerFrequency = frequency
-	}
 }
 
 // WithSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
@@ -253,7 +230,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(settings, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
+		return sampling.NewStringAttributeFilter(settings, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch)
 	case StatusCode:
 		scfCfg := cfg.StatusCodeCfg
 		return sampling.NewStatusCodeFilter(settings, scfCfg.StatusCodes)
@@ -554,7 +531,7 @@ func (*tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.Reso
 		spans := scope.Spans()
 		is := scope.Scope()
 		spansLen := spans.Len()
-		for k := 0; k < spansLen; k++ {
+		for k := range spansLen {
 			span := spans.At(k)
 			key := span.TraceID()
 			idToSpans[key] = append(idToSpans[key], spanAndScope{

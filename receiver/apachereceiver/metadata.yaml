@@ -10,23 +10,23 @@ status:
     emeritus: [djaglowski]
 
 resource_attributes:
-    apache.server.name:
-      description: The name of the Apache HTTP server.
-      type: string
-      enabled: true
-    apache.server.port:
-      description: The port of the Apache HTTP server.
-      type: string
-      enabled: true
+  apache.server.name:
+    description: The name of the Apache HTTP server.
+    type: string
+    enabled: true
+  apache.server.port:
+    description: The port of the Apache HTTP server.
+    type: string
+    enabled: true
 
 attributes:
-  workers_state:
-    name_override: state
-    description: The state of workers.
+  connection_state:
+    description: The asynchronous connection state reported by Apache's server-status.
     type: string
     enum:
-      - busy
-      - idle
+      - writing
+      - keepalive
+      - closing
   cpu_level:
     name_override: level
     description: Level of processes.
@@ -39,8 +39,8 @@ attributes:
     description: Mode of processes.
     type: string
     enum:
-    - system
-    - user
+      - system
+      - user
   scoreboard_state:
     name_override: state
     description: The state of a connection.
@@ -58,66 +58,39 @@ attributes:
       - finishing
       - idle_cleanup
       - unknown
-  connection_state:
-    description: The asynchronous connection state reported by Apache's server-status.
+  workers_state:
+    name_override: state
+    description: The state of workers.
     type: string
     enum:
-      - writing
-      - keepalive
-      - closing
+      - busy
+      - idle
 
 metrics:
-  apache.uptime:
+  apache.connections.async:
     enabled: true
-    description: The amount of time that the server has been running in seconds.
-    unit: s
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: []
-  apache.current_connections:
-    enabled: true
-    description: The number of active connections currently attached to the HTTP server.
+    stability:
+      level: development
+    description: The number of connections in different asynchronous states reported by Apache's server-status.
     unit: "{connections}"
-    sum:
+    gauge:
       value_type: int
       input_type: string
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: []
-  apache.workers:
+    attributes: [connection_state]
+  apache.cpu.load:
     enabled: true
-    description: The number of workers currently attached to the HTTP server.
-    unit: "{workers}"
-    sum:
-      value_type: int
+    stability:
+      level: development
+    description: Current load of the CPU.
+    unit: "%"
+    gauge:
+      value_type: double
       input_type: string
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: [workers_state]
-  apache.requests:
-    enabled: true
-    description: The number of requests serviced by the HTTP server per second.
-    unit: "{requests}"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: []
-  apache.traffic:
-    enabled: true
-    description: Total HTTP server traffic.
-    unit: By
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
     attributes: []
   apache.cpu.time:
     enabled: true
+    stability:
+      level: development
     description: Jiffs used by processes of given category.
     unit: "{jiff}"
     sum:
@@ -126,25 +99,23 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [cpu_level, cpu_mode]
-  apache.cpu.load:
+  apache.current_connections:
     enabled: true
-    description: Current load of the CPU.
-    unit: "%"
-    gauge:
-      value_type: double
+    stability:
+      level: development
+    description: The number of active connections currently attached to the HTTP server.
+    unit: "{connections}"
+    sum:
+      value_type: int
       input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: []
   apache.load.1:
     enabled: true
+    stability:
+      level: development
     description: The average server load during the last minute.
-    unit: "%"
-    gauge:
-      value_type: double
-      input_type: string
-    attributes: []
-  apache.load.5:
-    enabled: true
-    description: The average server load during the last 5 minutes.
     unit: "%"
     gauge:
       value_type: double
@@ -152,7 +123,19 @@ metrics:
     attributes: []
   apache.load.15:
     enabled: true
+    stability:
+      level: development
     description: The average server load during the last 15 minutes.
+    unit: "%"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  apache.load.5:
+    enabled: true
+    stability:
+      level: development
+    description: The average server load during the last 5 minutes.
     unit: "%"
     gauge:
       value_type: double
@@ -160,6 +143,8 @@ metrics:
     attributes: []
   apache.request.time:
     enabled: true
+    stability:
+      level: development
     description: Total time spent on handling requests.
     unit: ms
     sum:
@@ -168,8 +153,22 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+  apache.requests:
+    enabled: true
+    stability:
+      level: development
+    description: The number of requests serviced by the HTTP server per second.
+    unit: "{requests}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
   apache.scoreboard:
     enabled: true
+    stability:
+      level: development
     description: The number of workers in each state.
     extended_documentation: >-
       The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
@@ -181,11 +180,38 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [scoreboard_state]
-  apache.connections.async:
+  apache.traffic:
     enabled: true
-    description: The number of connections in different asynchronous states reported by Apache's server-status.
-    unit: "{connections}"
-    gauge:
+    stability:
+      level: development
+    description: Total HTTP server traffic.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  apache.uptime:
+    enabled: true
+    stability:
+      level: development
+    description: The amount of time that the server has been running in seconds.
+    unit: s
+    sum:
       value_type: int
       input_type: string
-    attributes: [connection_state]
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  apache.workers:
+    enabled: true
+    stability:
+      level: development
+    description: The number of workers currently attached to the HTTP server.
+    unit: "{workers}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [workers_state]

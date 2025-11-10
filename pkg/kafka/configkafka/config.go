@@ -118,9 +118,16 @@ type ConsumerConfig struct {
 	// The maximum amount of time to wait for MinFetchSize bytes to be
 	// available before the broker returns a response (default 250ms)
 	MaxFetchWait time.Duration `mapstructure:"max_fetch_wait"`
+
+	// MaxPartitionFetchSize defines the maximum number of bytes to fetch
+	// per partition (default "1048576")
+	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
+
 	// RebalanceStrategy specifies the strategy to use for partition assignment.
-	// Possible values are "range", "roundrobin", and "sticky".
-	// Defaults to "range".
+	// Possible values are "range", "roundrobin", and "sticky", and
+	// "cooperative-sticky" (franz-go only).
+	//
+	// Defaults to "cooperative-sticky" for franz-go, "range" for Sarama.
 	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy,omitempty"`
 
 	// GroupInstanceID specifies the ID of the consumer
@@ -137,10 +144,11 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Enable:   true,
 			Interval: time.Second,
 		},
-		MinFetchSize:     1,
-		MaxFetchSize:     0,
-		MaxFetchWait:     250 * time.Millisecond,
-		DefaultFetchSize: 1048576,
+		MinFetchSize:          1,
+		MaxFetchSize:          0,
+		MaxFetchWait:          250 * time.Millisecond,
+		DefaultFetchSize:      1048576,
+		MaxPartitionFetchSize: 1048576,
 	}
 }
 
@@ -211,6 +219,10 @@ type ProducerConfig struct {
 	// Whether or not to allow automatic topic creation.
 	// (default enabled).
 	AllowAutoTopicCreation bool `mapstructure:"allow_auto_topic_creation"`
+
+	// Linger controls the linger time for the producer.
+	// (default 10ms).
+	Linger time.Duration `mapstructure:"linger"`
 }
 
 func NewDefaultProducerConfig() ProducerConfig {
@@ -220,6 +232,7 @@ func NewDefaultProducerConfig() ProducerConfig {
 		Compression:            "none",
 		FlushMaxMessages:       0,
 		AllowAutoTopicCreation: true,
+		Linger:                 10 * time.Millisecond,
 	}
 }
 
@@ -259,7 +272,7 @@ func (c *ProducerConfig) Unmarshal(conf *confmap.Conf) error {
 	return conf.Unmarshal(c)
 }
 
-// RequiredAcks defines record acknowledgement behavior for for producers.
+// RequiredAcks defines record acknowledgement behavior for producers.
 type RequiredAcks int
 
 const (
@@ -387,6 +400,8 @@ func (c SASLConfig) Validate() error {
 type AWSMSKConfig struct {
 	// Region is the AWS region the MSK cluster is based in
 	Region string `mapstructure:"region"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // KerberosConfig defines kerberos configuration.
