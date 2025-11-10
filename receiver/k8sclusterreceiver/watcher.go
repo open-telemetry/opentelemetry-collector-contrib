@@ -63,7 +63,10 @@ type resourceWatcher struct {
 	initialSyncTimedOut *atomic.Bool
 	config              *Config
 	entityLogConsumer   consumer.Logs
-	mu                  sync.RWMutex
+	// mu protects metadataConsumers and entityLogConsumer during leadership transitions.
+	// These fields are modified in setupMetadataExporters (called on leadership gain)
+	// while potentially being accessed concurrently by informer callbacks.
+	mu sync.RWMutex
 
 	// For mocking.
 	makeClient               func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
