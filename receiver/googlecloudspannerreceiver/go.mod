@@ -7,17 +7,17 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.4.0
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.45.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/component/componenttest v0.139.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/confmap v1.45.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/confmap/xconfmap v0.139.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/consumer v1.45.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/consumer/consumertest v0.139.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/pdata v1.45.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/receiver v1.45.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/receiver/receivertest v0.139.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/scraper v0.139.1-0.20251105131800-09a271914bdc
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.139.1-0.20251105131800-09a271914bdc
+	go.opentelemetry.io/collector/component v1.45.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/component/componenttest v0.139.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/confmap v1.45.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/confmap/xconfmap v0.139.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/consumer v1.45.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/consumer/consumertest v0.139.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/pdata v1.45.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/receiver v1.45.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/receiver/receivertest v0.139.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/scraper v0.139.1-0.20251106125304-a6a176660925
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.139.1-0.20251106125304-a6a176660925
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -69,13 +69,13 @@ require (
 	github.com/zeebo/errs v1.4.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.139.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.139.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/featuregate v1.45.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.139.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/pipeline v1.45.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.139.1-0.20251105131800-09a271914bdc // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.139.1-0.20251105131800-09a271914bdc // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.139.1-0.20251106125304-a6a176660925 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.139.1-0.20251106125304-a6a176660925 // indirect
+	go.opentelemetry.io/collector/featuregate v1.45.1-0.20251106125304-a6a176660925 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.139.1-0.20251106125304-a6a176660925 // indirect
+	go.opentelemetry.io/collector/pipeline v1.45.1-0.20251106125304-a6a176660925 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.139.1-0.20251106125304-a6a176660925 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.139.1-0.20251106125304-a6a176660925 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.36.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
