@@ -12,10 +12,8 @@ import (
 	"time"
 )
 
-var (
-	// OracleCloud IMDS compute endpoint
-	metadataEndpoint = "http://169.254.169.254/opc/v2/instance/"
-)
+// OracleCloud IMDS compute endpoint
+var metadataEndpoint = "http://169.254.169.254/opc/v2/instance/"
 
 // Provider gets metadata from the OracleCloud IMDS.
 type Provider interface {
