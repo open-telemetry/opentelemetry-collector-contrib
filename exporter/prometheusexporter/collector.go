@@ -228,7 +228,7 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 
 	// TODO: implement custom bucket native histograms #43981
 	if schema == CBNHScale {
-		return nil, fmt.Errorf("custom bucket native histograms (CBNH) are still not implemented")
+		return nil, errors.New("custom bucket native histograms (CBNH) are still not implemented")
 	}
 	if schema < -4 {
 		return nil, fmt.Errorf("cannot convert exponential to native histogram: scale must be >= -4, was %d", schema)

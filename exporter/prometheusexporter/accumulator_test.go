@@ -809,6 +809,218 @@ func TestAccumulateDeltaToCumulativeExponentialHistogram(t *testing.T) {
 	})
 }
 
+func TestAccumulateExponentialHistogramZeroThresholds(t *testing.T) {
+	appendDeltaNativeWithZeroThreshold := func(startTs, ts time.Time, scale, posOff int32, pos []uint64, negOff int32, neg []uint64,
+		zeroCount, count uint64, sum, zeroThreshold float64, metrics pmetric.MetricSlice,
+	) pmetric.Metric {
+		metric := metrics.AppendEmpty()
+		metric.SetName("test_native_hist_zero_threshold")
+		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+		dp.SetScale(scale)
+		dp.Positive().SetOffset(posOff)
+		dp.Positive().BucketCounts().FromRaw(pos)
+		dp.Negative().SetOffset(negOff)
+		dp.Negative().BucketCounts().FromRaw(neg)
+		dp.SetZeroCount(zeroCount)
+		dp.SetCount(count)
+		dp.SetZeroThreshold(zeroThreshold)
+		dp.SetSum(sum)
+		dp.Attributes().PutStr("label_1", "1")
+		dp.Attributes().PutStr("label_2", "2")
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTs))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		return metric
+	}
+
+	t.Run("MergeWithHigherZeroThreshold", func(t *testing.T) {
+		// Test merging two histograms where one has a higher zero threshold
+		// Some buckets from the histogram with lower threshold should be moved to zero count
+		startTs := time.Now().Add(-6 * time.Second)
+		ts1 := time.Now().Add(-5 * time.Second)
+		ts2 := time.Now().Add(-4 * time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		// First histogram: scale=0, offset=0, zeroThreshold=0.5, buckets representing ranges [1,2), [2,4), [4,8)
+		// Bucket 0: [2^0, 2^1) = [1,2), count=2
+		// Bucket 1: [2^1, 2^2) = [2,4), count=3
+		// Bucket 2: [2^2, 2^3) = [4,8), count=1
+		appendDeltaNativeWithZeroThreshold(startTs, ts1, 0, 0, []uint64{2, 3, 1}, 0, nil, 1, 7, 15.0, 0.5, ilm.Metrics())
+
+		// Second histogram: scale=0, offset=0, zeroThreshold=3.0, buckets representing same ranges
+		// With new zero threshold of 3.0, bucket 0 [1,2) should be moved to zero count
+		// Only buckets [2,4) and [4,8) should remain
+		m2 := appendDeltaNativeWithZeroThreshold(ts1, ts2, 0, 0, []uint64{1, 2, 4}, 0, nil, 2, 9, 20.0, 3.0, ilm.Metrics())
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(rm)
+		require.Equal(t, 2, n)
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.ExponentialHistogram().DataPoints().At(0).Attributes(), pcommon.NewMap())
+		got, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+		// Expect zero threshold to be the maximum (3.0)
+		require.InDelta(t, 3.0, dp.ZeroThreshold(), 1e-12)
+
+		// Zero count should include original zero counts plus bucket 0 from first histogram
+		// Original zero counts: 1 + 2 = 3, plus bucket 0 from first histogram: 2
+		require.Equal(t, uint64(3+2), dp.ZeroCount())
+
+		// After filtering first histogram: offset=1, counts=[3,1] (bucket 0 removed)
+		// Second histogram: offset=0, counts=[1,2,4]
+		// Merged result: offset=0, counts=[1, 3+2, 1+4] = [1, 5, 5]
+		require.Equal(t, int32(0), dp.Positive().Offset())
+		require.Equal(t, 3, dp.Positive().BucketCounts().Len())
+		require.Equal(t, uint64(1), dp.Positive().BucketCounts().At(0)) // bucket 0: [1,2) from second histogram
+		require.Equal(t, uint64(5), dp.Positive().BucketCounts().At(1)) // bucket 1: [2,4) = 3+2
+		require.Equal(t, uint64(5), dp.Positive().BucketCounts().At(2)) // bucket 2: [4,8) = 1+4
+
+		// Total count should remain the same
+		require.Equal(t, uint64(16), dp.Count())
+
+		// Sum should be sum of both histograms
+		require.InDelta(t, 35.0, dp.Sum(), 1e-12)
+	})
+
+	t.Run("MergeSameZeroThreshold", func(t *testing.T) {
+		// Test merging two histograms with the same zero threshold
+		// No buckets should be moved to zero count
+		startTs := time.Now().Add(-6 * time.Second)
+		ts1 := time.Now().Add(-5 * time.Second)
+		ts2 := time.Now().Add(-4 * time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		appendDeltaNativeWithZeroThreshold(startTs, ts1, 0, 0, []uint64{2, 3}, 0, nil, 1, 6, 10.0, 1.0, ilm.Metrics())
+		m2 := appendDeltaNativeWithZeroThreshold(ts1, ts2, 0, 0, []uint64{1, 2}, 0, nil, 2, 5, 8.0, 1.0, ilm.Metrics())
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(rm)
+		require.Equal(t, 2, n)
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.ExponentialHistogram().DataPoints().At(0).Attributes(), pcommon.NewMap())
+		got, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+		// Zero threshold should remain 1.0
+		require.InDelta(t, 1.0, dp.ZeroThreshold(), 1e-12)
+
+		// Zero count should just be the sum of original zero counts
+		require.Equal(t, uint64(1+2), dp.ZeroCount())
+
+		// Positive buckets should be merged normally
+		require.Equal(t, int32(0), dp.Positive().Offset())
+		require.Equal(t, 2, dp.Positive().BucketCounts().Len())
+		require.Equal(t, uint64(3), dp.Positive().BucketCounts().At(0)) // 2+1
+		require.Equal(t, uint64(5), dp.Positive().BucketCounts().At(1)) // 3+2
+
+		// Total count
+		require.Equal(t, uint64(11), dp.Count())
+
+		// Sum
+		require.InDelta(t, 18.0, dp.Sum(), 1e-12)
+	})
+
+	t.Run("AllBucketsMovedToZeroCount", func(t *testing.T) {
+		// Test case where all buckets from one histogram get moved to zero count
+		startTs := time.Now().Add(-6 * time.Second)
+		ts1 := time.Now().Add(-5 * time.Second)
+		ts2 := time.Now().Add(-4 * time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		// First histogram: small buckets, zero threshold = 0.1
+		// Buckets: [1,2), [2,4) with counts [3, 2]
+		appendDeltaNativeWithZeroThreshold(startTs, ts1, 0, 0, []uint64{3, 2}, 0, nil, 1, 6, 5.0, 0.1, ilm.Metrics())
+
+		// Second histogram: higher zero threshold = 10.0, which is greater than all bucket upper bounds from first histogram
+		// Buckets: [4,8), [8,16) with counts [1, 1]
+		m2 := appendDeltaNativeWithZeroThreshold(ts1, ts2, 0, 2, []uint64{1, 1}, 0, nil, 5, 7, 12.0, 10.0, ilm.Metrics())
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(rm)
+		require.Equal(t, 2, n)
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.ExponentialHistogram().DataPoints().At(0).Attributes(), pcommon.NewMap())
+		got, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+		// Zero threshold should be 10.0
+		require.InDelta(t, 10.0, dp.ZeroThreshold(), 1e-12)
+
+		// Zero count should include all buckets from first histogram plus original zero counts
+		// Original zero counts: 1 + 5 = 6, plus all buckets from first histogram: 3 + 2 = 5
+		require.Equal(t, uint64(6+5), dp.ZeroCount())
+
+		// Positive buckets should only include buckets from second histogram that weren't filtered
+		require.Equal(t, int32(2), dp.Positive().Offset())
+		require.Equal(t, 2, dp.Positive().BucketCounts().Len())
+		require.Equal(t, uint64(1), dp.Positive().BucketCounts().At(0)) // bucket 2: [4,8)
+		require.Equal(t, uint64(1), dp.Positive().BucketCounts().At(1)) // bucket 3: [8,16)
+
+		// Total count
+		require.Equal(t, uint64(13), dp.Count())
+
+		// Sum
+		require.InDelta(t, 17.0, dp.Sum(), 1e-12)
+	})
+
+	t.Run("LowerZeroThresholdHasNoBuckets", func(t *testing.T) {
+		// Test edge case where histogram with lower zero threshold has no positive buckets
+		startTs := time.Now().Add(-6 * time.Second)
+		ts1 := time.Now().Add(-5 * time.Second)
+		ts2 := time.Now().Add(-4 * time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		// First histogram: only zero count, no positive buckets
+		appendDeltaNativeWithZeroThreshold(startTs, ts1, 0, 0, nil, 0, nil, 5, 5, 0.0, 0.1, ilm.Metrics())
+
+		// Second histogram: has buckets, higher zero threshold
+		m2 := appendDeltaNativeWithZeroThreshold(ts1, ts2, 0, 1, []uint64{2, 3}, 0, nil, 3, 8, 15.0, 2.0, ilm.Metrics())
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(rm)
+		require.Equal(t, 2, n)
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.ExponentialHistogram().DataPoints().At(0).Attributes(), pcommon.NewMap())
+		got, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+		// Zero threshold should be 2.0
+		require.InDelta(t, 2.0, dp.ZeroThreshold(), 1e-12)
+
+		// Zero count should be sum of original zero counts
+		require.Equal(t, uint64(5+3), dp.ZeroCount())
+
+		// Positive buckets should be from second histogram only
+		require.Equal(t, int32(1), dp.Positive().Offset())
+		require.Equal(t, 2, dp.Positive().BucketCounts().Len())
+		require.Equal(t, uint64(2), dp.Positive().BucketCounts().At(0))
+		require.Equal(t, uint64(3), dp.Positive().BucketCounts().At(1))
+
+		// Total count
+		require.Equal(t, uint64(13), dp.Count())
+
+		// Sum
+		require.InDelta(t, 15.0, dp.Sum(), 1e-12)
+	})
+}
+
 func TestTimeseriesSignatureNotMutating(t *testing.T) {
 	attrs := pcommon.NewMap()
 	attrs.PutStr("label_2", "2")

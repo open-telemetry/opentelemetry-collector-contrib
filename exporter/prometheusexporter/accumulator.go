@@ -5,6 +5,7 @@ package prometheusexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -479,6 +480,46 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	dest.ExplicitBounds().FromRaw(newer.ExplicitBounds().AsRaw())
 }
 
+// calculateBucketUpperBound calculates the upper bound for an exponential histogram bucket
+func calculateBucketUpperBound(scale, offset int32, index int) float64 {
+	// For exponential histograms with base = 2:
+	// Upper bound = 2^(scale + offset + index + 1)
+	return math.Pow(2, float64(scale+offset+int32(index)+1))
+}
+
+// filterBucketsForZeroThreshold filters buckets that fall below the zero threshold
+// and returns the filtered buckets and the additional zero count
+func filterBucketsForZeroThreshold(offset int32, counts []uint64, scale int32, zeroThreshold float64) (int32, []uint64, uint64) {
+	if len(counts) == 0 || zeroThreshold <= 0 {
+		return offset, counts, 0
+	}
+
+	additionalZeroCount := uint64(0)
+	filteredCounts := make([]uint64, 0, len(counts))
+	newOffset := offset
+
+	// Find the first bucket whose upper bound is > zeroThreshold
+	for i, count := range counts {
+		upperBound := calculateBucketUpperBound(scale, offset, i)
+		if upperBound <= zeroThreshold {
+			// This bucket's range falls entirely below the zero threshold
+			additionalZeroCount += count
+			newOffset = offset + int32(i) + 1 // Move offset to next bucket
+		} else {
+			// This bucket and all subsequent buckets should be kept
+			filteredCounts = append(filteredCounts, counts[i:]...)
+			break
+		}
+	}
+
+	// If all buckets were filtered out, return empty buckets
+	if len(filteredCounts) == 0 {
+		return 0, nil, additionalZeroCount
+	}
+
+	return newOffset, filteredCounts, additionalZeroCount
+}
+
 func accumulateExponentialHistogramValues(prev, current, dest pmetric.ExponentialHistogramDataPoint) {
 	if current.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
 		dest.SetStartTimestamp(current.StartTimestamp())
@@ -493,11 +534,34 @@ func accumulateExponentialHistogramValues(prev, current, dest pmetric.Exponentia
 	targetScale := min(current.Scale(), prev.Scale())
 	dest.SetScale(targetScale)
 
+	// Determine the new zero threshold (maximum of the two)
+	newZeroThreshold := max(prev.ZeroThreshold(), current.ZeroThreshold())
+	dest.SetZeroThreshold(newZeroThreshold)
+
+	// Downscale buckets to target scale
 	pPosOff, pPosCounts := downscaleBucketSide(prev.Positive().Offset(), prev.Positive().BucketCounts().AsRaw(), prev.Scale(), targetScale)
 	pNegOff, pNegCounts := downscaleBucketSide(prev.Negative().Offset(), prev.Negative().BucketCounts().AsRaw(), prev.Scale(), targetScale)
 	cPosOff, cPosCounts := downscaleBucketSide(current.Positive().Offset(), current.Positive().BucketCounts().AsRaw(), current.Scale(), targetScale)
 	cNegOff, cNegCounts := downscaleBucketSide(current.Negative().Offset(), current.Negative().BucketCounts().AsRaw(), current.Scale(), targetScale)
 
+	// Filter buckets that fall below the new zero threshold
+	additionalZeroCount := uint64(0)
+
+	// Filter positive buckets from previous histogram
+	if newZeroThreshold > prev.ZeroThreshold() {
+		var filteredZeroCount uint64
+		pPosOff, pPosCounts, filteredZeroCount = filterBucketsForZeroThreshold(pPosOff, pPosCounts, targetScale, newZeroThreshold)
+		additionalZeroCount += filteredZeroCount
+	}
+
+	// Filter positive buckets from current histogram
+	if newZeroThreshold > current.ZeroThreshold() {
+		var filteredZeroCount uint64
+		cPosOff, cPosCounts, filteredZeroCount = filterBucketsForZeroThreshold(cPosOff, cPosCounts, targetScale, newZeroThreshold)
+		additionalZeroCount += filteredZeroCount
+	}
+
+	// Merge the remaining buckets
 	mPosOff, mPosCounts := mergeBuckets(pPosOff, pPosCounts, cPosOff, cPosCounts)
 	mNegOff, mNegCounts := mergeBuckets(pNegOff, pNegCounts, cNegOff, cNegCounts)
 
@@ -506,14 +570,9 @@ func accumulateExponentialHistogramValues(prev, current, dest pmetric.Exponentia
 	dest.Negative().SetOffset(mNegOff)
 	dest.Negative().BucketCounts().FromRaw(mNegCounts)
 
-	dest.SetZeroCount(prev.ZeroCount() + current.ZeroCount())
+	// Set zero count including additional counts from filtered buckets
+	dest.SetZeroCount(prev.ZeroCount() + current.ZeroCount() + additionalZeroCount)
 	dest.SetCount(prev.Count() + current.Count())
-
-	zt := prev.ZeroThreshold()
-	if current.ZeroThreshold() > zt {
-		zt = current.ZeroThreshold()
-	}
-	dest.SetZeroThreshold(zt)
 
 	if prev.HasSum() && current.HasSum() {
 		dest.SetSum(prev.Sum() + current.Sum())
