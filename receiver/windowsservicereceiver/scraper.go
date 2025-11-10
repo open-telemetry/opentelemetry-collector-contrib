@@ -124,18 +124,18 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 
 		svc, err := updateService(&ws.mgr, name)
 		if err != nil {
-			scrapeErr.AddPartial(1, fmt.Errorf("updateService failed for %v: %v", name, err))
+			scrapeErr.AddPartial(1, fmt.Errorf("updateService failed for %v: %w", name, err))
 			continue
 		}
 
 		if err := svc.updateStatus(); err != nil {
 			_ = svc.close()
-			scrapeErr.AddPartial(1, fmt.Errorf("updateStatus failed for %v: %v", name, err))
+			scrapeErr.AddPartial(1, fmt.Errorf("updateStatus failed for %v: %w", name, err))
 			continue
 		}
 		if err := svc.updateConfig(); err != nil {
 			_ = svc.close()
-			scrapeErr.AddPartial(1, fmt.Errorf("updateConfig failed for %v: %v", name, err))
+			scrapeErr.AddPartial(1, fmt.Errorf("updateConfig failed for %v: %w", name, err))
 			continue
 		}
 
@@ -145,7 +145,7 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 		ws.mb.RecordWindowsServiceStatusDataPoint(ts, val, name, startAttr)
 
 		if err := svc.close(); err != nil {
-			scrapeErr.AddPartial(1, fmt.Errorf("failed to close service %v: %v", name, err))
+			scrapeErr.AddPartial(1, fmt.Errorf("failed to close service %v: %w", name, err))
 		}
 	}
 
