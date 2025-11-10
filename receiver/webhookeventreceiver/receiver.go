@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"github.com/julienschmidt/httprouter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -227,7 +227,7 @@ func (er *eventReceiver) failBadReq(_ context.Context,
 	httpStatusCode int,
 	err error,
 ) {
-	jsonResp, err := jsoniter.Marshal(err.Error())
+	jsonResp, err := json.Marshal(err.Error())
 	if err != nil {
 		er.settings.Logger.Warn("failed to marshall error to json")
 	}
