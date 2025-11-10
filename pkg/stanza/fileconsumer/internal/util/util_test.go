@@ -17,6 +17,7 @@ import (
 func TestIsGzipFile(t *testing.T) {
 	temp, err := os.Create(filepath.Join(t.TempDir(), "test.log"))
 	require.NoError(t, err)
+	defer temp.Close()
 
 	tempWrite := gzip.NewWriter(temp)
 	_, err = tempWrite.Write([]byte("this is test data and the header should prove this is gzip"))
