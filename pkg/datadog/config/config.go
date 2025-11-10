@@ -110,6 +110,8 @@ type Config struct {
 	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 
+	OrchestratorExplorer OrchestratorExplorerConfig `mapstructure:"orchestrator_explorer"`
+
 	// Non-fatal warnings found during configuration loading.
 	warnings []error
 }
@@ -173,6 +175,10 @@ func (c *Config) Validate() error {
 
 	if c.HostMetadata.ReporterPeriod < 5*time.Minute {
 		return errors.New("reporter_period must be 5 minutes or higher")
+	}
+
+	if err := c.OrchestratorExplorer.Validate(); err != nil {
+		return err
 	}
 
 	return nil
@@ -401,6 +407,10 @@ func CreateDefaultConfig() component.Config {
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
+		},
+
+		OrchestratorExplorer: OrchestratorExplorerConfig{
+			Enabled: false,
 		},
 
 		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373
