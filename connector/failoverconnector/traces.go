@@ -37,7 +37,6 @@ func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*
 
 // Consume is the traces-specific consumption method
 func (f *tracesRouter) Consume(ctx context.Context, td ptrace.Traces) error {
-	// fmt.Println("Consume called")
 	return f.strategy.ConsumeTraces(ctx, td)
 }
 
