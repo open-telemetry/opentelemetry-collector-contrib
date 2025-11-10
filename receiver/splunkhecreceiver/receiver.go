@@ -416,16 +416,55 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	dec := jsoniter.NewDecoder(bodyReader)
 
-	var events []*splunk.Event
-	var metricEvents []*splunk.Event
+	var unfiltered []*splunk.Event
+	var firstEvent any
+	firstErr := dec.Decode(&firstEvent)
 
-	for dec.More() {
-		var msg splunk.Event
-		err := dec.Decode(&msg)
-		if err != nil {
+	if firstErr != nil {
+		r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, firstErr)
+		return
+	}
+
+	switch v := firstEvent.(type) {
+	case []any:
+		// Array of events
+		eventBytes, _ := jsoniter.Marshal(v)
+		var events []splunk.Event
+		if err := jsoniter.Unmarshal(eventBytes, &events); err != nil {
 			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 			return
 		}
+
+		if len(events) == 0 {
+			r.failRequest(resp, http.StatusBadRequest, noDataRespBody, nil)
+			return
+		}
+
+		// If event is JSON array, there should be no more tokens after the first one
+		if dec.More() {
+			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, nil)
+			return
+		}
+
+		for _, item := range events {
+			unfiltered = append(unfiltered, &item)
+		}
+	default:
+		// Single event
+		eventBytes, _ := jsoniter.Marshal(v)
+		var event splunk.Event
+		if err := jsoniter.Unmarshal(eventBytes, &event); err != nil {
+			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
+			return
+		}
+		unfiltered = append(unfiltered, &event)
+	}
+
+	var events []*splunk.Event
+	var metricEvents []*splunk.Event
+
+	for len(unfiltered) > 0 {
+		msg := unfiltered[0]
 
 		for _, v := range msg.Fields {
 			if !isFlatJSONField(v) {
@@ -436,10 +475,10 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 		if msg.IsMetric() {
 			if r.metricsConsumer == nil {
-				r.failRequest(resp, http.StatusBadRequest, errUnsupportedMetricEvent, err)
+				r.failRequest(resp, http.StatusBadRequest, errUnsupportedMetricEvent, nil)
 				return
 			}
-			metricEvents = append(metricEvents, &msg)
+			metricEvents = append(metricEvents, msg)
 		} else {
 			if msg.Event == nil {
 				r.failRequest(resp, http.StatusBadRequest, eventRequiredRespBody, nil)
@@ -452,11 +491,23 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			}
 
 			if r.logsConsumer == nil {
-				r.failRequest(resp, http.StatusBadRequest, errUnsupportedLogEvent, err)
+				r.failRequest(resp, http.StatusBadRequest, errUnsupportedLogEvent, nil)
 				return
 			}
-			events = append(events, &msg)
+			events = append(events, msg)
 		}
+
+		if dec.More() {
+			var msg splunk.Event
+			err := dec.Decode(&msg)
+			if err != nil {
+				r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
+				return
+			}
+			unfiltered = append(unfiltered, &msg)
+		}
+
+		unfiltered = unfiltered[1:]
 	}
 	resourceCustomizer := r.createResourceCustomizer(req)
 	if r.logsConsumer != nil && len(events) > 0 {
