@@ -32,17 +32,6 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
-  system.disk.operations:
-    enabled: true
-    description: Disk operations count.
-    unit: "{operations}"
-    stability:
-      level: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [device, direction]
 
   system.disk.io_time:
     enabled: true
@@ -55,6 +44,17 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [device]
+  system.disk.merged:
+    enabled: true
+    description: The number of disk reads/writes merged into single physical disk access operations.
+    unit: "{operations}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [device, direction]
   system.disk.operation_time:
     enabled: true
     description: Time spent in disk operations.
@@ -66,17 +66,17 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
-  system.disk.weighted_io_time:
+  system.disk.operations:
     enabled: true
-    description: Time disk spent activated multiplied by the queue length.
-    unit: s
+    description: Disk operations count.
+    unit: "{operations}"
     stability:
       level: development
     sum:
-      value_type: double
+      value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [device]
+    attributes: [device, direction]
 
   system.disk.pending_operations:
     enabled: true
@@ -89,14 +89,14 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     attributes: [device]
-  system.disk.merged:
+  system.disk.weighted_io_time:
     enabled: true
-    description: The number of disk reads/writes merged into single physical disk access operations.
-    unit: "{operations}"
+    description: Time disk spent activated multiplied by the queue length.
+    unit: s
     stability:
       level: development
     sum:
-      value_type: int
+      value_type: double
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [device, direction]
+    attributes: [device]

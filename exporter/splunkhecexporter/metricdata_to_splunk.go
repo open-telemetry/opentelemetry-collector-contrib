@@ -5,6 +5,7 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"hash/fnv"
+	"maps"
 	"math"
 	"strconv"
 	"strings"
@@ -253,9 +254,7 @@ func populateAttributes(fields map[string]any, attributeMap pcommon.Map) {
 
 func cloneMap(fields map[string]any) map[string]any {
 	newFields := make(map[string]any, len(fields))
-	for k, v := range fields {
-		newFields[k] = v
-	}
+	maps.Copy(newFields, fields)
 	return newFields
 }
 

@@ -6,6 +6,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
@@ -35,6 +36,7 @@ type Config struct {
 	ConsumerGroup            string        `mapstructure:"group"`
 	ApplySemanticConventions bool          `mapstructure:"apply_semantic_conventions"`
 	TimeFormats              TimeFormat    `mapstructure:"time_formats"`
+	MetricAggregation        string        `mapstructure:"metric_aggregation"`
 
 	// azeventhub lib specific
 	PollRate      int `mapstructure:"poll_rate"`
@@ -45,15 +47,6 @@ type TimeFormat struct {
 	Logs    []string `mapstructure:"logs"`
 	Metrics []string `mapstructure:"metrics"`
 	Traces  []string `mapstructure:"traces"`
-}
-
-func isValidFormat(format string) bool {
-	for _, validFormat := range validFormats {
-		if logFormat(format) == validFormat {
-			return true
-		}
-	}
-	return false
 }
 
 // Validate config
@@ -74,7 +67,7 @@ func (config *Config) Validate() error {
 			return err
 		}
 	}
-	if !isValidFormat(config.Format) {
+	if !slices.Contains(validFormats, logFormat(config.Format)) {
 		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
 	}
 	if config.Partition == "" && config.Offset != "" {
