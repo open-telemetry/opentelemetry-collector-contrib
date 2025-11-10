@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const (
+var (
 	// OracleCloud IMDS compute endpoint
 	metadataEndpoint = "http://169.254.169.254/opc/v2/instance/"
 )
@@ -32,6 +32,9 @@ func IsRunningOnOracleCloud(ctx context.Context) bool {
 	if err != nil {
 		return false
 	}
+
+	req.Header.Add("Authorization", "Bearer Oracle")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return false
