@@ -7,7 +7,7 @@ change_type: bug_fix
 component: extension/bearertokenauth
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove error messages `fsnotify: can't remove non-existent watch` when watching kubernetes SA tokens.
+note: "Remove error messages `fsnotify: can't remove non-existent watch` when watching kubernetes SA tokens."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44104]
