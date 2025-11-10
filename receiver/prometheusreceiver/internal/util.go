@@ -96,7 +96,7 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 }
 
 // convToMetricType returns the data type and if it is monotonic
-func convToMetricType(metricType model.MetricType) (pmetric.MetricType, bool) {
+func convToMetricType(metricType model.MetricType, exponentialHistogram bool) (pmetric.MetricType, bool) {
 	switch metricType {
 	case model.MetricTypeCounter:
 		// always use float64, as it's the internal data type used in prometheus
@@ -105,6 +105,9 @@ func convToMetricType(metricType model.MetricType) (pmetric.MetricType, bool) {
 	case model.MetricTypeGauge, model.MetricTypeUnknown:
 		return pmetric.MetricTypeGauge, false
 	case model.MetricTypeHistogram:
+		if exponentialHistogram {
+			return pmetric.MetricTypeExponentialHistogram, true
+		}
 		return pmetric.MetricTypeHistogram, true
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation
 	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
