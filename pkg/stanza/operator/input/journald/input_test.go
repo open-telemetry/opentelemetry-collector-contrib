@@ -247,6 +247,89 @@ func TestBuildConfig(t *testing.T) {
 	}
 }
 
+func TestRunJournalctlCancelsOnReadTimeout(t *testing.T) {
+	cfg := NewConfigWithID("journald_watchdog")
+	cfg.OutputIDs = []string{"output"}
+	cfg.ReadTimeout = 50 * time.Millisecond
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	input := op.(*Input)
+
+	input.persister = testutil.NewUnscopedMockPersister()
+
+	var fakeCmd *fakeBlockingCmd
+	input.newCmd = func(cmdCtx context.Context, _ []byte) cmd {
+		fakeCmd = newFakeBlockingCmd(cmdCtx)
+		return fakeCmd
+	}
+
+	jctlCtx, jctlCancel := context.WithCancel(context.Background())
+
+	jctl, err := input.newJournalctl(jctlCtx)
+	require.NoError(t, err)
+	require.NotNil(t, fakeCmd)
+
+	result := make(chan error, 1)
+
+	go func() {
+		result <- input.runJournalctl(jctlCtx, jctlCancel, jctl)
+	}()
+
+	select {
+	case err := <-result:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("timeout waiting for runJournalctl to exit")
+	}
+}
+
+// fakeBlockingCmd blocks on reading from stdout and stderr until the context is done.
+type fakeBlockingCmd struct {
+	stdoutR *io.PipeReader
+	stderrR *io.PipeReader
+	done    <-chan struct{}
+}
+
+func newFakeBlockingCmd(ctx context.Context) *fakeBlockingCmd {
+	stdoutR, stdoutW := io.Pipe()
+	stderrR, stderrW := io.Pipe()
+
+	// Close the pipe writers when the context is done to mimic the behavior
+	// of CommandContext.
+	go func() {
+		<-ctx.Done()
+		_ = stdoutW.Close()
+		_ = stderrW.Close()
+	}()
+
+	return &fakeBlockingCmd{
+		stdoutR: stdoutR,
+		stderrR: stderrR,
+		done:    ctx.Done(),
+	}
+}
+
+func (f *fakeBlockingCmd) StdoutPipe() (io.ReadCloser, error) {
+	return f.stdoutR, nil
+}
+
+func (f *fakeBlockingCmd) StderrPipe() (io.ReadCloser, error) {
+	return f.stderrR, nil
+}
+
+func (f *fakeBlockingCmd) Start() error {
+	return nil
+}
+
+func (f *fakeBlockingCmd) Wait() error {
+	<-f.done
+	_ = f.stdoutR.Close()
+	_ = f.stderrR.Close()
+	return context.Canceled
+}
+
 func TestInputJournaldError(t *testing.T) {
 	cfg := NewConfigWithID("my_journald_input")
 	cfg.OutputIDs = []string{"output"}

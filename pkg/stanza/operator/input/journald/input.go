@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	gojson "github.com/goccy/go-json"
@@ -35,6 +36,7 @@ type Input struct {
 	cancel              context.CancelFunc
 	wg                  sync.WaitGroup
 	errChan             chan error
+	readTimeout         time.Duration
 }
 
 type cmd interface {
@@ -80,9 +82,12 @@ func (operator *Input) run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			jctl, err := operator.newJournalctl(ctx)
+			// The context here controls the journalctl process lifecycle in the current run.
+			jctlCtx, jctlCancel := context.WithCancel(ctx)
+			jctl, err := operator.newJournalctl(jctlCtx)
 			// If we can't start journalctl, there is nothing we can do but logging the error and return.
 			if err != nil {
+				jctlCancel()
 				select {
 				case operator.errChan <- err:
 				case <-time.After(waitDuration):
@@ -92,7 +97,7 @@ func (operator *Input) run(ctx context.Context) {
 			}
 
 			operator.Logger().Debug("Starting the journalctl command")
-			if err := operator.runJournalctl(ctx, jctl); err != nil {
+			if err := operator.runJournalctl(jctlCtx, jctlCancel, jctl); err != nil {
 				ee := &exec.ExitError{}
 				if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
 					operator.Logger().Error("journalctl command exited", zap.Error(ee))
@@ -129,10 +134,13 @@ func (operator *Input) newJournalctl(ctx context.Context) (*journalctl, error) {
 	}
 	jctl.stderr, err = journal.StderrPipe()
 	if err != nil {
+		_ = jctl.stdout.Close()
 		return nil, fmt.Errorf("failed to get journalctl stderr: %w", err)
 	}
 
 	if err = journal.Start(); err != nil {
+		_ = jctl.stdout.Close()
+		_ = jctl.stderr.Close()
 		return nil, fmt.Errorf("start journalctl: %w", err)
 	}
 
@@ -141,14 +149,59 @@ func (operator *Input) newJournalctl(ctx context.Context) (*journalctl, error) {
 
 // runJournalctl runs the journalctl command. This is a blocking call that returns
 // when the command exits.
-func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) error {
+func (operator *Input) runJournalctl(ctx context.Context, cancel context.CancelFunc, jctl *journalctl) error {
+	defer cancel()
+
+	var lastRead atomic.Int64
+	lastRead.Store(time.Now().UnixNano())
+
+	// Start the watchdog goroutine when the read timeout is set.
+	// This goroutine monitors the last read time and cancels the context
+	// when the last read time exceeds the read timeout.
+	if operator.readTimeout > 0 {
+		interval := operator.readTimeout / 2
+		if interval <= 0 {
+			interval = operator.readTimeout
+		}
+
+		operator.wg.Add(1)
+		go func() {
+			defer operator.wg.Done()
+
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ticker.C:
+					ts := lastRead.Load()
+					if ts == 0 {
+						continue
+					}
+					lastReadTime := time.Unix(0, ts)
+					if time.Since(lastReadTime) >= operator.readTimeout {
+						operator.Logger().Warn("journalctl read exceeded timeout, canceling command", zap.Time("last_read", lastReadTime), zap.Duration("read_timeout", operator.readTimeout))
+						cancel()
+						return
+					}
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+	}
+
 	// Start the stderr reader goroutine.
 	// This goroutine reads the stderr from the journalctl process. If the
 	// process exits for any reason, then the stderr will be closed, this
 	// goroutine will get an EOF error and exit.
+	// When this goroutine exits, it will cancel the context and the watchdog goroutine will exit.
 	operator.wg.Add(1)
 	go func() {
-		defer operator.wg.Done()
+		defer func() {
+			operator.wg.Done()
+			cancel()
+		}()
 
 		stderrBuf := bufio.NewReader(jctl.stderr)
 
@@ -169,9 +222,13 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 	// the data, and writes to output. If the journalctl process exits for
 	// any reason, then the stdout will be closed, this goroutine will get
 	// an EOF error and exits.
+	// When this goroutine exits, it will cancel the context and the watchdog goroutine will exit.
 	operator.wg.Add(1)
 	go func() {
-		defer operator.wg.Done()
+		defer func() {
+			operator.wg.Done()
+			cancel()
+		}()
 
 		stdoutBuf := bufio.NewReader(jctl.stdout)
 
@@ -183,6 +240,7 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 				}
 				return
 			}
+			lastRead.Store(time.Now().UnixNano())
 
 			entry, cursor, err := operator.parseJournalEntry(line)
 			if err != nil {
