@@ -14,7 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
+	semconv22 "go.opentelemetry.io/otel/semconv/v1.22.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -31,43 +32,44 @@ import (
 // neither convert the SemConv key to the equivalent ECS name nor pass-through the
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]string{
-	string(semconv.ServiceInstanceIDKey):      "service.node.name",
-	string(semconv.DeploymentEnvironmentKey):  "service.environment",
-	string(semconv.TelemetrySDKNameKey):       "",
-	string(semconv.TelemetrySDKLanguageKey):   "",
-	string(semconv.TelemetrySDKVersionKey):    "",
-	string(semconv.TelemetryDistroNameKey):    "",
-	string(semconv.TelemetryDistroVersionKey): "",
-	string(semconv.CloudPlatformKey):          "cloud.service.name",
-	string(semconv.ContainerImageTagsKey):     "container.image.tag",
-	string(semconv.HostNameKey):               "host.hostname",
-	string(semconv.HostArchKey):               "host.architecture",
-	string(semconv.ProcessParentPIDKey):       "process.parent.pid",
-	string(semconv.ProcessExecutableNameKey):  "process.title",
-	string(semconv.ProcessExecutablePathKey):  "process.executable",
-	string(semconv.ProcessCommandLineKey):     "process.args",
-	string(semconv.ProcessRuntimeNameKey):     "service.runtime.name",
-	string(semconv.ProcessRuntimeVersionKey):  "service.runtime.version",
-	string(semconv.OSNameKey):                 "host.os.name",
-	string(semconv.OSTypeKey):                 "host.os.platform",
-	string(semconv.OSDescriptionKey):          "host.os.full",
-	string(semconv.OSVersionKey):              "host.os.version",
-	string(semconv.ClientAddressKey):          "client.ip",
-	string(semconv.SourceAddressKey):          "source.ip",
-	string(semconv.K8SDeploymentNameKey):      "kubernetes.deployment.name",
-	string(semconv.K8SNamespaceNameKey):       "kubernetes.namespace",
-	string(semconv.K8SNodeNameKey):            "kubernetes.node.name",
-	string(semconv.K8SPodNameKey):             "kubernetes.pod.name",
-	string(semconv.K8SPodUIDKey):              "kubernetes.pod.uid",
-	string(semconv.K8SJobNameKey):             "kubernetes.job.name",
-	string(semconv.K8SCronJobNameKey):         "kubernetes.cronjob.name",
-	string(semconv.K8SStatefulSetNameKey):     "kubernetes.statefulset.name",
-	string(semconv.K8SReplicaSetNameKey):      "kubernetes.replicaset.name",
-	string(semconv.K8SDaemonSetNameKey):       "kubernetes.daemonset.name",
-	string(semconv.K8SContainerNameKey):       "kubernetes.container.name",
-	string(semconv.K8SClusterNameKey):         "orchestrator.cluster.name",
-	string(semconv.FaaSInstanceKey):           "faas.id",
-	string(semconv.FaaSTriggerKey):            "faas.trigger.type",
+	string(semconv.ServiceInstanceIDKey):         "service.node.name",
+	string(semconv22.DeploymentEnvironmentKey):   "service.environment",
+	string(semconv.DeploymentEnvironmentNameKey): "service.environment",
+	string(semconv.TelemetrySDKNameKey):          "",
+	string(semconv.TelemetrySDKLanguageKey):      "",
+	string(semconv.TelemetrySDKVersionKey):       "",
+	string(semconv.TelemetryDistroNameKey):       "",
+	string(semconv.TelemetryDistroVersionKey):    "",
+	string(semconv.CloudPlatformKey):             "cloud.service.name",
+	string(semconv.ContainerImageTagsKey):        "container.image.tag",
+	string(semconv.HostNameKey):                  "host.hostname",
+	string(semconv.HostArchKey):                  "host.architecture",
+	string(semconv.ProcessParentPIDKey):          "process.parent.pid",
+	string(semconv.ProcessExecutableNameKey):     "process.title",
+	string(semconv.ProcessExecutablePathKey):     "process.executable",
+	string(semconv.ProcessCommandLineKey):        "process.args",
+	string(semconv.ProcessRuntimeNameKey):        "service.runtime.name",
+	string(semconv.ProcessRuntimeVersionKey):     "service.runtime.version",
+	string(semconv.OSNameKey):                    "host.os.name",
+	string(semconv.OSTypeKey):                    "host.os.platform",
+	string(semconv.OSDescriptionKey):             "host.os.full",
+	string(semconv.OSVersionKey):                 "host.os.version",
+	string(semconv.ClientAddressKey):             "client.ip",
+	string(semconv.SourceAddressKey):             "source.ip",
+	string(semconv.K8SDeploymentNameKey):         "kubernetes.deployment.name",
+	string(semconv.K8SNamespaceNameKey):          "kubernetes.namespace",
+	string(semconv.K8SNodeNameKey):               "kubernetes.node.name",
+	string(semconv.K8SPodNameKey):                "kubernetes.pod.name",
+	string(semconv.K8SPodUIDKey):                 "kubernetes.pod.uid",
+	string(semconv.K8SJobNameKey):                "kubernetes.job.name",
+	string(semconv.K8SCronJobNameKey):            "kubernetes.cronjob.name",
+	string(semconv.K8SStatefulSetNameKey):        "kubernetes.statefulset.name",
+	string(semconv.K8SReplicaSetNameKey):         "kubernetes.replicaset.name",
+	string(semconv.K8SDaemonSetNameKey):          "kubernetes.daemonset.name",
+	string(semconv.K8SContainerNameKey):          "kubernetes.container.name",
+	string(semconv.K8SClusterNameKey):            "orchestrator.cluster.name",
+	string(semconv.FaaSInstanceKey):              "faas.id",
+	string(semconv.FaaSTriggerKey):               "faas.trigger.type",
 }
 
 // resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
@@ -210,7 +212,7 @@ func (ecsModeEncoder) encodeLog(
 		string(semconv.ExceptionMessageKey):     "error.message",
 		string(semconv.ExceptionStacktraceKey):  "error.stacktrace",
 		string(semconv.ExceptionTypeKey):        "error.type",
-		string(semconv.ExceptionEscapedKey):     "event.error.exception.handled",
+		string(semconv22.ExceptionEscapedKey):   "event.error.exception.handled",
 		string(semconv.HTTPResponseBodySizeKey): "http.response.encoded_body_size",
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
@@ -254,12 +256,20 @@ func (ecsModeEncoder) encodeSpan(
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Finally, try to map record-level attributes to ECS fields.
+
+	// determine the correct message queue name based on the trace type (Elastic span or transaction)
+	messageQueueName := "span.message.queue.name"
+	processor, _ := span.Attributes().Get("processor.event")
+	if processor.Str() == "transaction" {
+		messageQueueName = "transaction.message.queue.name"
+	}
+
 	spanAttrsConversionMap := map[string]string{
-		string(semconv.MessagingDestinationNameKey): "span.message.queue.name",
-		"messaging.operation.name":                  "span.action",
-		string(semconv.DBSystemKey):                 "span.db.type",
-		"db.namespace":                              "span.db.instance",
-		"db.query.text":                             "span.db.statement",
+		string(semconv.MessagingDestinationNameKey): messageQueueName,
+		string(semconv.MessagingOperationNameKey):   "span.action",
+		string(semconv22.DBSystemKey):               "span.db.type",
+		string(semconv.DBNamespaceKey):              "span.db.instance",
+		string(semconv.DBQueryTextKey):              "span.db.statement",
 		string(semconv.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
 	}
 
