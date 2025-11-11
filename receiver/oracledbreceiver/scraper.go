@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"sort"
@@ -134,20 +135,20 @@ type oracleScraper struct {
 	querySampleCfg             QuerySample
 	serviceInstanceID          string
 	lastExecutionTimestamp     time.Time
+	lastQueryMetricsDBTime     string
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
 	s := &oracleScraper{
-		mb:                     metricsBuilder,
-		metricsBuilderConfig:   metricsBuilderConfig,
-		scrapeCfg:              scrapeCfg,
-		logger:                 logger,
-		dbProviderFunc:         providerFunc,
-		clientProviderFunc:     clientProviderFunc,
-		instanceName:           instanceName,
-		hostName:               hostName,
-		serviceInstanceID:      getInstanceID(instanceName, logger),
-		lastExecutionTimestamp: time.Unix(0, 0),
+		mb:                   metricsBuilder,
+		metricsBuilderConfig: metricsBuilderConfig,
+		scrapeCfg:            scrapeCfg,
+		logger:               logger,
+		dbProviderFunc:       providerFunc,
+		clientProviderFunc:   clientProviderFunc,
+		instanceName:         instanceName,
+		hostName:             hostName,
+		serviceInstanceID:    getInstanceID(instanceName, logger),
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -531,8 +532,12 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	var scrapeErrors []error
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
-		if s.isTopNMetricsCollectionDue() {
-			topNCollectionErrors := s.collectTopNMetricData(ctx, logs)
+		currentCollectionTime := time.Now()
+
+		if int(math.Ceil(currentCollectionTime.Sub(s.lastExecutionTimestamp).Seconds())) < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
+			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
+		} else {
+			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime)
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
 			}
@@ -549,17 +554,13 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	return logs, errors.Join(scrapeErrors...)
 }
 
-func (s *oracleScraper) isTopNMetricsCollectionDue() bool {
-
-}
-
-func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs) error {
+func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs, collectionTime time.Time) error {
 	var errs []error
 	// get metrics and query texts from DB
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	intervalSeconds := int(s.scrapeCfg.CollectionInterval.Seconds())
+	lookbackTimeSeconds := s.calculateLookbackSeconds()
+
 	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, oracleQueryMetricsSQL, s.logger)
-	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, intervalSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
+	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, lookbackTimeSeconds, lookbackTimeSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
 
 	if metricError != nil {
 		return fmt.Errorf("error executing oracleQueryMetricsSQL: %w", metricError)
@@ -625,6 +626,8 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	// if cache updates is not equal to rows returned, that indicates there is problem somewhere
 	s.logger.Debug("Cache update", zap.Int("update-count", cacheUpdates), zap.Int("new-size", s.metricCache.Len()))
 
+	s.lastExecutionTimestamp = collectionTime
+	fmt.Println(">>>>>> time set")
 	if len(hits) == 0 {
 		s.logger.Info("No log records for this scrape")
 		return errors.Join(errs...)
@@ -654,7 +657,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 		planString := string(planBytes)
 
 		s.lb.RecordDbServerTopQueryEvent(context.Background(),
-			timestamp,
+			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,
 			s.hostName,
 			hit.queryText,
@@ -879,4 +882,16 @@ func constructInstanceID(host, port, service string) string {
 		return fmt.Sprintf("%s:%s/%s", host, port, service)
 	}
 	return fmt.Sprintf("%s:%s", host, port)
+}
+
+func (s *oracleScraper) calculateLookbackSeconds() int {
+	if s.lastExecutionTimestamp.IsZero() {
+		return int(s.topQueryCollectCfg.CollectionInterval.Seconds())
+	}
+
+	const vsqlRefreshLagSec = 10 * time.Second // Buffer to account for v$sql maximum refresh latency
+
+	return int(math.Ceil(time.Now().
+		Add(vsqlRefreshLagSec).
+		Sub(s.lastExecutionTimestamp).Seconds()))
 }

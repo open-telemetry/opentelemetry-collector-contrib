@@ -33,7 +33,6 @@ type TopQueryCollection struct {
 	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint          `mapstructure:"top_query_count"`
 	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
-	LookbackTime        time.Duration `mapstructure:"lookback_time"`
 }
 
 type QuerySample struct {
@@ -108,11 +107,4 @@ func (c Config) Validate() error {
 		allErrs = multierr.Append(allErrs, errTopQueryCount)
 	}
 	return allErrs
-}
-
-func (cfg *Config) EffectiveLookbackTime() time.Duration {
-	if cfg.LookbackTime <= 0 {
-		return 2 * cfg.ControllerConfig.CollectionInterval
-	}
-	return cfg.LookbackTime
 }
