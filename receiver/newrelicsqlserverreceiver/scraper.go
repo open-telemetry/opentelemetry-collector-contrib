@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -114,6 +115,355 @@ func (s *sqlServerScraper) shutdown(ctx context.Context) error {
 		s.connection.Close()
 	}
 	return nil
+}
+
+// scrapeLogs collects execution plan logs from SQL Server and emits them as OTLP logs
+func (s *sqlServerScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
+	s.logger.Info("=== scrapeLogs: Starting SQL Server logs collection for execution plans ===")
+	
+	// Create logs collection
+	logs := plog.NewLogs()
+	
+	// Only collect execution plan logs if query monitoring is enabled
+	if !s.config.EnableQueryMonitoring {
+		s.logger.Warn("Query monitoring disabled, skipping execution plan logs collection")
+		return logs, nil
+	}
+	
+	s.logger.Info("Query monitoring is ENABLED, proceeding with execution plan collection")
+	
+	// Get execution plan data from query performance scraper
+	executionPlans, err := s.collectExecutionPlanData(ctx)
+	if err != nil {
+		s.logger.Error("Failed to collect execution plan data for logs", zap.Error(err))
+		return logs, err
+	}
+	
+	s.logger.Info("Collected execution plans for logs", zap.Int("count", len(executionPlans)))
+	
+	// Convert execution plans to OTLP logs
+	s.convertExecutionPlansToLogs(executionPlans, logs)
+	
+	logCount := logs.LogRecordCount()
+	s.logger.Info("=== scrapeLogs: Completed SQL Server logs collection ===", 
+		zap.Int("log_records", logCount),
+		zap.Int("resource_logs", logs.ResourceLogs().Len()))
+	
+	return logs, nil
+}
+
+// collectExecutionPlanData collects execution plan data directly from the database for logs
+func (s *sqlServerScraper) collectExecutionPlanData(ctx context.Context) ([]*models.ExecutionPlanAnalysis, error) {
+	if s.queryPerformanceScraper == nil {
+		s.logger.Debug("Query performance scraper not initialized, skipping execution plan collection")
+		return nil, nil
+	}
+	
+	s.logger.Debug("Starting execution plan data collection for logs")
+	
+	// Step 1: Get slow queries to identify which execution plans to collect
+	slowQueries, err := s.getSlowQueriesForLogs(ctx)
+	if err != nil {
+		s.logger.Error("Failed to get slow queries for execution plan logs", zap.Error(err))
+		return nil, err
+	}
+	
+	if len(slowQueries) == 0 {
+		s.logger.Debug("No slow queries found, no execution plans to collect for logs")
+		return []*models.ExecutionPlanAnalysis{}, nil
+	}
+	
+	// Step 2: Extract query hashes from slow queries
+	queryHashes := s.extractQueryHashesFromSlowQueries(slowQueries)
+	if len(queryHashes) == 0 {
+		s.logger.Debug("No query hashes found in slow queries for logs")
+		return []*models.ExecutionPlanAnalysis{}, nil
+	}
+	
+	// Step 3: Get execution plan data using query hashes
+	executionPlans, err := s.getExecutionPlansForLogs(ctx, queryHashes)
+	if err != nil {
+		s.logger.Error("Failed to get execution plans for logs", zap.Error(err))
+		return nil, err
+	}
+	
+	s.logger.Debug("Collected execution plans for logs", 
+		zap.Int("slow_queries", len(slowQueries)),
+		zap.Int("query_hashes", len(queryHashes)),
+		zap.Int("execution_plans", len(executionPlans)))
+	
+	return executionPlans, nil
+}
+
+// getSlowQueriesForLogs retrieves slow queries for execution plan analysis
+func (s *sqlServerScraper) getSlowQueriesForLogs(ctx context.Context) ([]models.SlowQuery, error) {
+	// Use balanced parameters to avoid query timeouts while still capturing data
+	intervalSeconds := 60  // 1 minute interval (faster query, less data)
+	topN := 10             // Top 10 queries (fewer results for faster execution)
+	elapsedTimeThreshold := 100  // 100ms threshold (reasonable barrier)
+	textTruncateLimit := 2000  // 2KB limit (smaller for faster query)
+	
+	formattedQuery := fmt.Sprintf(queries.SlowQuery, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit)
+	
+	s.logger.Info("Executing slow query for logs collection",
+		zap.String("query", queries.TruncateQuery(formattedQuery, 200)),
+		zap.Int("interval_seconds", intervalSeconds),
+		zap.Int("top_n", topN),
+		zap.Int("elapsed_time_threshold_ms", elapsedTimeThreshold))
+	
+	var results []models.SlowQuery
+	if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
+		return nil, fmt.Errorf("failed to execute slow query for logs: %w", err)
+	}
+	
+	s.logger.Info("Retrieved slow queries for logs", zap.Int("count", len(results)))
+	return results, nil
+}
+
+// extractQueryHashesFromSlowQueries extracts query hashes from slow query results
+func (s *sqlServerScraper) extractQueryHashesFromSlowQueries(slowQueries []models.SlowQuery) []string {
+	queryHashMap := make(map[string]bool)
+	var queryHashes []string
+	
+	nullCount := 0
+	emptyCount := 0
+	
+	for _, slowQuery := range slowQueries {
+		if slowQuery.QueryID == nil {
+			nullCount++
+			continue
+		}
+		if slowQuery.QueryID.IsEmpty() {
+			emptyCount++
+			continue
+		}
+		queryHashStr := slowQuery.QueryID.String()
+		if !queryHashMap[queryHashStr] {
+			queryHashMap[queryHashStr] = true
+			queryHashes = append(queryHashes, queryHashStr)
+		}
+	}
+	
+	s.logger.Info("Extracted query hashes for logs",
+		zap.Int("total_slow_queries", len(slowQueries)),
+		zap.Int("unique_query_hashes", len(queryHashes)),
+		zap.Int("null_query_hashes", nullCount),
+		zap.Int("empty_query_hashes", emptyCount))
+	
+	return queryHashes
+}
+
+// getExecutionPlansForLogs retrieves execution plan data for the given query hashes
+func (s *sqlServerScraper) getExecutionPlansForLogs(ctx context.Context, queryHashes []string) ([]*models.ExecutionPlanAnalysis, error) {
+	if len(queryHashes) == 0 {
+		s.logger.Info("No query hashes provided for execution plan retrieval")
+		return []*models.ExecutionPlanAnalysis{}, nil
+	}
+	
+	s.logger.Info("Executing execution plan queries for logs",
+		zap.Int("query_hash_count", len(queryHashes)))
+	
+	var allExecutionPlans []*models.ExecutionPlanAnalysis
+	successCount := 0
+	errorCount := 0
+	emptyCount := 0
+	
+	// Execute the query for each query hash individually
+	for i, queryHash := range queryHashes {
+		// Format query with the query hash parameter
+		formattedQuery := fmt.Sprintf(queries.QueryExecutionPlan, queryHash)
+		
+		if i < 3 { // Log first few queries for debugging
+			s.logger.Debug("Executing execution plan query",
+				zap.Int("index", i),
+				zap.String("query_hash", queryHash),
+				zap.String("query", queries.TruncateQuery(formattedQuery, 200)))
+		}
+		
+		var results []models.QueryExecutionPlan
+		if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
+			s.logger.Warn("Failed to execute execution plan query for query hash",
+				zap.String("query_hash", queryHash),
+				zap.Error(err))
+			errorCount++
+			continue
+		}
+		
+		if len(results) == 0 {
+			emptyCount++
+			continue
+		}
+		
+		// Parse execution plans and convert to analysis
+		for _, result := range results {
+			if result.ExecutionPlanXML == nil || *result.ExecutionPlanXML == "" {
+				s.logger.Debug("Skipping empty execution plan XML", zap.String("query_hash", queryHash))
+				continue
+			}
+			
+			queryID := ""
+			planHandle := ""
+			sqlText := ""
+			
+			if result.QueryID != nil {
+				queryID = result.QueryID.String()
+			}
+			if result.PlanHandle != nil {
+				planHandle = result.PlanHandle.String()
+			}
+			if result.SQLText != nil {
+				sqlText = *result.SQLText
+			}
+			
+			planAnalysis, err := models.ParseExecutionPlanXML(*result.ExecutionPlanXML, queryID, planHandle)
+			if err != nil {
+				s.logger.Warn("Failed to parse execution plan XML",
+					zap.String("query_hash", queryHash),
+					zap.Error(err))
+				continue
+			}
+			
+			// Set additional metadata
+			if planAnalysis != nil {
+				planAnalysis.QueryID = queryID
+				planAnalysis.PlanHandle = planHandle
+				planAnalysis.SQLText = sqlText
+				planAnalysis.CollectionTime = time.Now().Format(time.RFC3339)
+				allExecutionPlans = append(allExecutionPlans, planAnalysis)
+				successCount++
+			}
+		}
+	}
+	
+	s.logger.Info("Retrieved execution plan query results",
+		zap.Int("total_query_hashes", len(queryHashes)),
+		zap.Int("successful_plans", successCount),
+		zap.Int("empty_results", emptyCount),
+		zap.Int("errors", errorCount),
+		zap.Int("total_plans", len(allExecutionPlans)))
+	
+	return allExecutionPlans, nil
+}
+
+// formatPlanHandlesForSQL formats plan handles for use in SQL IN clause
+func (s *sqlServerScraper) formatPlanHandlesForSQL(planHandles []string) string {
+	if len(planHandles) == 0 {
+		return "0x0"
+	}
+	
+	// Join plan handles with commas for SQL query
+	planHandlesString := ""
+	for i, planHandle := range planHandles {
+		if i > 0 {
+			planHandlesString += ","
+		}
+		planHandlesString += planHandle
+	}
+	
+	return planHandlesString
+}
+
+// convertExecutionPlansToLogs converts execution plan analysis to OTLP log records
+func (s *sqlServerScraper) convertExecutionPlansToLogs(executionPlans []*models.ExecutionPlanAnalysis, logs plog.Logs) {
+	if len(executionPlans) == 0 {
+		return
+	}
+	
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	
+	// Set resource attributes following OpenTelemetry semantic conventions
+	resourceAttrs := resourceLogs.Resource().Attributes()
+	resourceAttrs.PutStr("db.system", "mssql")
+	resourceAttrs.PutStr("server.address", s.config.Hostname)
+	resourceAttrs.PutStr("server.port", s.config.Port)
+	
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver")
+	
+	now := pcommon.NewTimestampFromTime(time.Now())
+	
+	for _, analysis := range executionPlans {
+		if analysis == nil {
+			continue
+		}
+		
+		// Create log record for execution plan summary
+		s.createExecutionPlanSummaryLog(analysis, scopeLogs, now)
+		
+		// Create log records for each execution plan node/operator
+		for _, node := range analysis.Nodes {
+			s.createExecutionPlanNodeLog(analysis, &node, scopeLogs, now)
+		}
+	}
+}
+
+// createExecutionPlanSummaryLog creates a log record for execution plan summary
+func (s *sqlServerScraper) createExecutionPlanSummaryLog(analysis *models.ExecutionPlanAnalysis, scopeLogs plog.ScopeLogs, timestamp pcommon.Timestamp) {
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	logRecord.SetTimestamp(timestamp)
+	logRecord.SetObservedTimestamp(timestamp)
+	logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
+	logRecord.SetSeverityText("INFO")
+	
+	// Set event name - this is the key for proper log event emission
+	logRecord.SetEventName("sqlserver.execution_plan")
+	
+	// Set log body
+	logRecord.Body().SetStr("SQL Server Execution Plan Summary")
+	
+	// Set attributes
+	attrs := logRecord.Attributes()
+	attrs.PutStr("query_id", analysis.QueryID)
+	attrs.PutStr("plan_handle", analysis.PlanHandle)
+	attrs.PutStr("sql_text", analysis.SQLText)
+	attrs.PutDouble("total_cost", analysis.TotalCost)
+	attrs.PutStr("compile_time", analysis.CompileTime)
+	attrs.PutInt("compile_cpu", analysis.CompileCPU)
+	attrs.PutInt("compile_memory", analysis.CompileMemory)
+	attrs.PutStr("collection_time", analysis.CollectionTime)
+	attrs.PutInt("total_operators", int64(len(analysis.Nodes)))
+}
+
+// createExecutionPlanNodeLog creates a log record for an execution plan node/operator
+func (s *sqlServerScraper) createExecutionPlanNodeLog(analysis *models.ExecutionPlanAnalysis, node *models.ExecutionPlanNode, scopeLogs plog.ScopeLogs, timestamp pcommon.Timestamp) {
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	logRecord.SetTimestamp(timestamp)
+	logRecord.SetObservedTimestamp(timestamp)
+	logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
+	logRecord.SetSeverityText("INFO")
+	
+	// Set event name - this is the key for proper log event emission
+	logRecord.SetEventName("sqlserver.execution_plan_operator")
+	
+	// Set log body
+	logRecord.Body().SetStr(fmt.Sprintf("SQL Server Execution Plan Operator: %s", node.PhysicalOp))
+	
+	// Set attributes
+	attrs := logRecord.Attributes()
+	attrs.PutStr("query_id", node.QueryID)
+	attrs.PutStr("plan_handle", node.PlanHandle)
+	attrs.PutInt("node_id", int64(node.NodeID))
+	attrs.PutStr("sql_text", node.SQLText)
+	attrs.PutStr("physical_op", node.PhysicalOp)
+	attrs.PutStr("logical_op", node.LogicalOp)
+	attrs.PutDouble("estimate_rows", node.EstimateRows)
+	attrs.PutDouble("estimate_io", node.EstimateIO)
+	attrs.PutDouble("estimate_cpu", node.EstimateCPU)
+	attrs.PutDouble("avg_row_size", node.AvgRowSize)
+	attrs.PutDouble("total_subtree_cost", node.TotalSubtreeCost)
+	attrs.PutDouble("estimated_operator_cost", node.EstimatedOperatorCost)
+	attrs.PutStr("estimated_execution_mode", node.EstimatedExecutionMode)
+	attrs.PutInt("granted_memory_kb", node.GrantedMemoryKb)
+	attrs.PutBool("spill_occurred", node.SpillOccurred)
+	attrs.PutBool("no_join_predicate", node.NoJoinPredicate)
+	attrs.PutDouble("total_worker_time", node.TotalWorkerTime)
+	attrs.PutDouble("total_elapsed_time", node.TotalElapsedTime)
+	attrs.PutInt("total_logical_reads", node.TotalLogicalReads)
+	attrs.PutInt("total_logical_writes", node.TotalLogicalWrites)
+	attrs.PutInt("execution_count", int64(node.ExecutionCount))
+	attrs.PutDouble("avg_elapsed_time_ms", node.AvgElapsedTimeMs)
+	attrs.PutStr("collection_timestamp", node.CollectionTimestamp)
+	attrs.PutStr("last_execution_time", node.LastExecutionTime)
 }
 
 // detectEngineEdition detects the SQL Server engine edition following nri-mssql pattern

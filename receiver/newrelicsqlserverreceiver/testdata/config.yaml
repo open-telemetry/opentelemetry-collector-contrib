@@ -19,6 +19,12 @@ service:
       receivers: [newrelicsqlserver]
       processors: [memory_limiter, batch, resource]
       exporters: [otlphttp, debug]
+    
+    # Logs pipeline: receiver -> processor -> exporter (for execution plans)
+    logs:
+      receivers: [newrelicsqlserver]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlphttp/logs, debug]
   
   # Telemetry configuration for the collector itself
   telemetry:
@@ -52,6 +58,9 @@ processors:
       - key: service.version
         value: "1.0.0"
         action: upsert
+      - key: entity.name
+        value: "sqlserver.execution_plan_operator"
+        action: upsert
 
 # Receivers collect telemetry data
 receivers:
@@ -72,6 +81,8 @@ receivers:
     
     # Collection interval (how often to collect metrics)
     collection_interval: 60s
+
+    query_monitoring_fetch_interval: 15        # seconds - how often to fetch slow queries
     
     # Optional: Initial delay before starting collection
     # initial_delay: 10s
@@ -118,10 +129,43 @@ exporters:
     # Timeout for HTTP requests
     timeout: 30s
   
+  # New Relic OTLP HTTP Exporter for Logs (Execution Plans)
+  otlphttp/logs:
+    # New Relic OTLP logs endpoint
+    endpoint: "https://staging-otlp.nr-data.net:4317"
+    
+    # Headers for authentication
+    headers:
+      # ⚠️  REPLACE WITH YOUR ACTUAL NEW RELIC LICENSE KEY ⚠️
+      api-key: ""
+    
+    # TLS configuration
+    tls:
+      insecure: false
+    
+    # Retry configuration
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    
+    # Queue configuration for handling bursts
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 100
+    
+    # Compression (gzip is recommended)
+    compression: gzip
+    
+    # Timeout for HTTP requests
+    timeout: 30s
+  
   # Debug exporter for debugging (outputs to console)
   debug:
     verbosity: detailed
-    # Use detailed format to see all metrics
+    # Use detailed format to see all metrics and logs
     sampling_initial: 2
     sampling_thereafter: 500
 

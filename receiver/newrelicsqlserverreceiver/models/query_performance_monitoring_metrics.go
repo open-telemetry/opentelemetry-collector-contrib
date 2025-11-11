@@ -171,3 +171,58 @@ type QueryExecutionPlan struct {
 	LastExecutionTime  *int64   `db:"last_execution_time" metric_name:"last_execution_time" source_type:"gauge"`
 	ExecutionPlanXML   *string  `db:"execution_plan_xml" metric_name:"execution_plan_xml" source_type:"attribute"`
 }
+
+// ExecutionPlanNode represents a parsed execution plan node with detailed operator information
+// This model contains the parsed data structure from XML execution plans for New Relic logging
+type ExecutionPlanNode struct {
+	// Identifiers
+	QueryID     string `json:"query_id"`
+	PlanHandle  string `json:"plan_handle"`
+	NodeID      int    `json:"node_id"`
+	
+	// SQL Query Information
+	SQLText     string `json:"sql_text"`
+	
+	// Operator Information
+	PhysicalOp  string  `json:"physical_op"`
+	LogicalOp   string  `json:"logical_op"`
+	
+	// Cost Estimates
+	EstimateRows           float64 `json:"estimate_rows"`
+	EstimateIO             float64 `json:"estimate_io"`
+	EstimateCPU            float64 `json:"estimate_cpu"`
+	AvgRowSize             float64 `json:"avg_row_size"`
+	TotalSubtreeCost       float64 `json:"total_subtree_cost"`
+	EstimatedOperatorCost  float64 `json:"estimated_operator_cost"`
+	
+	// Execution Details
+	EstimatedExecutionMode string  `json:"estimated_execution_mode"`
+	GrantedMemoryKb        int64   `json:"granted_memory_kb"`
+	SpillOccurred          bool    `json:"spill_occurred"`
+	NoJoinPredicate        bool    `json:"no_join_predicate"`
+	
+	// Performance Metrics
+	TotalWorkerTime       float64 `json:"total_worker_time"`
+	TotalElapsedTime      float64 `json:"total_elapsed_time"`
+	TotalLogicalReads     int64   `json:"total_logical_reads"`
+	TotalLogicalWrites    int64   `json:"total_logical_writes"`
+	ExecutionCount        int64   `json:"execution_count"`
+	AvgElapsedTimeMs      float64 `json:"avg_elapsed_time_ms"`
+	
+	// Timestamps
+	CollectionTimestamp   string  `json:"collection_timestamp"`
+	LastExecutionTime     string  `json:"last_execution_time"`
+}
+
+// ExecutionPlanAnalysis represents the complete parsed execution plan with metadata
+type ExecutionPlanAnalysis struct {
+	QueryID           string              `json:"query_id"`
+	PlanHandle        string              `json:"plan_handle"`
+	SQLText           string              `json:"sql_text"`
+	TotalCost         float64             `json:"total_cost"`
+	CompileTime       string              `json:"compile_time"`
+	CompileCPU        int64               `json:"compile_cpu"`
+	CompileMemory     int64               `json:"compile_memory"`
+	Nodes             []ExecutionPlanNode `json:"nodes"`
+	CollectionTime    string              `json:"collection_time"`
+}

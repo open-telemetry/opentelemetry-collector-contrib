@@ -61,10 +61,12 @@ package scrapers
 
 import (
     "context"
+    "encoding/json"
     "fmt"
     "time"
 
     "go.opentelemetry.io/collector/pdata/pcommon"
+    "go.opentelemetry.io/collector/pdata/plog"
     "go.opentelemetry.io/collector/pdata/pmetric"
     "go.uber.org/zap"
 
@@ -77,19 +79,22 @@ import (
 
 // QueryPerformanceScraper handles SQL Server query performance monitoring metrics collection
 type QueryPerformanceScraper struct {
-    connection    SQLConnectionInterface
-    logger        *zap.Logger
-    startTime     pcommon.Timestamp
-    engineEdition int
+    connection         SQLConnectionInterface
+    logger             *zap.Logger
+    startTime          pcommon.Timestamp
+    engineEdition      int
+    executionPlanLogger *models.ExecutionPlanLogger
+    logConsumer        plog.Logs // For emitting execution plan logs
 }
 
 // NewQueryPerformanceScraper creates a new query performance scraper
 func NewQueryPerformanceScraper(conn SQLConnectionInterface, logger *zap.Logger, engineEdition int) *QueryPerformanceScraper {
     return &QueryPerformanceScraper{
-        connection:    conn,
-        logger:        logger,
-        startTime:     pcommon.NewTimestampFromTime(time.Now()),
-        engineEdition: engineEdition,
+        connection:         conn,
+        logger:             logger,
+        startTime:          pcommon.NewTimestampFromTime(time.Now()),
+        engineEdition:      engineEdition,
+        executionPlanLogger: models.NewExecutionPlanLogger(),
     }
 }
 
@@ -742,29 +747,9 @@ func (s *QueryPerformanceScraper) processQueryExecutionPlanMetrics(result models
         createSafeAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    // Create execution plan info metric with anonymized XML content
-    if result.ExecutionPlanXML != nil {
-        metric := scopeMetrics.Metrics().AppendEmpty()
-        metric.SetName("sqlserver.query_execution_plan.execution_plan_xml")
-        metric.SetDescription("Execution plan XML content for detailed query analysis")
-        metric.SetUnit("1")
-        
-        gauge := metric.SetEmptyGauge()
-        dataPoint := gauge.DataPoints().AppendEmpty()
-        dataPoint.SetTimestamp(timestamp)
-        dataPoint.SetStartTimestamp(s.startTime)
-        dataPoint.SetIntValue(1) // 1 = plan available, 0 = no plan
-        
-        // Include XML content with StatementText anonymized
-        attrs := createSafeAttributes()
-        xmlContent := helpers.AnonymizeExecutionPlanXML(*result.ExecutionPlanXML)
-        // Limit XML size to prevent attribute size issues
-        if len(xmlContent) > 8192 {
-            xmlContent = xmlContent[:8192] + "...[truncated]"
-        }
-        attrs.PutStr("execution_plan_xml", xmlContent)
-        attrs.CopyTo(dataPoint.Attributes())
-    }
+    // NOTE: Execution plan data is now emitted as OTLP logs only (not metrics)
+    // This prevents high cardinality issues and allows proper structured logging
+    // The logs pipeline will handle execution plan data emission to New Relic
 
     // Log detailed information for debugging/analysis (not in metrics)
     s.logger.Debug("Processed query execution plan metrics with cardinality safety",
@@ -793,6 +778,230 @@ func (s *QueryPerformanceScraper) getSlowQueryResults(ctx context.Context, inter
         zap.Int("result_count", len(results)))
 
     return results, nil
+}
+
+// emitExecutionPlanLogs creates and emits structured logs for execution plan data
+func (s *QueryPerformanceScraper) emitExecutionPlanLogs(analysis *models.ExecutionPlanAnalysis) error {
+    if analysis == nil {
+        return fmt.Errorf("cannot emit logs for nil execution plan analysis")
+    }
+
+    // Create a new logs collection
+    logs := plog.NewLogs()
+    resourceLogs := logs.ResourceLogs().AppendEmpty()
+    
+    // Add resource attributes
+    resourceAttrs := resourceLogs.Resource().Attributes()
+    resourceAttrs.PutStr("service.name", "newrelic-sql-server-receiver")
+    resourceAttrs.PutStr("component", "execution-plan-analyzer")
+    resourceAttrs.PutStr("telemetry.sdk.name", "opentelemetry")
+    
+    scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+    scopeLogs.Scope().SetName("newrelicsqlserverreceiver.execution_plan")
+    scopeLogs.Scope().SetVersion("1.0.0")
+    
+    // Create main execution plan summary log
+    summaryLogRecord := scopeLogs.LogRecords().AppendEmpty()
+    summaryLogRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+    summaryLogRecord.SetSeverityNumber(plog.SeverityNumberInfo)
+    summaryLogRecord.SetSeverityText("INFO")
+    summaryLogRecord.Body().SetStr("SQL Server Execution Plan Analysis")
+    
+    // Add execution plan summary attributes
+    summaryAttrs := summaryLogRecord.Attributes()
+    summaryAttrs.PutStr("event_type", "SQLServerExecutionPlan")
+    summaryAttrs.PutStr("query_id", analysis.QueryID)
+    summaryAttrs.PutStr("plan_handle", analysis.PlanHandle)
+    summaryAttrs.PutStr("sql_text", analysis.SQLText)
+    summaryAttrs.PutDouble("total_cost", analysis.TotalCost)
+    summaryAttrs.PutStr("compile_time", analysis.CompileTime)
+    summaryAttrs.PutInt("compile_cpu", analysis.CompileCPU)
+    summaryAttrs.PutInt("compile_memory", analysis.CompileMemory)
+    summaryAttrs.PutStr("collection_time", analysis.CollectionTime)
+    summaryAttrs.PutInt("total_operators", int64(len(analysis.Nodes)))
+    
+    // Add execution plan as JSON attribute
+    if jsonData, err := json.Marshal(analysis); err == nil {
+        summaryAttrs.PutStr("execution_plan_json", string(jsonData))
+    }
+    
+    // Create individual log records for each operator node
+    for _, node := range analysis.Nodes {
+        nodeLogRecord := scopeLogs.LogRecords().AppendEmpty()
+        nodeLogRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+        nodeLogRecord.SetSeverityNumber(plog.SeverityNumberInfo)
+        nodeLogRecord.SetSeverityText("INFO")
+        nodeLogRecord.Body().SetStr("SQL Server Execution Plan Operator")
+        
+        // Add node attributes
+        nodeAttrs := nodeLogRecord.Attributes()
+        nodeAttrs.PutStr("event_type", "SQLServerExecutionPlanNode")
+        nodeAttrs.PutStr("query_id", node.QueryID)
+        nodeAttrs.PutStr("plan_handle", node.PlanHandle)
+        nodeAttrs.PutInt("node_id", int64(node.NodeID))
+        nodeAttrs.PutStr("sql_text", node.SQLText)
+        nodeAttrs.PutStr("physical_op", node.PhysicalOp)
+        nodeAttrs.PutStr("logical_op", node.LogicalOp)
+        nodeAttrs.PutDouble("estimate_rows", node.EstimateRows)
+        nodeAttrs.PutDouble("estimate_io", node.EstimateIO)
+        nodeAttrs.PutDouble("estimate_cpu", node.EstimateCPU)
+        nodeAttrs.PutDouble("avg_row_size", node.AvgRowSize)
+        nodeAttrs.PutDouble("total_subtree_cost", node.TotalSubtreeCost)
+        nodeAttrs.PutDouble("estimated_operator_cost", node.EstimatedOperatorCost)
+        nodeAttrs.PutStr("estimated_execution_mode", node.EstimatedExecutionMode)
+        nodeAttrs.PutInt("granted_memory_kb", node.GrantedMemoryKb)
+        nodeAttrs.PutBool("spill_occurred", node.SpillOccurred)
+        nodeAttrs.PutBool("no_join_predicate", node.NoJoinPredicate)
+        nodeAttrs.PutDouble("total_worker_time", node.TotalWorkerTime)
+        nodeAttrs.PutDouble("total_elapsed_time", node.TotalElapsedTime)
+        nodeAttrs.PutInt("total_logical_reads", node.TotalLogicalReads)
+        nodeAttrs.PutInt("total_logical_writes", node.TotalLogicalWrites)
+        nodeAttrs.PutInt("execution_count", node.ExecutionCount)
+        nodeAttrs.PutDouble("avg_elapsed_time_ms", node.AvgElapsedTimeMs)
+        nodeAttrs.PutStr("collection_timestamp", node.CollectionTimestamp)
+        nodeAttrs.PutStr("last_execution_time", node.LastExecutionTime)
+        
+        // Add operator analysis
+        nodeAttrs.PutStr("operator_category", s.categorizeOperator(node.PhysicalOp))
+        nodeAttrs.PutStr("performance_impact", s.assessPerformanceImpact(&node))
+    }
+    
+    // Store the logs for later emission (this would be handled by the receiver framework)
+    s.logConsumer = logs
+    
+    s.logger.Info("Generated execution plan logs",
+        zap.String("query_id", analysis.QueryID),
+        zap.String("plan_handle", analysis.PlanHandle),
+        zap.Int("total_logs", 1+len(analysis.Nodes)),
+        zap.Int("operator_count", len(analysis.Nodes)))
+    
+    return nil
+}
+
+// categorizeOperator categorizes the physical operator type
+func (s *QueryPerformanceScraper) categorizeOperator(physicalOp string) string {
+    categories := map[string]string{
+        "Clustered Index Scan":     "Data Access",
+        "Index Scan":               "Data Access", 
+        "Index Seek":               "Data Access",
+        "Key Lookup":               "Data Access",
+        "Table Scan":               "Data Access",
+        "Nested Loops":             "Join",
+        "Hash Match":               "Join",
+        "Merge Join":               "Join",
+        "Sort":                     "Sort/Aggregate",
+        "Stream Aggregate":         "Sort/Aggregate",
+        "Hash Aggregate":           "Sort/Aggregate",
+        "Compute Scalar":           "Computation",
+        "Filter":                   "Filter",
+        "Parallelism":              "Parallelism",
+        "Sequence Project":         "Projection",
+    }
+    
+    if category, exists := categories[physicalOp]; exists {
+        return category
+    }
+    return "Other"
+}
+
+// assessPerformanceImpact assesses the performance impact of an operator
+func (s *QueryPerformanceScraper) assessPerformanceImpact(node *models.ExecutionPlanNode) string {
+    if node.TotalSubtreeCost > 100.0 {
+        return "High"
+    }
+    if node.TotalSubtreeCost > 10.0 {
+        return "Medium"
+    }
+    return "Low"
+}
+
+// logExecutionPlanToNewRelic emits structured logs for execution plan data to be consumed by New Relic
+func (s *QueryPerformanceScraper) logExecutionPlanToNewRelic(analysis *models.ExecutionPlanAnalysis) {
+    if analysis == nil {
+        return
+    }
+    planSummary := map[string]interface{}{
+        "event_type":         "SQLServerExecutionPlan",
+        "log_type":          "sql_server_execution_plan",
+        "query_id":          analysis.QueryID,
+        "plan_handle":       analysis.PlanHandle,
+        "sql_text":          analysis.SQLText,
+        "total_cost":        analysis.TotalCost,
+        "compile_time":      analysis.CompileTime,
+        "compile_cpu":       analysis.CompileCPU,
+        "compile_memory":    analysis.CompileMemory,
+        "collection_time":   analysis.CollectionTime,
+        "total_operators":   len(analysis.Nodes),
+        "component":         "newrelicsqlserverreceiver",
+        "source":           "sql_server_execution_plan_analyzer",
+    }
+
+    // Convert to JSON for New Relic structured logging
+    if jsonData, err := json.Marshal(planSummary); err == nil {
+        // Log as structured JSON that New Relic can parse
+        s.logger.Info("SQL Server Execution Plan Summary",
+            zap.String("nr_log_type", "sql_server_execution_plan"),
+            zap.String("execution_plan_summary_json", string(jsonData)),
+            zap.String("query_id", analysis.QueryID),
+            zap.String("plan_handle", analysis.PlanHandle))
+    }
+
+    // Log each execution plan operator as separate structured logs
+    for _, node := range analysis.Nodes {
+        operatorData := map[string]interface{}{
+            "event_type":                "SQLServerExecutionPlanNode",
+            "log_type":                 "sql_server_execution_plan_node",
+            "query_id":                 node.QueryID,
+            "plan_handle":              node.PlanHandle,
+            "node_id":                  node.NodeID,
+            "sql_text":                 node.SQLText,
+            "physical_op":              node.PhysicalOp,
+            "logical_op":               node.LogicalOp,
+            "estimate_rows":            node.EstimateRows,
+            "estimate_io":              node.EstimateIO,
+            "estimate_cpu":             node.EstimateCPU,
+            "avg_row_size":             node.AvgRowSize,
+            "total_subtree_cost":       node.TotalSubtreeCost,
+            "estimated_operator_cost":  node.EstimatedOperatorCost,
+            "estimated_execution_mode": node.EstimatedExecutionMode,
+            "granted_memory_kb":        node.GrantedMemoryKb,
+            "spill_occurred":           node.SpillOccurred,
+            "no_join_predicate":        node.NoJoinPredicate,
+            "total_worker_time":        node.TotalWorkerTime,
+            "total_elapsed_time":       node.TotalElapsedTime,
+            "total_logical_reads":      node.TotalLogicalReads,
+            "total_logical_writes":     node.TotalLogicalWrites,
+            "execution_count":          node.ExecutionCount,
+            "avg_elapsed_time_ms":      node.AvgElapsedTimeMs,
+            "collection_timestamp":     node.CollectionTimestamp,
+            "last_execution_time":      node.LastExecutionTime,
+            "operator_category":        s.categorizeOperator(node.PhysicalOp),
+            "performance_impact":       s.assessPerformanceImpact(&node),
+            "component":               "newrelicsqlserverreceiver",
+            "source":                  "sql_server_execution_plan_analyzer",
+        }
+
+        if jsonData, err := json.Marshal(operatorData); err == nil {
+            // Log each operator as structured JSON for New Relic
+            s.logger.Info("SQL Server Execution Plan Operator", 
+                zap.String("nr_log_type", "sql_server_execution_plan_node"),
+                zap.String("execution_plan_node_json", string(jsonData)),
+                zap.String("query_id", node.QueryID),
+                zap.String("plan_handle", node.PlanHandle),
+                zap.Int("node_id", node.NodeID),
+                zap.String("physical_op", node.PhysicalOp))
+        }
+    }
+
+    // Log the complete execution plan as raw JSON for external processing
+    if jsonData, err := json.Marshal(analysis); err == nil {
+        s.logger.Info("SQL Server Complete Execution Plan JSON",
+            zap.String("nr_log_type", "sql_server_execution_plan_complete"),
+            zap.String("complete_execution_plan_json", string(jsonData)),
+            zap.String("query_id", analysis.QueryID),
+            zap.String("plan_handle", analysis.PlanHandle),
+            zap.Int("node_count", len(analysis.Nodes)))
+    }
 }
 
 // extractQueryIDsFromSlowQueries extracts unique QueryIDs from slow query results
