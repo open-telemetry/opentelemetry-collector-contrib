@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/containerd/errdefs v1.0.0
-	github.com/docker/docker v28.5.1+incompatible
+	github.com/docker/docker v28.5.2+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/confmap v1.45.1-0.20251106125304-a6a176660925
