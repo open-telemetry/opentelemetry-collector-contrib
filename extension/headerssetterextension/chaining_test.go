@@ -23,11 +23,11 @@ type mockAuthExtension struct {
 	component.ShutdownFunc
 }
 
-func (m *mockAuthExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (*mockAuthExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &mockAuthRoundTripper{base: base, headerKey: "Authorization", headerValue: "Bearer token123"}, nil
 }
 
-func (m *mockAuthExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+func (*mockAuthExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &mockPerRPCCredentials{metadata: map[string]string{"authorization": "Bearer token123"}}, nil
 }
 
@@ -52,11 +52,11 @@ type mockPerRPCCredentials struct {
 	metadata map[string]string
 }
 
-func (m *mockPerRPCCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (m *mockPerRPCCredentials) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
 	return m.metadata, nil
 }
 
-func (m *mockPerRPCCredentials) RequireTransportSecurity() bool {
+func (*mockPerRPCCredentials) RequireTransportSecurity() bool {
 	return false
 }
 
@@ -100,7 +100,7 @@ func TestChainingWithAdditionalAuth_HTTP(t *testing.T) {
 	}
 
 	// Start the extension
-	err = ext.Start(context.Background(), host)
+	err = ext.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	// Get the RoundTripper
@@ -110,7 +110,7 @@ func TestChainingWithAdditionalAuth_HTTP(t *testing.T) {
 	require.NotNil(t, rt)
 
 	// Create a test request
-	req, err := http.NewRequest("GET", "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	require.NoError(t, err)
 
 	// Execute the round trip
@@ -153,7 +153,7 @@ func TestChainingWithAdditionalAuth_gRPC(t *testing.T) {
 	}
 
 	// Start the extension
-	err = ext.Start(context.Background(), host)
+	err = ext.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	// Get the PerRPCCredentials
@@ -162,7 +162,7 @@ func TestChainingWithAdditionalAuth_gRPC(t *testing.T) {
 	require.NotNil(t, creds)
 
 	// Get metadata
-	metadata, err := creds.GetRequestMetadata(context.Background())
+	metadata, err := creds.GetRequestMetadata(t.Context())
 	require.NoError(t, err)
 
 	// Verify both auth metadata are present
@@ -198,7 +198,7 @@ func TestChainingWithMissingAuth(t *testing.T) {
 	}
 
 	// Start the extension
-	err = ext.Start(context.Background(), host)
+	err = ext.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	// Get the RoundTripper - should fail
@@ -237,7 +237,7 @@ func TestWithoutAdditionalAuth(t *testing.T) {
 	require.NotNil(t, rt)
 
 	// Create a test request
-	req, err := http.NewRequest("GET", "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	require.NoError(t, err)
 
 	// Execute the round trip
@@ -246,7 +246,7 @@ func TestWithoutAdditionalAuth(t *testing.T) {
 
 	// Verify only custom header is present in captured request
 	require.NotNil(t, captureRT.capturedRequest, "Request should be captured")
-	assert.Equal(t, "", captureRT.capturedRequest.Header.Get("Authorization"), "Auth header should not be present")
+	assert.Empty(t, captureRT.capturedRequest.Header.Get("Authorization"), "Auth header should not be present")
 	assert.Equal(t, "custom-value", captureRT.capturedRequest.Header.Get("X-Custom-Header"), "Custom header should be present")
 }
 
@@ -302,7 +302,7 @@ func (m *requestCaptureRoundTripper) RoundTrip(req *http.Request) (*http.Respons
 	m.capturedRequest = req
 	// Just return a dummy response
 	return &http.Response{
-		StatusCode: 200,
+		StatusCode: http.StatusOK,
 		Request:    req,
 	}, nil
 }
@@ -313,4 +313,3 @@ var (
 	_ extensionauth.GRPCClient = (*mockAuthExtension)(nil)
 	_ component.Host           = (*mockHost)(nil)
 )
-

@@ -55,19 +55,33 @@ func (h *headerSetterExtension) Start(_ context.Context, host component.Host) er
 	return nil
 }
 
+// getAdditionalAuthExtension retrieves the configured additional auth extension if present.
+// Returns nil if no additional auth is configured.
+func (h *headerSetterExtension) getAdditionalAuthExtension() (component.Component, error) {
+	if h.additionalAuth == nil || h.host == nil {
+		return nil, nil
+	}
+
+	ext := h.host.GetExtensions()[*h.additionalAuth]
+	if ext == nil {
+		return nil, fmt.Errorf("auth extension %v not found", h.additionalAuth)
+	}
+
+	return ext, nil
+}
+
 // PerRPCCredentials implements extensionauth.GRPCClient.
 func (h *headerSetterExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	var baseCredentials credentials.PerRPCCredentials
 
 	// If additional_auth is configured, chain with it first
-	if h.additionalAuth != nil && h.host != nil {
-		ext := h.host.GetExtensions()[*h.additionalAuth]
-		if ext == nil {
-			return nil, fmt.Errorf("auth extension %v not found", h.additionalAuth)
-		}
+	ext, err := h.getAdditionalAuthExtension()
+	if err != nil {
+		return nil, err
+	}
 
+	if ext != nil {
 		if grpcClient, ok := ext.(extensionauth.GRPCClient); ok {
-			var err error
 			baseCredentials, err = grpcClient.PerRPCCredentials()
 			if err != nil {
 				return nil, fmt.Errorf("failed to get PerRPCCredentials from %v: %w", h.additionalAuth, err)
@@ -84,18 +98,16 @@ func (h *headerSetterExtension) PerRPCCredentials() (credentials.PerRPCCredentia
 // RoundTripper implements extensionauth.HTTPClient.
 func (h *headerSetterExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	// If additional_auth is configured, chain with it first
-	var baseRT http.RoundTripper = base
+	baseRT := base
 
-	if h.additionalAuth != nil && h.host != nil {
-		// Get the auth extension from host
-		ext := h.host.GetExtensions()[*h.additionalAuth]
-		if ext == nil {
-			return nil, fmt.Errorf("auth extension %v not found", h.additionalAuth)
-		}
+	ext, err := h.getAdditionalAuthExtension()
+	if err != nil {
+		return nil, err
+	}
 
+	if ext != nil {
 		// Check if it implements HTTPClient
 		if httpClient, ok := ext.(extensionauth.HTTPClient); ok {
-			var err error
 			baseRT, err = httpClient.RoundTripper(base)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get RoundTripper from %v: %w", h.additionalAuth, err)
