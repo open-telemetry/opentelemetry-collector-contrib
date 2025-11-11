@@ -196,8 +196,6 @@ func TestNewBulkIndexer(t *testing.T) {
 }
 
 func TestGetErrorHint(t *testing.T) {
-	otelMappingModeHint := "This error typically occurs when using OTel mapping mode (default from v0.122.0) with Elasticsearch < 8.12. OTel mapping mode requires Elasticsearch 8.12+ (ideally 8.16+). To resolve: upgrade Elasticsearch to 8.12+, or use a different mapping mode (e.g., mapping::mode: ecs or mapping::mode: raw). See the README for more details."
-
 	tests := []struct {
 		name      string
 		index     string
@@ -208,34 +206,40 @@ func TestGetErrorHint(t *testing.T) {
 			name:      "version_conflict_engine_exception with .ds-metrics- prefix",
 			index:     ".ds-metrics-foo",
 			errorType: "version_conflict_engine_exception",
-			want:      "check the \"Known issues\" section of Elasticsearch Exporter docs",
+			want:      errorHintKnownIssues,
 		},
 		{
-			name:      "illegal_argument_exception with .otel in index (OTel mapping mode)",
+			name:      "illegal_argument_exception with .otel- in index (OTel mapping mode)",
 			index:     "logs-generic.otel-default",
 			errorType: "illegal_argument_exception",
-			want:      otelMappingModeHint,
+			want:      errorHintOTelMappingMode,
 		},
 		{
-			name:      "illegal_argument_exception with .otel in metrics index",
+			name:      "illegal_argument_exception with .otel- in metrics index",
 			index:     "metrics-generic.otel-default",
 			errorType: "illegal_argument_exception",
-			want:      otelMappingModeHint,
+			want:      errorHintOTelMappingMode,
 		},
 		{
-			name:      "illegal_argument_exception with .otel in traces index",
+			name:      "illegal_argument_exception with .otel- in traces index",
 			index:     "traces-generic.otel-default",
 			errorType: "illegal_argument_exception",
-			want:      otelMappingModeHint,
+			want:      errorHintOTelMappingMode,
 		},
 		{
-			name:      "illegal_argument_exception without .otel (not OTel mapping mode)",
+			name:      "illegal_argument_exception without .otel- (not OTel mapping mode)",
 			index:     "logs-generic-default",
 			errorType: "illegal_argument_exception",
 			want:      "",
 		},
 		{
-			name:      "other error type with .otel",
+			name:      "illegal_argument_exception with .otel but not as suffix (should not match)",
+			index:     "logs-generic.oteldefault",
+			errorType: "illegal_argument_exception",
+			want:      "",
+		},
+		{
+			name:      "other error type with .otel-",
 			index:     "logs-generic.otel-default",
 			errorType: "mapper_parsing_exception",
 			want:      "",
