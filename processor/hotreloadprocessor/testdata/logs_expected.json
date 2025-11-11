@@ -1,0 +1,167 @@
+{
+  "resourceLogs": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "my.service"
+            }
+          }
+        ]
+      },
+      "scopeLogs": [
+        {
+          "scope": {
+            "name": "my.library",
+            "version": "1.0.0",
+            "attributes": [
+              {
+                "key": "my.scope.attribute",
+                "value": {
+                  "stringValue": "some scope attribute"
+                }
+              }
+            ]
+          },
+          "logRecords": [
+            {
+              "timeUnixNano": "1544712660300000000",
+              "observedTimeUnixNano": "1544712660300000000",
+              "severityNumber": 10,
+              "severityText": "Information",
+              "body": {
+                "stringValue": "Example log record"
+              },
+              "attributes": [
+                {
+                  "key": "test1",
+                  "value": {
+                    "stringValue": "Found maintenance plan\\!"
+                  }
+                },
+                {
+                  "key": "test2",
+                  "value": {
+                    "stringValue": "Found maintenance plan!\""
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "doubleValue": 400
+                  }
+                },
+                {
+                  "key": "string",
+                  "value": {
+                    "kvlistValue": {
+                      "values": [
+                        {
+                          "key": "attribute.empty",
+                          "value": {
+                            "stringValue": ""
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "key": "string.attribute.empty",
+                  "value": {
+                    "stringValue": ""
+                  }
+                },
+                {
+                  "key": "string.attribute",
+                  "value": {
+                    "stringValue": "some string"
+                  }
+                },
+                {
+                  "key": "string.attribute.doubleq",
+                  "value": {
+                    "stringValue": "INSERT INTO \"dfdfd-dsdsf\" (..) bla bla"
+                  }
+                },
+                {
+                  "key": "string.attribute.regex",
+                  "value": {
+                    "stringValue": "my regex (\"can find me\")"
+                  }
+                },
+                {
+                  "key": "boolean.attribute",
+                  "value": {
+                    "boolValue": true
+                  }
+                },
+                {
+                  "key": "int.attribute",
+                  "value": {
+                    "intValue": "10"
+                  }
+                },
+                {
+                  "key": "double.attribute",
+                  "value": {
+                    "doubleValue": 637.704
+                  }
+                },
+                {
+                  "key": "array.attribute",
+                  "value": {
+                    "arrayValue": {
+                      "values": [
+                        {
+                          "stringValue": "many"
+                        },
+                        {
+                          "stringValue": "values"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "key": "map.attribute",
+                  "value": {
+                    "kvlistValue": {
+                      "values": [
+                        {
+                          "key": "some.map.key",
+                          "value": {
+                            "stringValue": "some value"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "key": "pipeline",
+                  "value": {
+                    "kvlistValue": {
+                      "values": [
+                        {
+                          "key": "id",
+                          "value": {
+                            "stringValue": "12345"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "traceId": "5b8efff798038103d269b633813fc60c",
+              "spanId": "eee19b7ec3c1b174"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

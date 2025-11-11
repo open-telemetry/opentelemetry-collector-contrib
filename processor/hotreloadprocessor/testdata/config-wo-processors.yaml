@@ -1,0 +1,5 @@
+processors: {}
+service:
+  pipelines:
+    logs/32ad2c3d-ae7c-4887-b476-365dade8c9cd/69174d41-a49c-4763-bce2-e97ef8051bab:
+      processors: []
