@@ -220,7 +220,7 @@ func Test_index_native_slices(t *testing.T) {
 
 			indexFn := index(ottl.NewValueComparator(), sourceExpr, valueExpr)
 			result, err := indexFn(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -307,7 +307,7 @@ func Test_index_error_cases(t *testing.T) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedErr)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, result)
 			}
 		})
@@ -345,7 +345,7 @@ func Test_IndexFactory(t *testing.T) {
 		}
 
 		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, fn)
 	})
 

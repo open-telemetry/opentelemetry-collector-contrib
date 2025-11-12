@@ -32,7 +32,7 @@ func TestNewParser(t *testing.T) {
 		enumParser,
 	)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, ottl.Parser[testContext]{}, parser)
 }
 
@@ -55,7 +55,7 @@ func TestNewParserWithOptions(t *testing.T) {
 		customOption,
 	)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, ottl.Parser[testContext]{}, parser)
 }
 

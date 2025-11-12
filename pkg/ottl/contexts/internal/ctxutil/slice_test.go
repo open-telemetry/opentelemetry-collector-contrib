@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -28,7 +29,7 @@ func Test_GetSliceValue_Valid(t *testing.T) {
 		},
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "val", value)
 }
 
@@ -115,7 +116,7 @@ func Test_SetSliceValue_Valid(t *testing.T) {
 	err := ctxutil.SetSliceValue[any](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{I: ottltest.Intp(0)},
 	}, "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "value", s.At(0).AsRaw())
 }
 
@@ -205,7 +206,7 @@ func Test_GetCommonTypedSliceValue_Valid(t *testing.T) {
 		},
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, s.At(1), value)
 }
 
@@ -292,7 +293,7 @@ func Test_SetCommonTypedSliceValue_Valid(t *testing.T) {
 	err := ctxutil.SetCommonTypedSliceValue[any, string](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{I: ottltest.Intp(1)},
 	}, "two")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "two", s.At(1))
 }
 
@@ -396,11 +397,11 @@ func Test_SetCommonTypedSliceValues(t *testing.T) {
 
 	ps := pcommon.NewSlice()
 	err := ps.FromRaw([]any{"one", "two", "three"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	invalid := pcommon.NewSlice()
 	err = invalid.FromRaw([]any{"one", 1, "three"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name      string
@@ -452,7 +453,7 @@ func Test_SetCommonTypedSliceValues(t *testing.T) {
 			if tt.wantError != "" {
 				assert.ErrorContains(t, err, tt.wantError)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, s.AsRaw())
 			}
 		})
@@ -470,7 +471,7 @@ func Test_SetCommonIntSliceValue_Valid(t *testing.T) {
 			err := ctxutil.SetCommonIntSliceValue[any, int32](t.Context(), nil, s, []ottl.Key[any]{
 				&pathtest.Key[any]{I: ottltest.Intp(1)},
 			}, val)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, int32(1), s.At(1))
 		})
 	}
@@ -576,11 +577,11 @@ func Test_SetCommonIntSliceValues(t *testing.T) {
 
 	ps := pcommon.NewSlice()
 	err := ps.FromRaw([]any{1, 2, 3})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	invalid := pcommon.NewSlice()
 	err = invalid.FromRaw([]any{"one", 1, "three"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name      string
@@ -637,7 +638,7 @@ func Test_SetCommonIntSliceValues(t *testing.T) {
 			if tt.wantError != "" {
 				assert.ErrorContains(t, err, tt.wantError)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, s.AsRaw())
 			}
 		})
