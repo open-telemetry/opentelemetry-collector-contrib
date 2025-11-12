@@ -5,6 +5,8 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"encoding/json"
+	"sort"
 	"sync"
 	"time"
 
@@ -24,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	systemprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -326,6 +329,63 @@ func newExtension(
 			resourceMap[k] = v.AsString()
 			return true
 		})
+	}
+
+	// Collect host.ip directly since resourcedetection processor hasn't started yet
+	// Extensions start before processors in the collector lifecycle
+	// Per OTel semantic conventions, host.ip is a string[] containing all available IPs
+	// excluding loopback interfaces
+	sysProvider := systemprovider.NewProvider()
+	if hostIPs, err := sysProvider.HostIPs(); err == nil && len(hostIPs) > 0 {
+		// Convert IPs to strings (IPv4 in dotted-quad, IPv6 in RFC 5952 format)
+		detectedIPs := make([]string, 0, len(hostIPs))
+		for _, ip := range hostIPs {
+			detectedIPs = append(detectedIPs, ip.String())
+		}
+
+		// Check if host.ip already exists in resource attributes (e.g., manually configured)
+		// If so, merge the existing and detected IPs
+		ipSet := make(map[string]struct{})
+		if existingHostIP, exists := resourceMap["host.ip"]; exists {
+			// Try to parse existing value as JSON array
+			var existingIPs []string
+			if jsonErr := json.Unmarshal([]byte(existingHostIP), &existingIPs); jsonErr == nil {
+				for _, ip := range existingIPs {
+					ipSet[ip] = struct{}{}
+				}
+				set.Logger.Debug("Found existing host.ip in resource attributes, merging with detected IPs",
+					zap.Int("existing_count", len(existingIPs)),
+					zap.Int("detected_count", len(detectedIPs)))
+			} else {
+				// If it's not a JSON array, treat it as a single IP (backwards compatibility)
+				ipSet[existingHostIP] = struct{}{}
+				set.Logger.Debug("Found existing host.ip as string, merging with detected IPs")
+			}
+		}
+
+		// Add all detected IPs to the set (deduplication)
+		for _, ip := range detectedIPs {
+			ipSet[ip] = struct{}{}
+		}
+
+		// Convert set back to sorted slice
+		mergedIPs := make([]string, 0, len(ipSet))
+		for ip := range ipSet {
+			mergedIPs = append(mergedIPs, ip)
+		}
+
+		// Sort IPs to ensure deterministic output and avoid unnecessary backend updates
+		// when the same IPs are reported in different orders (e.g., after collector restart)
+		sort.Strings(mergedIPs)
+
+		// Store as JSON array per OTel semantic conventions
+		// Example: ["192.168.1.140", "fe80::abc2:4a28:737a:609e"]
+		if jsonIPs, jsonErr := json.Marshal(mergedIPs); jsonErr == nil {
+			resourceMap["host.ip"] = string(jsonIPs)
+			set.Logger.Debug("Collected host IP addresses", zap.Strings("ips", mergedIPs))
+		}
+	} else if err != nil {
+		set.Logger.Warn("Failed to collect host IP addresses", zap.Error(err))
 	}
 
 	// configure payloadSender struct

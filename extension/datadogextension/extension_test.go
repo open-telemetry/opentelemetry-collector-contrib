@@ -5,7 +5,9 @@ package datadogextension
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -213,8 +215,11 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 
 	// Expect map with keys and values
 	require.NotNil(t, ext.otelCollectorMetadata)
-	expected := map[string]string{"a_key": "1", "b_key": "2"}
-	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
+	// Verify the explicitly set attributes
+	assert.Equal(t, "1", ext.otelCollectorMetadata.CollectorResourceAttributes["a_key"])
+	assert.Equal(t, "2", ext.otelCollectorMetadata.CollectorResourceAttributes["b_key"])
+	// host.ip should also be present (automatically collected)
+	assert.Contains(t, ext.otelCollectorMetadata.CollectorResourceAttributes, "host.ip")
 
 	// Cleanup
 	assert.NoError(t, ext.Shutdown(t.Context()))
@@ -255,12 +260,12 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 
 	// Verify all resource attributes are collected
 	require.NotNil(t, ext.otelCollectorMetadata)
-	expected := map[string]string{
-		"deployment.environment.name": "prod",
-		"cloud.region":                "us-east",
-		"team.name":                   "backend",
-	}
-	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
+	// Verify the explicitly set attributes
+	assert.Equal(t, "prod", ext.otelCollectorMetadata.CollectorResourceAttributes["deployment.environment.name"])
+	assert.Equal(t, "us-east", ext.otelCollectorMetadata.CollectorResourceAttributes["cloud.region"])
+	assert.Equal(t, "backend", ext.otelCollectorMetadata.CollectorResourceAttributes["team.name"])
+	// host.ip should also be present (automatically collected)
+	assert.Contains(t, ext.otelCollectorMetadata.CollectorResourceAttributes, "host.ip")
 
 	// Cleanup
 	assert.NoError(t, ext.Shutdown(t.Context()))
@@ -778,4 +783,335 @@ func (m *failAfterFirstCallSerializer) GetCallCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.callCount
+}
+
+func TestHostIPCollection(t *testing.T) {
+	t.Run("host.ip is collected as JSON array per OTel semantic conventions", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		ext.serializer = &mockSerializer{}
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+		// Verify that host.ip was collected
+		require.NotNil(t, ext.info.resourceAttributes)
+		hostIP, hasHostIP := ext.info.resourceAttributes["host.ip"]
+		assert.True(t, hasHostIP, "host.ip should be present in resource attributes")
+		assert.NotEmpty(t, hostIP, "host.ip should not be empty")
+		t.Logf("Collected host.ip: %s", hostIP)
+
+		// Verify it's a valid JSON array
+		var ips []string
+		err = json.Unmarshal([]byte(hostIP), &ips)
+		require.NoError(t, err, "host.ip should be a valid JSON array")
+		assert.NotEmpty(t, ips, "host.ip array should contain at least one IP")
+		t.Logf("Parsed IPs: %v", ips)
+
+		// Verify it's included in the payload
+		conf := confmap.NewFromStringMap(map[string]any{})
+		err = ext.NotifyConfig(t.Context(), conf)
+		require.NoError(t, err)
+
+		require.NotNil(t, ext.otelCollectorMetadata)
+		assert.Contains(t, ext.otelCollectorMetadata.CollectorResourceAttributes, "host.ip")
+
+		// Verify the payload also has valid JSON array
+		payloadHostIP := ext.otelCollectorMetadata.CollectorResourceAttributes["host.ip"]
+		var payloadIPs []string
+		err = json.Unmarshal([]byte(payloadHostIP), &payloadIPs)
+		require.NoError(t, err, "payload host.ip should be a valid JSON array")
+		assert.Equal(t, ips, payloadIPs, "payload IPs should match collected IPs")
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(t.Context()))
+	})
+
+	t.Run("host.ip combines with existing resource attributes", func(t *testing.T) {
+		// Prepare TelemetrySettings with existing Resource attributes
+		tel := componenttest.NewNopTelemetrySettings()
+		res := pcommon.NewResource()
+		res.Attributes().PutStr("service.name", "test-service")
+		res.Attributes().PutStr("deployment.environment", "staging")
+		tel.Resource = res
+
+		set := extension.Settings{
+			TelemetrySettings: tel,
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		ext.serializer = &mockSerializer{}
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+		// Verify all attributes are present
+		require.NotNil(t, ext.info.resourceAttributes)
+		assert.Contains(t, ext.info.resourceAttributes, "service.name")
+		assert.Contains(t, ext.info.resourceAttributes, "deployment.environment")
+		assert.Contains(t, ext.info.resourceAttributes, "host.ip")
+		assert.Equal(t, "test-service", ext.info.resourceAttributes["service.name"])
+		assert.Equal(t, "staging", ext.info.resourceAttributes["deployment.environment"])
+
+		// Verify host.ip is a valid JSON array
+		hostIP := ext.info.resourceAttributes["host.ip"]
+		assert.NotEmpty(t, hostIP)
+		var ips []string
+		err = json.Unmarshal([]byte(hostIP), &ips)
+		require.NoError(t, err, "host.ip should be a valid JSON array")
+		assert.NotEmpty(t, ips, "host.ip array should contain at least one IP")
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
+
+	t.Run("host.ip values are sorted for deterministic output", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		ext.serializer = &mockSerializer{}
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+		// Verify host.ip is present and sorted
+		require.NotNil(t, ext.info.resourceAttributes)
+		hostIP := ext.info.resourceAttributes["host.ip"]
+		require.NotEmpty(t, hostIP)
+
+		// Parse the JSON array
+		var ips []string
+		err = json.Unmarshal([]byte(hostIP), &ips)
+		require.NoError(t, err, "host.ip should be a valid JSON array")
+		require.NotEmpty(t, ips, "host.ip array should contain at least one IP")
+
+		// Verify the IPs are sorted
+		sortedIPs := make([]string, len(ips))
+		copy(sortedIPs, ips)
+		sort.Strings(sortedIPs)
+		assert.Equal(t, sortedIPs, ips, "IPs should be in sorted order")
+
+		t.Logf("IPs are properly sorted: %v", ips)
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
+
+	t.Run("host.ip merges with existing resource attribute (JSON array)", func(t *testing.T) {
+		// Prepare TelemetrySettings with an existing host.ip as JSON array
+		tel := componenttest.NewNopTelemetrySettings()
+		res := pcommon.NewResource()
+		// Set a pre-configured IP that might not be detected (e.g., external IP)
+		existingIPs := []string{"203.0.113.5", "2001:db8::1"}
+		existingJSON, _ := json.Marshal(existingIPs)
+		res.Attributes().PutStr("host.ip", string(existingJSON))
+		tel.Resource = res
+
+		set := extension.Settings{
+			TelemetrySettings: tel,
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		ext.serializer = &mockSerializer{}
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+		// Verify host.ip contains both existing and detected IPs
+		require.NotNil(t, ext.info.resourceAttributes)
+		hostIP := ext.info.resourceAttributes["host.ip"]
+		require.NotEmpty(t, hostIP)
+
+		var ips []string
+		err = json.Unmarshal([]byte(hostIP), &ips)
+		require.NoError(t, err)
+
+		// Should contain the pre-configured IPs
+		assert.Contains(t, ips, "203.0.113.5", "Should contain pre-configured IPv4")
+		assert.Contains(t, ips, "2001:db8::1", "Should contain pre-configured IPv6")
+
+		// Should also contain at least some detected IPs (we don't know exact ones)
+		assert.GreaterOrEqual(t, len(ips), len(existingIPs), "Should have at least the pre-configured IPs plus detected ones")
+
+		// Verify still sorted
+		sortedIPs := make([]string, len(ips))
+		copy(sortedIPs, ips)
+		sort.Strings(sortedIPs)
+		assert.Equal(t, sortedIPs, ips, "Merged IPs should be sorted")
+
+		t.Logf("Merged IPs (existing + detected): %v", ips)
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
+
+	t.Run("host.ip merges with existing resource attribute (single string - backwards compat)", func(t *testing.T) {
+		// Prepare TelemetrySettings with an existing host.ip as a plain string (backwards compatibility)
+		tel := componenttest.NewNopTelemetrySettings()
+		res := pcommon.NewResource()
+		res.Attributes().PutStr("host.ip", "203.0.113.5")
+		tel.Resource = res
+
+		set := extension.Settings{
+			TelemetrySettings: tel,
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		ext.serializer = &mockSerializer{}
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+		// Verify host.ip contains both existing string and detected IPs, converted to JSON array
+		require.NotNil(t, ext.info.resourceAttributes)
+		hostIP := ext.info.resourceAttributes["host.ip"]
+		require.NotEmpty(t, hostIP)
+
+		var ips []string
+		err = json.Unmarshal([]byte(hostIP), &ips)
+		require.NoError(t, err, "Should be converted to JSON array format")
+
+		// Should contain the pre-configured IP
+		assert.Contains(t, ips, "203.0.113.5", "Should contain pre-configured IP")
+
+		// Should have multiple IPs (the string one plus detected ones)
+		assert.Greater(t, len(ips), 1, "Should have the pre-configured IP plus detected ones")
+
+		t.Logf("Merged IPs (string converted + detected): %v", ips)
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
+
+	t.Run("host.ip deduplicates overlapping IPs", func(t *testing.T) {
+		// Get one of the actual detected IPs first by creating a temp extension
+		tempSet := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		tempHostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		tempUUIDProvider := &mockUUIDProvider{mockUUID: "temp-uuid"}
+		tempCfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+		tempExt, _ := newExtension(t.Context(), tempCfg, tempSet, tempHostProvider, tempUUIDProvider)
+		tempExt.serializer = &mockSerializer{}
+		_ = tempExt.Start(t.Context(), componenttest.NewNopHost())
+
+		var detectedIPs []string
+		if hostIP, exists := tempExt.info.resourceAttributes["host.ip"]; exists {
+			_ = json.Unmarshal([]byte(hostIP), &detectedIPs)
+		}
+		_ = tempExt.Shutdown(context.Background())
+
+		if len(detectedIPs) == 0 {
+			t.Skip("No detected IPs available for deduplication test")
+		}
+
+		// Now create actual test with overlapping IPs
+		tel := componenttest.NewNopTelemetrySettings()
+		res := pcommon.NewResource()
+		// Include one detected IP and one external IP
+		overlappingIPs := []string{detectedIPs[0], "203.0.113.5"}
+		existingJSON, _ := json.Marshal(overlappingIPs)
+		res.Attributes().PutStr("host.ip", string(existingJSON))
+		tel.Resource = res
+
+		set := extension.Settings{
+			TelemetrySettings: tel,
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		ext.serializer = &mockSerializer{}
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+		// Verify host.ip is deduplicated
+		require.NotNil(t, ext.info.resourceAttributes)
+		hostIP := ext.info.resourceAttributes["host.ip"]
+		require.NotEmpty(t, hostIP)
+
+		var ips []string
+		err = json.Unmarshal([]byte(hostIP), &ips)
+		require.NoError(t, err)
+
+		// Count occurrences of the overlapping IP
+		count := 0
+		for _, ip := range ips {
+			if ip == detectedIPs[0] {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count, "Overlapping IP should appear exactly once (deduplicated)")
+		assert.Contains(t, ips, "203.0.113.5", "Should contain the external IP")
+
+		t.Logf("Deduplicated IPs: %v", ips)
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
 }
