@@ -745,7 +745,10 @@ func (oif *onlineIsolationForest) checkAdaptiveWindowResize() {
 	// Apply gradual adjustment
 	if targetSize != currentSize {
 		// Limit rate of change
-		maxChange := max(int(float64(currentSize)*oif.adaptiveConfig.AdaptationRate), 1)
+		maxChange := int(float64(currentSize) * oif.adaptiveConfig.AdaptationRate)
+		if maxChange < 1 {
+			maxChange = 1
+		}
 
 		if targetSize > currentSize {
 			oif.currentWindowSize = minInt(currentSize+maxChange, targetSize)
@@ -787,7 +790,7 @@ func (oif *onlineIsolationForest) resizeDataWindow(newSize int) {
 		if oif.windowFull {
 			// Copy in correct order when window is full
 			newWindow := make([][]float64, newSize)
-			for i := range newSize {
+			for i := 0; i < newSize; i++ {
 				srcIndex := (oif.windowIndex - newSize + i + len(oif.dataWindow)) % len(oif.dataWindow)
 				newWindow[i] = oif.dataWindow[srcIndex]
 			}

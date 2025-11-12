@@ -279,7 +279,7 @@ func TestVelocityTracking(t *testing.T) {
 	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig)
 
 	// Process samples rapidly to create velocity
-	for i := range 10 {
+	for i := 0; i < 10; i++ {
 		forest.ProcessSample([]float64{float64(i), float64(i * 2)})
 		time.Sleep(100 * time.Millisecond) // Consistent timing for velocity
 	}
@@ -304,7 +304,7 @@ func TestMemoryMonitoring(t *testing.T) {
 	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig)
 
 	// Process samples to generate memory usage
-	for i := range 20 {
+	for i := 0; i < 20; i++ {
 		forest.ProcessSample([]float64{float64(i), float64(i * 2), float64(i * 3)})
 	}
 
@@ -329,7 +329,7 @@ func TestAdaptiveWindowResizing(t *testing.T) {
 	initialSize := forest.getCurrentWindowSize()
 
 	// Process samples to trigger adaptive behavior
-	for i := range 15 {
+	for i := 0; i < 15; i++ {
 		forest.ProcessSample([]float64{float64(i), float64(i * 2)})
 		time.Sleep(50 * time.Millisecond) // Create some velocity
 	}
@@ -975,7 +975,8 @@ func BenchmarkAdaptiveIsolationForestProcessing(b *testing.B) {
 		}
 	}
 
-	for i := 0; b.Loop(); i++ {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		sample := samples[i%len(samples)]
 		forest.ProcessSample(sample)
 	}
