@@ -1829,7 +1829,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 	}
 
 	requests := []*writev2.Request{}
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		requests = append(requests, createRequest("metric_"+strconv.Itoa(i+1), float64(i+1)*10, int64(i+1)*1000))
 	}
 
