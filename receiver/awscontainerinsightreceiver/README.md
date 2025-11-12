@@ -7,7 +7,6 @@
 | Distributions | [contrib] |
 | Warnings      | [Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fawscontainerinsight%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fawscontainerinsight) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fawscontainerinsight%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fawscontainerinsight) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_awscontainerinsightreceiver)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_awscontainerinsightreceiver&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@pxaws](https://www.github.com/pxaws) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -33,7 +32,7 @@ See the [design doc](./design.md)
 Example configuration:
 ```
 receivers:
-  awscontainerinsightreceiver:
+  awscontainerinsight:
     # all parameters are optional
     collection_interval: 60s
     container_orchestrator: eks
@@ -41,6 +40,8 @@ receivers:
     prefer_full_pod_name: false 
     add_full_pod_name_metric_label: false 
 ```
+
+> **Note:** The component type `awscontainerinsightreceiver` is deprecated and will be removed in a future version. Please use `awscontainerinsight` instead.
 There is no need to provide any parameters since they are all optional. 
 
 **collection_interval (optional)**
@@ -137,7 +138,7 @@ data:
       health_check:
 
     receivers:
-      awscontainerinsightreceiver:
+      awscontainerinsight:
 
     exporters:
       awsemf:
@@ -672,10 +673,10 @@ kubectl apply -f config.yaml
 
 The attribute `container_status_reason` is present only when `container_status` is in "Waiting" or "Terminated" State. The attribute `container_last_termination_reason` is present only when `container_status` is in "Terminated" State.
 
-This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an ECS cluster to collect the instance level metrics:
+This is a sample configuration for AWS Container Insights using the `awscontainerinsight` and `awsemfexporter` for an ECS cluster to collect the instance level metrics:
 ```
 receivers:
-  awscontainerinsightreceiver:
+  awscontainerinsight:
     collection_interval: 10s
     container_orchestrator: ecs
 

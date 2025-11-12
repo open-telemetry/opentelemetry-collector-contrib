@@ -1,3 +1,8 @@
+awscontainerinsight:
+  container_orchestrator: eks
+awscontainerinsight/collection_interval_settings:
+  collection_interval: 60s
+# Deprecated: awscontainerinsightreceiver is deprecated in favor of awscontainerinsight
 awscontainerinsightreceiver:
   container_orchestrator: eks
 awscontainerinsightreceiver/collection_interval_settings:
