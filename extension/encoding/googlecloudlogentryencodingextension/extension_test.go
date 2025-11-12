@@ -30,6 +30,8 @@ func newTestExtension(t *testing.T, cfg Config) *ext {
 }
 
 func TestHandleLogLine(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		logLine     []byte
@@ -71,6 +73,8 @@ func TestHandleLogLine(t *testing.T) {
 }
 
 func TestUnmarshalLogs(t *testing.T) {
+	t.Parallel()
+
 	// this test will test all common log fields at once
 	data, err := os.ReadFile("testdata/log_entry.json")
 	require.NoError(t, err)
@@ -129,7 +133,7 @@ func TestUnmarshalLogs(t *testing.T) {
 }
 
 func TestPayloads(t *testing.T) {
-	// TODO Keep adding tests when adding new log types support
+	t.Parallel()
 
 	tests := []struct {
 		name             string
@@ -199,47 +203,28 @@ func TestPayloads(t *testing.T) {
 		},
 	}
 
-	extension := newTestExtension(t, Config{})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			extension := newTestExtension(t, Config{})
+
 			data, err := os.ReadFile(tt.logFilename)
 			require.NoError(t, err)
 
-			content := bytes.NewBuffer(nil)
-			normalizeNDJSON := func(raw []byte) {
-				lines := bytes.Split(raw, []byte{'\n'})
-				for _, line := range lines {
-					line = bytes.TrimSpace(line)
-					if len(line) == 0 {
-						continue
-					}
-					content.Write(line)
-					content.WriteByte('\n')
-				}
-			}
-
-			isNDJSON := filepath.Ext(tt.logFilename) == ".ndjson"
-			var compactionErr error
-			if !isNDJSON {
-				compactionErr = gojson.Compact(content, data)
-			}
-
-			if isNDJSON || compactionErr != nil {
-				if !isNDJSON {
-					content.Reset()
-				}
-				// NDJSON fixtures contain one JSON object per line, so we strip
-				// whitespace from each line while preserving record boundaries.
-				normalizeNDJSON(data)
+			var content *bytes.Buffer
+			if filepath.Ext(tt.logFilename) == ".ndjson" {
+				content = bytes.NewBuffer(data)
+			} else { // regular .json file
+				content = bytes.NewBuffer(nil)
+				// Logs are expected to be one JSON object per line, so we compact them.
+				// Our NDJSON fixtures (NDJSON aside) are by definition already compacted.
+				compactionErr := gojson.Compact(content, data)
+				require.NoError(t, compactionErr)
 			}
 
 			logs, err := extension.UnmarshalLogs(content.Bytes())
 			require.NoError(t, err)
-
-			// write expected log with:
-			// golden.WriteLogs(t, tt.expectedFilename, logs)
 
 			expectedLogs, err := golden.ReadLogs(tt.expectedFilename)
 			require.NoError(t, err)
