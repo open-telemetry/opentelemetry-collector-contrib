@@ -14,4 +14,6 @@ type OrchestratorConfig struct {
 
 	// ClusterName is the name of the Kubernetes cluster to associate with the orchestrator data.
 	ClusterName string `mapstructure:"cluster_name"`
+	
+	Enabled bool `mapstructure:"enabled"`
 }

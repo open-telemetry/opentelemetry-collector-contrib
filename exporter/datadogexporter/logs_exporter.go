@@ -57,7 +57,7 @@ func newLogsAgentExporter(
 			Key:         string(cfg.API.Key),
 			Site:        cfg.API.Site,
 			Endpoint:    cfg.Orchestrator.Endpoint,
-			Enabled:     true,
+			Enabled:     cfg.Orchestrator.Enabled,
 		},
 	}
 
