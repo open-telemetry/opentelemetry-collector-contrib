@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/goleak"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
@@ -2954,7 +2957,9 @@ func TestStatus(t *testing.T) {
 				url = fmt.Sprintf("http://%s%s", tc.legacyConfig.Endpoint, tc.legacyConfig.Path)
 			}
 
-			client := &http.Client{}
+			transport := &http.Transport{DisableKeepAlives: true}
+			client := &http.Client{Transport: transport}
+			defer transport.CloseIdleConnections()
 
 			for _, ts := range tc.teststeps {
 				if ts.step != nil {
@@ -2983,6 +2988,7 @@ func TestStatus(t *testing.T) {
 
 				body, err := io.ReadAll(resp.Body)
 				require.NoError(t, err)
+				resp.Body.Close()
 
 				assert.Contains(t, string(body), ts.expectedBody)
 
@@ -3125,7 +3131,9 @@ func TestConfig(t *testing.T) {
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
 
-			client := &http.Client{}
+			transport := &http.Transport{DisableKeepAlives: true}
+			client := &http.Client{Transport: transport}
+			defer transport.CloseIdleConnections()
 			url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)
 
 			if tc.setup != nil {
@@ -3134,6 +3142,7 @@ func TestConfig(t *testing.T) {
 
 			resp, err := client.Get(url)
 			require.NoError(t, err)
+			defer resp.Body.Close()
 			assert.Equal(t, tc.expectedStatusCode, resp.StatusCode)
 
 			body, err := io.ReadAll(resp.Body)
@@ -3141,4 +3150,97 @@ func TestConfig(t *testing.T) {
 			assert.Equal(t, tc.expectedBody, body)
 		})
 	}
+}
+
+func TestStatusVerboseIncludesAttributes(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled: true,
+			Path:    "/status",
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, traces.InstanceIDs(), componentstatus.StatusOK)
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "not enough permissions to read cpu data")
+	scrapers := attrs.PutEmptySlice("scrapers")
+	for _, scraper := range []string{"cpu", "memory", "network"} {
+		scrapers.AppendEmpty().SetStr(scraper)
+	}
+
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	resp, err := client.Get(ts.URL + config.Status.Path + "?verbose")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	expectedAttrs := map[string]any{
+		"error_msg": "not enough permissions to read cpu data",
+		"scrapers":  []any{"cpu", "memory", "network"},
+	}
+
+	assert.Equal(t, expectedAttrs, st.Attributes)
+
+	metricsStatus, ok := st.ComponentStatuses["pipeline:"+metrics.PipelineID.String()]
+	require.True(t, ok)
+	assert.Equal(t, expectedAttrs, metricsStatus.Attributes)
+
+	exporterKey := "exporter:" + metrics.ExporterID.ComponentID().String()
+	exporterStatus, ok := metricsStatus.ComponentStatuses[exporterKey]
+	require.True(t, ok)
+	assert.Equal(t, expectedAttrs, exporterStatus.Attributes)
 }
