@@ -130,9 +130,9 @@ func TestInvalidConfigValidation(t *testing.T) {
 func TestHTTPConfigurationStructConsistency(t *testing.T) {
 	// LimitedClientConfig must have the same structure as ClientConfig, but without the fields that the UAA
 	// library does not support.
-	checkTypeFieldMatch(t, "Endpoint", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.NewDefaultClientConfig()))
-	checkTypeFieldMatch(t, "TLS", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.NewDefaultClientConfig()))
-	checkTypeFieldMatch(t, "InsecureSkipVerify", reflect.TypeOf(LimitedTLSClientSetting{}), reflect.TypeOf(configtls.ClientConfig{}))
+	checkTypeFieldMatch(t, "Endpoint", reflect.TypeFor[LimitedClientConfig](), reflect.TypeOf(confighttp.NewDefaultClientConfig()))
+	checkTypeFieldMatch(t, "TLS", reflect.TypeFor[LimitedClientConfig](), reflect.TypeOf(confighttp.NewDefaultClientConfig()))
+	checkTypeFieldMatch(t, "InsecureSkipVerify", reflect.TypeFor[LimitedTLSClientSetting](), reflect.TypeFor[configtls.ClientConfig]())
 }
 
 func loadSuccessfulConfig(t *testing.T) *Config {
