@@ -91,7 +91,6 @@ components:
     - extension/db_storage
     - extension/docker_observer
     - extension/ecs_observer
-    - extension/ecs_task_observer
     - extension/encoding
     - extension/file_storage
     - extension/googleclientauth
@@ -128,8 +127,8 @@ components:
     - internal/common
     - internal/coreinternal
     - internal/datadog
+    - internal/datadog/e2e
     - internal/docker
-    - internal/e2e
     - internal/exp/metrics
     - internal/filter
     - internal/grpcutil
@@ -168,6 +167,7 @@ components:
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/opencensus
+    - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
@@ -226,6 +226,7 @@ components:
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
+    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azureblob
@@ -234,7 +235,7 @@ components:
     - receiver/bigip
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoosreceiver
+    - receiver/ciscoos
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
@@ -253,6 +254,7 @@ components:
     - receiver/gitlab
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
+    - receiver/googlecloudpubsubpush
     - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/hostmetrics
@@ -325,11 +327,13 @@ components:
     - receiver/windowseventlog
     - receiver/windowsperfcounters
     - receiver/windowsservice
+    - receiver/yanggrpc
     - receiver/zipkin
     - receiver/zookeeper
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/interfaces
     - scraper/load
     - scraper/memory
     - scraper/network
@@ -337,6 +341,7 @@ components:
     - scraper/paging
     - scraper/process
     - scraper/processes
+    - scraper/system
     - scraper/system
     - scraper/zookeeper
     - testbed

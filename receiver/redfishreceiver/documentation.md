@@ -18,7 +18,7 @@ Measures the power state of a chassis (-1 unknown, 0 off, 1 on).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {powerstate} | Gauge | Int | development |
+| {powerstate} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -41,7 +41,7 @@ Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {health} | Gauge | Int | development |
+| {statushealth} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -64,7 +64,7 @@ Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {statusstate} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -87,7 +87,7 @@ Measures the reading of a chassis fan.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Int | development |
+| {} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -97,6 +97,7 @@ Measures the reading of a chassis fan.
 | base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | fan.name | Fan name. | Any Str | Recommended |
+| fan.reading_units | Fan reading units. | Any Str | Recommended |
 
 ### fan.status.health
 
@@ -104,7 +105,7 @@ Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {health} | Gauge | Int | development |
+| {statushealth} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -121,7 +122,7 @@ Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {statusstate} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -138,7 +139,7 @@ Measures the power state of a system (-1 unknown, 0 off, 1 on).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {powerstate} | Gauge | Int | development |
+| {powerstate} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -162,7 +163,7 @@ Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {health} | Gauge | Int | development |
+| {statushealth} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -186,7 +187,7 @@ Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {statusstate} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -210,7 +211,7 @@ Measures the reading of a chassis temperature.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Int | development |
+| °C | Gauge | Int | Development |
 
 #### Attributes
 
@@ -219,7 +220,7 @@ Measures the reading of a chassis temperature.
 | system.host_name | System host name. | Any Str | Recommended |
 | base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
-| fan.name | Fan name. | Any Str | Recommended |
+| temperature.name | Temperature name. | Any Str | Recommended |
 
 ### temperature.status.health
 
@@ -227,7 +228,7 @@ Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 wa
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {health} | Gauge | Int | development |
+| {statushealth} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -244,7 +245,7 @@ Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {statusstate} | Gauge | Int | Development |
 
 #### Attributes
 
