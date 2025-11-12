@@ -163,8 +163,12 @@ func TestGenerateBlobName(t *testing.T) {
 	assert.True(t, strings.HasPrefix(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat)))
 }
 
-func TestGenerateBlobNameUseUTC(t *testing.T) {
+func TestGenerateBlobNameTimezoneSpecificLocation(t *testing.T) {
 	t.Parallel()
+
+	const tzName = "America/New_York"
+	loc, err := time.LoadLocation(tzName)
+	require.NoError(t, err)
 
 	c := &Config{
 		BlobNameFormat: BlobNameFormat{
@@ -173,22 +177,23 @@ func TestGenerateBlobNameUseUTC(t *testing.T) {
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
 			SerialNumRange: 10000,
 			Params:         map[string]string{},
-			UseUTC:         true,
+			Timezone:       tzName,
 		},
 	}
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae.timeLocation = loc
 
-	before := time.Now().UTC()
+	before := time.Now().In(loc)
 	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
-	after := time.Now().UTC()
+	after := time.Now().In(loc)
 
 	lastUnderscore := strings.LastIndex(metricsBlobName, "_")
 	require.NotEqual(t, -1, lastUnderscore, "expected serial number separator in blob name")
 	prefix := metricsBlobName[:lastUnderscore]
 
-	parsed, err := time.ParseInLocation(c.BlobNameFormat.MetricsFormat, prefix, time.UTC)
+	parsed, err := time.ParseInLocation(c.BlobNameFormat.MetricsFormat, prefix, loc)
 	require.NoError(t, err)
 
 	assert.False(t, parsed.Before(before.Add(-time.Second)))

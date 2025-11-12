@@ -36,6 +36,7 @@ type azureBlobExporter struct {
 	signal           pipeline.Signal
 	marshaller       *marshaller
 	blobNameTemplate *blobNameTemplate
+	timeLocation     *time.Location
 }
 
 type blobNameTemplate struct {
@@ -288,14 +289,25 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		}
 	}
 
+	if tz := strings.TrimSpace(e.config.BlobNameFormat.Timezone); tz != "" {
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			return fmt.Errorf("failed to load timezone: %w", err)
+		}
+		e.timeLocation = loc
+	} else {
+		e.timeLocation = nil
+	}
+
 	return nil
 }
 
 func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryData any) (string, error) {
 	// Get current time
 	now := time.Now()
-	if e.config.BlobNameFormat.UseUTC {
-		now = now.UTC()
+
+	if e.timeLocation != nil {
+		now = now.In(e.timeLocation)
 	}
 
 	var format string

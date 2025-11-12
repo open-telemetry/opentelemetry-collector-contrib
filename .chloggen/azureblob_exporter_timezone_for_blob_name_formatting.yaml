@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/azureblob
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add 'use_utc' option to azureblob exporter to use UTC in blob names."
+note: Add timezone option for formatting blob names in azureblob exporter.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43752]
