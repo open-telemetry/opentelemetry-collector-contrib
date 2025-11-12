@@ -49,6 +49,9 @@ github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.73.0-rc.5 h1:
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.73.0-rc.5/go.mod h1:oT94ugBQ15ZOr1/vVk4NYdRmUAo96wALMYlTEQ2YSZw=
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.73.0-rc.5 h1:ln3OAb6wNRr2cOznsKq+gaejqFkLGfubvzEReFi5V1s=
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.73.0-rc.5/go.mod h1:20Or8X2xcqU7fk0y8CY2eTz3U69h1bMVFPInkRui8Cc=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.73.0-devel.0.20251112101945-be74d5075af8/go.mod h1:8VjZiWVJ+sMsO7r1qjIDc+wf138IcbrGJYeHnL9S69M=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.73.0-devel.0.20251112125715-a62d9fb43f2c/go.mod h1:8VjZiWVJ+sMsO7r1qjIDc+wf138IcbrGJYeHnL9S69M=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.73.0-devel.0.20251112131501-7f9e6b46cd99/go.mod h1:8VjZiWVJ+sMsO7r1qjIDc+wf138IcbrGJYeHnL9S69M=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.73.0-rc.5 h1:OXJtdaorMLNO+ACJTHp250K6YhLfyiKOujtzBdo2VtU=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.73.0-rc.5/go.mod h1:WkDqxQRwSF9DOWoYn2Vg7KItg4K5XuXp6I1HifVN05A=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.73.0-rc.5 h1:oIPddVd0CGDl2TCRMI1qhGR3G28jMbcRQJ7ZGkT9wMQ=
@@ -407,6 +410,7 @@ github.com/magiconair/properties v1.8.10 h1:s31yESBquKXCV9a/ScB3ESkOjUYYv+X0rg8S
 github.com/magiconair/properties v1.8.10/go.mod h1:Dhd985XPs7jluiymwWYZ0G4Z61jb3vdS329zhj2hYo0=
 github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0=
 github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
+github.com/mailru/easyjson v0.9.0/go.mod h1:1+xMtQp2MRNVL/V1bOzuP3aP8VNwRW55fQUto+XFtTU=
 github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=
 github.com/mattn/go-colorable v0.1.14/go.mod h1:6LmQG8QLFO4G5z1gPvYEzlUgJ2wF+stgPZH1UqBm1s8=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
