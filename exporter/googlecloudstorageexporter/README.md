@@ -34,7 +34,7 @@ Here is an example configuration for this exporter:
 exporters:
   googlecloudstorage:
     encoding: text_encoding
-    storage:
+    bucket:
       name: bucket-test
       project_id: project-test
       reuse_if_exists: true
