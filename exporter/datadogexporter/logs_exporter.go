@@ -52,12 +52,12 @@ func newLogsAgentExporter(
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,
 		OrchestratorConfig: logsagentexporter.OrchestratorConfig{
-			ClusterName: cfg.Orchestrator.ClusterName,
+			ClusterName: cfg.OrchestratorExplorer.ClusterName,
 			Hostname:    hostnameComponent,
 			Key:         string(cfg.API.Key),
 			Site:        cfg.API.Site,
-			Endpoint:    cfg.Orchestrator.Endpoint,
-			Enabled:     cfg.Orchestrator.Enabled,
+			Endpoint:    cfg.OrchestratorExplorer.Endpoint,
+			Enabled:     cfg.OrchestratorExplorer.Enabled,
 		},
 	}
 
