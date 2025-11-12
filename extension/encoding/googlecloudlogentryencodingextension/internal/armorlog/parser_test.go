@@ -9,6 +9,7 @@ import (
 	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 func TestContainsSecurityPolicyFields(t *testing.T) {
@@ -128,15 +129,15 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				TLSJa3Fingerprint: "ja3_fingerprint",
 			},
 			expected: map[string]any{
-				gcpArmorRecaptchaActionTokenScore:  float64(0.9),
-				gcpArmorRecaptchaSessionTokenScore: float64(0),
-				gcpArmorUserIPInfoSource:           "X-Forwarded-For",
-				gcpArmorUserIPInfoIPAddress:        "192.168.1.1",
-				gcpArmorRemoteIPInfoIPAddress:      "10.0.0.1",
-				gcpArmorRemoteIPInfoRegionCode:     "US",
-				gcpArmorRemoteIPInfoAsn:            int64(12345),
-				gcpArmorTLSJa4Fingerprint:          "ja4_fingerprint",
-				gcpArmorTLSJa3Fingerprint:          "ja3_fingerprint",
+				gcpArmorRecaptchaActionTokenScore:     float64(0.9),
+				gcpArmorRecaptchaSessionTokenScore:    float64(0),
+				gcpArmorUserIPInfoSource:              "X-Forwarded-For",
+				string(semconv.ClientAddressKey):      "192.168.1.1",
+				string(semconv.NetworkPeerAddressKey): "10.0.0.1",
+				gcpArmorRemoteIPInfoRegionCode:        "US",
+				gcpArmorRemoteIPInfoAsn:               int64(12345),
+				gcpArmorTLSJa4Fingerprint:             "ja4_fingerprint",
+				gcpArmorTLSJa3Fingerprint:             "ja3_fingerprint",
 			},
 		},
 		{
@@ -159,8 +160,8 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorUserIPInfoSource:    "X-Real-IP",
-				gcpArmorUserIPInfoIPAddress: "0.0.0.0",
+				gcpArmorUserIPInfoSource:         "X-Real-IP",
+				string(semconv.ClientAddressKey): "0.0.0.0",
 			},
 		},
 	}
@@ -632,6 +633,21 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			expectsErr: "invalid Armor log",
 		},
 		{
+			name: "different remote ips",
+			payload: `{
+				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+				"statusDetails": "denied_by_security_policy",
+				"remoteIp": "192.168.1.1",
+				"enforcedSecurityPolicy": {},
+				"securityPolicyRequestData": {
+					"remoteIpInfo": {
+						"ipAddress": "10.0.0.1"
+					}
+				}
+			}`,
+			expectsErr: "remote IP differs from existing network.peer.address attribute",
+		},
+		{
 			name: "preview edge security policy",
 			payload: `{
 				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
@@ -758,11 +774,11 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			}`,
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:              "denied_by_security_policy",
-				gcpLoadBalancingRemoteIP:                   "1.2.3.4",
+				string(semconv.NetworkPeerAddressKey):      "1.2.3.4",
 				gcpLoadBalancingBackendTargetProjectNumber: "123456789",
 				gcpArmorRecaptchaActionTokenScore:          float64(0.9),
 				gcpArmorUserIPInfoSource:                   "X-Forwarded-For",
-				gcpArmorUserIPInfoIPAddress:                "5.6.7.8",
+				string(semconv.ClientAddressKey):           "5.6.7.8",
 				gcpArmorTLSJa3Fingerprint:                  "ja3-fingerprint",
 				gcpArmorSecurityPolicyType:                 securityPolicyTypeEnforced,
 				gcpArmorSecurityPolicyName:                 "enforced-policy",

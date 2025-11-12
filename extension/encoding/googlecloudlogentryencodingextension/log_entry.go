@@ -242,7 +242,7 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	shared.PutInt(string(semconv.HTTPResponseStatusCodeKey), req.Status, attributes)
 	shared.PutStr(string(semconv.HTTPRequestMethodKey), req.RequestMethod, attributes)
 	shared.PutStr(string(semconv.UserAgentOriginalKey), req.UserAgent, attributes)
-	shared.PutStr(string(semconv.ClientAddressKey), req.RemoteIP, attributes)
+	shared.PutStr(string(semconv.NetworkPeerAddressKey), req.RemoteIP, attributes)
 	shared.PutStr(string(semconv.ServerAddressKey), req.ServerIP, attributes)
 	shared.PutStr(refererHeaderField, req.Referer, attributes)
 	shared.PutBool(gcpCacheLookupField, req.CacheLookup, attributes)

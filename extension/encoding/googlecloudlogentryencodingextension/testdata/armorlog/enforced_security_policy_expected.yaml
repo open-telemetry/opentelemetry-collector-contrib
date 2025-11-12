@@ -91,9 +91,6 @@ resourceLogs:
               - key: user_agent.original
                 value:
                   stringValue: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
-              - key: client.address
-                value:
-                  stringValue: 79.117.34.252
               - key: http.request.server.duration
                 value:
                   doubleValue: 0.102951

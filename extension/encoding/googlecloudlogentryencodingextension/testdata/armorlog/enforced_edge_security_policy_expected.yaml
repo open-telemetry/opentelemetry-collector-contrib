@@ -91,9 +91,6 @@ resourceLogs:
               - key: user_agent.original
                 value:
                   stringValue: curl/8.7.1
-              - key: client.address
-                value:
-                  stringValue: 79.117.34.252
               - key: http.request.server.duration
                 value:
                   doubleValue: 0.000782

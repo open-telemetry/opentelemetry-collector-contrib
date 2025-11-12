@@ -12,6 +12,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -26,9 +27,6 @@ const (
 
 	// gcpLoadBalancingBackendTargetProjectNumber holds the project number of the backend target
 	gcpLoadBalancingBackendTargetProjectNumber = "gcp.load_balancing.backend_target_project_number"
-
-	// gcpLoadBalancingRemoteIP holds the remote IP address of the client
-	gcpLoadBalancingRemoteIP = "network.peer.address"
 
 	// gcpArmorSecurityPolicyType holds security policy type
 	gcpArmorSecurityPolicyType = "gcp.armor.security_policy.type"
@@ -68,10 +66,6 @@ const (
 	gcpArmorRecaptchaSessionTokenScore = "gcp.armor.request_data.recaptcha_session_token.score"
 	// gcpArmorUserIPInfoSource holds a field that is typically the header from which the user IP was resolved
 	gcpArmorUserIPInfoSource = "http.request.header.source"
-	// gcpArmorUserIPInfoIPAddress holds the IP address resolved from the source field
-	gcpArmorUserIPInfoIPAddress = "client.address"
-	// gcpArmorRemoteIPInfoIPAddress holds the IP address of the remote IP
-	gcpArmorRemoteIPInfoIPAddress = "network.peer.address"
 	// gcpArmorRemoteIPInfoRegionCode holds the two-letter country code or region code for the IP address
 	gcpArmorRemoteIPInfoRegionCode = "geo.region.iso_code"
 	// gcpArmorRemoteIPInfoAsn holds the five-digit autonomous system number (ASN) for the IP address
@@ -199,17 +193,22 @@ func handleUserIPInfo(info *userIPInfo, attr pcommon.Map) {
 	}
 
 	shared.PutStr(gcpArmorUserIPInfoSource, info.Source, attr)
-	shared.PutStr(gcpArmorUserIPInfoIPAddress, info.IPAddress, attr)
+	shared.PutStr(string(semconv.ClientAddressKey), info.IPAddress, attr)
 }
 
-func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) {
+func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) error {
 	if info == nil {
-		return
+		return nil
 	}
 
-	shared.PutStr(gcpArmorRemoteIPInfoIPAddress, info.IPAddress, attr)
 	shared.PutStr(gcpArmorRemoteIPInfoRegionCode, info.RegionCode, attr)
 	shared.PutInt(gcpArmorRemoteIPInfoAsn, info.ASN, attr)
+
+	if err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), info.IPAddress, attr); err != nil {
+		return fmt.Errorf("security policy remote IP differs from existing %s attribute: %w", string(semconv.NetworkPeerAddressKey), err)
+	}
+
+	return nil
 }
 
 func handleTLSFingerprints(data *securityPolicyRequestData, attr pcommon.Map) {
@@ -217,15 +216,15 @@ func handleTLSFingerprints(data *securityPolicyRequestData, attr pcommon.Map) {
 	shared.PutStr(gcpArmorTLSJa3Fingerprint, data.TLSJa3Fingerprint, attr)
 }
 
-func handleSecurityPolicyRequestData(data *securityPolicyRequestData, attr pcommon.Map) {
+func handleSecurityPolicyRequestData(data *securityPolicyRequestData, attr pcommon.Map) error {
 	if data == nil {
-		return
+		return nil
 	}
 
 	handleRecaptchaTokens(data, attr)
 	handleUserIPInfo(data.UserIPInfo, attr)
-	handleRemoteIPInfo(data.RemoteIPInfo, attr)
 	handleTLSFingerprints(data, attr)
+	return handleRemoteIPInfo(data.RemoteIPInfo, attr)
 }
 
 func handleRateLimitAction(rl *rateLimitAction, attr pcommon.Map) {
@@ -309,10 +308,14 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 
 	// Handle request metadata fields
 	shared.PutStr(gcpLoadBalancingBackendTargetProjectNumber, log.BackendTargetProjectNumber, attr)
-	shared.PutStr(gcpLoadBalancingRemoteIP, log.RemoteIP, attr)
+	if err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), log.RemoteIP, attr); err != nil {
+		return fmt.Errorf("remote IP differs from existing %s attribute: %w", string(semconv.NetworkPeerAddressKey), err)
+	}
 
 	// Handle security policy request data (all nested fields)
-	handleSecurityPolicyRequestData(log.SecurityPolicyRequestData, attr)
+	if err := handleSecurityPolicyRequestData(log.SecurityPolicyRequestData, attr); err != nil {
+		return fmt.Errorf("error handling Security Policy Request Data: %w", err)
+	}
 
 	if log.PreviewEdgeSecurityPolicy != nil {
 		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreviewEdge)
