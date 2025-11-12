@@ -560,7 +560,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	lookbackTimeSeconds := s.calculateLookbackSeconds()
 
 	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, oracleQueryMetricsSQL, s.logger)
-	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, lookbackTimeSeconds, lookbackTimeSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
+	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, lookbackTimeSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
 
 	if metricError != nil {
 		return fmt.Errorf("error executing oracleQueryMetricsSQL: %w", metricError)
@@ -627,7 +627,6 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	s.logger.Debug("Cache update", zap.Int("update-count", cacheUpdates), zap.Int("new-size", s.metricCache.Len()))
 
 	s.lastExecutionTimestamp = collectionTime
-	fmt.Println(">>>>>> time set")
 	if len(hits) == 0 {
 		s.logger.Info("No log records for this scrape")
 		return errors.Join(errs...)
