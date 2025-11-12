@@ -870,6 +870,71 @@ func TestAddNamespaceLabels(t *testing.T) {
 	})
 }
 
+func TestServiceNamespaceAnnotationTakesPrecedence(t *testing.T) {
+	// This test verifies that when a pod has an explicit service.namespace attribute
+	// (e.g., from resource.opentelemetry.io/service.namespace annotation),
+	// it should take precedence over the k8s.namespace.name value as per semantic conventions
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{string(conventions.ServiceNamespaceKey), "k8s.pod.ip"}
+			return cfg
+		}(),
+		nil,
+	)
+
+	podIP := "1.1.1.1"
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				Sources: []kube.AssociationSource{
+					{
+						From: "connection",
+					},
+				},
+			},
+		}
+	})
+
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		pi := kube.PodIdentifier{
+			kube.PodIdentifierAttributeFromConnection(podIP),
+		}
+		// Pod is in kubernetes namespace "default" but has explicit service.namespace="agent" from annotation
+		kp.kc.(*fakeClient).Pods[pi] = &kube.Pod{
+			Name:      "test-pod",
+			Namespace: "default",
+			Attributes: map[string]string{
+				string(conventions.ServiceNamespaceKey): "agent", // from resource.opentelemetry.io/service.namespace annotation
+			},
+		}
+	})
+
+	ctx := client.NewContext(t.Context(), client.Info{
+		Addr: &net.IPAddr{
+			IP: net.ParseIP(podIP),
+		},
+	})
+	m.testConsume(
+		ctx,
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		generateProfiles(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(res pcommon.Resource) {
+		// service.namespace should be "agent" from the annotation, NOT "default" from k8s.namespace.name
+		assertResourceHasStringAttribute(t, res, "service.namespace", "agent")
+		assertResourceHasStringAttribute(t, res, "k8s.pod.ip", podIP)
+	})
+}
+
 func TestAddNodeLabels(t *testing.T) {
 	m := newMultiTest(
 		t,
