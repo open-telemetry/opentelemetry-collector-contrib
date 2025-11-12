@@ -305,7 +305,7 @@ func Test_index_error_cases(t *testing.T) {
 
 			if tt.expectedErr != "" {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedErr)
+				assert.ErrorContains(t, err, tt.expectedErr)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.expected, result)
@@ -353,6 +353,6 @@ func Test_IndexFactory(t *testing.T) {
 		// This tests the error case in createIndexFunction
 		_, err := createIndexFunction[any](ottl.FunctionContext{}, "invalid args")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "IndexFactory args must be of type *IndexArguments[K]")
+		assert.ErrorContains(t, err, "IndexFactory args must be of type *IndexArguments[K]")
 	})
 }
