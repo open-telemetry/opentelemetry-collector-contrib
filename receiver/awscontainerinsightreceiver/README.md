@@ -7,6 +7,7 @@
 | Distributions | [contrib] |
 | Warnings      | [Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fawscontainerinsight%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fawscontainerinsight) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fawscontainerinsight%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fawscontainerinsight) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_awscontainerinsight)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_awscontainerinsight&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@pxaws](https://www.github.com/pxaws) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -15,7 +16,7 @@
 
 ## Overview
 
-AWS Container Insights Receiver (`awscontainerinsightreceiver`) is an AWS specific receiver that supports [CloudWatch Container Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html). CloudWatch Container Insights collect, aggregate, 
+AWS Container Insights Receiver (`awscontainerinsight`) is an AWS specific receiver that supports [CloudWatch Container Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html). CloudWatch Container Insights collect, aggregate, 
 and summarize metrics and logs from your containerized applications and microservices. Data are collected as as performance log events 
 using [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html). From the EMF data, Amazon CloudWatch can create the aggregated CloudWatch metrics at the cluster, node, pod, task, and service level.
 
@@ -40,8 +41,6 @@ receivers:
     prefer_full_pod_name: false 
     add_full_pod_name_metric_label: false 
 ```
-
-> **Note:** The component type `awscontainerinsightreceiver` is deprecated and will be removed in a future version. Please use `awscontainerinsight` instead.
 There is no need to provide any parameters since they are all optional. 
 
 **collection_interval (optional)**
@@ -65,7 +64,7 @@ The "PodName" attribute is set based on the name of the relevant controllers lik
 The "FullPodName" attribute is the pod name including suffix. If false FullPodName label is not added. The default value is false
 
 ## Sample configuration for Container Insights 
-This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an EKS cluster:
+This is a sample configuration for AWS Container Insights using the `awscontainerinsight` and `awsemfexporter` for an EKS cluster:
 ```
 # create namespace
 apiVersion: v1
@@ -222,7 +221,7 @@ data:
     service:
       pipelines:
         metrics:
-          receivers: [awscontainerinsightreceiver]
+          receivers: [awscontainerinsight]
           exporters: [awsemf]
 
       extensions: [health_check]
@@ -720,7 +719,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [awscontainerinsightreceiver]
+      receivers: [awscontainerinsight]
       exporters: [awsemf,debug]
 ```
 To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/setup/ecs#3-setup-the-aws-otel-collector-for-ecs-ec2-instance-metrics) for details
