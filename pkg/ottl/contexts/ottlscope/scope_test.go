@@ -412,17 +412,17 @@ func Test_newPathGetSetter(t *testing.T) {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			is, res := createTelemetry()
 
 			tCtx := NewTransformContext(is, res, pmetric.NewResourceMetrics())
 			got, err := accessor.Get(t.Context(), tCtx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exIs, exRes := createTelemetry()
 			exCache := pcommon.NewMap()
@@ -478,7 +478,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			require.NoError(t, err)
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}

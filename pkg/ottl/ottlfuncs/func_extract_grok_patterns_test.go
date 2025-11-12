@@ -116,10 +116,10 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 				},
 			}
 			exprFunc, err := extractGrokPatterns(target, pattern, nco, patternDefinitionOptional)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			resultMap, ok := result.(pcommon.Map)
 			require.True(t, ok)
@@ -260,7 +260,7 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 				},
 			}
 			exprFunc, err := extractGrokPatterns[any](tt.target, pattern, nco, patternDefinitionOptional)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
