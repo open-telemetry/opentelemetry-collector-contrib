@@ -333,9 +333,6 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("orchestrator::endpoint") {
 		c.Orchestrator.Endpoint = fmt.Sprintf("https://orchestrator.%s%s", c.API.Site, endpoints.OrchestratorManifestEndpoint.Route)
 	}
-	if !configMap.IsSet("orchestrator::enabled") {
-		c.Orchestrator.Enabled = true
-	}
 
 	// Return an error if an endpoint is explicitly set to ""
 	if c.Metrics.Endpoint == "" || c.Traces.Endpoint == "" || c.Logs.Endpoint == "" {
