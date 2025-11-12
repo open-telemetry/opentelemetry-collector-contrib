@@ -268,7 +268,7 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 			s.settings.Logger.Error("failed to get Azure Resources data", zap.Error(err))
 			return
 		}
-		for _, resource := range nextResult.Value {
+		for _, resource := range s.hackResources(nextResult.Value) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -305,6 +305,44 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 
 	s.subscriptions[subscriptionID].resourcesUpdated = time.Now()
 	maps.Copy(s.resourceTypes[subscriptionID], resourceTypes)
+}
+
+// hackResources is a workaround specially done for the storageAccount metrics.
+// Every StorageAccount resources have some implicit sub resources (/blobServices/default, fileServices/default, etc...) that are not returned by the API.
+// We need to add them manually to the resources and resourceTypes map.
+// Note that we do that hack only if the user has asked the sub resource types explicitly in the services config.
+// Example:
+// For each resource with id .../Microsoft.Storage/storageAccount/myResource of type Microsoft.Storage/storageAccount,
+// It will create a fake resource with id .../Microsoft.Storage/storageAccount/myResource/blobServices/default of type Microsoft.Storage/storageAccounts/blobServices.
+// TODO: duplicate
+func (s *azureBatchScraper) hackResources(resources []*armresources.GenericResourceExpanded) []*armresources.GenericResourceExpanded {
+	var hackedResources []*armresources.GenericResourceExpanded
+	for _, resource := range resources {
+		hackedResources = append(hackedResources, resource)
+		if resource.Type != nil && *resource.Type == "Microsoft.Storage/storageAccounts" {
+			for _, subType := range []string{"blobServices", "fileServices", "queueServices", "tableServices"} {
+				hackedType := fmt.Sprintf("Microsoft.Storage/storageAccounts/%s", subType)
+				if _, found := sliceFindInsensitive(s.cfg.Services, hackedType); found {
+					hackedResource, err := copyResource(resource)
+					if err != nil {
+						s.settings.Logger.Error("failed to create a hack resource",
+							zap.String("resource type", *resource.Type),
+							zap.String("hack resource type", hackedType),
+							zap.Error(err),
+						)
+					}
+					if hackedResource != nil {
+						// Create a fake new resource with type and ID corresponding to the sub resource.
+						// The rest of the attributes (location, tags, etc...) are copied from the original resource.
+						hackedResource.Type = &hackedType
+						hackedResource.ID = to.Ptr(fmt.Sprintf("%s/%s/default", *resource.ID, subType))
+						hackedResources = append(hackedResources, hackedResource)
+					}
+				}
+			}
+		}
+	}
+	return hackedResources
 }
 
 // TODO: duplicate

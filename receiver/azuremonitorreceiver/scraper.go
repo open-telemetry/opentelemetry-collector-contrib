@@ -290,7 +290,7 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 			s.settings.Logger.Error("failed to get Azure Resources data", zap.Error(err))
 			return
 		}
-		for _, resource := range nextResult.Value {
+		for _, resource := range s.hackResources(nextResult.Value) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -317,6 +317,44 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 	}
 
 	s.subscriptions[subscriptionID].resourcesUpdated = time.Now()
+}
+
+// hackResources is a workaround specially done for the storageAccount metrics.
+// Every StorageAccount resources have some implicit sub resources (/blobServices/default, fileServices/default, etc...) that are not returned by the API.
+// We need to add them manually to the resources and resourceTypes map.
+// Note that we do that hack only if the user has asked the sub resource types explicitly in the services config.
+// Example:
+// For each resource with id .../Microsoft.Storage/storageAccount/myResource of type Microsoft.Storage/storageAccount,
+// It will create a fake resource with id .../Microsoft.Storage/storageAccount/myResource/blobServices/default of type Microsoft.Storage/storageAccounts/blobServices.
+// TODO: duplicate
+func (s *azureScraper) hackResources(resources []*armresources.GenericResourceExpanded) []*armresources.GenericResourceExpanded {
+	var hackedResources []*armresources.GenericResourceExpanded
+	for _, resource := range resources {
+		hackedResources = append(hackedResources, resource)
+		if resource.Type != nil && *resource.Type == "Microsoft.Storage/storageAccounts" {
+			for _, subType := range []string{"blobServices", "fileServices", "queueServices", "tableServices"} {
+				hackedType := fmt.Sprintf("Microsoft.Storage/storageAccounts/%s", subType)
+				if _, found := sliceFindInsensitive(s.cfg.Services, hackedType); found {
+					hackedResource, err := copyResource(resource)
+					if err != nil {
+						s.settings.Logger.Error("failed to create a hack resource",
+							zap.String("resource type", *resource.Type),
+							zap.String("hack resource type", hackedType),
+							zap.Error(err),
+						)
+					}
+					if hackedResource != nil {
+						// Create a fake new resource with type and ID corresponding to the sub resource.
+						// The rest of the attributes (location, tags, etc...) are copied from the original resource.
+						hackedResource.Type = &hackedType
+						hackedResource.ID = to.Ptr(fmt.Sprintf("%s/%s/default", *resource.ID, subType))
+						hackedResources = append(hackedResources, hackedResource)
+					}
+				}
+			}
+		}
+	}
+	return hackedResources
 }
 
 func getResourceGroupFromID(id string) string {
@@ -550,6 +588,15 @@ func getMetricAggregations(metricNamespace, metricName string, filters NestedLis
 	return out
 }
 
+func sliceFindInsensitive(slice []string, value string) (int, bool) {
+	for i, v := range slice {
+		if strings.EqualFold(v, value) {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
 func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
 	for k, v := range m {
 		if strings.EqualFold(key, k) {
@@ -586,4 +633,17 @@ func filterResourceTags(tagFilterList map[string]struct{}, resourceTags map[stri
 	}
 
 	return includedTags
+}
+
+func copyResource(original *armresources.GenericResourceExpanded) (*armresources.GenericResourceExpanded, error) {
+	hackedResourceStr, err := original.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	var newResource armresources.GenericResourceExpanded
+	err = newResource.UnmarshalJSON(hackedResourceStr)
+	if err != nil {
+		return nil, err
+	}
+	return &newResource, nil
 }
