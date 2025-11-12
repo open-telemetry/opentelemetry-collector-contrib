@@ -745,7 +745,7 @@ func (oif *onlineIsolationForest) checkAdaptiveWindowResize() {
 	// Apply gradual adjustment
 	if targetSize != currentSize {
 		// Limit rate of change
-		maxChange := max(int(float64(currentSize) * oif.adaptiveConfig.AdaptationRate), 1)
+		maxChange := max(int(float64(currentSize)*oif.adaptiveConfig.AdaptationRate), 1)
 
 		if targetSize > currentSize {
 			oif.currentWindowSize = minInt(currentSize+maxChange, targetSize)
