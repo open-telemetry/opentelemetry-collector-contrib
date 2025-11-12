@@ -64,7 +64,7 @@ func Test_ProcessProfiles_ResourceContext(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -105,7 +105,7 @@ func Test_ProcessProfiles_InferredResourceContext(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -146,7 +146,7 @@ func Test_ProcessProfiles_ScopeContext(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -187,7 +187,7 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -402,7 +402,7 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -610,7 +610,7 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -727,7 +727,7 @@ func Test_ProcessProfiles_MixContext(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -817,7 +817,7 @@ func Test_ProcessProfiles_InferredMixContext(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -834,15 +834,15 @@ func Test_ProcessProfiles_ErrorMode(t *testing.T) {
 	}{
 		{
 			context:   "resource",
-			statement: `set(attributes["test"], ParseJSON(1))`,
+			statement: `set(attributes["test"], ParseJSON("1"))`,
 		},
 		{
 			context:   "scope",
-			statement: `set(attributes["test"], ParseJSON(1))`,
+			statement: `set(attributes["test"], ParseJSON("1"))`,
 		},
 		{
 			context:   "profile",
-			statement: `set(original_payload_format, ParseJSON(1))`,
+			statement: `set(original_payload_format, ParseJSON("1"))`,
 		},
 	}
 
@@ -853,7 +853,7 @@ func Test_ProcessProfiles_ErrorMode(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 	}
 }
@@ -870,7 +870,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 			name:      "profile: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(profile.original_payload_format, ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(profile.original_payload_format, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.dropped_attributes_count == 1`}},
 			},
 			want: func(td pprofile.Profiles) {
@@ -882,16 +882,16 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 			name:      "profile: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(profile.original_payload_format, ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(profile.original_payload_format, ParseJSON(true))`}},
+				{Statements: []string{`set(profile.original_payload_format, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(profile.original_payload_format, ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
 			name:      "resource: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
 			},
 			want: func(td pprofile.Profiles) {
@@ -902,16 +902,16 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 			name:      "resource: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(true))`}},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
 			name:      "scope: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
 			},
 			want: func(td pprofile.Profiles) {
@@ -922,10 +922,10 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 			name:      "scope: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(true))`}},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 	}
 
@@ -943,7 +943,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 				assert.Contains(t, err.Error(), tt.wantErrorWith)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -1077,7 +1077,7 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)
@@ -1215,10 +1215,10 @@ func Test_ProcessProfiles_InferredContextFromConditions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructProfiles()
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructProfiles()
 			tt.want(exTd)

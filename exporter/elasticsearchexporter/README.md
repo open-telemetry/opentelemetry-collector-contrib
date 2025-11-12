@@ -625,10 +625,41 @@ This gives the exporter the opportunity to group all related metrics into the sa
 Symptom: bulk indexer logs an error that indicates "bulk indexer flush error" with bulk request returning HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
 
 ```
-error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error        {"otelcol.component.id": "elasticsearch", "otelcol.component.kind": "Exporter", "otelcol.signal": "logs", "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"}
+error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error
+{
+  "otelcol.component.id": "elasticsearch",
+  "otelcol.component.kind": "Exporter",
+  "otelcol.signal": "logs",
+  "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"
+}
 ```
 
 This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) sending to Elasticsearch version < 8.12.
 
 To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
 Alternatively, try other mapping modes, but the document structure will be different.
+
+### "dropping cumulative temporality histogram" and "dropping cumulative temporality exponential histogram"
+
+Symptom: `elasticsearchexporter` logs a warning `dropping cumulative temporarily histogram` similar to:
+
+```
+warn    elasticsearchexporter@v0.132.0/exporter.go:340  validation errors
+{
+  "resource": {
+    "service.instance.id": "33ffe7e8-e944-4f92-8fce-9094f4b61d1d",
+    "service.name": "./elastic-agent",
+    "service.version": "9.1.5"
+  },
+  "otelcol.component.id": "elasticsearch/otel",
+  "otelcol.component.kind": "exporter",
+  "otelcol.signal": "metrics",
+  "error": "dropping cumulative temporality histogram \"http.client.request.duration\""
+}
+```
+
+This issue occurs because Elasticsearch does not support **cumulative temporality** for histograms.
+As a workaround, you can either:
+- Export histogram metrics using **delta temporality**, or
+- Apply a `cumulativetodelta` processor.
+For more details, see [Metrics data ingestion](https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#metrics-data-ingestion).
