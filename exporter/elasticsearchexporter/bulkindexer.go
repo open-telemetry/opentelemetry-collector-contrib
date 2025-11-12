@@ -66,9 +66,11 @@ const (
 	errorHintOTelMappingMode = "OTel mapping mode requires Elasticsearch 8.12+ (see Known issues in README)"
 )
 
-// otelDatasetSuffixRegex matches the .otel-{namespace} suffix pattern in OTel mapping mode indices.
-// Pattern: {signal}-{dataset}.otel-{namespace}
-var otelDatasetSuffixRegex = regexp.MustCompile(`\.otel-`)
+var (
+	// otelDatasetSuffixRegex matches the .otel-{namespace} suffix pattern in OTel mapping mode indices.
+	// Pattern: {signal}-{dataset}.otel-{namespace}
+	otelDatasetSuffixRegex = regexp.MustCompile(`^[^-]+?-[^-]+?\.otel-`)
+)
 
 func newBulkIndexer(
 	client esapi.Transport,
