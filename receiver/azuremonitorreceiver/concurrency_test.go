@@ -36,7 +36,7 @@ func BenchmarkMutexMapImpl(b *testing.B) {
 
 func benchmarkMapImplLarge(b *testing.B, m concurrentMetricsBuilderMap[int]) {
 	// Pre-fill with 1 million entries
-	for i := 0; i < 1_000_000; i++ {
+	for i := range 1_000_000 {
 		key := strconv.Itoa(i)
 		m.Set(key, i)
 	}
