@@ -9,6 +9,9 @@
       "outcome": "DENY"
     },
     "securityPolicyRequestData": {
+      "recaptchaActionToken": {
+        "score": 0.9
+      },
       "remoteIpInfo": {
         "asn": 57269,
         "regionCode": "ES"

@@ -28,7 +28,7 @@ const (
 	gcpLoadBalancingBackendTargetProjectNumber = "gcp.load_balancing.backend_target_project_number"
 
 	// gcpLoadBalancingRemoteIP holds the remote IP address of the client
-	gcpLoadBalancingRemoteIP = "gcp.load_balancing.remote_ip"
+	gcpLoadBalancingRemoteIP = "network.peer.address"
 
 	// gcpArmorSecurityPolicyType holds security policy type
 	gcpArmorSecurityPolicyType = "gcp.armor.security_policy.type"
@@ -67,27 +67,22 @@ const (
 	// gcpArmorRecaptchaSessionTokenScore holds the legitimacy score embedded in a of the reCAPTCHA session-token
 	gcpArmorRecaptchaSessionTokenScore = "gcp.armor.request_data.recaptcha_session_token.score"
 	// gcpArmorUserIPInfoSource holds a field that is typically the header from which the user IP was resolved
-	gcpArmorUserIPInfoSource = "gcp.armor.request_data.user_ip_info.source"
+	gcpArmorUserIPInfoSource = "http.request.header.source"
 	// gcpArmorUserIPInfoIPAddress holds the IP address resolved from the source field
-	gcpArmorUserIPInfoIPAddress = "gcp.armor.request_data.user_ip_info.ip_address"
+	gcpArmorUserIPInfoIPAddress = "client.address"
 	// gcpArmorRemoteIPInfoIPAddress holds the IP address of the remote IP
-	gcpArmorRemoteIPInfoIPAddress = "gcp.armor.request_data.remote_ip.ip_address"
+	gcpArmorRemoteIPInfoIPAddress = "network.peer.address"
 	// gcpArmorRemoteIPInfoRegionCode holds the two-letter country code or region code for the IP address
-	gcpArmorRemoteIPInfoRegionCode = "gcp.armor.request_data.remote_ip.region_code"
+	gcpArmorRemoteIPInfoRegionCode = "geo.region.iso_code"
 	// gcpArmorRemoteIPInfoAsn holds the five-digit autonomous system number (ASN) for the IP address
 	gcpArmorRemoteIPInfoAsn = "gcp.armor.request_data.remote_ip.asn"
 	// gcpArmorTLSJa4Fingerprint holds a JA4 TTL/SSL fingerprint if the client connects using HTTPS, HTTP/2, or HTTP/3
-	gcpArmorTLSJa4Fingerprint = "gcp.armor.request_data.tls_ja4_fingerprint"
+	gcpArmorTLSJa4Fingerprint = "tls.client.ja4"
 	// gcpArmorTLSJa3Fingerprint holds a JA3 TTL/SSL fingerprint if the client connects using HTTPS, HTTP/2, or HTTP/3
-	gcpArmorTLSJa3Fingerprint = "gcp.armor.request_data.tls_ja3_fingerprint"
+	gcpArmorTLSJa3Fingerprint = "tls.client.ja3"
 )
 
 const (
-	// Possible statusDetails string values
-	statusDetailsRedirectedBySecurityPolicy = "redirected_by_security_policy"
-	statusDetailsDeniedBySecurityPolicy     = "denied_by_security_policy"
-	statusDetailsBodyDeniedBySecurityPolicy = "body_denied_by_security_policy"
-
 	// Security policy type string values
 	securityPolicyTypePreviewEdge  = "previewEdgeSecurityPolicy"
 	securityPolicyTypeEnforcedEdge = "enforcedEdgeSecurityPolicy"
@@ -133,7 +128,7 @@ type userIPInfo struct {
 type remoteIPInfo struct {
 	IPAddress  string `json:"ipAddress"`
 	RegionCode string `json:"regionCode"`
-	ASN        int    `json:"asn"`
+	ASN        *int64 `json:"asn"`
 }
 
 type securityPolicyBase struct {
@@ -178,12 +173,6 @@ func isValid(log armorlog) error {
 		return fmt.Errorf("expected @type to be %s, got %s", armorLogType, log.Type)
 	}
 
-	if log.StatusDetails != statusDetailsBodyDeniedBySecurityPolicy &&
-		log.StatusDetails != statusDetailsDeniedBySecurityPolicy &&
-		log.StatusDetails != statusDetailsRedirectedBySecurityPolicy {
-		return fmt.Errorf("invalid statusDetails for Cloud Armor log entry: %s", log.StatusDetails)
-	}
-
 	if log.EnforcedSecurityPolicy == nil &&
 		log.PreviewSecurityPolicy == nil &&
 		log.EnforcedEdgeSecurityPolicy == nil &&
@@ -195,11 +184,11 @@ func isValid(log armorlog) error {
 }
 
 func handleRecaptchaTokens(data *securityPolicyRequestData, attr pcommon.Map) {
-	if data.RecaptchaActionToken != nil && data.RecaptchaActionToken.Score != 0 {
+	if data.RecaptchaActionToken != nil {
 		attr.PutDouble(gcpArmorRecaptchaActionTokenScore, data.RecaptchaActionToken.Score)
 	}
 
-	if data.RecaptchaSessionToken != nil && data.RecaptchaSessionToken.Score != 0 {
+	if data.RecaptchaSessionToken != nil {
 		attr.PutDouble(gcpArmorRecaptchaSessionTokenScore, data.RecaptchaSessionToken.Score)
 	}
 }
@@ -209,10 +198,8 @@ func handleUserIPInfo(info *userIPInfo, attr pcommon.Map) {
 		return
 	}
 
-	attr.PutStr(gcpArmorUserIPInfoSource, info.Source)
-	if info.IPAddress != "" {
-		attr.PutStr(gcpArmorUserIPInfoIPAddress, info.IPAddress)
-	}
+	shared.PutStr(gcpArmorUserIPInfoSource, info.Source, attr)
+	shared.PutStr(gcpArmorUserIPInfoIPAddress, info.IPAddress, attr)
 }
 
 func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) {
@@ -220,20 +207,14 @@ func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) {
 		return
 	}
 
-	if info.IPAddress != "" {
-		attr.PutStr(gcpArmorRemoteIPInfoIPAddress, info.IPAddress)
-	}
-	attr.PutStr(gcpArmorRemoteIPInfoRegionCode, info.RegionCode)
-	attr.PutInt(gcpArmorRemoteIPInfoAsn, int64(info.ASN))
+	shared.PutStr(gcpArmorRemoteIPInfoIPAddress, info.IPAddress, attr)
+	shared.PutStr(gcpArmorRemoteIPInfoRegionCode, info.RegionCode, attr)
+	shared.PutInt(gcpArmorRemoteIPInfoAsn, info.ASN, attr)
 }
 
 func handleTLSFingerprints(data *securityPolicyRequestData, attr pcommon.Map) {
-	if data.TLSJa4Fingerprint != "" {
-		attr.PutStr(gcpArmorTLSJa4Fingerprint, data.TLSJa4Fingerprint)
-	}
-	if data.TLSJa3Fingerprint != "" {
-		attr.PutStr(gcpArmorTLSJa3Fingerprint, data.TLSJa3Fingerprint)
-	}
+	shared.PutStr(gcpArmorTLSJa4Fingerprint, data.TLSJa4Fingerprint, attr)
+	shared.PutStr(gcpArmorTLSJa3Fingerprint, data.TLSJa3Fingerprint, attr)
 }
 
 func handleSecurityPolicyRequestData(data *securityPolicyRequestData, attr pcommon.Map) {
@@ -248,10 +229,12 @@ func handleSecurityPolicyRequestData(data *securityPolicyRequestData, attr pcomm
 }
 
 func handleRateLimitAction(rl *rateLimitAction, attr pcommon.Map) {
-	if rl != nil {
-		attr.PutStr(gcpArmorRateLimitActionKey, rl.Key)
-		attr.PutStr(gcpArmorRateLimitActionOutcome, rl.Outcome)
+	if rl == nil {
+		return
 	}
+
+	shared.PutStr(gcpArmorRateLimitActionKey, rl.Key, attr)
+	shared.PutStr(gcpArmorRateLimitActionOutcome, rl.Outcome, attr)
 }
 
 func handleAddressGroup(ag *addressGroup, attr pcommon.Map) {

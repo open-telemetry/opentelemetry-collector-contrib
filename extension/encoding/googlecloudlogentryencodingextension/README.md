@@ -350,16 +350,16 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 |---|--- |
 | `statusDetails` | `gcp.load_balancing.status.details`|
 | `backendTargetProjectNumber` | `gcp.load_balancing.backend_target_project_number` |
-| `remoteIp` | `gcp.load_balancing.remote_ip` |
+| `remoteIp` | `network.peer.address` |
 | `securityPolicyRequestData.recaptchaActionToken.score` | `gcp.armor.request_data.recaptcha_action_token.score` |
 | `securityPolicyRequestData.recaptchaSessionToken.score` | `gcp.armor.request_data.recaptcha_session_token.score` |
-| `securityPolicyRequestData.userIpInfo.source` | `gcp.armor.request_data.user_ip_info.source` |
-| `securityPolicyRequestData.userIpInfo.ipAddress` | `gcp.armor.request_data.user_ip_info.ip_address` |
-| `securityPolicyRequestData.remoteIpInfo.ipAddress` | `gcp.armor.request_data.remote_ip.ip_address` |
-| `securityPolicyRequestData.remoteIpInfo.regionCode` | `gcp.armor.request_data.remote_ip.region_code` |
+| `securityPolicyRequestData.userIpInfo.source` | `http.request.header.source` |
+| `securityPolicyRequestData.userIpInfo.ipAddress` | `client.address` |
+| `securityPolicyRequestData.remoteIpInfo.ipAddress` | `network.peer.address` |
+| `securityPolicyRequestData.remoteIpInfo.regionCode` | `geo.region.iso_code` |
 | `securityPolicyRequestData.remoteIpInfo.asn` | `gcp.armor.request_data.remote_ip.asn` |
-| `securityPolicyRequestData.tlsJa4Fingerprint` | `gcp.armor.request_data.tls_ja4_fingerprint` |
-| `securityPolicyRequestData.tlsJa3Fingerprint` | `gcp.armor.request_data.tls_ja3_fingerprint` |
+| `securityPolicyRequestData.tlsJa4Fingerprint` | `tls.client.ja4` |
+| `securityPolicyRequestData.tlsJa3Fingerprint` | `tls.client.ja3` |
 | `name` | `gcp.armor.security_policy.name`|
 | `priority` | `gcp.armor.security_policy.priority` |
 | `configuredAction` | `gcp.armor.security_policy.configured_action` |

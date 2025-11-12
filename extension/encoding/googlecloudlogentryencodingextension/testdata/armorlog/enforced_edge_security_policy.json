@@ -10,6 +10,9 @@
     },
     "backendTargetProjectNumber": "projects/8560181848",
     "securityPolicyRequestData": {
+      "recaptchaSessionToken": {
+        "score": 0.0
+      },
       "remoteIpInfo": {
         "regionCode": "ES",
         "asn": 57269

@@ -4,10 +4,10 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: extension/encoding
+component: extension/googlecloudlogentry_encoding
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Parse cloud audit logs into log record attributes instead of placing it in the body as is.
+note: Parse cloud armor logs into log record attributes instead of placing it in the body as is.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43389]

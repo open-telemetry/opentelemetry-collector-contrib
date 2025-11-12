@@ -72,19 +72,9 @@ func TestIsValid(t *testing.T) {
 			expectsErr: "expected @type to be type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry, got invalid-type",
 		},
 		{
-			name: "invalid status details",
-			log: armorlog{
-				Type:                   armorLogType,
-				EnforcedSecurityPolicy: &enforcedSecurityPolicy{},
-				StatusDetails:          "invalid-status-details",
-			},
-			expectsErr: "invalid statusDetails for Cloud Armor log entry",
-		},
-		{
 			name: "all security policies nil",
 			log: armorlog{
-				Type:          armorLogType,
-				StatusDetails: statusDetailsDeniedBySecurityPolicy,
+				Type: armorLogType,
 			},
 			expectsErr: "at least one of the security policy fields must be non-nil",
 		},
@@ -92,7 +82,6 @@ func TestIsValid(t *testing.T) {
 			name: "valid log with enforced security policy",
 			log: armorlog{
 				Type:                   armorLogType,
-				StatusDetails:          statusDetailsDeniedBySecurityPolicy,
 				EnforcedSecurityPolicy: &enforcedSecurityPolicy{},
 			},
 		},
@@ -110,6 +99,7 @@ func TestIsValid(t *testing.T) {
 }
 
 func TestHandleSecurityPolicyRequestData(t *testing.T) {
+	int64ptr := func(i int64) *int64 { return &i }
 	tests := []struct {
 		name     string
 		data     *securityPolicyRequestData
@@ -124,7 +114,7 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 			name: "all fields populated",
 			data: &securityPolicyRequestData{
 				RecaptchaActionToken:  &recaptchaToken{Score: 0.9},
-				RecaptchaSessionToken: &recaptchaToken{Score: 0.8},
+				RecaptchaSessionToken: &recaptchaToken{Score: 0.0},
 				UserIPInfo: &userIPInfo{
 					Source:    "X-Forwarded-For",
 					IPAddress: "192.168.1.1",
@@ -132,14 +122,14 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				RemoteIPInfo: &remoteIPInfo{
 					IPAddress:  "10.0.0.1",
 					RegionCode: "US",
-					ASN:        12345,
+					ASN:        int64ptr(12345),
 				},
 				TLSJa4Fingerprint: "ja4_fingerprint",
 				TLSJa3Fingerprint: "ja3_fingerprint",
 			},
 			expected: map[string]any{
 				gcpArmorRecaptchaActionTokenScore:  float64(0.9),
-				gcpArmorRecaptchaSessionTokenScore: float64(0.8),
+				gcpArmorRecaptchaSessionTokenScore: float64(0),
 				gcpArmorUserIPInfoSource:           "X-Forwarded-For",
 				gcpArmorUserIPInfoIPAddress:        "192.168.1.1",
 				gcpArmorRemoteIPInfoIPAddress:      "10.0.0.1",
@@ -356,10 +346,7 @@ func TestHandleRateLimitAction(t *testing.T) {
 				Key:     "",
 				Outcome: "",
 			},
-			expected: map[string]any{
-				gcpArmorRateLimitActionKey:     "",
-				gcpArmorRateLimitActionOutcome: "",
-			},
+			expected: map[string]any{},
 		},
 	}
 

@@ -196,7 +196,7 @@ func TestPayloads(t *testing.T) {
 			expectedFilename: "testdata/armorlog/enforced_security_policy_expected.yaml",
 		},
 		{
-			name:             "armor log - enforced security policy",
+			name:             "armor log - enforced edge security policy",
 			logFilename:      "testdata/armorlog/enforced_edge_security_policy.json",
 			expectedFilename: "testdata/armorlog/enforced_edge_security_policy_expected.yaml",
 		},

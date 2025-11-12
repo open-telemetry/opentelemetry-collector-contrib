@@ -34,16 +34,16 @@ resourceLogs:
               - key: log.record.uid
                 value:
                   stringValue: 83gmkdftgh8t5
-              - key: gcp.armor.status.details
+              - key: gcp.load_balancing.status.details
                 value:
                   stringValue: denied_by_security_policy
-              - key: gcp.armor.backend_target_project_number
+              - key: gcp.load_balancing.backend_target_project_number
                 value:
                   stringValue: projects/8560181848
-              - key: gcp.armor.remote_ip
+              - key: network.peer.address
                 value:
                   stringValue: 79.117.34.252
-              - key: gcp.armor.request_data.remote_ip.region_code
+              - key: geo.region.iso_code
                 value:
                   stringValue: ES
               - key: gcp.armor.request_data.remote_ip.asn
@@ -64,6 +64,9 @@ resourceLogs:
               - key: gcp.armor.security_policy.outcome
                 value:
                   stringValue: DENY
+              - key: gcp.armor.request_data.recaptcha_action_token.score
+                value:
+                  doubleValue: 0.9
               - key: http.request.method
                 value:
                   stringValue: GET
