@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -305,7 +306,7 @@ func Test_extractSumMetric(t *testing.T) {
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
 			evaluate, err := extractSumMetric(tt.monotonicity, tt.suffix)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.Equal(t, tt.wantErr, err)
