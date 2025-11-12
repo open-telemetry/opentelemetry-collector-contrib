@@ -222,7 +222,7 @@ components:
     - receiver/apache
     - receiver/apachespark
     - receiver/awscloudwatch
-    - receiver/awscontainerinsightreceiver
+    - receiver/awscontainerinsight
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
     - receiver/awslambda
