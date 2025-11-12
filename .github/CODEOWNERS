@@ -180,6 +180,7 @@ pkg/translator/faro/                                             @open-telemetry
 pkg/translator/jaeger/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
 pkg/translator/loki/                                             @open-telemetry/collector-contrib-approvers @gouthamve @mar4uk
 pkg/translator/opencensus/                                       @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+pkg/translator/pprof/                                            @open-telemetry/collector-contrib-approvers @florianl
 pkg/translator/prometheus/                                       @open-telemetry/collector-contrib-approvers @dashpole @bertysentry @ArthurSens
 pkg/translator/prometheusremotewrite/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 pkg/translator/signalfx/                                         @open-telemetry/collector-contrib-approvers @dmitryax
@@ -261,6 +262,7 @@ receiver/fluentforwardreceiver/                                  @open-telemetry
 receiver/githubreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @crobert-1 @TylerHelmuth
 receiver/gitlabreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @atoulme
 receiver/googlecloudmonitoringreceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth
+receiver/googlecloudpubsubpushreceiver/                          @open-telemetry/collector-contrib-approvers @axw @constanca-m
 receiver/googlecloudpubsubreceiver/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @KiranmayiB @nsj07
 receiver/haproxyreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
@@ -345,6 +347,7 @@ receiver/webhookeventreceiver/                                   @open-telemetry
 receiver/windowseventlogreceiver/                                @open-telemetry/collector-contrib-approvers @armstrmi @pjanotti
 receiver/windowsperfcountersreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 receiver/windowsservicereceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti @shalper2
+receiver/yanggrpcreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme
 receiver/zipkinreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock @akats7
 scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock @akats7
@@ -377,7 +380,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 # Start unmaintained components list
 
 exporter/carbonexporter/                                         @open-telemetry/collector-contrib-approvers
-extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers
 receiver/bigipreceiver/                                          @open-telemetry/collector-contrib-approvers
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers
 
