@@ -47,7 +47,9 @@ func TestConvertPprofToPprofile(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s: %s", name, err)
 			}
-			_ = pprofile
+			if _, err := convertPprofileToPprof(pprofile); err != nil {
+				t.Fatalf("%s: %s", name, err)
+			}
 		})
 	}
 }
