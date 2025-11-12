@@ -629,7 +629,7 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 			_, err := pathExpressionParser(getCache)(path)
 			require.Error(t, err)
 			expectError := fmt.Sprintf(`replace "%s.cache[key]" with "spanevent.cache[key]"`, higherContext)
-			require.Contains(t, err.Error(), expectError)
+			require.ErrorContains(t, err, expectError)
 		})
 	}
 }
