@@ -203,6 +203,7 @@ pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
 pkg/translator/opencensus
+pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
