@@ -126,7 +126,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.139.0 // indirect
-	github.com/open-telemetry/otel-arrow/go v0.44.0 // indirect
+	github.com/open-telemetry/otel-arrow/go v0.45.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
