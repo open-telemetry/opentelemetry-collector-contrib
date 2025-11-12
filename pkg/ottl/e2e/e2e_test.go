@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -391,7 +392,7 @@ func Test_e2e_editors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContextEditors()
@@ -400,7 +401,7 @@ func Test_e2e_editors(t *testing.T) {
 				exTCtx := constructLogTransformContextEditors()
 				tt.want(exTCtx)
 
-				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			}
 		})
 	}
@@ -1388,21 +1389,21 @@ func Test_e2e_converters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
 				_, _, err = statement.Execute(t.Context(), tCtx)
 				if tt.errMsg == "" {
-					assert.NoError(t, err)
+					require.NoError(t, err)
 				} else {
-					assert.Contains(t, err.Error(), tt.errMsg)
+					assert.ErrorContains(t, err, tt.errMsg)
 				}
 
 				exTCtx := constructLogTransformContext()
 				tt.want(exTCtx)
 
-				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			}
 		})
 	}
@@ -1574,7 +1575,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
@@ -1583,7 +1584,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 				exTCtx := constructLogTransformContext()
 				tt.want(exTCtx)
 
-				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			}
 		})
 	}
@@ -1672,7 +1673,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 
 			for _, statement := range tt.statements {
 				logStatements, err := parseStatementWithAndWithoutPathContext(statement)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				for _, s := range logStatements {
 					_, _, _ = s.Execute(t.Context(), tCtx)
@@ -1682,7 +1683,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			exTCtx := constructLogTransformContext()
 			tt.want(exTCtx)
 
-			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+			require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 		})
 	}
 }
@@ -1790,13 +1791,13 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			valueExpr, err := logParser.ParseValueExpression(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tCtx := constructLogTransformContextValueExpressions()
 			val, err := valueExpr.Eval(t.Context(), tCtx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), val)
 		})
@@ -1823,9 +1824,9 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 			funcs[isRootSpanFactory.Name()] = isRootSpanFactory
 			spanParser, err := ottlspan.NewParser(funcs, settings)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			spanStatements, err := spanParser.ParseStatement(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tCtx := constructSpanTransformContext()
 			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
@@ -1833,7 +1834,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			exTCtx := constructSpanTransformContext()
 			tt.want(exTCtx)
 
-			assert.NoError(t, ptracetest.CompareResourceSpans(newResourceSpans(exTCtx), newResourceSpans(tCtx)))
+			require.NoError(t, ptracetest.CompareResourceSpans(newResourceSpans(exTCtx), newResourceSpans(tCtx)))
 		})
 	}
 }
@@ -1857,9 +1858,9 @@ func Test_ProcessSpanEvents(t *testing.T) {
 			funcs := ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
 
 			spanEventParser, err := ottlspanevent.NewParser(funcs, settings)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			spanStatements, err := spanEventParser.ParseStatement(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tCtx := constructSpanEventTransformContext()
 			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
@@ -1867,7 +1868,7 @@ func Test_ProcessSpanEvents(t *testing.T) {
 			exTCtx := constructSpanEventTransformContext()
 			tt.want(exTCtx)
 
-			assert.NoError(t, ptracetest.CompareSpanEvent(newSpanEvent(exTCtx), newSpanEvent(tCtx)))
+			require.NoError(t, ptracetest.CompareSpanEvent(newSpanEvent(exTCtx), newSpanEvent(tCtx)))
 		})
 	}
 }
@@ -2139,7 +2140,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 
 	settings := componenttest.NewNopTelemetrySettings()
 	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
 	// Use a round trip composition to ensure each iteration of the benchmark is the same.
 	// GetXML(body, "/Data/From/Test") returns "<Test>1</Test><Test>2</Test>"
@@ -2148,7 +2149,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 	// set overwrites the body, but the result should be the same as the original body
 	roundTrip := `set(body, RemoveXML(InsertXML(body, "/Data/To", GetXML(body, "/Data/From/Test")), "/Data/To/Test"))`
 	logStatements, err := logParser.ParseStatement(roundTrip)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
 	actualCtx := tCtxWithTestBody()
 	b.ReportAllocs()
@@ -2158,5 +2159,5 @@ func Benchmark_XML_Functions(b *testing.B) {
 	}
 
 	// Ensure correctness
-	assert.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(tCtxWithTestBody()), newResourceLogs(actualCtx)))
+	require.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(tCtxWithTestBody()), newResourceLogs(actualCtx)))
 }
