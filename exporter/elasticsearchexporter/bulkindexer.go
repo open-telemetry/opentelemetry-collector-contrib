@@ -69,7 +69,7 @@ const (
 var (
 	// otelDatasetSuffixRegex matches the .otel-{namespace} suffix pattern in OTel mapping mode indices.
 	// Pattern: {signal}-{dataset}.otel-{namespace}
-	otelDatasetSuffixRegex = regexp.MustCompile(`\.otel-`)
+	otelDatasetSuffixRegex = regexp.MustCompile(`^[^-]+?-[^-]+?\.otel-`)
 )
 
 func newBulkIndexer(
