@@ -70,6 +70,9 @@ type azureLogRecord struct {
 	Level             *json.Number    `json:"Level"`
 	Location          *string         `json:"location"`
 	Properties        json.RawMessage `json:"properties"`
+	// rawRecord stores the raw JSON bytes of the entire record to capture
+	// fields that aren't in the struct (e.g., vnet flow log fields)
+	rawRecord json.RawMessage
 }
 
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
@@ -89,6 +92,18 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 	if iter.Error != nil {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
+	}
+
+	// Re-parse to capture raw record JSON for fields not in the struct
+	var rawRecords struct {
+		Records []json.RawMessage `json:"records"`
+	}
+	if err := json.Unmarshal(buf, &rawRecords); err == nil {
+		for i := range azureLogs.Records {
+			if i < len(rawRecords.Records) {
+				azureLogs.Records[i].rawRecord = rawRecords.Records[i]
+			}
+		}
 	}
 
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
@@ -226,9 +241,70 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	// TODO Keep adding other common fields, like tenant ID
 }
 
-func extractRawAttributes(log *azureLogRecord) map[string]any {
-	attrs := map[string]any{}
+// parseRawRecord splits known vs unknown fields from the raw record JSON.
+func parseRawRecord(log *azureLogRecord) (map[string]any, map[string]any) {
+	if len(log.rawRecord) == 0 {
+		return nil, nil
+	}
 
+	var raw map[string]any
+	if err := gojson.Unmarshal(log.rawRecord, &raw); err != nil {
+		return nil, nil
+	}
+
+	// Extract all fields from raw record, excluding known struct fields
+	knownFields := map[string]bool{
+		"time":              true,
+		"timeStamp":         true,
+		"resourceId":        true,
+		"tenantId":          true,
+		"operationName":     true,
+		"operationVersion":  true,
+		"category":          true,
+		"resultType":        true,
+		"resultSignature":   true,
+		"resultDescription": true,
+		"durationMs":        true,
+		"callerIpAddress":   true,
+		"correlationId":     true,
+		"identity":          true,
+		"Level":             true,
+		"location":          true,
+		"properties":        true,
+	}
+
+	known := make(map[string]any)
+	unknown := make(map[string]any)
+
+	for k, v := range raw {
+		if knownFields[k] {
+			known[k] = v
+		} else {
+			unknown[k] = v
+		}
+	}
+	return known, unknown
+}
+
+// mergeProperties decodes the properties JSON, applies semantic conventions,
+// and merges unknown fields if present.
+func mergeProperties(category string, propsJSON []byte, unknown map[string]any) map[string]any {
+	props := make(map[string]any)
+	copyPropertiesAndApplySemanticConventions(category, propsJSON, props)
+
+	if len(unknown) == 0 {
+		return props
+	}
+
+	// Merge unknown fields into props
+	for k, v := range unknown {
+		props[k] = v
+	}
+	return props
+}
+
+// addCommonAzureFields fills attrs with the standard Azure fields.
+func addCommonAzureFields(attrs map[string]any, log *azureLogRecord) {
 	attrs[azureCategory] = log.Category
 	setIf(attrs, azureCorrelationID, log.CorrelationID)
 	if log.DurationMs != nil {
@@ -242,11 +318,6 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 	}
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
-
-	if log.Properties != nil {
-		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
-	}
-
 	setIf(attrs, azureResultDescription, log.ResultDescription)
 	setIf(attrs, azureResultSignature, log.ResultSignature)
 	setIf(attrs, azureResultType, log.ResultType)
@@ -254,6 +325,32 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 
 	setIf(attrs, string(conventions.CloudRegionKey), log.Location)
 	setIf(attrs, string(conventions.NetworkPeerAddressKey), log.CallerIPAddress)
+}
+
+func extractRawAttributes(log *azureLogRecord) map[string]any {
+	attrs := map[string]any{}
+	hasProperties := len(log.Properties) > 0
+	known, unknown := parseRawRecord(log)
+
+	// Handle properties + unknown fields merge
+	switch {
+	case hasProperties:
+		attrs[azureProperties] = mergeProperties(log.Category, log.Properties, unknown)
+	case len(unknown) > 0:
+		// No "properties" field but unknown fields exist
+		attrs[azureProperties] = unknown
+	}
+
+	// Add standardized Azure fields
+	addCommonAzureFields(attrs, log)
+	// Merge known fields into attrs
+	if len(known) > 0 {
+		for k, v := range known {
+			if _, exists := attrs[k]; !exists {
+				attrs[k] = v
+			}
+		}
+	}
 	return attrs
 }
 
