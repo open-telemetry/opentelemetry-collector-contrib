@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -351,6 +352,150 @@ func TestAzureScraperGetResources(t *testing.T) {
 	s.getResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Empty(t, s.resources["subscriptionId1"])
+}
+
+func TestAzureScraperHackResources(t *testing.T) {
+	cfgWithSubTypes := createDefaultTestConfig()
+	cfgWithoutSubTypes := createDefaultTestConfig()
+	cfgWithoutSubTypes.Services = []string{}
+
+	tests := []struct {
+		name         string
+		cfg          *Config
+		resourcesArg []*armresources.GenericResourceExpanded
+		expected     []*armresources.GenericResourceExpanded
+	}{
+		{
+			name: "user selected sub types (blobServices etc)",
+			cfg:  cfgWithSubTypes,
+			resourcesArg: []*armresources.GenericResourceExpanded{
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					Tags: map[string]*string{
+						"tagB": to.Ptr("tagB value"),
+					},
+				},
+			},
+			expected: []*armresources.GenericResourceExpanded{
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/blobServices/default"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts/blobServices"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/fileServices/default"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts/fileServices"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/queueServices/default"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts/queueServices"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/tableServices/default"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts/tableServices"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					Tags: map[string]*string{
+						"tagB": to.Ptr("tagB value"),
+					},
+				},
+			},
+		},
+		{
+			name: "user didn't select sub type (blobServices etc)",
+			cfg:  cfgWithoutSubTypes,
+			resourcesArg: []*armresources.GenericResourceExpanded{
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					Tags: map[string]*string{
+						"tagB": to.Ptr("tagB value"),
+					},
+				},
+			},
+			expected: []*armresources.GenericResourceExpanded{
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					Tags: map[string]*string{
+						"tagB": to.Ptr("tagB value"),
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			optionsResolver := newMockClientOptionsResolver(
+				getSubscriptionByIDMockData(),
+				getSubscriptionsMockData(),
+				getResourcesMockData(),
+				getMetricsDefinitionsMockData(),
+				getMetricsValuesMockData(),
+				nil,
+			)
+
+			settings := receivertest.NewNopSettings(metadata.Type)
+
+			s := &azureScraper{
+				cfg:                   tt.cfg,
+				settings:              settings.TelemetrySettings,
+				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mutex:                 &sync.Mutex{},
+				time:                  getTimeMock(),
+				clientOptionsResolver: optionsResolver,
+
+				// From there, initialize everything that is normally initialized in start() func
+				subscriptions: map[string]*azureSubscription{},
+				resources:     map[string]map[string]*azureResource{},
+			}
+
+			assert.Equal(t, tt.expected, s.hackResources(tt.resourcesArg))
+		})
+	}
 }
 
 func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
@@ -706,6 +851,45 @@ func TestMapFindInsensitive(t *testing.T) {
 			require.Equal(t, tt.want, ok)
 			if ok {
 				require.Equal(t, testStr, got)
+			}
+		})
+	}
+}
+
+func TestSliceFindInsensitive(t *testing.T) {
+	testNamespace := "Microsoft.AAD/DomainServices"
+	testIndex := 1
+	testFilters := []string{
+		"microsoft.insights/components",
+		testNamespace,
+	}
+	tests := []struct {
+		name string
+		key  string
+		want bool
+	}{
+		{
+			name: "should find when same case",
+			key:  testNamespace,
+			want: true,
+		},
+		{
+			name: "should find when different case",
+			key:  strings.ToLower(testNamespace),
+			want: true,
+		},
+		{
+			name: "should not find when not exists",
+			key:  "microsoft.eventhub/namespaces",
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := sliceFindInsensitive(testFilters, tt.key)
+			require.Equal(t, tt.want, ok)
+			if ok {
+				require.Equal(t, testIndex, got)
 			}
 		})
 	}
