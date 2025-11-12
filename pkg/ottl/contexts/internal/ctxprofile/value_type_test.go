@@ -150,7 +150,7 @@ func TestAccessValueTypeRoot_Setter(t *testing.T) {
 			err := getSetter.Set(t.Context(), ctx, tt.setValue)
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, originalStringTable, dict.StringTable())
@@ -202,7 +202,7 @@ func TestAccessValueTypeType_Getter(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, got)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.wantValue, got)
@@ -295,7 +295,7 @@ func TestAccessValueTypeType_Setter(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				if tt.validateFunc != nil {
@@ -354,7 +354,7 @@ func TestAccessValueTypeUnit_Getter(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, got)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.wantValue, got)
@@ -448,7 +448,7 @@ func TestAccessValueTypeUnit_Setter(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				if tt.validateFunc != nil {

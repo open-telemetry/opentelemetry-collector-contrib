@@ -154,12 +154,12 @@ func Test_FormatTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := FormatTime(tt.time, tt.format)
 			if tt.errorMsg != "" {
-				assert.Contains(t, err.Error(), tt.errorMsg)
+				assert.ErrorContains(t, err, tt.errorMsg)
 			} else {
 				require.NoError(t, err)
 				result, err := exprFunc(nil, nil)
 				if tt.funcErrorMsg != "" {
-					assert.Contains(t, err.Error(), tt.funcErrorMsg)
+					assert.ErrorContains(t, err, tt.funcErrorMsg)
 				} else {
 					require.NoError(t, err)
 					assert.Equal(t, tt.expected, result)

@@ -781,7 +781,7 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 	_, err := pathExpressionParser(getCache)(path)
 	require.Error(t, err)
 	expectError := fmt.Sprintf(`replace "%s.cache[key]" with "span.cache[key]"`, ctxresource.Name)
-	require.Contains(t, err.Error(), expectError)
+	require.ErrorContains(t, err, expectError)
 }
 
 func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {

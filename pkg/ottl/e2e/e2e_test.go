@@ -1397,7 +1397,7 @@ func Test_e2e_converters(t *testing.T) {
 				if tt.errMsg == "" {
 					require.NoError(t, err)
 				} else {
-					assert.Contains(t, err.Error(), tt.errMsg)
+					assert.ErrorContains(t, err, tt.errMsg)
 				}
 
 				exTCtx := constructLogTransformContext()

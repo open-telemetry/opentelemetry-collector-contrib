@@ -189,7 +189,7 @@ func TestPathExpressionParser(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.errContains != "" {
-					assert.Contains(t, err.Error(), tt.errContains)
+					assert.ErrorContains(t, err, tt.errContains)
 				}
 				return
 			}
