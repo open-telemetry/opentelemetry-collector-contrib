@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: breaking
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Glob matching is now case-insensitive on Windows.
+note: New featuregate `filelog.windows.caseInsensitive` introduced. It will make glob matching is case-insensitive on Windows.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40685]
@@ -19,9 +19,9 @@ subtext: |
   Previously, any `include` pattern that included some manner of wildcard (`*` or `**`) would
   be case-sensitive on Windows, but Windows filepaths are by default case-insensitive. This meant
   that in a directory with the files `a.log` and `b.LOG`, the pattern `*.log` would previously only
-  match `a.log`. Now, it will match both `a.log` and `b.LOG` when on Windows. The behaviour is the
-  same as always on other operating systems, as all other currently supported platforms for the Collector
-  have case-sensitive filesystems.
+  match `a.log`. With the `filelog.windows.caseInsensitive` featuregate enabled, it will match both `a.log`
+  and `b.LOG` when on Windows. The behaviour is the same as always on other operating systems, as all other
+  currently supported platforms for the Collector have case-sensitive filesystems.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
