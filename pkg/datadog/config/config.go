@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -19,6 +18,9 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/endpoints"
+	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 )
 
 var (
@@ -72,7 +74,7 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
+	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
@@ -89,6 +91,9 @@ type Config struct {
 
 	// Logs defines the Logs exporter specific configuration
 	Logs LogsConfig `mapstructure:"logs"`
+
+	// Orchestrator defines the Orchestrator exporter specific configuration
+	Orchestrator OrchestratorConfig `mapstructure:"orchestrator"`
 
 	// HostMetadata defines the host metadata specific configuration
 	HostMetadata HostMetadataConfig `mapstructure:"host_metadata"`
@@ -325,6 +330,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("logs::endpoint") {
 		c.Logs.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
+	if !configMap.IsSet("orchestrator::endpoint") {
+		c.Orchestrator.Endpoint = fmt.Sprintf("https://orchestrator.%s%s", c.API.Site, endpoints.OrchestratorManifestEndpoint.Route)
+	}
 
 	// Return an error if an endpoint is explicitly set to ""
 	if c.Metrics.Endpoint == "" || c.Traces.Endpoint == "" || c.Logs.Endpoint == "" {
@@ -401,6 +409,12 @@ func CreateDefaultConfig() component.Config {
 			UseCompression:   true,
 			CompressionLevel: 6,
 			BatchWait:        5,
+		},
+
+		Orchestrator: OrchestratorConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://orchestrator.datadoghq.com",
+			},
 		},
 
 		HostMetadata: HostMetadataConfig{
