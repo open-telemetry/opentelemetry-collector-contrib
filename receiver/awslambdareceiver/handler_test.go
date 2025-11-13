@@ -323,7 +323,7 @@ func (mockS3LogUnmarshaler) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (n mockS3LogUnmarshaler) UnmarshalLogs(data []byte) (plog.Logs, error) {
+func (mockS3LogUnmarshaler) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	if string(data) == mockContent {
 		return plog.NewLogs(), nil
 	}

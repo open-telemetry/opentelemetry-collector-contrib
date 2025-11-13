@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"go.opentelemetry.io/collector/component"
@@ -104,7 +105,11 @@ func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 	a.handler = handler
 
-	go lambda.StartWithOptions(a.processLambdaEvent, lambda.WithContext(ctx))
+	// Only start Lambda runtime if we're actually in a Lambda environment
+	// This prevents errors during tests when Lambda environment variables are not set
+	if os.Getenv("_LAMBDA_SERVER_PORT") != "" && os.Getenv("AWS_LAMBDA_RUNTIME_API") != "" {
+		go lambda.StartWithOptions(a.processLambdaEvent, lambda.WithContext(ctx))
+	}
 	return nil
 }
 
@@ -214,7 +219,7 @@ func (a *awsLambdaReceiver) handleEvent(ctx context.Context, event json.RawMessa
 	return nil
 }
 
-func (_ *awsLambdaReceiver) Shutdown(_ context.Context) error {
+func (*awsLambdaReceiver) Shutdown(_ context.Context) error {
 	return nil
 }
 
