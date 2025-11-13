@@ -217,7 +217,6 @@ func (cfg *Config) buildClickHouseOptions() (*clickhouse.Options, error) {
 		cfg.TLS.ServerName != "" ||
 		cfg.TLS.Insecure ||
 		cfg.TLS.InsecureSkipVerify {
-
 		opt.TLS, err = cfg.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)

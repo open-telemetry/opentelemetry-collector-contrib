@@ -767,7 +767,7 @@ func TestBuildClickHouseOptions_WithCAFileOnly(t *testing.T) {
 	cfg.Endpoint = "clickhouse://default:password@localhost:9000/default?secure=true"
 
 	// Create a dummy CA file (intentionally invalid to trigger TLS error).
-	tmpFile, err := os.CreateTemp("", "ca*.pem")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "ca*.pem")
 	require.NoError(t, err)
 	defer os.Remove(tmpFile.Name())
 
