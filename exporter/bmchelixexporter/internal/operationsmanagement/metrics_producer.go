@@ -473,8 +473,8 @@ func toPercentMetricName(originalName string) string {
 		return originalName // already transformed
 	}
 
-	if strings.HasSuffix(originalName, "ratio") {
-		return strings.TrimSuffix(originalName, "ratio") + "percent"
+	if trimmed, ok := strings.CutSuffix(originalName, "ratio"); ok {
+		return trimmed + "percent"
 	}
 
 	return originalName + ".percent"
