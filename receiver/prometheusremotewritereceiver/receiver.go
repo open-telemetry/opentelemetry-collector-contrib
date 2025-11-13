@@ -194,6 +194,10 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	w.WriteHeader(http.StatusNoContent)
 
+	// Return if metric count is 0.
+	if m.MetricCount() == 0 {
+		return
+	}
 	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
 	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
 	if err != nil {

@@ -1509,21 +1509,6 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 		attrs.PutStr("cloud_provider", "gcp")
 		attrs.PutStr("region", "us-central1")
 
-		return metrics
-	}()
-
-	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
-	expectedIndex1 := func() pmetric.Metrics {
-		metrics := pmetric.NewMetrics()
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
-		attrs.PutStr("service.instance.id", "host1")
-		attrs.PutStr("machine_type", "n1-standard-1")
-		attrs.PutStr("cloud_provider", "gcp")
-		attrs.PutStr("region", "us-central1")
-
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("OpenTelemetry Collector")
 		sm.Scope().SetVersion("latest")
@@ -1568,11 +1553,10 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
-
-			// index 0 is related to the target_info metric that is the first request.
+			// Only one metric should be emitted
+			assert.Len(t, mockConsumer.metrics, 1)
+			// index 0 is related to the join between the target_info and the normal metric.
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex0, mockConsumer.metrics[0]))
-			// index 1 is related to the join between the target_info and the normal metric.
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex1, mockConsumer.metrics[1]))
 		})
 	}
 }
@@ -1768,11 +1752,11 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	}
 
 	// As target_info and metric1 have the same job/instance, they generate the same end metric: mockConsumer.metrics[0].
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[1]))
-	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[2]. At this point, the cache is full it should evict the target_info metric to store the metric2.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[0]))
+	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[1]. At this point, the cache is full it should evict the target_info metric to store the metric2.
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[1]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[3]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[2]))
 }
 
 func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
