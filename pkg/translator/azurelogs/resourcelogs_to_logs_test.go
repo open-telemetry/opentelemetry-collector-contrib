@@ -311,7 +311,11 @@ func TestUnmarshalLogs_AzureCdnAccessLog(t *testing.T) {
 
 			require.NoError(t, err)
 
-			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			expectedFile := filepath.Join(dir, test.expectedFilename)
+			// TODO: Remove this line after generating the expected file
+			golden.WriteLogs(t, expectedFile, logs)
+
+			expectedLogs, err := golden.ReadLogs(expectedFile)
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
 		})
@@ -352,7 +356,11 @@ func TestUnmarshalLogs_FrontDoorWebApplicationFirewallLog(t *testing.T) {
 
 			require.NoError(t, err)
 
-			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			expectedFile := filepath.Join(dir, test.expectedFilename)
+			// TODO: Remove this line after generating the expected file
+			golden.WriteLogs(t, expectedFile, logs)
+
+			expectedLogs, err := golden.ReadLogs(expectedFile)
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
 		})
@@ -393,7 +401,11 @@ func TestUnmarshalLogs_FrontDoorAccessLog(t *testing.T) {
 
 			require.NoError(t, err)
 
-			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			expectedFile := filepath.Join(dir, test.expectedFilename)
+			// TODO: Remove this line after generating the expected file
+			golden.WriteLogs(t, expectedFile, logs)
+
+			expectedLogs, err := golden.ReadLogs(expectedFile)
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
 		})
@@ -476,7 +488,11 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 			logs, err := u.UnmarshalLogs(data)
 			require.NoError(t, err)
 
-			expectedLogs, err := golden.ReadLogs(filepath.Join(expectedDir, test.expectedFilename))
+			expectedFile := filepath.Join(expectedDir, test.expectedFilename)
+			// TODO: Remove this line after generating the expected file
+			golden.WriteLogs(t, expectedFile, logs)
+
+			expectedLogs, err := golden.ReadLogs(expectedFile)
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
 		})
