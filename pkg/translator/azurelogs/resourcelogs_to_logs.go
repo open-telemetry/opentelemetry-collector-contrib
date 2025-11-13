@@ -331,7 +331,8 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 	attrs := map[string]any{}
 	hasProperties := len(log.Properties) > 0
 	known, unknown := parseRawRecord(log)
-
+	fmt.Println("------- known = ", known)
+	fmt.Println("------- unknown = ", unknown)
 	// Handle properties + unknown fields merge
 	switch {
 	case hasProperties:
@@ -345,10 +346,14 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 	addCommonAzureFields(attrs, log)
 	// Merge known fields into attrs
 	if len(known) > 0 {
-		for k, v := range known {
-			if _, exists := attrs[k]; !exists {
-				attrs[k] = v
+		// Only merge unknown fields into body, not known Azure root fields
+		for k, v := range unknown {
+			attrsProperties, ok := attrs[azureProperties].(map[string]any)
+			if !ok {
+				attrsProperties = map[string]any{}
+				attrs[azureProperties] = attrsProperties
 			}
+			attrsProperties[k] = v
 		}
 	}
 	return attrs
