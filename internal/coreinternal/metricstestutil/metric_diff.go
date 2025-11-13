@@ -6,6 +6,7 @@ package metricstestutil // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -343,9 +344,9 @@ func diffValues(
 }
 
 func attrMapToString(m pcommon.Map) string {
-	out := ""
+	var out strings.Builder
 	for k, v := range m.All() {
-		out += "[" + k + "=" + v.AsString() + "]"
+		out.WriteString("[" + k + "=" + v.AsString() + "]")
 	}
-	return out
+	return out.String()
 }
