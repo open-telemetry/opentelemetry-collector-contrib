@@ -17,6 +17,9 @@ import (
 // e.g. `go test -tags generate_vpc_goldens ./extension/... -run TestGenerateVPCGoldens`.
 // The fixtures are stored as newline-delimited JSON logs; the helper rewrites
 // each one to match the encoder output.
+//
+// Note that the NDJSON files those are based on the output of the export_vpc_flow_logs.sh script.
+// See scripts/README.md in this package for more details.
 func TestGenerateVPCGoldens(t *testing.T) {
 	t.Parallel()
 

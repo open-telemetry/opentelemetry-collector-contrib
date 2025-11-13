@@ -3,17 +3,16 @@
 This module provisions the Google Cloud infrastructure required to capture VPC
 flow logs for the
 `googlecloudlogentryencodingextension` test fixtures. It replaces the manual
-`gcloud`-heavy setup with declarative Terraform resources while preserving the
-existing Go helper and traffic generation scripts.
+ setup with declarative Terraform resources alongside some bash and golang help.
 
 ## Prerequisites
 
 - Terraform **v1.5+**
 - Google provider **v5.0+** (downloaded automatically by Terraform)
 - An authenticated `gcloud` session (`gcloud auth login`) with access to the
-  target project
-- The Google Cloud APIs used by the resources must be enabled:
-  `compute.googleapis.com`, `logging.googleapis.com`
+- Make sure you are logged into gcloud in TWO different ways
+  - `gcloud auth login`
+  - `gcloud auth application-default login` (for terraform)
 
 > The helper scripts use the Go traffic runner to connect to instances via SSH
 > and generate traffic after Terraform completes.
@@ -39,10 +38,12 @@ existing Go helper and traffic generation scripts.
    scripts/export_vpc_flow_logs.sh
    ```
 
-4. Tear everything down when finished (uses `terraform destroy` under the hood):
+4. You can then get the exported files and turn them into test fixtures via a manual process of your choice.
+
+5. Tear everything down when finished (uses `terraform destroy` under the hood):
 
    ```bash
-   scripts/teardown_vpc_flow_fixtures.sh --dry-run=false
+   scripts/teardown_vpc_flow_fixtures.sh --dry-run=true # switch to false to actually do the teardown
    ```
 
 ## Manual Terraform Usage
@@ -84,14 +85,3 @@ existing `terraform.tfvars`.
 | `region`         | Region where the managed instance group resides.             |
 | `mig_name`       | Managed instance group name consumed by the Go helper.       |
 | `subnet_name`    | Subnet used for log filtering and traffic generation.        |
-
-## Resource Overview
-
-Terraform manages the following resources:
-
-- VPC network (`google_compute_network`)
-- Subnet with flow logs enabled (`google_compute_subnetwork`)
-- Internal and SSH firewall rules (`google_compute_firewall`)
-- Instance template (`google_compute_instance_template`)
-- Regional managed instance group with two instances
-  (`google_compute_region_instance_group_manager`)
