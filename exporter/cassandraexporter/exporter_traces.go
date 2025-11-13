@@ -6,9 +6,9 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
-	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"time"
 
+	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -43,19 +43,19 @@ func initializeTraceKernel(cfg *Config) error {
 
 	defer session.Close()
 
-	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).WithContext(ctx).Exec()
+	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).ExecContext(ctx)
 	if createDatabaseError != nil {
 		return createDatabaseError
 	}
-	createLinksTypeError := session.Query(parseCreateLinksTypeSQL(cfg)).WithContext(ctx).Exec()
+	createLinksTypeError := session.Query(parseCreateLinksTypeSQL(cfg)).ExecContext(ctx)
 	if createLinksTypeError != nil {
 		return createLinksTypeError
 	}
-	createEventsTypeError := session.Query(parseCreateEventsTypeSQL(cfg)).WithContext(ctx).Exec()
+	createEventsTypeError := session.Query(parseCreateEventsTypeSQL(cfg)).ExecContext(ctx)
 	if createEventsTypeError != nil {
 		return createEventsTypeError
 	}
-	createSpanTableError := session.Query(parseCreateSpanTableSQL(cfg)).WithContext(ctx).Exec()
+	createSpanTableError := session.Query(parseCreateSpanTableSQL(cfg)).ExecContext(ctx)
 	if createSpanTableError != nil {
 		return createSpanTableError
 	}
