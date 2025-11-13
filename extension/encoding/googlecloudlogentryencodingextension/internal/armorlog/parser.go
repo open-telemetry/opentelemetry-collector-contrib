@@ -13,7 +13,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -43,7 +43,7 @@ const (
 	gcpArmorSecurityPolicyOutcome = "gcp.armor.security_policy.outcome"
 
 	// Rate limit action attributes
-	// gcpArmorRateLimitActionKey holds the the rate limit key value (up to 36 bytes)
+	// gcpArmorRateLimitActionKey holds the rate limit key value (up to 36 bytes)
 	gcpArmorRateLimitActionKey = "gcp.armor.security_policy.rate_limit.action.key"
 	// gcpArmorRateLimitActionOutcome holds the outcome of the rate limit action
 	gcpArmorRateLimitActionOutcome = "gcp.armor.security_policy.rate_limit.action.outcome"
@@ -66,15 +66,11 @@ const (
 	// gcpArmorRecaptchaSessionTokenScore holds the legitimacy score embedded in a of the reCAPTCHA session-token
 	gcpArmorRecaptchaSessionTokenScore = "gcp.armor.request_data.recaptcha_session_token.score" // #nosec G101
 	// gcpArmorUserIPInfoSource holds a field that is typically the header from which the user IP was resolved
-	gcpArmorUserIPInfoSource = "http.request.header.source"
-	// gcpArmorRemoteIPInfoRegionCode holds the two-letter country code or region code for the IP address
-	gcpArmorRemoteIPInfoRegionCode = "geo.region.iso_code"
+	gcpArmorUserIPInfoSource = "gcp.armor.request_data.user_ip.source"
 	// gcpArmorRemoteIPInfoAsn holds the five-digit autonomous system number (ASN) for the IP address
 	gcpArmorRemoteIPInfoAsn = "gcp.armor.request_data.remote_ip.asn"
 	// gcpArmorTLSJa4Fingerprint holds a JA4 TTL/SSL fingerprint if the client connects using HTTPS, HTTP/2, or HTTP/3
 	gcpArmorTLSJa4Fingerprint = "tls.client.ja4"
-	// gcpArmorTLSJa3Fingerprint holds a JA3 TTL/SSL fingerprint if the client connects using HTTPS, HTTP/2, or HTTP/3
-	gcpArmorTLSJa3Fingerprint = "tls.client.ja3"
 )
 
 const (
@@ -128,7 +124,7 @@ type remoteIPInfo struct {
 
 type securityPolicyBase struct {
 	Name             string `json:"name"`
-	Priority         int    `json:"priority"`
+	Priority         *int64 `json:"priority"`
 	ConfiguredAction string `json:"configuredAction"`
 	Outcome          string `json:"outcome"`
 }
@@ -202,7 +198,7 @@ func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) error {
 		return nil
 	}
 
-	shared.PutStr(gcpArmorRemoteIPInfoRegionCode, info.RegionCode, attr)
+	shared.PutStr(string(semconv.GeoRegionISOCodeKey), info.RegionCode, attr)
 	shared.PutInt(gcpArmorRemoteIPInfoAsn, info.ASN, attr)
 
 	if err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), info.IPAddress, attr); err != nil {
@@ -214,7 +210,7 @@ func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) error {
 
 func handleTLSFingerprints(data *securityPolicyRequestData, attr pcommon.Map) {
 	shared.PutStr(gcpArmorTLSJa4Fingerprint, data.TLSJa4Fingerprint, attr)
-	shared.PutStr(gcpArmorTLSJa3Fingerprint, data.TLSJa3Fingerprint, attr)
+	shared.PutStr(string(semconv.TLSClientJa3Key), data.TLSJa3Fingerprint, attr)
 }
 
 func handleSecurityPolicyRequestData(data *securityPolicyRequestData, attr pcommon.Map) error {
@@ -256,10 +252,10 @@ func handleThreatIntelligence(ti *threatIntelligence, attr pcommon.Map) {
 }
 
 func handleSecurityPolicyBase(sp *securityPolicyBase, attr pcommon.Map) {
-	attr.PutStr(gcpArmorSecurityPolicyName, sp.Name)
-	attr.PutInt(gcpArmorSecurityPolicyPriority, int64(sp.Priority))
-	attr.PutStr(gcpArmorSecurityPolicyConfiguredAction, sp.ConfiguredAction)
-	attr.PutStr(gcpArmorSecurityPolicyOutcome, sp.Outcome)
+	shared.PutStr(gcpArmorSecurityPolicyName, sp.Name, attr)
+	shared.PutInt(gcpArmorSecurityPolicyPriority, sp.Priority, attr)
+	shared.PutStr(gcpArmorSecurityPolicyConfiguredAction, sp.ConfiguredAction, attr)
+	shared.PutStr(gcpArmorSecurityPolicyOutcome, sp.Outcome, attr)
 }
 
 func handleSecurityPolicyExtended(sp *securityPolicyExtended, attr pcommon.Map) {
@@ -281,7 +277,7 @@ func handleEnforcedSecurityPolicy(sp *enforcedSecurityPolicy, attr pcommon.Map) 
 	handleSecurityPolicyExtended(&sp.securityPolicyExtended, attr)
 
 	if sp.AdaptiveProtection != nil {
-		attr.PutStr(gcpArmorAdaptiveProtectionAutoDeployAlertID, sp.AdaptiveProtection.AutoDeployAlertID)
+		shared.PutStr(gcpArmorAdaptiveProtectionAutoDeployAlertID, sp.AdaptiveProtection.AutoDeployAlertID, attr)
 	}
 }
 
@@ -289,10 +285,10 @@ func ContainsSecurityPolicyFields(jsonPayload gojson.RawMessage) bool {
 	// Check for the presence of key armor log field names in the raw JSON without unmarshaling
 	// to avoid unnecessary overhead for non-armor load balancer logs.
 	s := string(jsonPayload)
-	return strings.Contains(s, `"enforcedSecurityPolicy"`) ||
-		strings.Contains(s, `"previewSecurityPolicy"`) ||
-		strings.Contains(s, `"enforcedEdgeSecurityPolicy"`) ||
-		strings.Contains(s, `"previewEdgeSecurityPolicy"`)
+	return strings.Contains(s, securityPolicyTypeEnforced) ||
+		strings.Contains(s, securityPolicyTypePreview) ||
+		strings.Contains(s, securityPolicyTypeEnforcedEdge) ||
+		strings.Contains(s, securityPolicyTypePreviewEdge)
 }
 
 func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
@@ -305,7 +301,7 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 		return fmt.Errorf("invalid Armor log: %w", err)
 	}
 
-	attr.PutStr(gcpLoadBalancingStatusDetails, log.StatusDetails)
+	shared.PutStr(gcpLoadBalancingStatusDetails, log.StatusDetails, attr)
 
 	// Handle request metadata fields
 	shared.PutStr(gcpLoadBalancingBackendTargetProjectNumber, log.BackendTargetProjectNumber, attr)

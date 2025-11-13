@@ -9,8 +9,10 @@ import (
 	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
+
+func int64ptr(i int64) *int64 { return &i }
 
 func TestContainsSecurityPolicyFields(t *testing.T) {
 	tests := []struct {
@@ -100,7 +102,6 @@ func TestIsValid(t *testing.T) {
 }
 
 func TestHandleSecurityPolicyRequestData(t *testing.T) {
-	int64ptr := func(i int64) *int64 { return &i }
 	tests := []struct {
 		name     string
 		data     *securityPolicyRequestData
@@ -134,10 +135,10 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				gcpArmorUserIPInfoSource:              "X-Forwarded-For",
 				string(semconv.ClientAddressKey):      "192.168.1.1",
 				string(semconv.NetworkPeerAddressKey): "10.0.0.1",
-				gcpArmorRemoteIPInfoRegionCode:        "US",
+				string(semconv.GeoRegionISOCodeKey):   "US",
 				gcpArmorRemoteIPInfoAsn:               int64(12345),
 				gcpArmorTLSJa4Fingerprint:             "ja4_fingerprint",
-				gcpArmorTLSJa3Fingerprint:             "ja3_fingerprint",
+				string(semconv.TLSClientJa3Key):       "ja3_fingerprint",
 			},
 		},
 		{
@@ -148,7 +149,7 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 			},
 			expected: map[string]any{
 				gcpArmorRecaptchaActionTokenScore: float64(0.5),
-				gcpArmorTLSJa3Fingerprint:         "ja3_only",
+				string(semconv.TLSClientJa3Key):   "ja3_only",
 			},
 		},
 		{
@@ -185,7 +186,7 @@ func TestHandleSecurityPolicyBase(t *testing.T) {
 			name: "all fields populated",
 			policy: &securityPolicyBase{
 				Name:             "test-policy",
-				Priority:         100,
+				Priority:         int64ptr(100),
 				ConfiguredAction: "DENY",
 				Outcome:          "DENY",
 			},
@@ -200,7 +201,7 @@ func TestHandleSecurityPolicyBase(t *testing.T) {
 			name: "zero priority",
 			policy: &securityPolicyBase{
 				Name:             "policy-zero",
-				Priority:         0,
+				Priority:         int64ptr(0),
 				ConfiguredAction: "allow",
 				Outcome:          "accepted",
 			},
@@ -372,7 +373,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         10,
+					Priority:         int64ptr(10),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -389,7 +390,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         10,
+					Priority:         int64ptr(10),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -412,7 +413,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         10,
+					Priority:         int64ptr(10),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -431,7 +432,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         10,
+					Priority:         int64ptr(10),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -452,7 +453,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         10,
+					Priority:         int64ptr(10),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -473,7 +474,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         10,
+					Priority:         int64ptr(10),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -525,7 +526,7 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 				securityPolicyExtended: securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "test-policy",
-						Priority:         10,
+						Priority:         int64ptr(10),
 						ConfiguredAction: "DENY",
 						Outcome:          "DENY",
 					},
@@ -544,7 +545,7 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 				securityPolicyExtended: securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "test-policy",
-						Priority:         10,
+						Priority:         int64ptr(10),
 						ConfiguredAction: "DENY",
 						Outcome:          "DENY",
 					},
@@ -567,7 +568,7 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 				securityPolicyExtended: securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "test-policy",
-						Priority:         10,
+						Priority:         int64ptr(10),
 						ConfiguredAction: "DENY",
 						Outcome:          "DENY",
 					},
@@ -779,7 +780,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				gcpArmorRecaptchaActionTokenScore:          float64(0.9),
 				gcpArmorUserIPInfoSource:                   "X-Forwarded-For",
 				string(semconv.ClientAddressKey):           "5.6.7.8",
-				gcpArmorTLSJa3Fingerprint:                  "ja3-fingerprint",
+				string(semconv.TLSClientJa3Key):            "ja3-fingerprint",
 				gcpArmorSecurityPolicyType:                 securityPolicyTypeEnforced,
 				gcpArmorSecurityPolicyName:                 "enforced-policy",
 				gcpArmorSecurityPolicyPriority:             int64(30),
