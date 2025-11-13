@@ -206,11 +206,10 @@ func TestPayloads(t *testing.T) {
 		},
 	}
 
+	extension := newTestExtension(t, Config{})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			extension := newTestExtension(t, Config{})
 
 			data, err := os.ReadFile(tt.logFilename)
 			require.NoError(t, err)
