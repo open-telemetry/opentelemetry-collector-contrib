@@ -21,11 +21,11 @@ const (
 	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
 	// defaultEndpoint = "localhost:8080"
-	defaultReadTimeout         = "500ms"
-	defaultWriteTimeout        = "500ms"
-	defaultPath                = "/events"
-	defaultHealthPath          = "/health_check"
-	defaultMaxRequestBodySize  = 100 * 1024 // 100KB
+	defaultReadTimeout        = "500ms"
+	defaultWriteTimeout       = "500ms"
+	defaultPath               = "/events"
+	defaultHealthPath         = "/health_check"
+	defaultMaxRequestBodySize = 100 * 1024 // 100KB
 )
 
 // NewFactory creates a factory for Generic Webhook Receiver.
