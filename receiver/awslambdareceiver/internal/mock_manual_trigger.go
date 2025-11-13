@@ -14,7 +14,7 @@ import (
 type MockCustomEventHandler[T any] struct {
 	ctrl     *gomock.Controller
 	recorder *MockCustomEventHandlerMockRecorder[T]
-	isgomock struct{}
+	_        struct{} // prevent unkeyed literal initialization
 }
 
 // MockCustomEventHandlerMockRecorder is the mock recorder for MockCustomEventHandler.
@@ -93,7 +93,7 @@ func (mr *MockCustomEventHandlerMockRecorder[T]) PostProcess(ctx, on any) *gomoc
 type MockIterator[T any] struct {
 	ctrl     *gomock.Controller
 	recorder *MockIteratorMockRecorder[T]
-	isgomock struct{}
+	_        struct{} // prevent unkeyed literal initialization
 }
 
 // MockIteratorMockRecorder is the mock recorder for MockIterator.

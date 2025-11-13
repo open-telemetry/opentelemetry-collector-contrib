@@ -51,7 +51,7 @@ func newS3Handler[T any](
 	}
 }
 
-func (s *s3Handler[T]) handlerType() eventType {
+func (_ *s3Handler[T]) handlerType() eventType {
 	return s3Event
 }
 
@@ -96,7 +96,7 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 	return nil
 }
 
-func (s *s3Handler[T]) parseEvent(raw json.RawMessage) (event events.S3EventRecord, err error) {
+func (_ *s3Handler[T]) parseEvent(raw json.RawMessage) (event events.S3EventRecord, err error) {
 	var message events.S3Event
 	if err := gojson.Unmarshal(raw, &message); err != nil {
 		return events.S3EventRecord{}, fmt.Errorf("failed to unmarshal S3 event notification: %w", err)
@@ -129,7 +129,7 @@ func newCWLogsSubscriptionHandler(
 	}
 }
 
-func (c *cwLogsSubscriptionHandler) handlerType() eventType {
+func (_ *cwLogsSubscriptionHandler) handlerType() eventType {
 	return cwEvent
 }
 

@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
@@ -273,7 +273,7 @@ func TestSetObservedTimestampForAllLogs(t *testing.T) {
 	// Add ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
 	attr := rl.Resource().Attributes()
-	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 
 	// Add ScopeLogs
 	scopeLogs := plog.NewScopeLogs()
@@ -281,7 +281,7 @@ func TestSetObservedTimestampForAllLogs(t *testing.T) {
 	recordLog := plog.NewLogRecord()
 
 	// Add record attributes
-	recordLog.Attributes().PutStr(conventions.AttributeClientAddress, "0.0.0.0")
+	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), "0.0.0.0")
 	rScope := scopeLogs.LogRecords().AppendEmpty()
 	recordLog.MoveTo(rScope)
 
@@ -308,7 +308,7 @@ type noOpLogsConsumer struct {
 	err          error
 }
 
-func (n *noOpLogsConsumer) Capabilities() consumer.Capabilities {
+func (*noOpLogsConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
@@ -319,7 +319,7 @@ func (n *noOpLogsConsumer) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 
 type mockS3LogUnmarshaler struct{}
 
-func (n mockS3LogUnmarshaler) Capabilities() consumer.Capabilities {
+func (mockS3LogUnmarshaler) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 

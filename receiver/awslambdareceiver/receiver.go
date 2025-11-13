@@ -214,7 +214,7 @@ func (a *awsLambdaReceiver) handleEvent(ctx context.Context, event json.RawMessa
 	return nil
 }
 
-func (a *awsLambdaReceiver) Shutdown(_ context.Context) error {
+func (_ *awsLambdaReceiver) Shutdown(_ context.Context) error {
 	return nil
 }
 

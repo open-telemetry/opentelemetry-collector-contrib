@@ -607,12 +607,12 @@ type mockExtensionWithPMetricUnmarshaler struct {
 
 type mockExtension struct{}
 
-func (m *mockExtension) Start(_ context.Context, _ component.Host) error {
+func (*mockExtension) Start(_ context.Context, _ component.Host) error {
 	// Mock the behavior of the Start method.
 	return nil
 }
 
-func (m *mockExtension) Shutdown(_ context.Context) error {
+func (*mockExtension) Shutdown(_ context.Context) error {
 	// Mock the behavior of the Shutdown method.
 	return nil
 }

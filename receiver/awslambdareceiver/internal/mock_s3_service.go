@@ -1,8 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package internal is a generated GoMock package.
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
+package internal
 
 import (
 	context "context"
@@ -16,7 +15,7 @@ import (
 type Mocks3API struct {
 	ctrl     *gomock.Controller
 	recorder *Mocks3APIMockRecorder
-	isgomock struct{}
+	_        struct{} // prevent unkeyed literal initialization
 }
 
 // Mocks3APIMockRecorder is the mock recorder for Mocks3API.
@@ -100,7 +99,7 @@ func (mr *Mocks3APIMockRecorder) ListObjectsV2(ctx, params any, optFns ...any) *
 type MockS3Service struct {
 	ctrl     *gomock.Controller
 	recorder *MockS3ServiceMockRecorder
-	isgomock struct{}
+	_        struct{} // prevent unkeyed literal initialization
 }
 
 // MockS3ServiceMockRecorder is the mock recorder for MockS3Service.
@@ -168,7 +167,7 @@ func (mr *MockS3ServiceMockRecorder) ReadObject(ctx, bucketName, objectKey any) 
 type MockS3Provider struct {
 	ctrl     *gomock.Controller
 	recorder *MockS3ProviderMockRecorder
-	isgomock struct{}
+	_        struct{} // prevent unkeyed literal initialization
 }
 
 // MockS3ProviderMockRecorder is the mock recorder for MockS3Provider.
