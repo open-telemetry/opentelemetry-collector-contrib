@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -121,7 +121,7 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		)
 		sp.SetAttributes(telemetryAttributes...)
 		for j := 0; j < w.loadSize; j++ {
-			sp.SetAttributes(common.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
+			sp.SetAttributes(config.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
 		}
 
 		// Store the parent span context for potential future linking

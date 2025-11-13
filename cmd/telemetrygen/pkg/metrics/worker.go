@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -107,7 +107,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 		loadAttrs := signalAttrs
 		if w.loadSize > 0 {
 			for j := 0; j < w.loadSize; j++ {
-				loadAttrs = append(loadAttrs, common.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
+				loadAttrs = append(loadAttrs, config.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
 			}
 		}
 		var metrics []metricdata.Metrics
