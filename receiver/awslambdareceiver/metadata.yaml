@@ -3,7 +3,7 @@ type: awslambda
 status:
   class: receiver
   stability:
-    development: [logs]
+    development: [logs, metrics]
   distributions: []
   codeowners:
     active: [MichaelKatsoulis, Kavindu-Dodan, axw, pjanotti]
