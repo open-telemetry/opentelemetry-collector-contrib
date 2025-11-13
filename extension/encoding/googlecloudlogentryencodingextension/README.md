@@ -353,7 +353,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `remoteIp` | `network.peer.address` |
 | `securityPolicyRequestData.recaptchaActionToken.score` | `gcp.armor.request_data.recaptcha_action_token.score` |
 | `securityPolicyRequestData.recaptchaSessionToken.score` | `gcp.armor.request_data.recaptcha_session_token.score` |
-| `securityPolicyRequestData.userIpInfo.source` | `http.request.header.source` |
+| `securityPolicyRequestData.userIpInfo.source` | `gcp.armor.request_data.user_ip.source` |
 | `securityPolicyRequestData.userIpInfo.ipAddress` | `client.address` |
 | `securityPolicyRequestData.remoteIpInfo.ipAddress` | `network.peer.address` |
 | `securityPolicyRequestData.remoteIpInfo.regionCode` | `geo.region.iso_code` |
