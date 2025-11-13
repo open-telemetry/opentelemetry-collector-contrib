@@ -284,7 +284,7 @@ Indicate Redis cluster is enabled
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### redis.cluster.known_nodes
 
@@ -445,7 +445,7 @@ The sum in bytes of all overheads that the server allocated for managing its int
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### redis.memory.used_memory_startup
 
@@ -453,7 +453,7 @@ Initial amount of memory consumed by Redis at startup in bytes
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### redis.replication.replica_offset
 
@@ -483,7 +483,7 @@ Number of keys being tracked by the server
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {key} | Sum | Int | Cumulative | false | development |
+| {key} | Sum | Int | Cumulative | false | Development |
 
 ## Resource Attributes
 
