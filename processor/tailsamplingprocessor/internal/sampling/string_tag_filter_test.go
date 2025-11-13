@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -226,7 +227,8 @@ func TestStringTagFilter(t *testing.T) {
 					assert.NoError(t, err)
 				}()
 			}
-			filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values, c.filterCfg.EnabledRegexMatching, c.filterCfg.CacheMaxSize, c.filterCfg.InvertMatch)
+			filter, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values, c.filterCfg.EnabledRegexMatching, c.filterCfg.CacheMaxSize, c.filterCfg.InvertMatch)
+			require.NoError(t, err)
 			decision, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
@@ -234,9 +236,24 @@ func TestStringTagFilter(t *testing.T) {
 	}
 }
 
+func TestStringTagFilter_InvalidRegex(t *testing.T) {
+	t.Run("error when regex is enabled", func(t *testing.T) {
+		filter, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "key", []string{"*invalid-regex"}, true, defaultCacheSize, false)
+		assert.Error(t, err)
+		assert.Nil(t, filter)
+	})
+
+	t.Run("succeeds when regex is disabled", func(t *testing.T) {
+		filter, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "key", []string{"*invalid-regex"}, false, defaultCacheSize, false)
+		assert.NoError(t, err)
+		assert.NotNil(t, filter)
+	})
+}
+
 func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
 	trace := newTraceStringAttrs(map[string]any{"example": "value"}, "", "")
-	filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"value"}, false, 0, false)
+	filter, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"value"}, false, 0, false)
+	require.NoError(b, err)
 
 	for b.Loop() {
 		_, err := filter.Evaluate(b.Context(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
@@ -246,7 +263,8 @@ func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
 
 func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
 	trace := newTraceStringAttrs(map[string]any{"example": "grpc.health.v1.HealthCheck"}, "", "")
-	filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"v[0-9]+.HealthCheck$"}, true, 0, false)
+	filter, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"v[0-9]+.HealthCheck$"}, true, 0, false)
+	require.NoError(b, err)
 
 	for b.Loop() {
 		_, err := filter.Evaluate(b.Context(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
