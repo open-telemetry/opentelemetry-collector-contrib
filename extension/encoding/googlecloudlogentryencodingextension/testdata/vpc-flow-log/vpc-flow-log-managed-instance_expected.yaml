@@ -10,18 +10,18 @@ resourceLogs:
         - key: gcp.resource_type
           value:
             stringValue: gce_subnetwork
-        - key: gcp.label.location
-          value:
-            stringValue: us-central1
-        - key: gcp.label.project_id
-          value:
-            stringValue: elastic-logstash
         - key: gcp.label.subnetwork_id
           value:
             stringValue: "3489268495624148348"
         - key: gcp.label.subnetwork_name
           value:
             stringValue: andrewvc-flowfixtures-subnet
+        - key: gcp.label.location
+          value:
+            stringValue: us-central1
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-logstash
     scopeLogs:
       - logRecords:
           - attributes:

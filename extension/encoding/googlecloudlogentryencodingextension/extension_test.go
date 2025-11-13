@@ -222,6 +222,9 @@ func TestPayloads(t *testing.T) {
 			logs, err := extension.UnmarshalLogs(content.Bytes())
 			require.NoError(t, err)
 
+			// write expected log with:
+			// golden.WriteLogs(t, tt.expectedFilename, logs)
+
 			expectedLogs, err := golden.ReadLogs(tt.expectedFilename)
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
