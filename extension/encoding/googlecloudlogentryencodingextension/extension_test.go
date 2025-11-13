@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 
 	gojson "github.com/goccy/go-json"
@@ -197,12 +196,12 @@ func TestPayloads(t *testing.T) {
 		},
 		{
 			name:             "vpc flow log - google services",
-			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-google-service.ndjson",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-google-service.json",
 			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-google-service_expected.yaml",
 		},
 		{
 			name:             "vpc flow log - managed instance mig regions",
-			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-managed-instance.ndjson",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-managed-instance.json",
 			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-managed-instance_expected.yaml",
 		},
 	}
@@ -216,16 +215,10 @@ func TestPayloads(t *testing.T) {
 			data, err := os.ReadFile(tt.logFilename)
 			require.NoError(t, err)
 
-			var content *bytes.Buffer
-			if filepath.Ext(tt.logFilename) == ".ndjson" {
-				content = bytes.NewBuffer(data)
-			} else { // regular .json file
-				content = bytes.NewBuffer(nil)
-				// Logs are expected to be one JSON object per line, so we compact them.
-				// Our NDJSON fixtures (NDJSON aside) are by definition already compacted.
-				compactionErr := gojson.Compact(content, data)
-				require.NoError(t, compactionErr)
-			}
+			// Logs are expected to be one JSON object per line, so we compact them.
+			content := bytes.NewBuffer(nil)
+			compactionErr := gojson.Compact(content, data)
+			require.NoError(t, compactionErr)
 
 			logs, err := extension.UnmarshalLogs(content.Bytes())
 			require.NoError(t, err)

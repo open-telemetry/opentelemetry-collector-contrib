@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	gojson "github.com/goccy/go-json"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
@@ -18,10 +19,10 @@ import (
 // tests that exercise VPC flow parsing. It is guarded by the
 // `generate_vpc_goldens` build tag so it only runs when explicitly invoked,
 // e.g. `go test -tags generate_vpc_goldens ./extension/... -run TestGenerateVPCGoldens`.
-// The fixtures are stored as newline-delimited JSON logs; the helper rewrites
+// The fixtures are stored as multi-line JSON logs; the helper compacts and rewrites
 // each one to match the encoder output.
 //
-// Note that the NDJSON files those are based on the output of the export_vpc_flow_logs.sh script.
+// Note that the JSON files those are based on the output of the export_vpc_flow_logs.sh script.
 // See scripts/README.md in this package for more details.
 func TestGenerateVPCGoldens(t *testing.T) {
 	t.Parallel()
@@ -37,12 +38,12 @@ func TestGenerateVPCGoldens(t *testing.T) {
 	}{
 		{
 			name:     "google_service",
-			jsonFile: "vpc-flow-log-google-service.ndjson",
+			jsonFile: "vpc-flow-log-google-service.json",
 			outFile:  "vpc-flow-log-google-service_expected.yaml",
 		},
 		{
 			name:     "managed_instance",
-			jsonFile: "vpc-flow-log-managed-instance.ndjson",
+			jsonFile: "vpc-flow-log-managed-instance.json",
 			outFile:  "vpc-flow-log-managed-instance_expected.yaml",
 		},
 	}
@@ -52,24 +53,18 @@ func TestGenerateVPCGoldens(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			raw, err := os.ReadFile(filepath.Join(root, tc.jsonFile))
+			data, err := os.ReadFile(filepath.Join(root, tc.jsonFile))
 			if err != nil {
 				t.Fatalf("failed to read fixture: %v", err)
 			}
 
-			lines := bytes.Split(raw, []byte{'\n'})
-			var buf bytes.Buffer
-			for _, line := range lines {
-				line = bytes.TrimSpace(line)
-				if len(line) == 0 {
-					continue
-				}
-				buf.Write(line)
-				buf.WriteByte('\n')
+			// Compact multi-line JSON to a single line
+			content := bytes.NewBuffer(nil)
+			if err := gojson.Compact(content, data); err != nil {
+				t.Fatalf("failed to compact JSON: %v", err)
 			}
-			data := bytes.TrimSpace(buf.Bytes())
 
-			logs, err := ext.UnmarshalLogs(data)
+			logs, err := ext.UnmarshalLogs(content.Bytes())
 			if err != nil {
 				t.Fatalf("failed to unmarshal logs: %v", err)
 			}
