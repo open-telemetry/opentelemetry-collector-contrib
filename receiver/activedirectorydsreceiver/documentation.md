@@ -18,7 +18,7 @@ The number of binds per second serviced by this domain controller.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {binds}/s | Sum | Double | Cumulative | false | development |
+| {binds}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ The amount of time taken for the last successful LDAP bind.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 ### active_directory.ds.ldap.bind.rate
 
@@ -40,7 +40,7 @@ The number of successful LDAP binds per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {binds}/s | Sum | Double | Cumulative | false | development |
+| {binds}/s | Sum | Double | Cumulative | false | Development |
 
 ### active_directory.ds.ldap.client.session.count
 
@@ -48,7 +48,7 @@ The number of connected LDAP client sessions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {sessions} | Sum | Int | Cumulative | false | development |
+| {sessions} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.ldap.search.rate
 
@@ -56,7 +56,7 @@ The number of LDAP searches per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {searches}/s | Sum | Double | Cumulative | false | development |
+| {searches}/s | Sum | Double | Cumulative | false | Development |
 
 ### active_directory.ds.name_cache.hit_rate
 
@@ -64,7 +64,7 @@ The percentage of directory object name component lookups that are satisfied by 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
+| % | Gauge | Double | Development |
 
 ### active_directory.ds.notification.queued
 
@@ -72,7 +72,7 @@ The number of pending update notifications that have been queued to push to clie
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {notifications} | Sum | Int | Cumulative | false | development |
+| {notifications} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.operation.rate
 
@@ -80,7 +80,7 @@ The number of operations performed per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations}/s | Sum | Double | Cumulative | false | development |
+| {operations}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -94,7 +94,7 @@ The amount of network data transmitted by the Directory Replication Agent.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -109,7 +109,7 @@ The number of objects transmitted by the Directory Replication Agent per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {objects}/s | Sum | Double | Cumulative | false | development |
+| {objects}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -123,7 +123,7 @@ The number of pending replication operations for the Directory Replication Agent
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | false | development |
+| {operations} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.replication.property.rate
 
@@ -131,7 +131,7 @@ The number of properties transmitted by the Directory Replication Agent per seco
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {properties}/s | Sum | Double | Cumulative | false | development |
+| {properties}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -145,7 +145,7 @@ The number of objects remaining until the full sync completes for the Directory 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {objects} | Sum | Int | Cumulative | false | development |
+| {objects} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.replication.sync.request.count
 
@@ -153,7 +153,7 @@ The number of sync requests made by the Directory Replication Agent.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -167,7 +167,7 @@ The number of values transmitted by the Directory Replication Agent per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {values}/s | Sum | Double | Cumulative | false | development |
+| {values}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -182,7 +182,7 @@ The number of security descriptor propagation events that are queued for process
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {events} | Sum | Int | Cumulative | false | development |
+| {events} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.suboperation.rate
 
@@ -190,7 +190,7 @@ The rate of sub-operations performed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {suboperations}/s | Sum | Double | Cumulative | false | development |
+| {suboperations}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -204,4 +204,4 @@ The number of threads in use by the directory service.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {threads} | Sum | Int | Cumulative | false | development |
+| {threads} | Sum | Int | Cumulative | false | Development |

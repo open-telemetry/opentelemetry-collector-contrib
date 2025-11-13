@@ -1,0 +1,25 @@
+resourceLogs:
+  - scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: status
+                value:
+                  stringValue: info
+              - key: timestamp
+                value:
+                  intValue: 1234567890
+              - key: hostname
+                value:
+                  stringValue: test-host
+              - key: service
+                value:
+                  stringValue: test-service
+              - key: ddsource
+                value:
+                  stringValue: test-source
+              - key: ddtags
+                value:
+                  stringValue: env:prod,version:1.0
+            body:
+              stringValue: Test log message
+            timeUnixNano: "1736889934967986176"

@@ -120,7 +120,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 		intervalStartTimeMs int64
 	}{
 		{
-			name:                "histogram with startTimestamp",
+			name:                "histogram with no startTimestamp",
 			metricName:          "histogram",
 			intervalStartTimeMs: 11,
 			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
@@ -138,7 +138,6 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.ExplicitBounds().FromRaw([]float64{0.75, 2.75})
 				point.BucketCounts().FromRaw([]uint64{33, 22, 11})
-				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -207,7 +206,6 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				point.ExplicitBounds().FromRaw([]float64{0.75, 2.75})
 				point.BucketCounts().FromRaw([]uint64{0, 0, 0})
-				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -239,8 +237,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetCount(66)
 				point.SetSum(1004.78)
-				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.BucketCounts().FromRaw([]uint64{66})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
@@ -252,7 +249,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
+			mp := newMetricFamily(tt.metricName, mc, zap.NewNop(), false, false)
 			for i, tv := range tt.scrapes {
 				var lbls labels.Labels
 				if tv.extraLabel.Name != "" {
@@ -323,7 +320,6 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.SetCount(180)
 				point.SetSum(100.5)
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
-				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond))
 				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
 				point.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50})
 				attributes := point.Attributes()
@@ -347,7 +343,6 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond))
 				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
 				point.BucketCounts().FromRaw([]uint64{0, 0, 0, 0, 0})
 				attributes := point.Attributes()
@@ -374,7 +369,6 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.SetCount(50)
 				point.SetSum(125.25)
 				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
-				point.SetStartTimestamp(pcommon.Timestamp(12 * time.Millisecond))
 				point.ExplicitBounds().FromRaw([]float64{0.5, 2.0})
 				point.BucketCounts().FromRaw([]uint64{15, 20, 15})
 				attributes := point.Attributes()
@@ -400,7 +394,6 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.SetCount(16)
 				point.SetSum(10.0)
 				point.SetTimestamp(pcommon.Timestamp(30 * time.Millisecond))
-				point.SetStartTimestamp(pcommon.Timestamp(30 * time.Millisecond))
 				point.ExplicitBounds().FromRaw([]float64{-5.0, 0.0, 5.0})
 				point.BucketCounts().FromRaw([]uint64{5, 10, 15, 16})
 				point.Attributes().PutStr("a", "A")
@@ -411,7 +404,7 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
+			mp := newMetricFamily(tt.metricName, mc, zap.NewNop(), false, false)
 			sRef, _ := getSeriesRef(nil, tt.labels, mp.mtype)
 
 			err := mp.addNHCBSeries(sRef, tt.metricName, tt.labels, tt.intervalStartTimeMs, tt.integerHistogram, tt.floatHistogram)
@@ -455,7 +448,7 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 		intervalStartTimeMs int64
 	}{
 		{
-			name:                "integer histogram with startTimestamp",
+			name:                "integer histogram without startTimestamp",
 			metricName:          "request_duration_seconds",
 			intervalStartTimeMs: 11,
 			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
@@ -481,8 +474,7 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 				point := pmetric.NewExponentialHistogramDataPoint()
 				point.SetCount(66)
 				point.SetSum(1004.78)
-				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.SetScale(1)
 				point.SetZeroThreshold(0.42)
 				point.SetZeroCount(1)
@@ -560,7 +552,6 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 				point := pmetric.NewExponentialHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -571,7 +562,7 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
+			mp := newMetricFamily(tt.metricName, mc, zap.NewNop(), true, false)
 			for i, tv := range tt.scrapes {
 				var lbls labels.Labels
 				if tv.extraLabel.Name != "" {
@@ -704,8 +695,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn99 := qtL.AppendEmpty()
 				qn99.SetQuantile(.99)
 				qn99.SetValue(82)
-				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
+				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -848,8 +838,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn99 := qtL.AppendEmpty()
 				qn99.SetQuantile(.99)
 				qn99.SetValue(0)
-				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
+				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -873,7 +862,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamily(tt.name, mc, zap.NewNop())
+			mp := newMetricFamily(tt.name, mc, zap.NewNop(), false, false)
 			for _, lbs := range tt.labelsScrapes {
 				for i, scrape := range lbs.scrapes {
 					lb := lbs.labels.Copy()
@@ -942,7 +931,6 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 
 				// the time in milliseconds -> nanoseconds.
 				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))
-				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond))
 
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
@@ -984,8 +972,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
 				point.SetDoubleValue(33.7)
-				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -1003,8 +990,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
 				point.SetDoubleValue(99.9)
-				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -1015,7 +1001,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop())
+			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop(), false, false)
 			for _, tv := range tt.scrapes {
 				lb := tt.labels.Copy()
 				sRef, _ := getSeriesRef(nil, lb, mp.mtype)

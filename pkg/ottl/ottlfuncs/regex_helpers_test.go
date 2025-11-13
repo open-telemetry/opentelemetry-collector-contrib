@@ -41,8 +41,8 @@ func Test_newDynamicRegex_LiteralPattern_Invalid(t *testing.T) {
 	dr, err := newDynamicRegex("testFunc", getter)
 	assert.Error(t, err)
 	assert.Nil(t, dr)
-	assert.Contains(t, err.Error(), "testFunc")
-	assert.Contains(t, err.Error(), "[invalid(regex")
+	assert.ErrorContains(t, err, "testFunc")
+	assert.ErrorContains(t, err, "[invalid(regex")
 }
 
 func Test_newDynamicRegex_DynamicPattern(t *testing.T) {
@@ -174,7 +174,7 @@ func Test_dynamicRegex_compile_Dynamic_GetterError(t *testing.T) {
 	compiled, err := dr.compile(ctx, tCtx)
 	assert.Error(t, err)
 	assert.Nil(t, compiled)
-	assert.Contains(t, err.Error(), "testFunc")
+	assert.ErrorContains(t, err, "testFunc")
 }
 
 func Test_dynamicRegex_compile_Dynamic_DifferentPatterns(t *testing.T) {

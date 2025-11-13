@@ -4,6 +4,7 @@
 package prometheusreceiver
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/prometheus/prometheus/config"
 	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -165,6 +165,9 @@ func TestScrapeViaProtobuf(t *testing.T) {
 	})
 }
 
+// TestNativeVsClassicHistogramScrapeViaProtobuf checks the classic and native histograms
+// can co-exists, regardless whether metadata is available or not.
+// When there is no metadata, float series are all mapped 1:1 to Gauge metrics.
 func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 	classicHistogram := &dto.MetricFamily{
 		Name: "test_classic_histogram",
@@ -329,6 +332,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 		mutCfg                 func(*PromConfig)
 		enableNativeHistograms bool
 		expected               []metricExpectation
+		expectedIgnoreMetadata []metricExpectation
 	}{
 		"feature enabled scrape classic off": {
 			enableNativeHistograms: true,
@@ -370,6 +374,53 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					nil,
 				},
 			},
+			expectedIgnoreMetadata: []metricExpectation{
+				{
+					"test_classic_histogram_bucket",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_classic_histogram_count",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_classic_histogram_sum",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram",
+					pmetric.MetricTypeExponentialHistogram,
+					"",
+					[]dataPointExpectation{{
+						exponentialHistogramComparator: []exponentialHistogramComparator{
+							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
+							checkMixedHistogramNativeExemplars,
+						},
+					}},
+					nil,
+				},
+				{
+					"test_native_histogram",
+					pmetric.MetricTypeExponentialHistogram,
+					"",
+					[]dataPointExpectation{{
+						exponentialHistogramComparator: []exponentialHistogramComparator{
+							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
+							checkNativeHistogramExemplars,
+						},
+					}},
+					nil,
+				},
+			},
 		},
 		"feature disabled scrape classic off": {
 			enableNativeHistograms: false,
@@ -396,6 +447,50 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 							checkMixedHistogramClassicExemplars,
 						},
 					}},
+					nil,
+				},
+			},
+			expectedIgnoreMetadata: []metricExpectation{
+				{
+					"test_classic_histogram_bucket",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_classic_histogram_count",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_classic_histogram_sum",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_bucket",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_count",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_sum",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
 					nil,
 				},
 			},
@@ -458,6 +553,74 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					nil,
 				},
 			},
+			expectedIgnoreMetadata: []metricExpectation{
+				{
+					"test_classic_histogram_bucket",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_classic_histogram_count",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_classic_histogram_sum",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_bucket",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_count",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_sum",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{ // Scrape both classic and native buckets from mixed histograms.
+					"test_mixed_histogram",
+					pmetric.MetricTypeExponentialHistogram,
+					"",
+					[]dataPointExpectation{{
+						exponentialHistogramComparator: []exponentialHistogramComparator{
+							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
+							checkMixedHistogramNativeExemplars,
+						},
+					}},
+					nil,
+				},
+				{ // Scrape native only histograms as is.
+					"test_native_histogram",
+					pmetric.MetricTypeExponentialHistogram,
+					"",
+					[]dataPointExpectation{{
+						exponentialHistogramComparator: []exponentialHistogramComparator{
+							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
+							checkNativeHistogramExemplars,
+						},
+					}},
+					nil,
+				},
+			},
 		},
 		"feature disabled scrape classic on": {
 			mutCfg: func(cfg *PromConfig) {
@@ -493,37 +656,86 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					nil,
 				},
 			},
+			expectedIgnoreMetadata: []metricExpectation{
+				{
+					"test_classic_histogram_bucket",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_classic_histogram_count",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_classic_histogram_sum",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_bucket",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_count",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+				{
+					"test_mixed_histogram_sum",
+					pmetric.MetricTypeGauge,
+					"",
+					nil,
+					nil,
+				},
+			},
 		},
 	}
 
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
-	}()
+	for _, ignoreMetadata := range []bool{false, true} {
+		t.Run(fmt.Sprintf("skip metadata=%v", ignoreMetadata), func(t *testing.T) {
+			for name, tc := range testCases {
+				t.Run(name, func(t *testing.T) {
+					t.Parallel()
 
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", tc.enableNativeHistograms)
-			require.NoError(t, err)
-
-			targets := []*testData{
-				{
-					name: "target1",
-					pages: []mockPrometheusResponse{
-						{code: 200, useProtoBuf: true, buf: buffer.Bytes()},
-					},
-					validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
-						verifyNumValidScrapeResults(t, td, result)
-						doCompare(t, "target1", td.attributes, result[0], tc.expected)
-					},
-				},
+					targets := []*testData{
+						{
+							name: "target1",
+							pages: []mockPrometheusResponse{
+								{code: 200, useProtoBuf: true, buf: buffer.Bytes()},
+							},
+							validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+								verifyNumValidScrapeResults(t, td, result)
+								if ignoreMetadata {
+									doCompare(t, "target1", td.attributes, result[0], tc.expectedIgnoreMetadata)
+								} else {
+									doCompare(t, "target1", td.attributes, result[0], tc.expected)
+								}
+							},
+						},
+					}
+					mutCfg := tc.mutCfg
+					if mutCfg == nil {
+						mutCfg = func(*PromConfig) {}
+					}
+					testComponent(t, targets, func(c *Config) {
+						c.enableNativeHistograms = tc.enableNativeHistograms
+						c.ignoreMetadata = ignoreMetadata
+						c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
+					}, mutCfg)
+				})
 			}
-			mutCfg := tc.mutCfg
-			if mutCfg == nil {
-				mutCfg = func(*PromConfig) {}
-			}
-			testComponent(t, targets, func(c *Config) {
-				c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
-			}, mutCfg)
 		})
 	}
 }
@@ -650,12 +862,9 @@ func TestStaleExponentialHistogram(t *testing.T) {
 			},
 		},
 	}
-	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", true)
-	require.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
-	}()
+
 	testComponent(t, targets, func(c *Config) {
+		c.enableNativeHistograms = true
 		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	})
 }
@@ -715,12 +924,9 @@ func TestFloatCounterHistogram(t *testing.T) {
 			},
 		},
 	}
-	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", true)
-	require.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
-	}()
+
 	testComponent(t, targets, func(c *Config) {
+		c.enableNativeHistograms = true
 		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	})
 }

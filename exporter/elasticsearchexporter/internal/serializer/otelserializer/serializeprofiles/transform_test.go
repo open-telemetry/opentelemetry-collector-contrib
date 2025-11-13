@@ -88,7 +88,7 @@ func TestTransform(t *testing.T) {
 				pt.SetTypeStrindex(2)
 				pt.SetUnitStrindex(3)
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -115,7 +115,7 @@ func TestTransform(t *testing.T) {
 				st.SetTypeStrindex(0)
 				st.SetUnitStrindex(1)
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -147,7 +147,7 @@ func TestTransform(t *testing.T) {
 				pt.SetTypeStrindex(2)
 				pt.SetUnitStrindex(3)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
 
 				return rp
@@ -211,7 +211,7 @@ func TestTransform(t *testing.T) {
 				pt.SetTypeStrindex(4)
 				pt.SetUnitStrindex(5)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
 				s.Values().Append(1)
 				s.SetStackIndex(0)
@@ -360,7 +360,7 @@ func TestStackPayloads(t *testing.T) {
 				p := sp.Profiles().AppendEmpty()
 				p.SetPeriod(1e9 / 20)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
 				s.Values().Append(1)
 				s.SetStackIndex(0)
@@ -475,7 +475,7 @@ func TestStackPayloads(t *testing.T) {
 				p := sp.Profiles().AppendEmpty()
 				p.SetPeriod(1e9 / 20)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
 				s.Values().Append(2)
 
@@ -600,7 +600,7 @@ func TestStackPayloads(t *testing.T) {
 				p := sp.Profiles().AppendEmpty()
 				p.SetPeriod(1e9 / 20)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
 				s.Values().Append(1)
 
@@ -711,7 +711,7 @@ func TestStackTraceEvent(t *testing.T) {
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -737,7 +737,7 @@ func TestStackTraceEvent(t *testing.T) {
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -763,7 +763,7 @@ func TestStackTraceEvent(t *testing.T) {
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -804,7 +804,7 @@ func TestStackTraceEvent(t *testing.T) {
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.AttributeIndices().Append(0, 1)
 
 				return rp
@@ -828,7 +828,7 @@ func TestStackTraceEvent(t *testing.T) {
 			dic := tt.buildDictionary()
 			rp := tt.buildResourceProfiles()
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
-			s := p.Sample().At(0)
+			s := p.Samples().At(0)
 
 			hostMetadata := newHostMetadata(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
 			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, hostMetadata)
@@ -898,9 +898,9 @@ func TestStackTrace(t *testing.T) {
 				l.SetAddress(address3)
 				l.AttributeIndices().Append(2)
 
-				li := l.Line().AppendEmpty()
+				li := l.Lines().AppendEmpty()
 				li.SetLine(1)
-				li = l.Line().AppendEmpty()
+				li = l.Lines().AppendEmpty()
 				li.SetLine(3)
 
 				// Create a location without build ID
@@ -912,7 +912,7 @@ func TestStackTrace(t *testing.T) {
 				locWithoutBuildID := dic.LocationTable().AppendEmpty()
 				locWithoutBuildID.SetMappingIndex(0)
 				locWithoutBuildID.AttributeIndices().Append(0)
-				li = locWithoutBuildID.Line().AppendEmpty()
+				li = locWithoutBuildID.Lines().AppendEmpty()
 				li.SetLine(99)
 				stack.LocationIndices().Append(0, 1, 2, 3)
 
@@ -928,7 +928,7 @@ func TestStackTrace(t *testing.T) {
 			},
 			buildProfile: func() pprofile.Profile {
 				p := pprofile.NewProfile()
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return p
 			},
@@ -948,7 +948,7 @@ func TestStackTrace(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dic := tt.buildDictionary()
 			p := tt.buildProfile()
-			s := p.Sample().At(0)
+			s := p.Samples().At(0)
 
 			frames, frameTypes, _, err := stackFrames(dic, s)
 			require.NoError(t, err)
@@ -1011,7 +1011,7 @@ func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 	for i := range frameIDs {
 		indices[i] = int32(i)
 	}
-	s := p.Sample().AppendEmpty()
+	s := p.Samples().AppendEmpty()
 
 	a := dic.AttributeTable().AppendEmpty()
 	a.SetKeyStrindex(0)

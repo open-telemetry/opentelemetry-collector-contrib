@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
@@ -55,9 +56,15 @@ type metricGroup struct {
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
-func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
+func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
-	mtype, isMonotonic := convToMetricType(metadata.Type)
+	// Native histograms have intrinsic metric type, use it,
+	// regardless of what metadata says.
+	if isNativeHistogram {
+		metadata.Type = model.MetricTypeHistogram
+	}
+
+	mtype, isMonotonic := convToMetricType(metadata.Type, isNativeHistogram && !isNHCB)
 	if mtype == pmetric.MetricTypeEmpty {
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}

@@ -3,6 +3,15 @@ description: Suggest a new component for the project
 title: "New component: "
 labels: ["Sponsor Needed", "needs triage"]
 body:
+  - type: checkboxes
+    attributes:
+      label: Building and distributing outside this repository
+      description: "The OpenTelemetry Collector has a pluggable architecture that allows you to build your own [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include your component in this repository to be able to use or distribute your component: you can just  host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/)."
+      options:
+        - label: I understand I can use and distribute my component outside of this repository.
+          required: true
+    validations:
+      required: true
   - type: textarea
     attributes:
       label: The purpose and use-cases of the new component

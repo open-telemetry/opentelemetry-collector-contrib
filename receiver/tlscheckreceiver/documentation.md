@@ -18,7 +18,7 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 

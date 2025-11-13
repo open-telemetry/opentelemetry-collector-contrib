@@ -65,3 +65,21 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 		Type:         model.MetricTypeUnknown,
 	}, metricName
 }
+
+type emptyMetadataStore struct{}
+
+func (emptyMetadataStore) ListMetadata() []scrape.MetricMetadata {
+	return nil
+}
+
+func (emptyMetadataStore) GetMetadata(string) (scrape.MetricMetadata, bool) {
+	return scrape.MetricMetadata{}, false
+}
+
+func (emptyMetadataStore) SizeMetadata() int {
+	return 0
+}
+
+func (emptyMetadataStore) LengthMetadata() int {
+	return 0
+}

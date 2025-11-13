@@ -21,7 +21,7 @@ Gauge values map to service status as follows: 0 - Failed to retrieve service st
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 

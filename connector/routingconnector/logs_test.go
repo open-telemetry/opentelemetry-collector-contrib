@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -437,9 +436,9 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isBodyString := `IsString(body) == true`
-	require.Contains(t, common.StandardFunctions[ottllog.TransformContext](), "IsString")
+	require.Contains(t, standardFunctions[ottllog.TransformContext](), "IsString")
 	isBodyMap := `IsMap(body) == true`
-	require.Contains(t, common.StandardFunctions[ottllog.TransformContext](), "IsMap")
+	require.Contains(t, standardFunctions[ottllog.TransformContext](), "IsMap")
 
 	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
 	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`

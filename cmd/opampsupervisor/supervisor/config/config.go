@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -171,6 +172,19 @@ type OpAMPServer struct {
 	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+func (o OpAMPServer) OpaqueHeaders() map[string][]configopaque.String {
+	opaque := make(map[string][]configopaque.String, len(o.Headers))
+
+	for key, values := range o.Headers {
+		opaque[key] = make([]configopaque.String, len(values))
+		for i, val := range values {
+			opaque[key][i] = configopaque.String(val)
+		}
+	}
+
+	return opaque
 }
 
 func (o OpAMPServer) Validate() error {

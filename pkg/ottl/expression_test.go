@@ -720,7 +720,7 @@ func Test_newGetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := p.newGetter(tt.val)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tCtx := tt.want
 
@@ -907,7 +907,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := p.newGetter(tt.val)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = reader.Get(t.Context(), nil)
 			assert.Equal(t, tt.err, err)
 		})
@@ -968,7 +968,7 @@ func Test_StandardStringGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
 				assert.IsType(t, TypeError(""), err)
@@ -1072,7 +1072,7 @@ func Test_FunctionGetter(t *testing.T) {
 			if tt.valid {
 				var result any
 				result, err = fn.Eval(t.Context(), nil)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, result.(string))
 			} else {
 				assert.EqualError(t, err, tt.expectedErrorMsg)
@@ -1214,7 +1214,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.want == nil {
 					assert.Nil(t, val)
 				} else {
@@ -1295,7 +1295,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
 				assert.IsType(t, TypeError(""), err)
@@ -1468,7 +1468,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.want == nil {
 					assert.Nil(t, val)
 				} else {
@@ -1549,7 +1549,7 @@ func Test_StandardIntGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
 				assert.IsType(t, TypeError(""), err)
@@ -1722,7 +1722,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.want == nil {
 					assert.Nil(t, val)
 				} else {
@@ -1921,7 +1921,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.want == nil {
 					assert.Nil(t, val)
 				} else {
@@ -2002,7 +2002,7 @@ func Test_StandardBoolGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
 				assert.IsType(t, TypeError(""), err)
@@ -2154,7 +2154,7 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.want == nil {
 					assert.Nil(t, val)
 				} else {
@@ -2355,7 +2355,7 @@ func Test_StandardPSliceGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
 				assert.IsType(t, TypeError(""), err)
@@ -2441,7 +2441,7 @@ func Test_StandardPMapGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
 				assert.IsType(t, TypeError(""), err)
@@ -2547,7 +2547,7 @@ func Test_StandardDurationGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
 				assert.ErrorContains(t, err, tt.expectedErrorMsg)
@@ -2633,10 +2633,10 @@ func Test_StandardTimeGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				var want time.Time
 				want, err = time.Parse("2006-01-02T15:04:05.000000000Z", tt.want)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, want, val)
 			} else {
 				assert.ErrorContains(t, err, tt.expectedErrorMsg)
@@ -2723,7 +2723,7 @@ func Test_newStandardStringGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})
@@ -2789,7 +2789,7 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, *val.(*string))
 			}
 		})
@@ -2855,7 +2855,7 @@ func Test_newStandardIntGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})
@@ -2921,7 +2921,7 @@ func Test_newStandardIntLikeGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, *(val.(*int64)))
 			}
 		})
@@ -2987,7 +2987,7 @@ func Test_newStandardFloatGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})
@@ -3053,7 +3053,7 @@ func Test_newStandardFloatLikeGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, *(val.(*float64)))
 			}
 		})
@@ -3119,7 +3119,7 @@ func Test_newStandardBoolGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})
@@ -3185,7 +3185,7 @@ func Test_newStandardBoolLikeGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, *(val.(*bool)))
 			}
 		})
@@ -3251,7 +3251,7 @@ func Test_newStandardDurationGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})
@@ -3318,7 +3318,7 @@ func Test_newStandardTimeGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})
@@ -3384,7 +3384,7 @@ func Test_newStandardByteSliceLikeGetterGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})
@@ -3453,7 +3453,7 @@ func Test_newStandardPMapGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})
@@ -3522,7 +3522,7 @@ func Test_newStandardPSliceGetter(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, val)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantVal, val)
 			}
 		})

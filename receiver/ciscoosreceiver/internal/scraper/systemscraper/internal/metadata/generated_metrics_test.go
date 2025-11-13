@@ -81,7 +81,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemMemoryUtilizationDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
-			rb.SetCiscoDeviceIP("cisco.device.ip-val")
+			rb.SetHostIP("host.ip-val")
+			rb.SetHwType("hw.type-val")
+			rb.SetOsName("os.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

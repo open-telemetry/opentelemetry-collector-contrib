@@ -60,7 +60,7 @@ func prepareSubprocess(conf *Config) (*Subprocess, func(t *assert.CollectT) *pro
 
 	findProcessInfo := func(t *assert.CollectT) *process.Process {
 		pid := int32(subprocess.Pid())
-		assert.NotEqual(t, pid, -1)
+		assert.NotEqual(t, -1, pid)
 		proc, err := process.NewProcess(pid)
 		require.NoError(t, err)
 		ppid, err := proc.Ppid()

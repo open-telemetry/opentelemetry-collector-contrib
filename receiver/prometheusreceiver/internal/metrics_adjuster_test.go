@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 var (
@@ -740,6 +742,7 @@ type metricsAdjusterTest struct {
 func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*metricsAdjusterTest) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, removeStartTimeAdjustment, false)()
 			adjusted := pmetric.NewMetrics()
 			test.metrics.CopyTo(adjusted)
 			// Add the instance/job to the input metrics if they aren't already present.

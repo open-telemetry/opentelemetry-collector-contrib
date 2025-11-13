@@ -232,13 +232,51 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig
 	return promconfig.RemoteWriteProtoMsgV1, nil
 }
 
+// getOrCreateRM returns or creates the ResourceMetrics for a job/instance pair within an HTTP request.
+//
+// Two-level cache:
+//
+//  1. reqRM (per-request): groups samples with the same job/instance into a single ResourceMetrics
+//     during current request processing, avoiding duplication in the output.
+//
+//  2. prw.rmCache (global LRU): stores snapshots of previously seen resource attributes (from target_info),
+//     allowing future requests to reuse enriched attributes.
+//
+// This function always creates new ResourceMetrics per request, only copying attributes
+// from the LRU cache when available. Never returns cached objects to avoid shared
+// mutation across concurrent requests.
+func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
+	hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+
+	if rm, ok := reqRM[hashedLabels]; ok {
+		return rm, hashedLabels
+	}
+
+	rm := otelMetrics.ResourceMetrics().AppendEmpty()
+	if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
+		// When the ResourceMetrics already exists in the global cache, we can reuse the previous snapshots and perpass the already seen attributes to the current request.
+		existingRM.Resource().Attributes().CopyTo(rm.Resource().Attributes())
+	} else {
+		// When the ResourceMetrics does not exist in the global cache, we need to create a new one and add it to the request map.
+		// Saving the new ResourceMetrics in the global cache to avoid creating duplicates in the next requests.
+		parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+		snapshot := pmetric.NewResourceMetrics()
+		rm.Resource().Attributes().CopyTo(snapshot.Resource().Attributes())
+		prw.rmCache.Add(hashedLabels, snapshot)
+	}
+
+	reqRM[hashedLabels] = rm
+	return rm, hashedLabels
+}
+
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
 		badRequestErrors error
-		otelMetrics      = pmetric.NewMetrics()
-		labelsBuilder    = labels.NewScratchBuilder(0)
+		// otelMetrics represents the final metrics, after all the processing, that will be returned by the receiver.
+		otelMetrics   = pmetric.NewMetrics()
+		labelsBuilder = labels.NewScratchBuilder(0)
 		// More about stats: https://github.com/prometheus/docs/blob/main/docs/specs/prw/remote_write_spec_2_0.md#required-written-response-headers
 		// TODO: add exemplars to the stats.
 		stats = promremote.WriteResponseStats{
@@ -246,11 +284,19 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
+		// modifiedResourceMetric keeps track, for each request, of which resources (identified by the job/instance hash) had their resource attributes modified — for example, through target_info.
+		// Once the request is fully processed, only the resource attributes contained in the request’s ResourceMetrics are snapshotted back into the LRU cache.
+		// This ensures that future requests start with the enriched resource attributes already applied.
+		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 	)
 
 	for i := range req.Timeseries {
 		ts := &req.Timeseries[i]
-		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
+		ls, err := ts.ToLabels(&labelsBuilder, req.Symbols)
+		if err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("error converting timeseries to labels: %w", err))
+			continue
+		}
 		metadata := schema.NewMetadataFromLabels(ls)
 		if metadata.Name == "" {
 			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
@@ -263,17 +309,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
-			var rm pmetric.ResourceMetrics
-			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-
-			if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
-				rm = existingRM
-			} else {
-				rm = otelMetrics.ResourceMetrics().AppendEmpty()
-			}
-
+			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 			attrs := rm.Resource().Attributes()
-			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
 
 			// Add the remaining labels as resource attributes
 			for labelName, labelValue := range ls.Map() {
@@ -281,7 +318,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					attrs.PutStr(labelName, labelValue)
 				}
 			}
-			prw.rmCache.Add(hashedLabels, rm)
+
+			snapshot := pmetric.NewResourceMetrics()
+			attrs.CopyTo(snapshot.Resource().Attributes())
+			prw.rmCache.Add(hashed, snapshot)
 			continue
 		}
 
@@ -302,21 +342,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats)
+			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, modifiedResourceMetric)
 			continue
 		}
 
 		// Handle regular metrics (gauge, counter, summary)
-		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		existingRM, ok := prw.rmCache.Get(hashedLabels)
-		var rm pmetric.ResourceMetrics
-		if ok {
-			rm = existingRM
-		} else {
-			rm = otelMetrics.ResourceMetrics().AppendEmpty()
-			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			prw.rmCache.Add(hashedLabels, rm)
-		}
+		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 
 		resourceID := identity.OfResource(rm.Resource())
 		metricIdentity := createMetricIdentity(
@@ -403,6 +434,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	scopeName, scopeVersion, metricName, unit, description string,
 	metricCache map[uint64]pmetric.Metric,
 	stats *promremote.WriteResponseStats,
+	modifiedRM map[uint64]pmetric.ResourceMetrics,
 ) {
 	// Drop classic histogram series (those with samples)
 	if len(ts.Samples) != 0 {
@@ -411,10 +443,12 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		return
 	}
 
-	var rm pmetric.ResourceMetrics
-	var hashedLabels uint64
-	var resourceID identity.Resource
-	var scope pmetric.ScopeMetrics
+	var (
+		hashedLabels uint64
+		resourceID   identity.Resource
+		scope        pmetric.ScopeMetrics
+		rm           pmetric.ResourceMetrics
+	)
 
 	for i := range ts.Histograms {
 		histogram := &ts.Histograms[i]
@@ -437,15 +471,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 		// Create resource if needed (only for the first valid histogram)
 		if hashedLabels == 0 {
-			hashedLabels = xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-			existingRM, ok := prw.rmCache.Get(hashedLabels)
-			if ok {
-				rm = existingRM
-			} else {
-				rm = otelMetrics.ResourceMetrics().AppendEmpty()
-				parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-				prw.rmCache.Add(hashedLabels, rm)
-			}
+			rm, _ = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
 			resourceID = identity.OfResource(rm.Resource())
 		}
 

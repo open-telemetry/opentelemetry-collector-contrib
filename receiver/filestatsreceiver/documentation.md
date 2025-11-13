@@ -18,7 +18,7 @@ Elapsed time since the last modification of the file or folder, in seconds since
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | false | development |
+| s | Sum | Int | Cumulative | false | Development |
 
 ### file.size
 
@@ -26,7 +26,7 @@ The size of the file or folder, in bytes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| b | Gauge | Int | development |
+| b | Gauge | Int | Development |
 
 ## Optional Metrics
 
@@ -44,7 +44,7 @@ Elapsed time since last access of the file or folder, in seconds since Epoch.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | false | development |
+| s | Sum | Int | Cumulative | false | Development |
 
 ### file.count
 
@@ -52,7 +52,7 @@ The number of files matched
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {file} | Gauge | Int | development |
+| {file} | Gauge | Int | Development |
 
 ### file.ctime
 
@@ -60,7 +60,7 @@ Elapsed time since the last change of the file or folder, in seconds since Epoch
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | false | development |
+| s | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

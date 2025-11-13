@@ -6,7 +6,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -16,7 +15,7 @@ import (
 
 func Test_IsRootSpan(t *testing.T) {
 	exprFunc, err := isRootSpan()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// root span
 	spanRoot := ptrace.NewSpan()
@@ -25,7 +24,7 @@ func Test_IsRootSpan(t *testing.T) {
 	})
 
 	value, err := exprFunc(nil, ottlspan.NewTransformContext(spanRoot, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.Equal(t, true, value)
 
 	// non root span
@@ -35,6 +34,6 @@ func Test_IsRootSpan(t *testing.T) {
 	})
 
 	value, err = exprFunc(nil, ottlspan.NewTransformContext(spanNonRoot, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.Equal(t, false, value)
 }

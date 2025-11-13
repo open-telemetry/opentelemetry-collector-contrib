@@ -1,0 +1,8 @@
+googlecloudpubsubpush:
+  encoding: test
+
+googlecloudpubsubpush/empty_encoding:
+
+googlecloudpubsubpush/misformatted_endpoint:
+  encoding: test
+  endpoint: invalid_endpoint

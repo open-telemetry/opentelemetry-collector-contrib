@@ -1444,6 +1444,11 @@ func TestLocalRootConsumer(t *testing.T) {
 	// Checks these values are the same for both
 	assert.Equal(t, segments[0].StartTime, segments[1].StartTime)
 	assert.Equal(t, segments[0].EndTime, segments[1].EndTime)
+
+	// Check that segment EndTime matches span's EndTime
+	expectedEndTime := float64(span.EndTimestamp()) / float64(time.Second)
+	assert.Equal(t, expectedEndTime, *segments[0].EndTime)
+	assert.Equal(t, expectedEndTime, *segments[1].EndTime)
 }
 
 func TestNonLocalRootConsumerProcess(t *testing.T) {
@@ -1967,6 +1972,8 @@ func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 			attrs.PutInt(key, int64(cast))
 		case int64:
 			attrs.PutInt(key, cast)
+		case bool:
+			attrs.PutBool(key, cast)
 		case []string:
 			slice := attrs.PutEmptySlice(key)
 			for _, v := range cast {
@@ -2042,6 +2049,40 @@ func constructTimedEventsWithSentMessageEvent(tm pcommon.Timestamp) ptrace.SpanE
 }
 
 // newTraceID generates a new valid X-Ray TraceID
+func TestSpanWithInProgressTrue(t *testing.T) {
+	spanName := "/api/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSXRayInProgressAttribute] = true
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.NotNil(t, segment.InProgress)
+	assert.True(t, *segment.InProgress)
+	assert.Nil(t, segment.EndTime)
+	assert.Nil(t, segment.Metadata["default"][awsxray.AWSXRayInProgressAttribute])
+}
+
+func TestSpanWithInProgressFalse(t *testing.T) {
+	spanName := "/api/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSXRayInProgressAttribute] = false
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Nil(t, segment.InProgress)
+	assert.NotNil(t, segment.EndTime)
+	assert.Empty(t, segment.Annotations)
+	assert.Nil(t, segment.Metadata["default"][awsxray.AWSXRayInProgressAttribute])
+}
+
 func newTraceID() pcommon.TraceID {
 	var r [16]byte
 	epoch := time.Now().Unix()

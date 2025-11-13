@@ -40,6 +40,8 @@ func (r *RPCClient) GetCommand(feature string) string {
 			return "show system resources"
 		}
 		return "show process memory"
+	case "interfaces":
+		return "show interface"
 	default:
 		return ""
 	}
