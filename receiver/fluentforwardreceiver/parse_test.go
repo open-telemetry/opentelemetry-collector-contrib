@@ -24,16 +24,16 @@ func parseHexDump(name string) []byte {
 		panic("failed to read hex dump file " + path + ": " + err.Error())
 	}
 
-	var hexStr string
+	var hexStr strings.Builder
 	for line := range strings.SplitSeq(string(dump), "\n") {
 		if line == "" {
 			continue
 		}
 		line = strings.Split(line, "|")[0]
-		hexStr += strings.Join(strings.Fields(line)[1:], "")
+		hexStr.WriteString(strings.Join(strings.Fields(line)[1:], ""))
 	}
 
-	bytes, err := hex.DecodeString(hexStr)
+	bytes, err := hex.DecodeString(hexStr.String())
 	if err != nil {
 		panic("failed to parse hex bytes: " + err.Error())
 	}
