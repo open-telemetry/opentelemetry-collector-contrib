@@ -235,7 +235,7 @@ func Test_performModelUpdate_WithAdaptiveStatistics(t *testing.T) {
 	features := map[string][]float64{"duration": {50.0}}
 	attrs := map[string]any{"service.name": "test"}
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		p.processFeatures(features, attrs)
 		time.Sleep(10 * time.Millisecond) // Create some velocity
 	}
