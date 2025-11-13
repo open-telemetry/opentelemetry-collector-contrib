@@ -7,6 +7,7 @@
 package armorlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -48,8 +49,8 @@ const (
 	gcpArmorRateLimitActionOutcome = "gcp.armor.security_policy.rate_limit.action.outcome"
 
 	// Extended attributes
-	// gcpArmorPreconfiguredExprIds holds the IDs of all preconfigured WAF rule expressions that triggered the rule
-	gcpArmorPreconfiguredExprIds = "gcp.armor.security_policy.preconfigured.expr_ids"
+	// gcpArmorWAFRuleExpressionIDs holds the IDs of all preconfigured WAF rule expressions that triggered the rule
+	gcpArmorWAFRuleExpressionIDs = "gcp.armor.security_policy.preconfigured.expr_ids"
 	// gcpArmorThreatIntelligenceCategories holds information about the matched IP address lists from Google Threat Intelligence
 	gcpArmorThreatIntelligenceCategories = "gcp.armor.security_policy.threat_intelligence.categories"
 	// gcpArmorAddressGroupNames holds the names of the matched address groups
@@ -61,9 +62,9 @@ const (
 
 	// Security policy request data attributes
 	// gcpArmorRecaptchaActionTokenScore holds the legitimacy score embedded in a of the reCAPTCHA action-token
-	gcpArmorRecaptchaActionTokenScore = "gcp.armor.request_data.recaptcha_action_token.score"
+	gcpArmorRecaptchaActionTokenScore = "gcp.armor.request_data.recaptcha_action_token.score" // #nosec G101 -- This is not a credential but an attribute name
 	// gcpArmorRecaptchaSessionTokenScore holds the legitimacy score embedded in a of the reCAPTCHA session-token
-	gcpArmorRecaptchaSessionTokenScore = "gcp.armor.request_data.recaptcha_session_token.score"
+	gcpArmorRecaptchaSessionTokenScore = "gcp.armor.request_data.recaptcha_session_token.score" // #nosec G101
 	// gcpArmorUserIPInfoSource holds a field that is typically the header from which the user IP was resolved
 	gcpArmorUserIPInfoSource = "http.request.header.source"
 	// gcpArmorRemoteIPInfoRegionCode holds the two-letter country code or region code for the IP address
@@ -135,7 +136,7 @@ type securityPolicyBase struct {
 type securityPolicyExtended struct {
 	securityPolicyBase
 	RateLimitAction      *rateLimitAction    `json:"rateLimitAction"`
-	PreconfiguredExprIds []string            `json:"preconfiguredExprIds"`
+	PreconfiguredExprIDs []string            `json:"preconfiguredExprIds"`
 	ThreatIntelligence   *threatIntelligence `json:"threatIntelligence"`
 	AddressGroup         *addressGroup       `json:"addressGroup"`
 }
@@ -171,7 +172,7 @@ func isValid(log armorlog) error {
 		log.PreviewSecurityPolicy == nil &&
 		log.EnforcedEdgeSecurityPolicy == nil &&
 		log.PreviewEdgeSecurityPolicy == nil {
-		return fmt.Errorf("at least one of the security policy fields must be non-nil")
+		return errors.New("at least one of the security policy fields must be non-nil")
 	}
 
 	return nil
@@ -268,10 +269,10 @@ func handleSecurityPolicyExtended(sp *securityPolicyExtended, attr pcommon.Map) 
 	handleThreatIntelligence(sp.ThreatIntelligence, attr)
 	handleAddressGroup(sp.AddressGroup, attr)
 
-	if len(sp.PreconfiguredExprIds) > 0 {
-		exprIdsSlice := attr.PutEmptySlice(gcpArmorPreconfiguredExprIds)
-		for _, id := range sp.PreconfiguredExprIds {
-			exprIdsSlice.AppendEmpty().SetStr(id)
+	if len(sp.PreconfiguredExprIDs) > 0 {
+		exprIDsSlice := attr.PutEmptySlice(gcpArmorWAFRuleExpressionIDs)
+		for _, id := range sp.PreconfiguredExprIDs {
+			exprIDsSlice.AppendEmpty().SetStr(id)
 		}
 	}
 }
@@ -317,16 +318,17 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 		return fmt.Errorf("error handling Security Policy Request Data: %w", err)
 	}
 
-	if log.PreviewEdgeSecurityPolicy != nil {
+	switch {
+	case log.PreviewEdgeSecurityPolicy != nil:
 		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreviewEdge)
 		handleSecurityPolicyBase(log.PreviewEdgeSecurityPolicy, attr)
-	} else if log.EnforcedEdgeSecurityPolicy != nil {
+	case log.EnforcedEdgeSecurityPolicy != nil:
 		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypeEnforcedEdge)
 		handleSecurityPolicyBase(log.EnforcedEdgeSecurityPolicy, attr)
-	} else if log.PreviewSecurityPolicy != nil {
+	case log.PreviewSecurityPolicy != nil:
 		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreview)
 		handleSecurityPolicyExtended(log.PreviewSecurityPolicy, attr)
-	} else if log.EnforcedSecurityPolicy != nil {
+	case log.EnforcedSecurityPolicy != nil:
 		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypeEnforced)
 		handleEnforcedSecurityPolicy(log.EnforcedSecurityPolicy, attr)
 	}

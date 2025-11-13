@@ -169,7 +169,7 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			attr := pcommon.NewMap()
-			handleSecurityPolicyRequestData(tt.data, attr)
+			require.NoError(t, handleSecurityPolicyRequestData(tt.data, attr))
 			require.Equal(t, tt.expected, attr.AsRaw())
 		})
 	}
@@ -416,14 +416,14 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
-				PreconfiguredExprIds: []string{"expr1", "expr2"},
+				PreconfiguredExprIDs: []string{"expr1", "expr2"},
 			},
 			expected: map[string]any{
 				gcpArmorSecurityPolicyName:             "test-policy",
 				gcpArmorSecurityPolicyPriority:         int64(10),
 				gcpArmorSecurityPolicyConfiguredAction: "DENY",
 				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorPreconfiguredExprIds:           []any{"expr1", "expr2"},
+				gcpArmorWAFRuleExpressionIDs:           []any{"expr1", "expr2"},
 			},
 		},
 		{
@@ -481,7 +481,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 					Key:     "rate-key",
 					Outcome: "rate_limited",
 				},
-				PreconfiguredExprIds: []string{"expr1"},
+				PreconfiguredExprIDs: []string{"expr1"},
 				ThreatIntelligence: &threatIntelligence{
 					Categories: []string{"malware"},
 				},
@@ -496,7 +496,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 				gcpArmorSecurityPolicyOutcome:          "DENY",
 				gcpArmorRateLimitActionKey:             "rate-key",
 				gcpArmorRateLimitActionOutcome:         "rate_limited",
-				gcpArmorPreconfiguredExprIds:           []any{"expr1"},
+				gcpArmorWAFRuleExpressionIDs:           []any{"expr1"},
 				gcpArmorThreatIntelligenceCategories:   []any{"malware"},
 				gcpArmorAddressGroupNames:              []any{"group1"},
 			},
@@ -575,7 +575,7 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 						Key:     "rate-key",
 						Outcome: "rate_limited",
 					},
-					PreconfiguredExprIds: []string{"expr1"},
+					PreconfiguredExprIDs: []string{"expr1"},
 					ThreatIntelligence: &threatIntelligence{
 						Categories: []string{"malware"},
 					},
@@ -594,7 +594,7 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 				gcpArmorSecurityPolicyOutcome:               "DENY",
 				gcpArmorRateLimitActionKey:                  "rate-key",
 				gcpArmorRateLimitActionOutcome:              "rate_limited",
-				gcpArmorPreconfiguredExprIds:                []any{"expr1"},
+				gcpArmorWAFRuleExpressionIDs:                []any{"expr1"},
 				gcpArmorThreatIntelligenceCategories:        []any{"malware"},
 				gcpArmorAddressGroupNames:                   []any{"group1"},
 				gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-123",
@@ -709,7 +709,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				gcpArmorSecurityPolicyPriority:         int64(20),
 				gcpArmorSecurityPolicyConfiguredAction: "DENY",
 				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorPreconfiguredExprIds:           []any{"expr1", "expr2"},
+				gcpArmorWAFRuleExpressionIDs:           []any{"expr1", "expr2"},
 			},
 		},
 		{
@@ -747,7 +747,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				gcpArmorSecurityPolicyOutcome:               "DENY",
 				gcpArmorRateLimitActionKey:                  "rate-key",
 				gcpArmorRateLimitActionOutcome:              "rate_limited",
-				gcpArmorPreconfiguredExprIds:                []any{"expr1"},
+				gcpArmorWAFRuleExpressionIDs:                []any{"expr1"},
 				gcpArmorThreatIntelligenceCategories:        []any{"malware", "phishing"},
 				gcpArmorAddressGroupNames:                   []any{"group1", "group2"},
 				gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-123",
