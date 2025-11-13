@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 //go:build generate_vpc_goldens
 
 package googlecloudlogentryencodingextension

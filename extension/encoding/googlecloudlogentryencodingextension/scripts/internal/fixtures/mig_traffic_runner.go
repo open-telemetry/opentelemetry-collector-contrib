@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // mig_traffic_runner discovers instances in a regional managed instance group,
 // resolves each instance's zone and primary internal IP, assigns a peer IP in a
 // circular fashion, and optionally connects to each instance over SSH to run
@@ -75,8 +78,9 @@ func main() {
 		entries, err := collectEntries(migName, region, expectedSize)
 		if err == nil {
 			if generateTraffic {
-				if err := executeTrafficGeneration(entries, projectID); err != nil {
-					exitErr(err)
+				etgErr := executeTrafficGeneration(entries, projectID)
+				if etgErr != nil {
+					exitErr(etgErr)
 				}
 				return
 			}
