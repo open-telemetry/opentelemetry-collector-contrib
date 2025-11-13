@@ -8,11 +8,11 @@ The following telemetry is emitted by this component.
 
 ### otelcol_loadbalancer_backend_latency
 
-Response latency in ms for the backends. [development]
+Response latency in ms for the backends. [Development]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Histogram | Int | development |
+| ms | Histogram | Int | Development |
 
 #### Attributes
 
@@ -22,11 +22,11 @@ Response latency in ms for the backends. [development]
 
 ### otelcol_loadbalancer_backend_outcome
 
-Number of successes and failures for each endpoint. [development]
+Number of successes and failures for each endpoint. [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {outcomes} | Sum | Int | true | development |
+| {outcomes} | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -36,11 +36,11 @@ Number of successes and failures for each endpoint. [development]
 
 ### otelcol_loadbalancer_num_backend_updates
 
-Number of times the list of backends was updated. [development]
+Number of times the list of backends was updated. [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {updates} | Sum | Int | true | development |
+| {updates} | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -50,11 +50,11 @@ Number of times the list of backends was updated. [development]
 
 ### otelcol_loadbalancer_num_backends
 
-Current number of backends in use. [development]
+Current number of backends in use. [Development]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {backends} | Gauge | Int | development |
+| {backends} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -64,11 +64,11 @@ Current number of backends in use. [development]
 
 ### otelcol_loadbalancer_num_resolutions
 
-Number of times the resolver has triggered new resolutions. [development]
+Number of times the resolver has triggered new resolutions. [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {resolutions} | Sum | Int | true | development |
+| {resolutions} | Sum | Int | true | Development |
 
 #### Attributes
 

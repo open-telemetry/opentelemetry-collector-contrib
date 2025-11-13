@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -153,14 +154,14 @@ func Test_FormatTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := FormatTime(tt.time, tt.format)
 			if tt.errorMsg != "" {
-				assert.Contains(t, err.Error(), tt.errorMsg)
+				assert.ErrorContains(t, err, tt.errorMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				result, err := exprFunc(nil, nil)
 				if tt.funcErrorMsg != "" {
-					assert.Contains(t, err.Error(), tt.funcErrorMsg)
+					assert.ErrorContains(t, err, tt.funcErrorMsg)
 				} else {
-					assert.NoError(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, tt.expected, result)
 				}
 			}

@@ -150,9 +150,9 @@ func Test_Duration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Duration(tt.duration)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

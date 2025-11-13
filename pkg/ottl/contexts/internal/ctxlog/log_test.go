@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -356,16 +357,16 @@ func TestPathGetSetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxlog.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			log := createTelemetry(tt.bodyType)
 
 			got, err := accessor.Get(t.Context(), newTestContext(log))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), newTestContext(log), tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			expectedLog := createTelemetry(tt.bodyType)
 			tt.modified(expectedLog)

@@ -64,32 +64,32 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.LoadbalancerBackendLatency, err = builder.meter.Int64Histogram(
 		"otelcol_loadbalancer_backend_latency",
-		metric.WithDescription("Response latency in ms for the backends. [development]"),
+		metric.WithDescription("Response latency in ms for the backends. [Development]"),
 		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerBackendOutcome, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_backend_outcome",
-		metric.WithDescription("Number of successes and failures for each endpoint. [development]"),
+		metric.WithDescription("Number of successes and failures for each endpoint. [Development]"),
 		metric.WithUnit("{outcomes}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerNumBackendUpdates, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_num_backend_updates",
-		metric.WithDescription("Number of times the list of backends was updated. [development]"),
+		metric.WithDescription("Number of times the list of backends was updated. [Development]"),
 		metric.WithUnit("{updates}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerNumBackends, err = builder.meter.Int64Gauge(
 		"otelcol_loadbalancer_num_backends",
-		metric.WithDescription("Current number of backends in use. [development]"),
+		metric.WithDescription("Current number of backends in use. [Development]"),
 		metric.WithUnit("{backends}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerNumResolutions, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_num_resolutions",
-		metric.WithDescription("Number of times the resolver has triggered new resolutions. [development]"),
+		metric.WithDescription("Number of times the resolver has triggered new resolutions. [Development]"),
 		metric.WithUnit("{resolutions}"),
 	)
 	errs = errors.Join(errs, err)

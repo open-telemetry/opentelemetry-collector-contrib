@@ -18,7 +18,7 @@ The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' p
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -45,7 +45,7 @@ Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Double | development |
+| {%} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -61,7 +61,7 @@ Gauge tracking the number of buckets and their searchable status. *Note:** Searc
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {count} | Gauge | Int | development |
+| {count} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -78,7 +78,7 @@ Count of buckets per index
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {buckets} | Gauge | Int | development |
+| {buckets} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -94,7 +94,7 @@ Count of events in this bucket super-directory. *Note:** Must be pointed at spec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {events} | Gauge | Int | development |
+| {events} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -111,7 +111,7 @@ Count of events in this bucket super-directory. *Note:** Must be pointed at spec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {buckets} | Gauge | Int | development |
+| {buckets} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -128,7 +128,7 @@ Count of events in this bucket super-directory. *Note:** Must be pointed at spec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {buckets} | Gauge | Int | development |
+| {buckets} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -145,7 +145,7 @@ Count of events for index, excluding frozen events. Approximately equal to the e
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {events} | Gauge | Int | development |
+| {events} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -161,7 +161,7 @@ Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in thi
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -177,7 +177,7 @@ Size in bytes on disk of this index *Note:** Must be pointed at specific indexer
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -193,7 +193,7 @@ Gauge tracking the average rate of indexed data. **Note:** Search is best run ag
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Double | development |
+| KBy | Gauge | Double | Development |
 
 #### Attributes
 
@@ -209,7 +209,7 @@ Gauge tracking the number of indexing process cpu seconds per instance
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {s} | Gauge | Double | development |
+| {s} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -225,7 +225,7 @@ Gauge tracking the average indexer index queue ration (%). *Note:** Search is be
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Double | development |
+| {%} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -241,7 +241,7 @@ Gauge tracking the number of raw write seconds per instance
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {s} | Gauge | Double | development |
+| {s} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -257,7 +257,7 @@ The status of a rolling restart.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -274,7 +274,7 @@ Gauge tracking average bytes per second throughput of indexer. *Note:** Must be 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | development |
+| By/s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -290,7 +290,7 @@ Gauge tracking the indexes and their average size (gb). *Note:** Search is best 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| Gb | Gauge | Double | development |
+| Gb | Gauge | Double | Development |
 
 #### Attributes
 
@@ -306,7 +306,7 @@ Gauge tracking the indexes and their average usage (%). *Note:** Search is best 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Double | development |
+| {%} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -322,7 +322,7 @@ Gauge tracking the indexes and their bucket counts. *Note:** Search is best run 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {count} | Gauge | Int | development |
+| {count} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -338,7 +338,7 @@ Gauge tracking the indexes and their median data age (days). *Note:** Search is 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {days} | Gauge | Int | development |
+| {days} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -354,7 +354,7 @@ Gauge tracking the indexes and their total size (gb). *Note:** Search is best ru
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| Gb | Gauge | Double | development |
+| Gb | Gauge | Double | Development |
 
 #### Attributes
 
@@ -370,7 +370,7 @@ Gauge tracking the average IOPs used per instance
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {iops} | Gauge | Int | development |
+| {iops} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -386,7 +386,7 @@ Backup and restore status of the KV store.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -402,7 +402,7 @@ Replication status of the KV store.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -418,7 +418,7 @@ This is the overall status of the kvstore for the given deployment.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -434,9 +434,9 @@ This is the overall status of the kvstore for the given deployment.
 
 Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {seconds} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {seconds} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -454,7 +454,7 @@ Gauge tracking the indexed license usage per index
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -470,7 +470,7 @@ Gauge tracking the average indexer parser queue ration (%). *Note:** Search is b
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Double | development |
+| {%} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -486,7 +486,7 @@ Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Int | development |
+| KBy | Gauge | Int | Development |
 
 #### Attributes
 
@@ -502,7 +502,7 @@ Gauge tracking the average execution latency of scheduled searches
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {ms} | Gauge | Double | development |
+| {ms} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -518,7 +518,7 @@ Gauge tracking the average runtime of scheduled searches
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {ms} | Gauge | Double | development |
+| {ms} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -534,7 +534,7 @@ Gauge tracking the ratio of completed to skipped scheduled searches
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Double | development |
+| {%} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -550,7 +550,7 @@ Gauge tracking the duration in seconds of the last search probe call.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Double | development |
+| {status} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -565,7 +565,7 @@ Gauge tracking whether the last search probe successfully initiated a search.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -580,7 +580,7 @@ Gauge tracking the dispatch status of the last search probe.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -596,7 +596,7 @@ Gauge tracking whether the last search probe call was successful with the dispat
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {status} | Gauge | Int | development |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -611,7 +611,7 @@ Gauge tracking current length of queue. *Note:** Must be pointed at specific ind
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {queues} | Gauge | Int | development |
+| {queues} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -627,7 +627,7 @@ Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at speci
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -643,7 +643,7 @@ Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -659,7 +659,7 @@ Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -675,7 +675,7 @@ Gauge tracking number of artifacts currently on disk that belong to finished sea
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -691,7 +691,7 @@ Gauge total size (MB) of artifacts currently on disk that belong to finished sea
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -707,7 +707,7 @@ Gauge tracking number of artifacts currently on disk that belong to unfinished/r
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -723,7 +723,7 @@ Gauge total size (MB) of artifacts currently on disk that belong to unfinished/r
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -739,7 +739,7 @@ Gauge tracking number of artifacts currently on disk that are not in a valid sta
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -755,7 +755,7 @@ Gauge tracking number search artifacts metadata stored in memory, available in b
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -771,7 +771,7 @@ Gauge tracking, in megabytes, memory used to cache job status and job info of al
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {mb} | Gauge | Int | development |
+| {mb} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -788,7 +788,7 @@ Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of sche
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -804,7 +804,7 @@ Gauge tracking number of scheduled search artifacts currently on disk. Note:* Mu
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -820,7 +820,7 @@ Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Mu
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {search_artifacts} | Gauge | Int | development |
+| {search_artifacts} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -836,7 +836,7 @@ Gauge tracking the average indexer typing queue ration (%). *Note:** Search is b
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Double | development |
+| {%} | Gauge | Double | Development |
 
 #### Attributes
 

@@ -1,0 +1,107 @@
+type: interfaces
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: []
+
+resource_attributes:
+  host.ip:
+    description: The IP address of the Cisco network device
+    type: string
+    enabled: true
+  hw.type:
+    description: Type of the physical hardware component
+    type: string
+    enabled: true
+  os.name:
+    description: The operating system type of the Cisco device
+    type: string
+    enabled: true
+
+attributes:
+  network.interface.description:
+    description: The description/alias of the network interface
+    type: string
+  network.interface.mac:
+    description: The MAC address of the network interface
+    type: string
+  network.interface.name:
+    description: The name of the network interface
+    type: string
+  network.interface.speed:
+    description: The configured speed of the network interface
+    type: string
+  network.io.direction:
+    description: Direction of flow of bytes/operations (receive or transmit)
+    type: string
+    enum: [receive, transmit]
+  network.packet.type:
+    description: Type of packet (multicast or broadcast)
+    type: string
+    enum: [multicast, broadcast]
+
+metrics:
+  system.network.errors:
+    enabled: true
+    stability:
+      level: development
+    description: The number of errors encountered
+    unit: "{errors}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]
+
+  system.network.interface.status:
+    enabled: true
+    stability:
+      level: development
+    description: Interface operational status (1 = up, 0 = down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]
+
+  system.network.io:
+    enabled: true
+    stability:
+      level: development
+    description: The number of bytes transmitted and received
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]
+
+  system.network.packet.count:
+    enabled: true
+    stability:
+      level: development
+    description: The number of packets transmitted or received, categorized by type
+    unit: "{packets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [network.packet.type, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]
+
+  system.network.packet.dropped:
+    enabled: true
+    stability:
+      level: development
+    description: The number of packets dropped
+    unit: "{packets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]
+
+tests:
+  config:

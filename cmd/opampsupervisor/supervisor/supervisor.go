@@ -660,7 +660,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
-	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
+	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.OpaqueHeaders()))
 	settings := types.StartSettings{
 		OpAMPServerURL:     s.config.Server.Endpoint,
 		Header:             s.config.Server.Headers,

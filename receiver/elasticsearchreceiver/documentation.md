@@ -18,7 +18,7 @@ Estimated memory used for the operation.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ Memory limit for the circuit breaker.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -46,7 +46,7 @@ Total number of times the circuit breaker has been triggered and prevented an ou
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -60,7 +60,7 @@ The number of data nodes in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {nodes} | Sum | Int | Cumulative | false | development |
+| {nodes} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.cluster.health
 
@@ -70,7 +70,7 @@ Health status is based on the state of its primary and replica shards. Green ind
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {status} | Sum | Int | Cumulative | false | development |
+| {status} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -84,7 +84,7 @@ The number of unfinished fetches.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {fetches} | Sum | Int | Cumulative | false | development |
+| {fetches} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.cluster.nodes
 
@@ -92,7 +92,7 @@ The total number of nodes in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {nodes} | Sum | Int | Cumulative | false | development |
+| {nodes} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.cluster.pending_tasks
 
@@ -100,7 +100,7 @@ The number of cluster-level changes that have not yet been executed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {tasks} | Sum | Int | Cumulative | false | development |
+| {tasks} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.cluster.published_states.differences
 
@@ -108,7 +108,7 @@ Number of differences between published cluster states.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -122,7 +122,7 @@ Number of published cluster states.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.cluster.shards
 
@@ -130,7 +130,7 @@ The number of shards in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {shards} | Sum | Int | Cumulative | false | development |
+| {shards} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -144,7 +144,7 @@ Number of cluster states in queue.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -158,7 +158,7 @@ The number of cluster state update attempts that changed the cluster state since
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -172,7 +172,7 @@ The cumulative amount of time updating the cluster state since the node started.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -187,7 +187,7 @@ The number of documents for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {documents} | Sum | Int | Cumulative | false | development |
+| {documents} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -202,7 +202,7 @@ The number of operations completed for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -217,7 +217,7 @@ The number of currently active segment merges
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {merges} | Gauge | Int | development |
+| {merges} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -231,7 +231,7 @@ Time spent on operations for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -246,7 +246,7 @@ Number of segments of an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {segments} | Sum | Int | Cumulative | false | development |
+| {segments} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -260,7 +260,7 @@ The size of the shards assigned to this index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -274,7 +274,7 @@ Configured memory limit, in bytes, for the indexing requests.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### elasticsearch.indexing_pressure.memory.total.primary_rejections
 
@@ -282,7 +282,7 @@ Cumulative number of indexing requests rejected in the primary stage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### elasticsearch.indexing_pressure.memory.total.replica_rejections
 
@@ -290,7 +290,7 @@ Number of indexing requests rejected in the replica stage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### elasticsearch.memory.indexing_pressure
 
@@ -298,7 +298,7 @@ Memory consumed, in bytes, by indexing requests in the specified stage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -312,7 +312,7 @@ Total count of query cache misses across all shards assigned to selected nodes.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {count} | Sum | Int | Cumulative | false | development |
+| {count} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -326,7 +326,7 @@ The number of evictions from the cache on a node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {evictions} | Sum | Int | Cumulative | true | development |
+| {evictions} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -340,7 +340,7 @@ The size in bytes of the cache on a node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -354,7 +354,7 @@ The number of open tcp connections for internal cluster communication.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.cluster.io
 
@@ -362,7 +362,7 @@ The number of bytes sent and received on the network for internal cluster commun
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -378,7 +378,7 @@ This metric is available only on Linux systems.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| KiBy | Sum | Int | Cumulative | false | development |
+| KiBy | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.disk.io.write
 
@@ -388,7 +388,7 @@ This metric is available only on Linux systems.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| KiBy | Sum | Int | Cumulative | false | development |
+| KiBy | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.documents
 
@@ -396,7 +396,7 @@ The number of documents on the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {documents} | Sum | Int | Cumulative | false | development |
+| {documents} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -410,7 +410,7 @@ The amount of disk space available to the JVM across all file stores for this no
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.fs.disk.free
 
@@ -418,7 +418,7 @@ The amount of unallocated disk space across all file stores for this node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.fs.disk.total
 
@@ -426,7 +426,7 @@ The amount of disk space across all file stores for this node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.http.connections
 
@@ -434,7 +434,7 @@ The number of HTTP connections to the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.ingest.documents
 
@@ -442,7 +442,7 @@ Total number of documents ingested during the lifetime of this node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {documents} | Sum | Int | Cumulative | true | development |
+| {documents} | Sum | Int | Cumulative | true | Development |
 
 ### elasticsearch.node.ingest.documents.current
 
@@ -450,7 +450,7 @@ Total number of documents currently being ingested.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {documents} | Sum | Int | Cumulative | false | development |
+| {documents} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.ingest.operations.failed
 
@@ -458,15 +458,15 @@ Total number of failed ingest operations during the lifetime of this node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operation} | Sum | Int | Cumulative | true | development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 ### elasticsearch.node.open_files
 
 The number of open file descriptors held by the node.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {files} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {files} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.operations.completed
 
@@ -474,7 +474,7 @@ The number of operations completed by a node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -488,7 +488,7 @@ Time spent on operations by a node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -502,7 +502,7 @@ Total number of documents currently being ingested by a pipeline.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {documents} | Sum | Int | Cumulative | false | development |
+| {documents} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -516,7 +516,7 @@ Number of documents preprocessed by the ingest pipeline.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {documents} | Sum | Int | Cumulative | false | development |
+| {documents} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -530,7 +530,7 @@ Total number of failed operations for the ingest pipeline.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operation} | Sum | Int | Cumulative | true | development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -544,7 +544,7 @@ Total number of times the script cache has evicted old data.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### elasticsearch.node.script.compilation_limit_triggered
 
@@ -552,7 +552,7 @@ Total number of times the script compilation circuit breaker has limited inline 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### elasticsearch.node.script.compilations
 
@@ -560,7 +560,7 @@ Total number of inline script compilations performed by the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {compilations} | Sum | Int | Cumulative | false | development |
+| {compilations} | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.shards.data_set.size
 
@@ -568,7 +568,7 @@ Total data set size of all shards assigned to the node. This includes the size o
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.shards.reserved.size
 
@@ -576,7 +576,7 @@ A prediction of how much larger the shard stores on this node will eventually gr
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.shards.size
 
@@ -584,7 +584,7 @@ The size of the shards assigned to this node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.thread_pool.tasks.finished
 
@@ -592,7 +592,7 @@ The number of tasks finished by the thread pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {tasks} | Sum | Int | Cumulative | true | development |
+| {tasks} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -607,7 +607,7 @@ The number of queued tasks in the thread pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {tasks} | Sum | Int | Cumulative | false | development |
+| {tasks} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -621,7 +621,7 @@ The number of threads in the thread pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {threads} | Sum | Int | Cumulative | false | development |
+| {threads} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -636,7 +636,7 @@ Number of transaction log operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 ### elasticsearch.node.translog.size
 
@@ -644,7 +644,7 @@ Size of the transaction log.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.translog.uncommitted.size
 
@@ -652,7 +652,7 @@ Size of uncommitted transaction log operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.os.cpu.load_avg.15m
 
@@ -660,7 +660,7 @@ Fifteen-minute load average on the system (field is not present if fifteen-minut
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### elasticsearch.os.cpu.load_avg.1m
 
@@ -668,7 +668,7 @@ One-minute load average on the system (field is not present if one-minute load a
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### elasticsearch.os.cpu.load_avg.5m
 
@@ -676,7 +676,7 @@ Five-minute load average on the system (field is not present if five-minute load
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### elasticsearch.os.cpu.usage
 
@@ -684,7 +684,7 @@ Recent CPU usage for the whole system, or -1 if not supported.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Int | development |
+| % | Gauge | Int | Development |
 
 ### elasticsearch.os.memory
 
@@ -692,7 +692,7 @@ Amount of physical memory.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -706,7 +706,7 @@ The number of loaded classes
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### jvm.gc.collections.count
 
@@ -714,7 +714,7 @@ The total number of garbage collections that have occurred
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -728,7 +728,7 @@ The approximate accumulated collection elapsed time
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -742,7 +742,7 @@ The amount of memory that is guaranteed to be available for the heap
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### jvm.memory.heap.max
 
@@ -750,7 +750,7 @@ The maximum amount of memory can be used for the heap
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### jvm.memory.heap.used
 
@@ -758,7 +758,7 @@ The current heap memory usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### jvm.memory.nonheap.committed
 
@@ -766,7 +766,7 @@ The amount of memory that is guaranteed to be available for non-heap purposes
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### jvm.memory.nonheap.used
 
@@ -774,7 +774,7 @@ The current non-heap memory usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### jvm.memory.pool.max
 
@@ -782,7 +782,7 @@ The maximum amount of memory can be used for the memory pool
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -796,7 +796,7 @@ The current memory pool memory usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -810,7 +810,7 @@ The current number of threads
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ## Optional Metrics
 
@@ -828,7 +828,7 @@ The number of evictions from the cache for indices in cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {evictions} | Sum | Int | Cumulative | true | development |
+| {evictions} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -842,7 +842,7 @@ The number of evictions from the cache for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {evictions} | Sum | Int | Cumulative | true | development |
+| {evictions} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -857,7 +857,7 @@ The size in bytes of the cache for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -872,7 +872,7 @@ The number of elements of the query cache for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -886,7 +886,7 @@ The total number of documents in merge operations for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {documents} | Sum | Int | Cumulative | true | development |
+| {documents} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -900,7 +900,7 @@ The total size of merged segments for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -914,7 +914,7 @@ Size of memory for segment object of an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -929,7 +929,7 @@ Size of segments of an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -943,7 +943,7 @@ Number of transaction log operations for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -957,7 +957,7 @@ Size of the transaction log for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -971,7 +971,7 @@ Total amount of memory used for the query cache across all shards assigned to th
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### elasticsearch.node.operations.current
 
@@ -979,7 +979,7 @@ Number of query operations currently running.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {operations} | Gauge | Int | development |
+| {operations} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -993,7 +993,7 @@ The number of hits and misses resulting from GET operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1007,7 +1007,7 @@ The time spent on hits and misses resulting from GET operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1021,7 +1021,7 @@ Size of memory for segment object of a node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -1035,7 +1035,7 @@ CPU time used by the process on which the Java virtual machine is running.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | development |
+| ms | Sum | Int | Cumulative | true | Development |
 
 ### elasticsearch.process.cpu.usage
 
@@ -1043,7 +1043,7 @@ CPU usage in percent.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### elasticsearch.process.memory.virtual
 
@@ -1051,7 +1051,7 @@ Size of virtual memory that is guaranteed to be available to the running process
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### jvm.memory.heap.utilization
 
@@ -1059,7 +1059,7 @@ Fraction of heap memory usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ## Resource Attributes
 

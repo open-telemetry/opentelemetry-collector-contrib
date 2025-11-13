@@ -18,7 +18,7 @@ Number of brokers in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {brokers} | Sum | Int | Cumulative | false | development |
+| {brokers} | Sum | Int | Cumulative | false | Development |
 
 ### kafka.consumer_group.lag
 
@@ -26,7 +26,7 @@ Current approximate lag of consumer group at partition of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -42,7 +42,7 @@ Current approximate sum of consumer group lag across all partitions of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -57,7 +57,7 @@ Count of members in the consumer group
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {members} | Sum | Int | Cumulative | false | development |
+| {members} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -71,7 +71,7 @@ Current offset of the consumer group at partition of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -87,7 +87,7 @@ Sum of consumer group offset across partitions of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -102,7 +102,7 @@ Current offset of partition of topic.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -117,7 +117,7 @@ Oldest offset of partition of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -132,7 +132,7 @@ Number of replicas for partition of topic
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {replicas} | Sum | Int | Cumulative | false | development |
+| {replicas} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -147,7 +147,7 @@ Number of synchronized replicas of partition
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {replicas} | Sum | Int | Cumulative | false | development |
+| {replicas} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -162,7 +162,7 @@ Number of partitions in topic.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {partitions} | Sum | Int | Cumulative | false | development |
+| {partitions} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -186,7 +186,7 @@ log retention time (s) of a broker.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
@@ -200,7 +200,7 @@ log retention period of a topic (s).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
@@ -214,7 +214,7 @@ log retention size of a topic in Bytes, The value (-1) indicates infinite size.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -228,7 +228,7 @@ minimum in-sync replicas of a topic.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {replicas} | Gauge | Int | development |
+| {replicas} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -242,7 +242,7 @@ replication factor of a topic.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 

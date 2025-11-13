@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -27,15 +29,15 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Device: DeviceConfig{
-					Device: DeviceInfo{
-						Host: HostInfo{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
 							Name: "test-device",
 							IP:   "192.168.1.1",
 							Port: 22,
 						},
 					},
-					Auth: AuthConfig{
+					Auth: connection.AuthConfig{
 						Username: "admin",
 						Password: configopaque.String("password"),
 					},
@@ -53,15 +55,15 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Device: DeviceConfig{
-					Device: DeviceInfo{
-						Host: HostInfo{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
 							Name: "test-device",
 							IP:   "192.168.1.1",
 							Port: 22,
 						},
 					},
-					Auth: AuthConfig{
+					Auth: connection.AuthConfig{
 						Username: "admin",
 						KeyFile:  "/path/to/key",
 					},
@@ -79,7 +81,7 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Device: DeviceConfig{},
+				Device: connection.DeviceConfig{},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
@@ -93,15 +95,15 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Device: DeviceConfig{
-					Device: DeviceInfo{
-						Host: HostInfo{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
 							Name: "test-device",
 							IP:   "192.168.1.1",
 							Port: 0,
 						},
 					},
-					Auth: AuthConfig{
+					Auth: connection.AuthConfig{
 						Username: "admin",
 						Password: configopaque.String("password"),
 					},
@@ -119,15 +121,15 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Device: DeviceConfig{
-					Device: DeviceInfo{
-						Host: HostInfo{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
 							Name: "test-device",
 							IP:   "192.168.1.1",
 							Port: 22,
 						},
 					},
-					Auth: AuthConfig{
+					Auth: connection.AuthConfig{
 						Username: "",
 						Password: configopaque.String("password"),
 					},
@@ -145,15 +147,15 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Device: DeviceConfig{
-					Device: DeviceInfo{
-						Host: HostInfo{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
 							Name: "test-device",
 							IP:   "192.168.1.1",
 							Port: 22,
 						},
 					},
-					Auth: AuthConfig{
+					Auth: connection.AuthConfig{
 						Username: "admin",
 					},
 				},
@@ -170,15 +172,15 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Device: DeviceConfig{
-					Device: DeviceInfo{
-						Host: HostInfo{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
 							Name: "test-device",
 							IP:   "192.168.1.1",
 							Port: 22,
 						},
 					},
-					Auth: AuthConfig{
+					Auth: connection.AuthConfig{
 						Username: "admin",
 						Password: configopaque.String("password"),
 					},

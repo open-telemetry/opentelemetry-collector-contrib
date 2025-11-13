@@ -7,10 +7,15 @@ package journald // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
+	"syscall"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -26,29 +31,56 @@ func init() {
 
 // Build will build a journald input operator from the supplied configuration
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+
 	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}
 
-	args, err := c.buildArgs()
+	newCmdFunc, err := c.buildNewCmdFunc()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Input{
-		InputOperator: inputOperator,
-		newCmd: func(ctx context.Context, cursor []byte) cmd {
-			// Copy args and if needed, add the cursor flag
-			journalArgs := append([]string{}, args...)
-			if cursor != nil {
-				journalArgs = append(journalArgs, "--after-cursor", string(cursor))
-			}
-			return exec.CommandContext(ctx, "journalctl", journalArgs...) // #nosec - ...
-			// journalctl is an executable that is required for this operator to function
-		},
+		InputOperator:       inputOperator,
+		newCmd:              newCmdFunc,
 		convertMessageBytes: c.ConvertMessageBytes,
 	}, nil
+}
+
+func (c Config) validate() error {
+	if c.StartAt != "end" && c.StartAt != "beginning" {
+		return fmt.Errorf("invalid value '%s' for parameter 'start_at'", c.StartAt)
+	}
+
+	if c.RootPath != "" {
+		if !filepath.IsAbs(c.JournalctlPath) {
+			return errors.New("'journalctl_path' must be an absolute path when 'root_path' is set")
+		}
+
+		if !filepath.IsAbs(c.RootPath) {
+			return errors.New("'root_path' must be an absolute path")
+		}
+
+		info, err := os.Stat(c.RootPath)
+		if err != nil {
+			return fmt.Errorf("cannot access root_path %q: %w", c.RootPath, err)
+		}
+
+		if !info.IsDir() {
+			return fmt.Errorf("root_path %q is not a directory", c.RootPath)
+		}
+	}
+
+	if strings.TrimSpace(c.JournalctlPath) == "" {
+		return errors.New("'journalctl_path' must be non-whitespace")
+	}
+
+	return nil
 }
 
 func (c Config) buildArgs() ([]string, error) {
@@ -60,12 +92,8 @@ func (c Config) buildArgs() ([]string, error) {
 		"--follow",      // Continue watching logs until cancelled
 	)
 
-	switch c.StartAt {
-	case "end":
-	case "beginning":
+	if c.StartAt == "beginning" {
 		args = append(args, "--no-tail")
-	default:
-		return nil, fmt.Errorf("invalid value '%s' for parameter 'start_at'", c.StartAt)
 	}
 
 	for _, unit := range c.Units {
@@ -155,4 +183,27 @@ func (c Config) buildMatchesConfig() ([]string, error) {
 	}
 
 	return matches, nil
+}
+
+func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd, error) {
+	args, err := c.buildArgs()
+	if err != nil {
+		return nil, err
+	}
+
+	return func(ctx context.Context, cursor []byte) cmd {
+		// Copy args and if needed, add the cursor flag
+		journalArgs := append([]string{}, args...)
+		if cursor != nil {
+			journalArgs = append(journalArgs, "--after-cursor", string(cursor))
+		}
+		cmd := exec.CommandContext(ctx, c.JournalctlPath, journalArgs...) // #nosec - ...
+		// journalctl is an executable that is required for this operator to function
+		if c.RootPath != "" {
+			cmd.SysProcAttr = &syscall.SysProcAttr{
+				Chroot: c.RootPath,
+			}
+		}
+		return cmd
+	}, nil
 }

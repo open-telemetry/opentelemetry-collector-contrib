@@ -18,6 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
 )
 
+var (
+	testTraceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	testSpanID1 = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+)
+
 func genTrace() ptrace.Traces {
 	start := time.Now().Add(-1 * time.Second)
 	end := time.Now()
@@ -40,11 +45,7 @@ func genTrace() ptrace.Traces {
 	return traces
 }
 
-func BenchmarkPeerTags_Native(b *testing.B) {
-	benchmarkPeerTags(b)
-}
-
-func benchmarkPeerTags(b *testing.B) {
+func BenchmarkPeerTags(b *testing.B) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeStatsBySpanKind = true
 	cfg.Traces.PeerTagsAggregation = true

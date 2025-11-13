@@ -5,16 +5,12 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -40,49 +36,6 @@ func createDefaultTestConfig() *Config {
 	cfg.TenantID = "fake-tenant-id"
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	return cfg
-}
-
-func newMockSubscriptionsListPager(subscriptionsPages []armsubscriptions.ClientListResponse) func(options *armsubscriptions.ClientListOptions) (resp azfake.PagerResponder[armsubscriptions.ClientListResponse]) {
-	return func(_ *armsubscriptions.ClientListOptions) (resp azfake.PagerResponder[armsubscriptions.ClientListResponse]) {
-		for _, page := range subscriptionsPages {
-			resp.AddPage(http.StatusOK, page, nil)
-		}
-		return resp
-	}
-}
-
-func newMockSubscriptionGet(subscriptionsByID map[string]armsubscriptions.ClientGetResponse) func(ctx context.Context, subscriptionID string, options *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
-	return func(_ context.Context, subscriptionID string, _ *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
-		resp.SetResponse(http.StatusOK, subscriptionsByID[subscriptionID], nil)
-		return resp, errResp
-	}
-}
-
-func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse) func(options *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
-	return func(_ *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
-		for _, page := range resourcesPages {
-			resp.AddPage(http.StatusOK, page, nil)
-		}
-		return resp
-	}
-}
-
-func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
-	return func(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
-		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
-		for _, page := range metricDefinitionsPagesByResourceURI[resourceURI] {
-			resp.AddPage(http.StatusOK, page, nil)
-		}
-		return resp
-	}
-}
-
-func newMockMetricList(metricsByResourceURIAndMetricName map[string]map[string]armmonitor.MetricsClientListResponse) func(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
-	return func(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
-		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
-		resp.SetResponse(http.StatusOK, metricsByResourceURIAndMetricName[resourceURI][*options.Metricnames], nil)
-		return resp, errResp
-	}
 }
 
 func TestAzureScraperScrape(t *testing.T) {
@@ -244,168 +197,53 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		valueMaximum := 123.45
 		valueMinimum := 0.1
 
-		subscriptionsByIDMockData := map[string]armsubscriptions.ClientGetResponse{
+		subscriptionsByIDMockData := newSubscriptionsByIDMockData(map[string]string{
+			fakeSubID: "displayname",
+		})
+		resourceMockData := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
 			fakeSubID: {
-				Subscription: armsubscriptions.Subscription{
-					SubscriptionID: to.Ptr(fakeSubID), DisplayName: to.Ptr("displayname"),
-				},
+				{{ID: &id1, Location: &location, Name: &name, Type: &metricNamespace1}},
+				{{ID: &id2, Location: &location, Name: &name, Type: &metricNamespace2}},
 			},
-		}
-		resourceMockData := map[string][]armresources.ClientListResponse{
-			fakeSubID: {
-				{
-					ResourceListResult: armresources.ResourceListResult{
-						Value: []*armresources.GenericResourceExpanded{
-							{
-								ID:       &id1,
-								Location: &location,
-								Name:     &name,
-								Type:     &metricNamespace1,
-							},
-						},
-					},
-				},
-				{
-					ResourceListResult: armresources.ResourceListResult{
-						Value: []*armresources.GenericResourceExpanded{
-							{
-								ID:       &id2,
-								Location: &location,
-								Name:     &name,
-								Type:     &metricNamespace2,
-							},
-						},
-					},
-				},
-			},
-		}
+		})
 
-		metricsDefinitionMockData := map[string][]armmonitor.MetricDefinitionsClientListResponse{
+		metricsDefinitionMockData := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
 			id1: {
-				{
-					MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-						Value: []*armmonitor.MetricDefinition{
-							{
-								Namespace: &metricNamespace1,
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName1,
-								},
-								MetricAvailabilities: []*armmonitor.MetricAvailability{
-									{
-										TimeGrain: &timeGrain,
-									},
-								},
-							},
-						},
-					},
-				},
+				{namespace: metricNamespace1, name: metricName1, timeGrain: timeGrain},
 			},
 			id2: {
-				{
-					MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-						Value: []*armmonitor.MetricDefinition{
-							{
-								Namespace: &metricNamespace2,
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName2,
-								},
-								MetricAvailabilities: []*armmonitor.MetricAvailability{
-									{
-										TimeGrain: &timeGrain,
-									},
-								},
-							},
-							{
-								Namespace: &metricNamespace2,
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName3,
-								},
-								MetricAvailabilities: []*armmonitor.MetricAvailability{
-									{
-										TimeGrain: &timeGrain,
-									},
-								},
-							},
-						},
-					},
-				},
+				{namespace: metricNamespace2, name: metricName2, timeGrain: timeGrain},
+				{namespace: metricNamespace2, name: metricName3, timeGrain: timeGrain},
 			},
-		}
+		})
 
-		metricsMockData := map[string]map[string]armmonitor.MetricsClientListResponse{
+		metricsMockData := newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{
 			id1: {
-				metricName1: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName1,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Count: &valueCount,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				metricName1: {{
+					Name: metricName1,
+					Unit: unit,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+						{Count: &valueCount},
+					}}},
+				}},
 			},
 			id2: {
-				metricName2: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName2,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Average: &valueMaximum,
-												Count:   &valueCount,
-												Maximum: &valueMaximum,
-												Minimum: &valueMinimum,
-												Total:   &valueCount,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				metricName3: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName3,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Maximum: &valueMaximum,
-												Minimum: &valueMinimum,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				metricName2: {{
+					Name: metricName2,
+					Unit: unit,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+						{Average: &valueMaximum, Count: &valueCount, Maximum: &valueMaximum, Minimum: &valueMinimum, Total: &valueCount},
+					}}},
+				}},
+				metricName3: {{
+					Name: metricName3,
+					Unit: unit,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+						{Maximum: &valueMaximum, Minimum: &valueMinimum},
+					}}},
+				}},
 			},
-		}
+		})
 
 		optionsResolver := newMockClientOptionsResolver(
 			subscriptionsByIDMockData,
@@ -447,43 +285,18 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 }
 
 func getSubscriptionByIDMockData() map[string]armsubscriptions.ClientGetResponse {
-	return map[string]armsubscriptions.ClientGetResponse{
-		"subscriptionId1": {
-			Subscription: armsubscriptions.Subscription{
-				SubscriptionID: to.Ptr("subscriptionId1"), DisplayName: to.Ptr("subscriptionDisplayName1"),
-			},
-		},
-		"subscriptionId2": {
-			Subscription: armsubscriptions.Subscription{
-				SubscriptionID: to.Ptr("subscriptionId2"), DisplayName: to.Ptr("subscriptionDisplayName2"),
-			},
-		},
-		"subscriptionId3": {
-			Subscription: armsubscriptions.Subscription{
-				SubscriptionID: to.Ptr("subscriptionId3"), DisplayName: to.Ptr("subscriptionDisplayName3"),
-			},
-		},
-	}
+	return newSubscriptionsByIDMockData(map[string]string{
+		"subscriptionId1": "subscriptionDisplayName1",
+		"subscriptionId2": "subscriptionDisplayName2",
+		"subscriptionId3": "subscriptionDisplayName3",
+	})
 }
 
 func getSubscriptionsMockData() []armsubscriptions.ClientListResponse {
-	return []armsubscriptions.ClientListResponse{
-		{
-			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
-				Value: []*armsubscriptions.Subscription{
-					{SubscriptionID: to.Ptr("subscriptionId1")},
-					{SubscriptionID: to.Ptr("subscriptionId2")},
-				},
-			},
-		},
-		{
-			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
-				Value: []*armsubscriptions.Subscription{
-					{SubscriptionID: to.Ptr("subscriptionId3")},
-				},
-			},
-		},
-	}
+	return newSubscriptionsListMockData([][]string{
+		{"subscriptionId1", "subscriptionId2"},
+		{"subscriptionId3"},
+	})
 }
 
 func getNominalTestScraper() *azureScraper {
@@ -588,14 +401,6 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 	})
 }
 
-type timeMock struct {
-	time time.Time
-}
-
-func (t *timeMock) Now() time.Time {
-	return t.time
-}
-
 func getTimeMock() timeNowIface {
 	return &timeMock{time: time.Now()}
 }
@@ -608,212 +413,61 @@ func getResourcesMockData() map[string][]armresources.ClientListResponse {
 		"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1",
 		"location1", "name1", "type1"
 
-	resourceID1 := armresources.GenericResourceExpanded{
-		ID:       &id1,
-		Location: &location1,
-		Name:     &name1,
-		Type:     &type1,
-	}
-
 	tagName1, tagValue1 := "tagName1", "tagValue1"
 	tagName2, tagValue2 := "tagName2", "tagValue2"
-	resourceID1.Tags = map[string]*string{
-		tagName1: &tagValue1,
-		tagName2: &tagValue2,
-	}
 
-	return map[string][]armresources.ClientListResponse{
+	return newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
 		"subscriptionId1": {
 			{
-				ResourceListResult: armresources.ResourceListResult{
-					Value: []*armresources.GenericResourceExpanded{
-						&resourceID1,
-						{
-							ID:       &id2,
-							Location: &location1,
-							Name:     &name1,
-							Type:     &type1,
-						},
+				{
+					ID: &id1, Location: &location1, Name: &name1, Type: &type1,
+					Tags: map[string]*string{
+						tagName1: &tagValue1,
+						tagName2: &tagValue2,
 					},
+				},
+				{
+					ID: &id2, Location: &location1, Name: &name1, Type: &type1,
 				},
 			},
 			{
-				ResourceListResult: armresources.ResourceListResult{
-					Value: []*armresources.GenericResourceExpanded{
-						{
-							ID:       &id3,
-							Location: &location1,
-							Name:     &name1,
-							Type:     &type1,
-						},
-					},
+				{
+					ID: &id3, Location: &location1, Name: &name1, Type: &type1,
 				},
 			},
 		},
-		"subscriptionId3": {{
-			ResourceListResult: armresources.ResourceListResult{
-				Value: []*armresources.GenericResourceExpanded{
-					{
-						ID:       &id4,
-						Location: &location1,
-						Name:     &name1,
-						Type:     &type1,
-					},
+		"subscriptionId3": {
+			{
+				{
+					ID: &id4, Location: &location1, Name: &name1, Type: &type1,
 				},
 			},
-		}},
-	}
+		},
+	})
 }
 
 func getMetricsDefinitionsMockData() map[string][]armmonitor.MetricDefinitionsClientListResponse {
 	namespace1, namespace2, name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2, dimension1, dimension2 := "namespace1",
 		"namespace2", "metric1", "metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension1", "dimension2"
 
-	return map[string][]armmonitor.MetricDefinitionsClientListResponse{
+	return newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
-			{
-				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-					Value: []*armmonitor.MetricDefinition{
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name1,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-						},
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name2,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-						},
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name3,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-						},
-					},
-				},
-			},
+			{namespace: namespace1, name: name1, timeGrain: timeGrain1},
+			{namespace: namespace1, name: name2, timeGrain: timeGrain1},
+			{namespace: namespace1, name: name3, timeGrain: timeGrain1},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2": {
-			{
-				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-					Value: []*armmonitor.MetricDefinition{
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name4,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-						},
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name5,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain2,
-								},
-							},
-							Dimensions: []*armmonitor.LocalizableString{
-								{
-									Value: &dimension1,
-								},
-								{
-									Value: &dimension2,
-								},
-							},
-						},
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name6,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain2,
-								},
-							},
-							Dimensions: []*armmonitor.LocalizableString{
-								{
-									Value: &dimension1,
-								},
-							},
-						},
-					},
-				},
-			},
+			{namespace: namespace1, name: name4, timeGrain: timeGrain1},
+			{namespace: namespace1, name: name5, timeGrain: timeGrain2, dimensions: []string{dimension1, dimension2}},
+			{namespace: namespace1, name: name6, timeGrain: timeGrain2, dimensions: []string{dimension1}},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3": {
-			{
-				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-					Value: []*armmonitor.MetricDefinition{
-						{
-							Namespace: &namespace2,
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-							Dimensions: []*armmonitor.LocalizableString{
-								{
-									Value: &dimension1,
-								},
-							},
-						},
-					},
-				},
-			},
+			{namespace: namespace2, name: name7, timeGrain: timeGrain1},
 		},
 		"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1": {
-			{
-				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-					Value: []*armmonitor.MetricDefinition{
-						{
-							Namespace: &namespace2,
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-							Dimensions: []*armmonitor.LocalizableString{
-								{
-									Value: &dimension1,
-								},
-							},
-						},
-					},
-				},
-			},
+			{namespace: namespace2, name: name7, timeGrain: timeGrain1},
 		},
-	}
+	})
 }
 
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
@@ -822,240 +476,107 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 	var unit1 armmonitor.Unit = "unit1"
 	var value1 float64 = 1
 
-	return map[string]map[string]armmonitor.MetricsClientListResponse{
+	return newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
 			name1 + "," + name2: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name1,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
+				{
+					Name: name1, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name2,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
+					}},
+				},
+				{
+					Name: name2, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+					}},
 				},
 			},
 			name3: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name3,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
+				{
+					Name: name3, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+					}},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2": {
 			name4: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name4,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
+				{
+					Name: name4, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+					}},
 				},
 			},
 			name5: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name5,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension2,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
+				{
+					Name: name5, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+						Metadatavalues: []*armmonitor.MetadataValue{
+							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+							{Name: &armmonitor.LocalizableString{Value: &dimension2}, Value: &dimensionValue},
+						},
+					}},
 				},
 			},
 			name6: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name6,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
+				{
+					Name: name6, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+						Metadatavalues: []*armmonitor.MetadataValue{
+							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+						},
+					}},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3": {
 			name7: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Count: &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
+				{
+					Name: name7, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Count: &value1},
 						},
-					},
+						Metadatavalues: []*armmonitor.MetadataValue{
+							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+						},
+					}},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1": {
 			name7: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Count: &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
+				{
+					Name: name7, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Count: &value1},
 						},
-					},
+						Metadatavalues: []*armmonitor.MetadataValue{
+							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+						},
+					}},
 				},
 			},
 		},
-	}
+	})
 }
 
 func TestGetMetricAggregations(t *testing.T) {
