@@ -26,8 +26,6 @@ import (
 )
 
 const (
-	logsEndpoint = "/logs"
-
 	bucketIDKey         = "bucketId"
 	objectIDKey         = "objectId"
 	eventTypeKey        = "eventType"
@@ -114,7 +112,7 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 		}
 		addHandlerFunc(
 			mux,
-			logsEndpoint,
+			"/",
 			logsUnmarshaler.UnmarshalLogs,
 			p.nextLogs.ConsumeLogs,
 			p.storageClient,
