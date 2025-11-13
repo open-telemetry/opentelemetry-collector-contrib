@@ -24,6 +24,7 @@ type internalTransform struct {
 	MetricIncludeFilter internalFilter
 	Action              ConfigAction
 	NewName             string
+	NewDescription      string
 	GroupResourceLabels map[string]string
 	AggregationType     aggregateutil.AggregationType
 	SubmatchCase        submatchCase
