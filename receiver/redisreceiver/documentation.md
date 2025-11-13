@@ -278,6 +278,14 @@ metrics:
     enabled: true
 ```
 
+### redis.cluster.cluster_enabled
+
+Indicate Redis cluster is enabled
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
+
 ### redis.cluster.known_nodes
 
 Number of known nodes in the cluster
@@ -431,6 +439,22 @@ The value of the maxmemory configuration directive
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+### redis.memory.used_memory_overhead
+
+The sum in bytes of all overheads that the server allocated for managing its internal data structures
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
+
+### redis.memory.used_memory_startup
+
+Initial amount of memory consumed by Redis at startup in bytes
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
+
 ### redis.replication.replica_offset
 
 Offset for redis replica
@@ -452,6 +476,14 @@ Redis node's role
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | role | Redis node's role | Str: ``replica``, ``primary`` | Recommended |
+
+### redis.tracking_total_keys
+
+Number of keys being tracked by the server
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {key} | Sum | Int | Cumulative | false | development |
 
 ## Resource Attributes
 
