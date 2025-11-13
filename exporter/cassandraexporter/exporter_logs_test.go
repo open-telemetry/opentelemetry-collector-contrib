@@ -5,9 +5,9 @@ package cassandraexporter
 
 import (
 	"errors"
-	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"testing"
 
+	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"github.com/stretchr/testify/require"
 )
 
