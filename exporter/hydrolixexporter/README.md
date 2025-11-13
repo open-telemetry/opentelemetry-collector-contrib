@@ -32,7 +32,7 @@ The following configuration options are supported:
 ```yaml
 exporters:
   hydrolix:
-    endpoint: https://ingest.hydrolix.example.com
+    endpoint: https://ingest.hydrolix.example.com/ingest/event
     hdx_table: otel_data
     hdx_transform: otel_transform
     hdx_username: ${env:HYDROLIX_USERNAME}
@@ -92,7 +92,7 @@ processors:
 
 exporters:
   hydrolix:
-    endpoint: https://ingest.hydrolix.example.com
+    endpoint: https://ingest.hydrolix.example.com/ingest/event
     hdx_table: otel_logs
     hdx_transform: otel_logs_transform
     hdx_username: ${env:HYDROLIX_USERNAME}

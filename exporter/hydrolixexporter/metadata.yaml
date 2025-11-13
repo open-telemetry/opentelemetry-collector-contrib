@@ -5,7 +5,7 @@ status:
   stability:
     development: [metrics, traces, logs]
   codeowners:
-    active: [murphy]
+    active: [murphpdx]
 
 tests:
   config:
