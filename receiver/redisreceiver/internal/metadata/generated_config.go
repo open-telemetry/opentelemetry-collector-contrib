@@ -66,6 +66,7 @@ type MetricsConfig struct {
 	RedisMemoryPeak                           MetricConfig `mapstructure:"redis.memory.peak"`
 	RedisMemoryRss                            MetricConfig `mapstructure:"redis.memory.rss"`
 	RedisMemoryUsed                           MetricConfig `mapstructure:"redis.memory.used"`
+	RedisMode                                 MetricConfig `mapstructure:"redis.mode"`
 	RedisNetInput                             MetricConfig `mapstructure:"redis.net.input"`
 	RedisNetOutput                            MetricConfig `mapstructure:"redis.net.output"`
 	RedisRdbChangesSinceLastSave              MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
@@ -73,6 +74,12 @@ type MetricsConfig struct {
 	RedisReplicationOffset                    MetricConfig `mapstructure:"redis.replication.offset"`
 	RedisReplicationReplicaOffset             MetricConfig `mapstructure:"redis.replication.replica_offset"`
 	RedisRole                                 MetricConfig `mapstructure:"redis.role"`
+	RedisSentinelMasters                      MetricConfig `mapstructure:"redis.sentinel.masters"`
+	RedisSentinelRunningScripts               MetricConfig `mapstructure:"redis.sentinel.running_scripts"`
+	RedisSentinelScriptsQueueLength           MetricConfig `mapstructure:"redis.sentinel.scripts_queue_length"`
+	RedisSentinelSimulateFailureFlags         MetricConfig `mapstructure:"redis.sentinel.simulate_failure_flags"`
+	RedisSentinelTiltSinceSeconds             MetricConfig `mapstructure:"redis.sentinel.tilt_since_seconds"`
+	RedisSentinelTotalTilt                    MetricConfig `mapstructure:"redis.sentinel.total_tilt"`
 	RedisSlavesConnected                      MetricConfig `mapstructure:"redis.slaves.connected"`
 	RedisUptime                               MetricConfig `mapstructure:"redis.uptime"`
 }
@@ -193,6 +200,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisMemoryUsed: MetricConfig{
 			Enabled: true,
 		},
+		RedisMode: MetricConfig{
+			Enabled: false,
+		},
 		RedisNetInput: MetricConfig{
 			Enabled: true,
 		},
@@ -212,6 +222,24 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		RedisRole: MetricConfig{
+			Enabled: false,
+		},
+		RedisSentinelMasters: MetricConfig{
+			Enabled: false,
+		},
+		RedisSentinelRunningScripts: MetricConfig{
+			Enabled: false,
+		},
+		RedisSentinelScriptsQueueLength: MetricConfig{
+			Enabled: false,
+		},
+		RedisSentinelSimulateFailureFlags: MetricConfig{
+			Enabled: false,
+		},
+		RedisSentinelTiltSinceSeconds: MetricConfig{
+			Enabled: false,
+		},
+		RedisSentinelTotalTilt: MetricConfig{
 			Enabled: false,
 		},
 		RedisSlavesConnected: MetricConfig{
