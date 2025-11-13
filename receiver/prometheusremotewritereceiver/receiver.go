@@ -520,6 +520,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			case writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
 				histMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
 			default:
+				// This default case should not be reached as this function is only called when:
+				// 1. ts.Metadata.Type == METRIC_TYPE_HISTOGRAM, or
+				// 2. ts.Metadata.Type == METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0
 			}
 		} else if len(histMetric.Description()) < len(description) {
 			// When the new description is longer than the existing one, we should update the metric description.

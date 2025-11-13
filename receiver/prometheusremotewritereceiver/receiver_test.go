@@ -1502,18 +1502,14 @@ func TestTranslateV2(t *testing.T) {
 			request: &writev2.Request{
 				Symbols: []string{
 					"",
-					"__name__",
-					"test_hncb_histogram",
-					"job",
-					"test",
-					"instance",
-					"localhost:8080",
-					"seconds",
-					"Test NHCB histogram",
+					"__name__", "test_hncb_histogram", // 1,2
+					"job", "test", // 3, 4
+					"instance", "localhost:8080", // 5, 6
+					"seconds", "Test NHCB histogram", // 7, 8
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_hncb_histogram, job=test, instance=localhost:8080
+						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6},
 						CreatedTimestamp: 123456000,
 						Metadata:         writev2.Metadata{},
 						Histograms: []writev2.Histogram{
