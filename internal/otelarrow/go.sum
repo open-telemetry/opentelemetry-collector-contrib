@@ -102,8 +102,8 @@ github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWu
 github.com/mostynb/go-grpc-compression v1.2.3 h1:42/BKWMy0KEJGSdWvzqIyOZ95YcR9mLPqKctH7Uo//I=
 github.com/mostynb/go-grpc-compression v1.2.3/go.mod h1:AghIxF3P57umzqM9yz795+y1Vjs47Km/Y2FE6ouQ7Lg=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
-github.com/open-telemetry/otel-arrow/go v0.44.0 h1:CnTqSyo7UXzvi1XQ3AmV1kOTD5bMHJkQBqjtzaHcqvM=
-github.com/open-telemetry/otel-arrow/go v0.44.0/go.mod h1:iZXAgbBgSRQ+NVprvbJfjE/8WBAViIMw1uPuZdkfYi4=
+github.com/open-telemetry/otel-arrow/go v0.45.0 h1:Z7HwYxA7nEISUuSc1XKW5VwQQDPPY+Pes17UGV6TWvU=
+github.com/open-telemetry/otel-arrow/go v0.45.0/go.mod h1:SCzaOAYK/LMUcSI+8sBB11/YSzg988+pbHBm1EYlQuM=
 github.com/pierrec/lz4/v4 v4.1.22 h1:cKFw6uJDK+/gfw5BcDL0JL5aBsAFdsIT18eRtLj7VIU=
 github.com/pierrec/lz4/v4 v4.1.22/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
