@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualDeltatocumulativeDatapoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_deltatocumulative_datapoints",
-		Description: "total number of datapoints processed. may have 'error' attribute, if processing failed [development]",
+		Description: "total number of datapoints processed. may have 'error' attribute, if processing failed [Development]",
 		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualDeltatocumulativeDatapoints(t *testing.T, tt *componenttest.Tele
 func AssertEqualDeltatocumulativeStreamsLimit(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_deltatocumulative_streams_limit",
-		Description: "upper limit of tracked streams [development]",
+		Description: "upper limit of tracked streams [Development]",
 		Unit:        "{stream}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -54,7 +54,7 @@ func AssertEqualDeltatocumulativeStreamsLimit(t *testing.T, tt *componenttest.Te
 func AssertEqualDeltatocumulativeStreamsMaxStale(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_deltatocumulative_streams_max_stale",
-		Description: "duration after which streams inactive streams are dropped [development]",
+		Description: "duration after which streams inactive streams are dropped [Development]",
 		Unit:        "s",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -68,7 +68,7 @@ func AssertEqualDeltatocumulativeStreamsMaxStale(t *testing.T, tt *componenttest
 func AssertEqualDeltatocumulativeStreamsTracked(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_deltatocumulative_streams_tracked",
-		Description: "number of streams tracked [development]",
+		Description: "number of streams tracked [Development]",
 		Unit:        "{dps}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
