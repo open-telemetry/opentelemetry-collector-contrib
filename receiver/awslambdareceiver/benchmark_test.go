@@ -7,13 +7,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
-
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/stretchr/testify/require"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
 func BenchmarkHandleS3Notification(b *testing.B) {

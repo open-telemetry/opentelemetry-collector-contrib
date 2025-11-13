@@ -6,13 +6,11 @@ package internal
 import (
 	"testing"
 
-	"go.uber.org/zap"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"go.uber.org/zap"
 )
 
 func TestErrorReplayTriggerHandler_Constructor(t *testing.T) {

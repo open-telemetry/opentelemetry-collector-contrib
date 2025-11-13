@@ -10,16 +10,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
-
+	"github.com/aws/aws-lambda-go/events"
 	gojson "github.com/goccy/go-json"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
-	"github.com/aws/aws-lambda-go/events"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
 type consumerFunc[T any] func(context.Context, T) error

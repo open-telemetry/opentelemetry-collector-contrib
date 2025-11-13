@@ -89,9 +89,9 @@ func TestCreateMetrics(t *testing.T) {
 		[]byte("dummy data"), nil,
 	)
 
-	host := MockHost{GetFunc: func() map[component.ID]component.Component {
+	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID("dummy_metric_encoding"): &MockExtensionWithPMetricUnmarshaler{
+			component.MustNewID("dummy_metric_encoding"): &mockExtensionWithPMetricUnmarshaler{
 				Unmarshaler: unmarshalMetricsFunc(func(data []byte) (pmetric.Metrics, error) {
 					require.Equal(t, "dummy data", string(data))
 					metrics := pmetric.NewMetrics()
@@ -289,7 +289,7 @@ func TestLoadLogsHandler(t *testing.T) {
 		{
 			name: "Default to CW Subscription filter - success",
 			factoryMock: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
-				return &MockExtensionWithPLogUnmarshaler{}, nil
+				return &mockExtensionWithPLogUnmarshaler{}, nil
 			},
 			isErr:               false,
 			expectedHandlerType: reflect.TypeOf(&cwLogsSubscriptionHandler{}),
@@ -301,7 +301,7 @@ func TestLoadLogsHandler(t *testing.T) {
 				id := component.NewID(component.MustNewType("my_encoding"))
 
 				return map[component.ID]component.Component{
-					id: &MockExtensionWithPLogUnmarshaler{},
+					id: &mockExtensionWithPLogUnmarshaler{},
 				}
 			},
 			isErr:               false,
@@ -326,8 +326,8 @@ func TestLoadLogsHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// construct mocks
-			host := MockHost{GetFunc: tt.hostMock}
-			factory := MockExtFactory{CreateFunc: tt.factoryMock}
+			host := mockHost{GetFunc: tt.hostMock}
+			factory := mockExtFactory{CreateFunc: tt.factoryMock}
 
 			// load handler and validate
 			handler, err := newLogsHandler(
@@ -366,7 +366,7 @@ func TestLoadEncodingExtension(t *testing.T) {
 				id := component.NewID(component.MustNewType("my_encoding"))
 
 				return map[component.ID]component.Component{
-					id: &MockExtensionWithPLogUnmarshaler{},
+					id: &mockExtensionWithPLogUnmarshaler{},
 				}
 			},
 			isError: false,
@@ -378,7 +378,7 @@ func TestLoadEncodingExtension(t *testing.T) {
 				id := component.NewIDWithName(component.MustNewType("encoder"), "my_encoding")
 
 				return map[component.ID]component.Component{
-					id: &MockExtensionWithPLogUnmarshaler{},
+					id: &mockExtensionWithPLogUnmarshaler{},
 				}
 			},
 			isError: false,
@@ -409,7 +409,7 @@ func TestLoadEncodingExtension(t *testing.T) {
 
 				return map[component.ID]component.Component{
 					// register metric unmarshaler and force failure
-					id: &MockExtensionWithPMetricUnmarshaler{},
+					id: &mockExtensionWithPMetricUnmarshaler{},
 				}
 			},
 			isError: true,
@@ -418,8 +418,8 @@ func TestLoadEncodingExtension(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			host := MockHost{
-				tt.hostGetMock,
+			host := mockHost{
+				GetFunc: tt.hostGetMock,
 			}
 
 			ext, err := loadEncodingExtension[plog.Unmarshaler](host, tt.encoding, "logs")
@@ -442,7 +442,7 @@ func TestLoadSubFilterLogUnmarshaler(t *testing.T) {
 		{
 			name: "successful_case",
 			mockFactory: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
-				return &MockExtensionWithPLogUnmarshaler{}, nil
+				return &mockExtensionWithPLogUnmarshaler{}, nil
 			},
 		},
 		{
@@ -455,7 +455,7 @@ func TestLoadSubFilterLogUnmarshaler(t *testing.T) {
 		{
 			name: "invalid_unmarshaler",
 			mockFactory: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
-				return &MockExtension{}, nil
+				return &mockExtension{}, nil
 			},
 			expectedErr: "does not implement plog.Unmarshaler",
 		},
@@ -463,7 +463,7 @@ func TestLoadSubFilterLogUnmarshaler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockFactory := &MockExtFactory{
+			mockFactory := &mockExtFactory{
 				CreateFunc: test.mockFactory,
 			}
 
@@ -586,41 +586,43 @@ func TestDetectTriggerType(t *testing.T) {
 	}
 }
 
-type MockExtFactory struct {
+type mockExtFactory struct {
 	CreateFunc func(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error)
+	_          struct{} // prevent unkeyed literal initialization
 }
 
-func (m *MockExtFactory) Create(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error) {
+func (m *mockExtFactory) Create(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error) {
 	return m.CreateFunc(ctx, settings, config)
 }
 
-type MockExtensionWithPLogUnmarshaler struct {
-	MockExtension    // Embed the base mock implementation.
+type mockExtensionWithPLogUnmarshaler struct {
+	mockExtension    // Embed the base mock implementation.
 	plog.Unmarshaler // Add the unmarshaler interface when needed.
 }
 
-type MockExtensionWithPMetricUnmarshaler struct {
-	MockExtension       // Embed the base mock implementation.
+type mockExtensionWithPMetricUnmarshaler struct {
+	mockExtension       // Embed the base mock implementation.
 	pmetric.Unmarshaler // Add the unmarshaler interface when needed.
 }
 
-type MockExtension struct{}
+type mockExtension struct{}
 
-func (m *MockExtension) Start(_ context.Context, _ component.Host) error {
+func (m *mockExtension) Start(_ context.Context, _ component.Host) error {
 	// Mock the behavior of the Start method.
 	return nil
 }
 
-func (m *MockExtension) Shutdown(_ context.Context) error {
+func (m *mockExtension) Shutdown(_ context.Context) error {
 	// Mock the behavior of the Shutdown method.
 	return nil
 }
 
-type MockHost struct {
+type mockHost struct {
 	GetFunc func() map[component.ID]component.Component
+	_       struct{} // prevent unkeyed literal initialization
 }
 
-func (m MockHost) GetExtensions() map[component.ID]component.Component {
+func (m mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.GetFunc()
 }
 

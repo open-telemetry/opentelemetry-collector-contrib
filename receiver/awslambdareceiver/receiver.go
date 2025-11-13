@@ -10,21 +10,18 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
-
-	"go.uber.org/zap"
-
 	"github.com/aws/aws-lambda-go/lambda"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
 type eventType string
