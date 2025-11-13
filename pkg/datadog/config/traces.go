@@ -51,6 +51,7 @@ type TracesConfig struct {
 	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
 	// If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
 	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+	//
 	// Deprecated: Please use PeerTagsAggregation instead
 	PeerServiceAggregation bool `mapstructure:"peer_service_aggregation"`
 
