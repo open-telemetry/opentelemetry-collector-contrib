@@ -53,7 +53,7 @@ func Test_TrimSuffix(t *testing.T) {
 					},
 					Suffix: tt.prefix,
 				})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
