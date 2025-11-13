@@ -15,19 +15,22 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: operationName
-                    value:
-                      stringValue: FlowLogFlowEvent
                   - key: properties
                     value:
                       kvlistValue:
                         values:
-                          - key: flowLogGUID
+                          - key: macAddress
                             value:
-                              stringValue: 00000000-0000-0000-0000-000000000000
+                              stringValue: "000000000000"
                           - key: flowLogResourceID
                             value:
                               stringValue: /SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.NETWORK/NETWORKWATCHERS/NETWORKWATCHER_EASTUS2/FLOWLOGS/TEST-VNET-FLOWLOG
+                          - key: targetResourceID
+                            value:
+                              stringValue: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet
+                          - key: flowLogVersion
+                            value:
+                              doubleValue: 4
                           - key: flowRecords
                             value:
                               kvlistValue:
@@ -56,27 +59,15 @@ resourceLogs:
                                                                     values:
                                                                       - stringValue: 1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,E,NX,1,66,1,635
                                                                       - stringValue: 1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,B,NX,0,0,0,0
-                          - key: macAddress
+                          - key: flowLogGUID
                             value:
-                              stringValue: "000000000000"
-                          - key: targetResourceID
-                            value:
-                              stringValue: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet
-                          - key: flowLogVersion
-                            value:
-                              doubleValue: 4
+                              stringValue: 00000000-0000-0000-0000-000000000000
                   - key: category
                     value:
                       stringValue: FlowLogFlowEvent
                   - key: operation.name
                     value:
                       stringValue: FlowLogFlowEvent
-                  - key: resourceId
-                    value:
-                      stringValue: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet
-                  - key: time
-                    value:
-                      stringValue: "2025-11-07T15:59:52.9326845Z"
             timeUnixNano: "1762531192932684500"
         scope:
           name: otelcol/azureresourcelogs

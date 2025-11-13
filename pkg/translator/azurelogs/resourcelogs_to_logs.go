@@ -331,8 +331,7 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 	attrs := map[string]any{}
 	hasProperties := len(log.Properties) > 0
 	known, unknown := parseRawRecord(log)
-	fmt.Println("------- known = ", known)
-	fmt.Println("------- unknown = ", unknown)
+
 	// Handle properties + unknown fields merge
 	switch {
 	case hasProperties:
