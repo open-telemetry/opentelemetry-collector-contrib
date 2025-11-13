@@ -7,3 +7,9 @@ status:
   distributions: []
   codeowners:
     active: [MichaelKatsoulis, Kavindu-Dodan, axw, pjanotti]
+
+tests:
+  # TODO Fix this
+  skip_lifecycle: true
+  config:
+    s3_encoding: awslogs

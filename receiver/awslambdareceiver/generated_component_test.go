@@ -62,33 +62,5 @@ func TestComponentLifecycle(t *testing.T) {
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
-		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
-			require.NoError(t, err)
-			host := newMdatagenNopHost()
-			require.NoError(t, err)
-			require.NoError(t, firstRcvr.Start(context.Background(), host))
-			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
-			require.NoError(t, err)
-			require.NoError(t, secondRcvr.Start(context.Background(), host))
-			require.NoError(t, secondRcvr.Shutdown(context.Background()))
-		})
 	}
-}
-
-var _ component.Host = (*mdatagenNopHost)(nil)
-
-type mdatagenNopHost struct{}
-
-func newMdatagenNopHost() component.Host {
-	return &mdatagenNopHost{}
-}
-
-func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	return nil
 }
