@@ -95,6 +95,10 @@ func (*Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, curr
 	currentPoints := histogram.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
+		if st := currentDist.StartTimestamp(); st != 0 && st != currentDist.Timestamp() {
+			// Report point as is if the start timestamp is already set.
+			continue
+		}
 
 		refTsi, found := tsm.Get(current, currentDist.Attributes())
 		if !found {
@@ -140,6 +144,10 @@ func (*Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timeseri
 	currentPoints := histogram.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
+		if st := currentDist.StartTimestamp(); st != 0 && st != currentDist.Timestamp() {
+			// Report point as is if the start timestamp is already set.
+			continue
+		}
 
 		refTsi, found := tsm.Get(current, currentDist.Attributes())
 		if !found {
@@ -182,6 +190,10 @@ func (*Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current pm
 	currentPoints := current.Sum().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
+		if st := currentSum.StartTimestamp(); st != 0 && st != currentSum.Timestamp() {
+			// Report point as is if the start timestamp is already set.
+			continue
+		}
 
 		refTsi, found := tsm.Get(current, currentSum.Attributes())
 		if !found {
@@ -221,6 +233,10 @@ func (*Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, curren
 
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSummary := currentPoints.At(i)
+		if st := currentSummary.StartTimestamp(); st != 0 && st != currentSummary.Timestamp() {
+			// Report point as is if the start timestamp is already set.
+			continue
+		}
 
 		refTsi, found := tsm.Get(current, currentSummary.Attributes())
 		if !found {

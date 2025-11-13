@@ -288,7 +288,9 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]configopaque.String{"foo": "bah"}
+			cfg.Headers = configopaque.MapList{
+				{Name: "foo", Value: "bah"},
+			}
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -309,7 +311,9 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]configopaque.String{"User-Agent": "overridden"}
+			cfg.Headers = configopaque.MapList{
+				{Name: "User-Agent", Value: "overridden"},
+			}
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -2768,7 +2772,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 
 			profile.AttributeIndices().Append(2)
 
-			sample := profile.Sample().AppendEmpty()
+			sample := profile.Samples().AppendEmpty()
 			sample.TimestampsUnixNano().Append(0)
 
 			stack := dic.StackTable().AppendEmpty()

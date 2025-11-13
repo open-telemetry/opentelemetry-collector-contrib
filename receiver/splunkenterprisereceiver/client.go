@@ -99,7 +99,7 @@ func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req
 	// this returns a jobid which is then used in the second part to retrieve the search results
 	if sr.Jobid == nil {
 		var u string
-		path := "/services/search/jobs/"
+		path := "/services/search/v2/jobs/"
 
 		if e, ok := c.clients[eptType]; ok {
 			u, err = url.JoinPath(e.endpoint.String(), path)
@@ -121,13 +121,20 @@ func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req
 
 		return req, nil
 	}
-	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
+	data := url.Values{}
+	data.Add("add_summary_to_metadata", "true")
+	data.Add("count", fmt.Sprintf("%v", sr.count))
+	data.Add("offset", fmt.Sprintf("%v", sr.offset))
+
+	path := fmt.Sprintf("/services/search/v2/jobs/%s/results", *sr.Jobid)
 	url, _ := url.JoinPath(c.clients[eptType].endpoint.String(), path)
 
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	req, err = http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	return req, nil
 }

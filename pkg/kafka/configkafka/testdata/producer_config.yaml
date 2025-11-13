@@ -31,3 +31,9 @@ kafka/invalid_compression:
   compression: brotli
 kafka/invalid_required_acks:
   required_acks: 3
+
+kafka/producer_linger:
+  linger: 100ms
+
+kafka/producer_linger_1s:
+  linger: 1s

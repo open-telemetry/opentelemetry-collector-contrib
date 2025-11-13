@@ -82,4 +82,8 @@ resourceLogs:
             body: {}
             observedTimeUnixNano: "1755262477402958638"
             timeUnixNano: "1755262474966334000"
-        scope: {}
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.auditlog

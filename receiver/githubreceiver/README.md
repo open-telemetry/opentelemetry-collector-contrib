@@ -159,6 +159,7 @@ The WebHook configuration exposes the following settings:
 * `service_name`: (optional) - The service name for the traces. See the
 [Configuring Service Name](#configuring-service-name) section for more
 information.
+* `include_span_events`: (default = `false`) - When set to `true`, attaches the raw webhook event JSON as a span event. The workflow run event is attached to the workflow run span, and the workflow job event is attached to the job span.
 
 The WebHook configuration block also accepts all the [confighttp][cfghttp]
 settings.
@@ -173,6 +174,7 @@ receivers:
             path: /events
             health_path: /health
             secret: ${env:SECRET_STRING_VAR}
+            service_name: github-actions  # single logical CI service (See Configuring Service Name section below)
             required_headers:
                 WAF-Header: "value"
         scrapers: # The validation expects at least a dummy scraper config
@@ -187,24 +189,63 @@ of exposed configuration values can be found in [`config.go`](./config.go).
 
 The `service_name` option in the WebHook configuration can be used to set a
 pre-defined `service.name` resource attribute for all traces emitted by the
-receiver. This takes priority over the internal generation of the
-`service.name`. In this configuration, it would be important to create a GitHub
-receiver per GitHub app configured for the set of repositories that match your
-`service.name`.
+receiver. This value should represent the **logical service producing telemetry**
+(as defined by OpenTelemetry resource semantics), not individual repositories or
+components. For CI/CD usage, a typical choice is a single service such as
+`github-actions` (optionally paired with `service.namespace` for ownership and
+uniqueness).
 
-However, a more efficient approach would be to leverage the default generation
-of `service.name` by configuring [Custom Properties][cp] in each GitHub
-repository. To do that simply add a `service_name` key with the desired value in
-each repository and all events sent to the GitHub receiver will properly
-associate with that `service.name`. Alternatively, the `service_name` will be
-derived from the repository name.
+If you choose to set `service_name` explicitly, consider running a separate
+GitHub receiver (and/or GitHub App) for each distinct service that you want to
+model.
 
-The precedence for setting the `service.name` resource attribute is as follows:
+If you do not set `service_name`, the receiver supports deriving it from
+repository metadata. You can configure [Custom Properties][cp] in each GitHub
+repository by adding a `service_name` key; all events from that repository will
+then carry the specified `service.name`. If no custom property is found, the
+receiver will derive `service.name` from the repository name.
 
-1. `service_name` configuration in the WebHook configuration.
-2. `service_name` key in the repository's Custom Properties per repository.
+> **Note:** Deriving `service.name` from repositories is a convenience and may
+> be sufficient for small setups. In larger organizations, mapping repositories
+> directly to `service.name` often leads to many pseudo-services and can make
+> cross-repository analysis harder. Prefer an explicit CI service name when
+> modeling your pipelines as a platform service.
+
+**Precedence for setting `service.name`:**
+
+1. `service_name` in the WebHook configuration.
+2. `service_name` key in the repository’s Custom Properties.
 3. `service_name` derived from the repository name.
-4. `service.name` set to `unknown_service` per the semantic conventions as a fall back.
+4. `service.name` defaults to `unknown_service` per the semantic conventions.
+
+### Span Events
+
+When `include_span_events` is enabled, the receiver attaches the raw GitHub webhook event JSON as a span event to the corresponding span:
+
+- **Workflow Run events**: Attached as a span event named `github.workflow_run.event` to the root workflow run span
+- **Workflow Job events**: Attached as a span event named `github.workflow_job.event` to the job span
+
+The raw event is stored in the `event.payload` attribute as a JSON string. This allows for detailed inspection of the complete webhook payload, including fields that may not be mapped to span attributes.
+
+**Note**: The raw event payload can be large (typically 5-50KB). Consider the impact on storage and performance before enabling this feature in production environments.
+
+An example configuration with span events enabled:
+
+```yaml
+receivers:
+    github:
+        webhook:
+            endpoint: localhost:19418
+            path: /events
+            health_path: /health
+            secret: ${env:SECRET_STRING_VAR}
+            required_headers:
+                WAF-Header: "value"
+            include_span_events: true
+        scrapers: # The validation expects at least a dummy scraper config
+            scraper:
+                github_org: open-telemetry
+```
 
 ### Configuring A GitHub App
 

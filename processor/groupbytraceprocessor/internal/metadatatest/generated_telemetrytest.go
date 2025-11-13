@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorGroupbytraceConfNumTraces(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbytrace_conf_num_traces",
-		Description: "Maximum number of traces to hold in the internal storage",
+		Description: "Maximum number of traces to hold in the internal storage [Development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -38,7 +38,7 @@ func AssertEqualProcessorGroupbytraceConfNumTraces(t *testing.T, tt *componentte
 func AssertEqualProcessorGroupbytraceEventLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbytrace_event_latency",
-		Description: "How long the queue events are taking to be processed",
+		Description: "How long the queue events are taking to be processed [Development]",
 		Unit:        "ms",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -53,7 +53,7 @@ func AssertEqualProcessorGroupbytraceEventLatency(t *testing.T, tt *componenttes
 func AssertEqualProcessorGroupbytraceIncompleteReleases(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbytrace_incomplete_releases",
-		Description: "Releases that are suspected to have been incomplete",
+		Description: "Releases that are suspected to have been incomplete [Development]",
 		Unit:        "{releases}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -69,7 +69,7 @@ func AssertEqualProcessorGroupbytraceIncompleteReleases(t *testing.T, tt *compon
 func AssertEqualProcessorGroupbytraceNumEventsInQueue(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbytrace_num_events_in_queue",
-		Description: "Number of events currently in the queue",
+		Description: "Number of events currently in the queue [Development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -83,7 +83,7 @@ func AssertEqualProcessorGroupbytraceNumEventsInQueue(t *testing.T, tt *componen
 func AssertEqualProcessorGroupbytraceNumTracesInMemory(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbytrace_num_traces_in_memory",
-		Description: "Number of traces currently in the in-memory storage",
+		Description: "Number of traces currently in the in-memory storage [Development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -97,7 +97,7 @@ func AssertEqualProcessorGroupbytraceNumTracesInMemory(t *testing.T, tt *compone
 func AssertEqualProcessorGroupbytraceSpansReleased(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbytrace_spans_released",
-		Description: "Spans released to the next consumer",
+		Description: "Spans released to the next consumer [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -113,7 +113,7 @@ func AssertEqualProcessorGroupbytraceSpansReleased(t *testing.T, tt *componentte
 func AssertEqualProcessorGroupbytraceTracesEvicted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbytrace_traces_evicted",
-		Description: "Traces evicted from the internal buffer",
+		Description: "Traces evicted from the internal buffer [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -129,7 +129,7 @@ func AssertEqualProcessorGroupbytraceTracesEvicted(t *testing.T, tt *componentte
 func AssertEqualProcessorGroupbytraceTracesReleased(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbytrace_traces_released",
-		Description: "Traces released to the next consumer",
+		Description: "Traces released to the next consumer [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

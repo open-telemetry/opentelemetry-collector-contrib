@@ -49,6 +49,25 @@ func TestOtelCollectorPayload_MarshalJSON(t *testing.T) {
 	assert.Equal(t, oc.Metadata.FullComponents, unmarshaled.Metadata.FullComponents)
 }
 
+func TestOtelCollectorResourceAttributesJSON(t *testing.T) {
+	oc := &OtelCollectorPayload{
+		Hostname:  "test_host",
+		Timestamp: time.Now().UnixNano(),
+		UUID:      "test-uuid",
+		Metadata: OtelCollector{
+			CollectorResourceAttributes: map[string]string{"key1": "value1", "key2": "value2"},
+		},
+	}
+
+	b, err := json.Marshal(oc)
+	require.NoError(t, err)
+
+	var back OtelCollectorPayload
+	err = json.Unmarshal(b, &back)
+	require.NoError(t, err)
+	assert.Equal(t, oc.Metadata.CollectorResourceAttributes, back.Metadata.CollectorResourceAttributes)
+}
+
 func TestOtelCollectorPayload_UnmarshalAndMarshal(t *testing.T) {
 	// Read the sample JSON payload from file
 	filePath := "testdata/sample-otelcollectorpayload.json"

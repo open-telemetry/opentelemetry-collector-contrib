@@ -15,11 +15,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/interfacesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/systemscraper"
 )
 
 var scraperFactories = map[component.Type]scraper.Factory{
-	component.MustNewType("system"): systemscraper.NewFactory(),
+	component.MustNewType("system"):     systemscraper.NewFactory(),
+	component.MustNewType("interfaces"): interfacesscraper.NewFactory(),
 }
 
 // NewFactory creates a factory for Cisco OS receiver.
@@ -64,7 +66,10 @@ func createMetricsReceiver(
 
 		// Inject device configuration into scraper config
 		if sysCfg, ok := scraperCfg.(*systemscraper.Config); ok {
-			sysCfg.Device = convertToSystemScraperDeviceConfig(conf.Device)
+			sysCfg.Device = conf.Device
+		}
+		if intfCfg, ok := scraperCfg.(*interfacesscraper.Config); ok {
+			intfCfg.Device = conf.Device
 		}
 
 		scraperOptions = append(scraperOptions, scraperhelper.AddFactoryWithConfig(factory, scraperCfg))
@@ -80,21 +85,6 @@ func createMetricsReceiver(
 		consumer,
 		scraperOptions...,
 	)
-}
-
-func convertToSystemScraperDeviceConfig(device DeviceConfig) systemscraper.DeviceConfig {
-	return systemscraper.DeviceConfig{
-		Host: systemscraper.HostInfo{
-			Name: device.Device.Host.Name,
-			IP:   device.Device.Host.IP,
-			Port: device.Device.Host.Port,
-		},
-		Auth: systemscraper.AuthConfig{
-			Username: device.Auth.Username,
-			Password: string(device.Auth.Password),
-			KeyFile:  device.Auth.KeyFile,
-		},
-	}
 }
 
 type nopMetricsReceiver struct{}

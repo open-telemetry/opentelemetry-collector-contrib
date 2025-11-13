@@ -18,7 +18,7 @@ Number of clients pending on a blocking call
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {client} | Sum | Int | Cumulative | false | development |
+| {client} | Sum | Int | Cumulative | false | Development |
 
 ### redis.clients.connected
 
@@ -26,7 +26,7 @@ Number of client connections (excluding connections from replicas)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {client} | Sum | Int | Cumulative | false | development |
+| {client} | Sum | Int | Cumulative | false | Development |
 
 ### redis.clients.max_input_buffer
 
@@ -34,7 +34,7 @@ Biggest input buffer among current client connections
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.clients.max_output_buffer
 
@@ -42,7 +42,7 @@ Longest output list among current client connections
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.commands
 
@@ -50,7 +50,7 @@ Number of commands processed per second
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {ops}/s | Gauge | Int | development |
+| {ops}/s | Gauge | Int | Development |
 
 ### redis.commands.processed
 
@@ -58,7 +58,7 @@ Total number of commands processed by the server
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {command} | Sum | Int | Cumulative | true | development |
+| {command} | Sum | Int | Cumulative | true | Development |
 
 ### redis.connections.received
 
@@ -66,7 +66,7 @@ Total number of connections accepted by the server
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connection} | Sum | Int | Cumulative | true | development |
+| {connection} | Sum | Int | Cumulative | true | Development |
 
 ### redis.connections.rejected
 
@@ -74,7 +74,7 @@ Number of connections rejected because of maxclients limit
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connection} | Sum | Int | Cumulative | true | development |
+| {connection} | Sum | Int | Cumulative | true | Development |
 
 ### redis.cpu.time
 
@@ -82,7 +82,7 @@ System CPU consumed by the Redis server in seconds since server start
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
@@ -96,7 +96,7 @@ Average keyspace keys TTL
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 #### Attributes
 
@@ -110,7 +110,7 @@ Number of keyspace keys with an expiration
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {key} | Gauge | Int | development |
+| {key} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -124,7 +124,7 @@ Number of keyspace keys
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {key} | Gauge | Int | development |
+| {key} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -138,7 +138,7 @@ Number of evicted keys due to maxmemory limit
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {key} | Sum | Int | Cumulative | true | development |
+| {key} | Sum | Int | Cumulative | true | Development |
 
 ### redis.keys.expired
 
@@ -146,7 +146,7 @@ Total number of key expiration events
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {event} | Sum | Int | Cumulative | true | development |
+| {event} | Sum | Int | Cumulative | true | Development |
 
 ### redis.keyspace.hits
 
@@ -154,7 +154,7 @@ Number of successful lookup of keys in the main dictionary
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {hit} | Sum | Int | Cumulative | true | development |
+| {hit} | Sum | Int | Cumulative | true | Development |
 
 ### redis.keyspace.misses
 
@@ -162,7 +162,7 @@ Number of failed lookup of keys in the main dictionary
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {miss} | Sum | Int | Cumulative | true | development |
+| {miss} | Sum | Int | Cumulative | true | Development |
 
 ### redis.latest_fork
 
@@ -170,7 +170,7 @@ Duration of the latest fork operation in microseconds
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| us | Gauge | Int | development |
+| us | Gauge | Int | Development |
 
 ### redis.memory.fragmentation_ratio
 
@@ -178,7 +178,7 @@ Ratio between used_memory_rss and used_memory
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### redis.memory.lua
 
@@ -186,7 +186,7 @@ Number of bytes used by the Lua engine
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.memory.peak
 
@@ -194,7 +194,7 @@ Peak memory consumed by Redis (in bytes)
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.memory.rss
 
@@ -202,7 +202,7 @@ Number of bytes that Redis allocated as seen by the operating system
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.memory.used
 
@@ -210,7 +210,7 @@ Total number of bytes allocated by Redis using its allocator
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.net.input
 
@@ -218,7 +218,7 @@ The total number of bytes read from the network
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### redis.net.output
 
@@ -226,7 +226,7 @@ The total number of bytes written to the network
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### redis.rdb.changes_since_last_save
 
@@ -234,7 +234,7 @@ Number of changes since the last dump
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {change} | Sum | Int | Cumulative | false | development |
+| {change} | Sum | Int | Cumulative | false | Development |
 
 ### redis.replication.backlog_first_byte_offset
 
@@ -242,7 +242,7 @@ The master offset of the replication backlog buffer
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.replication.offset
 
@@ -250,7 +250,7 @@ The server's current replication offset
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.slaves.connected
 
@@ -258,7 +258,7 @@ Number of connected replicas
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {replica} | Sum | Int | Cumulative | false | development |
+| {replica} | Sum | Int | Cumulative | false | Development |
 
 ### redis.uptime
 
@@ -266,7 +266,7 @@ Number of seconds since Redis server start
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 ## Optional Metrics
 
@@ -284,7 +284,7 @@ Number of known nodes in the cluster
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {node} | Gauge | Int | development |
+| {node} | Gauge | Int | Development |
 
 ### redis.cluster.links_buffer_limit_exceeded.count
 
@@ -292,7 +292,7 @@ Total number of times the cluster links buffer limit was exceeded
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {count} | Sum | Int | Cumulative | true | development |
+| {count} | Sum | Int | Cumulative | true | Development |
 
 ### redis.cluster.node.count
 
@@ -300,7 +300,7 @@ Number of master nodes in the cluster
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {node} | Gauge | Int | development |
+| {node} | Gauge | Int | Development |
 
 ### redis.cluster.node.uptime
 
@@ -308,7 +308,7 @@ The node's current epoch
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 ### redis.cluster.slots_assigned
 
@@ -316,7 +316,7 @@ Number of slots assigned in the cluster
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {slot} | Gauge | Int | development |
+| {slot} | Gauge | Int | Development |
 
 ### redis.cluster.slots_fail
 
@@ -324,7 +324,7 @@ Number of slots in the cluster that are in a failing state
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {slot} | Gauge | Int | development |
+| {slot} | Gauge | Int | Development |
 
 ### redis.cluster.slots_ok
 
@@ -332,7 +332,7 @@ Number of slots in the cluster that are ok
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {slot} | Gauge | Int | development |
+| {slot} | Gauge | Int | Development |
 
 ### redis.cluster.slots_pfail
 
@@ -340,7 +340,7 @@ Number of slots in the cluster that are in a 'potentially failing' state
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {slot} | Gauge | Int | development |
+| {slot} | Gauge | Int | Development |
 
 ### redis.cluster.state
 
@@ -348,7 +348,7 @@ State of the cluster
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {state} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -362,7 +362,7 @@ Total number of messages received by the cluster
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {message} | Sum | Int | Cumulative | true | development |
+| {message} | Sum | Int | Cumulative | true | Development |
 
 ### redis.cluster.stats_messages_sent
 
@@ -370,7 +370,7 @@ Total number of messages sent by the cluster
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {message} | Sum | Int | Cumulative | true | development |
+| {message} | Sum | Int | Cumulative | true | Development |
 
 ### redis.cluster.uptime
 
@@ -378,7 +378,7 @@ Current epoch of the cluster
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 ### redis.cmd.calls
 
@@ -386,7 +386,7 @@ Total number of calls for a command
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {call} | Sum | Int | Cumulative | true | development |
+| {call} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -400,7 +400,7 @@ Command execution latency
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -415,7 +415,7 @@ Total time for all executions of this command
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| us | Sum | Int | Cumulative | true | development |
+| us | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -429,7 +429,7 @@ The value of the maxmemory configuration directive
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.replication.replica_offset
 
@@ -437,7 +437,7 @@ Offset for redis replica
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### redis.role
 
@@ -445,7 +445,7 @@ Redis node's role
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {role} | Sum | Int | Cumulative | false | development |
+| {role} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

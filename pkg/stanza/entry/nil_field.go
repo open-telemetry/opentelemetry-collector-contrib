@@ -32,5 +32,5 @@ func (NilField) String() string {
 
 // NewNilField will create a new nil field
 func NewNilField() Field {
-	return Field{NilField{}}
+	return Field{FieldInterface: NilField{}}
 }

@@ -2,3 +2,4 @@ status:
   disable_codecov_badge: true
   codeowners:
     active: [MovieStoreGuy, andrzej-stencel, crobert-1]
+  class: pkg

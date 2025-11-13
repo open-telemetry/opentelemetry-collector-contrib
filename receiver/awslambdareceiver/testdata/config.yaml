@@ -1,0 +1,7 @@
+awslambda/awslogs_encoding:
+  s3_encoding: awslogs_encoding
+
+awslambda/json_log_encoding:
+  s3_encoding: json_log_encoding
+
+awslambda/empty_encoding:

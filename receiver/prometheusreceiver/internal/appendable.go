@@ -21,6 +21,7 @@ type appendable struct {
 	metricAdjuster         MetricsAdjuster
 	useStartTimeMetric     bool
 	enableNativeHistograms bool
+	useMetadata            bool
 	trimSuffixes           bool
 	startTimeMetricRegex   *regexp.Regexp
 	externalLabels         labels.Labels
@@ -38,6 +39,7 @@ func NewAppendable(
 	startTimeMetricRegex *regexp.Regexp,
 	useCreatedMetric bool,
 	enableNativeHistograms bool,
+	useMetadata bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
 ) (storage.Appendable, error) {
@@ -59,6 +61,7 @@ func NewAppendable(
 		metricAdjuster:         metricAdjuster,
 		useStartTimeMetric:     useStartTimeMetric,
 		enableNativeHistograms: enableNativeHistograms,
+		useMetadata:            useMetadata,
 		startTimeMetricRegex:   startTimeMetricRegex,
 		externalLabels:         externalLabels,
 		obsrecv:                obsrecv,
@@ -67,5 +70,5 @@ func NewAppendable(
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.enableNativeHistograms)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.enableNativeHistograms, o.useMetadata)
 }

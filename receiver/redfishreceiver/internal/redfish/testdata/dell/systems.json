@@ -1,0 +1,215 @@
+{
+  "@Redfish.Settings": {
+    "@odata.context": "/redfish/v1/$metadata#Settings.Settings",
+    "@odata.type": "#Settings.v1_4_0.Settings",
+    "SettingsObject": {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Settings"
+    },
+    "SupportedApplyTimes": [
+      "OnReset"
+    ]
+  },
+  "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1",
+  "@odata.type": "#ComputerSystem.v1_22_1.ComputerSystem",
+  "Actions": {
+    "#ComputerSystem.Reset": {
+      "target": "/redfish/v1/Systems/System.Embedded.1/Actions/ComputerSystem.Reset",
+      "ResetType@Redfish.AllowableValues": [
+        "On",
+        "ForceOff",
+        "ForceRestart",
+        "GracefulRestart",
+        "GracefulShutdown",
+        "PushPowerButton",
+        "Nmi",
+        "PowerCycle"
+      ]
+    }
+  },
+  "AssetTag": "",
+  "Bios": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Bios"
+  },
+  "BiosVersion": "1.17.3",
+  "BootProgress": {
+    "LastState": "None"
+  },
+  "Boot": {
+    "BootOptions": {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootOptions"
+    },
+    "Certificates": {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Boot/Certificates"
+    },
+    "BootOrder": [
+      "Boot0003",
+      "Boot0005"
+    ],
+    "BootOrder@odata.count": 2,
+    "BootSourceOverrideEnabled": "Disabled",
+    "BootSourceOverrideMode": "UEFI",
+    "BootSourceOverrideTarget": "None",
+    "UefiTargetBootSourceOverride": null,
+    "BootSourceOverrideTarget@Redfish.AllowableValues": [
+      "None",
+      "Pxe",
+      "Floppy",
+      "Cd",
+      "Hdd",
+      "BiosSetup",
+      "Utilities",
+      "UefiTarget",
+      "SDCard",
+      "UefiHttp"
+    ],
+    "StopBootOnFault": "Never"
+  },
+  "Description": "Computer System which represents a machine (physical or virtual) and the local resources such as memory, cpu and other devices that can be accessed from that machine.",
+  "EthernetInterfaces": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces"
+  },
+  "GraphicalConsole": {
+    "ConnectTypesSupported": [
+      "KVMIP"
+    ],
+    "ConnectTypesSupported@odata.count": 1,
+    "MaxConcurrentSessions": 6,
+    "ServiceEnabled": true
+  },
+  "HostName": "test-dell",
+  "HostWatchdogTimer": {
+    "FunctionEnabled": false,
+    "Status": {
+      "State": "Disabled"
+    },
+    "TimeoutAction": "None"
+  },
+  "HostingRoles": [],
+  "HostingRoles@odata.count": 0,
+  "Id": "System.Embedded.1",
+  "IndicatorLED": "Lit",
+  "IndicatorLED@Redfish.Deprecated": "Please migrate to use LocationIndicatorActive property",
+  "Links": {
+    "Chassis": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+      }
+    ],
+    "Chassis@odata.count": 1,
+    "CooledBy": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Thermal#/Fans/0"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Thermal#/Fans/1"
+      }
+    ],
+    "CooledBy@odata.count": 2,
+    "ManagedBy": [
+      {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+      }
+    ],
+    "ManagedBy@odata.count": 1,
+    "PoweredBy": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power#/PowerSupplies/0"
+      }
+    ],
+    "PoweredBy@odata.count": 1,
+    "TrustedComponents": [],
+    "TrustedComponents@odata.count": 0
+  },
+  "LastResetTime": "0000-00-00T00:00:00+00:00",
+  "LocationIndicatorActive": false,
+  "Manufacturer": "Dell Inc.",
+  "Memory": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Memory"
+  },
+  "MemorySummary": {
+    "MemoryMirroring": "System",
+    "Status": {
+      "Health": "Unknown",
+      "HealthRollup": "Unknown",
+      "State": "Enabled"
+    },
+    "Status@Redfish.Deprecated": "Please migrate to use Status in the individual Memory resources",
+    "TotalSystemMemoryGiB": 32
+  },
+  "Model": "PowerEdge XR4510c",
+  "Name": "System",
+  "NetworkInterfaces": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/NetworkInterfaces"
+  },
+  "PCIeDevices": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/PCIeDevices/0-31"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/PCIeDevices/133-0"
+    }
+  ],
+  "PCIeDevices@odata.count": 4,
+  "PCIeFunctions": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/PCIeDevices/0-31/PCIeFunctions/0-31-0"
+    },
+    {
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/PCIeDevices/133-0/PCIeFunctions/133-0-0"
+    }
+  ],
+  "PCIeFunctions@odata.count": 8,
+  "PartNumber": "075X14A03",
+  "PowerState": "Off",
+  "ProcessorSummary": {
+    "Count": 1,
+    "CoreCount": 4,
+    "LogicalProcessorCount": 8,
+    "Model": "Intel(R) Xeon(R) D-2712T CPU @ 1.90GHz",
+    "Status": {
+      "Health": "Unknown",
+      "HealthRollup": "Unknown",
+      "State": "Enabled"
+    },
+    "Status@Redfish.Deprecated": "Please migrate to use Status in the individual Processor resources",
+    "ThreadingEnabled": true
+  },
+  "Processors": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors"
+  },
+  "SKU": "7KRWWX2",
+  "SecureBoot": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot"
+  },
+  "SerialNumber": "MXBA41131C115G",
+  "SimpleStorage": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SimpleStorage"
+  },
+  "Status": {
+    "Health": "Critical",
+    "HealthRollup": "Critical",
+    "State": "StandbyOffline"
+  },
+  "Storage": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage"
+  },
+  "SystemType": "Physical",
+  "TrustedModules": [
+    {
+      "FirmwareVersion": "Unknown",
+      "InterfaceType": null,
+      "Status": {
+        "State": "Absent"
+      }
+    }
+  ],
+  "TrustedModules@odata.count": 1,
+  "UUID": "4c4c3456-114b-4410-8057-b7c1111111",
+  "VirtualMedia": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/VirtualMedia"
+  },
+  "VirtualMediaConfig": {
+    "ServiceEnabled": false
+  }
+}

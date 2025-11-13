@@ -18,7 +18,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
@@ -77,7 +76,7 @@ func (c *Commander) Start(ctx context.Context) error {
 	args := slices.Concat(c.args, c.cfg.Arguments)
 
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, args...) // #nosec G204
-	c.cmd.Env = common.EnvVarMapToEnvMapSlice(c.cfg.Env)
+	c.cmd.Env = envVarMapToEnvMapSlice(c.cfg.Env)
 	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// PassthroughLogging changes how collector start up happens
@@ -209,7 +208,7 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 	ctx := context.Background()
 
 	cmd := exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
-	cmd.Env = common.EnvVarMapToEnvMapSlice(c.cfg.Env)
+	cmd.Env = envVarMapToEnvMapSlice(c.cfg.Env)
 	cmd.SysProcAttr = sysProcAttrs()
 	// grab cmd pipes
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -375,4 +374,16 @@ func (c *Commander) Stop(ctx context.Context) error {
 	cancel()
 
 	return innerErr
+}
+
+func envVarMapToEnvMapSlice(m map[string]string) []string {
+	// let the command initialize the env itself
+	if m == nil {
+		return nil
+	}
+	result := os.Environ()
+	for key, value := range m {
+		result = append(result, key+"="+value)
+	}
+	return result
 }

@@ -1,0 +1,69 @@
+resourceLogs:
+  - scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: status
+                value:
+                  stringValue: info
+              - key: timestamp
+                value:
+                  intValue: 1000000000
+              - key: hostname
+                value:
+                  stringValue: host1
+              - key: service
+                value:
+                  stringValue: service1
+              - key: ddsource
+                value:
+                  stringValue: source1
+              - key: ddtags
+                value:
+                  stringValue: tag1:value1
+            body:
+              stringValue: First log
+            timeUnixNano: "1736889934967986176"
+          - attributes:
+              - key: status
+                value:
+                  stringValue: error
+              - key: timestamp
+                value:
+                  intValue: 2000000000
+              - key: hostname
+                value:
+                  stringValue: host2
+              - key: service
+                value:
+                  stringValue: service2
+              - key: ddsource
+                value:
+                  stringValue: source2
+              - key: ddtags
+                value:
+                  stringValue: tag2:value2,tagB:valueB
+            body:
+              stringValue: Second log
+            timeUnixNano: "1736889934967986176"
+          - attributes:
+              - key: status
+                value:
+                  stringValue: warning
+              - key: timestamp
+                value:
+                  intValue: 3000000000
+              - key: hostname
+                value:
+                  stringValue: host3
+              - key: service
+                value:
+                  stringValue: service3
+              - key: ddsource
+                value:
+                  stringValue: source3
+              - key: ddtags
+                value:
+                  stringValue: tag3:value3
+            body:
+              stringValue: Third log
+            timeUnixNano: "1736889934967986176"

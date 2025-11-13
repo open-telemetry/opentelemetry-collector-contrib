@@ -20,7 +20,7 @@ Number of bytes transferred from the disk by the container
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 ### container.blockio.io_service_bytes_recursive.write
 
@@ -30,7 +30,7 @@ Number of bytes transferred to the disk by the container
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.percent
 
@@ -38,7 +38,7 @@ Percent of CPU used by the container.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### container.cpu.usage.percpu
 
@@ -46,7 +46,7 @@ Total CPU time consumed per CPU-core.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -60,7 +60,7 @@ System CPU usage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.usage.total
 
@@ -68,7 +68,7 @@ Total CPU time consumed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.percent
 
@@ -76,7 +76,7 @@ Percentage of memory used.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### container.memory.usage.limit
 
@@ -84,7 +84,7 @@ Memory limit of the container.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.memory.usage.total
 
@@ -92,7 +92,7 @@ Memory usage of the container.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### container.network.io.usage.rx_bytes
 
@@ -100,7 +100,7 @@ Bytes received by the container.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### container.network.io.usage.tx_bytes
 
@@ -108,7 +108,7 @@ Bytes sent by the container.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 

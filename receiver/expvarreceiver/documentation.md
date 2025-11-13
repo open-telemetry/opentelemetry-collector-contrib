@@ -20,7 +20,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.frees
 
@@ -30,7 +30,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {objects} | Sum | Int | Cumulative | true | development |
+| {objects} | Sum | Int | Cumulative | true | Development |
 
 ### process.runtime.memstats.gc_cpu_fraction
 
@@ -40,7 +40,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### process.runtime.memstats.gc_sys
 
@@ -50,7 +50,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.heap_alloc
 
@@ -60,7 +60,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.heap_idle
 
@@ -70,7 +70,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.heap_inuse
 
@@ -80,7 +80,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.heap_objects
 
@@ -90,7 +90,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {objects} | Sum | Int | Cumulative | false | development |
+| {objects} | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.heap_released
 
@@ -100,7 +100,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.heap_sys
 
@@ -110,7 +110,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.last_pause
 
@@ -120,7 +120,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ns | Gauge | Int | development |
+| ns | Gauge | Int | Development |
 
 ### process.runtime.memstats.mallocs
 
@@ -130,7 +130,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {objects} | Sum | Int | Cumulative | true | development |
+| {objects} | Sum | Int | Cumulative | true | Development |
 
 ### process.runtime.memstats.mcache_inuse
 
@@ -140,7 +140,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.mcache_sys
 
@@ -150,7 +150,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.mspan_inuse
 
@@ -160,7 +160,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.mspan_sys
 
@@ -170,7 +170,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.next_gc
 
@@ -180,7 +180,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.num_forced_gc
 
@@ -190,7 +190,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### process.runtime.memstats.num_gc
 
@@ -200,7 +200,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### process.runtime.memstats.other_sys
 
@@ -210,7 +210,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.pause_total
 
@@ -220,7 +220,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### process.runtime.memstats.stack_inuse
 
@@ -230,7 +230,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.stack_sys
 
@@ -240,7 +240,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.sys
 
@@ -250,7 +250,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ## Optional Metrics
 
@@ -270,7 +270,7 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {lookups} | Sum | Int | Cumulative | false | development |
+| {lookups} | Sum | Int | Cumulative | false | Development |
 
 ### process.runtime.memstats.total_alloc
 
@@ -280,4 +280,4 @@ As defined by https://pkg.go.dev/runtime#MemStats
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |

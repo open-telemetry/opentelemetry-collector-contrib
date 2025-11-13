@@ -17,15 +17,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-type stefDataSender struct {
+type StefDataSender struct {
 	testbed.DataSenderBase
 	consumer.Metrics
+	Logger *zap.Logger
 }
 
 // NewStefDataSender creates a new STEF sender that will send
 // to the specified port after Start is called.
-func NewStefDataSender(host string, port int) testbed.MetricDataSender {
-	return &stefDataSender{
+func NewStefDataSender(host string, port int) *StefDataSender {
+	return &StefDataSender{
 		DataSenderBase: testbed.DataSenderBase{
 			Port: port,
 			Host: host,
@@ -33,7 +34,7 @@ func NewStefDataSender(host string, port int) testbed.MetricDataSender {
 	}
 }
 
-func (sds *stefDataSender) Start() error {
+func (sds *StefDataSender) Start() error {
 	factory := stefexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*stefexporter.Config)
 	cfg.Endpoint = sds.GetEndpoint().String()
@@ -42,6 +43,9 @@ func (sds *stefDataSender) Start() error {
 	}
 	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()
+	if sds.Logger != nil {
+		params.Logger = sds.Logger
+	}
 
 	exp, err := factory.CreateMetrics(context.Background(), params, cfg)
 	if err != nil {
@@ -52,13 +56,13 @@ func (sds *stefDataSender) Start() error {
 	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
-func (sds *stefDataSender) GenConfigYAMLStr() string {
+func (sds *StefDataSender) GenConfigYAMLStr() string {
 	format := `
   stef:
     endpoint: "%s"`
 	return fmt.Sprintf(format, sds.GetEndpoint())
 }
 
-func (*stefDataSender) ProtocolName() string {
+func (*StefDataSender) ProtocolName() string {
 	return "stef"
 }

@@ -60,10 +60,6 @@ receivers:
   
 
 processors:
-  batch:
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
   memory_limiter:
     check_interval: 1s
     limit_mib: 4000
@@ -96,6 +92,8 @@ exporters:
       key: ${env:DD_API_KEY}
     traces:
       trace_buffer: 500
+    sending_queue:
+      batch:
 
 connectors:
     datadog/connector:
@@ -104,17 +102,17 @@ service:
   pipelines:
     metrics:
       receivers: [datadog/connector, otlp, hostmetrics]
-      processors: [memory_limiter, batch, resourcedetection]
+      processors: [memory_limiter, resourcedetection]
       exporters: [datadog]
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch, resourcedetection]
+      processors: [memory_limiter, resourcedetection]
       exporters: [datadog/connector]
     traces/sampling:
       receivers: [datadog/connector]
-      processors: [memory_limiter, batch, resourcedetection]
+      processors: [memory_limiter, resourcedetection]
       exporters: [datadog]
     logs:
       receivers: [otlp, filelog]
-      processors: [memory_limiter, batch, resourcedetection]
+      processors: [memory_limiter, resourcedetection]
       exporters: [datadog]

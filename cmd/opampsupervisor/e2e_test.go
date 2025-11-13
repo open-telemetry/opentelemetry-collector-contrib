@@ -2118,7 +2118,9 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 
 			// Check that the status is set to APPLYING
 			require.EventuallyWithT(t, func(c *assert.CollectT) {
-				status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+				statusVal := remoteConfigStatus.Load()
+				require.NotNil(c, statusVal) // not set yet
+				status := statusVal.(*protobufs.RemoteConfigStatus)
 				t.Log("status", status.Status)
 				assert.Equal(c, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status.Status)
 			}, 5*time.Second, 100*time.Millisecond)

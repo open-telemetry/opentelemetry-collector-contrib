@@ -18,7 +18,7 @@ The average duration of a served request.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | development |
+| ms | Gauge | Double | Development |
 
 ### couchdb.database.open
 
@@ -26,7 +26,7 @@ The number of open databases.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {databases} | Sum | Int | Cumulative | false | development |
+| {databases} | Sum | Int | Cumulative | false | Development |
 
 ### couchdb.database.operations
 
@@ -34,7 +34,7 @@ The number of database operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -48,7 +48,7 @@ The number of open file descriptors.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {files} | Sum | Int | Cumulative | false | development |
+| {files} | Sum | Int | Cumulative | false | Development |
 
 ### couchdb.httpd.bulk_requests
 
@@ -56,7 +56,7 @@ The number of bulk requests.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### couchdb.httpd.requests
 
@@ -64,7 +64,7 @@ The number of HTTP requests by method.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -78,7 +78,7 @@ The number of each HTTP status code.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {responses} | Sum | Int | Cumulative | true | development |
+| {responses} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -92,7 +92,7 @@ The number of views read.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {views} | Sum | Int | Cumulative | true | development |
+| {views} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
