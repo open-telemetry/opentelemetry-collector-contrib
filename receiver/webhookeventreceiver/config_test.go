@@ -117,61 +117,61 @@ func TestValidateConfig(t *testing.T) {
 	}
 }
 
-func TestMaxRequestBodyBytesAutoCorrection(t *testing.T) {
+func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		desc     string
 		conf     Config
-		expected int
+		expected int64
 	}{
 		{
-			desc: "MaxRequestBodyBytes is 0, should be set to default",
+			desc: "MaxRequestBodySize is 0, should be set to default",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0",
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: 0,
 				},
-				MaxRequestBodyBytes: 0,
 			},
-			expected: bufio.MaxScanTokenSize,
+			expected: int64(bufio.MaxScanTokenSize),
 		},
 		{
-			desc: "MaxRequestBodyBytes is less than minimum, should be corrected",
+			desc: "MaxRequestBodySize is less than minimum, should be corrected",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0",
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: 10,
 				},
-				MaxRequestBodyBytes: 10,
 			},
-			expected: bufio.MaxScanTokenSize,
+			expected: int64(bufio.MaxScanTokenSize),
 		},
 		{
-			desc: "MaxRequestBodyBytes is exactly the minimum, should remain unchanged",
+			desc: "MaxRequestBodySize is exactly the minimum, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0",
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: int64(bufio.MaxScanTokenSize),
 				},
-				MaxRequestBodyBytes: bufio.MaxScanTokenSize,
 			},
-			expected: bufio.MaxScanTokenSize,
+			expected: int64(bufio.MaxScanTokenSize),
 		},
 		{
-			desc: "MaxRequestBodyBytes is greater than minimum, should remain unchanged",
+			desc: "MaxRequestBodySize is greater than minimum, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0",
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: 65538,
 				},
-				MaxRequestBodyBytes: 65538,
 			},
 			expected: 65538,
 		},
 		{
-			desc: "MaxRequestBodyBytes is way greater than minimum, should remain unchanged",
+			desc: "MaxRequestBodySize is way greater than minimum, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0",
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: 100 * 1024 * 1024, // 100MB
 				},
-				MaxRequestBodyBytes: 100 * 1024 * 1024, // 100MB
 			},
 			expected: 100 * 1024 * 1024, // 100MB
 		},
@@ -181,7 +181,7 @@ func TestMaxRequestBodyBytesAutoCorrection(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			err := test.conf.Validate()
 			require.NoError(t, err)
-			require.Equal(t, test.expected, test.conf.MaxRequestBodyBytes)
+			require.Equal(t, test.expected, test.conf.MaxRequestBodySize)
 		})
 	}
 }

@@ -44,7 +44,7 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	sc.Split(split)
 
 	// Increase max token size from default 64KB to configured value
-	sc.Buffer(make([]byte, bufio.MaxScanTokenSize), er.maxRequestBodyBytes)
+	sc.Buffer(make([]byte, bufio.MaxScanTokenSize), er.maxRequestBodySize)
 
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
@@ -76,7 +76,7 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 
 	if err := sc.Err(); err != nil {
 		if errors.Is(err, bufio.ErrTooLong) {
-			return log, scopeLog.LogRecords().Len(), fmt.Errorf("%w: limit is %d bytes", errRequestBodyTooLarge, er.maxRequestBodyBytes)
+			return log, scopeLog.LogRecords().Len(), fmt.Errorf("%w: limit is %d bytes", errRequestBodyTooLarge, er.maxRequestBodySize)
 		}
 		return log, scopeLog.LogRecords().Len(), fmt.Errorf("failed to scan request body: %w", err)
 	}

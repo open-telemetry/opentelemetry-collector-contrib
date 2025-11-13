@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
@@ -402,12 +403,14 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				Path:                defaultPath,
-				HealthPath:          defaultHealthPath,
-				ReadTimeout:         defaultReadTimeout,
-				WriteTimeout:        defaultWriteTimeout,
-				SplitLogsAtNewLine:  true,
-				MaxRequestBodyBytes: 150 * 1024, // Set to 150KB to handle the 100KB test payload
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 150 * 1024, // Set to 150KB to handle the 100KB test payload
+				},
+				Path:               defaultPath,
+				HealthPath:         defaultHealthPath,
+				ReadTimeout:        defaultReadTimeout,
+				WriteTimeout:       defaultWriteTimeout,
+				SplitLogsAtNewLine: true,
 			},
 			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
 				require.NoError(t, err)
@@ -436,12 +439,14 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 100 * 1024, // 100KB to handle the ~80KB test payload
+				},
 				Path:                    defaultPath,
 				HealthPath:              defaultHealthPath,
 				ReadTimeout:             defaultReadTimeout,
 				WriteTimeout:            defaultWriteTimeout,
 				SplitLogsAtJSONBoundary: true,
-				MaxRequestBodyBytes:     100 * 1024, // 100KB to handle the ~80KB test payload
 			},
 			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
 				require.NoError(t, err)
@@ -461,12 +466,14 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				Path:                defaultPath,
-				HealthPath:          defaultHealthPath,
-				ReadTimeout:         defaultReadTimeout,
-				WriteTimeout:        defaultWriteTimeout,
-				SplitLogsAtNewLine:  true,
-				MaxRequestBodyBytes: 100 * 1024, // Set to 100KB, smaller than payload
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 100 * 1024, // Set to 100KB, smaller than payload
+				},
+				Path:               defaultPath,
+				HealthPath:         defaultHealthPath,
+				ReadTimeout:        defaultReadTimeout,
+				WriteTimeout:       defaultWriteTimeout,
+				SplitLogsAtNewLine: true,
 			},
 			expectError: true,
 			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
@@ -478,7 +485,7 @@ func TestReqToLog(t *testing.T) {
 			},
 		},
 		{
-			desc: "request body with tiny MaxRequestBodyBytes uses default",
+			desc: "request body with tiny MaxRequestBodySize uses default",
 			sc: func() *bufio.Scanner {
 				largePayload := make([]byte, 60*1024)
 				for i := range largePayload {
@@ -488,12 +495,14 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				Path:                defaultPath,
-				HealthPath:          defaultHealthPath,
-				ReadTimeout:         defaultReadTimeout,
-				WriteTimeout:        defaultWriteTimeout,
-				SplitLogsAtNewLine:  true,
-				MaxRequestBodyBytes: 64, // Set smaller than allowed
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 64, // Set smaller than allowed
+				},
+				Path:               defaultPath,
+				HealthPath:         defaultHealthPath,
+				ReadTimeout:        defaultReadTimeout,
+				WriteTimeout:       defaultWriteTimeout,
+				SplitLogsAtNewLine: true,
 			},
 			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
 				require.NoError(t, err)

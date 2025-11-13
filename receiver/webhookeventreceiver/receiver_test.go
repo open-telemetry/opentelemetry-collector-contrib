@@ -281,7 +281,7 @@ func TestFailedReq(t *testing.T) {
 			cfg: func() Config {
 				c := createDefaultConfig().(*Config)
 				c.Endpoint = "localhost:0"
-				c.MaxRequestBodyBytes = 70 * 1024 // Set to 70KB limit
+				c.MaxRequestBodySize = 70 * 1024 // Set to 70KB limit
 				c.SplitLogsAtNewLine = true
 				return *c
 			}(),

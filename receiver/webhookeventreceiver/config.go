@@ -33,7 +33,6 @@ type Config struct {
 	SplitLogsAtJSONBoundary    bool                     `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
 	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
 	HeaderAttributeRegex       string                   `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
-	MaxRequestBodyBytes        int                      `mapstructure:"max_request_body_bytes"`        // maximum request body size in bytes. Default is 100KB
 }
 
 type RequiredHeader struct {
@@ -74,14 +73,13 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.MaxRequestBodyBytes == 0 {
-		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
-	} else if cfg.MaxRequestBodyBytes < bufio.MaxScanTokenSize {
-		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
+	// Set default MaxRequestBodySize if not configured
+	if cfg.MaxRequestBodySize == 0 {
+		cfg.MaxRequestBodySize = int64(bufio.MaxScanTokenSize)
+	} else if cfg.MaxRequestBodySize < int64(bufio.MaxScanTokenSize) {
+		// Enforce minimum of 64KB (bufio.MaxScanTokenSize)
+		cfg.MaxRequestBodySize = int64(bufio.MaxScanTokenSize)
 	}
-
-	// Set HTTP server body size limit to match scanner limit
-	cfg.MaxRequestBodySize = int64(cfg.MaxRequestBodyBytes)
 
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
 		errs = multierr.Append(errs, errRequiredHeader)

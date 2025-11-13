@@ -45,7 +45,7 @@ type eventReceiver struct {
 	obsrecv             *receiverhelper.ObsReport
 	gzipPool            *sync.Pool
 	includeHeadersRegex *regexp.Regexp
-	maxRequestBodyBytes int // Computed max token size for scanner (minimum 64KB)
+	maxRequestBodySize  int // Computed max token size for scanner (minimum 64KB)
 }
 
 func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -85,7 +85,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 		obsrecv:             obsrecv,
 		gzipPool:            &sync.Pool{New: func() any { return new(gzip.Reader) }},
 		includeHeadersRegex: includeHeaderRegex,
-		maxRequestBodyBytes: cfg.MaxRequestBodyBytes,
+		maxRequestBodySize:  int(cfg.MaxRequestBodySize),
 	}
 
 	return er, nil
