@@ -22,7 +22,7 @@ func NewResourceField(keys ...string) Field {
 	if keys == nil {
 		keys = []string{}
 	}
-	return Field{ResourceField{
+	return Field{FieldInterface: ResourceField{
 		Keys: keys,
 	}}
 }
@@ -219,6 +219,8 @@ func (f *ResourceField) UnmarshalText(text []byte) error {
 		return fmt.Errorf("must start with 'resource': %s", text)
 	}
 
-	*f = ResourceField{Keys: keys[1:]}
+	*f = ResourceField{
+		Keys: keys[1:],
+	}
 	return nil
 }

@@ -169,11 +169,6 @@ func TestSignalExporter_AuthorizationHeader(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: configopaque.String(privateKey),
-		Logs: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{},
-			},
-		},
 	}
 
 	exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
@@ -186,7 +181,7 @@ func TestSignalExporter_AuthorizationHeader(t *testing.T) {
 		require.NoError(t, exp.shutdown(t.Context()))
 	}()
 
-	authHeader, ok := wrapper.config.Headers["Authorization"]
+	authHeader, ok := wrapper.config.Headers.Get("Authorization")
 	require.True(t, ok, "Authorization header should be present")
 	assert.Equal(t, configopaque.String("Bearer "+privateKey), authHeader, "Authorization header should be in Bearer format")
 
@@ -203,36 +198,36 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 		{
 			name: "logs",
 			config: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"Custom-Header": "custom-value",
-					"X-Test":        "test-value",
+				Headers: configopaque.MapList{
+					{Name: "Custom-Header", Value: "custom-value"},
+					{Name: "X-Test", Value: "test-value"},
 				},
 			},
 		},
 		{
 			name: "traces",
 			config: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"Custom-Header": "custom-value",
-					"X-Test":        "test-value",
+				Headers: configopaque.MapList{
+					{Name: "Custom-Header", Value: "custom-value"},
+					{Name: "X-Test", Value: "test-value"},
 				},
 			},
 		},
 		{
 			name: "metrics",
 			config: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"Custom-Header": "custom-value",
-					"X-Test":        "test-value",
+				Headers: configopaque.MapList{
+					{Name: "Custom-Header", Value: "custom-value"},
+					{Name: "X-Test", Value: "test-value"},
 				},
 			},
 		},
 		{
 			name: "profiles",
 			config: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
-					"Custom-Header": "custom-value",
-					"X-Test":        "test-value",
+				Headers: configopaque.MapList{
+					{Name: "Custom-Header", Value: "custom-value"},
+					{Name: "X-Test", Value: "test-value"},
 				},
 			},
 		},
@@ -271,15 +266,15 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 			headers := wrapper.config.Headers
 			require.Len(t, headers, 3)
 
-			authHeader, ok := headers["Authorization"]
+			authHeader, ok := headers.Get("Authorization")
 			require.True(t, ok)
 			assert.Equal(t, configopaque.String("Bearer "+privateKey), authHeader)
 
-			customHeader, ok := headers["Custom-Header"]
+			customHeader, ok := headers.Get("Custom-Header")
 			require.True(t, ok)
 			assert.Equal(t, configopaque.String("custom-value"), customHeader)
 
-			testHeader, ok := headers["X-Test"]
+			testHeader, ok := headers.Get("X-Test")
 			require.True(t, ok)
 			assert.Equal(t, configopaque.String("test-value"), testHeader)
 

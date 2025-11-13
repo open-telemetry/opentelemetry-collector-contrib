@@ -39,10 +39,11 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
 
+	authHeader, _ := e.config.Headers.Get("Authorization")
 	authParams := utils.AuthParams{
 		AccessID:    e.config.APIToken.AccessID,
 		AccessKey:   string(e.config.APIToken.AccessKey),
-		BearerToken: string(e.config.Headers["Authorization"]),
+		BearerToken: string(authHeader),
 	}
 
 	ctx, e.cancel = context.WithCancel(ctx)
