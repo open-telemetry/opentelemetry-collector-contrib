@@ -201,6 +201,18 @@ func TestValidate(t *testing.T) {
 			},
 			err: "reporter_period must be 5 minutes or higher",
 		},
+		{
+			name: "empty cluster_name when orchestrator_explorer is enabled",
+			cfg: &Config{
+				API:          APIConfig{Key: "abcdef0"},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
+				OrchestratorExplorer: OrchestratorExplorerConfig{
+					Enabled:     true,
+					ClusterName: "",
+				},
+			},
+			err: "'cluster_name' is required when 'orchestrator_explorer' is enabled",
+		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
