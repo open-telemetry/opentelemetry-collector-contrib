@@ -4,7 +4,6 @@
 package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 
 import (
-	"bufio"
 	"errors"
 	"regexp"
 	"time"
@@ -75,10 +74,8 @@ func (cfg *Config) Validate() error {
 
 	// Set default MaxRequestBodySize if not configured
 	if cfg.MaxRequestBodySize == 0 {
-		cfg.MaxRequestBodySize = int64(bufio.MaxScanTokenSize)
-	} else if cfg.MaxRequestBodySize < int64(bufio.MaxScanTokenSize) {
-		// Enforce minimum of 64KB (bufio.MaxScanTokenSize)
-		cfg.MaxRequestBodySize = int64(bufio.MaxScanTokenSize)
+		cfg.MaxRequestBodySize = int64(20 * 1024 * 1024) // 20MiB
+		// to match default value http://github.com/open-telemetry/opentelemetry-collector/blob/release/v0.139.x/config/confighttp/server.go#L31
 	}
 
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
