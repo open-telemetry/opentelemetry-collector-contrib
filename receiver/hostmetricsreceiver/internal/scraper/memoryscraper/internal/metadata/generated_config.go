@@ -27,12 +27,17 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for memory metrics.
 type MetricsConfig struct {
-	SystemLinuxMemoryAvailable MetricConfig `mapstructure:"system.linux.memory.available"`
-	SystemLinuxMemoryDirty     MetricConfig `mapstructure:"system.linux.memory.dirty"`
-	SystemMemoryLimit          MetricConfig `mapstructure:"system.memory.limit"`
-	SystemMemoryPageSize       MetricConfig `mapstructure:"system.memory.page_size"`
-	SystemMemoryUsage          MetricConfig `mapstructure:"system.memory.usage"`
-	SystemMemoryUtilization    MetricConfig `mapstructure:"system.memory.utilization"`
+	SystemLinuxMemoryAvailable         MetricConfig `mapstructure:"system.linux.memory.available"`
+	SystemLinuxMemoryDirty             MetricConfig `mapstructure:"system.linux.memory.dirty"`
+	SystemLinuxMemoryHugePagesFree     MetricConfig `mapstructure:"system.linux.memory.huge_pages.free"`
+	SystemLinuxMemoryHugePagesPageSize MetricConfig `mapstructure:"system.linux.memory.huge_pages.page_size"`
+	SystemLinuxMemoryHugePagesReserved MetricConfig `mapstructure:"system.linux.memory.huge_pages.reserved"`
+	SystemLinuxMemoryHugePagesSurplus  MetricConfig `mapstructure:"system.linux.memory.huge_pages.surplus"`
+	SystemLinuxMemoryHugePagesTotal    MetricConfig `mapstructure:"system.linux.memory.huge_pages.total"`
+	SystemMemoryLimit                  MetricConfig `mapstructure:"system.memory.limit"`
+	SystemMemoryPageSize               MetricConfig `mapstructure:"system.memory.page_size"`
+	SystemMemoryUsage                  MetricConfig `mapstructure:"system.memory.usage"`
+	SystemMemoryUtilization            MetricConfig `mapstructure:"system.memory.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -41,6 +46,21 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SystemLinuxMemoryDirty: MetricConfig{
+			Enabled: false,
+		},
+		SystemLinuxMemoryHugePagesFree: MetricConfig{
+			Enabled: false,
+		},
+		SystemLinuxMemoryHugePagesPageSize: MetricConfig{
+			Enabled: false,
+		},
+		SystemLinuxMemoryHugePagesReserved: MetricConfig{
+			Enabled: false,
+		},
+		SystemLinuxMemoryHugePagesSurplus: MetricConfig{
+			Enabled: false,
+		},
+		SystemLinuxMemoryHugePagesTotal: MetricConfig{
 			Enabled: false,
 		},
 		SystemMemoryLimit: MetricConfig{
