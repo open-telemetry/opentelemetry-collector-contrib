@@ -135,7 +135,6 @@ type oracleScraper struct {
 	querySampleCfg             QuerySample
 	serviceInstanceID          string
 	lastExecutionTimestamp     time.Time
-	lastQueryMetricsDBTime     string
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
@@ -535,7 +534,7 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		currentCollectionTime := time.Now()
 		lookbackTimeCounter := s.calculateLookbackSeconds()
 		if lookbackTimeCounter < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
-			s.logger.Debug("Skipping the collection of top queries because collection interval not yet elapsed.")
+			s.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
 		} else {
 			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if topNCollectionErrors != nil {
