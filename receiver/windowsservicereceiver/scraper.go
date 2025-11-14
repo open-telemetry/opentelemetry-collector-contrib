@@ -8,13 +8,14 @@ package windowsservicereceiver // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
@@ -114,7 +115,7 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 		return ws.mb.Emit(), err
 	}
 
-	var scrapeErr error
+	var scrapeErr scrapererror.ScrapeErrors
 
 	for _, name := range names {
 		if !ws.allowed(name) {
@@ -123,18 +124,18 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 
 		svc, err := updateService(&ws.mgr, name)
 		if err != nil {
-			scrapeErr = multierr.Append(scrapeErr, err)
+			scrapeErr.AddPartial(1, fmt.Errorf("updateService failed for %v: %w", name, err))
 			continue
 		}
 
 		if err := svc.updateStatus(); err != nil {
 			_ = svc.close()
-			scrapeErr = multierr.Append(scrapeErr, err)
+			scrapeErr.AddPartial(1, fmt.Errorf("updateStatus failed for %v: %w", name, err))
 			continue
 		}
 		if err := svc.updateConfig(); err != nil {
 			_ = svc.close()
-			scrapeErr = multierr.Append(scrapeErr, err)
+			scrapeErr.AddPartial(1, fmt.Errorf("updateConfig failed for %v: %w", name, err))
 			continue
 		}
 
@@ -144,9 +145,9 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 		ws.mb.RecordWindowsServiceStatusDataPoint(ts, val, name, startAttr)
 
 		if err := svc.close(); err != nil {
-			scrapeErr = multierr.Append(scrapeErr, err)
+			scrapeErr.AddPartial(1, fmt.Errorf("failed to close service %v: %w", name, err))
 		}
 	}
 
-	return ws.mb.Emit(), scrapeErr
+	return ws.mb.Emit(), scrapeErr.Combine()
 }
