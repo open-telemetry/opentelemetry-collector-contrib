@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -42,7 +42,7 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount: 1,
 		},
 		NumTraces: 1,
@@ -65,7 +65,7 @@ func TestNumberOfSpans(t *testing.T) {
 	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount: 1,
 		},
 		NumTraces:     1,
@@ -82,7 +82,7 @@ func TestNumberOfSpans(t *testing.T) {
 
 func TestDurationInf(t *testing.T) {
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			TotalDuration: types.DurationWithInf(-1),
 		},
 		NumTraces:     1,
@@ -103,7 +103,7 @@ func TestRateOfSpans(t *testing.T) {
 	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			Rate:          10,
 			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
@@ -134,7 +134,7 @@ func TestSpanDuration(t *testing.T) {
 
 	targetDuration := 1 * time.Second
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			Rate:          10,
 			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
@@ -165,7 +165,7 @@ func TestUnthrottled(t *testing.T) {
 	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			TotalDuration: types.DurationWithInf(50 * time.Millisecond),
 			WorkerCount:   1,
 		},
@@ -192,7 +192,7 @@ func TestSpanKind(t *testing.T) {
 	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount: 1,
 		},
 		NumTraces: 1,
@@ -241,7 +241,7 @@ func TestSpanStatuses(t *testing.T) {
 			otel.SetTracerProvider(tracerProvider)
 
 			cfg := &Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumTraces:  1,
@@ -351,7 +351,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "No duration, NumTraces, or Continuous",
 			cfg: &Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 			},
@@ -393,7 +393,7 @@ func (m *mockSyncer) Reset() {
 
 func configWithNoAttributes(qty int, statusCode string) *Config {
 	return &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount:         1,
 			TelemetryAttributes: nil,
 		},
@@ -404,9 +404,9 @@ func configWithNoAttributes(qty int, statusCode string) *Config {
 
 func configWithOneAttribute(qty int, statusCode string) *Config {
 	return &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount:         1,
-			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
+			TelemetryAttributes: config.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
 		},
 		NumTraces:  qty,
 		StatusCode: statusCode,
@@ -414,14 +414,14 @@ func configWithOneAttribute(qty int, statusCode string) *Config {
 }
 
 func configWithMultipleAttributes(qty int, statusCode string) *Config {
-	kvs := common.KeyValue{
+	kvs := config.KeyValue{
 		telemetryAttrKeyOne:     telemetryAttrValueOne,
 		telemetryAttrKeyTwo:     telemetryAttrValueTwo,
 		telemetryAttrIntKeyOne:  telemetryAttrIntValueOne,
 		telemetryAttrBoolKeyOne: telemetryAttrBoolValueOne,
 	}
 	return &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount:         1,
 			TelemetryAttributes: kvs,
 		},
