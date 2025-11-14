@@ -38,6 +38,7 @@ body:
       - connector/routing
       - connector/servicegraph
       - connector/signaltometrics
+      - connector/slowsql
       - connector/spanmetrics
       - connector/sum
       - exporter/alertmanager
@@ -120,7 +121,6 @@ body:
       - extension/observer/cfgardenobserver
       - extension/observer/dockerobserver
       - extension/observer/ecsobserver
-      - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
       - extension/observer/kafkatopicsobserver
@@ -141,8 +141,8 @@ body:
       - internal/common
       - internal/core
       - internal/datadog
+      - internal/datadog/e2e
       - internal/docker
-      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
@@ -173,6 +173,7 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/stanza/operator/input/journald
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
@@ -180,6 +181,7 @@ body:
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
+      - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
@@ -234,6 +236,7 @@ body:
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awslambda
       - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
@@ -243,6 +246,8 @@ body:
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos
+      - receiver/ciscoos/internal/scraper/interfacesscraper
+      - receiver/ciscoos/internal/scraper/systemscraper
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
@@ -261,6 +266,7 @@ body:
       - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
+      - receiver/googlecloudpubsubpush
       - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
@@ -315,6 +321,7 @@ body:
       - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
+      - receiver/redfish
       - receiver/redis
       - receiver/riak
       - receiver/saphana
@@ -343,6 +350,7 @@ body:
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/windowsservice
+      - receiver/yanggrpc
       - receiver/zipkin
       - receiver/zookeeper
       - scraper/zookeeperscraper

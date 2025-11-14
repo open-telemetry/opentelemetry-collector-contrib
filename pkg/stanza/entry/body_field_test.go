@@ -287,25 +287,25 @@ func TestBodyFieldSet(t *testing.T) {
 
 func TestBodyFieldParent(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
-		field := BodyField{[]string{"child"}}
-		require.Equal(t, BodyField{[]string{}}, field.Parent())
+		field := BodyField{Keys: []string{"child"}}
+		require.Equal(t, BodyField{Keys: []string{}}, field.Parent())
 	})
 
 	t.Run("Root", func(t *testing.T) {
-		field := BodyField{[]string{}}
-		require.Equal(t, BodyField{[]string{}}, field.Parent())
+		field := BodyField{Keys: []string{}}
+		require.Equal(t, BodyField{Keys: []string{}}, field.Parent())
 	})
 }
 
 func TestBodyFieldChild(t *testing.T) {
-	field := BodyField{[]string{"parent"}}
-	require.Equal(t, BodyField{[]string{"parent", "child"}}, field.Child("child"))
+	field := BodyField{Keys: []string{"parent"}}
+	require.Equal(t, BodyField{Keys: []string{"parent", "child"}}, field.Child("child"))
 }
 
 func TestBodyFieldMerge(t *testing.T) {
 	entry := &Entry{}
 	entry.Body = "raw_value"
-	field := BodyField{[]string{"embedded"}}
+	field := BodyField{Keys: []string{"embedded"}}
 	values := map[string]any{"new": "values"}
 	field.Merge(entry, values)
 	expected := map[string]any{"embedded": values}

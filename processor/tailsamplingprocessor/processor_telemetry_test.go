@@ -29,8 +29,7 @@ import (
 func TestMetricsAfterOneEvaluation(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -44,7 +43,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -63,9 +62,8 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -80,7 +78,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
-				Description: "Count of traces that were sampled or not per sampling policy",
+				Description: "Count of traces that were sampled or not per sampling policy [Development]",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
@@ -102,7 +100,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_global_count_traces_sampled",
-				Description: "Global count of traces that were sampled or not by at least one policy",
+				Description: "Global count of traces that were sampled or not by at least one policy [Development]",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
@@ -123,7 +121,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_policy_cpu_time",
-				Description: "Total time spent (in microseconds) executing a specific sampling policy",
+				Description: "Total time spent (in microseconds) executing a specific sampling policy [Development]",
 				Unit:        "µs",
 				Data: metricdata.Sum[int64]{
 					Temporality: metricdata.CumulativeTemporality,
@@ -162,7 +160,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
-				Description: "Latency (in milliseconds) of each run of the sampling decision timer",
+				Description: "Latency (in milliseconds) of each run of the sampling decision timer [Development]",
 				Unit:        "ms",
 				Data: metricdata.Histogram[int64]{
 					Temporality: metricdata.CumulativeTemporality,
@@ -174,7 +172,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_new_trace_id_received",
-				Description: "Counts the arrival of new traces",
+				Description: "Counts the arrival of new traces [Development]",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
@@ -191,7 +189,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
-				Description: "Count of sampling policy evaluation errors",
+				Description: "Count of sampling policy evaluation errors [Development]",
 				Unit:        "{errors}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
@@ -208,7 +206,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
-				Description: "Count of traces that needed to be dropped before the configured wait time",
+				Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
@@ -225,7 +223,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_traces_on_memory",
-				Description: "Tracks the number of traces current on memory",
+				Description: "Tracks the number of traces current on memory [Development]",
 				Unit:        "{traces}",
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
@@ -248,8 +246,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 func TestMetricsWithComponentID(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -263,7 +260,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -283,9 +280,8 @@ func TestMetricsWithComponentID(t *testing.T) {
 	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -300,7 +296,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
-				Description: "Count of traces that were sampled or not per sampling policy",
+				Description: "Count of traces that were sampled or not per sampling policy [Development]",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
@@ -322,7 +318,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_policy_cpu_time",
-				Description: "Total time spent (in microseconds) executing a specific sampling policy",
+				Description: "Total time spent (in microseconds) executing a specific sampling policy [Development]",
 				Unit:        "µs",
 				Data: metricdata.Sum[int64]{
 					Temporality: metricdata.CumulativeTemporality,
@@ -393,7 +389,7 @@ func TestMetricsCountSampled(t *testing.T) {
 			m: []metricdata.Metrics{
 				{
 					Name:        "otelcol_processor_tail_sampling_global_count_traces_sampled",
-					Description: "Global count of traces that were sampled or not by at least one policy",
+					Description: "Global count of traces that were sampled or not by at least one policy [Development]",
 					Unit:        "{traces}",
 					Data: metricdata.Sum[int64]{
 						IsMonotonic: true,
@@ -411,7 +407,7 @@ func TestMetricsCountSampled(t *testing.T) {
 				},
 				{
 					Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
-					Description: "Count of traces that were sampled or not per sampling policy",
+					Description: "Count of traces that were sampled or not per sampling policy [Development]",
 					Unit:        "{traces}",
 					Data: metricdata.Sum[int64]{
 						Temporality: metricdata.CumulativeTemporality,
@@ -430,7 +426,7 @@ func TestMetricsCountSampled(t *testing.T) {
 				},
 				{
 					Name:        "otelcol_processor_tail_sampling_count_spans_sampled",
-					Description: "Count of spans that were sampled or not per sampling policy",
+					Description: "Count of spans that were sampled or not per sampling policy [Development]",
 					Unit:        "{spans}",
 					Data: metricdata.Sum[int64]{
 						Temporality: metricdata.CumulativeTemporality,
@@ -465,7 +461,7 @@ func TestMetricsCountSampled(t *testing.T) {
 			m: []metricdata.Metrics{
 				{
 					Name:        "otelcol_processor_tail_sampling_global_count_traces_sampled",
-					Description: "Global count of traces that were sampled or not by at least one policy",
+					Description: "Global count of traces that were sampled or not by at least one policy [Development]",
 					Unit:        "{traces}",
 					Data: metricdata.Sum[int64]{
 						IsMonotonic: true,
@@ -483,7 +479,7 @@ func TestMetricsCountSampled(t *testing.T) {
 				},
 				{
 					Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
-					Description: "Count of traces that were sampled or not per sampling policy",
+					Description: "Count of traces that were sampled or not per sampling policy [Development]",
 					Unit:        "{traces}",
 					Data: metricdata.Sum[int64]{
 						Temporality: metricdata.CumulativeTemporality,
@@ -502,7 +498,7 @@ func TestMetricsCountSampled(t *testing.T) {
 				},
 				{
 					Name:        "otelcol_processor_tail_sampling_count_spans_sampled",
-					Description: "Count of spans that were sampled or not per sampling policy",
+					Description: "Count of spans that were sampled or not per sampling policy [Development]",
 					Unit:        "{spans}",
 					Data: metricdata.Sum[int64]{
 						Temporality: metricdata.CumulativeTemporality,
@@ -544,7 +540,7 @@ func TestMetricsCountSampled(t *testing.T) {
 			m: []metricdata.Metrics{
 				{
 					Name:        "otelcol_processor_tail_sampling_global_count_traces_sampled",
-					Description: "Global count of traces that were sampled or not by at least one policy",
+					Description: "Global count of traces that were sampled or not by at least one policy [Development]",
 					Unit:        "{traces}",
 					Data: metricdata.Sum[int64]{
 						IsMonotonic: true,
@@ -562,7 +558,7 @@ func TestMetricsCountSampled(t *testing.T) {
 				},
 				{
 					Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
-					Description: "Count of traces that were sampled or not per sampling policy",
+					Description: "Count of traces that were sampled or not per sampling policy [Development]",
 					Unit:        "{traces}",
 					Data: metricdata.Sum[int64]{
 						Temporality: metricdata.CumulativeTemporality,
@@ -581,7 +577,7 @@ func TestMetricsCountSampled(t *testing.T) {
 				},
 				{
 					Name:        "otelcol_processor_tail_sampling_count_spans_sampled",
-					Description: "Count of spans that were sampled or not per sampling policy",
+					Description: "Count of spans that were sampled or not per sampling policy [Development]",
 					Unit:        "{spans}",
 					Data: metricdata.Sum[int64]{
 						Temporality: metricdata.CumulativeTemporality,
@@ -604,15 +600,14 @@ func TestMetricsCountSampled(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			// prepare
 			s := setupTestTelemetry()
-			b := newSyncIDBatcher()
-			syncBatcher := b.(*syncIDBatcher)
+			controller := newTestTSPController()
 
 			cfg := Config{
 				DecisionWait: 1,
 				NumTraces:    100,
 				PolicyCfgs:   tt.policyCfgs,
 				Options: []Option{
-					withDecisionBatcher(syncBatcher),
+					withTestController(controller),
 				},
 			}
 			cs := &consumertest.TracesSink{}
@@ -631,9 +626,8 @@ func TestMetricsCountSampled(t *testing.T) {
 			err = proc.ConsumeTraces(t.Context(), simpleTraces())
 			require.NoError(t, err)
 
-			tsp := proc.(*tailSamplingSpanProcessor)
-			tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-			tsp.policyTicker.OnTick()
+			controller.waitForTick() // the first tick always gets an empty batch
+			controller.waitForTick()
 
 			// verify
 			var md metricdata.ResourceMetrics
@@ -653,8 +647,7 @@ func TestMetricsCountSampled(t *testing.T) {
 func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -668,7 +661,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -690,9 +683,8 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -700,7 +692,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_trace_removal_age",
-		Description: "Time (in seconds) from arrival of a new trace until its removal from memory",
+		Description: "Time (in seconds) from arrival of a new trace until its removal from memory [Development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -714,8 +706,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -732,7 +723,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -754,9 +745,8 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	for _, traceID := range traceIDs {
 		lateSpan := ptrace.NewTraces()
@@ -772,7 +762,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_late_span_age",
-		Description: "Time (in seconds) from the sampling decision was taken and the arrival of a late span",
+		Description: "Time (in seconds) from the sampling decision was taken and the arrival of a late span [Development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -797,8 +787,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -812,7 +801,7 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -834,9 +823,8 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -844,7 +832,7 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
-		Description: "Count of traces that needed to be dropped before the configured wait time",
+		Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			IsMonotonic: true,
@@ -864,8 +852,7 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -883,7 +870,7 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -905,9 +892,8 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -915,7 +901,7 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
-		Description: "Count of sampling policy evaluation errors",
+		Description: "Count of sampling policy evaluation errors [Development]",
 		Unit:        "{errors}",
 		Data: metricdata.Sum[int64]{
 			IsMonotonic: true,
@@ -935,8 +921,7 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	// Use this instead of the default no-op cache
 	c, err := cache.NewLRUDecisionCache[bool](200)
@@ -954,7 +939,7 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 			WithSampledDecisionCache(c),
 		},
 	}
@@ -974,13 +959,12 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick() // ensure a sampling decision was made and cached
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick() // ensure a sampling decision was made and cached
 
 	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
-	tsp.policyTicker.OnTick()
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -988,7 +972,7 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_early_releases_from_cache_decision",
-		Description: "Number of spans that were able to be immediately released due to a decision cache hit.",
+		Description: "Number of spans that were able to be immediately released due to a decision cache hit. [Development]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			IsMonotonic: true,

@@ -110,6 +110,8 @@ type Config struct {
 	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 
+	OrchestratorExplorer OrchestratorExplorerConfig `mapstructure:"orchestrator_explorer"`
+
 	// Non-fatal warnings found during configuration loading.
 	warnings []error
 }
@@ -119,6 +121,27 @@ func (c *Config) LogWarnings(logger *zap.Logger) {
 	for _, err := range c.warnings {
 		logger.Warn(fmt.Sprintf("%v", err))
 	}
+}
+
+// AddWarning adds a warning message to the configuration.
+// This allows external modules to add warnings that will be logged later.
+func (c *Config) AddWarning(warning error) {
+	c.warnings = append(c.warnings, warning)
+}
+
+// AddWarningf adds a formatted warning message to the configuration.
+// This allows external modules to add formatted warnings that will be logged later.
+func (c *Config) AddWarningf(format string, args ...any) {
+	c.warnings = append(c.warnings, fmt.Errorf(format, args...))
+}
+
+// GetWarnings returns a copy of all warnings stored in the configuration.
+// This allows external modules to retrieve and process warnings as needed.
+func (c *Config) GetWarnings() []error {
+	// Return a copy to prevent external modification of the internal slice
+	warnings := make([]error, len(c.warnings))
+	copy(warnings, c.warnings)
+	return warnings
 }
 
 var _ component.Config = (*Config)(nil)
@@ -154,11 +177,16 @@ func (c *Config) Validate() error {
 		return errors.New("reporter_period must be 5 minutes or higher")
 	}
 
+	if err := c.OrchestratorExplorer.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
 // It does not validate online; this is handled on startup.
+//
 // Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
 func StaticAPIKeyCheck(key string) error {
 	if key == "" {
@@ -382,6 +410,19 @@ func CreateDefaultConfig() component.Config {
 			ReporterPeriod: 30 * time.Minute,
 		},
 
+		OrchestratorExplorer: OrchestratorExplorerConfig{
+			Enabled: false,
+		},
+
 		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373
 	}
+}
+
+// CheckAndCastConfig checks a component.Config type and casts it to the Datadog Config struct.
+func CheckAndCastConfig(c component.Config) (*Config, error) {
+	cfg, ok := c.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("expected config of type *datadog.Config, got %T", c)
+	}
+	return cfg, nil
 }

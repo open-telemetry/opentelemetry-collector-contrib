@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
@@ -73,6 +74,10 @@ var systemSpecificMetrics = map[string][]string{
 	"solaris": {"system.filesystem.inodes.usage"},
 }
 
+var systemSpecificMetricsNFS = map[string][]string{
+	"linux": {"nfs.client.net.count", "nfs.client.net.tcp.connection.accepted", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.requests", "nfs.server.fh.stale.count", "nfs.server.io", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.tcp.connection.accepted", "nfs.server.rpc.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
+}
+
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
@@ -92,6 +97,11 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		),
 	}
 
+	if runtime.GOOS == "linux" && nfsscraper.CanScrapeAll() {
+		f := nfsscraper.NewFactory()
+		cfg.Scrapers[f.Type()] = f.CreateDefaultConfig()
+	}
+
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
 		f := processscraper.NewFactory()
 		cfg.Scrapers[f.Type()] = f.CreateDefaultConfig()
@@ -108,8 +118,8 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	// canceling the context provided to Start should not cancel any async processes initiated by the receiver
 	cancelFn()
 
-	const tick = 50 * time.Millisecond
-	const waitFor = 10 * time.Second
+	const tick = 200 * time.Millisecond
+	const waitFor = 30 * time.Second
 	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
 		if len(got) == 0 {
@@ -143,6 +153,10 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 	expectedMetrics := allMetrics
 
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
+	if nfsscraper.CanScrapeAll() {
+		expectedMetrics = append(expectedMetrics, systemSpecificMetricsNFS[runtime.GOOS]...)
+	}
+
 	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, returnedMetrics, expected)
@@ -320,6 +334,19 @@ func Benchmark_ScrapePagingMetrics(b *testing.B) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		Scrapers:         newScrapersConfigs(pagingscraper.NewFactory()),
+	}
+
+	benchmarkScrapeMetrics(b, cfg)
+}
+
+func Benchmark_ScrapeNFSMetrics(b *testing.B) {
+	if !nfsscraper.CanScrapeAll() || runtime.GOOS != "linux" {
+		b.Skip("skipping test on unsupported platform")
+	}
+
+	cfg := &Config{
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Scrapers:         newScrapersConfigs(nfsscraper.NewFactory()),
 	}
 
 	benchmarkScrapeMetrics(b, cfg)
