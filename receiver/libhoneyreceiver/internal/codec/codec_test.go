@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package decoder
+package codec
 
 import (
 	"bytes"
@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
 )
 
 func TestDecodeEvents_JSON(t *testing.T) {
@@ -65,7 +63,7 @@ func TestDecodeEvents_JSON(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			events, err := DecodeEvents(encoder.JSONContentType, []byte(tt.body), tt.headers)
+			events, err := DecodeEvents(JSONContentType, []byte(tt.body), tt.headers)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -383,8 +381,8 @@ func TestDecodeMsgpack_PreservesTypes(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	encoder := msgpack.NewEncoder(&buf)
-	err := encoder.Encode(testData)
+	msgpackEncoder := msgpack.NewEncoder(&buf)
+	err := msgpackEncoder.Encode(testData)
 	require.NoError(t, err)
 
 	events, err := DecodeEvents("application/msgpack", buf.Bytes(), http.Header{})

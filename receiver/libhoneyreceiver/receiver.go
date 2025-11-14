@@ -19,7 +19,6 @@ import (
 	"sync"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,8 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/decoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/codec"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
@@ -174,31 +172,19 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 }
 
 // writeLibhoneyError writes a bad request error response in the appropriate format for libhoney clients
-func writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, errorMsg string) {
+func writeLibhoneyError(resp http.ResponseWriter, enc codec.Encoder, errorMsg string) {
 	errorResponse := []response.ResponseInBatch{{
 		ErrorStr: errorMsg,
 		Status:   http.StatusBadRequest,
 	}}
 
-	var responseBody []byte
-	var err error
-	var contentType string
-
-	switch enc.ContentType() {
-	case encoder.MsgpackContentType:
-		responseBody, err = msgpack.Marshal(errorResponse)
-		contentType = encoder.MsgpackContentType
-	default:
-		responseBody, err = json.Marshal(errorResponse)
-		contentType = encoder.JSONContentType
-	}
-
+	responseBody, err := enc.MarshalResponse(errorResponse)
 	if err != nil {
 		// Fallback to generic error if we can't marshal the response
 		errorutil.HTTPError(resp, err)
 		return
 	}
-	writeResponse(resp, contentType, http.StatusBadRequest, responseBody)
+	writeResponse(resp, enc.ContentType(), http.StatusBadRequest, responseBody)
 }
 
 // decompressBody handles decompression based on Content-Encoding header
@@ -347,7 +333,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 	// Decode libhoney events from request body
-	libhoneyevents, err := decoder.DecodeEvents(req.Header.Get("Content-Type"), body, req.Header)
+	libhoneyevents, err := codec.DecodeEvents(req.Header.Get("Content-Type"), body, req.Header)
 	if err != nil {
 		r.settings.Logger.Error("Failed to decode events",
 			zap.Error(err),
@@ -446,17 +432,17 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	}
 }
 
-func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {
+func readContentType(resp http.ResponseWriter, req *http.Request) (codec.Encoder, bool) {
 	if req.Method != http.MethodPost {
 		handleUnmatchedMethod(resp)
 		return nil, false
 	}
 
 	switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
-	case encoder.JSONContentType:
-		return encoder.JsEncoder, true
+	case codec.JSONContentType:
+		return codec.JsEncoder, true
 	case "application/x-msgpack", "application/msgpack":
-		return encoder.MpEncoder, true
+		return codec.MpEncoder, true
 	default:
 		handleUnmatchedContentType(resp)
 		return nil, false
@@ -484,7 +470,7 @@ func handleUnmatchedMethod(resp http.ResponseWriter) {
 
 func handleUnmatchedContentType(resp http.ResponseWriter) {
 	status := http.StatusUnsupportedMediaType
-	writeResponse(resp, "text/plain", status, fmt.Appendf(nil, "%v unsupported media type, supported: [%s, %s]", status, encoder.JSONContentType, encoder.PbContentType))
+	writeResponse(resp, "text/plain", status, fmt.Appendf(nil, "%v unsupported media type, supported: [%s, application/x-msgpack]", status, codec.JSONContentType))
 }
 
 // applyConsumerResultsToSuccessfulEvents applies consumer results only to events that succeeded parsing
@@ -504,35 +490,23 @@ func applyConsumerResultsToSuccessfulEvents(results []response.ResponseInBatch, 
 }
 
 // writeSuccessResponse writes a success response for all events in the batch
-func writeSuccessResponse(resp http.ResponseWriter, enc encoder.Encoder, numEvents int) {
+func writeSuccessResponse(resp http.ResponseWriter, enc codec.Encoder, numEvents int) {
 	successResponse := response.MakeSuccessResponse(numEvents)
 	writeLibhoneyResponse(resp, enc, http.StatusOK, successResponse)
 }
 
 // writePartialResponse writes a response for mixed success/failure results
-func writePartialResponse(resp http.ResponseWriter, enc encoder.Encoder, results []response.ResponseInBatch) {
+func writePartialResponse(resp http.ResponseWriter, enc codec.Encoder, results []response.ResponseInBatch) {
 	writeLibhoneyResponse(resp, enc, http.StatusOK, results)
 }
 
 // writeLibhoneyResponse marshals and writes a libhoney-format response
-func writeLibhoneyResponse(resp http.ResponseWriter, enc encoder.Encoder, statusCode int, batchResponse []response.ResponseInBatch) {
-	var responseBody []byte
-	var err error
-	var contentType string
-
-	switch enc.ContentType() {
-	case encoder.MsgpackContentType:
-		responseBody, err = msgpack.Marshal(batchResponse)
-		contentType = encoder.MsgpackContentType
-	default:
-		responseBody, err = json.Marshal(batchResponse)
-		contentType = encoder.JSONContentType
-	}
-
+func writeLibhoneyResponse(resp http.ResponseWriter, enc codec.Encoder, statusCode int, batchResponse []response.ResponseInBatch) {
+	responseBody, err := enc.MarshalResponse(batchResponse)
 	if err != nil {
 		// Fallback to generic error if we can't marshal the response
 		errorutil.HTTPError(resp, err)
 		return
 	}
-	writeResponse(resp, contentType, statusCode, responseBody)
+	writeResponse(resp, enc.ContentType(), statusCode, responseBody)
 }

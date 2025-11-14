@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package decoder // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/decoder"
+package codec // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/codec"
 
 import (
 	"bytes"
@@ -13,17 +13,53 @@ import (
 
 	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
+
+const (
+	JSONContentType    = "application/json"
+	MsgpackContentType = "application/msgpack"
+)
+
+var (
+	JsEncoder = &jsonEncoder{}
+	MpEncoder = &msgpackEncoder{}
+)
+
+// Encoder handles marshaling of libhoney response batches in the appropriate format
+type Encoder interface {
+	MarshalResponse([]response.ResponseInBatch) ([]byte, error)
+	ContentType() string
+}
+
+type jsonEncoder struct{}
+
+func (jsonEncoder) MarshalResponse(batchResponse []response.ResponseInBatch) ([]byte, error) {
+	return json.Marshal(batchResponse)
+}
+
+func (jsonEncoder) ContentType() string {
+	return JSONContentType
+}
+
+type msgpackEncoder struct{}
+
+func (msgpackEncoder) MarshalResponse(batchResponse []response.ResponseInBatch) ([]byte, error) {
+	return msgpack.Marshal(batchResponse)
+}
+
+func (msgpackEncoder) ContentType() string {
+	return MsgpackContentType
+}
 
 // DecodeEvents decodes libhoney events from the request body based on content type
 func DecodeEvents(contentType string, body []byte, headers http.Header) ([]libhoneyevent.LibhoneyEvent, error) {
 	switch contentType {
 	case "application/x-msgpack", "application/msgpack":
 		return decodeMsgpack(body, headers)
-	case encoder.JSONContentType:
+	case JSONContentType:
 		return decodeJSON(body, headers)
 	default:
 		return nil, fmt.Errorf("unsupported content type: %s", contentType)
@@ -238,3 +274,4 @@ func ValidateEvents(events []libhoneyevent.LibhoneyEvent) error {
 	}
 	return nil
 }
+
