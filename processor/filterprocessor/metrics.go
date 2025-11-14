@@ -52,6 +52,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 			if err != nil {
 				return nil, err
 			}
+			fsp.skipResourceExpr = applyActionToExpr(fsp.skipResourceExpr, cfg.Metrics.Action)
 		}
 
 		if cfg.Metrics.MetricConditions != nil {
@@ -59,6 +60,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 			if err != nil {
 				return nil, err
 			}
+			fsp.skipMetricExpr = applyActionToExpr(fsp.skipMetricExpr, cfg.Metrics.Action)
 		}
 
 		if cfg.Metrics.DataPointConditions != nil {
@@ -66,6 +68,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 			if err != nil {
 				return nil, err
 			}
+			fsp.skipDataPointExpr = applyActionToExpr(fsp.skipDataPointExpr, cfg.Metrics.Action)
 		}
 
 		return fsp, nil
