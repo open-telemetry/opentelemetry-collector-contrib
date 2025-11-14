@@ -194,3 +194,74 @@ func TestNewBulkIndexer(t *testing.T) {
 	bi := newBulkIndexer(client, cfg.(*Config), true, nil, nil)
 	t.Cleanup(func() { bi.Close(t.Context()) })
 }
+
+func TestGetErrorHint(t *testing.T) {
+	tests := []struct {
+		name      string
+		index     string
+		errorType string
+		want      string
+	}{
+		{
+			name:      "version_conflict_engine_exception with .ds-metrics- prefix",
+			index:     ".ds-metrics-foo",
+			errorType: "version_conflict_engine_exception",
+			want:      errorHintKnownIssues,
+		},
+		{
+			name:      "illegal_argument_exception with .otel- in index (OTel mapping mode)",
+			index:     "logs-generic.otel-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintOTelMappingMode,
+		},
+		{
+			name:      "illegal_argument_exception with .otel- in metrics index",
+			index:     "metrics-generic.otel-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintOTelMappingMode,
+		},
+		{
+			name:      "illegal_argument_exception with .otel- in traces index",
+			index:     "traces-generic.otel-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintOTelMappingMode,
+		},
+		{
+			name:      "illegal_argument_exception without .otel- (not OTel mapping mode)",
+			index:     "logs-generic-default",
+			errorType: "illegal_argument_exception",
+			want:      "",
+		},
+		{
+			name:      "illegal_argument_exception with .otel but not as suffix (should not match)",
+			index:     "logs-generic.oteldefault",
+			errorType: "illegal_argument_exception",
+			want:      "",
+		},
+		{
+			name:      "other error type with .otel-",
+			index:     "logs-generic.otel-default",
+			errorType: "mapper_parsing_exception",
+			want:      "",
+		},
+		{
+			name:      "version_conflict_engine_exception without .ds-metrics- prefix",
+			index:     "logs-foo",
+			errorType: "version_conflict_engine_exception",
+			want:      "",
+		},
+		{
+			name:      "empty index and error type",
+			index:     "",
+			errorType: "",
+			want:      "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getErrorHint(tt.index, tt.errorType)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
