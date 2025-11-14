@@ -247,14 +247,16 @@ const benchData = `{
 
 func BenchmarkParseJSON(b *testing.B) {
 	ctx := b.Context()
-	b.ReportAllocs()
+	getter := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return benchData, nil
+		},
+	}
 
+	b.ReportAllocs()
+	b.ResetTimer()
 	for b.Loop() {
-		_, err := parseJSON(ottl.StandardStringGetter[any]{
-			Getter: func(context.Context, any) (any, error) {
-				return benchData, nil
-			},
-		})(ctx, nil)
+		_, err := parseJSON(getter)(ctx, nil)
 		require.NoError(b, err)
 	}
 }
