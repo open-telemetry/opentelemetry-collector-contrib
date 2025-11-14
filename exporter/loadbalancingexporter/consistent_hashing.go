@@ -28,29 +28,34 @@ type ringItem struct {
 // hashRing is a consistent hash ring following Karger et al.
 type hashRing struct {
 	// ringItems holds all the positions, used for the lookup the position for the closest next ring item
-	items []ringItem
+	items     []ringItem
+	endpoints []string
 }
 
 // newHashRing builds a new immutable consistent hash ring based on the given endpoints.
 func newHashRing(endpoints []string) *hashRing {
 	items := positionsForEndpoints(endpoints, defaultWeight)
 	return &hashRing{
-		items: items,
+		items:     items,
+		endpoints: endpoints,
 	}
+}
+
+// getPosition calculates the position in the ring for the given identifier
+func getPosition(identifier []byte) position {
+	hasher := crc32.NewIEEE()
+	hasher.Write(identifier)
+	hash := hasher.Sum32()
+	pos := hash % maxPositions
+	return position(pos)
 }
 
 // endpointFor calculates which backend is responsible for the given traceID
 func (h *hashRing) endpointFor(identifier []byte) string {
 	if h == nil {
-		// perhaps the ring itself couldn't get initialized yet?
 		return ""
 	}
-	hasher := crc32.NewIEEE()
-	hasher.Write(identifier)
-	hash := hasher.Sum32()
-	pos := hash % maxPositions
-
-	return h.findEndpoint(position(pos))
+	return h.findEndpoint(getPosition(identifier))
 }
 
 // findEndpoint returns the "next" endpoint starting from the given position, or an empty string in case no endpoints are available
