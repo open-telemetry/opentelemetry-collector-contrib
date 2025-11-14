@@ -200,6 +200,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.139.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver v0.139.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver v0.139.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver v0.139.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.139.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.139.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.139.0
