@@ -426,6 +426,10 @@ func TestGetInstanceId(t *testing.T) {
 	assert.Equal(t, "unknown:1521", localInstanceID)
 }
 
+func testCalculateLookbackSeconds(t *testing.T) {
+	//TODO
+}
+
 func readFile(fname string) []byte {
 	file, err := os.ReadFile(filepath.Join("testdata", fname))
 	if err != nil {
