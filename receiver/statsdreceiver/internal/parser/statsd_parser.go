@@ -376,7 +376,7 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 			instrument.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter)
 		} else {
 			point := instrument.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
-			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
+			point.SetDoubleValue(point.DoubleValue() + parsedMetric.counterValue())
 		}
 
 	case TimingType, HistogramType, DistributionType:
