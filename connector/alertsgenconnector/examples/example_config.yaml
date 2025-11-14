@@ -1,0 +1,173 @@
+# -----------------------------------------------------------------------------
+# OpenTelemetry Collector - Example config with alertsgenconnector enabled
+# -----------------------------------------------------------------------------
+# ENV HINTS:
+# - Kubernetes: set instance_id from Pod name via Downward API (e.g. ${K8S_POD_NAME})
+# - VMs / Bare metal: set instance_id to a stable hostname or machine-id (e.g. ${HOSTNAME})
+# - TSDB is OPTIONAL here (disabled by default). Enable it for HA/state restore & remote write.
+# -----------------------------------------------------------------------------
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+connectors:
+  alertsgen:
+    # -------- Core scheduling --------
+    window: 5s
+    step: 5s
+
+    # `instance_id` is used for HA coordination and dedup of alerts generation
+    # Kubernetes:  instance_id: "${K8S_POD_NAME}"
+    # VM/Bare metal: instance_id: "${HOSTNAME}"
+    # Standalone: Just leave it as "${HOSTNAME}"
+    instance_id: "${K8S_POD_NAME}"
+
+    # -------- Rules (examples; adjust to your data) --------
+    rules:
+      - name: "high_latency_traces"
+        signal: "traces"
+        expr:
+          type: "quantile_over_time"
+          field: "duration"
+          op: ">"
+          value: 500
+          quantile: 0.95
+          rate_duration: 1m
+        for: 30s
+        group_by: ["service.name"]
+        severity: "critical"
+        enabled: true
+        labels:
+          alertname: "trace_p95_slow"
+        description: "95th percentile trace duration above 500ms"
+
+      - name: "http_5xx_rate"
+        signal: "metrics"
+        expr:
+          type: "rate"
+          field: "http.server.requests"   # adjust to your metric
+          op: ">"
+          value: 0.02                     # 2% error rate
+          rate_duration: 2m
+        for: 1m
+        group_by: ["service.name", "http.target"]
+        severity: "warning"
+        enabled: true
+        labels:
+          alertname: "http_5xx_rate"
+        description: "HTTP 5xx rate above 2%"
+
+      - name: "error_logs_burst"
+        signal: "logs"
+        expr:
+          type: "rate"
+          field: "severity"               # interpreted as ERROR count in your evaluator
+          op: ">"
+          value: 50
+          rate_duration: 1m
+        for: 30s
+        group_by: ["service.name"]
+        severity: "warning"
+        enabled: true
+        labels:
+          alertname: "log_error_burst"
+        description: "High ERROR log rate"
+
+    # Emit a metric sample for each alert event (added feature)
+    emit_alert_metrics: true
+
+    # -------- TSDB (optional; disabled by default) --------
+    tsdb:
+      enabled: false
+      query_url: ""               # e.g. K8s: http://prometheus.monitoring:9090
+      remote_write_url: ""        # e.g. K8s: http://victoria-metrics.monitoring:8428/api/v1/write
+      enable_remote_write: false
+      query_timeout: 30s
+      write_timeout: 10s
+      dedup_window: 30s
+      remote_write_batch_size: 1000
+      remote_write_flush_interval: 5s
+
+    # -------- De-duplication --------
+    dedup:
+      fingerprint_labels: ["alertname", "severity", "cluster", "namespace", "service"]
+      exclude_labels: ["pod_ip", "container_id", "timestamp", "trace_id"]
+      window: 30s
+      enable_tsdb_dedup: true
+
+    # -------- Limits (storm + cardinality) --------
+    limits:
+      storm:
+        max_transitions_per_minute: 100
+        max_events_per_interval: 50
+        interval: 1s
+        circuit_breaker_threshold: 0.5
+        circuit_breaker_recovery_time: 30s
+      cardinality:
+        max_labels: 20
+        max_label_value_length: 128
+        max_total_label_size: 2048
+        hash_if_exceeds: 128
+        allowlist: ["alertname", "severity", "rule_id"]
+        blocklist: ["pod_ip", "container_id", "trace_id"]
+        max_series_per_rule: 1000
+        label_sampling_enabled: false
+        label_sampling_rate: 0.1
+
+    # -------- Notifications (timeouts & retries) --------
+    notify:
+      enabled: true
+      timeout: 10s
+      retry:
+        enabled: true
+        max_attempts: 3
+        initial_delay: 1s
+        max_delay: 30s
+        multiplier: 2.0
+
+    # -------- Memory management --------
+    memory:
+      max_memory_bytes: 0                 # 0 = use percent
+      max_memory_percent: 0.10            # 10% of system memory
+      max_trace_entries: 0
+      max_log_entries: 0
+      max_metric_entries: 0
+      enable_adaptive_scaling: true
+      scale_up_threshold: 0.8
+      scale_down_threshold: 0.4
+      scale_check_interval: 30s
+      max_scale_factor: 10.0
+      enable_memory_pressure_handling: true
+      memory_pressure_threshold: 0.85
+      sampling_rate_under_pressure: 0.10
+      use_ring_buffers: false
+      ring_buffer_overwrite: false
+
+exporters:
+  logging:
+    loglevel: debug
+  prometheus:
+    endpoint: "0.0.0.0:9464"      # scrapeable by Prometheus
+    namespace: "otelcol"
+
+service:
+  pipelines:
+    # Traces → AlertsGen → Logs (alerts emitted as logs)
+    traces:
+      receivers: [otlp]
+      connectors: [alertsgen]
+      exporters: [logging]
+
+    # Metrics → AlertsGen → Logs & Metrics (fan out)
+    metrics:
+      receivers: [otlp]
+      connectors: [alertsgen]
+      exporters: [logging, prometheus]
+
+    # Logs pipeline (includes alerts emitted by the connector + any incoming logs)
+    logs:
+      receivers: [otlp]
+      exporters: [logging]
