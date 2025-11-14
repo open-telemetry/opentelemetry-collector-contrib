@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -275,9 +276,9 @@ func BenchmarkConsumeFiles(b *testing.B) {
 	// to avoid measuring the time it takes to generate them
 	// and to reduce the amount of syscalls in the benchmark.
 	uniqueLines := 10
-	severalLines := ""
+	var severalLines strings.Builder
 	for range uniqueLines {
-		severalLines += string(filetest.TokenWithLength(999)) + "\n"
+		severalLines.WriteString(string(filetest.TokenWithLength(999)) + "\n")
 	}
 
 	for _, bench := range cases {
@@ -295,7 +296,7 @@ func BenchmarkConsumeFiles(b *testing.B) {
 				_, err := f.WriteString(f.Name() + "\n")
 				require.NoError(b, err)
 				for b.Loop() {
-					_, err := f.WriteString(severalLines)
+					_, err := f.WriteString(severalLines.String())
 					require.NoError(b, err)
 				}
 				require.NoError(b, f.Sync())
