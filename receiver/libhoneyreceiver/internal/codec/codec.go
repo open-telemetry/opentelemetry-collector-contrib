@@ -101,7 +101,8 @@ func decodeJSON(body []byte, headers http.Header) ([]libhoneyevent.LibhoneyEvent
 
 // isSingleMsgpackObject checks if the msgpack data represents a single object (map) vs an array
 // msgpack format: 0x80-0x8f = fixmap, 0xde = map16, 0xdf = map32
-//                 0x90-0x9f = fixarray, 0xdc = array16, 0xdd = array32
+//
+//	0x90-0x9f = fixarray, 0xdc = array16, 0xdd = array32
 func isSingleMsgpackObject(body []byte) bool {
 	if len(body) == 0 {
 		return false
@@ -289,4 +290,3 @@ func ValidateEvents(events []libhoneyevent.LibhoneyEvent) error {
 	}
 	return nil
 }
-

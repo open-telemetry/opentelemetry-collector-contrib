@@ -23,7 +23,7 @@ func TestDecodeEvents_JSON(t *testing.T) {
 		headers  http.Header
 		wantLen  int
 		wantErr  bool
-		validate func(t *testing.T, events []interface{})
+		validate func(t *testing.T, events []any)
 	}{
 		{
 			name:    "single flat event",
@@ -93,7 +93,7 @@ func TestDecodeEvents_Msgpack(t *testing.T) {
 		{
 			name: "single flat event",
 			body: func() []byte {
-				data := map[string]interface{}{"field1": "value1", "field2": 42}
+				data := map[string]any{"field1": "value1", "field2": 42}
 				buf, _ := msgpack.Marshal(data)
 				return buf
 			},
@@ -104,8 +104,8 @@ func TestDecodeEvents_Msgpack(t *testing.T) {
 		{
 			name: "single structured event",
 			body: func() []byte {
-				data := map[string]interface{}{
-					"data":       map[string]interface{}{"field1": "value1"},
+				data := map[string]any{
+					"data":       map[string]any{"field1": "value1"},
 					"time":       "2024-01-01T00:00:00Z",
 					"samplerate": 1,
 				}
@@ -119,9 +119,9 @@ func TestDecodeEvents_Msgpack(t *testing.T) {
 		{
 			name: "array of events",
 			body: func() []byte {
-				data := []map[string]interface{}{
-					{"data": map[string]interface{}{"field1": "value1"}},
-					{"data": map[string]interface{}{"field2": "value2"}},
+				data := []map[string]any{
+					{"data": map[string]any{"field1": "value1"}},
+					{"data": map[string]any{"field2": "value2"}},
 				}
 				buf, _ := msgpack.Marshal(data)
 				return buf
@@ -133,7 +133,7 @@ func TestDecodeEvents_Msgpack(t *testing.T) {
 		{
 			name: "single event with headers",
 			body: func() []byte {
-				data := map[string]interface{}{"field1": "value1"}
+				data := map[string]any{"field1": "value1"}
 				buf, _ := msgpack.Marshal(data)
 				return buf
 			},
@@ -187,7 +187,7 @@ func TestIsSingleMsgpackObject(t *testing.T) {
 		{
 			name: "fixmap",
 			body: func() []byte {
-				data := map[string]interface{}{"key": "value"}
+				data := map[string]any{"key": "value"}
 				buf, _ := msgpack.Marshal(data)
 				return buf
 			},
@@ -196,7 +196,7 @@ func TestIsSingleMsgpackObject(t *testing.T) {
 		{
 			name: "fixarray",
 			body: func() []byte {
-				data := []interface{}{"item1", "item2"}
+				data := []any{"item1", "item2"}
 				buf, _ := msgpack.Marshal(data)
 				return buf
 			},
@@ -372,8 +372,8 @@ func TestBuildLibhoneyEventFromMap(t *testing.T) {
 
 func TestDecodeMsgpack_PreservesTypes(t *testing.T) {
 	// Test that msgpack decoding preserves different types correctly
-	testData := map[string]interface{}{
-		"data": map[string]interface{}{
+	testData := map[string]any{
+		"data": map[string]any{
 			"string_field": "test",
 			"int_field":    int64(42),
 			"float_field":  3.14,
