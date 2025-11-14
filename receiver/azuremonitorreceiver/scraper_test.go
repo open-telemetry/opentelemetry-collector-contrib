@@ -217,31 +217,35 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			},
 		})
 
-		metricsMockData := newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{
+		metricsMockData := newMetricsClientListResponseMockData(map[string]map[string]map[string][]metricsClientListResponseMockInput{
 			id1: {
-				metricName1: {{
-					Name: metricName1,
-					Unit: unit,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
-						{Count: &valueCount},
-					}}},
-				}},
+				metricNamespace1: {
+					metricName1: {{
+						Name: metricName1,
+						Unit: unit,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+							{Count: &valueCount},
+						}}},
+					}},
+				},
 			},
 			id2: {
-				metricName2: {{
-					Name: metricName2,
-					Unit: unit,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
-						{Average: &valueMaximum, Count: &valueCount, Maximum: &valueMaximum, Minimum: &valueMinimum, Total: &valueCount},
-					}}},
-				}},
-				metricName3: {{
-					Name: metricName3,
-					Unit: unit,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
-						{Maximum: &valueMaximum, Minimum: &valueMinimum},
-					}}},
-				}},
+				metricNamespace1: {
+					metricName2: {{
+						Name: metricName2,
+						Unit: unit,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+							{Average: &valueMaximum, Count: &valueCount, Maximum: &valueMaximum, Minimum: &valueMinimum, Total: &valueCount},
+						}}},
+					}},
+					metricName3: {{
+						Name: metricName3,
+						Unit: unit,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+							{Maximum: &valueMaximum, Minimum: &valueMinimum},
+						}}},
+					}},
+				},
 			},
 		})
 
@@ -470,109 +474,117 @@ func getMetricsDefinitionsMockData() map[string][]armmonitor.MetricDefinitionsCl
 	})
 }
 
-func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
+func getMetricsValuesMockData() map[string]map[string]map[string]armmonitor.MetricsClientListResponse {
 	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue := "metric1", "metric2",
 		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value"
 	var unit1 armmonitor.Unit = "unit1"
 	var value1 float64 = 1
 
-	return newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{
+	return newMetricsClientListResponseMockData(map[string]map[string]map[string][]metricsClientListResponseMockInput{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
-			name1 + "," + name2: {
-				{
-					Name: name1, Unit: unit1,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{
-						Data: []*armmonitor.MetricValue{
-							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
-						},
-					}},
+			"namespace1": {
+				name1 + "," + name2: {
+					{
+						Name: name1, Unit: unit1,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{
+							Data: []*armmonitor.MetricValue{
+								{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
+							},
+						}},
+					},
+					{
+						Name: name2, Unit: unit1,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{
+							Data: []*armmonitor.MetricValue{
+								{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
+							},
+						}},
+					},
 				},
-				{
-					Name: name2, Unit: unit1,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{
-						Data: []*armmonitor.MetricValue{
-							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
-						},
-					}},
-				},
-			},
-			name3: {
-				{
-					Name: name3, Unit: unit1,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{
-						Data: []*armmonitor.MetricValue{
-							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
-						},
-					}},
+				name3: {
+					{
+						Name: name3, Unit: unit1,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{
+							Data: []*armmonitor.MetricValue{
+								{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
+							},
+						}},
+					},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2": {
-			name4: {
-				{
-					Name: name4, Unit: unit1,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{
-						Data: []*armmonitor.MetricValue{
-							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
-						},
-					}},
+			"namespace1": {
+				name4: {
+					{
+						Name: name4, Unit: unit1,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{
+							Data: []*armmonitor.MetricValue{
+								{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
+							},
+						}},
+					},
 				},
-			},
-			name5: {
-				{
-					Name: name5, Unit: unit1,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{
-						Data: []*armmonitor.MetricValue{
-							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
-						},
-						Metadatavalues: []*armmonitor.MetadataValue{
-							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
-							{Name: &armmonitor.LocalizableString{Value: &dimension2}, Value: &dimensionValue},
-						},
-					}},
+				name5: {
+					{
+						Name: name5, Unit: unit1,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{
+							Data: []*armmonitor.MetricValue{
+								{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
+							},
+							Metadatavalues: []*armmonitor.MetadataValue{
+								{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+								{Name: &armmonitor.LocalizableString{Value: &dimension2}, Value: &dimensionValue},
+							},
+						}},
+					},
 				},
-			},
-			name6: {
-				{
-					Name: name6, Unit: unit1,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{
-						Data: []*armmonitor.MetricValue{
-							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
-						},
-						Metadatavalues: []*armmonitor.MetadataValue{
-							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
-						},
-					}},
+				name6: {
+					{
+						Name: name6, Unit: unit1,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{
+							Data: []*armmonitor.MetricValue{
+								{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
+							},
+							Metadatavalues: []*armmonitor.MetadataValue{
+								{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+							},
+						}},
+					},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3": {
-			name7: {
-				{
-					Name: name7, Unit: unit1,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{
-						Data: []*armmonitor.MetricValue{
-							{Count: &value1},
-						},
-						Metadatavalues: []*armmonitor.MetadataValue{
-							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
-						},
-					}},
+			"namespace2": {
+				name7: {
+					{
+						Name: name7, Unit: unit1,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{
+							Data: []*armmonitor.MetricValue{
+								{Count: &value1},
+							},
+							Metadatavalues: []*armmonitor.MetadataValue{
+								{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+							},
+						}},
+					},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1": {
-			name7: {
-				{
-					Name: name7, Unit: unit1,
-					TimeSeries: []*armmonitor.TimeSeriesElement{{
-						Data: []*armmonitor.MetricValue{
-							{Count: &value1},
-						},
-						Metadatavalues: []*armmonitor.MetadataValue{
-							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
-						},
-					}},
+			"namespace2": {
+				name7: {
+					{
+						Name: name7, Unit: unit1,
+						TimeSeries: []*armmonitor.TimeSeriesElement{{
+							Data: []*armmonitor.MetricValue{
+								{Count: &value1},
+							},
+							Metadatavalues: []*armmonitor.MetadataValue{
+								{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+							},
+						}},
+					},
 				},
 			},
 		},
