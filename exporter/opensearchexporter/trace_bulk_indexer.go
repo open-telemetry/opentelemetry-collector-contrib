@@ -60,8 +60,9 @@ func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Trace
 	tbi.errs = append(tbi.errs, consumererror.NewTraces(err, trace))
 }
 
-func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time) {
-	forEachSpan(td, indexResolver, cfg, timestamp, func(indexName string, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) {
+func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces, ir *indexResolver, cfg *Config, timestamp time.Time) {
+	forEachSpan(td, ir, cfg, timestamp, func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) {
+		indexName := resolver.ResolveSpanIndex(cfg, resource, scope, span, timestamp)
 		payload, err := tbi.model.encodeTrace(resource, scope, scopeSchemaURL, span)
 		if err != nil {
 			tbi.appendPermanentError(err)
@@ -144,11 +145,10 @@ func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(
 	})
 }
 
-func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, visitor func(string, pcommon.Resource, string, pcommon.InstrumentationScope, string, ptrace.Span)) {
+func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, visitor func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span)) {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		il := resourceSpans.At(i)
-		indexName := indexResolver.ResolveTraceIndex(cfg, il, timestamp)
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
@@ -157,7 +157,7 @@ func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, ti
 
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				visitor(indexName, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
+				visitor(indexResolver, cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
 			}
 		}
 	}

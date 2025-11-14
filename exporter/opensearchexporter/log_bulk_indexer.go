@@ -58,22 +58,23 @@ func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
 	lbi.errs = append(lbi.errs, consumererror.NewLogs(err, log))
 }
 
-func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, indexResolver *indexResolver, cfg *Config, timestamp time.Time) {
-	forEachLog(ld, indexResolver, cfg, timestamp, func(indexName string, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, log plog.LogRecord) {
-		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, log)
+func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, ir *indexResolver, cfg *Config, timestamp time.Time) {
+	forEachLog(ld, ir, cfg, timestamp, func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord) {
+		indexName := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, timestamp)
+		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, logRecord)
 		if err != nil {
 			lbi.appendPermanentError(err)
 		} else {
 			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchapi.BulkRespItem, itemErr error) {
 				// Setup error handler. The handler handles the per item response status based on the
 				// selective ACKing in the bulk response.
-				lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, log))
+				lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
 			}
 			bi := lbi.newBulkIndexerItem(payload, indexName)
 			bi.OnFailure = ItemFailureHandler
 			err = lbi.bulkIndexer.Add(ctx, bi)
 			if err != nil {
-				lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, log))
+				lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
 			}
 		}
 	})
@@ -123,11 +124,10 @@ func newLogOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError fu
 	})
 }
 
-func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timestamp time.Time, visitor func(string, pcommon.Resource, string, pcommon.InstrumentationScope, string, plog.LogRecord)) {
+func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timestamp time.Time, visitor func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord)) {
 	resourceLogs := ld.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		il := resourceLogs.At(i)
-		indexName := indexResolver.ResolveLogIndex(cfg, il, timestamp)
 		resource := il.Resource()
 		scopeLogs := il.ScopeLogs()
 		for j := 0; j < scopeLogs.Len(); j++ {
@@ -136,7 +136,7 @@ func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timesta
 
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				visitor(indexName, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log)
+				visitor(indexResolver, cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log)
 			}
 		}
 	}

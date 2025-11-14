@@ -25,29 +25,6 @@ func newIndexResolver() *indexResolver {
 	}
 }
 
-// ResolveLogIndex resolves the logs index name using placeholders, fallback, and time format
-func (r *indexResolver) ResolveLogIndex(cfg *Config, resLog plog.ResourceLogs, timestamp time.Time) string {
-	if cfg.LogsIndex == "" {
-		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_logs")
-		return r.appendTimeFormat(indexName, cfg.LogsIndexTimeFormat, timestamp)
-	}
-
-	attrs := r.collectLogAttributes(resLog)
-	return r.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, cfg.LogsIndexTimeFormat, attrs, timestamp)
-}
-
-// ResolveTraceIndex resolves the traces index name using placeholders, fallback, and time format
-func (r *indexResolver) ResolveTraceIndex(cfg *Config, resSpan ptrace.ResourceSpans, timestamp time.Time) string {
-	if cfg.TracesIndex == "" {
-		// Use default pattern
-		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_traces")
-		return r.appendTimeFormat(indexName, cfg.TracesIndexTimeFormat, timestamp)
-	}
-
-	attrs := r.collectTraceAttributes(resSpan)
-	return r.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, cfg.TracesIndexTimeFormat, attrs, timestamp)
-}
-
 // resolveIndexName handles the common logic for resolving index names with placeholders
 func (r *indexResolver) resolveIndexName(indexPattern, fallback, timeFormat string, attrs map[string]string, timestamp time.Time) string {
 	index := r.placeholderPattern.ReplaceAllStringFunc(indexPattern, func(match string) string {
@@ -72,76 +49,85 @@ func (*indexResolver) appendTimeFormat(index, timeFormat string, timestamp time.
 	return index
 }
 
-// collectLogAttributes extracts resource and log record attributes into a flat map for placeholder resolution
-func (*indexResolver) collectLogAttributes(resLog plog.ResourceLogs) map[string]string {
+// ResolveSpanIndex resolves the traces index name per span using placeholders, fallback, and time format
+func (r *indexResolver) ResolveSpanIndex(cfg *Config, resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span, timestamp time.Time) string {
+	if cfg.TracesIndex == "" {
+		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_traces")
+		return r.appendTimeFormat(indexName, cfg.TracesIndexTimeFormat, timestamp)
+	}
+
+	attrs := r.collectSpanAttributes(resource, scope, span)
+	return r.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, cfg.TracesIndexTimeFormat, attrs, timestamp)
+}
+
+// ResolveLogRecordIndex resolves the logs index name per log record using placeholders, fallback, and time format
+func (r *indexResolver) ResolveLogRecordIndex(cfg *Config, resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord, timestamp time.Time) string {
+	if cfg.LogsIndex == "" {
+		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_logs")
+		return r.appendTimeFormat(indexName, cfg.LogsIndexTimeFormat, timestamp)
+	}
+
+	attrs := r.collectLogRecordAttributes(resource, scope, logRecord)
+	return r.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, cfg.LogsIndexTimeFormat, attrs, timestamp)
+}
+
+// collectSpanAttributes extracts resource, scope, and span attributes into a flat map for placeholder resolution with precedence
+func (*indexResolver) collectSpanAttributes(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) map[string]string {
 	attrs := make(map[string]string)
-	// Resource attributes
-	resAttrs := resLog.Resource().Attributes()
+	// Resource attributes (lowest precedence)
+	resAttrs := resource.Attributes()
 	resAttrs.Range(func(k string, v pcommon.Value) bool {
 		attrs[k] = v.AsString()
 		return true
 	})
-	logSlice := resLog.ScopeLogs()
-	for j := 0; j < logSlice.Len(); j++ {
-		scopeLogs := logSlice.At(j)
-		// Instrumentation scope attributes
-		if scope := scopeLogs.Scope(); scope.Name() != "" {
-			attrs["scope.name"] = scope.Name()
-		}
-		if scope := scopeLogs.Scope(); scope.Version() != "" {
-			attrs["scope.version"] = scope.Version()
-		}
-		scopeAttrs := scopeLogs.Scope().Attributes()
-		scopeAttrs.Range(func(k string, v pcommon.Value) bool {
-			attrs[k] = v.AsString()
-			return true
-		})
-		logs := scopeLogs.LogRecords()
-		for k := 0; k < logs.Len(); k++ {
-			logAttrs := logs.At(k).Attributes()
-			logAttrs.Range(func(k string, v pcommon.Value) bool {
-				attrs[k] = v.AsString()
-				return true
-			})
-		}
+	// Instrumentation scope attributes
+	if scope.Name() != "" {
+		attrs["scope.name"] = scope.Name()
 	}
+	if scope.Version() != "" {
+		attrs["scope.version"] = scope.Version()
+	}
+	scopeAttrs := scope.Attributes()
+	scopeAttrs.Range(func(k string, v pcommon.Value) bool {
+		attrs[k] = v.AsString()
+		return true
+	})
+	// Span attributes (highest precedence, overwrites)
+	spanAttrs := span.Attributes()
+	spanAttrs.Range(func(k string, v pcommon.Value) bool {
+		attrs[k] = v.AsString()
+		return true
+	})
 	return attrs
 }
 
-// collectTraceAttributes extracts resource and span attributes into a flat map for placeholder resolution
-func (*indexResolver) collectTraceAttributes(resSpan ptrace.ResourceSpans) map[string]string {
+// collectLogRecordAttributes extracts resource, scope, and log record attributes into a flat map for placeholder resolution with precedence
+func (*indexResolver) collectLogRecordAttributes(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord) map[string]string {
 	attrs := make(map[string]string)
-	// Resource attributes
-	resAttrs := resSpan.Resource().Attributes()
+	// Resource attributes (lowest precedence)
+	resAttrs := resource.Attributes()
 	resAttrs.Range(func(k string, v pcommon.Value) bool {
 		attrs[k] = v.AsString()
 		return true
 	})
-	scopeSpans := resSpan.ScopeSpans()
-	for j := 0; j < scopeSpans.Len(); j++ {
-		scopeSpan := scopeSpans.At(j)
-		// Instrumentation scope attributes
-		if scope := scopeSpan.Scope(); scope.Name() != "" {
-			attrs["scope.name"] = scope.Name()
-		}
-		if scope := scopeSpan.Scope(); scope.Version() != "" {
-			attrs["scope.version"] = scope.Version()
-		}
-		scopeAttrs := scopeSpan.Scope().Attributes()
-		scopeAttrs.Range(func(k string, v pcommon.Value) bool {
-			attrs[k] = v.AsString()
-			return true
-		})
-		spans := scopeSpan.Spans()
-		for k := 0; k < spans.Len(); k++ {
-			span := spans.At(k)
-			spanAttrs := span.Attributes()
-			spanAttrs.Range(func(k string, v pcommon.Value) bool {
-				attrs[k] = v.AsString()
-				return true
-			})
-		}
+	// Instrumentation scope attributes
+	if scope.Name() != "" {
+		attrs["scope.name"] = scope.Name()
 	}
+	if scope.Version() != "" {
+		attrs["scope.version"] = scope.Version()
+	}
+	scopeAttrs := scope.Attributes()
+	scopeAttrs.Range(func(k string, v pcommon.Value) bool {
+		attrs[k] = v.AsString()
+		return true
+	})
+	// Log record attributes (highest precedence, overwrites)
+	logAttrs := logRecord.Attributes()
+	logAttrs.Range(func(k string, v pcommon.Value) bool {
+		attrs[k] = v.AsString()
+		return true
+	})
 	return attrs
 }
 
