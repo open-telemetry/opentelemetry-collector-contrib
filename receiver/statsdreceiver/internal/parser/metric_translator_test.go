@@ -35,9 +35,59 @@ func TestBuildCounterMetric(t *testing.T) {
 	expectedMetric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	expectedMetric.Sum().SetIsMonotonic(isMonotonicCounter)
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
-	dp.SetIntValue(32)
+	dp.SetDoubleValue(32.0)
 	dp.Attributes().PutStr("mykey", "myvalue")
 	assert.Equal(t, expectedMetrics, metric)
+}
+
+func TestBuildCounterMetricWithFractionalValue(t *testing.T) {
+	metricDescription := statsDMetricDescription{
+		name:  "testFractionalCounter",
+		attrs: attribute.NewSet(attribute.String("mykey", "myvalue")),
+	}
+
+	tests := []struct {
+		name          string
+		asFloat       float64
+		expectedValue float64
+		sampleRate    float64
+	}{
+		{
+			name:          "small_fraction",
+			asFloat:       0.01,
+			expectedValue: 0.01, // Now preserves the fractional value
+			sampleRate:    0,
+		},
+		{
+			name:          "large_fraction",
+			asFloat:       0.9,
+			expectedValue: 0.9, // Now preserves the fractional value
+			sampleRate:    0,
+		},
+		{
+			name:          "fraction_with_sample_rate",
+			asFloat:       0.5,
+			expectedValue: 5.0, // When adjusted by sample rate (0.1), value becomes 5.0
+			sampleRate:    0.1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsedMetric := statsDMetric{
+				description: metricDescription,
+				asFloat:     tt.asFloat,
+				sampleRate:  tt.sampleRate,
+			}
+
+			isMonotonicCounter := false
+			metric := buildCounterMetric(parsedMetric, isMonotonicCounter)
+
+			// Verify the actual float64 value after conversion
+			actualValue := metric.Metrics().At(0).Sum().DataPoints().At(0).DoubleValue()
+			assert.Equal(t, tt.expectedValue, actualValue, "Expected fractional value %v to convert to %v", tt.asFloat, tt.expectedValue)
+		})
+	}
 }
 
 func TestSetTimestampsForCounterMetric(t *testing.T) {
