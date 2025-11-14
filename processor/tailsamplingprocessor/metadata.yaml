@@ -83,7 +83,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_tail_sampling_sampling_policy_cpu_time:
+    processor_tail_sampling_sampling_policy_execution_time_sum:
       description: Total time spent (in microseconds) executing a specific sampling policy
       stability:
         level: development
@@ -94,7 +94,7 @@ telemetry:
         monotonic: true
       attributes: [policy]
 
-    processor_tail_sampling_sampling_policy_executions:
+    processor_tail_sampling_sampling_policy_execution_count:
       description: Total number of executions of a specific sampling policy
       stability:
         level: development

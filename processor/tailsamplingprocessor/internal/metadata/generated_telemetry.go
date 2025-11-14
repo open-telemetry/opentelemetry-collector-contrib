@@ -33,9 +33,9 @@ type TelemetryBuilder struct {
 	ProcessorTailSamplingNewTraceIDReceived             metric.Int64Counter
 	ProcessorTailSamplingSamplingDecisionTimerLatency   metric.Int64Histogram
 	ProcessorTailSamplingSamplingLateSpanAge            metric.Int64Histogram
-	ProcessorTailSamplingSamplingPolicyCPUTime          metric.Int64Counter
 	ProcessorTailSamplingSamplingPolicyEvaluationError  metric.Int64Counter
-	ProcessorTailSamplingSamplingPolicyExecutions       metric.Int64Counter
+	ProcessorTailSamplingSamplingPolicyExecutionCount   metric.Int64Counter
+	ProcessorTailSamplingSamplingPolicyExecutionTimeSum metric.Int64Counter
 	ProcessorTailSamplingSamplingTraceDroppedTooEarly   metric.Int64Counter
 	ProcessorTailSamplingSamplingTraceRemovalAge        metric.Int64Histogram
 	ProcessorTailSamplingSamplingTracesOnMemory         metric.Int64Gauge
@@ -113,22 +113,22 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingPolicyCPUTime, err = builder.meter.Int64Counter(
-		"otelcol_processor_tail_sampling_sampling_policy_cpu_time",
-		metric.WithDescription("Total time spent (in microseconds) executing a specific sampling policy [development]"),
-		metric.WithUnit("µs"),
-	)
-	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingPolicyEvaluationError, err = builder.meter.Int64Counter(
 		"otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
 		metric.WithDescription("Count of sampling policy evaluation errors [development]"),
 		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingPolicyExecutions, err = builder.meter.Int64Counter(
-		"otelcol_processor_tail_sampling_sampling_policy_executions",
+	builder.ProcessorTailSamplingSamplingPolicyExecutionCount, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_sampling_policy_execution_count",
 		metric.WithDescription("Total number of executions of a specific sampling policy [development]"),
 		metric.WithUnit("{executions}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingSamplingPolicyExecutionTimeSum, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_sampling_policy_execution_time_sum",
+		metric.WithDescription("Total time spent (in microseconds) executing a specific sampling policy [development]"),
+		metric.WithUnit("µs"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = builder.meter.Int64Counter(

@@ -91,20 +91,6 @@ Time (in seconds) from the sampling decision was taken and the arrival of a late
 | ---- | ----------- | ---------- | --------- |
 | s | Histogram | Int | development |
 
-### otelcol_processor_tail_sampling_sampling_policy_cpu_time
-
-Total time spent (in microseconds) executing a specific sampling policy [development]
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| µs | Sum | Int | true | development |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
-
 ### otelcol_processor_tail_sampling_sampling_policy_evaluation_error
 
 Count of sampling policy evaluation errors [development]
@@ -113,13 +99,27 @@ Count of sampling policy evaluation errors [development]
 | ---- | ----------- | ---------- | --------- | --------- |
 | {errors} | Sum | Int | true | development |
 
-### otelcol_processor_tail_sampling_sampling_policy_executions
+### otelcol_processor_tail_sampling_sampling_policy_execution_count
 
 Total number of executions of a specific sampling policy [development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {executions} | Sum | Int | true | development |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| policy | Name of the policy | Any Str |
+
+### otelcol_processor_tail_sampling_sampling_policy_execution_time_sum
+
+Total time spent (in microseconds) executing a specific sampling policy [development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| µs | Sum | Int | true | development |
 
 #### Attributes
 

@@ -26,9 +26,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorTailSamplingNewTraceIDReceived.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingLateSpanAge.Record(context.Background(), 1)
-	tb.ProcessorTailSamplingSamplingPolicyCPUTime.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(context.Background(), 1)
-	tb.ProcessorTailSamplingSamplingPolicyExecutions.Add(context.Background(), 1)
+	tb.ProcessorTailSamplingSamplingPolicyExecutionCount.Add(context.Background(), 1)
+	tb.ProcessorTailSamplingSamplingPolicyExecutionTimeSum.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingTraceRemovalAge.Record(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingTracesOnMemory.Record(context.Background(), 1)
@@ -53,13 +53,13 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorTailSamplingSamplingLateSpanAge(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorTailSamplingSamplingPolicyCPUTime(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingSamplingPolicyEvaluationError(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorTailSamplingSamplingPolicyExecutions(t, testTel,
+	AssertEqualProcessorTailSamplingSamplingPolicyExecutionCount(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingPolicyExecutionTimeSum(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingSamplingTraceDroppedTooEarly(t, testTel,
