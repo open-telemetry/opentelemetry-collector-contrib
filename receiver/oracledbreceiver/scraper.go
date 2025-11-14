@@ -533,10 +533,11 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
-		if int(math.Ceil(currentCollectionTime.Sub(s.lastExecutionTimestamp).Seconds())) < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
+		lookbackTimeCounter := s.calculateLookbackSeconds()
+		if lookbackTimeCounter < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top queries because collection interval not yet elapsed.")
 		} else {
-			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime)
+			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
 			}
@@ -553,11 +554,9 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	return logs, errors.Join(scrapeErrors...)
 }
 
-func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs, collectionTime time.Time) error {
+func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs, collectionTime time.Time, lookbackTimeSeconds int) error {
 	var errs []error
 	// get metrics and query texts from DB
-	lookbackTimeSeconds := s.calculateLookbackSeconds()
-
 	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, oracleQueryMetricsSQL, s.logger)
 	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, lookbackTimeSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
 
