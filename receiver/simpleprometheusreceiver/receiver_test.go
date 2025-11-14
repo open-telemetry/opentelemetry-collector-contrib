@@ -11,6 +11,7 @@ import (
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,6 +65,26 @@ func TestReceiver(t *testing.T) {
 			require.Error(t, r.Start(t.Context(), componenttest.NewNopHost()))
 		})
 	}
+}
+
+// issue: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42031
+func TestFallbackScrapeProtocol(t *testing.T) {
+	clientConfigTLS := confighttp.NewDefaultClientConfig()
+	clientConfigTLS.Endpoint = "localhost:1234"
+	clientConfigTLS.TLS = configtls.ClientConfig{
+		Insecure: true,
+	}
+
+	config := &Config{
+		ClientConfig:       clientConfigTLS,
+		CollectionInterval: 10 * time.Second,
+		MetricsPath:        "/metric",
+		Params:             url.Values{"foo": []string{"bar", "foobar"}},
+	}
+
+	pConfig, err := getPrometheusConfigWrapperWithValidation(config, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	assert.Equal(t, promconfig.PrometheusText0_0_4, pConfig.PrometheusConfig.ScrapeConfigs[0].ScrapeFallbackProtocol)
 }
 
 func TestGetPrometheusConfig(t *testing.T) {
