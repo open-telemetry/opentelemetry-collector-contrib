@@ -5,6 +5,7 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -14,7 +15,10 @@ import (
 var (
 	errNoPipelinePriority    = errors.New("No pipelines are defined in the priority list")
 	errInvalidRetryIntervals = errors.New("Retry interval must be positive")
+	errInvalidFailoverMode   = errors.New("Failover mode is invalid")
 )
+
+var validFailoverModes = []FailoverMode{"standard"}
 
 type Config struct {
 	// QueueSettings use the exporterhelper sending_queue to move the queue to the connector to avoid data being stuck
@@ -25,6 +29,9 @@ type Config struct {
 	// sit at a single priority level and will be routed in a fanout. If any pipeline at a level fails, the
 	// level is considered unhealthy
 	PipelinePriority [][]pipeline.ID `mapstructure:"priority_levels"`
+
+	// FailoverMode determines the failover strategy to use. Options: "standard""
+	FailoverMode FailoverMode `mapstructure:"failover_mode"`
 
 	// RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over
 	// all levels below the current
@@ -49,6 +56,9 @@ func (c *Config) Validate() error {
 	}
 	if c.RetryInterval <= 0 {
 		return errInvalidRetryIntervals
+	}
+	if !slices.Contains(validFailoverModes, c.FailoverMode) {
+		return errInvalidFailoverMode
 	}
 	return nil
 }
