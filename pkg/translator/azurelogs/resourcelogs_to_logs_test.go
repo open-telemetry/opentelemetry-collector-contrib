@@ -434,11 +434,7 @@ func TestUnmarshalLogs_VNetFlowLog(t *testing.T) {
 
 			require.NoError(t, err)
 
-			expectedFile := filepath.Join(dir, test.expectedFilename)
-			// TODO: Remove this line after generating the expected file
-			golden.WriteLogs(t, expectedFile, logs)
-
-			expectedLogs, err := golden.ReadLogs(expectedFile)
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
 		})

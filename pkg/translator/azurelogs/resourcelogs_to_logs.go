@@ -288,17 +288,39 @@ func parseRawRecord(log *azureLogRecord) (map[string]any, map[string]any) {
 
 // mergeProperties decodes the properties JSON, applies semantic conventions,
 // and merges unknown fields if present.
-func mergeProperties(category string, propsJSON []byte, unknown map[string]any) map[string]any {
+// Note: Return type is 'any' to handle primitive property values without double-nesting.
+func mergeProperties(category string, propsJSON []byte, unknown map[string]any) any {
 	props := make(map[string]any)
 	copyPropertiesAndApplySemanticConventions(category, propsJSON, props)
 
-	if len(unknown) == 0 {
-		return props
+	// Check if the content is a map nested under 'properties' (standard map properties case)
+	propertiesContent, isNestedMap := props[azureProperties].(map[string]any)
+	if isNestedMap {
+		// Standard JSON Map Properties (Fixes double nesting for maps)
+		if len(unknown) > 0 {
+			// Merge unknown fields into properties
+			for k, v := range unknown {
+				propertiesContent[k] = v
+			}
+		}
+		return propertiesContent
+
+	} else if len(props) == 1 {
+		// Primitive Value
+		if val, ok := props[azureProperties]; ok {
+			// If it's a primitive value (not a map), return it directly,
+			// but only if there are no unknown fields (cannot cleanly merge with primitives).
+			if _, isMap := val.(map[string]any); !isMap && len(unknown) == 0 {
+				return val
+			}
+		}
 	}
 
-	// Merge unknown fields into props
-	for k, v := range unknown {
-		props[k] = v
+	if len(unknown) > 0 {
+		// Merge unknown fields into props
+		for k, v := range unknown {
+			props[k] = v
+		}
 	}
 	return props
 }
@@ -330,12 +352,16 @@ func addCommonAzureFields(attrs map[string]any, log *azureLogRecord) {
 func extractRawAttributes(log *azureLogRecord) map[string]any {
 	attrs := map[string]any{}
 	hasProperties := len(log.Properties) > 0
-	known, unknown := parseRawRecord(log)
+	_, unknown := parseRawRecord(log)
 
 	// Handle properties + unknown fields merge
 	switch {
 	case hasProperties:
-		attrs[azureProperties] = mergeProperties(log.Category, log.Properties, unknown)
+		// merged will be a map (unwrapped content) or a primitive (unwrapped value)
+		merged := mergeProperties(log.Category, log.Properties, unknown)
+		// Set the merged value under the 'properties' key.
+		attrs[azureProperties] = merged
+
 	case len(unknown) > 0:
 		// No "properties" field but unknown fields exist
 		attrs[azureProperties] = unknown
@@ -343,18 +369,6 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 
 	// Add standardized Azure fields
 	addCommonAzureFields(attrs, log)
-	// Merge known fields into attrs
-	if len(known) > 0 {
-		// Only merge unknown fields into body, not known Azure root fields
-		for k, v := range unknown {
-			attrsProperties, ok := attrs[azureProperties].(map[string]any)
-			if !ok {
-				attrsProperties = map[string]any{}
-				attrs[azureProperties] = attrsProperties
-			}
-			attrsProperties[k] = v
-		}
-	}
 	return attrs
 }
 
