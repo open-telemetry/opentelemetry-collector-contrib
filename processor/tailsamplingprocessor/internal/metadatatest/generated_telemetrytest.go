@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorTailSamplingCountSpansSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_count_spans_sampled",
-		Description: "Count of spans that were sampled or not per sampling policy [development]",
+		Description: "Count of spans that were sampled or not per sampling policy [Development]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualProcessorTailSamplingCountSpansSampled(t *testing.T, tt *compone
 func AssertEqualProcessorTailSamplingCountTracesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
-		Description: "Count of traces that were sampled or not per sampling policy [development]",
+		Description: "Count of traces that were sampled or not per sampling policy [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualProcessorTailSamplingCountTracesSampled(t *testing.T, tt *compon
 func AssertEqualProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_early_releases_from_cache_decision",
-		Description: "Number of spans that were able to be immediately released due to a decision cache hit. [development]",
+		Description: "Number of spans that were able to be immediately released due to a decision cache hit. [Development]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -72,7 +72,7 @@ func AssertEqualProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T
 func AssertEqualProcessorTailSamplingGlobalCountTracesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_global_count_traces_sampled",
-		Description: "Global count of traces that were sampled or not by at least one policy [development]",
+		Description: "Global count of traces that were sampled or not by at least one policy [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -88,7 +88,7 @@ func AssertEqualProcessorTailSamplingGlobalCountTracesSampled(t *testing.T, tt *
 func AssertEqualProcessorTailSamplingNewTraceIDReceived(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_new_trace_id_received",
-		Description: "Counts the arrival of new traces [development]",
+		Description: "Counts the arrival of new traces [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -104,7 +104,7 @@ func AssertEqualProcessorTailSamplingNewTraceIDReceived(t *testing.T, tt *compon
 func AssertEqualProcessorTailSamplingSamplingDecisionTimerLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
-		Description: "Latency (in milliseconds) of each run of the sampling decision timer [development]",
+		Description: "Latency (in milliseconds) of each run of the sampling decision timer [Development]",
 		Unit:        "ms",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -119,7 +119,7 @@ func AssertEqualProcessorTailSamplingSamplingDecisionTimerLatency(t *testing.T, 
 func AssertEqualProcessorTailSamplingSamplingLateSpanAge(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_late_span_age",
-		Description: "Time (in seconds) from the sampling decision was taken and the arrival of a late span [development]",
+		Description: "Time (in seconds) from the sampling decision was taken and the arrival of a late span [Development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -134,7 +134,7 @@ func AssertEqualProcessorTailSamplingSamplingLateSpanAge(t *testing.T, tt *compo
 func AssertEqualProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
-		Description: "Count of sampling policy evaluation errors [development]",
+		Description: "Count of sampling policy evaluation errors [Development]",
 		Unit:        "{errors}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -150,7 +150,7 @@ func AssertEqualProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T,
 func AssertEqualProcessorTailSamplingSamplingPolicyExecutionCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_policy_execution_count",
-		Description: "Total number of executions of a specific sampling policy [development]",
+		Description: "Total number of executions of a specific sampling policy [Development]",
 		Unit:        "{executions}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -166,7 +166,7 @@ func AssertEqualProcessorTailSamplingSamplingPolicyExecutionCount(t *testing.T, 
 func AssertEqualProcessorTailSamplingSamplingPolicyExecutionTimeSum(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_policy_execution_time_sum",
-		Description: "Total time spent (in microseconds) executing a specific sampling policy [development]",
+		Description: "Total time spent (in microseconds) executing a specific sampling policy [Development]",
 		Unit:        "µs",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -182,7 +182,7 @@ func AssertEqualProcessorTailSamplingSamplingPolicyExecutionTimeSum(t *testing.T
 func AssertEqualProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
-		Description: "Count of traces that needed to be dropped before the configured wait time [development]",
+		Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -198,7 +198,7 @@ func AssertEqualProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T, 
 func AssertEqualProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_trace_removal_age",
-		Description: "Time (in seconds) from arrival of a new trace until its removal from memory [development]",
+		Description: "Time (in seconds) from arrival of a new trace until its removal from memory [Development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -213,7 +213,7 @@ func AssertEqualProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T, tt *c
 func AssertEqualProcessorTailSamplingSamplingTracesOnMemory(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_traces_on_memory",
-		Description: "Tracks the number of traces current on memory [development]",
+		Description: "Tracks the number of traces current on memory [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
