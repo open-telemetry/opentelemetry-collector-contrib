@@ -126,27 +126,27 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 		expected int64
 	}{
 		{
-			desc: "MaxRequestBodySize is 0, should be set to default",
+			desc: "MaxRequestBodySize is 0, should be set to default 20MB",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint:           "localhost:0",
 					MaxRequestBodySize: 0,
 				},
 			},
-			expected: int64(bufio.MaxScanTokenSize),
+			expected: 20 * 1024 * 1024, // 20MB default from confighttp
 		},
 		{
-			desc: "MaxRequestBodySize is less than minimum, should be corrected",
+			desc: "MaxRequestBodySize is set to small value, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint:           "localhost:0",
 					MaxRequestBodySize: 10,
 				},
 			},
-			expected: int64(bufio.MaxScanTokenSize),
+			expected: 10, // No minimum enforcement, user's value is preserved
 		},
 		{
-			desc: "MaxRequestBodySize is exactly the minimum, should remain unchanged",
+			desc: "MaxRequestBodySize is exactly 64KB, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint:           "localhost:0",
@@ -156,7 +156,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 			expected: int64(bufio.MaxScanTokenSize),
 		},
 		{
-			desc: "MaxRequestBodySize is greater than minimum, should remain unchanged",
+			desc: "MaxRequestBodySize is greater than 64KB, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint:           "localhost:0",
@@ -166,7 +166,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 			expected: 65538,
 		},
 		{
-			desc: "MaxRequestBodySize is way greater than minimum, should remain unchanged",
+			desc: "MaxRequestBodySize is way greater than 64KB, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint:           "localhost:0",
