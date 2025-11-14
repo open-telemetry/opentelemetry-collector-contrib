@@ -533,7 +533,6 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
-
 		if int(math.Ceil(currentCollectionTime.Sub(s.lastExecutionTimestamp).Seconds())) < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
 		} else {
@@ -626,7 +625,6 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	// if cache updates is not equal to rows returned, that indicates there is problem somewhere
 	s.logger.Debug("Cache update", zap.Int("update-count", cacheUpdates), zap.Int("new-size", s.metricCache.Len()))
 
-	s.lastExecutionTimestamp = collectionTime
 	if len(hits) == 0 {
 		s.logger.Info("No log records for this scrape")
 		return errors.Join(errs...)
@@ -685,6 +683,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 		s.logger.Debug("Log records for this scrape", zap.Int("count", hitCount))
 	}
 
+	s.lastExecutionTimestamp = collectionTime
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 
 	return errors.Join(errs...)
