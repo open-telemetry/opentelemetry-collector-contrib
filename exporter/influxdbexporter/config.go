@@ -111,8 +111,7 @@ func (cfg *Config) Validate() error {
 
 	// Validate precision
 	validPrecisions := []string{"ns", "ms", "s", "us"}
-	validPrecision := slices.Contains(validPrecisions, cfg.Precision)
-	if !validPrecision {
+	if slices.Contains(validPrecisions, cfg.Precision) {
 		return fmt.Errorf("invalid precision %q, must be one of: %s",
 			cfg.Precision, strings.Join(validPrecisions, ", "))
 	}
