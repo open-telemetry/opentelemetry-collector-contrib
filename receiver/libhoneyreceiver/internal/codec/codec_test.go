@@ -5,12 +5,15 @@ package codec
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
 
 func TestDecodeEvents_JSON(t *testing.T) {
@@ -400,4 +403,207 @@ func TestDecodeMsgpack_PreservesTypes(t *testing.T) {
 	assert.Equal(t, int64(42), data["int_field"])
 	assert.Equal(t, 3.14, data["float_field"])
 	assert.Equal(t, true, data["bool_field"])
+}
+
+func TestMarshalResponse_JSON(t *testing.T) {
+	tests := []struct {
+		name      string
+		responses []response.ResponseInBatch
+		wantErr   bool
+	}{
+		{
+			name: "success responses",
+			responses: []response.ResponseInBatch{
+				{Status: 202},
+				{Status: 202},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mixed success and error",
+			responses: []response.ResponseInBatch{
+				{Status: 202},
+				{Status: 400, ErrorStr: "bad request"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "single response",
+			responses: []response.ResponseInBatch{
+				{Status: 202},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := JsEncoder.MarshalResponse(tt.responses)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			// Verify it's valid JSON
+			var decoded []response.ResponseInBatch
+			err = json.Unmarshal(data, &decoded)
+			require.NoError(t, err)
+			assert.Equal(t, tt.responses, decoded)
+
+			// Verify content type
+			assert.Equal(t, JSONContentType, JsEncoder.ContentType())
+		})
+	}
+}
+
+func TestMarshalResponse_Msgpack(t *testing.T) {
+	tests := []struct {
+		name      string
+		responses []response.ResponseInBatch
+		wantErr   bool
+	}{
+		{
+			name: "success responses",
+			responses: []response.ResponseInBatch{
+				{Status: 202},
+				{Status: 202},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mixed success and error",
+			responses: []response.ResponseInBatch{
+				{Status: 202},
+				{Status: 400, ErrorStr: "bad request"},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := MpEncoder.MarshalResponse(tt.responses)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			// Verify it's valid msgpack
+			var decoded []response.ResponseInBatch
+			decoder := msgpack.NewDecoder(bytes.NewReader(data))
+			decoder.UseLooseInterfaceDecoding(true)
+			err = decoder.Decode(&decoded)
+			require.NoError(t, err)
+			assert.Equal(t, tt.responses, decoded)
+
+			// Verify content type
+			assert.Equal(t, MsgpackContentType, MpEncoder.ContentType())
+		})
+	}
+}
+
+func TestGetEncoder(t *testing.T) {
+	tests := []struct {
+		name        string
+		contentType string
+		wantEncoder Encoder
+		wantErr     bool
+	}{
+		{
+			name:        "JSON content type",
+			contentType: "application/json",
+			wantEncoder: JsEncoder,
+			wantErr:     false,
+		},
+		{
+			name:        "JSON content type (constant)",
+			contentType: JSONContentType,
+			wantEncoder: JsEncoder,
+			wantErr:     false,
+		},
+		{
+			name:        "Msgpack content type",
+			contentType: "application/msgpack",
+			wantEncoder: MpEncoder,
+			wantErr:     false,
+		},
+		{
+			name:        "Msgpack content type (x-msgpack)",
+			contentType: "application/x-msgpack",
+			wantEncoder: MpEncoder,
+			wantErr:     false,
+		},
+		{
+			name:        "unsupported content type",
+			contentType: "application/xml",
+			wantErr:     true,
+		},
+		{
+			name:        "empty content type",
+			contentType: "",
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			encoder, err := GetEncoder(tt.contentType)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "unsupported content type")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantEncoder, encoder)
+		})
+	}
+}
+
+func TestEncoder_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name        string
+		encoder     Encoder
+		contentType string
+	}{
+		{
+			name:        "JSON round trip",
+			encoder:     JsEncoder,
+			contentType: JSONContentType,
+		},
+		{
+			name:        "Msgpack round trip",
+			encoder:     MpEncoder,
+			contentType: MsgpackContentType,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create response data
+			responses := []response.ResponseInBatch{
+				{Status: 202},
+				{Status: 400, ErrorStr: "test error"},
+			}
+
+			// Marshal
+			data, err := tt.encoder.MarshalResponse(responses)
+			require.NoError(t, err)
+
+			// Unmarshal based on type
+			var decoded []response.ResponseInBatch
+			if tt.contentType == JSONContentType {
+				err = json.Unmarshal(data, &decoded)
+			} else {
+				decoder := msgpack.NewDecoder(bytes.NewReader(data))
+				decoder.UseLooseInterfaceDecoding(true)
+				err = decoder.Decode(&decoded)
+			}
+			require.NoError(t, err)
+
+			// Verify round trip preserved data
+			assert.Equal(t, responses, decoded)
+		})
+	}
 }

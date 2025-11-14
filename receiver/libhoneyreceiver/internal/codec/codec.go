@@ -1,6 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package codec provides encoding and decoding for the libhoney event format.
+// It handles both JSON and MessagePack formats, supporting single events,
+// batches, flat events, and structured events with header-based metadata.
 package codec // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/codec"
 
 import (
@@ -52,6 +55,18 @@ func (msgpackEncoder) MarshalResponse(batchResponse []response.ResponseInBatch) 
 
 func (msgpackEncoder) ContentType() string {
 	return MsgpackContentType
+}
+
+// GetEncoder returns the appropriate encoder for the given content type
+func GetEncoder(contentType string) (Encoder, error) {
+	switch contentType {
+	case JSONContentType:
+		return JsEncoder, nil
+	case MsgpackContentType, "application/x-msgpack":
+		return MpEncoder, nil
+	default:
+		return nil, fmt.Errorf("unsupported content type: %s", contentType)
+	}
 }
 
 // DecodeEvents decodes libhoney events from the request body based on content type

@@ -438,15 +438,13 @@ func readContentType(resp http.ResponseWriter, req *http.Request) (codec.Encoder
 		return nil, false
 	}
 
-	switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
-	case codec.JSONContentType:
-		return codec.JsEncoder, true
-	case "application/x-msgpack", "application/msgpack":
-		return codec.MpEncoder, true
-	default:
+	contentType := getMimeTypeFromContentType(req.Header.Get("Content-Type"))
+	encoder, err := codec.GetEncoder(contentType)
+	if err != nil {
 		handleUnmatchedContentType(resp)
 		return nil, false
 	}
+	return encoder, true
 }
 
 func writeResponse(w http.ResponseWriter, contentType string, statusCode int, msg []byte) {
