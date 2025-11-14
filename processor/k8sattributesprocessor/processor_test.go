@@ -1602,9 +1602,6 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			hostname: "invalid-ip",
 			expectedAttrs: map[string]string{
 				string(conventions.HostNameKey): "invalid-ip",
-				"k":                             "v",
-				"1":                             "2",
-				"aa":                            "b",
 			},
 		},
 		{
