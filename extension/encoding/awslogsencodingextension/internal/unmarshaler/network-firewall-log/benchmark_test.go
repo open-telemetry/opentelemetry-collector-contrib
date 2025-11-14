@@ -36,8 +36,8 @@ func readAndCompressLogFileForBenchmark(b *testing.B, dir, file string) []byte {
 func BenchmarkUnmarshalNetworkFirewallAlertLog(b *testing.B) {
 	u := networkFirewallLogUnmarshaler{buildInfo: component.BuildInfo{}}
 	data := readAndCompressLogFileForBenchmark(b, "testdata", "valid_alert_log.json")
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
 		if err != nil {
 			b.Fatal(err)
@@ -48,8 +48,8 @@ func BenchmarkUnmarshalNetworkFirewallAlertLog(b *testing.B) {
 func BenchmarkUnmarshalNetworkFirewallFlowLog(b *testing.B) {
 	u := networkFirewallLogUnmarshaler{buildInfo: component.BuildInfo{}}
 	data := readAndCompressLogFileForBenchmark(b, "testdata", "valid_flow_log.json")
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
 		if err != nil {
 			b.Fatal(err)
@@ -60,8 +60,8 @@ func BenchmarkUnmarshalNetworkFirewallFlowLog(b *testing.B) {
 func BenchmarkUnmarshalNetworkFirewallTLSLog(b *testing.B) {
 	u := networkFirewallLogUnmarshaler{buildInfo: component.BuildInfo{}}
 	data := readAndCompressLogFileForBenchmark(b, "testdata", "valid_tls_log.json")
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
 		if err != nil {
 			b.Fatal(err)

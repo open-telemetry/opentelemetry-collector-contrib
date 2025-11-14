@@ -285,7 +285,7 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 	}
 	if albRecord.ActionsExecuted != unknownField {
 		actions := recordLog.Attributes().PutEmptySlice(AttributeELBActionsExecuted)
-		for _, action := range strings.Split(albRecord.ActionsExecuted, ",") {
+		for action := range strings.SplitSeq(albRecord.ActionsExecuted, ",") {
 			actions.AppendEmpty().SetStr(action)
 		}
 	}
