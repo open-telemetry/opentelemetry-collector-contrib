@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/vmihailenco/msgpack/v5"
@@ -30,8 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/decoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
@@ -348,261 +346,30 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		}
 		return
 	}
-	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
+	// Decode libhoney events from request body
+	libhoneyevents, err := decoder.DecodeEvents(req.Header.Get("Content-Type"), body, req.Header)
+	if err != nil {
+		r.settings.Logger.Error("Failed to decode events",
+			zap.Error(err),
+			zap.String("content-type", req.Header.Get("Content-Type")),
+			zap.String("endpoint", req.RequestURI),
+			zap.String("api-key-masked", maskedKey))
+		writeLibhoneyError(resp, enc, fmt.Sprintf("failed to decode events: %v", err))
+		return
+	}
 
-	switch req.Header.Get("Content-Type") {
-	case "application/x-msgpack", "application/msgpack":
-		// The custom UnmarshalMsgpack will handle timestamp normalization
-		// Check msgpack type by peeking at first byte to avoid double-decoding
-		// msgpack format: 0x80-0x8f = fixmap, 0xde = map16, 0xdf = map32
-		//                 0x90-0x9f = fixarray, 0xdc = array16, 0xdd = array32
-		isSingleObject := false
-		if len(body) > 0 {
-			firstByte := body[0]
-			// Check if it's a map type
-			isSingleObject = (firstByte >= 0x80 && firstByte <= 0x8f) || firstByte == 0xde || firstByte == 0xdf
-		}
-
-		if isSingleObject {
-			// Single object - decode as map
-			var rawEvent map[string]any
-			decoder := msgpack.NewDecoder(bytes.NewReader(body))
-			decoder.UseLooseInterfaceDecoding(true)
-			err = decoder.Decode(&rawEvent)
-			if err == nil {
-				// Apply headers for single event (X-Honeycomb-Event-Time, X-Honeycomb-Samplerate)
-				// Only apply if not already present in the body
-				if eventTimeHeader := req.Header.Get("X-Honeycomb-Event-Time"); eventTimeHeader != "" {
-					if _, hasTime := rawEvent["time"]; !hasTime {
-						rawEvent["time"] = eventTimeHeader
-					}
-				}
-				if samplerateHeader := req.Header.Get("X-Honeycomb-Samplerate"); samplerateHeader != "" {
-					if _, hasSamplerate := rawEvent["samplerate"]; !hasSamplerate {
-						// Convert string to number for msgpack compatibility
-						var samplerate any
-						if sr, convErr := json.Number(samplerateHeader).Int64(); convErr == nil {
-							samplerate = sr
-						} else if sr, convErr := json.Number(samplerateHeader).Float64(); convErr == nil {
-							samplerate = sr
-						} else {
-							samplerate = samplerateHeader // Fallback to string
-						}
-						rawEvent["samplerate"] = samplerate
-					}
-				}
-
-				// Successfully decoded as single object - check if it needs wrapping
-				if _, hasData := rawEvent["data"]; !hasData {
-					// Flat event format - wrap all fields into data
-					// Make a copy of the map to avoid mutating the original
-					dataCopy := make(map[string]any)
-					for k, v := range rawEvent {
-						if k != "time" && k != "samplerate" {
-							dataCopy[k] = v
-						}
-					}
-
-					wrappedEvent := make(map[string]any)
-					wrappedEvent["data"] = dataCopy
-					// Preserve time and samplerate at top level if they exist
-					if t, ok := rawEvent["time"]; ok {
-						wrappedEvent["time"] = t
-					}
-					if sr, ok := rawEvent["samplerate"]; ok {
-						wrappedEvent["samplerate"] = sr
-					}
-
-					rawEvent = wrappedEvent
-				}
-				// Construct LibhoneyEvent directly from the map to avoid re-marshaling issues
-				singleEvent := libhoneyevent.LibhoneyEvent{
-					Samplerate: 1, // default
-					Data:       make(map[string]any),
-				}
-
-				// Extract samplerate
-				if sr, ok := rawEvent["samplerate"]; ok {
-					switch v := sr.(type) {
-					case int:
-						singleEvent.Samplerate = v
-					case int64:
-						singleEvent.Samplerate = int(v)
-					case float64:
-						singleEvent.Samplerate = int(v)
-					}
-				}
-
-				// Extract time
-				if t, ok := rawEvent["time"]; ok {
-					switch v := t.(type) {
-					case string:
-						singleEvent.Time = v
-						propertime := eventtime.GetEventTime(v)
-						singleEvent.MsgPackTimestamp = &propertime
-					case *time.Time:
-						singleEvent.MsgPackTimestamp = v
-					}
-				}
-				if singleEvent.MsgPackTimestamp == nil {
-					tnow := time.Now()
-					singleEvent.MsgPackTimestamp = &tnow
-				}
-
-				// Extract data
-				if data, ok := rawEvent["data"].(map[string]any); ok {
-					singleEvent.Data = data
-				}
-
-				libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
-			}
+	// Log successful decoding
+	if len(libhoneyevents) > 0 {
+		if libhoneyevents[0].MsgPackTimestamp != nil {
+			r.settings.Logger.Debug("Events decoded successfully",
+				zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp),
+				zap.String("timestamp.first.time", libhoneyevents[0].Time),
+				zap.String("content-type", req.Header.Get("Content-Type")))
 		} else {
-			// Array format - decode as array of maps first
-			var rawEvents []map[string]any
-			decoder := msgpack.NewDecoder(bytes.NewReader(body))
-			decoder.UseLooseInterfaceDecoding(true)
-			err = decoder.Decode(&rawEvents)
-			if err != nil {
-				r.settings.Logger.Error("Failed to decode msgpack array",
-					zap.Error(err),
-					zap.String("hex", fmt.Sprintf("%x", body[:min(len(body), 100)])))
-			} else {
-				// Convert each map to a LibhoneyEvent
-				for _, rawEvent := range rawEvents {
-					event := libhoneyevent.LibhoneyEvent{
-						Samplerate: 1, // default
-						Data:       make(map[string]any),
-					}
-
-					// Extract samplerate
-					if sr, ok := rawEvent["samplerate"]; ok {
-						switch v := sr.(type) {
-						case int:
-							event.Samplerate = v
-						case int64:
-							event.Samplerate = int(v)
-						case float64:
-							event.Samplerate = int(v)
-						}
-					}
-
-					// Extract time
-					if t, ok := rawEvent["time"]; ok {
-						switch v := t.(type) {
-						case string:
-							event.Time = v
-							propertime := eventtime.GetEventTime(v)
-							event.MsgPackTimestamp = &propertime
-						case *time.Time:
-							event.MsgPackTimestamp = v
-						}
-					}
-					if event.MsgPackTimestamp == nil {
-						tnow := time.Now()
-						event.MsgPackTimestamp = &tnow
-					}
-
-					// Extract data (arrays should always have structured events with data field)
-					if data, ok := rawEvent["data"].(map[string]any); ok {
-						event.Data = data
-					}
-
-					libhoneyevents = append(libhoneyevents, event)
-				}
-			}
+			r.settings.Logger.Debug("Events decoded successfully",
+				zap.String("timestamp.first.time", libhoneyevents[0].Time),
+				zap.String("content-type", req.Header.Get("Content-Type")))
 		}
-
-		if err != nil {
-			r.settings.Logger.Info("messagepack decoding failed")
-			writeLibhoneyError(resp, enc, "failed to unmarshal msgpack")
-			return
-		}
-		if len(libhoneyevents) > 0 {
-			// MsgPackTimestamp is guaranteed to be non-nil after UnmarshalMsgpack
-			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
-			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
-		}
-	case encoder.JSONContentType:
-		// Check first non-whitespace character to determine structure
-		trimmed := bytes.TrimLeft(body, " \t\n\r")
-		if len(trimmed) > 0 && trimmed[0] == '{' {
-			// Single object - check if it's flat or has data field
-			var rawEvent map[string]any
-			err = json.Unmarshal(body, &rawEvent)
-			if err == nil {
-				// Apply headers for single event (X-Honeycomb-Event-Time, X-Honeycomb-Samplerate)
-				// Only apply if not already present in the body
-				if eventTimeHeader := req.Header.Get("X-Honeycomb-Event-Time"); eventTimeHeader != "" {
-					if _, hasTime := rawEvent["time"]; !hasTime {
-						rawEvent["time"] = eventTimeHeader
-					}
-				}
-				if samplerateHeader := req.Header.Get("X-Honeycomb-Samplerate"); samplerateHeader != "" {
-					if _, hasSamplerate := rawEvent["samplerate"]; !hasSamplerate {
-						// Convert string to number for JSON compatibility
-						var samplerate any
-						if sr, convErr := json.Number(samplerateHeader).Int64(); convErr == nil {
-							samplerate = sr
-						} else if sr, convErr := json.Number(samplerateHeader).Float64(); convErr == nil {
-							samplerate = sr
-						} else {
-							samplerate = samplerateHeader // Fallback to string
-						}
-						rawEvent["samplerate"] = samplerate
-					}
-				}
-
-				// If the event doesn't have a "data" field, wrap all fields into data
-				if _, hasData := rawEvent["data"]; !hasData {
-					// Flat event format - wrap all fields into data
-					// Make a copy of the map to avoid mutating the original
-					dataCopy := make(map[string]any)
-					for k, v := range rawEvent {
-						if k != "time" && k != "samplerate" {
-							dataCopy[k] = v
-						}
-					}
-
-					wrappedEvent := make(map[string]any)
-					wrappedEvent["data"] = dataCopy
-					// Preserve time and samplerate at top level if they exist
-					if t, ok := rawEvent["time"]; ok {
-						wrappedEvent["time"] = t
-					}
-					if sr, ok := rawEvent["samplerate"]; ok {
-						wrappedEvent["samplerate"] = sr
-					}
-					rawEvent = wrappedEvent
-				}
-				// Now unmarshal the structured event
-				rawBytes, _ := json.Marshal(rawEvent)
-				var singleEvent libhoneyevent.LibhoneyEvent
-				err = json.Unmarshal(rawBytes, &singleEvent)
-				if err == nil {
-					libhoneyevents = []libhoneyevent.LibhoneyEvent{singleEvent}
-				}
-			}
-		} else {
-			// Array format - unmarshal directly
-			err = json.Unmarshal(body, &libhoneyevents)
-		}
-
-		if err != nil {
-			writeLibhoneyError(resp, enc, "failed to unmarshal JSON")
-			return
-		}
-
-		if len(libhoneyevents) > 0 {
-			// Debug: Log the state of MsgPackTimestamp
-			r.settings.Logger.Debug("JSON event decoded", zap.Bool("has_msgpacktimestamp", libhoneyevents[0].MsgPackTimestamp != nil))
-			if libhoneyevents[0].MsgPackTimestamp != nil {
-				r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
-			} else {
-				r.settings.Logger.Debug("Decoding with json worked", zap.String("timestamp.first.time", libhoneyevents[0].Time))
-			}
-		}
-	default:
-		r.settings.Logger.Info("unsupported content type", zap.String("content-type", req.Header.Get("Content-Type")))
 	}
 
 	// Parse events and track which original indices contributed to each OTLP entity
