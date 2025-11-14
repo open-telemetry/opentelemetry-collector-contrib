@@ -534,7 +534,7 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
 		if int(math.Ceil(currentCollectionTime.Sub(s.lastExecutionTimestamp).Seconds())) < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
-			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			s.logger.Debug("Skipping the collection of top queries because collection interval not yet elapsed.")
 		} else {
 			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime)
 			if topNCollectionErrors != nil {
