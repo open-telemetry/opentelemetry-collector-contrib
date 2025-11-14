@@ -36,10 +36,10 @@ func NewConfig() *Config {
 // NewConfigWithID creates a new JSON parser config with default values
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		ParserConfig:            helper.NewParserConfig(operatorID, operatorType),
-		Format:                  "",
-		AddMetadataFromFilePath: true,
-		MaxLogSize:              0,
+		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
+		Format:       "",
+		MaxLogSize:   10485760, // 10MiB
+		MaxBatchSize: 0,        // unlimited
 	}
 }
 
@@ -50,6 +50,7 @@ type Config struct {
 	Format                  string          `mapstructure:"format"`
 	AddMetadataFromFilePath bool            `mapstructure:"add_metadata_from_filepath"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	MaxBatchSize            int             `mapstructure:"max_batch_size,omitempty"`
 }
 
 // Build will build a Container parser operator.
@@ -124,5 +125,7 @@ func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg.CombineWith = ""
 	recombineParserCfg.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
 	recombineParserCfg.MaxLogSize = c.MaxLogSize
+	recombineParserCfg.MaxBatchSize = c.MaxBatchSize
+	recombineParserCfg.MaxUnmatchedBatchSize = 0 // unlimited and let it flush based on max_log_size and max_batch_size
 	return recombineParserCfg
 }
