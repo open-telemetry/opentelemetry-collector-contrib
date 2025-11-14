@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -62,6 +63,7 @@ type resourceWatcher struct {
 	initialSyncTimedOut *atomic.Bool
 	config              *Config
 	entityLogConsumer   consumer.Logs
+	mu                  sync.RWMutex
 
 	// For mocking.
 	makeClient               func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
@@ -331,7 +333,10 @@ func (rw *resourceWatcher) onAdd(obj any) {
 }
 
 func (rw *resourceWatcher) hasDestination() bool {
-	return len(rw.metadataConsumers) != 0 || rw.entityLogConsumer != nil
+	rw.mu.RLock()
+	has := len(rw.metadataConsumers) != 0 || rw.entityLogConsumer != nil
+	rw.mu.RUnlock()
+	return has
 }
 
 func (rw *resourceWatcher) onUpdate(oldObj, newObj any) {
@@ -424,7 +429,9 @@ func (rw *resourceWatcher) setupMetadataExporters(
 		)
 	}
 
+	rw.mu.Lock()
 	rw.metadataConsumers = out
+	rw.mu.Unlock()
 	return nil
 }
 
@@ -448,11 +455,14 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 
 	metadataUpdate := metadata.GetMetadataUpdate(oldMetadata, newMetadata)
 	if len(metadataUpdate) != 0 {
+		rw.mu.RLock()
 		for _, consume := range rw.metadataConsumers {
 			_ = consume(metadataUpdate)
 		}
+		rw.mu.RUnlock()
 	}
 
+	rw.mu.RLock()
 	if rw.entityLogConsumer != nil {
 		// Represent metadata update as entity events.
 		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp, rw.config.MetadataCollectionInterval)
@@ -477,6 +487,7 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 			}
 		}
 	}
+	rw.mu.RUnlock()
 }
 
 // stringSliceToMap converts a slice of strings into a map with keys from the slice
