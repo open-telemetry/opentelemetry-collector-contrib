@@ -116,13 +116,14 @@ func exceptionMessage(e *faroTypes.Exception) string {
 
 // exceptionToString is the string representation of an Exception
 func exceptionToString(e *faroTypes.Exception) string {
-	stacktrace := exceptionMessage(e)
+	var stacktrace strings.Builder
+	stacktrace.WriteString(exceptionMessage(e))
 	if e.Stacktrace != nil {
 		for i := range e.Stacktrace.Frames {
-			stacktrace += frameToString(&e.Stacktrace.Frames[i])
+			stacktrace.WriteString(frameToString(&e.Stacktrace.Frames[i]))
 		}
 	}
-	return stacktrace
+	return stacktrace.String()
 }
 
 // frameToString function converts a Frame into a human readable string
