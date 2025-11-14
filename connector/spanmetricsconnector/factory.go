@@ -34,6 +34,7 @@ var (
 	includeCollectorInstanceID    *featuregate.Gate
 	useSecondAsDefaultMetricsUnit *featuregate.Gate
 	excludeResourceMetrics        *featuregate.Gate
+	useOtelStatusCodeAttribute    *featuregate.Gate
 )
 
 func init() {
@@ -61,6 +62,11 @@ func init() {
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, connector will exclude all resource attributes."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
+	)
+	useOtelStatusCodeAttribute = featuregate.GlobalRegistry().MustRegister(
+		"spanmetrics.statusCodeConvention.useOtelPrefix",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, generated metrics will use `otel.status_code=ERROR` instead of `status.code=STATUS_CODE_ERROR`"),
 	)
 }
 
