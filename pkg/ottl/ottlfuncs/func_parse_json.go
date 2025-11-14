@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/goccy/go-json"
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -47,22 +47,47 @@ func parseJSON[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 		if err != nil {
 			return nil, err
 		}
-		var parsedValue any
-		err = json.Unmarshal([]byte(targetVal), &parsedValue)
-		if err != nil {
-			return nil, err
+
+		iter := jsoniter.ConfigFastest.BorrowIterator([]byte(targetVal))
+		defer jsoniter.ConfigFastest.ReturnIterator(iter)
+		val := pcommon.NewValueEmpty()
+		unmarshalValue(val, iter)
+		if iter.Error != nil {
+			return nil, iter.Error
 		}
-		switch v := parsedValue.(type) {
-		case []any:
-			result := pcommon.NewSlice()
-			err = result.FromRaw(v)
-			return result, err
-		case map[string]any:
-			result := pcommon.NewMap()
-			err = result.FromRaw(v)
-			return result, err
+		switch val.Type() {
+		case pcommon.ValueTypeSlice:
+			return val.Slice(), err
+		case pcommon.ValueTypeMap:
+			return val.Map(), err
 		default:
-			return nil, fmt.Errorf("could not convert parsed value of type %T to JSON object", v)
+			return nil, fmt.Errorf("could not convert parsed value of type %q to JSON object", val.Type())
 		}
+	}
+}
+
+func unmarshalValue(dest pcommon.Value, iter *jsoniter.Iterator) {
+	switch iter.WhatIsNext() {
+	case jsoniter.NilValue:
+		// do nothing
+	case jsoniter.StringValue:
+		dest.SetStr(iter.ReadString())
+	case jsoniter.NumberValue:
+		dest.SetDouble(iter.ReadFloat64())
+	case jsoniter.BoolValue:
+		dest.SetBool(iter.ReadBool())
+	case jsoniter.ArrayValue:
+		a := dest.SetEmptySlice()
+		for iter.ReadArray() {
+			unmarshalValue(a.AppendEmpty(), iter)
+		}
+	case jsoniter.ObjectValue:
+		m := dest.SetEmptyMap()
+		for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
+			unmarshalValue(m.PutEmpty(f), iter)
+		}
+	default:
+		iter.ReportError("unmarshalValue", "unknown json format")
+		return
 	}
 }

@@ -1034,7 +1034,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 				{Statements: []string{`set(span.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(span.attributes["test"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+			wantErrorWith: "could not convert parsed value of type \"Bool\" to JSON object",
 		},
 		{
 			name:      "spanevent: statements group with error mode",
@@ -1054,7 +1054,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+			wantErrorWith: "could not convert parsed value of type \"Bool\" to JSON object",
 		},
 		{
 			name:      "resource: statements group with error mode",
@@ -1074,7 +1074,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+			wantErrorWith: "could not convert parsed value of type \"Bool\" to JSON object",
 		},
 		{
 			name:      "scope: statements group with error mode",
@@ -1094,7 +1094,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: `could not convert parsed value of type bool to JSON object`,
+			wantErrorWith: `could not convert parsed value of type "Bool" to JSON object`,
 		},
 	}
 
