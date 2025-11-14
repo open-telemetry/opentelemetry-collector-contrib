@@ -6,6 +6,7 @@ package tests // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -155,7 +156,7 @@ service:
 
 	// prepare data
 
-	message := ""
+	var message strings.Builder
 	expectedAttributes := []map[string]any{}
 	expectedLogs := plog.NewLogs()
 	rl := expectedLogs.ResourceLogs().AppendEmpty()
@@ -168,7 +169,7 @@ service:
 		lr.SetSeverityText(e.severityText)
 		lr.SetTimestamp(e.timestamp)
 		expectedAttributes = append(expectedAttributes, e.attributes)
-		message += e.message + "\n"
+		message.WriteString(e.message + "\n")
 	}
 
 	// Prepare client
@@ -176,7 +177,7 @@ service:
 	require.NoError(t, err)
 
 	// Write requests
-	fmt.Fprint(conn, message)
+	fmt.Fprint(conn, message.String())
 
 	// Wait for all messages
 	for len(backend.ReceivedLogs) < 1 {

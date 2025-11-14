@@ -32,6 +32,7 @@ type MetricsConfig struct {
 	RedisClientsConnected                     MetricConfig `mapstructure:"redis.clients.connected"`
 	RedisClientsMaxInputBuffer                MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
 	RedisClientsMaxOutputBuffer               MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
+	RedisClusterClusterEnabled                MetricConfig `mapstructure:"redis.cluster.cluster_enabled"`
 	RedisClusterKnownNodes                    MetricConfig `mapstructure:"redis.cluster.known_nodes"`
 	RedisClusterLinksBufferLimitExceededCount MetricConfig `mapstructure:"redis.cluster.links_buffer_limit_exceeded.count"`
 	RedisClusterNodeCount                     MetricConfig `mapstructure:"redis.cluster.node.count"`
@@ -66,6 +67,8 @@ type MetricsConfig struct {
 	RedisMemoryPeak                           MetricConfig `mapstructure:"redis.memory.peak"`
 	RedisMemoryRss                            MetricConfig `mapstructure:"redis.memory.rss"`
 	RedisMemoryUsed                           MetricConfig `mapstructure:"redis.memory.used"`
+	RedisMemoryUsedMemoryOverhead             MetricConfig `mapstructure:"redis.memory.used_memory_overhead"`
+	RedisMemoryUsedMemoryStartup              MetricConfig `mapstructure:"redis.memory.used_memory_startup"`
 	RedisNetInput                             MetricConfig `mapstructure:"redis.net.input"`
 	RedisNetOutput                            MetricConfig `mapstructure:"redis.net.output"`
 	RedisRdbChangesSinceLastSave              MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
@@ -74,6 +77,7 @@ type MetricsConfig struct {
 	RedisReplicationReplicaOffset             MetricConfig `mapstructure:"redis.replication.replica_offset"`
 	RedisRole                                 MetricConfig `mapstructure:"redis.role"`
 	RedisSlavesConnected                      MetricConfig `mapstructure:"redis.slaves.connected"`
+	RedisTrackingTotalKeys                    MetricConfig `mapstructure:"redis.tracking_total_keys"`
 	RedisUptime                               MetricConfig `mapstructure:"redis.uptime"`
 }
 
@@ -90,6 +94,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		RedisClientsMaxOutputBuffer: MetricConfig{
 			Enabled: true,
+		},
+		RedisClusterClusterEnabled: MetricConfig{
+			Enabled: false,
 		},
 		RedisClusterKnownNodes: MetricConfig{
 			Enabled: false,
@@ -193,6 +200,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisMemoryUsed: MetricConfig{
 			Enabled: true,
 		},
+		RedisMemoryUsedMemoryOverhead: MetricConfig{
+			Enabled: false,
+		},
+		RedisMemoryUsedMemoryStartup: MetricConfig{
+			Enabled: false,
+		},
 		RedisNetInput: MetricConfig{
 			Enabled: true,
 		},
@@ -216,6 +229,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		RedisSlavesConnected: MetricConfig{
 			Enabled: true,
+		},
+		RedisTrackingTotalKeys: MetricConfig{
+			Enabled: false,
 		},
 		RedisUptime: MetricConfig{
 			Enabled: true,
