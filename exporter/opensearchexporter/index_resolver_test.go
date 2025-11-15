@@ -304,6 +304,72 @@ func TestIndexResolver_ResolveSpanIndex_MultipleResources(t *testing.T) {
 	}
 }
 
+func TestIndexResolver_ResolveLogRecordIndex_MultiplePlaceholders(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		LogsIndex:           "%{service.name}-%{env}-logs",
+		LogsIndexFallback:   "default",
+		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
+	}
+
+	ld := createTestLogDataWithMultipleAttributes("myservice", "prod")
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+	resource := ld.ResourceLogs().At(0).Resource()
+	scope := ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	index := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, ts)
+	expected := "myservice-prod-logs-2025.06.07"
+	if index != expected {
+		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
+func TestIndexResolver_ResolveSpanIndex_MultiplePlaceholders(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		TracesIndex:           "%{service.name}-%{env}-traces",
+		TracesIndexFallback:   "default",
+		TracesIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:               "default",
+		Namespace:             "namespace",
+	}
+
+	td := createTestTraceDataWithMultipleAttributes("myservice", "prod")
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+	resource := td.ResourceSpans().At(0).Resource()
+	scope := td.ResourceSpans().At(0).ScopeSpans().At(0).Scope()
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	index := resolver.ResolveSpanIndex(cfg, resource, scope, span, ts)
+	expected := "myservice-prod-traces-2025.06.07"
+	if index != expected {
+		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
+func TestIndexResolver_ResolveLogRecordIndex_MultiplePlaceholdersWithFallback(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		LogsIndex:           "%{service.name}-%{missing}-logs",
+		LogsIndexFallback:   "fallback",
+		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
+	}
+
+	ld := createTestLogData("myservice")
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+	resource := ld.ResourceLogs().At(0).Resource()
+	scope := ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	index := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, ts)
+	expected := "myservice-fallback-logs-2025.06.07"
+	if index != expected {
+		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
 func TestConvertGoTimeFormat(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -391,6 +457,36 @@ func createTestLogDataMultipleResources(serviceName1, serviceName2 string) plog.
 	logRecord2.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	return ld
+}
+
+func createTestLogDataWithMultipleAttributes(serviceName, env string) plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	if serviceName != "" {
+		rl.Resource().Attributes().PutStr("service.name", serviceName)
+	}
+	if env != "" {
+		rl.Resource().Attributes().PutStr("env", env)
+	}
+	sl := rl.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return ld
+}
+
+func createTestTraceDataWithMultipleAttributes(serviceName, env string) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	if serviceName != "" {
+		rs.Resource().Attributes().PutStr("service.name", serviceName)
+	}
+	if env != "" {
+		rs.Resource().Attributes().PutStr("env", env)
+	}
+	ss := rs.ScopeSpans().AppendEmpty()
+	span := ss.Spans().AppendEmpty()
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return td
 }
 
 func createTestTraceDataMultipleResources(serviceName1, serviceName2 string) ptrace.Traces {
