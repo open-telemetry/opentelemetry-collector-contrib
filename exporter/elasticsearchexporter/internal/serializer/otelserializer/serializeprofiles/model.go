@@ -56,6 +56,8 @@ type StackTraceEvent struct {
 	ServiceName      string `json:"service.name,omitempty"`
 	Frequency        int64  `json:"Stacktrace.sampling_frequency"`
 	Count            uint16 `json:"Stacktrace.count"`
+	ProjectID        uint32 `json:"profiling.project.id,omitempty"`
+	HostName         string `json:"host.name,omitempty"`
 }
 
 // StackTrace represents a stacktrace serializable into the stacktraces index.
