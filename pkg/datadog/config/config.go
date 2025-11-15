@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -19,6 +18,9 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/endpoints"
+	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 )
 
 var (
@@ -72,7 +74,7 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
+	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
@@ -325,6 +327,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	}
 	if !configMap.IsSet("logs::endpoint") {
 		c.Logs.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
+	}
+	if !configMap.IsSet("orchestrator_explorer::endpoint") {
+		c.OrchestratorExplorer.Endpoint = fmt.Sprintf("https://orchestrator.%s%s", c.API.Site, endpoints.OrchestratorManifestEndpoint.Route)
 	}
 
 	// Return an error if an endpoint is explicitly set to ""

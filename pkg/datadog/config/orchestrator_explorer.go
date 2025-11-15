@@ -12,6 +12,8 @@ type OrchestratorExplorerConfig struct {
 
 	// ClusterName defines the kubernetes cluster name.
 	ClusterName string `mapstructure:"cluster_name"`
+
+	Endpoint string `mapstructure:"endpoint"`
 }
 
 // Validate the configuration for errors.
