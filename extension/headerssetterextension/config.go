@@ -6,6 +6,7 @@ package headerssetterextension // import "github.com/open-telemetry/opentelemetr
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
@@ -17,7 +18,8 @@ var (
 )
 
 type Config struct {
-	HeadersConfig []HeaderConfig `mapstructure:"headers"`
+	HeadersConfig  []HeaderConfig `mapstructure:"headers"`
+	AdditionalAuth *component.ID  `mapstructure:"additional_auth"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

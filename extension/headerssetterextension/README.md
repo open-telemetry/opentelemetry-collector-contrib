@@ -23,7 +23,12 @@ header to the value extracted from the context.
 
 ## Configuration
 
-The following settings are required:
+The following settings are available:
+
+- `additional_auth` (Optional): The ID of another auth extension to chain with.
+  When specified, this extension will call the additional auth extension first,
+  then apply its own headers on top. This allows combining multiple authentication
+  methods, such as OAuth2 for authorization and custom headers for additional metadata.
 
 - `headers`: a list of header configuration objects that specify headers and
   their value sources. Each configuration object has the following properties:
@@ -99,6 +104,65 @@ service:
       processors: [ batch ]
       exporters: [ loki ]
 ```
+
+## Chaining with other Auth Extensions
+
+The `headers_setter` extension can be chained with another authentication extension
+using the `additional_auth` parameter. This allows combining multiple authentication
+methods, such as OAuth2 for bearer token authentication and custom headers for
+additional metadata or routing information.
+
+### Example: Combining OAuth2 and Custom Headers
+
+```yaml
+extensions:
+  oauth2client:
+    client_id: someclientid
+    client_secret: someclientsecret
+    token_url: https://example.com/oauth2/default/v1/token
+    scopes: ["api.metrics"]
+    # The timeout parameter is optional
+    timeout: 2s
+
+  headers_setter:
+    # Chain with the oauth2client extension
+    additional_auth: oauth2client
+    headers:
+      - key: X-Scope-OrgID
+        value: acme-tenant
+      - key: X-Custom-Header
+        from_context: custom_metadata
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        include_metadata: true
+
+exporters:
+  prometheusremotewrite:
+    endpoint: https://prometheus.example.com/api/v1/write
+    auth:
+      # Use headers_setter as the authenticator
+      # This will apply both OAuth2 and custom headers
+      authenticator: headers_setter
+
+service:
+  extensions: [oauth2client, headers_setter]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheusremotewrite]
+```
+
+In this configuration:
+1. The `oauth2client` extension provides OAuth2 bearer token authentication
+2. The `headers_setter` extension adds custom headers on top of the OAuth2 authentication
+3. When the exporter sends data, both authentication methods are applied:
+   - OAuth2 adds the `Authorization: Bearer <token>` header
+   - Headers setter adds `X-Scope-OrgID` and `X-Custom-Header` headers
+4. The collector ensures the `oauth2client` extension starts before `headers_setter`
+   due to the dependency relationship
 
 [batch-processor]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor/README.md
 [batch-processor-preserve-metadata]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor/README.md#batching-and-client-metadata
