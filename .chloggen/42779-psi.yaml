@@ -1,0 +1,10 @@
+change_type: enhancement
+
+component: receiver/hostmetrics
+
+note: Pressure Stall Information (PSI) from linux hosts
+issues: [42779]
+
+subtext: Added support for Linux 4.20+ new Pressure Stall Information metrics
+
+change_logs: [user,api]
