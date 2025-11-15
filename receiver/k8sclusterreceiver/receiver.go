@@ -54,7 +54,6 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 		return errors.New("unable to get exporters")
 	}
 	exporters := ge.GetExporters()
-
 	if err := kr.resourceWatcher.setupMetadataExporters(
 		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters); err != nil {
 		return err
@@ -167,7 +166,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 	kr.obsrecv.EndMetricsOp(c, metadata.Type.String(), numPoints, err)
 }
 
-// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+// newMetricsReceiver creates the Kubernetes cluster metrics receiver with the given configuration.
 func newMetricsReceiver(
 	ctx context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -186,7 +185,7 @@ func newMetricsReceiver(
 	return r, nil
 }
 
-// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+// newLogsReceiver creates the Kubernetes cluster logs receiver with the given configuration.
 func newLogsReceiver(
 	ctx context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Logs,
 ) (receiver.Logs, error) {
@@ -205,7 +204,7 @@ func newLogsReceiver(
 	return r, nil
 }
 
-// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+// newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(_ context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 	rCfg := cfg.(*Config)
 	obsrecv, err := receiverhelper.NewObsReport(
