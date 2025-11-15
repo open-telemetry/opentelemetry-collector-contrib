@@ -235,6 +235,7 @@ type RetrySettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	// MaxRequests configures how often an HTTP request is attempted before it is assumed to be failed.
+	//
 	// Deprecated: use MaxRetries instead.
 	MaxRequests int `mapstructure:"max_requests"`
 
