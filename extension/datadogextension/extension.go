@@ -5,11 +5,13 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -23,7 +25,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -75,6 +80,11 @@ type datadogExtension struct {
 	// components to assist in payload sending/logging
 	logger     *zap.Logger
 	serializer agentcomponents.SerializerWithForwarder
+	scrubber   scrub.Scrubber // scrubber scrubs sensitive information from error messages
+
+	// components for sending liveness metric
+	metricsAPI *datadogV2.MetricsApi // client sends running metrics to backend
+	retrier    *clientutil.Retrier   // retrier handles retries on requests
 
 	// struct to store extension info
 	info *info
@@ -224,28 +234,100 @@ func (e *datadogExtension) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+// sendLivenessMetric sends the otel.datadog_extension.running metric to indicate the extension is active
+func (e *datadogExtension) sendLivenessMetric(ctx context.Context) error {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	timestamp := uint64(now)
+	buildTags := metrics.TagsFromBuildInfo(e.info.build)
+
+	// Create the running metric using the same pattern as the exporter
+	series := metrics.DefaultMetrics(e.info.host.Identifier, timestamp, buildTags)
+
+	// Add hostname source tag to indicate whether hostname was configured or inferred
+	for i := range series {
+		series[i].Tags = append(series[i].Tags, "hostname_source:"+e.info.hostnameSource)
+	}
+
+	// Send the metric with retries
+	_, err := e.retrier.DoWithRetries(ctx, func(context.Context) error {
+		ctx2 := clientutil.GetRequestContext(ctx, string(e.configs.extension.API.Key))
+		_, httpresp, merr := e.metricsAPI.SubmitMetrics(
+			ctx2,
+			datadogV2.MetricPayload{Series: series},
+			*clientutil.GZipSubmitMetricsOptionalParameters,
+		)
+		return clientutil.WrapError(merr, httpresp)
+	})
+
+	if err != nil {
+		e.logger.Error("Failed to send extension liveness metric", zap.Error(err))
+		return e.scrubber.Scrub(err)
+	}
+
+	e.logger.Debug("Successfully sent extension liveness metric",
+		zap.String("hostname", e.info.host.Identifier),
+		zap.String("hostname_source", e.info.hostnameSource))
+	return nil
+}
+
 // startPeriodicPayloadSending starts a goroutine that sends payloads on payloadSendingInterval
 func (e *datadogExtension) startPeriodicPayloadSending() {
 	e.payloadSender.once.Do(func() {
 		go func() {
 			defer e.payloadSender.ticker.Stop()
+
+			// Send initial liveness metric on startup
+			if err := e.sendLivenessMetric(e.payloadSender.ctx); err != nil {
+				e.logger.Warn("Failed to send initial liveness metric", zap.Error(err))
+			}
+
 			for {
 				select {
 				case <-e.payloadSender.ticker.C:
-					e.logger.Debug("Sending periodic payload to Datadog")
-					if _, err := e.httpServer.SendPayload(); err != nil {
-						e.logger.Error("Failed to send periodic payload", zap.Error(err))
-					} else {
-						e.logger.Debug("Successfully sent periodic payload to Datadog")
+					e.logger.Debug("Sending periodic payloads to Datadog")
+
+					// Send liveness metric first
+					if err := e.sendLivenessMetric(e.payloadSender.ctx); err != nil {
+						e.logger.Error("Failed to send periodic liveness metric", zap.Error(err))
 					}
+
+					// Wait 1 minute before sending metadata payload
+					e.logger.Debug("Waiting 1 minute before sending metadata payload")
+					select {
+					case <-time.After(1 * time.Minute):
+						// Send metadata payload after delay
+						if _, err := e.httpServer.SendPayload(); err != nil {
+							e.logger.Error("Failed to send periodic payload", zap.Error(err))
+						} else {
+							e.logger.Debug("Successfully sent periodic payload to Datadog")
+						}
+					case <-e.payloadSender.ctx.Done():
+						e.logger.Debug("Stopping periodic payload sending during delay")
+						return
+					}
+
 				case <-e.payloadSender.ctx.Done():
 					e.logger.Debug("Stopping periodic payload sending")
 					return
 				case <-e.payloadSender.channel:
 					// Allow manual triggering of payload sending if needed
 					e.logger.Debug("Manually triggered payload send")
-					if _, err := e.httpServer.SendPayload(); err != nil {
-						e.logger.Error("Failed to send manually triggered payload", zap.Error(err))
+
+					// Send liveness metric first
+					if err := e.sendLivenessMetric(e.payloadSender.ctx); err != nil {
+						e.logger.Error("Failed to send manually triggered liveness metric", zap.Error(err))
+					}
+
+					// Wait 1 minute before sending metadata payload
+					select {
+					case <-time.After(1 * time.Minute):
+						// Send metadata payload on manual trigger after delay
+						if _, err := e.httpServer.SendPayload(); err != nil {
+							e.logger.Error("Failed to send manually triggered payload", zap.Error(err))
+						}
+					case <-e.payloadSender.ctx.Done():
+						e.logger.Debug("Stopping during manual trigger delay")
+						return
 					}
 				}
 			}
@@ -318,6 +400,35 @@ func newExtension(
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
 
+	// Create scrubber for error message sanitization
+	scrubber := scrub.NewScrubber()
+
+	// Create metrics API client for sending liveness metric
+	// Construct the metrics endpoint from the site
+	// If site contains http:// or https://, use it as-is (for testing), otherwise construct the API URL
+	metricsEndpoint := cfg.API.Site
+	if metricsEndpoint != "" && metricsEndpoint[0] != 'h' {
+		// Normal case: site is like "datadoghq.com"
+		metricsEndpoint = fmt.Sprintf("https://api.%s", cfg.API.Site)
+	}
+	apiClient := clientutil.CreateAPIClient(
+		set.BuildInfo,
+		metricsEndpoint,
+		cfg.ClientConfig)
+	metricsAPI := datadogV2.NewMetricsApi(apiClient)
+
+	// Create retrier for handling failed requests with backoff
+	retrier := clientutil.NewRetrier(set.Logger, ddConfig.BackOffConfig, scrubber)
+
+	// Optionally validate API key on startup
+	if cfg.API.FailOnInvalidKey {
+		errchan := make(chan error)
+		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
+		if err := <-errchan; err != nil {
+			return nil, err
+		}
+	}
+
 	// Collect resource attributes from TelemetrySettings.Resource
 	// Format: map[string]string
 	resourceMap := make(map[string]string)
@@ -337,6 +448,9 @@ func newExtension(
 		configs:    &configs{extension: cfg},
 		logger:     set.Logger,
 		serializer: serializer,
+		scrubber:   scrubber,
+		metricsAPI: metricsAPI,
+		retrier:    retrier,
 		info: &info{
 			host:               host,
 			hostnameSource:     hostnameSource,
