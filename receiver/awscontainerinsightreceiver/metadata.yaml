@@ -1,4 +1,4 @@
-type: awscontainerinsightreceiver
+type: awscontainerinsight
 
 status:
   class: receiver

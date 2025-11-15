@@ -17,6 +17,7 @@ import (
 func TestNewFactory(t *testing.T) {
 	c := NewFactory()
 	assert.NotNil(t, c)
+	assert.Equal(t, metadata.Type, c.Type())
 }
 
 func TestCreateMetrics(t *testing.T) {
