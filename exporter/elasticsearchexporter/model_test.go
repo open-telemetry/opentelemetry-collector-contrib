@@ -533,6 +533,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"id": "1920212223242526",
 		"name": "client span",
 		"action": "receive",
+		"kind": "CLIENT",
 		"db": {
 		  "instance": "users",
 		  "statement": "SELECT * FROM users WHERE user_id=?",
@@ -1293,6 +1294,24 @@ func TestMapLogAttributesToECS(t *testing.T) {
 
 			expectedDoc := test.expectedDoc()
 			require.Equal(t, expectedDoc, doc)
+		})
+	}
+}
+
+func Test_spanKindToECSStr(t *testing.T) {
+	tests := map[ptrace.SpanKind]string{
+		ptrace.SpanKindUnspecified: "",
+		ptrace.SpanKindInternal:    "INTERNAL",
+		ptrace.SpanKindServer:      "SERVER",
+		ptrace.SpanKindClient:      "CLIENT",
+		ptrace.SpanKindProducer:    "PRODUCER",
+		ptrace.SpanKindConsumer:    "CONSUMER",
+	}
+
+	for kind, expected := range tests {
+		t.Run(kind.String(), func(t *testing.T) {
+			got := spanKindToECSStr(kind)
+			require.Equal(t, expected, got)
 		})
 	}
 }
