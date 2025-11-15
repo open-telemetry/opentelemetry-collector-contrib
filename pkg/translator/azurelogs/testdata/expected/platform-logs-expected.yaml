@@ -15,6 +15,9 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: operation.name
+                    value:
+                      stringValue: ContainerLogs
                   - key: container.id
                     value:
                       stringValue: CONTAINER_ID
@@ -31,14 +34,9 @@ resourceLogs:
                   - key: category
                     value:
                       stringValue: AppServicePlatformLogs
-                  - key: operation.name
-                    value:
-                      stringValue: ContainerLogs
             severityNumber: 9
             severityText: Informational
-            spanId: ""
             timeUnixNano: "1713960235630000000"
-            traceId: ""
         scope:
           name: otelcol/azureresourcelogs
           version: 1.2.3
