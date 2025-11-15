@@ -141,24 +141,9 @@ func verifyOpenMetricsCreatedTimestampZeroIngestionDisabled(t *testing.T, td *te
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
-						compareStartTimestamp(tsZero),
-						compareTimestamp(ts1),
-						compareDoubleValue(1.0),
-					},
-				},
-			},
-			nil,
-		},
-		{
-			"a_seconds_created",
-			pmetric.MetricTypeSum,
-			"s",
-			[]dataPointExpectation{
-				{
-					numberPointComparator: []numberPointComparator{
 						compareStartTimestamp(timestampFromFloat64(123.456)),
 						compareTimestamp(ts1),
-						compareDoubleValue(0),
+						compareDoubleValue(1.0),
 					},
 				},
 			},
