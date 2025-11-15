@@ -41,6 +41,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/hydrolixexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest

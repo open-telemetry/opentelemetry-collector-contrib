@@ -66,6 +66,7 @@ body:
       - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
+      - exporter/hydrolix
       - exporter/influxdb
       - exporter/kafka
       - exporter/loadbalancing
