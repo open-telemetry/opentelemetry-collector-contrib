@@ -277,7 +277,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	// Create a mock event XML
 	eventXML := &EventXML{
 		Original: "<Event><System><Provider Name='TestProvider'/><EventID>1</EventID></System></Event>",
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2024-01-01T00:00:00Z",
 		},
 	}
@@ -342,7 +342,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	// Create a mock event XML
 	eventXML := &EventXML{
 		Original: "<Event><System><Provider Name='TestProvider'/><EventID>1</EventID></System></Event>",
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2024-01-01T00:00:00Z",
 		},
 	}
