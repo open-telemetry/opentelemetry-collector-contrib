@@ -14,6 +14,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+/*
+TestIsRunningOnOracleCloud_AuthorizationHeader
+Verifies that every IsRunningOnOracleCloud probe sends the Authorization: Bearer Oracle header.
+*/
+func TestIsRunningOnOracleCloud_AuthorizationHeader(t *testing.T) {
+	var seenAuthHeader string
+
+	// Start a mock IMDS HTTP server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenAuthHeader = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK) // Probe expects 200 OK for "success"
+	}))
+	defer ts.Close()
+
+	// Patch metadataEndpoint to point to our server just for this test.
+	origEndpoint := metadataEndpoint
+	metadataEndpoint = ts.URL
+	defer func() { metadataEndpoint = origEndpoint }()
+
+	ok := IsRunningOnOracleCloud(t.Context())
+	assert.True(t, ok, "Probe should succeed against test server")
+	assert.Equal(t, "Bearer Oracle", seenAuthHeader, "Authorization header must be present and correct")
+}
+
 // TestNewProvider verifies that NewProvider returns a non-nil provider.
 func TestNewProvider(t *testing.T) {
 	provider := NewProvider()
