@@ -52,6 +52,251 @@ func TestTransformer(t *testing.T) {
 		expectedOutput []*entry.Entry
 	}{
 		{
+			"EntriesMatchingForFirstEntryOneFileOnly",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'start'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.OverwriteWith = "newest"
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "more1a", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more1b", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more2a", map[string]string{attrs.LogFilePath: "file2"}),
+				entryWithBodyAttr(t2, "more2b", map[string]string{attrs.LogFilePath: "file2"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start\nmore1a", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start\nmore1b", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more2a\nmore2b", map[string]string{attrs.LogFilePath: "file2"}),
+			},
+		},
+		{
+			"StateMachine",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.OutputIDs = []string{"fake"}
+				cfg.States = []State{
+					{
+						Name:      "start_state",
+						Condition: "body matches 'start'",
+						Cont:      "cont",
+					},
+					{
+						Name:      "cont",
+						Condition: "body matches '^more.*'",
+						Cont:      "cont",
+					},
+				}
+				cfg.OverwriteWith = "newest"
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "more1a", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more1b", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more2a", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more2b", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start\nmore1a", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start\nmore1b", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start\nmore2a\nmore2b", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+		},
+		{
+			"StateMachine_RecombineLines",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.OutputIDs = []string{"fake"}
+				cfg.States = []State{
+					{
+						Name:      "start_state",
+						Condition: "body matches 'This is a first line'",
+						Cont:      "cont_state",
+					},
+					{
+						Name:      "cont_state",
+						Condition: "body matches 'This is a second line'",
+						Cont:      "cont_state",
+					},
+					{
+						Name:      "cont_state",
+						Condition: "body matches 'This is also a second line'",
+						Cont:      "cont_state",
+					},
+					{
+						Name:      "cont_state",
+						Condition: "body matches 'This is a line that connects a log with a first line.'",
+						Cont:      "start_state",
+					},
+				}
+				cfg.OverwriteWith = "newest"
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "This is a first line", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "This is a second line", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "This is a first line", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "This is also a second line", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "This is a first line", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "This is also a second line", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "This is a line that connects a log with a first line.", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "This is a first line", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "This is a first line\nThis is a second line", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "This is a first line\nThis is also a second line", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "This is a first line\nThis is also a second line\nThis is a line that connects a log with a first line.\nThis is a first line", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+		},
+		{
+			"Recombine_MultipleJavaStackTraces",
+			func() *Config {
+				cfg := NewConfig()
+				// combine_field: body
+				cfg.CombineField = entry.NewBodyField()
+				cfg.OutputIDs = []string{"fake"}
+				// combine_with: "\n"
+				cfg.CombineWith = "\n"
+				// overwrite_with: "newest"
+				cfg.OverwriteWith = "newest"
+				cfg.States = []State{
+					{
+						Name:      "start_state",
+						Condition: `body matches "(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]"`,
+						Cont:      "java_after_exception",
+					},
+					{
+						Name:      "java_nested_exception",
+						Condition: `body matches "(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]"`,
+						Cont:      "java_after_exception",
+					},
+					{
+						// condition: body matches "/^[\t ]*nested exception is:[\t ]*"
+						Name:      "java_after_exception",
+						Condition: `body matches "^[\t ]*nested exception is:[\t ]*"`,
+						Cont:      "java_nested_exception",
+					},
+					{
+						// condition: body matches "/^[\r\n]*$"
+						Name:      "java_after_exception",
+						Condition: `body matches "^[\r\n]*$"`,
+						Cont:      "java_after_exception",
+					},
+					{
+						// condition: body matches "/^[\t ]+(?:eval )?at "
+						Name:      "java_after_exception",
+						Condition: `body matches "^[\t ]+(?:eval )?at "`,
+						Cont:      "java_after_exception",
+					},
+					{
+						// condition: body matches "/^[\t ]+--- End of inner exception stack trace ---$"
+						Name:      "java_after_exception",
+						Condition: `body matches "^[\t ]+--- End of inner exception stack trace ---$"`,
+						Cont:      "java_after_exception",
+					},
+					{
+						// condition: body matches "/^--- End of stack trace from previous (?x:)location where exception was thrown ---$"
+						Name:      "java_after_exception",
+						Condition: `body matches "^--- End of stack trace from previous location where exception was thrown ---$"`,
+						Cont:      "java_after_exception",
+					},
+					{
+						// condition: body matches "/^[\t ]*(?:Caused by|Suppressed):/"
+						Name:      "java_after_exception",
+						Condition: `body matches "^[\t ]*(?:Caused by|Suppressed):"`,
+						Cont:      "java_after_exception",
+					},
+					{
+						// condition: body matches "/^[\t ]*... \d+ (?:more|common frames omitted)/"
+						Name:      "java_after_exception",
+						Condition: `body matches "^[\t ]*... \\d+ (?:more|common frames omitted)"`,
+						Cont:      "java_after_exception",
+					},
+				}
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			// --- Input Entries ---
+			[]*entry.Entry{
+				// Trace 1
+				entryWithBodyAttr(t1, "com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "  at com.my.app.Object.do$a1(MakeLog.java:50)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "  at java.lang.Thing.call(Thing.java:10)", map[string]string{attrs.LogFilePath: "file1"}),
+				// Trace 2 (Starts a new log entry)
+				entryWithBodyAttr(t1, "javax.servlet.ServletException: Something bad happened", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "  at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "  at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "Caused by: com.example.myproject.MyProjectServletException", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "  at com.example.myproject.MyServlet.doPost(MyServlet.java:169)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "  at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "  ... 27 common frames omitted", map[string]string{attrs.LogFilePath: "file1"}),
+				// Trace 3 (Starts a new log entry)
+				entryWithBodyAttr(t2, "java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "  nested exception is:", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "  at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "  at java.base/java.lang.Thread.run(Thread.java:748)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "Caused by: javax.mail.SendFailedException: Invalid Addresses;", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "  nested exception is:", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "  at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "  at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "  ... 12 more", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+			// --- Expected Output Entries ---
+			[]*entry.Entry{
+				// Merged Trace 1
+				entryWithBodyAttr(t1,
+					"com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n"+
+						"  at com.my.app.Object.do$a1(MakeLog.java:50)\n"+
+						"  at java.lang.Thing.call(Thing.java:10)",
+					map[string]string{attrs.LogFilePath: "file1"}),
+
+				// Merged Trace 2
+				entryWithBodyAttr(t1,
+					"javax.servlet.ServletException: Something bad happened\n"+
+						"  at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n"+
+						"  at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\n"+
+						"Caused by: com.example.myproject.MyProjectServletException\n"+
+						"  at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n"+
+						"  at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n"+
+						"  ... 27 common frames omitted",
+					map[string]string{attrs.LogFilePath: "file1"}),
+
+				// Merged Trace 3
+				entryWithBodyAttr(t2,
+					"java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n"+
+						"  nested exception is:\n"+
+						"com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"+
+						"  at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n"+
+						"  at java.base/java.lang.Thread.run(Thread.java:748)\n"+
+						"Caused by: javax.mail.SendFailedException: Invalid Addresses;\n"+
+						"  nested exception is:\n"+
+						"com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"+
+						"  at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n"+
+						"  at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n"+
+						"  ... 12 more\n"+
+						"Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied",
+					map[string]string{attrs.LogFilePath: "file1"}),
+			},
+		},
+		{
 			"NoEntriesFirst",
 			func() *Config {
 				cfg := NewConfig()
