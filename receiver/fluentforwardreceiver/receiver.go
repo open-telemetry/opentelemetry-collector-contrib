@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -22,12 +23,13 @@ import (
 const eventChannelLength = 100
 
 type fluentReceiver struct {
-	collector *collector
-	listener  net.Listener
-	conf      *Config
-	logger    *zap.Logger
-	server    *server
-	cancel    context.CancelFunc
+	collector                  *collector
+	listener                   net.Listener
+	conf                       *Config
+	logger                     *zap.Logger
+	server                     *server
+	cancel                     context.CancelFunc
+	waitBeforeShutdownDuration time.Duration
 }
 
 func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) (receiver.Logs, error) {
@@ -64,6 +66,8 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 
 	r.collector.Start(receiverCtx)
 
+	r.waitBeforeShutdownDuration = r.conf.ShutdownDelay
+
 	listenAddr := r.conf.ListenAddress
 
 	var listener net.Listener
@@ -97,6 +101,7 @@ func (r *fluentReceiver) Shutdown(context.Context) error {
 	if r.listener == nil {
 		return nil
 	}
+	time.Sleep(r.waitBeforeShutdownDuration)
 	r.listener.Close()
 	r.cancel()
 	return nil
