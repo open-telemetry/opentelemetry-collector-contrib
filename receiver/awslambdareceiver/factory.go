@@ -17,7 +17,9 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 func createLogsReceiver(
@@ -26,5 +28,14 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-	return newAWSLambdaReceiver(cfg.(*Config), &settings, consumer), nil
+	return newLogsReceiver(cfg.(*Config), settings, consumer)
+}
+
+func createMetricsReceiver(
+	_ context.Context,
+	settings receiver.Settings,
+	cfg component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	return newMetricsReceiver(cfg.(*Config), settings, consumer)
 }

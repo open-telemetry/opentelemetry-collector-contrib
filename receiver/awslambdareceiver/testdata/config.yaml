@@ -1,7 +1,15 @@
 awslambda/awslogs_encoding:
   s3_encoding: awslogs_encoding
+  failure_bucket_arn: "arn:aws:s3:::failure-bucket"
 
 awslambda/json_log_encoding:
   s3_encoding: json_log_encoding
+  failure_bucket_arn: "arn:aws:s3:::failure-bucket"
 
 awslambda/empty_encoding:
+  failure_bucket_arn: "arn:aws:s3:::failure-bucket"
+
+awslambda/failure_missing_arn:
+
+awslambda/failure_invalid_arn:
+  failure_bucket_arn: "failure-bucket"
