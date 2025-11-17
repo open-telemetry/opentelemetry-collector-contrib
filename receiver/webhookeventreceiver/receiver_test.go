@@ -276,6 +276,22 @@ func TestFailedReq(t *testing.T) {
 			}(),
 			status: http.StatusUnauthorized,
 		},
+		{
+			desc: "Request body exceeds max size",
+			cfg: func() Config {
+				c := createDefaultConfig().(*Config)
+				c.Endpoint = "localhost:0"
+				c.MaxRequestBodySize = 70 * 1024 // Set to 70KB limit
+				c.SplitLogsAtNewLine = true
+				return *c
+			}(),
+			req: func() *http.Request {
+				// Create a payload larger than 70KB to ensure it exceeds the limit
+				largeBody := strings.Repeat("X", 80*1024)
+				return httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(largeBody))
+			}(),
+			status: http.StatusBadRequest,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {

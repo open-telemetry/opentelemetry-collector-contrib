@@ -6,6 +6,8 @@
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
 
 import (
+	"syscall"
+
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/mgr"
 )
@@ -42,11 +44,17 @@ type serviceManager struct {
 }
 
 func (sm *serviceManager) connect() error {
-	m, err := mgr.Connect()
+	var m mgr.Mgr
+	var s *uint16
+
+	h, err := windows.OpenSCManager(s, nil, windows.GENERIC_READ)
 	if err != nil {
 		return err
 	}
-	sm.svcmgr = m
+
+	m.Handle = h
+
+	sm.svcmgr = &m
 	return nil
 }
 
@@ -71,5 +79,19 @@ func (sm *serviceManager) openService(name string) (*mgr.Service, error) {
 	if name == "" {
 		return nil, windows.ERROR_INVALID_PARAMETER
 	}
-	return sm.svcmgr.OpenService(name)
+
+	namePointer, err := syscall.UTF16PtrFromString(name)
+	if err != nil {
+		return nil, err
+	}
+
+	h, err := windows.OpenService(sm.svcmgr.Handle, namePointer, windows.GENERIC_READ)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mgr.Service{
+		Handle: h,
+		Name:   name,
+	}, nil
 }
