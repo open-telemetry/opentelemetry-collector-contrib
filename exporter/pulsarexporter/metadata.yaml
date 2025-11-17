@@ -6,7 +6,8 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, dao-jun]
+    active: [dao-jun]
+    emeritus: [dmitryax]
 
 # Update the exporter to pass the tests
 tests:
