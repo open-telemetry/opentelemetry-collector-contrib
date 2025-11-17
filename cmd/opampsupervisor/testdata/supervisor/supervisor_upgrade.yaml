@@ -18,6 +18,3 @@ storage:
 
 agent:
   executable: '{{.agent_path}}'
-  package:
-    archive: tar.gz
-    agent_binary: '{{.agent_binary}}'

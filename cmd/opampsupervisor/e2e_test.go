@@ -2584,13 +2584,11 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 		ext = ".exe"
 	}
 
-	agentFileName := fmt.Sprintf("otelcontribcol_%s_%s%s", runtime.GOOS, runtime.GOARCH, ext)
-
-	// Testing setup
+	// Upgrading will overwrite the agent binary
+	// Use a temp dir and copy binary to a new path to not affect other tests
 	tmpDir := t.TempDir()
 	storageDir := filepath.Join(tmpDir, "storage")
-
-	// Upgrading will overwrite the agent binary, so we'll copy to a new path to not affect other tests
+	agentFileName := fmt.Sprintf("otelcontribcol_%s_%s%s", runtime.GOOS, runtime.GOARCH, ext)
 	agentFilePath := filepath.Join("..", "..", "bin", agentFileName)
 	agentFileCopyPath := filepath.Join(tmpDir, agentFileName)
 	copyFile(t, agentFilePath, agentFileCopyPath)
@@ -2650,10 +2648,9 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 
 	// Start the supervisor
 	s, _ := newSupervisor(t, "upgrade", map[string]string{
-		"url":          server.addr,
-		"storage_dir":  storageDir,
-		"agent_path":   agentFileCopyPath,
-		"agent_binary": "otelcol-contrib" + ext,
+		"url":         server.addr,
+		"storage_dir": storageDir,
+		"agent_path":  agentFileCopyPath,
 	})
 	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
@@ -2690,6 +2687,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 			AllPackagesHash: []byte{0x03, 0x04},
 		},
 	})
+	t.Logf("Sent PackagesAvailable message to supervisor")
 
 	// Wait for new package statuses and verify we have the first "Installing" status report
 	ps = <-packageStatusesChan
@@ -2706,6 +2704,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 		},
 		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
 	}, ps)
+	t.Logf("Received package_installing status from supervisor")
 
 	// Handle and verify the various "Downloading" status reports we'll get as the supervisor downloads the agent package
 	for {
@@ -2734,6 +2733,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 		},
 		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
 	}, ps)
+	t.Logf("Received package_installed status from supervisor")
 
 	// Verify the agent description containing the new version was found
 	require.Eventually(t, func() bool {
