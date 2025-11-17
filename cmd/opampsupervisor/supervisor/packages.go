@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -16,13 +15,10 @@ import (
 
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"github.com/sigstore/cosign/v2/cmd/cosign/cli/fulcio"
-	"github.com/sigstore/cosign/v2/pkg/cosign"
-	"github.com/sigstore/cosign/v2/pkg/oci/static"
-	"github.com/sigstore/rekor/pkg/client"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/verifier"
 )
 
 var (
@@ -50,7 +46,7 @@ type packageManager struct {
 	agentExePath string
 	installFunc  InstallFunc
 	agentBinary  string
-	checkOpts    *cosign.CheckOpts
+	verifier     verifier.Verifier
 	am           agentManager
 }
 
@@ -88,10 +84,10 @@ func newPackageManager(
 		return nil, fmt.Errorf("create archive installer: %w", err)
 	}
 
-	// Create signature verification options
-	checkOpts, err := createCosignCheckOpts(packageOpts.Signature)
+	// Create package verifier
+	verifier, err := verifier.NewVerifier(packageOpts.Verifier)
 	if err != nil {
-		return nil, fmt.Errorf("create signature verification options: %w", err)
+		return nil, fmt.Errorf("create package verifier: %w", err)
 	}
 
 	return &packageManager{
@@ -102,7 +98,7 @@ func newPackageManager(
 		agentExePath:    agentPath,
 		installFunc:     installer,
 		agentBinary:     packageOpts.AgentBinary,
-		checkOpts:       checkOpts,
+		verifier:        verifier,
 		am:              am,
 	}, nil
 }
@@ -176,13 +172,14 @@ func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 // UpdateContent updates the content of the agent package.
 // The order of operations is as follows:
 // 1. Download data from the data stream.
-// 2. Verify the package integrity and signature.
-// 3. Verify the tarball contains the collector binary.
-// 4. Extract data from tarball to a temporary file.
-// 5. Stop the agent process.
-// 6. Backup the existing agent file.
-// 7. Overwrite the existing agent file with the new agent.
-// 8. Delete the backup after a successful update.
+// 2. Verify the package data matches the expected content hash.
+// 3. Verify the package signature using the configured Verifier.
+// 4. Verify the tarball contains the collector binary.
+// 5. Extract data from tarball to a temporary file.
+// 6. Stop the agent process.
+// 7. Backup the existing agent file.
+// 8. Overwrite the existing agent file with the new agent.
+// 9. Delete the backup after a successful update.
 // Agent process is restarted when this function returns.
 func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
 	// Only the agent package is supported.
@@ -196,25 +193,23 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		return fmt.Errorf("read package bytes: %w", err)
 	}
 
-	// 2. Verify the package integrity and signature.
+	// 2. Verify the package data matches the expected content hash.
 	if err = verifyPackageHash(by, contentHash); err != nil {
 		return fmt.Errorf("could not verify package integrity: %w", err)
 	}
-	b64Cert, b64Signature, err := parsePackageSignature(signature)
-	if err != nil {
-		return fmt.Errorf("could not parse package signature: %w", err)
-	}
-	if err = verifyPackageSignature(ctx, p.checkOpts, by, b64Cert, b64Signature); err != nil {
+
+	// 3. Verify the package signature using the configured Verifier.
+	if err = p.verifier.Verify(by, signature); err != nil {
 		return fmt.Errorf("could not verify package signature: %w", err)
 	}
 
-	// 3, 4: Verify and install the agent binary to a temporary file.
+	// 4, 5: Verify and install the agent binary to a temporary file.
 	tmpFilePath := filepath.Join(p.storageDir, "collector.tmp")
 	if err = p.installFunc(ctx, by, p.agentBinary, tmpFilePath); err != nil {
 		return fmt.Errorf("install func: %w", err)
 	}
 
-	// 5. Stop the agent process.
+	// 6. Stop the agent process.
 	startAgent, err := p.am.stopAgentProcess(ctx)
 	if err != nil {
 		return fmt.Errorf("stop agent process: %w", err)
@@ -223,13 +218,13 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	// We always want to start the agent process again, even if we fail to write the agent file
 	defer close(startAgent)
 
-	// 6. Backup the existing agent file.
+	// 7. Backup the existing agent file.
 	agentBackupPath := filepath.Join(p.storageDir, "collector.bak")
 	if err = renameFile(p.agentExePath, agentBackupPath); err != nil {
 		return fmt.Errorf("rename collector exe path to backup path: %w", err)
 	}
 
-	// 7. Overwrite the existing agent file with the new agent.
+	// 8. Overwrite the existing agent file with the new agent.
 	if err = renameFile(tmpFilePath, p.agentExePath); err != nil {
 		if restoreErr := renameFile(agentBackupPath, p.agentExePath); restoreErr != nil {
 			return errors.Join(fmt.Errorf("rename tmp file to agent executable path: %w", err), fmt.Errorf("restore agent backup: %w", restoreErr))
@@ -237,7 +232,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		return fmt.Errorf("successfully restored backup, but failed to rename tmp file to agent executable path: %w", err)
 	}
 
-	// 8. Delete the backup after a successful update.
+	// 9. Delete the backup after a successful update.
 	if err = os.Remove(agentBackupPath); err != nil {
 		return fmt.Errorf("delete agent backup: %w", err)
 	}
@@ -299,93 +294,6 @@ func verifyPackageHash(packageBytes, expectedHash []byte) error {
 	}
 
 	return nil
-}
-
-func parsePackageSignature(signature []byte) (b64Cert, b64Signature []byte, err error) {
-	splitSignature := bytes.SplitN(signature, []byte(" "), 2)
-	if len(splitSignature) != 2 {
-		return nil, nil, errors.New("signature must be formatted as a space separated cert and signature")
-	}
-
-	return splitSignature[0], splitSignature[1], nil
-}
-
-// verifyPackageSignature verifies that the b64Signature is a valid signature for packageBytes.
-// b64Cert is used to validate the identity of the signature against the identities in the
-// provided checkOpts.
-func verifyPackageSignature(ctx context.Context, checkOpts *cosign.CheckOpts, packageBytes, b64Cert, b64Signature []byte) error {
-	decodedCert, err := base64.StdEncoding.AppendDecode(nil, b64Cert)
-	if err != nil {
-		return fmt.Errorf("b64 decode cert: %w", err)
-	}
-
-	ociSig, err := static.NewSignature(packageBytes, string(b64Signature), static.WithCertChain(decodedCert, nil))
-	if err != nil {
-		return fmt.Errorf("create signature: %w", err)
-	}
-
-	// VerifyBlobSignature uses the provided checkOpts to verify the signature of the package.
-	// Specifically it uses the public Fulcio certificates to verify the identity of the signature and
-	// a Rekor client to verify the validity of the signature against a transparency log.
-	_, err = cosign.VerifyBlobSignature(ctx, ociSig, checkOpts)
-	if err != nil {
-		return fmt.Errorf("verify blob: %w", err)
-	}
-
-	return nil
-}
-
-// createCosignCheckOpts creates a cosign.CheckOpts from the signature options.
-// These options provide information needed to verify the signature of the package.
-// The options consist of public Fulcio certificates to verify the identity of the signature,
-// a Rekor client to verify the integrity of the signature against a transparency log,
-// and a set of identities that the signature must match. More information about the
-// cosign.CheckOpts can be found in the specification (../specification/README.md#collector-executable-updates-flow).
-func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOpts, error) {
-	rootCerts, err := fulcio.GetRoots()
-	if err != nil {
-		return nil, fmt.Errorf("fetch root certs: %w", err)
-	}
-
-	intermediateCerts, err := fulcio.GetIntermediates()
-	if err != nil {
-		return nil, fmt.Errorf("fetch intermediate certs: %w", err)
-	}
-
-	rekorClient, err := client.GetRekorClient("https://rekor.sigstore.dev")
-	if err != nil {
-		return nil, fmt.Errorf("create rekot client: %w", err)
-	}
-
-	rekorKeys, err := cosign.GetRekorPubs(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("get rekor public keys: %w", err)
-	}
-
-	ctLogPubKeys, err := cosign.GetCTLogPubs(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("get CT log public keys: %w", err)
-	}
-
-	identities := make([]cosign.Identity, 0, len(signatureOpts.Identities))
-	for _, ident := range signatureOpts.Identities {
-		identities = append(identities, cosign.Identity{
-			Issuer:        ident.Issuer,
-			IssuerRegExp:  ident.IssuerRegExp,
-			Subject:       ident.Subject,
-			SubjectRegExp: ident.SubjectRegExp,
-		})
-	}
-
-	return &cosign.CheckOpts{
-		RootCerts:                    rootCerts,
-		IntermediateCerts:            intermediateCerts,
-		CertGithubWorkflowRepository: signatureOpts.CertGithubWorkflowRepository,
-		Identities:                   identities,
-		RekorClient:                  rekorClient,
-		RekorPubKeys:                 rekorKeys,
-		CTLogPubKeys:                 ctLogPubKeys,
-	}, nil
 }
 
 // renameFile will rename the file at srcPath to dstPath
