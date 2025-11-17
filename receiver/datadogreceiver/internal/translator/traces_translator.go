@@ -18,7 +18,7 @@ import (
 	"sync"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
@@ -84,7 +84,7 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 //
 // This is currently gated by a feature gate (receiver.datadogreceiver.Enable128BitTraceID). If we don't get a cache
 // in traceIDCache, we don't enable this behavior.
-func traceID64to128(span *pb.Span, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (pcommon.TraceID, error) {
+func traceID64to128(span *pb.Span, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (pcommon.TraceID, error) {
 	if val, ok := traceIDCache.Get(span.TraceID); ok {
 		return val, nil
 	} else if val, ok := span.Meta["_dd.p.tid"]; ok {
@@ -141,7 +141,7 @@ func processSpanByName(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
-func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
+func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
 		traces = append(traces, p.GetSpans())
