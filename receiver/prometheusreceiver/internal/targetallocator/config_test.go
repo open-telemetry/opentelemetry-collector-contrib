@@ -112,7 +112,7 @@ func TestConfigValidate_InvalidEndpoint(t *testing.T) {
 			cfg := &Config{
 				CollectorID: tt.collectorID,
 			}
-			cfg.ClientConfig.Endpoint = tt.endpoint
+			cfg.Endpoint = tt.endpoint
 			err := cfg.Validate()
 			if tt.expectError {
 				assert.Error(t, err)

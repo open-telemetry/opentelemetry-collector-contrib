@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	promconfig "github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -123,7 +123,7 @@ func TestGetScrapeConfigsResponse_InvalidURL(t *testing.T) {
 
 func TestGetScrapeConfigsResponse_HTTPError(t *testing.T) {
 	// Create a test server that returns an error
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer server.Close()
@@ -137,9 +137,9 @@ func TestGetScrapeConfigsResponse_HTTPError(t *testing.T) {
 
 func TestGetScrapeConfigsResponse_InvalidYAML(t *testing.T) {
 	// Create a test server that returns invalid YAML
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid: yaml: content: [[["))
+		_, _ = w.Write([]byte("invalid: yaml: content: [[["))
 	}))
 	defer server.Close()
 
