@@ -489,14 +489,14 @@ func calculateBucketUpperBound(scale, offset int32, index int) float64 {
 
 // filterBucketsForZeroThreshold filters buckets that fall below the zero threshold
 // and returns the filtered buckets and the additional zero count
-func filterBucketsForZeroThreshold(offset int32, counts []uint64, scale int32, zeroThreshold float64) (int32, []uint64, uint64) {
+func filterBucketsForZeroThreshold(offset int32, counts []uint64, scale int32, zeroThreshold float64) (newOffset int32, filteredCounts []uint64, additionalZeroCount uint64) {
 	if len(counts) == 0 || zeroThreshold <= 0 {
 		return offset, counts, 0
 	}
 
-	additionalZeroCount := uint64(0)
-	filteredCounts := make([]uint64, 0, len(counts))
-	newOffset := offset
+	additionalZeroCount = uint64(0)
+	filteredCounts = make([]uint64, 0, len(counts))
+	newOffset = offset
 
 	// Find the first bucket whose upper bound is > zeroThreshold
 	for i, count := range counts {
