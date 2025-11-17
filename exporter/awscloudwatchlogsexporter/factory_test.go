@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -17,9 +18,9 @@ func TestDefaultConfig_exporterSettings(t *testing.T) {
 	want := &Config{
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: func() exporterhelper.QueueBatchConfig {
+		QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
 			queue := exporterhelper.NewDefaultQueueConfig()
-			queue.NumConsumers = 1
+			queue.Get().NumConsumers = 1
 			return queue
 		}(),
 	}

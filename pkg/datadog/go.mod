@@ -282,3 +282,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sco
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
+
+replace go.opentelemetry.io/config/configoptional => /home/jmacd/src/otel/opentelemetry-collector/config/configoptional
