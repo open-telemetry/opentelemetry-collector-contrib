@@ -30,31 +30,20 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, awsLogsEncoding),
 			expected: &Config{
-				S3Encoding:       awsLogsEncoding,
-				FailureBucketARN: "arn:aws:s3:::failure-bucket",
+				S3Encoding: awsLogsEncoding,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "json_log_encoding"),
 			expected: &Config{
-				S3Encoding:       "json_log_encoding",
-				FailureBucketARN: "arn:aws:s3:::failure-bucket",
+				S3Encoding: "json_log_encoding",
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "empty_encoding"),
 			expected: &Config{
-				S3Encoding:       "",
-				FailureBucketARN: "arn:aws:s3:::failure-bucket",
+				S3Encoding: "",
 			},
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "failure_missing_arn"),
-			expectError: "failure_bucket_arn must be set",
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "failure_invalid_arn"),
-			expectError: "invalid S3 ARN format",
 		},
 	}
 

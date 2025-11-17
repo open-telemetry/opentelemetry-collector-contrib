@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -23,60 +22,8 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
-
-func TestHandleCloudwatchLogEvent(t *testing.T) {
-	t.Parallel()
-
-	dir := "testdata"
-	tests := map[string]struct {
-		eventData     string
-		expectedErr   string
-		eventConsumer consumer.Logs
-	}{
-		"valid_cloudwatch_log_event": {
-			eventData:     getDataFromFile(t, filepath.Join(dir, "cloudwatch_log.json")),
-			eventConsumer: &noOpLogsConsumer{},
-		},
-		"invalid_base64_data": {
-			eventData:     "#",
-			expectedErr:   "failed to decode data from cloudwatch logs event",
-			eventConsumer: &noOpLogsConsumer{},
-		},
-		"invalid_cloudwatch_log_data": {
-			eventData:     "test",
-			expectedErr:   "failed to unmarshal logs",
-			eventConsumer: &noOpLogsConsumer{},
-		},
-	}
-
-	unmarshaler, err := loadSubFilterLogUnmarshaler(t.Context(), awslogsencodingextension.NewFactory())
-	require.NoError(t, err)
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			cwEvent := events.CloudwatchLogsEvent{
-				AWSLogs: events.CloudwatchLogsRawData{
-					Data: test.eventData,
-				},
-			}
-
-			var lambdaEvent json.RawMessage
-			lambdaEvent, err = json.Marshal(cwEvent)
-			require.NoError(t, err)
-
-			handler := newCWLogsSubscriptionHandler(zap.NewNop(), unmarshaler.UnmarshalLogs, test.eventConsumer.ConsumeLogs)
-			err := handler.handle(t.Context(), lambdaEvent)
-			if test.expectedErr != "" {
-				require.ErrorContains(t, err, test.expectedErr)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
 
 func TestProcessLambdaEvent_S3Notification(t *testing.T) {
 	t.Parallel()

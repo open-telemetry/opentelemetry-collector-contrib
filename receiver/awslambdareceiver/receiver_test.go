@@ -5,7 +5,7 @@ package awslambdareceiver
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -27,10 +26,11 @@ import (
 )
 
 func TestCreateLogs(t *testing.T) {
-	// Create receiver using factory with default config. This means decoding
-	// is done using the default CloudWatch Logs subscription filter unmarshaler.
+	// Create receiver using factory with S3 encoding config.
+	// Note: The S3Encoding value must match the component ID used when registering the extension.
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.S3Encoding = awsLogsEncoding
 	sink := consumertest.LogsSink{}
 	receiver, err := factory.CreateLogs(
 		t.Context(),
@@ -41,22 +41,49 @@ func TestCreateLogs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, receiver)
 
+	goMock := gomock.NewController(t)
+	s3Service := internal.NewMockS3Service(goMock)
+	s3Provider := internal.NewMockS3Provider(goMock)
+	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
+
+	// Read S3 log test data
+	testDataPath := filepath.Join("testdata", "s3_log.txt")
+	testData, err := os.ReadFile(testDataPath)
+	require.NoError(t, err)
+	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(testData, nil)
+
+	// Register the extension with the same component ID as S3Encoding
+	// This is required: the extension ID must match cfg.S3Encoding
+	host := mockHost{GetFunc: func() map[component.ID]component.Component {
+		return map[component.ID]component.Component{
+			component.MustNewID(awsLogsEncoding): &mockExtensionWithPLogUnmarshaler{
+				Unmarshaler: unmarshalLogsFunc(func(data []byte) (plog.Logs, error) {
+					require.Equal(t, string(testData), string(data))
+					logs := plog.NewLogs()
+					rl := logs.ResourceLogs().AppendEmpty()
+					sl := rl.ScopeLogs().AppendEmpty()
+					sl.LogRecords().AppendEmpty()
+					return logs, nil
+				}),
+			},
+		}
+	}}
+
 	// Initialize the handler manually (without starting Lambda runtime)
 	awsReceiver := receiver.(*awsLambdaReceiver)
-	handler, err := awsReceiver.newHandler(t.Context(), componenttest.NewNopHost(), nil)
+	handler, err := awsReceiver.newHandler(t.Context(), host, s3Provider)
 	require.NoError(t, err)
 	awsReceiver.handler = handler
 
-	// Create a fake CloudWatch lambda event using testdata
-	// Read and prepare the CloudWatch log data
-	testDataPath := filepath.Join("testdata", "cloudwatch_log.json")
-	testData := getDataFromFile(t, testDataPath)
-
-	// Process a CloudWatch logs event.
-	lambdaEvent, err := json.Marshal(events.CloudwatchLogsEvent{
-		AWSLogs: events.CloudwatchLogsRawData{
-			Data: testData,
-		},
+	// Process an S3 event notification.
+	lambdaEvent, err := json.Marshal(events.S3Event{
+		Records: []events.S3EventRecord{{
+			EventSource: "aws:s3",
+			S3: events.S3Entity{
+				Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+				Object: events.S3Object{Key: "test-file.txt", Size: int64(len(testData))},
+			},
+		}},
 	})
 	require.NoError(t, err)
 	err = awsReceiver.processLambdaEvent(t.Context(), lambdaEvent)
@@ -142,8 +169,7 @@ func TestCreateMetricsRequiresS3Encoding(t *testing.T) {
 
 func TestProcessLambdaEvent(t *testing.T) {
 	commonCfg := Config{
-		S3Encoding:       "alb",
-		FailureBucketARN: "aws:s3:::my-bucket",
+		S3Encoding: "alb",
 	}
 
 	commonLogger := zap.NewNop()
@@ -160,18 +186,6 @@ func TestProcessLambdaEvent(t *testing.T) {
 			name:      "Successful S3 event",
 			eventType: s3Event,
 			event:     []byte(`{"Records": "S3 event content"}`),
-		},
-		{
-			name:      "Successful CloudWatch event",
-			eventType: cwEvent,
-			event:     []byte(`{"awslogs": "CW event content"}`),
-		},
-		{
-			name:         "Wrong event type - S3 event for CW handler",
-			eventType:    cwEvent,
-			event:        []byte(`{"Records": "S3 event content"}`),
-			isError:      true,
-			errorContent: `cannot handle event type`,
 		},
 		{
 			name:      "Unknown events are ignored",
@@ -207,76 +221,6 @@ func TestProcessLambdaEvent(t *testing.T) {
 	}
 }
 
-func TestHandleCustomTrigger(t *testing.T) {
-	commonCfg := Config{
-		S3Encoding:       "alb",
-		FailureBucketARN: "aws:s3:::my-bucket",
-	}
-
-	commonLogger := zap.NewNop()
-	goMock := gomock.NewController(t)
-
-	s3Provider := internal.NewMockS3Provider(goMock)
-
-	t.Run("Successful event handling for S3 event", func(t *testing.T) {
-		customEventHandler := internal.NewMockCustomEventHandler[*internal.ErrorReplayResponse](goMock)
-		customEventHandler.EXPECT().IsDryRun().AnyTimes().Return(false)
-		customEventHandler.EXPECT().HasNext().Times(1).Return(true)
-		customEventHandler.EXPECT().HasNext().Times(1).Return(false)
-		customEventHandler.EXPECT().PostProcess(gomock.Any(), gomock.Any()).AnyTimes()
-
-		customEventHandler.EXPECT().GetNext(gomock.Any()).Times(1).Return(
-			&internal.ErrorReplayResponse{
-				Content: []byte(`{"Records": "S3 event content"}`),
-				Key:     "my-object-key",
-			}, nil)
-
-		mockHandler := mockPlogEventHandler{event: s3Event}
-
-		receiver := awsLambdaReceiver{
-			cfg:        &commonCfg,
-			logger:     commonLogger,
-			handler:    &mockHandler,
-			s3Provider: s3Provider,
-		}
-
-		err := receiver.handleCustomTriggers(t.Context(), customEventHandler)
-		require.NoError(t, err)
-		require.Equal(t, 1, mockHandler.handleCount)
-	})
-
-	t.Run("Dry-run mode skips event processing", func(t *testing.T) {
-		customEventHandler := internal.NewMockCustomEventHandler[*internal.ErrorReplayResponse](goMock)
-		customEventHandler.EXPECT().HasNext().Times(1).Return(true)
-		customEventHandler.EXPECT().HasNext().Times(1).Return(false)
-		customEventHandler.EXPECT().PostProcess(gomock.Any(), gomock.Any()).AnyTimes()
-
-		// set dry-run mode
-		customEventHandler.EXPECT().IsDryRun().AnyTimes().Return(true)
-
-		customEventHandler.EXPECT().GetNext(gomock.Any()).Times(1).Return(
-			&internal.ErrorReplayResponse{
-				Content: []byte(`{"Records": "S3 event content"}`),
-				Key:     "my-object-key",
-			}, nil)
-
-		mockHandler := mockPlogEventHandler{event: s3Event}
-		mockConsumer := noOpLogsConsumer{}
-
-		receiver := awsLambdaReceiver{
-			cfg:        &commonCfg,
-			logger:     commonLogger,
-			handler:    &mockHandler,
-			s3Provider: s3Provider,
-		}
-
-		err := receiver.handleCustomTriggers(t.Context(), customEventHandler)
-		require.NoError(t, err)
-		require.Equal(t, 0, mockHandler.handleCount)
-		require.Equal(t, 0, mockConsumer.consumeCount)
-	})
-}
-
 func TestLoadLogsHandler(t *testing.T) {
 	tests := []struct {
 		name                string
@@ -286,14 +230,6 @@ func TestLoadLogsHandler(t *testing.T) {
 		expectedHandlerType reflect.Type
 		isErr               bool
 	}{
-		{
-			name: "Default to CW Subscription filter - success",
-			factoryMock: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
-				return &mockExtensionWithPLogUnmarshaler{}, nil
-			},
-			isErr:               false,
-			expectedHandlerType: reflect.TypeOf(&cwLogsSubscriptionHandler{}),
-		},
 		{
 			name:       "Prioritize ID based loading - success",
 			s3Encoding: "my_encoding",
@@ -433,50 +369,6 @@ func TestLoadEncodingExtension(t *testing.T) {
 	}
 }
 
-func TestLoadSubFilterLogUnmarshaler(t *testing.T) {
-	tests := []struct {
-		name        string
-		mockFactory func(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error)
-		expectedErr string
-	}{
-		{
-			name: "successful_case",
-			mockFactory: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
-				return &mockExtensionWithPLogUnmarshaler{}, nil
-			},
-		},
-		{
-			name: "create_extension_error",
-			mockFactory: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
-				return nil, errors.New("mock factory creation error")
-			},
-			expectedErr: "failed to create extension",
-		},
-		{
-			name: "invalid_unmarshaler",
-			mockFactory: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
-				return &mockExtension{}, nil
-			},
-			expectedErr: "does not implement plog.Unmarshaler",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mockFactory := &mockExtFactory{
-				CreateFunc: test.mockFactory,
-			}
-
-			_, errP := loadSubFilterLogUnmarshaler(t.Context(), mockFactory)
-			if test.expectedErr != "" {
-				require.ErrorContains(t, errP, test.expectedErr)
-			} else {
-				require.NoError(t, errP)
-			}
-		})
-	}
-}
-
 func TestExtractFirstKey(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -552,16 +444,6 @@ func TestDetectTriggerType(t *testing.T) {
 			want:  s3Event,
 		},
 		{
-			name:  "Parse CloudWatch event",
-			input: []byte(`{"awslogs": "some content"}`),
-			want:  cwEvent,
-		},
-		{
-			name:  "Custom event handling",
-			input: []byte(`{"replayFailedEvents": "some content"}`),
-			want:  customReplayEvent,
-		},
-		{
 			name:         "Invalid event - unknown json",
 			input:        []byte(`{"key": "value"}`),
 			isError:      true,
@@ -624,6 +506,12 @@ type mockHost struct {
 
 func (m mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.GetFunc()
+}
+
+type unmarshalLogsFunc func([]byte) (plog.Logs, error)
+
+func (f unmarshalLogsFunc) UnmarshalLogs(data []byte) (plog.Logs, error) {
+	return f(data)
 }
 
 type unmarshalMetricsFunc func([]byte) (pmetric.Metrics, error)

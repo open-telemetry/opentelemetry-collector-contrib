@@ -122,77 +122,14 @@ func (a *awsLambdaReceiver) processLambdaEvent(ctx context.Context, event json.R
 		return nil
 	}
 
-	if triggerType == customReplayEvent {
-		// Note - custom event handler is derived on-demand. This is to avoid unnecessary S3 service initialization
-		// for non-error replay scenarios, which is the common case.
-		a.logger.Info("Running custom event", zap.String(logInvokedTrigger, string(triggerType)))
-		service, err := a.s3Provider.GetService(ctx)
-		if err != nil {
-			return err
-		}
-
-		bucket, err := getBucketNameFromARN(a.cfg.FailureBucketARN)
-		if err != nil {
-			return fmt.Errorf("unable to determine bucket name from ARN: %w", err)
-		}
-
-		handler, err := internal.NewErrorReplayTriggerHandler(a.logger.Named("replayHandler"), event, bucket, service)
-		if err != nil {
-			a.logger.Error("failed to create error replay handler", zap.Error(err))
-			return nil
-		}
-
-		return a.handleCustomTriggers(ctx, handler)
-	}
-
 	return a.handleEvent(ctx, event, triggerType)
-}
-
-// handleCustomTriggers handles custom invocations of the Lambda.
-func (a *awsLambdaReceiver) handleCustomTriggers(ctx context.Context, handler internal.CustomEventHandler[*internal.ErrorReplayResponse]) error {
-	if handler.IsDryRun() {
-		a.logger.Info("Running in dryrun mode, processing is skipped")
-	}
-
-	var count int
-	for handler.HasNext() {
-		content, err := handler.GetNext(ctx)
-		if err != nil {
-			a.logger.Error("error while executing custom event", zap.Error(err))
-			return err
-		}
-
-		count++
-		if handler.IsDryRun() {
-			a.logger.Info(fmt.Sprintf("(dryrun) object key:  %s", content.Key))
-			continue
-		}
-
-		tType, err := detectTriggerType(content.Content)
-		if err != nil {
-			// Note - Manual triggers are synchronous.
-			// Errors for synchronous invocations are not retried by Lambda not stored at error destination.
-			return fmt.Errorf("invalid lambda trigger event from custom trigger: %w", err)
-		}
-
-		err = a.handleEvent(ctx, content.Content, tType)
-		if err != nil {
-			a.logger.Error("error while executing custom event", zap.Error(err))
-			return err
-		}
-
-		handler.PostProcess(ctx, content)
-	}
-
-	a.logger.Info(fmt.Sprintf("Processed %d events", count))
-	return nil
 }
 
 // handleEvent is specialized for processing events and extracting signals.
 // Handling of the event is done using provided eventKey.
 // See payload types content,
 //   - For S3: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#S3Event
-//   - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent
+//   - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent (TODO)
 func (a *awsLambdaReceiver) handleEvent(ctx context.Context, event json.RawMessage, et eventType) error {
 	a.logger.Info("Lambda triggered", zap.String(logInvokedTrigger, string(et)))
 
@@ -232,15 +169,11 @@ func newLogsHandler(
 	s3Provider internal.S3Provider,
 	factory extensionFactory,
 ) (lambdaEventHandler, error) {
-	// If S3Encoding is not set, then we are dealing with CW subscription filters
+	// If S3Encoding is not set, return an error
 	if cfg.S3Encoding == "" {
-		unmarshaler, err := loadSubFilterLogUnmarshaler(ctx, factory)
-		if err != nil {
-			return nil, err
-		}
-		return newCWLogsSubscriptionHandler(set.Logger, unmarshaler.UnmarshalLogs, next.ConsumeLogs), nil
+		return nil, errors.New("s3_encoding is required for logs stored in S3")
 	}
-	// Then prioritize encoding loading with S3Encoding ID
+
 	encodingExtension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.S3Encoding, "logs")
 	if err != nil {
 		return nil, err
@@ -290,49 +223,21 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 	return unmarshaler, nil
 }
 
-// loadSubFilterLogUnmarshaler loads unmarshaler for cloudwatch subscription filter logs
-func loadSubFilterLogUnmarshaler(ctx context.Context, factory extensionFactory) (plog.Unmarshaler, error) {
-	var extensionID component.ID
-	err := extensionID.UnmarshalText([]byte(awsLogsEncoding))
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal identifier: %w", err)
-	}
-
-	// Create the extension using the factory
-	ext, err := factory.Create(ctx, extension.Settings{ID: extensionID}, &awslogsencodingextension.Config{
-		Format: "cloudwatch",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create extension: %w", err)
-	}
-
-	// Assert that the extension implements plog.Unmarshaler
-	subscriptionFilterLogUnmarshaler, ok := ext.(plog.Unmarshaler)
-	if !ok {
-		return nil, fmt.Errorf("extension %q does not implement plog.Unmarshaler", extensionID.String())
-	}
-
-	// Return the unmarshaler
-	return subscriptionFilterLogUnmarshaler, nil
-}
-
 // detectTriggerType is a helper to derive the eventType based on the payload content.
+// Supported trigger types are:
+// - S3Event
+// - CloudWatchEvent (TODO)
+// - CustomReplayEvent (TODO)
 func detectTriggerType(data []byte) (eventType, error) {
 	switch {
 	case bytes.HasPrefix(data, []byte(`{"Records"`)):
 		return s3Event, nil
-	case bytes.HasPrefix(data, []byte(`{"awslogs"`)):
-		return cwEvent, nil
 	}
 
 	// fallback for possible manual trigger cases
 	key, err := extractFirstKey(data)
 	if err != nil {
 		return "", err
-	}
-
-	if key == string(customReplayEvent) {
-		return customReplayEvent, nil
 	}
 
 	return "", fmt.Errorf("unknown event type with key: %s", key)

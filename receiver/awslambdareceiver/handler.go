@@ -5,7 +5,6 @@ package awslambdareceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -108,59 +107,6 @@ func (*s3Handler[T]) parseEvent(raw json.RawMessage) (event events.S3EventRecord
 	}
 
 	return message.Records[0], nil
-}
-
-// cwLogsSubscriptionHandler is specialized in CloudWatch log stream subscription filter events
-type cwLogsSubscriptionHandler struct {
-	logger    *zap.Logger
-	unmarshal unmarshalFunc[plog.Logs]
-	consumer  consumerFunc[plog.Logs]
-}
-
-func newCWLogsSubscriptionHandler(
-	baseLogger *zap.Logger,
-	unmarshal unmarshalFunc[plog.Logs],
-	consumer consumerFunc[plog.Logs],
-) *cwLogsSubscriptionHandler {
-	return &cwLogsSubscriptionHandler{
-		logger:    baseLogger.Named("cw-logs-subscription"),
-		unmarshal: unmarshal,
-		consumer:  consumer,
-	}
-}
-
-func (*cwLogsSubscriptionHandler) handlerType() eventType {
-	return cwEvent
-}
-
-func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMessage) error {
-	var log events.CloudwatchLogsEvent
-	if err := gojson.Unmarshal(event, &log); err != nil {
-		return fmt.Errorf("failed to unmarshal cloudwatch event log: %w", err)
-	}
-
-	// events.CloudwatchLogsEvent has support for Parse (see
-	// https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent).
-	// Using it means decoding and decompressing the record. Since the
-	// subscriptionFilter unmarshaler has support for decompressing a JSON record,
-	// we opt to only decode the data and then passing it to the subscriptionFilter
-	// unmarshaler for decompression.
-	decoded, err := base64.StdEncoding.DecodeString(log.AWSLogs.Data)
-	if err != nil {
-		return fmt.Errorf("failed to decode data from cloudwatch logs event: %w", err)
-	}
-
-	data, err := c.unmarshal(decoded)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal logs: %w", err)
-	}
-
-	if err := c.consumer(ctx, data); err != nil {
-		// consumer errors are marked for retrying
-		return consumererror.NewRetryableError(err)
-	}
-
-	return nil
 }
 
 // setObservedTimestampForAllLogs adds observedTimestamp to all logs
