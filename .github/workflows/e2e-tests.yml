@@ -34,6 +34,7 @@ jobs:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
