@@ -1,0 +1,108 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-observability
+        - key: cloud.resource_id
+          value:
+            stringValue: requests
+        - key: gcp.resource_type
+          value:
+            stringValue: http_load_balancer
+        - key: gcp.label.zone
+          value:
+            stringValue: global
+        - key: gcp.label.url_map_name
+          value:
+            stringValue: cloud-armor-test-lb
+        - key: gcp.label.backend_service_name
+          value:
+            stringValue: bakcend-test-2
+        - key: gcp.label.forwarding_rule_name
+          value:
+            stringValue: cloud-armor-test-lb-forwarding-rule
+        - key: gcp.label.target_proxy_name
+          value:
+            stringValue: cloud-armor-test-lb-target-proxy
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-observability
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: wsohjrfi1x04h
+              - key: gcp.load_balancing.status.details
+                value:
+                  stringValue: denied_by_security_policy
+              - key: gcp.load_balancing.backend_target_project_number
+                value:
+                  stringValue: projects/8560181848
+              - key: network.peer.address
+                value:
+                  stringValue: 79.117.34.252
+              - key: geo.region.iso_code
+                value:
+                  stringValue: ES
+              - key: gcp.armor.request_data.remote_ip.asn
+                value:
+                  intValue: "57269"
+              - key: gcp.armor.security_policy.type
+                value:
+                  stringValue: enforcedEdgeSecurityPolicy
+              - key: gcp.armor.security_policy.name
+                value:
+                  stringValue: test-edge-policy
+              - key: gcp.armor.security_policy.priority
+                value:
+                  intValue: "1"
+              - key: gcp.armor.security_policy.configured_action
+                value:
+                  stringValue: DENY
+              - key: gcp.armor.security_policy.outcome
+                value:
+                  stringValue: DENY
+              - key: gcp.armor.request_data.recaptcha_session_token.score
+                value:
+                  doubleValue: 0.0
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.full
+                value:
+                  stringValue: http://136.110.215.198/
+              - key: url.path
+                value:
+                  stringValue: /
+              - key: url.domain
+                value:
+                  stringValue: 136.110.215.198
+              - key: http.request.size
+                value:
+                  intValue: "78"
+              - key: http.response.status_code
+                value:
+                  intValue: "403"
+              - key: http.response.size
+                value:
+                  intValue: "221"
+              - key: user_agent.original
+                value:
+                  stringValue: curl/8.7.1
+              - key: http.request.server.duration
+                value:
+                  doubleValue: 0.000782
+            body: {}
+            observedTimeUnixNano: "1762866393285597997"
+            timeUnixNano: "1762866392445633000"
+            severityNumber: 13
+            severityText: WARNING
+            traceId: 81cf737b0433a2dad906e15d8c657fab
+            spanId: 6a42467a04eff655
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.load-balancer
