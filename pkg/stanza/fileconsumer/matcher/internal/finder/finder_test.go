@@ -194,8 +194,11 @@ func TestFindFiles(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Chdir(t.TempDir())
-			if tc.caseInsensitiveFeaturegate {
+			if !tc.caseInsensitiveFeaturegate {
 				require.NoError(t, featuregate.GlobalRegistry().Set("filelog.windows.caseInsensitive", true))
+				t.Cleanup(func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set("filelog.windows.caseInsensitive", false))
+				})
 			}
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
