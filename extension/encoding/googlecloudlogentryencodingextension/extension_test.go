@@ -203,6 +203,16 @@ func TestPayloads(t *testing.T) {
 			name:             "vpc flow log - managed instance mig regions",
 			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-managed-instance.json",
 			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-managed-instance_expected.yaml",
+    },
+    {
+			name:             "armor log - enforced security policy",
+			logFilename:      "testdata/armorlog/enforced_security_policy.json",
+			expectedFilename: "testdata/armorlog/enforced_security_policy_expected.yaml",
+		},
+		{
+			name:             "armor log - enforced edge security policy",
+			logFilename:      "testdata/armorlog/enforced_edge_security_policy.json",
+			expectedFilename: "testdata/armorlog/enforced_edge_security_policy_expected.yaml",
 		},
 	}
 
