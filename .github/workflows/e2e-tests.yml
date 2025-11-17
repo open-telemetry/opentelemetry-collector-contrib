@@ -34,9 +34,12 @@ jobs:
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
+      - name: Examine disk space again
+        run: df -h
       - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Examine disk space again
+        run: df -h
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
       - name: Examine disk space again
