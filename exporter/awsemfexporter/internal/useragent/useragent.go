@@ -28,10 +28,15 @@ const (
 
 	// TODO: Available in semconv/v1.21.0+. Replace after collector dependency is v0.91.0+.
 	attributeTelemetryDistroVersion = "telemetry.distro.version"
-
-	attributeEBS    = "ci_ebs"
-	ebsMetricPrefix = "node_diskio_ebs"
+	attributeEBS                    = "ci_ebs"
+	attributeLocalInstanceStore     = "ci_lis"
 )
+
+// Map of NVMe feature attributes to their corresponding metric prefixes
+var featureMetricPrefixes = map[string]string{
+	attributeEBS:                "node_diskio_ebs",
+	attributeLocalInstanceStore: "node_diskio_instance_store",
+}
 
 type UserAgent struct {
 	mu          sync.RWMutex
@@ -95,8 +100,15 @@ func (ua *UserAgent) Process(labels map[string]string) {
 
 // ProcessMetrics checks metric names for specific patterns and updates user agent accordingly
 func (ua *UserAgent) ProcessMetrics(metrics pmetric.Metrics) {
-	// Check if we've already detected NVME
-	if _, exists := ua.featureList[attributeEBS]; exists {
+	// Check if all NVME features are already detected
+	allFeaturesFound := true
+	for feature := range featureMetricPrefixes {
+		if _, exists := ua.featureList[feature]; !exists {
+			allFeaturesFound = false
+			break
+		}
+	}
+	if allFeaturesFound {
 		return
 	}
 
@@ -107,14 +119,17 @@ func (ua *UserAgent) ProcessMetrics(metrics pmetric.Metrics) {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				metric := ms.At(k)
-				if strings.HasPrefix(metric.Name(), ebsMetricPrefix) {
-					ua.featureList[attributeEBS] = struct{}{}
-					ua.build()
-					return
+				for feature, prefix := range featureMetricPrefixes {
+					if strings.HasPrefix(metric.Name(), prefix) {
+						if _, exists := ua.featureList[feature]; !exists {
+							ua.featureList[feature] = struct{}{}
+						}
+					}
 				}
 			}
 		}
 	}
+	ua.build()
 }
 
 // build the user agent string from the items in the cache. Format is telemetry-sdk (<lang1>/<ver1>;<lang2>/<ver2>).

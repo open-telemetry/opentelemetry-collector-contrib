@@ -231,7 +231,7 @@ func (emf *emfExporter) start(_ context.Context, host component.Host) error {
 	// Below are optimizatons to minimize amoount of
 	// metrics processing. We have two scearios
 	// 1. AppSignal - Only run Process function for AppSignal related useragent
-	// 2. Enhanced Container Insights - Only run ProcessMetrics function for CI EBS related useragent
+	// 2. Enhanced Container Insights - Only run ProcessMetrics function for CI related useragent
 	if emf.config.IsAppSignalsEnabled() || emf.config.IsEnhancedContainerInsights() {
 		userAgent := useragent.NewUserAgent()
 		emf.svcStructuredLog.Handlers().Build.PushFrontNamed(userAgent.Handler())

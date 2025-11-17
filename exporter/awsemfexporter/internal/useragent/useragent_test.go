@@ -75,6 +75,10 @@ func TestUserAgent(t *testing.T) {
 			metrics: []string{"node_diskio_ebs_something"},
 			want:    "feature:(ci_ebs)",
 		},
+		"WithLocalInstanceStoreMetrics": {
+			metrics: []string{"node_diskio_instance_store_something"},
+			want:    "feature:(ci_lis)",
+		},
 		"WithBothTelemetryAndEBS": {
 			labelSets: []map[string]string{
 				{
@@ -85,13 +89,31 @@ func TestUserAgent(t *testing.T) {
 			metrics: []string{"node_diskio_ebs_something"},
 			want:    "telemetry-sdk (test/1.0) feature:(ci_ebs)",
 		},
+		"WithBothTelemetryAndLocalInstanceStore": {
+			labelSets: []map[string]string{
+				{
+					semconv.AttributeTelemetrySDKLanguage: "test",
+					attributeTelemetryDistroVersion:       "1.0",
+				},
+			},
+			metrics: []string{"node_diskio_instance_store_something"},
+			want:    "telemetry-sdk (test/1.0) feature:(ci_lis)",
+		},
 		"WithNonEBSMetrics": {
 			metrics: []string{"some_other_metric"},
 			want:    "",
 		},
-		"WithMultipleFeatures": {
+		"WithMultipleEBSMetrics": {
 			metrics: []string{"node_diskio_ebs_something", "node_diskio_ebs_something_else"},
 			want:    "feature:(ci_ebs)",
+		},
+		"WithMultipleLocalInstanceStoreMetrics": {
+			metrics: []string{"node_diskio_instance_store_something", "node_diskio_instance_store_something_else"},
+			want:    "feature:(ci_lis)",
+		},
+		"WithMixedEBSAndInstanceStoreMetrics": {
+			metrics: []string{"node_diskio_ebs_something", "node_diskio_ebs_something", "node_diskio_instance_store_something", "node_diskio_instance_store_something"},
+			want:    "feature:(ci_ebs ci_lis)", // Both features should be detected and sorted alphabetically
 		},
 	}
 	for name, testCase := range testCases {
