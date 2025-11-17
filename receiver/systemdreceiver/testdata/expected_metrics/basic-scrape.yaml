@@ -1,0 +1,145 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: systemd.unit.name
+          value:
+            stringValue: nginx.service
+    scopeMetrics:
+      - metrics:
+          - description: 1 if the check resulted in active_state matching the current state, otherwise 0.
+            name: systemd.unit.state
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: activating
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: deactivating
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: failed
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: inactive
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: maintenance
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: refreshing
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: reloading
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: systemd.unit.name
+          value:
+            stringValue: rsyslog.service
+    scopeMetrics:
+      - metrics:
+          - description: 1 if the check resulted in active_state matching the current state, otherwise 0.
+            name: systemd.unit.state
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: activating
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: deactivating
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: failed
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: inactive
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: maintenance
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: refreshing
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: systemd.unit.active_state
+                      value:
+                        stringValue: reloading
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest

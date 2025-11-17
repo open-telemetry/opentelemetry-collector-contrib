@@ -28,7 +28,6 @@ receivers:
   # https://github.com/signalfx/signalfx-istio-adapter
   zipkin:
 processors:
-  batch:
   # Optional: If you have a different environment tag name
   # If this option is enabled it must be added to the pipeline section below
   #attributes/copyfromexistingkey:
@@ -63,23 +62,27 @@ exporters:
     # This expects SFX_REALM environment variable to contain the realm (e.g. us0).
     # Alternatively, specify the relm directly in the endpoint url here.
     endpoint: "https://ingest.${env:SFX_REALM}.signalfx.com/v2/trace"
+    sending_queue:
+      batch:
   # Metrics + Events
   signalfx:
     # See above for SFX_TOKEN and SFX_REALM.
     access_token: "${env:SFX_TOKEN}"
     realm: "${env:SFX_REALM}"
+    sending_queue:
+      batch:
 service:
   pipelines:
     traces:
       receivers: [sapm, zipkin]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [sapm]
     metrics:
       receivers: [signalfx, prometheus]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
   extensions: [health_check, http_forwarder, zpages]

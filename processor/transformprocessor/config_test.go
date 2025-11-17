@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -338,14 +339,14 @@ func TestLoadConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
 			sub, err := cm.Sub(tt.id.String())
-			assert.NoError(t, err)
-			assert.NoError(t, sub.Unmarshal(cfg))
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				err = xconfmap.Validate(cfg)
@@ -357,7 +358,7 @@ func TestLoadConfig(t *testing.T) {
 					}
 				}
 			} else {
-				assert.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, xconfmap.Validate(cfg))
 				assert.EqualExportedValues(t, tt.expected, cfg)
 				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
@@ -369,13 +370,13 @@ func Test_UnknownContextID(t *testing.T) {
 	id := component.NewIDWithName(metadata.Type, "unknown_context")
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	sub, err := cm.Sub(id.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Error(t, sub.Unmarshal(cfg))
 }
 
@@ -383,24 +384,24 @@ func Test_UnknownErrorMode(t *testing.T) {
 	id := component.NewIDWithName(metadata.Type, "unknown_error_mode")
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	sub, err := cm.Sub(id.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Error(t, sub.Unmarshal(cfg))
 }
 
 func Test_MixedConfigurationStyles(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "mixed_configuration_styles").String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.ErrorContains(t, sub.Unmarshal(cfg), "configuring multiple configuration styles is not supported")
 }

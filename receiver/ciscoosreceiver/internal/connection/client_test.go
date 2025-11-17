@@ -51,6 +51,36 @@ func TestRPCClient_GetCommand(t *testing.T) {
 		expected string
 	}{
 		{
+			name:     "Version command",
+			osType:   "IOS XE",
+			feature:  "version",
+			expected: "show version",
+		},
+		{
+			name:     "CPU command for NX-OS",
+			osType:   "NX-OS",
+			feature:  "cpu",
+			expected: "show system resources",
+		},
+		{
+			name:     "CPU command for IOS XE",
+			osType:   "IOS XE",
+			feature:  "cpu",
+			expected: "show process cpu",
+		},
+		{
+			name:     "Memory command for NX-OS",
+			osType:   "NX-OS",
+			feature:  "memory",
+			expected: "show system resources",
+		},
+		{
+			name:     "Memory command for IOS XE",
+			osType:   "IOS XE",
+			feature:  "memory",
+			expected: "show process memory",
+		},
+		{
 			name:     "Interfaces command for NX-OS",
 			osType:   "NX-OS",
 			feature:  "interfaces",
@@ -60,54 +90,24 @@ func TestRPCClient_GetCommand(t *testing.T) {
 			name:     "Interfaces command for IOS XE",
 			osType:   "IOS XE",
 			feature:  "interfaces",
-			expected: "show interfaces",
+			expected: "show interface",
 		},
 		{
-			name:     "BGP command for NX-OS",
-			osType:   "NX-OS",
-			feature:  "bgp",
-			expected: "show bgp all summary",
-		},
-		{
-			name:     "BGP command for IOS",
-			osType:   "IOS",
-			feature:  "bgp",
-			expected: "show ip bgp summary",
-		},
-		{
-			name:     "Environment command",
+			name:     "VLANs command for IOS XE returns empty (feature removed)",
 			osType:   "IOS XE",
-			feature:  "environment",
-			expected: "show environment",
-		},
-		{
-			name:     "Facts version command",
-			osType:   "IOS XE",
-			feature:  "facts_version",
-			expected: "show version",
-		},
-		{
-			name:     "Facts memory command for NX-OS",
-			osType:   "NX-OS",
-			feature:  "facts_memory",
-			expected: "show system resources",
-		},
-		{
-			name:     "Facts memory command for IOS XE",
-			osType:   "IOS XE",
-			feature:  "facts_memory",
-			expected: "show memory statistics",
-		},
-		{
-			name:     "VLANs command for IOS XE",
-			osType:   "IOS XE",
-			feature:  "interfaces_vlans",
-			expected: "show vlans",
+			feature:  "vlans",
+			expected: "",
 		},
 		{
 			name:     "VLANs command for NX-OS returns empty",
 			osType:   "NX-OS",
-			feature:  "interfaces_vlans",
+			feature:  "vlans",
+			expected: "",
+		},
+		{
+			name:     "VLANs command for IOS returns empty",
+			osType:   "IOS",
+			feature:  "vlans",
 			expected: "",
 		},
 		{
@@ -125,6 +125,47 @@ func TestRPCClient_GetCommand(t *testing.T) {
 				Logger: logger,
 			}
 			assert.Equal(t, tt.expected, client.GetCommand(tt.feature))
+		})
+	}
+}
+
+func TestRPCClient_GetInterfaceCommands(t *testing.T) {
+	logger := zap.NewNop()
+
+	tests := []struct {
+		name               string
+		osType             string
+		expectedInterfaces string
+		expectedVLANs      string
+	}{
+		{
+			name:               "NX-OS interface commands",
+			osType:             "NX-OS",
+			expectedInterfaces: "show interface",
+			expectedVLANs:      "",
+		},
+		{
+			name:               "IOS XE interface commands (vlans feature removed)",
+			osType:             "IOS XE",
+			expectedInterfaces: "show interface",
+			expectedVLANs:      "",
+		},
+		{
+			name:               "IOS interface commands",
+			osType:             "IOS",
+			expectedInterfaces: "show interface",
+			expectedVLANs:      "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &RPCClient{
+				OSType: tt.osType,
+				Logger: logger,
+			}
+			assert.Equal(t, tt.expectedInterfaces, client.GetCommand("interfaces"))
+			assert.Equal(t, tt.expectedVLANs, client.GetCommand("vlans"))
 		})
 	}
 }

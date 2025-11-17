@@ -78,7 +78,7 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 	forwarderRequest.RequestURI = ""
 
 	// Add additional headers.
-	for k, v := range h.config.Egress.Headers {
+	for k, v := range h.config.Egress.Headers.Iter {
 		forwarderRequest.Header.Add(k, string(v))
 	}
 
