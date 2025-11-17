@@ -31,7 +31,7 @@ func BenchmarkSampling(b *testing.B) {
 	defer func() {
 		require.NoError(b, tsp.Shutdown(b.Context()))
 	}()
-	metrics := newPolicyMetrics(len(cfg.PolicyCfgs))
+	metrics := newPolicyTickMetrics(len(cfg.PolicyCfgs))
 	sampleBatches := make([]*samplingpolicy.TraceData, 0, len(batches))
 
 	for _, batch := range batches {
