@@ -186,5 +186,6 @@ func Test_IsList_Error(t *testing.T) {
 	})
 	result, err := exprFunc(t.Context(), nil)
 	assert.Equal(t, false, result)
-	assert.IsType(t, ottl.TypeError(""), err)
+	var typeErr ottl.TypeError
+	assert.ErrorAs(t, err, &typeErr)
 }
