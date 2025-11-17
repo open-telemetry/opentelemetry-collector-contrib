@@ -971,7 +971,8 @@ func Test_StandardStringGetter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1221,7 +1222,8 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1298,7 +1300,8 @@ func Test_StandardFloatGetter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1475,7 +1478,8 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1552,7 +1556,8 @@ func Test_StandardIntGetter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1729,7 +1734,8 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1928,7 +1934,8 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, val)
 				}
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -2005,7 +2012,8 @@ func Test_StandardBoolGetter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -2161,7 +2169,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -2358,7 +2367,8 @@ func Test_StandardPSliceGetter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -2444,7 +2454,8 @@ func Test_StandardPMapGetter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
-				assert.IsType(t, TypeError(""), err)
+				var typeErr TypeError
+				assert.ErrorAs(t, err, &typeErr)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
