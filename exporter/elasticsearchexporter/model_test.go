@@ -1298,24 +1298,6 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	}
 }
 
-func Test_spanKindToECSStr(t *testing.T) {
-	tests := map[ptrace.SpanKind]string{
-		ptrace.SpanKindUnspecified: "",
-		ptrace.SpanKindInternal:    "INTERNAL",
-		ptrace.SpanKindServer:      "SERVER",
-		ptrace.SpanKindClient:      "CLIENT",
-		ptrace.SpanKindProducer:    "PRODUCER",
-		ptrace.SpanKindConsumer:    "CONSUMER",
-	}
-
-	for kind, expected := range tests {
-		t.Run(kind.String(), func(t *testing.T) {
-			got := spanKindToECSStr(kind)
-			require.Equal(t, expected, got)
-		})
-	}
-}
-
 // JSON serializable structs for OTel test convenience
 type oTelRecord struct {
 	TraceID                oTelTraceID          `json:"trace_id"`

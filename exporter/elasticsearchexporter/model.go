@@ -289,8 +289,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("event.outcome", "failure")
 	}
 	document.AddLinks("span.links", span.Links())
-	spanKind := spanKindToECSStr(span.Kind())
-	if spanKind != "" {
+	if spanKind := spanKindToECSStr(span.Kind()); spanKind != "" {
 		document.AddString("span.kind", spanKind)
 	}
 
