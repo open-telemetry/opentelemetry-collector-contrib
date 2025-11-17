@@ -2772,7 +2772,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 
 			profile.AttributeIndices().Append(2)
 
-			sample := profile.Sample().AppendEmpty()
+			sample := profile.Samples().AppendEmpty()
 			sample.TimestampsUnixNano().Append(0)
 
 			stack := dic.StackTable().AppendEmpty()
