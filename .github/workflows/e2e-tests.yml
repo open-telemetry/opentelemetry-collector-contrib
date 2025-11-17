@@ -25,25 +25,18 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - name: Examine disk space
-        run: df -h
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
-      - name: Examine disk space again
-        run: df -h
       - name: Install dependencies
         run: make -j2 gomoddownload
-      - name: Examine disk space again
-        run: df -h
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
-      - name: Examine disk space again
-        run: df -h
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
@@ -81,6 +74,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
