@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	cloud.google.com/go/pubsub v1.49.0
 	github.com/googleapis/gax-go/v2 v2.15.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.140.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0
