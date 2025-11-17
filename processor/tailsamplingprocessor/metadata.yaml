@@ -83,16 +83,6 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_tail_sampling_sampling_decision_latency:
-      description: Latency (in microseconds) of a given sampling policy
-      stability:
-        level: development
-      unit: µs
-      enabled: true
-      histogram:
-        value_type: int
-        bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
-
     processor_tail_sampling_sampling_decision_timer_latency:
       description: Latency (in milliseconds) of each run of the sampling decision timer
       stability:
@@ -102,6 +92,7 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
+
     processor_tail_sampling_sampling_late_span_age:
       description: Time (in seconds) from the sampling decision was taken and the arrival of a late span
       stability:
@@ -121,6 +112,27 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_tail_sampling_sampling_policy_execution_count:
+      description: Total number of executions of a specific sampling policy
+      stability:
+        level: development
+      unit: "{executions}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy]
+
+    processor_tail_sampling_sampling_policy_execution_time_sum:
+      description: Total time spent (in microseconds) executing a specific sampling policy
+      stability:
+        level: development
+      unit: µs
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy]
 
     processor_tail_sampling_sampling_trace_dropped_too_early:
       description: Count of traces that needed to be dropped before the configured wait time
