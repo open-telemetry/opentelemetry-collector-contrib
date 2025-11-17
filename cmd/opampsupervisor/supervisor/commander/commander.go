@@ -166,7 +166,7 @@ func (c *Commander) startWithPassthroughLogging() error {
 				if err != io.EOF {
 					c.logger.Error("Error reading agent stdout", zap.Error(err))
 				}
-				// Log the last line if it exists and doesn't end with newline
+				// Trim and log the last line if it exists
 				if line != "" {
 					line = strings.TrimRight(line, "\r\n")
 					colLogger.Info(line)
@@ -185,7 +185,7 @@ func (c *Commander) startWithPassthroughLogging() error {
 				if err != io.EOF {
 					c.logger.Error("Error reading agent stderr", zap.Error(err))
 				}
-				// Log the last line if it exists and doesn't end with newline
+				// Trim and log the last line if it exists
 				if line != "" {
 					line = strings.TrimRight(line, "\r\n")
 					colLogger.Error(line)
@@ -253,7 +253,8 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 				if err != io.EOF {
 					c.logger.Error("Error reading agent stdout", zap.Error(err))
 				}
-				// Append the last line if it exists and doesn't end with newline
+				// Trim and append the last line if it exists
+				// Normalize line endings to \n
 				if line != "" {
 					line = strings.TrimRight(line, "\r\n")
 					stdout = append(stdout, []byte(line)...)
@@ -275,7 +276,8 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 				if err != io.EOF {
 					c.logger.Error("Error reading agent stderr", zap.Error(err))
 				}
-				// Append the last line if it exists and doesn't end with newline
+				// Trim and append the last line if it exists
+				// Normalize line endings to \n
 				if line != "" {
 					line = strings.TrimRight(line, "\r\n")
 					stderr = append(stderr, []byte(line)...)
