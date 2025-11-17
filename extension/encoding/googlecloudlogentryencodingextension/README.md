@@ -18,6 +18,7 @@ This extension can be used to unmarshall a [Cloud Logging LogEntry](https://clou
 Currently, this extension [can parse the following logs](#supported-log-types) into log record attributes:
 - [Cloud audit logs](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog) (extension [mapping](#cloud-audit-logs))
 - [VPC flow logs](https://cloud.google.com/vpc/docs/about-flow-logs-records) (extension [mapping](#vpc-flow-logs))
+- [Cloud armor logs](https://docs.cloud.google.com/armor/docs/request-logging) (extension [mapping](#cloud-armor-logs))
 
 For all others logs, the payload will be placed in the log record attribute. In this case, the following configuration options are supported:
 
@@ -148,6 +149,7 @@ The following format values are supported in the `googlecloudlogentryencodingext
 |------------------|------------------|-----------------|
 | Audit Logs | `auditlog` | Google Cloud audit logs (activity, data access, system event, policy) |
 | VPC Flow Logs | `vpcflow` | Virtual Private Cloud flow log records |
+| Armor Logs | `armorlog` | Google Cloud armor logs (security policies applied) |
 
 ### Cloud Audit Logs
 
@@ -338,3 +340,36 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `psc.psc_attachment.vpc.subnetwork_region` | `gcp.vpc.flow.private_service_connect.attachment.vpc.subnet.region` | not yet supported |
 | `psc.psc_attachment.vpc.vpc_name` | `gcp.vpc.flow.private_service_connect.attachment.vpc.name` | not yet supported |
 | `rdma_traffic_type` | `gcp.vpc.flow.remote_direct_memory_access.traffic_type` | not yet supported |
+
+
+### Cloud Armor logs
+
+[Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging#security_policy_log_entries) are mapped this way in the resulting OpenTelemetry log.
+
+| Original field | Log record attribute |
+|---|--- |
+| `statusDetails` | `gcp.load_balancing.status.details`|
+| `backendTargetProjectNumber` | `gcp.load_balancing.backend_target_project_number` |
+| `remoteIp` | `network.peer.address` |
+| `securityPolicyRequestData.recaptchaActionToken.score` | `gcp.armor.request_data.recaptcha_action_token.score` |
+| `securityPolicyRequestData.recaptchaSessionToken.score` | `gcp.armor.request_data.recaptcha_session_token.score` |
+| `securityPolicyRequestData.userIpInfo.source` | `gcp.armor.request_data.user_ip.source` |
+| `securityPolicyRequestData.userIpInfo.ipAddress` | `client.address` |
+| `securityPolicyRequestData.remoteIpInfo.ipAddress` | `network.peer.address` |
+| `securityPolicyRequestData.remoteIpInfo.regionCode` | `geo.region.iso_code` |
+| `securityPolicyRequestData.remoteIpInfo.asn` | `gcp.armor.request_data.remote_ip.asn` |
+| `securityPolicyRequestData.tlsJa4Fingerprint` | `tls.client.ja4` |
+| `securityPolicyRequestData.tlsJa3Fingerprint` | `tls.client.ja3` |
+| `name` | `gcp.armor.security_policy.name`|
+| `priority` | `gcp.armor.security_policy.priority` |
+| `configuredAction` | `gcp.armor.security_policy.configured_action` |
+| `outcome` | `gcp.armor.security_policy.outcome` |
+| `rateLimitAction.key` | `gcp.armor.security_policy.rate_limit.action.key` |
+| `rateLimitAction.outcome` | `gcp.armor.security_policy.rate_limit.action.outcome` |
+| `adaptiveProtection.autoDeployAlertId` | `gcp.armor.security_policy.adaptive_protection.auto_deploy.alert_id` |
+| `preconfiguredExprIds` | `gcp.armor.security_policy.preconfigured.expr_ids` |
+| `threatIntelligence.categories` | `gcp.armor.security_policy.threat_intelligence.categories` |
+| `addressGroup.names` | `gcp.armor.security_policy.address_group.names` |
+
+**Note:** There are 4 different policy types (`enforcedSecurityPolicy`, `previewSecurityPolicy` , `enforcedEdgeSecurityPolicy`, `previewEdgeSecurityPolicy`) and the log fields are repeated between them. OpenTelemetry will introduce a **type** field (`gcp.armor.security_policy.type`) to differentiate between different policies. All fields explanations are available at [Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging#security_policy_log_entries).
+
