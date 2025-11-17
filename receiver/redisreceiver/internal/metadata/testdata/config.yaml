@@ -9,6 +9,8 @@ all_set:
       enabled: true
     redis.clients.max_output_buffer:
       enabled: true
+    redis.cluster.cluster_enabled:
+      enabled: true
     redis.cluster.known_nodes:
       enabled: true
     redis.cluster.links_buffer_limit_exceeded.count:
@@ -77,6 +79,10 @@ all_set:
       enabled: true
     redis.memory.used:
       enabled: true
+    redis.memory.used_memory_overhead:
+      enabled: true
+    redis.memory.used_memory_startup:
+      enabled: true
     redis.mode:
       enabled: true
     redis.net.input:
@@ -106,6 +112,8 @@ all_set:
     redis.sentinel.total_tilt:
       enabled: true
     redis.slaves.connected:
+      enabled: true
+    redis.tracking_total_keys:
       enabled: true
     redis.uptime:
       enabled: true
@@ -126,6 +134,8 @@ none_set:
       enabled: false
     redis.clients.max_output_buffer:
       enabled: false
+    redis.cluster.cluster_enabled:
+      enabled: false
     redis.cluster.known_nodes:
       enabled: false
     redis.cluster.links_buffer_limit_exceeded.count:
@@ -194,6 +204,10 @@ none_set:
       enabled: false
     redis.memory.used:
       enabled: false
+    redis.memory.used_memory_overhead:
+      enabled: false
+    redis.memory.used_memory_startup:
+      enabled: false
     redis.mode:
       enabled: false
     redis.net.input:
@@ -223,6 +237,8 @@ none_set:
     redis.sentinel.total_tilt:
       enabled: false
     redis.slaves.connected:
+      enabled: false
+    redis.tracking_total_keys:
       enabled: false
     redis.uptime:
       enabled: false

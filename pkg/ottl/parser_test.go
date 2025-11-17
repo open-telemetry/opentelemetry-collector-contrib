@@ -1393,7 +1393,7 @@ func Test_parse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			parsed, err := parseStatement(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, parsed)
 		})
 	}
@@ -1554,7 +1554,7 @@ func Test_parseCondition_full(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.condition, func(t *testing.T) {
 			parsed, err := parseCondition(tt.condition)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, parsed)
 		})
 	}
@@ -2109,7 +2109,7 @@ func Test_parseWhere(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			statement := `set(name, "test") where ` + tt.statement
 			parsed, err := parseStatement(statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, parsed)
 		})
 	}
@@ -2247,7 +2247,7 @@ func Test_ParseValueExpression_full(t *testing.T) {
 				WithEnumParser[any](testParseEnum),
 			)
 			parsed, err := p.ParseValueExpression(tt.valueExpression)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			v, err := parsed.Eval(t.Context(), tt.tCtx)
 			require.NoError(t, err)
@@ -2580,7 +2580,7 @@ func Test_Statement_Execute(t *testing.T) {
 			}
 
 			result, condition, err := statement.Execute(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
 		})
@@ -2611,7 +2611,7 @@ func Test_Condition_Eval(t *testing.T) {
 			}
 
 			result, err := condition.Eval(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
@@ -2703,7 +2703,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			if tt.errorMode == PropagateError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -2842,7 +2842,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 			}
 
 			result, err := conditions.Eval(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
@@ -2903,7 +2903,7 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 			if tt.errorMode == PropagateError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

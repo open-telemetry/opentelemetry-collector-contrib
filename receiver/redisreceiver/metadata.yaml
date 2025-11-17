@@ -115,6 +115,15 @@ metrics:
     gauge:
       value_type: int
 
+  redis.cluster.cluster_enabled:
+    enabled: false
+    description: "Indicate Redis cluster is enabled"
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: int
+
   redis.cluster.known_nodes:
     enabled: false
     description: "Number of known nodes in the cluster"
@@ -457,6 +466,28 @@ metrics:
     gauge:
       value_type: int
 
+  redis.memory.used_memory_overhead:
+    enabled: false
+    description: "The sum in bytes of all overheads that the server allocated for managing its internal data structures"
+    stability:
+      level: development
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  redis.memory.used_memory_startup:
+    enabled: false
+    description: "Initial amount of memory consumed by Redis at startup in bytes"
+    stability:
+      level: development
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
   redis.mode:
     enabled: false
     description: Redis server mode
@@ -602,6 +633,17 @@ metrics:
     stability:
       level: development
     unit: "{replica}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  redis.tracking_total_keys:
+    enabled: false
+    description: "Number of keys being tracked by the server"
+    stability:
+      level: development
+    unit: "{key}"
     sum:
       value_type: int
       monotonic: false
