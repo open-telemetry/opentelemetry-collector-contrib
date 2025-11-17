@@ -101,21 +101,6 @@ func AssertEqualProcessorTailSamplingNewTraceIDReceived(t *testing.T, tt *compon
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorTailSamplingSamplingDecisionLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-		Description: "Latency (in microseconds) of a given sampling policy [Development]",
-		Unit:        "µs",
-		Data: metricdata.Histogram[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_tail_sampling_sampling_decision_latency")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
 func AssertEqualProcessorTailSamplingSamplingDecisionTimerLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
@@ -158,6 +143,38 @@ func AssertEqualProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_processor_tail_sampling_sampling_policy_evaluation_error")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorTailSamplingSamplingPolicyExecutionCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_sampling_policy_execution_count",
+		Description: "Total number of executions of a specific sampling policy [Development]",
+		Unit:        "{executions}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_tail_sampling_sampling_policy_execution_count")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorTailSamplingSamplingPolicyExecutionTimeSum(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_sampling_policy_execution_time_sum",
+		Description: "Total time spent (in microseconds) executing a specific sampling policy [Development]",
+		Unit:        "µs",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_tail_sampling_sampling_policy_execution_time_sum")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
