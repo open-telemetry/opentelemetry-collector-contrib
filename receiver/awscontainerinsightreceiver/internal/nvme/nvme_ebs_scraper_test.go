@@ -218,5 +218,5 @@ func TestNewNVMEScraperEndToEnd(t *testing.T) {
 
 func TestNvmeScraperJobName(t *testing.T) {
 	// needs to start with containerInsights
-	assert.True(t, strings.HasPrefix(jobName, "containerInsightsNVMeExporterScraper"))
+	assert.True(t, strings.HasPrefix(jobName, "containerInsightsNVMeEBSScraper"))
 }

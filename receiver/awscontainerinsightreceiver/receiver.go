@@ -212,9 +212,9 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
 		}
-		err = acir.initNVMEScraper(ctx, host, hostInfo, localNodeDecorator)
+		err = acir.initNVMeEbsScraper(ctx, host, hostInfo, localNodeDecorator)
 		if err != nil {
-			acir.settings.Logger.Debug("Unable to start NVME scraper", zap.Error(err))
+			acir.settings.Logger.Debug("Unable to start NVME EBS scraper", zap.Error(err))
 		}
 		err = acir.initPodResourcesStore()
 		if err != nil {
@@ -329,7 +329,7 @@ func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, ho
 	return err
 }
 
-func (acir *awsContainerInsightReceiver) initNVMEScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, localNodeDecorator stores.Decorator) error {
+func (acir *awsContainerInsightReceiver) initNVMeEbsScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, localNodeDecorator stores.Decorator) error {
 	decoConsumer := decoratorconsumer.DecorateConsumer{
 		ContainerOrchestrator: ci.EKS,
 		NextConsumer:          acir.nextConsumer,

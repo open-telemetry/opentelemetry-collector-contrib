@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// Original Metric Names
+	// EBS Original Metric Names
 	ebsReadOpsTotal        = "aws_ebs_csi_read_ops_total"
 	ebsWriteOpsTotal       = "aws_ebs_csi_write_ops_total"
 	ebsReadBytesTotal      = "aws_ebs_csi_read_bytes_total"

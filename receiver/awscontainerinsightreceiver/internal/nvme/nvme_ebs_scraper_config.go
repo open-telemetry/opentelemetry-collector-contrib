@@ -18,7 +18,7 @@ import (
 
 const (
 	collectionInterval        = 60 * time.Second
-	jobName                   = "containerInsightsNVMeExporterScraper"
+	jobName                   = "containerInsightsNVMeEBSScraper"
 	scraperMetricsPath        = "/metrics"
 	scraperK8sServiceSelector = "app=ebs-csi-node"
 )
