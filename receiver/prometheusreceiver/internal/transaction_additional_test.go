@@ -4,7 +4,6 @@
 package internal
 
 import (
-	"context"
 	"testing"
 
 	"github.com/prometheus/common/model"
@@ -142,7 +141,7 @@ func TestDetectAndStoreNativeHistogramStaleness(t *testing.T) {
 	}
 
 	scrapeCtxWithMeta := scrape.ContextWithMetricMetadataStore(
-		scrape.ContextWithTarget(context.Background(), target),
+		scrape.ContextWithTarget(t.Context(), target),
 		testMetadataStore(md))
 
 	tr := newTransaction(scrapeCtxWithMeta, &nopAdjuster{}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true, true)
@@ -212,7 +211,7 @@ func TestDetectAndStoreNativeHistogramStaleness_NotNativeHistogram(t *testing.T)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			scrapeCtxWithMeta := scrape.ContextWithMetricMetadataStore(
-				scrape.ContextWithTarget(context.Background(), target),
+				scrape.ContextWithTarget(t.Context(), target),
 				testMetadataStore(tt.metadata))
 
 			tr := newTransaction(scrapeCtxWithMeta, &nopAdjuster{}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true, true)
