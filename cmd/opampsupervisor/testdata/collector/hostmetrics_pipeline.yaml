@@ -1,0 +1,55 @@
+receivers:
+  hostmetrics:
+    collection_interval: 1s
+    scrapers:
+      process:
+        metrics:
+          process.threads:
+            enabled: true
+          process.signals_pending:
+            enabled: true
+          process.paging.faults:
+            enabled: true
+          process.memory.utilization:
+            enabled: true
+          process.memory.usage:
+            enabled: true
+          process.open_file_descriptors:
+            enabled: true
+          process.memory.virtual:
+            enabled: true
+          process.handles:
+            enabled: true
+          process.disk.operations:
+            enabled: true
+          process.context_switches:
+            enabled: true
+          process.disk.io:
+            enabled: true
+          process.cpu.utilization:
+            enabled: true
+          process.cpu.time:
+            enabled: true
+        mute_process_name_error: true
+        mute_process_exe_error: true
+        mute_process_io_error: true
+        mute_process_user_error: true
+        mute_process_cgroup_error: true  
+
+exporters:
+  file:
+    path: {{.outputLogFile}}
+
+extensions:
+  health_check:
+    endpoint: "localhost:13133"
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [hostmetrics]
+      exporters: [file]
+  telemetry:
+    logs:
+      level: debug
