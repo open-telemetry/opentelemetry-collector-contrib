@@ -1,0 +1,8 @@
+change_type: enhancement
+component: receiver/webhookevent
+note: Allow configuring larger webhook body size
+issues: [43544]
+subtext: | 
+  The receiver allows configuration a larger body buffer if needed. 
+  It also returns an error if the body exceeds the configured limit.
+change_logs: [user]
