@@ -49,7 +49,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_metric_points",
-			Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
+			Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
 			Unit:        "{datapoints}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -70,7 +70,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_metric_points",
-			Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
+			Description: "Number of metric points that could not be pushed into the pipeline. [Alpha]",
 			Unit:        "{datapoints}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,

@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -882,7 +881,7 @@ func buildSplunkHecMetricsMsg(event any, time float64, value int64, dimensions u
 			"metric_name:foo": value,
 		},
 	}
-	for dim := uint(0); dim < dimensions; dim++ {
+	for dim := range dimensions {
 		ev.Fields[fmt.Sprintf("k%d", dim)] = fmt.Sprintf("v%d", dim)
 	}
 
@@ -897,7 +896,7 @@ func buildSplunkHecMsg(time float64, dimensions uint) *splunk.Event {
 		Index:      "myindex",
 		SourceType: "custom:sourcetype",
 	}
-	for dim := uint(0); dim < dimensions; dim++ {
+	for dim := range dimensions {
 		ev.Fields[fmt.Sprintf("k%d", dim)] = fmt.Sprintf("v%d", dim)
 	}
 
@@ -1814,7 +1813,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 			currentTime := float64(time.Now().UnixNano()) / 1e6
 			event := buildSplunkHecMsg(currentTime, 3)
 			event.Fields["nested_map"] = tt.field
-			msgBytes, err := jsoniter.Marshal(event)
+			msgBytes, err := json.Marshal(event)
 			require.NoError(t, err)
 			req := httptest.NewRequest(http.MethodPost, "http://localhost/services/collector", bytes.NewReader(msgBytes))
 
@@ -1964,7 +1963,7 @@ func BenchmarkHandleReq(b *testing.B) {
 	msgBytes, err := json.Marshal(splunkMsg)
 	require.NoError(b, err)
 	totalMessage := make([]byte, 100*len(msgBytes))
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		offset := len(msgBytes) * i
 		for bi, b := range msgBytes {
 			totalMessage[offset+bi] = b
@@ -1972,9 +1971,8 @@ func BenchmarkHandleReq(b *testing.B) {
 	}
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(totalMessage))
 		rcv.handleReq(w, req)
 

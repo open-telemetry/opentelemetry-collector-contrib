@@ -48,13 +48,21 @@ var apiDict = map[string]string{
 	`SplunkHealth`:                      `/services/server/health/splunkd/details?output_mode=json`,
 	`SplunkInfo`:                        `/services/server/info?output_mode=json`,
 	`SplunkIndexerClusterManagerStatus`: `/services/cluster/manager/status?output_mode=json`,
+	`SplunkLicenses`:                    `/services/licenser/licenses?output_mode=json`,
 }
 
 type searchResponse struct {
-	search string
-	Jobid  *string `xml:"sid"`
-	Return int
-	Fields []*field `xml:"result>field"`
+	search     string
+	Jobid      *string `xml:"sid"`
+	Return     int
+	count      int
+	offset     int
+	TotalCount metaField `xml:"meta>fieldOrder>field"`
+	Fields     []*field  `xml:"result>field"`
+}
+
+type metaField struct {
+	Count int `xml:"summary.count,attr"`
 }
 
 type field struct {
@@ -145,7 +153,7 @@ type kvEntry struct {
 
 type kvStatus struct {
 	Current   kvStoreCurrent `json:"current"`
-	KVService kvService      `json:"externalKVStore,omitempty"`
+	KVService kvService      `json:"externalKVStore,omitzero"`
 }
 
 type kvService struct {
@@ -244,4 +252,20 @@ type idxClusterManagerStatusContent struct {
 	RollingRestartType      string `json:"rolling_restart_type,omitempty"`
 	SearchableRolling       bool   `json:"searchable_rolling,omitempty"`
 	ServiceReadyFlag        bool   `json:"service_ready_flag,omitempty"`
+}
+
+// '/services/licenser/licenses'
+type licenses struct {
+	Entries []licenseEntry `json:"entry"`
+}
+
+type licenseEntry struct {
+	Content licenseContent `json:"content"`
+}
+
+type licenseContent struct {
+	ExpirationTime int64  `json:"expiration_time"`
+	Label          string `json:"label"`
+	Status         string `json:"status"`
+	Type           string `json:"type"`
 }

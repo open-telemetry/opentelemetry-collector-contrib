@@ -1380,7 +1380,7 @@ func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 		tCtx := ottllog.NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 
 		b.Run(tt.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				var skip bool
 				skip, err = skipExpr.Eval(b.Context(), tCtx)
 				assert.NoError(b, err)

@@ -181,6 +181,14 @@ func (f *elbAccessLogUnmarshaler) addToCLBAccessLogs(resourceAttr *resourceAttri
 	if clbRecord.BackendStatusCode != 0 {
 		recordLog.Attributes().PutInt(AttributeELBBackendStatusCode, clbRecord.BackendStatusCode)
 	}
+
+	if clbRecord.UserAgent != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.UserAgentOriginalKey), clbRecord.UserAgent)
+	}
+	if clbRecord.BackendIPPort != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.DestinationAddressKey), clbRecord.BackendIP)
+		recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), clbRecord.BackendPort)
+	}
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
@@ -229,6 +237,82 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 	if albRecord.SSLCipher != unknownField {
 		recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), albRecord.SSLCipher)
 	}
+	if albRecord.UserAgent != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.UserAgentOriginalKey), albRecord.UserAgent)
+	}
+	if albRecord.DomainName != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.URLDomainKey), albRecord.DomainName)
+	}
+	if albRecord.TargetIPPort != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.DestinationAddressKey), albRecord.TargetIP)
+		recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), albRecord.TargetPort)
+	}
+
+	// Times are expressed in seconds with a precision of 3 decimal places in logs. Here we convert them to milliseconds.
+	if albRecord.RequestProcessingTime != unknownField {
+		rpt, e := safeConvertStrToFloat(albRecord.RequestProcessingTime)
+		if e == nil {
+			recordLog.Attributes().PutDouble(AttributeELBRequestProcessingTime, rpt)
+		}
+	}
+	if albRecord.TargetProcessingTime != unknownField {
+		tpt, e := safeConvertStrToFloat(albRecord.TargetProcessingTime)
+		if e == nil {
+			recordLog.Attributes().PutDouble(AttributeELBTargetProcessingTime, tpt)
+		}
+	}
+	if albRecord.ResponseProcessingTime != unknownField {
+		rpt, e := safeConvertStrToFloat(albRecord.ResponseProcessingTime)
+		if e == nil {
+			recordLog.Attributes().PutDouble(AttributeELBResponseProcessingTime, rpt)
+		}
+	}
+
+	if albRecord.TraceID != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBAWSTraceID, albRecord.TraceID)
+	}
+	if albRecord.TargetStatusCode != unknownField {
+		statusCode, e := safeConvertStrToInt(albRecord.TargetStatusCode)
+		if e == nil {
+			recordLog.Attributes().PutInt(AttributeELBBackendStatusCode, statusCode)
+		}
+	}
+	if albRecord.TargetGroupARN != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBTargetGroupARN, albRecord.TargetGroupARN)
+	}
+	if albRecord.ChosenCertARN != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBChosenCertARN, albRecord.ChosenCertARN)
+	}
+	if albRecord.ActionsExecuted != unknownField {
+		actions := recordLog.Attributes().PutEmptySlice(AttributeELBActionsExecuted)
+		for action := range strings.SplitSeq(albRecord.ActionsExecuted, ",") {
+			actions.AppendEmpty().SetStr(action)
+		}
+	}
+	if albRecord.RedirectURL != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBRedirectURL, albRecord.RedirectURL)
+	}
+	if albRecord.ErrorReason != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBErrorReason, albRecord.ErrorReason)
+	}
+	if albRecord.Classification != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBClassification, albRecord.Classification)
+	}
+	if albRecord.ClassificationReason != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBClassificationReason, albRecord.ClassificationReason)
+	}
+	if albRecord.ConnectionTraceID != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBConnectionTraceID, albRecord.ConnectionTraceID)
+	}
+	if albRecord.TransformedHost != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBTransformedHost, albRecord.TransformedHost)
+	}
+	if albRecord.TransformedURI != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBTransformedURI, albRecord.TransformedURI)
+	}
+	if albRecord.RequestTransformStatus != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBRequestTransformStatus, albRecord.RequestTransformStatus)
+	}
 
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
@@ -267,11 +351,16 @@ func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttri
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), nlbRecord.Version)
 	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), nlbRecord.ClientIP)
 	recordLog.Attributes().PutInt(string(conventions.ClientPortKey), nlbRecord.ClientPort)
+	recordLog.Attributes().PutStr(string(conventions.DestinationAddressKey), nlbRecord.DestinationIP)
+	recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), nlbRecord.DestinationPort)
 	recordLog.Attributes().PutInt(string(conventions.HTTPRequestSizeKey), nlbRecord.ReceivedBytes)
 	recordLog.Attributes().PutInt(string(conventions.HTTPResponseSizeKey), nlbRecord.SentBytes)
 	recordLog.Attributes().PutStr(AttributeTLSListenerResourceID, nlbRecord.Listener)
 	recordLog.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), nlbRecord.TLSProtocolVersion)
 	recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), nlbRecord.TLSCipher)
+	if nlbRecord.DomainName != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.URLDomainKey), nlbRecord.DomainName)
+	}
 
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))

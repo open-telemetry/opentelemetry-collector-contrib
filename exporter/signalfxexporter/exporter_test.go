@@ -41,7 +41,6 @@ import (
 	componentmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
@@ -187,7 +186,9 @@ func TestConsumeMetrics(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: map[string]configopaque.String{"test_header_": "test"},
+					Headers: configopaque.MapList{
+						{Name: "test_header_", Value: "test"},
+					},
 				},
 			}
 
@@ -546,11 +547,10 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers[k] = configopaque.String(v)
+				cfg.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -669,11 +669,10 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers[k] = configopaque.String(v)
+				cfg.Headers.Set(k, configopaque.String(v))
 			}
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -773,8 +772,7 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings.Enabled = false
@@ -934,7 +932,9 @@ func TestConsumeEventData(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: map[string]configopaque.String{"test_header_": "test"},
+					Headers: configopaque.MapList{
+						{Name: "test_header_", Value: "test"},
+					},
 				},
 			}
 
@@ -1028,8 +1028,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
@@ -1056,7 +1055,7 @@ func generateLargeDPBatch() pmetric.Metrics {
 	md.ResourceMetrics().EnsureCapacity(6500)
 
 	ts := time.Now()
-	for i := 0; i < 6500; i++ {
+	for i := range 6500 {
 		rm := md.ResourceMetrics().AppendEmpty()
 		ilm := rm.ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
@@ -1080,7 +1079,7 @@ func generateLargeEventBatch() plog.Logs {
 	batchSize := 65000
 	logs.EnsureCapacity(batchSize)
 	ts := time.Now()
-	for i := 0; i < batchSize; i++ {
+	for range batchSize {
 		lr := logs.AppendEmpty()
 		lr.Attributes().PutStr("k0", "k1")
 		lr.Attributes().PutEmpty("com.splunk.signalfx.event_category")
@@ -1457,7 +1456,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	batchSize := 1000
 	metrics := pmetric.NewMetrics()
 	tmd := testMetricsData(false)
-	for i := 0; i < batchSize; i++ {
+	for range batchSize {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
@@ -1485,7 +1484,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		converter: c,
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(b.Context(), metrics)
 		assert.NoError(b, err)
 		assert.Equal(b, 0, numDroppedTimeSeries)
@@ -1673,7 +1672,7 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	m.SetName("system.cpu.time")
 	sum := m.SetEmptySum()
 	for _, state := range []string{"idle", "interrupt", "nice", "softirq", "steal", "system", "user", "wait"} {
-		for cpu := 0; cpu < 32; cpu++ {
+		for cpu := range 32 {
 			dp := sum.DataPoints().AppendEmpty()
 			dp.SetDoubleValue(0)
 			dp.Attributes().PutStr("cpu", fmt.Sprintf("%d", cpu))
@@ -1822,7 +1821,7 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 	batchSize := 1000
 	metrics := pmetric.NewMetrics()
 	tmd := testMetricsData(true)
-	for i := 0; i < batchSize; i++ {
+	for range batchSize {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
@@ -1850,7 +1849,7 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 		converter: c,
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(b.Context(), metrics)
 		assert.NoError(b, err)
 		assert.Equal(b, 0, numDroppedTimeSeries)
@@ -2052,7 +2051,9 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: map[string]configopaque.String{"test_header_": "test"},
+					Headers: configopaque.MapList{
+						{Name: "test_header_", Value: "test"},
+					},
 				},
 			}
 
@@ -2099,7 +2100,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 
 			if tt.wantThrottleErr {
 				if tt.wantPartialMetricsErr {
-					partialMetrics, _ := utils.GetHistograms(smallBatch)
+					partialMetrics, _ := getHistograms(smallBatch)
 					throttleErr := errors.New(errMsg)
 					throttleErr = exporterhelper.NewThrottleRetry(throttleErr, time.Duration(tt.retryAfter)*time.Second)
 					testErr := consumererror.NewMetrics(throttleErr, partialMetrics)
@@ -2123,7 +2124,7 @@ func generateLargeMixedDPBatch() pmetric.Metrics {
 	md.ResourceMetrics().EnsureCapacity(7500)
 
 	ts := pcommon.NewTimestampFromTime(time.Now())
-	for i := 0; i < 7500; i++ {
+	for i := range 7500 {
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("kr0", "vr0")
 		ilm := rm.ScopeMetrics().AppendEmpty()

@@ -41,36 +41,45 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				Protocol:      "grpc",
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				DomainSettings: configgrpc.ClientConfig{
-					Compression: configcompression.TypeGzip,
-				},
-				Metrics: configgrpc.ClientConfig{
-					Endpoint:        "https://",
-					Compression:     configcompression.TypeGzip,
-					WriteBufferSize: 512 * 1024,
-				},
-				Logs: configgrpc.ClientConfig{
-					Endpoint:    "https://",
-					Compression: configcompression.TypeGzip,
-				},
-				Traces: configgrpc.ClientConfig{
-					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.TypeGzip,
-					TLS: configtls.ClientConfig{
-						Config:             configtls.Config{},
-						Insecure:           false,
-						InsecureSkipVerify: false,
-						ServerName:         "",
+				DomainSettings: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Compression: configcompression.TypeGzip,
 					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 0,
-					WaitForReady:    false,
-					BalancerName:    "",
+				},
+				Metrics: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:        "https://",
+						Compression:     configcompression.TypeGzip,
+						WriteBufferSize: 512 * 1024,
+					},
+				},
+				Logs: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    "https://",
+						Compression: configcompression.TypeGzip,
+					},
+				},
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Compression: configcompression.TypeGzip,
+						TLS: configtls.ClientConfig{
+							Config:             configtls.Config{},
+							Insecure:           false,
+							InsecureSkipVerify: false,
+							ServerName:         "",
+						},
+						ReadBufferSize:  0,
+						WriteBufferSize: 0,
+						WaitForReady:    false,
+						BalancerName:    "",
+					},
 				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   true,
@@ -84,36 +93,45 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				Protocol:      "grpc",
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				DomainSettings: configgrpc.ClientConfig{
-					Compression: configcompression.TypeGzip,
-				},
-				Metrics: configgrpc.ClientConfig{
-					Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression:     configcompression.TypeGzip,
-					WriteBufferSize: 512 * 1024,
-				},
-				Logs: configgrpc.ClientConfig{
-					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.TypeGzip,
-				},
-				Traces: configgrpc.ClientConfig{
-					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.TypeGzip,
-					TLS: configtls.ClientConfig{
-						Config:             configtls.Config{},
-						Insecure:           false,
-						InsecureSkipVerify: false,
-						ServerName:         "",
+				DomainSettings: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Compression: configcompression.TypeGzip,
 					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 0,
-					WaitForReady:    false,
-					BalancerName:    "",
+				},
+				Metrics: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Compression:     configcompression.TypeGzip,
+						WriteBufferSize: 512 * 1024,
+					},
+				},
+				Logs: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Compression: configcompression.TypeGzip,
+					},
+				},
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Compression: configcompression.TypeGzip,
+						TLS: configtls.ClientConfig{
+							Config:             configtls.Config{},
+							Insecure:           false,
+							InsecureSkipVerify: false,
+							ServerName:         "",
+						},
+						ReadBufferSize:  0,
+						WriteBufferSize: 0,
+						WaitForReady:    false,
+						BalancerName:    "",
+					},
 				},
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
@@ -372,8 +390,10 @@ func TestGetDomainGrpcSettings(t *testing.T) {
 			cfg := &Config{
 				Domain:      tt.domain,
 				PrivateLink: tt.privateLink,
-				DomainSettings: configgrpc.ClientConfig{
-					Compression: configcompression.TypeGzip,
+				DomainSettings: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Compression: configcompression.TypeGzip,
+					},
 				},
 			}
 
@@ -418,4 +438,85 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})
+}
+
+func TestConfigValidation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		config      *Config
+		expectedErr string
+	}{
+		{
+			name: "valid_grpc_config",
+			config: &Config{
+				Protocol:   "grpc",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Profiles: configgrpc.ClientConfig{
+					Endpoint: "ingress.coralogix.com:443",
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "no_protocol_defaults_to_grpc",
+			config: &Config{
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Profiles: configgrpc.ClientConfig{
+					Endpoint: "ingress.coralogix.com:443",
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "invalid_protocol",
+			config: &Config{
+				Protocol:   "tcp",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+			},
+			expectedErr: "protocol must be grpc or http",
+		},
+		{
+			name: "invalid_http_with_profiles",
+			config: &Config{
+				Protocol:   "http",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Profiles: configgrpc.ClientConfig{
+					Endpoint: "ingress.coralogix.com:443",
+				},
+			},
+			expectedErr: "profiles signal is not supported with HTTP protocol",
+		},
+		{
+			name: "valid_http_without_profiles",
+			config: &Config{
+				Protocol:   "http",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+			},
+			expectedErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectedErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
+			}
+		})
+	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -18,6 +19,9 @@ import (
 // Config defines configuration for Prometheus exporter.
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
+
+	// QueueBatchConfig defines the queue configuration.
+	QueueBatchConfig exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`
@@ -38,6 +42,7 @@ type Config struct {
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
 
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
+	//
 	// Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 

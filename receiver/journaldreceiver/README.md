@@ -8,7 +8,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fjournald%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fjournald) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fjournald%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fjournald) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_journald)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_journald&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    |  |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@belimawr](https://www.github.com/belimawr), [@namco1992](https://www.github.com/namco1992) |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski), [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -19,15 +19,15 @@
 Parses Journald events from systemd journal.
 Journald receiver requires that:
 
-- the `journalctl` binary is present in the $PATH of the agent; and
+- the `journalctl` binary is present in the $PATH of the agent, or is present at `journalctl_path` if configured; and
 - the collector's user has sufficient permissions to access the journal through `journalctl`.
 
 ## Configuration
 
 | Field                               | Default                              | Description                                                                                                                                                                                                                              |
 |-------------------------------------|--------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `directory`                         | `/run/log/journal` or `/run/journal` | A directory containing journal files to read entries from                                                                                                                                                                                |
-| `files`                             |                                      | A list of journal files to read entries from                                                                                                                                                                                             |
+| `directory`                         | `/run/log/journal` or `/run/journal` | A directory containing journal files to read entries from. Relative to `root_path`.                                                                                                                                                      |
+| `files`                             |                                      | A list of journal files to read entries from. Relative to `root_path`.                                                                                                                                                                   |
 | `start_at`                          | `end`                                | At startup, where to start reading logs from the file. Options are beginning or end                                                                                                                                                      |
 | `units`                             |                                      | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                                            |
 | `identifiers`                       |                                      | Filter output by message identifiers (`SYSTEMD_IDENTIFIER`). See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                     |
@@ -44,6 +44,8 @@ Journald receiver requires that:
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
 | `retry_on_failure.max_interval`     | `30 seconds`                         | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                     |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`                          | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                            |
+| `root_path`                         |                                      | Chroot to use when executing the journalctl command. Must be an absolute path or empty. When empty (default), no chroot is used when executing journalctl.                                                                               |
+| `journalctl_path`                   | `journalctl`                         | journalctl command to execute. Relative to `root_path`. Must be an absolute path if `root_path` is non-empty. See below for more details                                                                                                 |
 | `operators`                         | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details                                                                                                              |
 
 ### Operators
@@ -180,17 +182,47 @@ which is going to effectively retrieve all entries which matches the following s
 
 The user running the collector must have enough permissions to access the journal; not granting them will lead to issues.
 
-When running in a containerized environment, differences in the systemd version running on the host and on the container may prevent access to logs due to different features and configurations (e.g. zstd compression, keyed hash etc).
-
-### Docker
+### Docker & Kubernetes
 
 When running otelcol in a container, note that:
 
 1. the container must run as a user that has permission to access the logs
 2. the path to the log directory (`/run/log/journal`, `/var/log/journal`...) must be mounted in the container
 3. depending on your guest system, you might need to explicitly set the log directory in the configuration
+4. differences in the systemd version running on the host and on the container may prevent access to logs due to different features and configurations (e.g. zstd compression, keyed hash etc)
 
-Please note that *the official otelcol images do not contain the journald binary*; you will need to create your custom image or find one that does.
+Please note that *the official otelcol images do not contain the journalctl binary*. The next two sections describe two approaches for providing a journalctl binary to the collector when running in a container.
+
+#### Bundling journalctl with the collector
+
+If the container only needs to run on a limited set of hosts for which there is a common compatible version of journalctl, then you can build a collector container that includes journalctl. There is a simple example with a step-by-step, including a `Dockerfile` in [`examples/container`](examples/container/README.md).
+
+#### Invoking journalctl from a mounted chroot
+
+Some collector containers need to work across a variety of arbitrary hosts that may be running mutually incompatible versions of journalctl, making it difficult to select a single version of journalctl to bundle into the container.
+
+One way to solve this problem is to ensure that the collector running in the container invokes the exact same journalctl that was used to write the logs in the first place. To achieve this, you can mount the host's rootfs to the container and then configure the receiver to run the host's journalctl in a chroot for that mount.
+
+You can pass `-v /:/host` to `docker run` to mount the host's rootfs:
+
+```
+docker run -v /:/host otel/opentelemetry-collector-contrib
+```
+
+Then, you can configure the receiver with `root_path` to use that mount as a chroot for journalctl. Due to a [Go issue](https://github.com/golang/go/issues/39341), running executables from $PATH does not work well in a chroot, so you must also use `journalctl_path` to configure a full path to `journalctl` inside of the chroot:
+
+```yaml
+receivers:
+  journald:
+    root_path: /host
+    journalctl_path: /usr/bin/journalctl
+```
+
+You also need to ensure the user running the collector can run the journalctl from the chroot, one way to do this is to run the collector as root:
+
+```
+docker run -v /:/host --user 0 otel/opentelemetry-collector-contrib
+```
 
 ### Linux packaging
 
@@ -203,7 +235,3 @@ sudo su -s /bin/bash -c 'journalctl --lines 5' otelcol-contrib
 ```
 
 if the permissions are set correctly you will see some logs, otherwise a clear error message.
-
-### Kubernetes
-
-See the instructions for [Docker](#Docker) and adapt according to your Kubernetes distribution and node OS.

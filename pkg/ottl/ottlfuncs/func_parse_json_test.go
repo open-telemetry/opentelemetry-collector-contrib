@@ -164,7 +164,7 @@ func Test_ParseJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := parseJSON(tt.target)
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			if tt.wantMap != nil {
 				resultMap, ok := result.(pcommon.Map)
@@ -248,8 +248,8 @@ const benchData = `{
 func BenchmarkParseJSON(b *testing.B) {
 	ctx := b.Context()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := parseJSON(ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
 				return benchData, nil

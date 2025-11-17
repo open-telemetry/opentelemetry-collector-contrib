@@ -4,6 +4,7 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"encoding/xml"
@@ -107,6 +108,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeHealth,
 		s.scrapeSearch,
 		s.scrapeIndexerClusterManagerStatus,
+		s.scrapeLicenses,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -156,8 +158,12 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkLicenseIndexUsageSearch`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -191,7 +197,11 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -206,7 +216,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 
 	// Record the results
 	var indexName string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "indexname":
 			indexName = f.Value
@@ -230,8 +240,12 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerAvgExecLatencySearch`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -265,7 +279,11 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -284,7 +302,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -308,8 +326,12 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIndexerAvgRate`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -343,11 +365,11 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
-		}
-
-		if sr.Return == 200 {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -365,7 +387,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 	}
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -389,8 +411,12 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkPipelineQueues`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -419,13 +445,16 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 		if err != nil {
 			errs <- err
 		}
-
 		res.Body.Close()
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 200 {
@@ -448,7 +477,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 	// Record the results
 	var host string
 	var ps int64
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -501,8 +530,12 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkBucketsSearchableStatus`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -531,13 +564,16 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 		if err != nil {
 			errs <- err
 		}
-
 		res.Body.Close()
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 200 {
@@ -561,7 +597,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 	var host string
 	var searchable string
 	var bc int64
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -589,8 +625,12 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIndexesData`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -623,13 +663,12 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
-		}
-
-		if sr.Return == 200 {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -648,7 +687,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 	// Record the results
 	var indexer string
 	var bc int64
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "title":
 			indexer = f.Value
@@ -702,8 +741,12 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerCompletionRatio`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -737,7 +780,11 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -756,7 +803,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -780,8 +827,12 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIndexerRawWriteSeconds`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -815,7 +866,11 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -834,7 +889,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -858,8 +913,12 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIndexerCpuSeconds`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -893,7 +952,11 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -912,7 +975,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -936,8 +999,12 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkIoAvgIops`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -971,7 +1038,11 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -990,7 +1061,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -1014,8 +1085,12 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerAvgRunTime`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -1049,7 +1124,11 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
-			break
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -1068,7 +1147,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 
 	// Record the results
 	var host string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
@@ -2137,5 +2216,70 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 		}
 		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
+	}
+}
+
+// Scrape License Endpoint
+func (s *splunkScraper) scrapeLicenses(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+	if !s.conf.Metrics.SplunkLicenseExpirationSecondsRemaining.Enabled {
+		return
+	}
+
+	var eptType string
+
+	switch {
+	case s.conf.IdxEndpoint.Endpoint != "":
+		errs <- errors.New("splunk.license.remaining cannot be scraped from an indexer")
+		return
+	case s.conf.SHEndpoint.Endpoint != "":
+		errs <- errors.New("splunk.license.remaining cannot be scraped from a search head")
+		return
+	case s.conf.CMEndpoint.Endpoint != "":
+		eptType = typeCm
+	default:
+		errs <- errors.New("no endpoint set for scraping")
+		return
+	}
+
+	i := info[eptType].Entries[0].Content
+	s.settings.Logger.Debug(fmt.Sprintf("endpoint type set: %s", eptType))
+
+	ept := apiDict[`SplunkLicenses`]
+	var licenses licenses
+
+	req, err := s.splunkClient.createAPIRequest(eptType, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	var body bytes.Buffer
+	_, err = io.Copy(&body, res.Body)
+	if err != nil {
+		errs <- err
+		return
+	}
+	s.settings.Logger.Debug(fmt.Sprintf("license response: %s", body.String()))
+	defer body.Reset()
+
+	if err := json.NewDecoder(&body).Decode(&licenses); err != nil {
+		errs <- err
+		return
+	}
+
+	s.settings.Logger.Debug(fmt.Sprintf("number of licenses found: %d", len(licenses.Entries)))
+
+	for _, entry := range licenses.Entries {
+		expTime := time.Unix(entry.Content.ExpirationTime, 0)
+		timeRemaining := int64(expTime.Sub(time.Now().UTC()).Seconds()) // expiry time - current time in seconds converted to int64
+
+		s.mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(now, timeRemaining, entry.Content.Status, entry.Content.Label, entry.Content.Type, i.Build, i.Version)
 	}
 }

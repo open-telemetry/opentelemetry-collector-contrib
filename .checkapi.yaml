@@ -6,6 +6,7 @@ ignored_paths:
   - extension/observer
   - extension/encoding
   - extension/opampcustommessages
+  - extension/storage
   - pkg/batchperresourceattr
   - pkg/batchpersignal
   - pkg/core/xidutils
@@ -25,6 +26,7 @@ ignored_paths:
   - pkg/translator/jaeger
   - pkg/translator/loki
   - pkg/translator/opencensus
+  - pkg/translator/pprof
   - pkg/translator/prometheus
   - pkg/translator/prometheusremotewrite
   - pkg/translator/signalfx
@@ -36,9 +38,14 @@ ignored_paths:
   - receiver/pulsarreceiver # 38930
   - exporter/pulsarexporter # 38929
   - exporter/elasticsearchexporter/integrationtest
-  - scraper/zookeeperscraper
   - testbed/mockdatasenders/mockdatadogagentexporter
   - extension/sumologicextension # 40655
+  - extension/k8sleaderelector # 43992
+  - processor/filterprocessor # 43994
+  - processor/transformprocessor # 43994
+  - receiver/aerospikereceiver # 43995
+  - receiver/carbonreceiver
+  - receiver/statsdreceiver
 allowed_functions:
   - name: NewFactory
     classes:
@@ -64,11 +71,23 @@ allowed_functions:
     classes:
       - receiver
     return_types: [receiver.Factory]
+  - name: NewFactory
+    classes:
+      - scraper
+    return_types: [scraper.Factory]
+  # Allow any functions under pkg
+  - name: "*"
+    classes:
+      - pkg
+  # Allow no functions under cmd
+  - classes:
+      - cmd
 
 ignored_functions:
   - ^Test.*
   - ^Benchmark.*
   - ^Fuzz.*
+  - ^Example.*
 
 unkeyed_literal_initialization:
   enabled: true

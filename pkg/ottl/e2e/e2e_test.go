@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -55,6 +56,17 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `keep_matching_keys(attributes, "^http")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().Remove("flags")
+				tCtx.GetLogRecord().Attributes().Remove("total.string")
+				tCtx.GetLogRecord().Attributes().Remove("foo")
+				tCtx.GetLogRecord().Attributes().Remove("things")
+				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
+				tCtx.GetLogRecord().Attributes().Remove("conflict")
+			},
+		},
+		{
+			statement: `keep_matching_keys(attributes, Concat(["^", "http"], ""))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().Remove("flags")
 				tCtx.GetLogRecord().Attributes().Remove("total.string")
@@ -242,6 +254,13 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `replace_all_matches(attributes, Concat(["*","/","*"],""), "test")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
+				tCtx.GetLogRecord().Attributes().PutStr("http.url", "test")
+			},
+		},
+		{
 			statement: `replace_all_patterns(attributes, "key", "^http", "test")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().Remove("http.method")
@@ -260,6 +279,19 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `replace_match(attributes["http.path"], Concat(["*","/","*"],""), "test")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
+			},
+		},
+		{
+			statement: `replace_all_patterns(attributes, "value", Concat(["/","health"],""), "@")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@")
+				tCtx.GetLogRecord().Attributes().PutStr("http.url", "http://localhost@")
+			},
+		},
+		{
 			statement: `replace_match(attributes["http.path"], "*/*", "test")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
@@ -269,6 +301,12 @@ func Test_e2e_editors(t *testing.T) {
 			statement: `replace_pattern(attributes["http.path"], "/", "@")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@health")
+			},
+		},
+		{
+			statement: `replace_pattern(attributes["http.path"], Concat(["/","health"],""), "@")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "@")
 			},
 		},
 		{
@@ -354,7 +392,7 @@ func Test_e2e_editors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContextEditors()
@@ -363,7 +401,7 @@ func Test_e2e_editors(t *testing.T) {
 				exTCtx := constructLogTransformContextEditors()
 				tt.want(exTCtx)
 
-				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			}
 		})
 	}
@@ -486,9 +524,21 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["decoded_base64"], Decode("cGFzcw==", attributes["encoding"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("decoded_base64", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Concat(["A","B"], attributes["val"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "Aval2B")
 			},
 		},
 		{
@@ -613,7 +663,26 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ExtractPatterns("aa123bb", Concat(["(?P", "<numbers>", "\\d+)"], "")))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("numbers", "123")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", "%{ELB_URI}", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("url.scheme", "http")
+				m.PutStr("url.username", "user")
+				m.PutStr("url.domain", "example.com")
+				m.PutInt("url.port", 80)
+				m.PutStr("url.path", "/path")
+				m.PutStr("url.query", "query=string")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", Concat(["%{", "ELB_URI", "}"], ""), true))`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutStr("url.scheme", "http")
@@ -972,6 +1041,15 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Sort(Split(attributes["flags"], attributes["split_delimiter"]), "desc"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				s.AppendEmpty().SetStr("C")
+				s.AppendEmpty().SetStr("B")
+				s.AppendEmpty().SetStr("A")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Sort([true, false, false]))`,
 			want: func(tCtx ottllog.TransformContext) {
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
@@ -1160,6 +1238,14 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `keep_keys(attributes["foo"], [Concat(["ba", "r"], "")])`,
+			want: func(tCtx ottllog.TransformContext) {
+				// keep_keys should see two arguments
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
+				m.PutStr("bar", "pass")
+			},
+		},
+		{
 			statement: `keep_keys(attributes["foo"], ["\\", "bar"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				// keep_keys should see two arguments
@@ -1286,26 +1372,38 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutInt("indexof", 2)
 			},
 		},
+		{
+			statement: `set(attributes["test"], XXH3("hello world"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "d447b1ea40e6988b")
+			},
+		},
+		{
+			statement: `set(attributes["test"], XXH128("hello world"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "df8d09e93f874900a99b8775cc15b6c7")
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
 				_, _, err = statement.Execute(t.Context(), tCtx)
 				if tt.errMsg == "" {
-					assert.NoError(t, err)
+					require.NoError(t, err)
 				} else {
-					assert.Contains(t, err.Error(), tt.errMsg)
+					assert.ErrorContains(t, err, tt.errMsg)
 				}
 
 				exTCtx := constructLogTransformContext()
 				tt.want(exTCtx)
 
-				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			}
 		})
 	}
@@ -1351,8 +1449,22 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "Using HasPrefix with dynamic prefix",
+			statement: `set(attributes["test"], "pass") where HasPrefix(body, attributes["dynamicprefix"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			name:      "Using HasSuffix",
 			statement: `set(attributes["test"], "pass") where HasSuffix(body, "tionA")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "Using HasSuffix with dynamic suffix",
+			statement: `set(attributes["test"], "pass") where HasSuffix(body, attributes["dynamicsuffix"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -1367,6 +1479,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "where clause without comparator",
 			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause without comparator dynamic pattern",
+			statement: `set(attributes["test"], "pass") where IsMatch(body, Concat(["operation", "[AC]"], ""))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -1456,7 +1575,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
@@ -1465,7 +1584,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 				exTCtx := constructLogTransformContext()
 				tt.want(exTCtx)
 
-				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			}
 		})
 	}
@@ -1489,10 +1608,34 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			},
 		},
 		{
+			name: "delete key of map literal dynamic",
+			statements: []string{
+				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
+				`set(attributes["dynamic_key"], "foo")`,
+				`delete_key(attributes["test"], attributes["dynamic_key"])`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("test", "hello")
+				tCtx.GetLogRecord().Attributes().PutStr("dynamic_key", "foo")
+			},
+		},
+		{
 			name: "delete matching keys of map literal",
 			statements: []string{
 				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
 				`delete_matching_keys(attributes["test"], ".*oo")`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("test", "hello")
+			},
+		},
+		{
+			name: "delete matching keys of map literal dynamic",
+			statements: []string{
+				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
+				`delete_matching_keys(attributes["test"], Concat([".*", "oo"], ""))`,
 			},
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
@@ -1530,7 +1673,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 
 			for _, statement := range tt.statements {
 				logStatements, err := parseStatementWithAndWithoutPathContext(statement)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				for _, s := range logStatements {
 					_, _, _ = s.Execute(t.Context(), tCtx)
@@ -1540,7 +1683,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			exTCtx := constructLogTransformContext()
 			tt.want(exTCtx)
 
-			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+			require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 		})
 	}
 }
@@ -1648,13 +1791,13 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			valueExpr, err := logParser.ParseValueExpression(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tCtx := constructLogTransformContextValueExpressions()
 			val, err := valueExpr.Eval(t.Context(), tCtx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), val)
 		})
@@ -1681,9 +1824,9 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 			funcs[isRootSpanFactory.Name()] = isRootSpanFactory
 			spanParser, err := ottlspan.NewParser(funcs, settings)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			spanStatements, err := spanParser.ParseStatement(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tCtx := constructSpanTransformContext()
 			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
@@ -1691,7 +1834,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			exTCtx := constructSpanTransformContext()
 			tt.want(exTCtx)
 
-			assert.NoError(t, ptracetest.CompareResourceSpans(newResourceSpans(exTCtx), newResourceSpans(tCtx)))
+			require.NoError(t, ptracetest.CompareResourceSpans(newResourceSpans(exTCtx), newResourceSpans(tCtx)))
 		})
 	}
 }
@@ -1715,9 +1858,9 @@ func Test_ProcessSpanEvents(t *testing.T) {
 			funcs := ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
 
 			spanEventParser, err := ottlspanevent.NewParser(funcs, settings)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			spanStatements, err := spanEventParser.ParseStatement(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tCtx := constructSpanEventTransformContext()
 			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
@@ -1725,7 +1868,7 @@ func Test_ProcessSpanEvents(t *testing.T) {
 			exTCtx := constructSpanEventTransformContext()
 			tt.want(exTCtx)
 
-			assert.NoError(t, ptracetest.CompareSpanEvent(newSpanEvent(exTCtx), newSpanEvent(tCtx)))
+			require.NoError(t, ptracetest.CompareSpanEvent(newSpanEvent(exTCtx), newSpanEvent(tCtx)))
 		})
 	}
 }
@@ -1783,7 +1926,11 @@ func constructLogTransformContext() ottllog.TransformContext {
 	logRecord.SetSeverityNumber(1)
 	logRecord.SetTraceID(traceID)
 	logRecord.SetSpanID(spanID)
+	logRecord.Attributes().PutStr("encoding", "base64")
 	logRecord.Attributes().PutStr("http.method", "get")
+	logRecord.Attributes().PutStr("split_delimiter", "|")
+	logRecord.Attributes().PutStr("dynamicprefix", "operation")
+	logRecord.Attributes().PutStr("dynamicsuffix", "tionA")
 	logRecord.Attributes().PutStr("http.path", "/health")
 	logRecord.Attributes().PutStr("http.url", "http://localhost/health")
 	logRecord.Attributes().PutStr("flags", "A|B|C")
@@ -1993,7 +2140,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 
 	settings := componenttest.NewNopTelemetrySettings()
 	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
 	// Use a round trip composition to ensure each iteration of the benchmark is the same.
 	// GetXML(body, "/Data/From/Test") returns "<Test>1</Test><Test>2</Test>"
@@ -2002,15 +2149,15 @@ func Benchmark_XML_Functions(b *testing.B) {
 	// set overwrites the body, but the result should be the same as the original body
 	roundTrip := `set(body, RemoveXML(InsertXML(body, "/Data/To", GetXML(body, "/Data/From/Test")), "/Data/To/Test"))`
 	logStatements, err := logParser.ParseStatement(roundTrip)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
 	actualCtx := tCtxWithTestBody()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, _, _ = logStatements.Execute(b.Context(), actualCtx)
 	}
 
 	// Ensure correctness
-	assert.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(tCtxWithTestBody()), newResourceLogs(actualCtx)))
+	require.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(tCtxWithTestBody()), newResourceLogs(actualCtx)))
 }

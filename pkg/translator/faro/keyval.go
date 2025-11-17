@@ -116,13 +116,14 @@ func exceptionMessage(e *faroTypes.Exception) string {
 
 // exceptionToString is the string representation of an Exception
 func exceptionToString(e *faroTypes.Exception) string {
-	stacktrace := exceptionMessage(e)
+	var stacktrace strings.Builder
+	stacktrace.WriteString(exceptionMessage(e))
 	if e.Stacktrace != nil {
 		for i := range e.Stacktrace.Frames {
-			stacktrace += frameToString(&e.Stacktrace.Frames[i])
+			stacktrace.WriteString(frameToString(&e.Stacktrace.Frames[i]))
 		}
 	}
-	return stacktrace
+	return stacktrace.String()
 }
 
 // frameToString function converts a Frame into a human readable string
@@ -150,9 +151,7 @@ func measurementToKeyVal(m *faroTypes.Measurement) *keyVal {
 	mergeKeyVal(kv, traceToKeyVal(m.Trace))
 
 	values := make(map[string]float64, len(m.Values))
-	for key, value := range m.Values {
-		values[key] = value
-	}
+	maps.Copy(values, m.Values)
 
 	mergeKeyValWithPrefix(kv, keyValFromFloatMap(values), faroMeasurementValuePrefix)
 	mergeKeyVal(kv, actionToKeyVal(m.Action))
