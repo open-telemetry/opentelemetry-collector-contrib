@@ -7,9 +7,9 @@
 package armorlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"strings"
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -79,6 +79,13 @@ const (
 	securityPolicyTypeEnforcedEdge = "enforcedEdgeSecurityPolicy"
 	securityPolicyTypePreview      = "previewSecurityPolicy"
 	securityPolicyTypeEnforced     = "enforcedSecurityPolicy"
+)
+
+var (
+	securityPolicyTypeEnforcedBytes     = []byte(securityPolicyTypeEnforced)
+	securityPolicyTypePreviewBytes      = []byte(securityPolicyTypePreview)
+	securityPolicyTypeEnforcedEdgeBytes = []byte(securityPolicyTypeEnforcedEdge)
+	securityPolicyTypePreviewEdgeBytes  = []byte(securityPolicyTypePreviewEdge)
 )
 
 type armorlog struct {
@@ -201,8 +208,8 @@ func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) error {
 	shared.PutStr(string(semconv.GeoRegionISOCodeKey), info.RegionCode, attr)
 	shared.PutInt(gcpArmorRemoteIPInfoAsn, info.ASN, attr)
 
-	if err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), info.IPAddress, attr); err != nil {
-		return fmt.Errorf("security policy remote IP differs from existing %s attribute: %w", string(semconv.NetworkPeerAddressKey), err)
+	if _, err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), info.IPAddress, attr); err != nil {
+		return fmt.Errorf("error setting security policy attribute: %w", err)
 	}
 
 	return nil
@@ -284,11 +291,10 @@ func handleEnforcedSecurityPolicy(sp *enforcedSecurityPolicy, attr pcommon.Map) 
 func ContainsSecurityPolicyFields(jsonPayload gojson.RawMessage) bool {
 	// Check for the presence of key armor log field names in the raw JSON without unmarshaling
 	// to avoid unnecessary overhead for non-armor load balancer logs.
-	s := string(jsonPayload)
-	return strings.Contains(s, securityPolicyTypeEnforced) ||
-		strings.Contains(s, securityPolicyTypePreview) ||
-		strings.Contains(s, securityPolicyTypeEnforcedEdge) ||
-		strings.Contains(s, securityPolicyTypePreviewEdge)
+	return bytes.Contains(jsonPayload, securityPolicyTypeEnforcedBytes) ||
+		bytes.Contains(jsonPayload, securityPolicyTypePreviewBytes) ||
+		bytes.Contains(jsonPayload, securityPolicyTypeEnforcedEdgeBytes) ||
+		bytes.Contains(jsonPayload, securityPolicyTypePreviewEdgeBytes)
 }
 
 func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
@@ -305,8 +311,8 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 
 	// Handle request metadata fields
 	shared.PutStr(gcpLoadBalancingBackendTargetProjectNumber, log.BackendTargetProjectNumber, attr)
-	if err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), log.RemoteIP, attr); err != nil {
-		return fmt.Errorf("remote IP differs from existing %s attribute: %w", string(semconv.NetworkPeerAddressKey), err)
+	if _, err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), log.RemoteIP, attr); err != nil {
+		return fmt.Errorf("error setting security policy attribute: %w", err)
 	}
 
 	// Handle security policy request data (all nested fields)

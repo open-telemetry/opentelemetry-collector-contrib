@@ -646,7 +646,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 					}
 				}
 			}`,
-			expectsErr: "remote IP differs from existing network.peer.address attribute",
+			expectsErr: "already present with different value",
 		},
 		{
 			name: "preview edge security policy",
