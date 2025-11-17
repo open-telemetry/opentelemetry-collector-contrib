@@ -196,7 +196,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 // when an explicit zero threshold is not provided in the datapoint.
 const (
 	defaultZeroThreshold = 1e-128
-	CBNHScale            = -53
+	cbnhScale            = -53
 )
 
 func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) map[int]int64 {
@@ -227,7 +227,7 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	schema := dp.Scale()
 
 	// TODO: implement custom bucket native histograms #43981
-	if schema == CBNHScale {
+	if schema == cbnhScale {
 		return nil, errors.New("custom bucket native histograms (CBNH) are still not implemented")
 	}
 	if schema < -4 {
