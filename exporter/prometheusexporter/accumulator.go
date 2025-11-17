@@ -501,15 +501,13 @@ func filterBucketsForZeroThreshold(offset int32, counts []uint64, scale int32, z
 	// Find the first bucket whose upper bound is > zeroThreshold
 	for i, count := range counts {
 		upperBound := calculateBucketUpperBound(scale, offset, i)
-		if upperBound <= zeroThreshold {
-			// This bucket's range falls entirely below the zero threshold
-			additionalZeroCount += count
-			newOffset = offset + int32(i) + 1 // Move offset to next bucket
-		} else {
-			// This bucket and all subsequent buckets should be kept
+		if upperBound > zeroThreshold {
 			filteredCounts = append(filteredCounts, counts[i:]...)
 			break
 		}
+		// This bucket's range falls entirely below the zero threshold
+		additionalZeroCount += count
+		newOffset = offset + int32(i) + 1 // Move offset to next bucket
 	}
 
 	// If all buckets were filtered out, return empty buckets
@@ -617,7 +615,6 @@ func downscaleBucketSide(offset int32, counts []uint64, fromScale, targetScale i
 		} else {
 			counts[nk-newOffset] += counts[i]
 		}
-
 	}
 	return newOffset, counts[:newLen]
 }
