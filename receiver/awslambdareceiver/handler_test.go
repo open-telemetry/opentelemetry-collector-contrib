@@ -3,13 +3,9 @@
 package awslambdareceiver
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -289,22 +285,4 @@ func (n *mockPlogEventHandler) handlerType() eventType {
 func (n *mockPlogEventHandler) handle(context.Context, json.RawMessage) error {
 	n.handleCount++
 	return nil
-}
-
-func getDataFromFile(t *testing.T, file string) string {
-	data, err := os.ReadFile(file)
-	require.NoError(t, err)
-
-	compressed := compressData(t, data)
-	return base64.StdEncoding.EncodeToString(compressed)
-}
-
-func compressData(t *testing.T, data []byte) []byte {
-	var buf bytes.Buffer
-	gzipWriter := gzip.NewWriter(&buf)
-	_, err := gzipWriter.Write(data)
-	require.NoError(t, err)
-	err = gzipWriter.Close()
-	require.NoError(t, err)
-	return buf.Bytes()
 }

@@ -15,13 +15,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
@@ -43,10 +41,6 @@ var (
 	_                  receiver.Metrics = (*awsLambdaReceiver)(nil)
 	_                  receiver.Logs    = (*awsLambdaReceiver)(nil)
 )
-
-type extensionFactory interface {
-	Create(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error)
-}
 
 type awsLambdaReceiver struct {
 	cfg        *Config
@@ -71,7 +65,7 @@ func newLogsReceiver(cfg *Config, set receiver.Settings, next consumer.Logs) (re
 		) (lambdaEventHandler, error) {
 			return newLogsHandler(
 				ctx, cfg, set, host, next,
-				s3Provider, awslogsencodingextension.NewFactory(),
+				s3Provider,
 			)
 		},
 	}, nil
@@ -167,7 +161,6 @@ func newLogsHandler(
 	host component.Host,
 	next consumer.Logs,
 	s3Provider internal.S3Provider,
-	factory extensionFactory,
 ) (lambdaEventHandler, error) {
 	// If S3Encoding is not set, return an error
 	if cfg.S3Encoding == "" {
@@ -226,11 +219,8 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 // detectTriggerType is a helper to derive the eventType based on the payload content.
 // Supported trigger types are:
 // - S3Event
-// - CloudWatchEvent (TODO)
-// - CustomReplayEvent (TODO)
 func detectTriggerType(data []byte) (eventType, error) {
-	switch {
-	case bytes.HasPrefix(data, []byte(`{"Records"`)):
+	if bytes.HasPrefix(data, []byte(`{"Records"`)) {
 		return s3Event, nil
 	}
 

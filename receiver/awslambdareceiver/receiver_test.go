@@ -263,7 +263,6 @@ func TestLoadLogsHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// construct mocks
 			host := mockHost{GetFunc: tt.hostMock}
-			factory := mockExtFactory{CreateFunc: tt.factoryMock}
 
 			// load handler and validate
 			handler, err := newLogsHandler(
@@ -272,9 +271,7 @@ func TestLoadLogsHandler(t *testing.T) {
 				receivertest.NewNopSettings(metadata.Type),
 				host,
 				consumertest.NewNop(),
-				s3Provider,
-				&factory,
-			)
+				s3Provider)
 			if tt.isErr {
 				require.Error(t, err)
 			} else {
@@ -466,15 +463,6 @@ func TestDetectTriggerType(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
-}
-
-type mockExtFactory struct {
-	CreateFunc func(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error)
-	_          struct{} // prevent unkeyed literal initialization
-}
-
-func (m *mockExtFactory) Create(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error) {
-	return m.CreateFunc(ctx, settings, config)
 }
 
 type mockExtensionWithPLogUnmarshaler struct {
