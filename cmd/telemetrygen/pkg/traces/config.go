@@ -9,13 +9,13 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 // Config describes the test scenario.
 type Config struct {
-	common.Config
+	config.Config
 	NumTraces        int
 	NumChildSpans    int
 	PropagateContext bool
