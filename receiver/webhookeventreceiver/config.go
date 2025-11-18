@@ -72,6 +72,12 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	// Set default MaxRequestBodySize if not configured
+	if cfg.MaxRequestBodySize == 0 {
+		cfg.MaxRequestBodySize = int64(20 * 1024 * 1024) // 20MiB
+		// to match default value http://github.com/open-telemetry/opentelemetry-collector/blob/release/v0.139.x/config/confighttp/server.go#L31
+	}
+
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
 		errs = multierr.Append(errs, errRequiredHeader)
 	}

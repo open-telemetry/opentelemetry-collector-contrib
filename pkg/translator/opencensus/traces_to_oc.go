@@ -21,6 +21,7 @@ import (
 )
 
 // ResourceSpansToOC may be used only by OpenCensus receiver and exporter implementations.
+//
 // Deprecated: Use ptrace.Traces.
 // TODO: move this function to OpenCensus package.
 func ResourceSpansToOC(rs ptrace.ResourceSpans) (*occommon.Node, *ocresource.Resource, []*octrace.Span) {

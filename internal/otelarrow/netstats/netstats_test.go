@@ -67,10 +67,6 @@ func viewsFromLevel(level configtelemetry.Level) []metric.View {
 				Name:  "otelcol_*_compressed_size",
 				Scope: scope,
 			}),
-			dropView(metric.Instrument{
-				Name:  "otelcol_*_compressed_size",
-				Scope: scope,
-			}),
 			// makeRecvMetrics for exporters.
 			dropView(metric.Instrument{
 				Name:  "otelcol_exporter_recv",

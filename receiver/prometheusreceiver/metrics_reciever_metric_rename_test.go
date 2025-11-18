@@ -185,7 +185,6 @@ func verifyRenameMetricKeepAction(t *testing.T, td *testData, resourceMetrics []
 				{
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
-						compareStartTimestamp(ts1),
 						compareDoubleValue(100),
 						compareAttributes(map[string]string{"method": "post", "port": "6380"}),
 					},

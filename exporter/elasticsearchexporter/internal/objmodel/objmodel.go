@@ -211,8 +211,8 @@ func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
 	linkValues := make([]Value, links.Len())
 	for i, link := range links.All() {
 		linkObj := Document{}
-		linkObj.AddTraceID("trace_id", link.TraceID())
-		linkObj.AddSpanID("span_id", link.SpanID())
+		linkObj.AddTraceID("trace.id", link.TraceID())
+		linkObj.AddSpanID("span.id", link.SpanID())
 		linkValues[i] = Value{kind: KindObject, doc: linkObj}
 	}
 

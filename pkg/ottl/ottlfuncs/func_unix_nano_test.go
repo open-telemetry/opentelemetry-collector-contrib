@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -59,9 +60,9 @@ func Test_TimeUnixNano(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := UnixNano(tt.time)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			want := tt.expected.UnixNano()
 			assert.Equal(t, want, result)
 		})

@@ -8,6 +8,7 @@ import (
 
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func nameOf(def *lexer.StatefulDefinition, val lexer.TokenType) string {
@@ -164,7 +165,7 @@ func Test_lexer(t *testing.T) {
 			lexDef := buildLexer()
 			symbols := lexDef.Symbols()
 			x, err := lexDef.LexString(tt.name, tt.input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			i := 0
 			for tok, err := x.Next(); tok.EOF() != true; tok, err = x.Next() {
 				if tt.expectErr {
@@ -172,7 +173,7 @@ func Test_lexer(t *testing.T) {
 					assert.Error(t, err)
 					break
 				}
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.output[i].val, tok.String())
 				assert.Equal(t, symbols[tt.output[i].typ], tok.Type,
 					"expected '%s' to be %s, got %v", tok.String(), tt.output[i].typ, nameOf(lexDef, tok.Type))

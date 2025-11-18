@@ -1696,7 +1696,6 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	err := c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
 
 	// Only the record that was not successfully sent should be returned
 	var logsErr consumererror.Logs

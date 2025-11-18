@@ -175,6 +175,7 @@ body:
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
+      - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
@@ -259,6 +260,7 @@ body:
       - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
+      - receiver/googlecloudpubsubpush
       - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics

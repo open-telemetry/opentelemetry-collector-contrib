@@ -541,10 +541,10 @@ func Test_replaceAllPatterns(t *testing.T) {
 			}
 
 			exprFunc, err := replaceAllPatterns[pcommon.Map](target, tt.mode, pattern, tt.replacement, tt.function, tt.replacementFormat)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
@@ -580,7 +580,7 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := replaceAllPatterns[any](target, modeValue, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -611,7 +611,7 @@ func Test_replaceAllPatterns_bad_function_input(t *testing.T) {
 	}
 
 	exprFunc, err := replaceAllPatterns[any](target, modeValue, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
@@ -659,7 +659,7 @@ func Test_replaceAllPatterns_bad_function_result(t *testing.T) {
 	}
 
 	exprFunc, err := replaceAllPatterns[any](target, modeValue, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
@@ -697,7 +697,7 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := replaceAllPatterns[any](target, modeValue, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)

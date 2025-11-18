@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -133,11 +134,11 @@ func Test_InsertXML(t *testing.T) {
 						},
 					},
 				})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
 			if tt.expectErr == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, tt.expectErr)
 			}
@@ -169,7 +170,7 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 			Target: invalidXMLGetter(),
 			XPath:  "/",
 		})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
@@ -185,7 +186,7 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 			XPath:       "/",
 			SubDocument: invalidXMLGetter(),
 		})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)

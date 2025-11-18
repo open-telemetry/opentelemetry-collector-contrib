@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -133,8 +133,7 @@ func newEpClient(clientSet kubernetes.Interface, logger *zap.Logger, options ...
 
 	c.store = NewObjStore(transformFuncEndpoint, logger)
 	lw := c.createEndpointListWatch(clientSet, metav1.NamespaceAll)
-	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-	reflector := cache.NewReflector(lw, &v1.Endpoints{}, c.store, 0)
+	reflector := cache.NewReflector(lw, &discoveryv1.EndpointSlice{}, c.store, 0)
 
 	go reflector.Run(c.stopChan)
 
@@ -152,28 +151,34 @@ func (c *epClient) shutdown() {
 }
 
 func transformFuncEndpoint(obj any) (any, error) {
-	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-	endpoint, ok := obj.(*v1.Endpoints)
+	endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
 	if !ok {
-		return nil, fmt.Errorf("input obj %v is not Endpoint type", obj)
+		return nil, fmt.Errorf("input obj %v is not EndpointSlice type", obj)
 	}
 	info := new(endpointInfo)
-	info.name = endpoint.Name
-	info.namespace = endpoint.Namespace
+	// EndpointSlice uses a label to reference the service
+	if serviceName, ok := endpointSlice.Labels[discoveryv1.LabelServiceName]; ok {
+		info.name = serviceName
+	} else {
+		// Fallback to the EndpointSlice name if label is not present
+		info.name = endpointSlice.Name
+	}
+	info.namespace = endpointSlice.Namespace
 	info.podKeyList = []string{}
-	if subsets := endpoint.Subsets; subsets != nil {
-		for _, subset := range subsets {
-			if addresses := subset.Addresses; addresses != nil {
-				for _, address := range addresses {
-					if targetRef := address.TargetRef; targetRef != nil && targetRef.Kind == typePod {
-						podKey := k8sutil.CreatePodKey(targetRef.Namespace, targetRef.Name)
-						if podKey == "" {
-							continue
-						}
-						info.podKeyList = append(info.podKeyList, podKey)
-					}
-				}
+
+	// EndpointSlice has Endpoints field (not Subsets like old Endpoints)
+	for _, endpoint := range endpointSlice.Endpoints {
+		// Check if endpoint is ready
+		if endpoint.Conditions.Ready != nil && !*endpoint.Conditions.Ready {
+			continue
+		}
+
+		if endpoint.TargetRef != nil && endpoint.TargetRef.Kind == typePod {
+			podKey := k8sutil.CreatePodKey(endpoint.TargetRef.Namespace, endpoint.TargetRef.Name)
+			if podKey == "" {
+				continue
 			}
+			info.podKeyList = append(info.podKeyList, podKey)
 		}
 	}
 	return info, nil
@@ -183,10 +188,10 @@ func (*epClient) createEndpointListWatch(client kubernetes.Interface, ns string)
 	ctx := context.Background()
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return client.CoreV1().Endpoints(ns).List(ctx, opts)
+			return client.DiscoveryV1().EndpointSlices(ns).List(ctx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return client.CoreV1().Endpoints(ns).Watch(ctx, opts)
+			return client.DiscoveryV1().EndpointSlices(ns).Watch(ctx, opts)
 		},
 	}
 }

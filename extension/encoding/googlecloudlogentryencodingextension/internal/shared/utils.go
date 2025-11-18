@@ -56,3 +56,20 @@ func PutBool(field string, value *bool, attributes pcommon.Map) {
 		attributes.PutBool(field, *value)
 	}
 }
+
+// PutStrIfNotPresent places value in the attributes map if not empty and not already present
+// Returns an error if the attribute is already present with a different value.
+func PutStrIfNotPresent(field, value string, attributes pcommon.Map) (bool, error) {
+	if value == "" {
+		return false, nil
+	}
+	val, exists := attributes.Get(field)
+	if !exists {
+		attributes.PutStr(field, value)
+		return true, nil
+	}
+	if val.Str() != value {
+		return false, fmt.Errorf("attribute %q already present with different value: existing=%q, new=%q", field, val.Str(), value)
+	}
+	return false, nil
+}

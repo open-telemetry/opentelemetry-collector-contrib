@@ -15,8 +15,8 @@ func parseCPUUtilizationNXOS(output string) (float64, error) {
 	// Regex to match: CPU states  :   27.70% user,   10.80% kernel,   61.49% idle
 	cpuRegex := regexp.MustCompile(`CPU states\s*:\s*([\d.]+)% user,\s*([\d.]+)% kernel`)
 
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(output, "\n")
+	for line := range lines {
 		matches := cpuRegex.FindStringSubmatch(line)
 		if len(matches) == 3 {
 			userPercent, err1 := strconv.ParseFloat(matches[1], 64)
@@ -40,8 +40,8 @@ func parseCPUUtilizationIOS(output string) (float64, error) {
 	// Regex to match: CPU utilization for five seconds: 8%/2%; one minute: 7%; five minutes: 6%
 	cpuRegex := regexp.MustCompile(`CPU utilization for five seconds:\s*(\d+)%`)
 
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(output, "\n")
+	for line := range lines {
 		matches := cpuRegex.FindStringSubmatch(line)
 		if len(matches) == 2 {
 			fiveSecPercent, err := strconv.ParseFloat(matches[1], 64)
@@ -71,8 +71,8 @@ func parseMemoryUtilization(output, osType string) (float64, error) {
 		memRegex = regexp.MustCompile(`Processor\s+Pool\s+Total:\s*(\d+)\s+Used:\s*(\d+)`)
 	}
 
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(output, "\n")
+	for line := range lines {
 		matches := memRegex.FindStringSubmatch(line)
 		if len(matches) == 3 {
 			total, err1 := strconv.ParseFloat(matches[1], 64)

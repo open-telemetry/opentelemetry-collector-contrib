@@ -266,6 +266,7 @@ func testReceiverVersionAndNameAreAttached(t *testing.T, enableNativeHistograms 
 func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 	for _, enableNativeHistograms := range []bool{true, false} {
 		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, removeStartTimeAdjustment, false)()
 			testTransactionCommitErrorWhenAdjusterError(t, enableNativeHistograms)
 		})
 	}
@@ -1329,668 +1330,602 @@ func TestMetricBuilderUntyped(t *testing.T) {
 }
 
 func TestMetricBuilderHistogram(t *testing.T) {
-	tests := []buildTestData{
-		{
-			name: "single item",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
-						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(10)
-				pt0.SetSum(99)
-				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "single item with exemplars",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint(
-							"hist_test_bucket",
-							1,
-							[]exemplar.Exemplar{
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}}...),
-								},
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}, {Name: "le", Value: "20"}}...),
-								},
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "traceid", Value: "e3688e1aa2961786"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}}...),
-								},
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
-								},
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc88"}, {Name: "span_id", Value: "dfa4597a9"}}...),
-								},
-							},
-							"foo", "bar", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
-						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(10)
-				pt0.SetSum(99)
-				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				e0 := pt0.Exemplars().AppendEmpty()
-				e0.SetTimestamp(timestampFromMs(1663113420863))
-				e0.SetDoubleValue(1)
-				e0.FilteredAttributes().PutStr(model.MetricNameLabel, "counter_test")
-				e0.FilteredAttributes().PutStr("foo", "bar")
-				e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
-				e0.FilteredAttributes().PutStr(model.JobLabel, "job")
-
-				e1 := pt0.Exemplars().AppendEmpty()
-				e1.SetTimestamp(timestampFromMs(1663113420863))
-				e1.SetDoubleValue(1)
-				e1.FilteredAttributes().PutStr("foo", "bar")
-				e1.FilteredAttributes().PutStr("le", "20")
-
-				e2 := pt0.Exemplars().AppendEmpty()
-				e2.SetTimestamp(timestampFromMs(1663113420863))
-				e2.SetDoubleValue(1)
-				e2.FilteredAttributes().PutStr("foo", "bar")
-				e2.FilteredAttributes().PutStr("traceid", "e3688e1aa2961786")
-				e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
-				e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
-
-				e3 := pt0.Exemplars().AppendEmpty()
-				e3.SetTimestamp(timestampFromMs(1663113420863))
-				e3.SetDoubleValue(1)
-				e3.FilteredAttributes().PutStr("foo", "bar")
-				e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
-				e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
-
-				e4 := pt0.Exemplars().AppendEmpty()
-				e4.SetTimestamp(timestampFromMs(1663113420863))
-				e4.SetDoubleValue(1)
-				e4.FilteredAttributes().PutStr("foo", "bar")
-				e4.FilteredAttributes().PutStr("span_id", "dfa4597a9")
-				e4.FilteredAttributes().PutStr("trace_id", "174137cab66dc88")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "multi-groups",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
-						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
-						createDataPoint("hist_test_bucket", 1, nil, "key2", "v2", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "key2", "v2", "le", "20"),
-						createDataPoint("hist_test_bucket", 3, nil, "key2", "v2", "le", "+inf"),
-						createDataPoint("hist_test_sum", 50, nil, "key2", "v2"),
-						createDataPoint("hist_test_count", 3, nil, "key2", "v2"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(10)
-				pt0.SetSum(99)
-				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				pt1 := hist0.DataPoints().AppendEmpty()
-				pt1.SetCount(3)
-				pt1.SetSum(50)
-				pt1.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt1.BucketCounts().FromRaw([]uint64{1, 1, 1})
-				pt1.SetTimestamp(tsNanos)
-				pt1.SetStartTimestamp(startTimestamp)
-				pt1.Attributes().PutStr("key2", "v2")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "multi-groups-and-families",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
-						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
-						createDataPoint("hist_test_bucket", 1, nil, "key2", "v2", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "key2", "v2", "le", "20"),
-						createDataPoint("hist_test_bucket", 3, nil, "key2", "v2", "le", "+inf"),
-						createDataPoint("hist_test_sum", 50, nil, "key2", "v2"),
-						createDataPoint("hist_test_count", 3, nil, "key2", "v2"),
-						createDataPoint("hist_test2_bucket", 1, nil, "foo", "bar", "le", "10"),
-						createDataPoint("hist_test2_bucket", 2, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test2_bucket", 3, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test2_sum", 50, nil, "foo", "bar"),
-						createDataPoint("hist_test2_count", 3, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(10)
-				pt0.SetSum(99)
-				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				pt1 := hist0.DataPoints().AppendEmpty()
-				pt1.SetCount(3)
-				pt1.SetSum(50)
-				pt1.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt1.BucketCounts().FromRaw([]uint64{1, 1, 1})
-				pt1.SetTimestamp(tsNanos)
-				pt1.SetStartTimestamp(startTimestamp)
-				pt1.Attributes().PutStr("key2", "v2")
-
-				m1 := mL0.AppendEmpty()
-				m1.SetName("hist_test2")
-				m1.Metadata().PutStr("prometheus.type", "histogram")
-				hist1 := m1.SetEmptyHistogram()
-				hist1.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt2 := hist1.DataPoints().AppendEmpty()
-				pt2.SetCount(3)
-				pt2.SetSum(50)
-				pt2.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt2.BucketCounts().FromRaw([]uint64{1, 1, 1})
-				pt2.SetTimestamp(tsNanos)
-				pt2.SetStartTimestamp(startTimestamp)
-				pt2.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "unordered-buckets",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
-						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(10)
-				pt0.SetSum(99)
-				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			// this won't likely happen in real env, as prometheus wont generate histogram with less than 3 buckets
-			name: "only-one-bucket",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_bucket", 3, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_count", 3, nil, "foo", "bar"),
-						createDataPoint("hist_test_sum", 100, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(3)
-				pt0.SetSum(100)
-				pt0.BucketCounts().FromRaw([]uint64{3})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			// this won't likely happen in real env, as prometheus wont generate histogram with less than 3 buckets
-			name: "only-one-bucket-noninf",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_bucket", 3, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test_count", 3, nil, "foo", "bar"),
-						createDataPoint("hist_test_sum", 100, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(3)
-				pt0.SetSum(100)
-				pt0.BucketCounts().FromRaw([]uint64{3, 0})
-				pt0.ExplicitBounds().FromRaw([]float64{20})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "no-sum",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test_bucket", 3, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_count", 3, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(3)
-				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
-				pt0.BucketCounts().FromRaw([]uint64{1, 1, 1})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "corrupted-no-buckets",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
-						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				m0.Metadata().PutStr("prometheus.type", "histogram")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(10)
-				pt0.SetSum(99)
-				pt0.BucketCounts().FromRaw([]uint64{10})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "corrupted-no-count",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
-						createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
-						createDataPoint("hist_test_bucket", 3, nil, "foo", "bar", "le", "+inf"),
-						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				return []pmetric.Metrics{pmetric.NewMetrics()}
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		for _, enableNativeHistograms := range []bool{true, false} {
-			// None of the histograms above have native histogram versions, so enabling native histograms has no effect.
-			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
-				tt.run(t, enableNativeHistograms)
-			})
-		}
-	}
-}
-
-func TestMetricBuilderSummary(t *testing.T) {
-	tests := []buildTestData{
-		{
-			name: "no-sum-and-count",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test", 5, nil, "foo", "bar", "quantile", "1"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				return []pmetric.Metrics{pmetric.NewMetrics()}
-			},
-		},
-		{
-			name: "no-count",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test", 1, nil, "foo", "bar", "quantile", "0.5"),
-						createDataPoint("summary_test", 2, nil, "foo", "bar", "quantile", "0.75"),
-						createDataPoint("summary_test", 5, nil, "foo", "bar", "quantile", "1"),
-						createDataPoint("summary_test_sum", 500, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				return []pmetric.Metrics{pmetric.NewMetrics()}
-			},
-		},
-		{
-			name: "no-sum",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test", 1, nil, "foo", "bar", "quantile", "0.5"),
-						createDataPoint("summary_test", 2, nil, "foo", "bar", "quantile", "0.75"),
-						createDataPoint("summary_test", 5, nil, "foo", "bar", "quantile", "1"),
-						createDataPoint("summary_test_count", 500, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("summary_test")
-				m0.Metadata().PutStr("prometheus.type", "summary")
-				sum0 := m0.SetEmptySummary()
-				pt0 := sum0.DataPoints().AppendEmpty()
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.SetCount(500)
-				pt0.SetSum(0.0)
-				pt0.Attributes().PutStr("foo", "bar")
-				qvL := pt0.QuantileValues()
-				q50 := qvL.AppendEmpty()
-				q50.SetQuantile(.50)
-				q50.SetValue(1.0)
-				q75 := qvL.AppendEmpty()
-				q75.SetQuantile(.75)
-				q75.SetValue(2.0)
-				q100 := qvL.AppendEmpty()
-				q100.SetQuantile(1)
-				q100.SetValue(5.0)
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "empty-quantiles",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test_sum", 100, nil, "foo", "bar"),
-						createDataPoint("summary_test_count", 500, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("summary_test")
-				m0.Metadata().PutStr("prometheus.type", "summary")
-				sum0 := m0.SetEmptySummary()
-				pt0 := sum0.DataPoints().AppendEmpty()
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetCount(500)
-				pt0.SetSum(100.0)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "regular-summary",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("summary_test", 1, nil, "foo", "bar", "quantile", "0.5"),
-						createDataPoint("summary_test", 2, nil, "foo", "bar", "quantile", "0.75"),
-						createDataPoint("summary_test", 5, nil, "foo", "bar", "quantile", "1"),
-						createDataPoint("summary_test_sum", 100, nil, "foo", "bar"),
-						createDataPoint("summary_test_count", 500, nil, "foo", "bar"),
-					},
-				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("summary_test")
-				m0.Metadata().PutStr("prometheus.type", "summary")
-				sum0 := m0.SetEmptySummary()
-				pt0 := sum0.DataPoints().AppendEmpty()
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetCount(500)
-				pt0.SetSum(100.0)
-				pt0.Attributes().PutStr("foo", "bar")
-				qvL := pt0.QuantileValues()
-				q50 := qvL.AppendEmpty()
-				q50.SetQuantile(.50)
-				q50.SetValue(1.0)
-				q75 := qvL.AppendEmpty()
-				q75.SetQuantile(.75)
-				q75.SetValue(2.0)
-				q100 := qvL.AppendEmpty()
-				q100.SetQuantile(1)
-				q100.SetValue(5.0)
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		for _, enableNativeHistograms := range []bool{false, true} {
-			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
-				tt.run(t, enableNativeHistograms)
-			})
-		}
-	}
-}
-
-func TestMetricBuilderNativeHistogram(t *testing.T) {
-	for _, enableNativeHistograms := range []bool{false, true} {
-		emptyH := &histogram.Histogram{
-			Schema:        1,
-			Count:         0,
-			Sum:           0,
-			ZeroThreshold: 0.001,
-			ZeroCount:     0,
-		}
-		h0 := tsdbutil.GenerateTestHistogram(0)
-
+	for _, disableMetricAdjustment := range []bool{true, false} {
 		tests := []buildTestData{
 			{
-				name: "empty integer histogram",
+				name: "single item",
 				inputs: []*testScrapedPage{
 					{
 						pts: []*testDataPoint{
-							createHistogramDataPoint("hist_test", emptyH, nil, nil, "foo", "bar"),
+							createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+							createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
 						},
 					},
 				},
 				wants: func() []pmetric.Metrics {
 					md0 := pmetric.NewMetrics()
-					if !enableNativeHistograms {
-						return []pmetric.Metrics{md0}
-					}
 					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 					m0 := mL0.AppendEmpty()
 					m0.SetName("hist_test")
 					m0.Metadata().PutStr("prometheus.type", "histogram")
-					m0.SetEmptyExponentialHistogram()
-					m0.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-					pt0 := m0.ExponentialHistogram().DataPoints().AppendEmpty()
-					pt0.Attributes().PutStr("foo", "bar")
-					pt0.SetStartTimestamp(startTimestamp)
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(10)
+					pt0.SetSum(99)
+					pt0.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 					pt0.SetTimestamp(tsNanos)
-					pt0.SetCount(0)
-					pt0.SetSum(0)
-					pt0.SetZeroThreshold(0.001)
-					pt0.SetScale(1)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
 
 					return []pmetric.Metrics{md0}
 				},
 			},
 			{
-				name: "integer histogram",
+				name: "single item with exemplars",
 				inputs: []*testScrapedPage{
 					{
 						pts: []*testDataPoint{
-							createHistogramDataPoint("hist_test", h0, nil, nil, "foo", "bar"),
+							createDataPoint(
+								"hist_test_bucket",
+								1,
+								[]exemplar.Exemplar{
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}}...),
+									},
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}, {Name: "le", Value: "20"}}...),
+									},
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "traceid", Value: "e3688e1aa2961786"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}}...),
+									},
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
+									},
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc88"}, {Name: "span_id", Value: "dfa4597a9"}}...),
+									},
+								},
+								"foo", "bar", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+							createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
 						},
 					},
 				},
 				wants: func() []pmetric.Metrics {
 					md0 := pmetric.NewMetrics()
-					if !enableNativeHistograms {
-						return []pmetric.Metrics{md0}
-					}
 					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 					m0 := mL0.AppendEmpty()
 					m0.SetName("hist_test")
 					m0.Metadata().PutStr("prometheus.type", "histogram")
-					m0.SetEmptyExponentialHistogram()
-					m0.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-					pt0 := m0.ExponentialHistogram().DataPoints().AppendEmpty()
-					pt0.Attributes().PutStr("foo", "bar")
-					pt0.SetStartTimestamp(startTimestamp)
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(10)
+					pt0.SetSum(99)
+					pt0.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 					pt0.SetTimestamp(tsNanos)
-					pt0.SetCount(12)
-					pt0.SetSum(18.4)
-					pt0.SetScale(1)
-					pt0.SetZeroThreshold(0.001)
-					pt0.SetZeroCount(2)
-					pt0.Positive().SetOffset(-1)
-					pt0.Positive().BucketCounts().Append(1)
-					pt0.Positive().BucketCounts().Append(2)
-					pt0.Positive().BucketCounts().Append(0)
-					pt0.Positive().BucketCounts().Append(1)
-					pt0.Positive().BucketCounts().Append(1)
-					pt0.Negative().SetOffset(-1)
-					pt0.Negative().BucketCounts().Append(1)
-					pt0.Negative().BucketCounts().Append(2)
-					pt0.Negative().BucketCounts().Append(0)
-					pt0.Negative().BucketCounts().Append(1)
-					pt0.Negative().BucketCounts().Append(1)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
+
+					e0 := pt0.Exemplars().AppendEmpty()
+					e0.SetTimestamp(timestampFromMs(1663113420863))
+					e0.SetDoubleValue(1)
+					e0.FilteredAttributes().PutStr(model.MetricNameLabel, "counter_test")
+					e0.FilteredAttributes().PutStr("foo", "bar")
+					e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
+					e0.FilteredAttributes().PutStr(model.JobLabel, "job")
+
+					e1 := pt0.Exemplars().AppendEmpty()
+					e1.SetTimestamp(timestampFromMs(1663113420863))
+					e1.SetDoubleValue(1)
+					e1.FilteredAttributes().PutStr("foo", "bar")
+					e1.FilteredAttributes().PutStr("le", "20")
+
+					e2 := pt0.Exemplars().AppendEmpty()
+					e2.SetTimestamp(timestampFromMs(1663113420863))
+					e2.SetDoubleValue(1)
+					e2.FilteredAttributes().PutStr("foo", "bar")
+					e2.FilteredAttributes().PutStr("traceid", "e3688e1aa2961786")
+					e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
+					e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
+
+					e3 := pt0.Exemplars().AppendEmpty()
+					e3.SetTimestamp(timestampFromMs(1663113420863))
+					e3.SetDoubleValue(1)
+					e3.FilteredAttributes().PutStr("foo", "bar")
+					e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
+					e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
+
+					e4 := pt0.Exemplars().AppendEmpty()
+					e4.SetTimestamp(timestampFromMs(1663113420863))
+					e4.SetDoubleValue(1)
+					e4.FilteredAttributes().PutStr("foo", "bar")
+					e4.FilteredAttributes().PutStr("span_id", "dfa4597a9")
+					e4.FilteredAttributes().PutStr("trace_id", "174137cab66dc88")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "multi-groups",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+							createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
+							createDataPoint("hist_test_bucket", 1, nil, "key2", "v2", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "key2", "v2", "le", "20"),
+							createDataPoint("hist_test_bucket", 3, nil, "key2", "v2", "le", "+inf"),
+							createDataPoint("hist_test_sum", 50, nil, "key2", "v2"),
+							createDataPoint("hist_test_count", 3, nil, "key2", "v2"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.Metadata().PutStr("prometheus.type", "histogram")
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(10)
+					pt0.SetSum(99)
+					pt0.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
+					pt0.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
+
+					pt1 := hist0.DataPoints().AppendEmpty()
+					pt1.SetCount(3)
+					pt1.SetSum(50)
+					pt1.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt1.BucketCounts().FromRaw([]uint64{1, 1, 1})
+					pt1.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt1.SetStartTimestamp(startTimestamp)
+					}
+					pt1.Attributes().PutStr("key2", "v2")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "multi-groups-and-families",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+							createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
+							createDataPoint("hist_test_bucket", 1, nil, "key2", "v2", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "key2", "v2", "le", "20"),
+							createDataPoint("hist_test_bucket", 3, nil, "key2", "v2", "le", "+inf"),
+							createDataPoint("hist_test_sum", 50, nil, "key2", "v2"),
+							createDataPoint("hist_test_count", 3, nil, "key2", "v2"),
+							createDataPoint("hist_test2_bucket", 1, nil, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test2_bucket", 2, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test2_bucket", 3, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test2_sum", 50, nil, "foo", "bar"),
+							createDataPoint("hist_test2_count", 3, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.Metadata().PutStr("prometheus.type", "histogram")
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(10)
+					pt0.SetSum(99)
+					pt0.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
+					pt0.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
+
+					pt1 := hist0.DataPoints().AppendEmpty()
+					pt1.SetCount(3)
+					pt1.SetSum(50)
+					pt1.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt1.BucketCounts().FromRaw([]uint64{1, 1, 1})
+					pt1.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt1.SetStartTimestamp(startTimestamp)
+					}
+					pt1.Attributes().PutStr("key2", "v2")
+
+					m1 := mL0.AppendEmpty()
+					m1.SetName("hist_test2")
+					m1.Metadata().PutStr("prometheus.type", "histogram")
+					hist1 := m1.SetEmptyHistogram()
+					hist1.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt2 := hist1.DataPoints().AppendEmpty()
+					pt2.SetCount(3)
+					pt2.SetSum(50)
+					pt2.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt2.BucketCounts().FromRaw([]uint64{1, 1, 1})
+					pt2.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt2.SetStartTimestamp(startTimestamp)
+					}
+					pt2.Attributes().PutStr("foo", "bar")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "unordered-buckets",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_bucket", 10, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+							createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.Metadata().PutStr("prometheus.type", "histogram")
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(10)
+					pt0.SetSum(99)
+					pt0.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
+					pt0.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				// this won't likely happen in real env, as prometheus wont generate histogram with less than 3 buckets
+				name: "only-one-bucket",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_bucket", 3, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_count", 3, nil, "foo", "bar"),
+							createDataPoint("hist_test_sum", 100, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.Metadata().PutStr("prometheus.type", "histogram")
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(3)
+					pt0.SetSum(100)
+					pt0.BucketCounts().FromRaw([]uint64{3})
+					pt0.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				// this won't likely happen in real env, as prometheus wont generate histogram with less than 3 buckets
+				name: "only-one-bucket-noninf",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_bucket", 3, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_count", 3, nil, "foo", "bar"),
+							createDataPoint("hist_test_sum", 100, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.Metadata().PutStr("prometheus.type", "histogram")
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(3)
+					pt0.SetSum(100)
+					pt0.BucketCounts().FromRaw([]uint64{3, 0})
+					pt0.ExplicitBounds().FromRaw([]float64{20})
+					pt0.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "no-sum",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_bucket", 3, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_count", 3, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.Metadata().PutStr("prometheus.type", "histogram")
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(3)
+					pt0.ExplicitBounds().FromRaw([]float64{10, 20})
+					pt0.BucketCounts().FromRaw([]uint64{1, 1, 1})
+					pt0.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "corrupted-no-buckets",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+							createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.Metadata().PutStr("prometheus.type", "histogram")
+					hist0 := m0.SetEmptyHistogram()
+					hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := hist0.DataPoints().AppendEmpty()
+					pt0.SetCount(10)
+					pt0.SetSum(99)
+					pt0.BucketCounts().FromRaw([]uint64{10})
+					pt0.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.Attributes().PutStr("foo", "bar")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "corrupted-no-count",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("hist_test_bucket", 1, nil, "foo", "bar", "le", "10"),
+							createDataPoint("hist_test_bucket", 2, nil, "foo", "bar", "le", "20"),
+							createDataPoint("hist_test_bucket", 3, nil, "foo", "bar", "le", "+inf"),
+							createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					return []pmetric.Metrics{pmetric.NewMetrics()}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			for _, enableNativeHistograms := range []bool{true, false} {
+				// None of the histograms above have native histogram versions, so enabling native histograms has no effect.
+				t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v/removeStartTimeAdjustment=%v", tt.name, enableNativeHistograms, disableMetricAdjustment), func(t *testing.T) {
+					defer testutil.SetFeatureGateForTest(t, removeStartTimeAdjustment, disableMetricAdjustment)()
+					tt.run(t, enableNativeHistograms)
+				})
+			}
+		}
+	}
+}
+
+func TestMetricBuilderSummary(t *testing.T) {
+	for _, disableMetricAdjustment := range []bool{true, false} {
+		tests := []buildTestData{
+			{
+				name: "no-sum-and-count",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("summary_test", 5, nil, "foo", "bar", "quantile", "1"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					return []pmetric.Metrics{pmetric.NewMetrics()}
+				},
+			},
+			{
+				name: "no-count",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("summary_test", 1, nil, "foo", "bar", "quantile", "0.5"),
+							createDataPoint("summary_test", 2, nil, "foo", "bar", "quantile", "0.75"),
+							createDataPoint("summary_test", 5, nil, "foo", "bar", "quantile", "1"),
+							createDataPoint("summary_test_sum", 500, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					return []pmetric.Metrics{pmetric.NewMetrics()}
+				},
+			},
+			{
+				name: "no-sum",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("summary_test", 1, nil, "foo", "bar", "quantile", "0.5"),
+							createDataPoint("summary_test", 2, nil, "foo", "bar", "quantile", "0.75"),
+							createDataPoint("summary_test", 5, nil, "foo", "bar", "quantile", "1"),
+							createDataPoint("summary_test_count", 500, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("summary_test")
+					m0.Metadata().PutStr("prometheus.type", "summary")
+					sum0 := m0.SetEmptySummary()
+					pt0 := sum0.DataPoints().AppendEmpty()
+					pt0.SetTimestamp(tsNanos)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.SetCount(500)
+					pt0.SetSum(0.0)
+					pt0.Attributes().PutStr("foo", "bar")
+					qvL := pt0.QuantileValues()
+					q50 := qvL.AppendEmpty()
+					q50.SetQuantile(.50)
+					q50.SetValue(1.0)
+					q75 := qvL.AppendEmpty()
+					q75.SetQuantile(.75)
+					q75.SetValue(2.0)
+					q100 := qvL.AppendEmpty()
+					q100.SetQuantile(1)
+					q100.SetValue(5.0)
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "empty-quantiles",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("summary_test_sum", 100, nil, "foo", "bar"),
+							createDataPoint("summary_test_count", 500, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("summary_test")
+					m0.Metadata().PutStr("prometheus.type", "summary")
+					sum0 := m0.SetEmptySummary()
+					pt0 := sum0.DataPoints().AppendEmpty()
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.SetTimestamp(tsNanos)
+					pt0.SetCount(500)
+					pt0.SetSum(100.0)
+					pt0.Attributes().PutStr("foo", "bar")
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "regular-summary",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("summary_test", 1, nil, "foo", "bar", "quantile", "0.5"),
+							createDataPoint("summary_test", 2, nil, "foo", "bar", "quantile", "0.75"),
+							createDataPoint("summary_test", 5, nil, "foo", "bar", "quantile", "1"),
+							createDataPoint("summary_test_sum", 100, nil, "foo", "bar"),
+							createDataPoint("summary_test_count", 500, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("summary_test")
+					m0.Metadata().PutStr("prometheus.type", "summary")
+					sum0 := m0.SetEmptySummary()
+					pt0 := sum0.DataPoints().AppendEmpty()
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.SetTimestamp(tsNanos)
+					pt0.SetCount(500)
+					pt0.SetSum(100.0)
+					pt0.Attributes().PutStr("foo", "bar")
+					qvL := pt0.QuantileValues()
+					q50 := qvL.AppendEmpty()
+					q50.SetQuantile(.50)
+					q50.SetValue(1.0)
+					q75 := qvL.AppendEmpty()
+					q75.SetQuantile(.75)
+					q75.SetValue(2.0)
+					q100 := qvL.AppendEmpty()
+					q100.SetQuantile(1)
+					q100.SetValue(5.0)
 
 					return []pmetric.Metrics{md0}
 				},
@@ -1998,9 +1933,118 @@ func TestMetricBuilderNativeHistogram(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				tt.run(t, enableNativeHistograms)
-			})
+			for _, enableNativeHistograms := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v/removeStartTimeAdjustment=%v", tt.name, enableNativeHistograms, disableMetricAdjustment), func(t *testing.T) {
+					defer testutil.SetFeatureGateForTest(t, removeStartTimeAdjustment, disableMetricAdjustment)()
+					tt.run(t, enableNativeHistograms)
+				})
+			}
+		}
+	}
+}
+
+func TestMetricBuilderNativeHistogram(t *testing.T) {
+	for _, disableMetricAdjustment := range []bool{true, false} {
+		for _, enableNativeHistograms := range []bool{false, true} {
+			emptyH := &histogram.Histogram{
+				Schema:        1,
+				Count:         0,
+				Sum:           0,
+				ZeroThreshold: 0.001,
+				ZeroCount:     0,
+			}
+			h0 := tsdbutil.GenerateTestHistogram(0)
+
+			tests := []buildTestData{
+				{
+					name: "empty integer histogram",
+					inputs: []*testScrapedPage{
+						{
+							pts: []*testDataPoint{
+								createHistogramDataPoint("hist_test", emptyH, nil, nil, "foo", "bar"),
+							},
+						},
+					},
+					wants: func() []pmetric.Metrics {
+						md0 := pmetric.NewMetrics()
+						if !enableNativeHistograms {
+							return []pmetric.Metrics{md0}
+						}
+						mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+						m0 := mL0.AppendEmpty()
+						m0.SetName("hist_test")
+						m0.Metadata().PutStr("prometheus.type", "histogram")
+						m0.SetEmptyExponentialHistogram()
+						m0.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+						pt0 := m0.ExponentialHistogram().DataPoints().AppendEmpty()
+						pt0.Attributes().PutStr("foo", "bar")
+						if !disableMetricAdjustment {
+							pt0.SetStartTimestamp(startTimestamp)
+						}
+						pt0.SetTimestamp(tsNanos)
+						pt0.SetCount(0)
+						pt0.SetSum(0)
+						pt0.SetZeroThreshold(0.001)
+						pt0.SetScale(1)
+
+						return []pmetric.Metrics{md0}
+					},
+				},
+				{
+					name: "integer histogram",
+					inputs: []*testScrapedPage{
+						{
+							pts: []*testDataPoint{
+								createHistogramDataPoint("hist_test", h0, nil, nil, "foo", "bar"),
+							},
+						},
+					},
+					wants: func() []pmetric.Metrics {
+						md0 := pmetric.NewMetrics()
+						if !enableNativeHistograms {
+							return []pmetric.Metrics{md0}
+						}
+						mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+						m0 := mL0.AppendEmpty()
+						m0.SetName("hist_test")
+						m0.Metadata().PutStr("prometheus.type", "histogram")
+						m0.SetEmptyExponentialHistogram()
+						m0.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+						pt0 := m0.ExponentialHistogram().DataPoints().AppendEmpty()
+						pt0.Attributes().PutStr("foo", "bar")
+						if !disableMetricAdjustment {
+							pt0.SetStartTimestamp(startTimestamp)
+						}
+						pt0.SetTimestamp(tsNanos)
+						pt0.SetCount(12)
+						pt0.SetSum(18.4)
+						pt0.SetScale(1)
+						pt0.SetZeroThreshold(0.001)
+						pt0.SetZeroCount(2)
+						pt0.Positive().SetOffset(-1)
+						pt0.Positive().BucketCounts().Append(1)
+						pt0.Positive().BucketCounts().Append(2)
+						pt0.Positive().BucketCounts().Append(0)
+						pt0.Positive().BucketCounts().Append(1)
+						pt0.Positive().BucketCounts().Append(1)
+						pt0.Negative().SetOffset(-1)
+						pt0.Negative().BucketCounts().Append(1)
+						pt0.Negative().BucketCounts().Append(2)
+						pt0.Negative().BucketCounts().Append(0)
+						pt0.Negative().BucketCounts().Append(1)
+						pt0.Negative().BucketCounts().Append(1)
+
+						return []pmetric.Metrics{md0}
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v/removeStartTimeAdjustment=%v", tt.name, enableNativeHistograms, disableMetricAdjustment), func(t *testing.T) {
+					defer testutil.SetFeatureGateForTest(t, removeStartTimeAdjustment, disableMetricAdjustment)()
+					tt.run(t, enableNativeHistograms)
+				})
+			}
 		}
 	}
 }

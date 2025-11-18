@@ -76,18 +76,18 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
 			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exCache := pcommon.NewMap()
 			tt.modified(exCache)
@@ -507,18 +507,18 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
 			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 			tt.modified(exNumberDataPoint)
@@ -954,18 +954,18 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
 
 			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exNumberDataPoint := createHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1485,18 +1485,18 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
 			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1917,18 +1917,18 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
 
 			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exNumberDataPoint := createSummaryDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -2098,18 +2098,18 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := pathExpressionParser(getCache)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			metric := createMetricTelemetry()
 
 			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exMetric := createMetricTelemetry()
 			tt.modified(exMetric)
@@ -2192,7 +2192,7 @@ func Test_ParseEnum(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, *actual)
 		})
 	}
@@ -2304,7 +2304,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			require.NoError(t, err)
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}

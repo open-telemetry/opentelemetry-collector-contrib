@@ -38,6 +38,7 @@ components:
         - file
         - googlecloud
         - googlecloudpubsub
+        - googlecloudstorage
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb

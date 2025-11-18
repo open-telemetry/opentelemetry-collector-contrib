@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
@@ -26,7 +27,7 @@ func TestValueTypeGetterSetter(t *testing.T) {
 			path:    nil,
 			wantErr: false,
 			checkFunc: func(t *testing.T, getSetter any, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, getSetter)
 
 				dict := newEmptyProfilesDictionary()
@@ -37,7 +38,7 @@ func TestValueTypeGetterSetter(t *testing.T) {
 
 				ctx := &mockValueTypeContext{dictionary: dict, valueType: valueType}
 				got, err := gs.Get(t.Context(), ctx)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, valueType, got)
 			},
 		},
@@ -48,7 +49,7 @@ func TestValueTypeGetterSetter(t *testing.T) {
 			},
 			wantErr: false,
 			checkFunc: func(t *testing.T, getSetter any, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, getSetter)
 			},
 		},
@@ -59,7 +60,7 @@ func TestValueTypeGetterSetter(t *testing.T) {
 			},
 			wantErr: false,
 			checkFunc: func(t *testing.T, getSetter any, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, getSetter)
 			},
 		},
@@ -104,7 +105,7 @@ func TestAccessValueTypeRoot_Getter(t *testing.T) {
 
 	getSetter := accessValueType(&pathtest.Path[*mockValueTypeContext]{N: "period_type"}, mockTargetValueType)
 	got, err := getSetter.Get(t.Context(), ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	gotValueType, ok := got.(pprofile.ValueType)
 	assert.True(t, ok)
@@ -149,9 +150,9 @@ func TestAccessValueTypeRoot_Setter(t *testing.T) {
 			err := getSetter.Set(t.Context(), ctx, tt.setValue)
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, originalStringTable, dict.StringTable())
 			}
 		})
@@ -201,9 +202,9 @@ func TestAccessValueTypeType_Getter(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, got)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantValue, got)
 			}
 		})
@@ -294,9 +295,9 @@ func TestAccessValueTypeType_Setter(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.validateFunc != nil {
 					tt.validateFunc(t, ctx, originalIdx)
 				}
@@ -353,9 +354,9 @@ func TestAccessValueTypeUnit_Getter(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, got)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantValue, got)
 			}
 		})
@@ -447,9 +448,9 @@ func TestAccessValueTypeUnit_Setter(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.ErrorContains(t, err, tt.errMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.validateFunc != nil {
 					tt.validateFunc(t, ctx, originalIdx)
 				}
