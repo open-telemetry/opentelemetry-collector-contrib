@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -28,7 +28,7 @@ func TestDurationAndMetricsInteraction(t *testing.T) {
 		{
 			name: "Default behavior - respects metrics parameter",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumMetrics: 3,
@@ -39,7 +39,7 @@ func TestDurationAndMetricsInteraction(t *testing.T) {
 		{
 			name: "Finite duration overrides metrics",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(100 * time.Millisecond),
 				},
@@ -51,7 +51,7 @@ func TestDurationAndMetricsInteraction(t *testing.T) {
 		{
 			name: "Infinite duration overrides metrics",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"),
 				},
@@ -63,7 +63,7 @@ func TestDurationAndMetricsInteraction(t *testing.T) {
 		{
 			name: "Zero duration with metrics",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(0),
 				},
@@ -75,7 +75,7 @@ func TestDurationAndMetricsInteraction(t *testing.T) {
 		{
 			name: "Negative duration with metrics",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(-100 * time.Millisecond),
 				},
@@ -121,7 +121,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with metrics",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumMetrics: 5,
@@ -132,7 +132,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with finite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(1 * time.Second),
 				},
@@ -144,7 +144,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with infinite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"),
 				},
@@ -156,7 +156,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Invalid config - no metrics and no duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumMetrics: 0,
@@ -189,7 +189,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with finite metrics and no duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumMetrics: 2,
@@ -200,7 +200,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with infinite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"),
 				},
@@ -212,7 +212,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with finite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(100 * time.Millisecond),
 				},
