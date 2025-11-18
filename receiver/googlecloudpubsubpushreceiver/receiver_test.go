@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/storage"
 	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -244,9 +245,10 @@ func newTestRequest(t *testing.T, attrs map[string]string, data []byte, subscrip
 
 func newTestPubSubPushReceiver(t *testing.T, cfg *Config) *pubSubPushReceiver {
 	startTestStorageEmulator(t) // we start the emulator so the storage client creation is successful
-	r, err := newPubSubPushReceiver(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
+	r := newPubSubPushReceiver(cfg, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
+	cl, err := storage.NewClient(t.Context())
 	require.NoError(t, err)
-	require.NotNil(t, r)
+	r.storageClient = cl
 	return r
 }
 

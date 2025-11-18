@@ -52,22 +52,15 @@ type pubSubPushReceiver struct {
 var _ receiver.Logs = (*pubSubPushReceiver)(nil)
 
 func newPubSubPushReceiver(
-	ctx context.Context,
 	cfg *Config,
 	set receiver.Settings,
 	nextLogs consumer.Logs,
-) (*pubSubPushReceiver, error) {
-	storageClient, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create storage client: %w", err)
-	}
-
+) *pubSubPushReceiver {
 	return &pubSubPushReceiver{
-		cfg:           cfg,
-		settings:      set,
-		storageClient: storageClient,
-		nextLogs:      nextLogs,
-	}, nil
+		cfg:      cfg,
+		settings: set,
+		nextLogs: nextLogs,
+	}
 }
 
 func addHandlerFunc[T any](
@@ -100,7 +93,10 @@ func addHandlerFunc[T any](
 }
 
 func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) error {
-	mux := http.NewServeMux()
+	var errCl error
+	if p.storageClient, errCl = storage.NewClient(ctx); errCl != nil {
+		return fmt.Errorf("failed to create storage client: %w", errCl)
+	}
 
 	logsUnmarshaler, errLoad := loadEncodingExtension[encoding.LogsUnmarshalerExtension](
 		host, p.cfg.Encoding, "logs",
@@ -108,6 +104,8 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 	if errLoad != nil {
 		return fmt.Errorf("failed to load encoding extension: %w", errLoad)
 	}
+
+	mux := http.NewServeMux()
 	addHandlerFunc(
 		mux,
 		"/",
