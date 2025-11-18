@@ -33,6 +33,10 @@ func createDeleteFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 }
 
 func deleteFrom[K any](target ottl.GetSetter[K], indexGetter ottl.IntGetter[K], lengthGetter ottl.Optional[ottl.IntGetter[K]]) (ottl.ExprFunc[K], error) {
+	if indexGetter == nil {
+		return nil, errors.New("indexGetter cannot be nil for delete function")
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := target.Get(ctx, tCtx)
 		if err != nil {

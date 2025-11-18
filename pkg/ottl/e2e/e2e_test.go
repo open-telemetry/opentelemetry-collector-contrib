@@ -75,6 +75,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("things")
 				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
 				tCtx.GetLogRecord().Attributes().Remove("conflict")
+				tCtx.GetLogRecord().Attributes().Remove("slice2")
 			},
 		},
 		{
