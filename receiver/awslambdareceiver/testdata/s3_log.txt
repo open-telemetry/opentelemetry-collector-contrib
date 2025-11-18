@@ -1,2 +1,0 @@
-version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
-2 627286350134 eni-0377aa710071c557e 172.31.31.124 140.82.121.6 52718 443 6 13 3777 1751375679 ENDTIME ACCEPT OK

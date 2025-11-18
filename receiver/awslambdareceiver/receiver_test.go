@@ -5,8 +5,6 @@ package awslambdareceiver
 import (
 	"context"
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -50,10 +48,8 @@ func TestCreateLogs(t *testing.T) {
 	s3Provider := internal.NewMockS3Provider(goMock)
 	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
 
-	// Read S3 log test data
-	testDataPath := filepath.Join("testdata", "s3_log.txt")
-	testData, err := os.ReadFile(testDataPath)
-	require.NoError(t, err)
+	// Test data - mock S3 file content
+	testData := []byte("version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status\n2 627286350134 eni-0377aa710071c557e 172.31.31.124 140.82.121.6 52718 443 6 13 3777 1751375679 ENDTIME ACCEPT OK\n")
 	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(testData, nil)
 
 	// Register the extension with the same component ID as S3Encoding
