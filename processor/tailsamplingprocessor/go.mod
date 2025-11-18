@@ -36,7 +36,7 @@ require (
 	github.com/antchfx/xpath v1.3.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
-	github.com/elastic/lunes v0.1.0 // indirect
+	github.com/elastic/lunes v0.2.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
