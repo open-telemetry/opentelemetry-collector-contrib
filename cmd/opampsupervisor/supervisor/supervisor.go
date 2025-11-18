@@ -2102,7 +2102,7 @@ func configMergeFunc(src, dest map[string]any) error {
 		if srcExt, ok := srcExtensions.([]any); ok {
 			if service, ok := dest["service"].(map[string]any); ok {
 				allExt := slices.Concat(destExt, srcExt)
-				// This is a small hack to ensure that the order is consitent and
+				// This is a small hack to ensure that the order is consistent and
 				// follows this simple rule: extensions from [src], then from [dest],
 				// in the order that they appear.
 				// We cannot use other simpler methods, like [sort.Strings], because
