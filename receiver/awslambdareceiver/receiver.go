@@ -105,7 +105,7 @@ func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 	a.handler = handler
 
-	go lambda.StartWithOptions(a.processLambdaEvent, lambda.WithContext(ctx))
+	go lambda.Start(a.processLambdaEvent)
 	return nil
 }
 
