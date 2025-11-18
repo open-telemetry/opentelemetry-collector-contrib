@@ -42,6 +42,12 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig returns a default config for the receiver.
 func createDefaultConfig() component.Config {
+	return CreateDefaultConfig()
+}
+
+// CreateDefaultConfig returns a default config for the receiver.
+// This is exported for use by the deprecated subpackage.
+func CreateDefaultConfig() component.Config {
 	return &Config{
 		CollectionInterval:        defaultCollectionInterval,
 		ContainerOrchestrator:     defaultContainerOrchestrator,
@@ -51,8 +57,19 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// CreateMetrics creates an AWS Container Insight receiver.
+// createMetricsReceiver creates an AWS Container Insight receiver.
 func createMetricsReceiver(
+	ctx context.Context,
+	params receiver.Settings,
+	baseCfg component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	return CreateMetricsReceiver(ctx, params, baseCfg, consumer)
+}
+
+// CreateMetricsReceiver creates an AWS Container Insight receiver.
+// This is exported for use by the deprecated subpackage.
+func CreateMetricsReceiver(
 	_ context.Context,
 	params receiver.Settings,
 	baseCfg component.Config,
