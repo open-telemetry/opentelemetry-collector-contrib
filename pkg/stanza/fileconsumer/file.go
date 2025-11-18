@@ -39,11 +39,17 @@ type Manager struct {
 	pollsToArchive int
 
 	telemetryBuilder *metadata.TelemetryBuilder
+
+	unreadableMu sync.Mutex
+	unreadable   map[string]struct{}
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
+
+	// initialize runtime-only tracking of unreadable paths
+	m.unreadable = make(map[string]struct{})
 
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
 		m.set.Logger.Warn("finding files", zap.Error(err))
@@ -175,12 +181,41 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
 }
 
+// makeFingerprint opens `path` and computes a fingerprint for the file
+// and contains logic to only log file permission errors once per file per startup
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
-		m.set.Logger.Error("Failed to open file", zap.Error(err))
+
+		// If a file is unreadable due to permissions error, store path in map and log error once (unless in debug mode)
+		if os.IsPermission(err) {
+			m.unreadableMu.Lock()
+			if m.unreadable == nil {
+				m.unreadable = make(map[string]struct{})
+			}
+			_, seen := m.unreadable[path]
+			if !seen {
+				m.set.Logger.Error("Failed to open file", zap.Error(err))
+				m.unreadable[path] = struct{}{}
+			} else {
+				m.set.Logger.Debug("Failed to open file (already reported)", zap.Error(err))
+			}
+			m.unreadableMu.Unlock()
+		} else {
+			m.set.Logger.Error("Failed to open file", zap.Error(err))
+		}
 		return nil, nil
 	}
+
+	// Notify if previously unreadable file is now able to be read
+	m.unreadableMu.Lock()
+	if m.unreadable != nil {
+		if _, seen := m.unreadable[path]; seen {
+			m.set.Logger.Info("Previously unreadable file is now readable", zap.String("path", path))
+			delete(m.unreadable, path)
+		}
+	}
+	m.unreadableMu.Unlock()
 
 	fp, err := m.readerFactory.NewFingerprint(file)
 	if err != nil {
