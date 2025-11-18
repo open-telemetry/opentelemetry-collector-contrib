@@ -139,9 +139,9 @@ func Test_isMatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := isMatch(tt.target, tt.pattern)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -159,7 +159,7 @@ func Test_isMatch_validation(t *testing.T) {
 		},
 	}
 	exprFunc, err := isMatch[any](target, invalidRegexPattern)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -176,7 +176,7 @@ func Test_isMatch_error(t *testing.T) {
 		},
 	}
 	exprFunc, err := isMatch[any](target, regexPattern)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }

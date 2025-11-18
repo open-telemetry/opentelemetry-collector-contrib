@@ -84,10 +84,10 @@ func Test_truncateAll(t *testing.T) {
 			}
 
 			exprFunc, err := TruncateAll(target, tt.limit)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
@@ -116,7 +116,7 @@ func Test_truncateAll_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := TruncateAll[any](target, 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -133,7 +133,7 @@ func Test_truncateAll_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := TruncateAll[any](target, 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)

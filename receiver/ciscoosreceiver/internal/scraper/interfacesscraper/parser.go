@@ -130,9 +130,9 @@ func parseInterfaces(output string, logger *zap.Logger) []*Interface {
 	isRx := true
 	var current *Interface
 	var interfaces []*Interface
-	lines := strings.Split(output, "\n")
+	lines := strings.SplitSeq(output, "\n")
 
-	for _, line := range lines {
+	for line := range lines {
 		if !newIfRegexp.MatchString(line) {
 			if current != nil && current.Validate() {
 				interfaces = append(interfaces, current)
@@ -216,9 +216,9 @@ func parseSimpleInterfaces(output string, _ *zap.Logger) []*Interface {
 
 	simpleRegex := regexp.MustCompile(`^(\S+)\s+(?:\S+\s+)*(\S+)\s+(\S+)\s*$`)
 
-	lines := strings.Split(output, "\n")
+	lines := strings.SplitSeq(output, "\n")
 
-	for _, line := range lines {
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.Contains(line, "Interface") {
 			continue

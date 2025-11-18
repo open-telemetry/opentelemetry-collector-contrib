@@ -44,7 +44,6 @@ ignored_paths:
   - processor/filterprocessor # 43994
   - processor/transformprocessor # 43994
   - receiver/aerospikereceiver # 43995
-  - receiver/prometheusreceiver # 43996
   - receiver/carbonreceiver
   - receiver/statsdreceiver
 allowed_functions:

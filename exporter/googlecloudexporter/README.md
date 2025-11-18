@@ -172,62 +172,53 @@ These instructions are to get you up and running quickly with the GCP exporter i
 The following configuration options are supported:
 
 - `project` (default = Fetch from Credentials): GCP project identifier.
-- `destination_project_quota` (optional): Counts quota for traces and metrics against the project to which the data is sent (as opposed to the project associated with the Collector's service account. For example, when setting `project_id` or using [multi-project export](#multi-project-exporting). (default = false)
-- `user_agent` (default = `opentelemetry-collector-contrib {{version}}`): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number.
+- `destination_project_quota` (optional, default = false): Counts quota against the project to which the data is sent (as opposed to the project associated with the Collector's service account. For example, when setting `project_id` or using [multi-project export](#multi-project-exporting).
+- `user_agent` (default = `collector description/version os/arch`, i.e. `opentelemetry-collector-contrib/v0.139.0 linux/amd64`): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number.
+- `timeout` (default = `12s`) The timeout for requests to Google Cloud Platform APIs, specified in Go Time Duration format.
 - `impersonate` (optional): Configuration for service account impersonation
   - `target_principal`: TargetPrincipal is the email address of the service account to impersonate.
   - `subject`: (optional) Subject is the sub field of a JWT. This field should only be set if you wish to impersonate as a user. This feature is useful when using domain wide delegation.
   - `delegates`: (default = []) Delegates are the service account email addresses in a delegation chain. Each service account must be granted roles/iam.serviceAccountTokenCreator on the next service account in the chain.
-- `metric` (optional): Configuration for sending metrics to Cloud Monitoring.
+- `metric` (optional): Configuration for sending metrics to Google Cloud Monitoring.
   - `prefix` (default = `workload.googleapis.com`): The prefix to add to metrics.
-  - `endpoint` (default = monitoring.googleapis.com): Endpoint where metric data is going to be sent to.
-  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
-  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `endpoint` (default = `monitoring.googleapis.com`): Endpoint where metric data is going to be sent to.
   - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
+  - `compression` (optional, supported values: [`gzip`]): Compression format for Metrics gRPC requests. Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
   - `known_domains` (default = [googleapis.com, kubernetes.io, istio.io, knative.dev]): If a metric belongs to one of these domains it does not get a prefix.
-  - `skip_create_descriptor` (default = false): If set to true, do not send metric descriptors to GCM.
-  - `instrumentation_library_labels` (default = true): If true, set the instrumentation_source and instrumentation_version labels.
-  - `create_service_timeseries` (default = false): If true, this will send all timeseries using `CreateServiceTimeSeries`. Implicitly, this sets `skip_create_descriptor` to true.
+  - `skip_create_descriptor` (default = false): If set to true, do not send metric descriptors to Google Cloud Monitoring.
+  - `instrumentation_library_labels` (default = true): If true, the exporter will copy the OTLP `InstrumentationScope.Name` to a label `instrumentation_source` and `InstrumentationScope.Version` to a label `instrumentation_version` labels on metrics.
+  - `service_resource_labels` (default = true):  If true, the exporter will copy the Semantic Conventions `service.name`, `service.namespace`, and `service.instance.id` from OTLP Resource Attributes into the Google Cloud Monitoring timeseries metric labels. These labels will be the same as the Semantic Conventions with `.` replaced by `_`.
   - `create_metric_descriptor_buffer_size` (default = 10): Buffer size for the channel which asynchronously calls CreateMetricDescriptor.
-  - `service_resource_labels` (default = true):  If true, the exporter will copy OTel's service.name, service.namespace, and service.instance.id resource attributes into the GCM timeseries metric labels.
   - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in metric labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.
     - `regex`: Match resource keys by regex.
   - `cumulative_normalization` (default = true): If true, normalizes cumulative metrics without start times or with explicit reset points by subtracting subsequent points from the initial point. It is enabled by default. Since it caches starting points, it may result in increased memory usage.
   - `sum_of_squared_deviation` (default = false): If true, enables calculation of an estimated sum of squared deviation.  It is an estimate, and is not exact.
+  - `create_service_timeseries` (default = false): If true, this will send all timeseries using `CreateServiceTimeSeries`. Implicitly, this sets `skip_create_descriptor` to true.
   - `experimental_wal` (default = []): If provided, enables use of a write ahead
     log for time series requests.
     - `directory` (default = `./`): Path to local directory for WAL file.
-    - `max_backoff` (default = `1h`): Max duration to retry requests on network
-      errors (`UNAVAILABLE` or `DEADLINE_EXCEEDED`).
-- `trace` (optional): Configuration for sending traces to Cloud Trace.
-  - `endpoint` (default = cloudtrace.googleapis.com): Endpoint where trace data is going to be sent to.
-  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+    - `max_backoff` (default = `1h`): Max duration to retry requests on network errors (`UNAVAILABLE` or `DEADLINE_EXCEEDED`).
+- `trace` (optional): Configuration for sending traces to Google Cloud Trace.
+  - `endpoint` (default = `cloudtrace.googleapis.com`): Endpoint where trace data is going to be sent to.
   - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
-  - `attribute_mappings` (optional): AttributeMappings determines how to map from OpenTelemetry attribute keys to Google Cloud Trace keys.  By default, it changes http and service keys so that they appear more prominently in the UI.
-    - `key`: Key is the OpenTelemetry attribute key
-    - `replacement`: Replacement is the attribute sent to Google Cloud Trace
-- `log` (optional): Configuration for sending metrics to Cloud Logging.
-  - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to.
-  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
   - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `attribute_mappings` (optional): AttributeMappings determines how to map from OpenTelemetry attribute keys to Google Cloud Trace keys.  By default, it changes `http` and `service` keys so that they appear more prominently in the UI.
+    - `key`: The OpenTelemetry attribute key
+    - `replacement`: The replacement attribute sent to Google Cloud Trace
+- `log` (optional): Configuration for sending logs to Google Cloud Logging.
+  - `endpoint` (default = `logging.googleapis.com`): Endpoint where log data is going to be sent to.
   - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
+  - `compression` (optional, Supported values: [`gzip`]): Compression format for Logs gRPC requests. Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
   - `default_log_name` (optional): Defines a default name for log entries. If left unset, and a log entry does not have the `gcp.log_name` attribute set, the exporter will return an error processing that entry.
-  - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
+  - `resource_filters` (default = []): If provided, Resource Attributes matching any filter will be included in log entry labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.
     - `regex`: Match resource keys by regex.
-  - `compression` (optional): Enable gzip compression for gRPC requests (valid values: `gzip`).
-- `sending_queue` (optional): Configuration for how to buffer traces before sending.
-  - `enabled` (default = true)
-  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
-    User should calculate this as `num_seconds * requests_per_second` where:
-    - `num_seconds` is the number of seconds to buffer in case of a backend outage
-    - `requests_per_second` is the average number of requests per seconds.
+- `sending_queue` (optional): Configuration for how to buffer data before sending. Note: The `sending_queue` is provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#sending-queue)
 
-Note: The `sending_queue` is provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
-
-Beyond standard YAML configuration as outlined in the sections that follow,
+Beyond standard YAML configuration as outlined in the section above,
 exporters that leverage the net/http package (all do today) also respect the
 following proxy environment variables:
 

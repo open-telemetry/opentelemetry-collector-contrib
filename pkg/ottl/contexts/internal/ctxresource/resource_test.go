@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -325,16 +326,16 @@ func TestPathGetSetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxresource.PathGetSetter[*testContext](tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			resource := createResource()
 
 			got, err := accessor.Get(t.Context(), newTestContext(resource))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), newTestContext(resource), tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			expectedResource := createResource()
 			tt.modified(expectedResource)

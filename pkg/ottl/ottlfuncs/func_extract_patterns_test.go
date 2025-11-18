@@ -53,10 +53,10 @@ func Test_extractPatterns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := extractPatterns(tt.target, tt.pattern)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			resultMap, ok := result.(pcommon.Map)
 			require.True(t, ok)
@@ -110,7 +110,7 @@ func Test_extractPatterns_validation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := extractPatterns[any](tt.target, tt.pattern)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, exprFunc)
 			_, err = exprFunc(t.Context(), nil)
 			assert.Error(t, err)
@@ -155,7 +155,7 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := extractPatterns[any](tt.target, tt.pattern)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
