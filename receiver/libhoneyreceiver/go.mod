@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhon
 go 1.24.0
 
 require (
-	github.com/gogo/protobuf v1.3.2
 	github.com/klauspost/compress v1.18.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.140.0
@@ -24,7 +23,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b
 )
 
 require (
@@ -43,6 +41,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.140.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
 )
 
 require (
