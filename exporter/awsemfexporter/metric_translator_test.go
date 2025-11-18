@@ -280,6 +280,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	kueueMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKueueMetricsScraper")
 	nvmeMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
 	nvmeMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNVMeEBSScraper")
+	nvmeLisMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
+	nvmeLisMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNVMeLISScraper")
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
@@ -408,6 +410,19 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName": "testSpan",
 			},
 			"myServiceNS/containerInsightsNVMeEBSScraper",
+			containerInsightsReceiver,
+		},
+		{
+			"nvme lis receiver",
+			nvmeLisMetric,
+			map[string]string{
+				"isItAnError": "false",
+				"spanName":    "testSpan",
+			},
+			map[string]string{
+				"spanName": "testSpan",
+			},
+			"myServiceNS/containerInsightsNVMeLISScraper",
 			containerInsightsReceiver,
 		},
 	}

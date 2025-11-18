@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -26,37 +27,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
-const renameMetric = `
-# HELP aws_ebs_csi_read_ops_total The total number of completed read operations.
-# TYPE aws_ebs_csi_read_ops_total counter
-aws_ebs_csi_read_ops_total{instance_id="i-0131bee5395cc4317",volume_id="vol-0281cf921f3dbb69b"} 55592
-# HELP aws_ebs_csi_read_seconds_total The total time spent, in seconds, by all completed read operations.
-# TYPE aws_ebs_csi_read_seconds_total counter
-aws_ebs_csi_read_seconds_total{instance_id="i-0131bee5395cc4317",volume_id="vol-0281cf921f3dbb69b"} 34.52
+const lisRenameMetric = `
+# HELP aws_ec2_instance_store_csi_read_ops_total Total number of read operations
+# TYPE aws_ec2_instance_store_csi_read_ops_total counter
+aws_ec2_instance_store_csi_read_ops_total{instance_id="i-0131bee5395cc4317",volume_id="vol-0281cf921f3dbb69b"} 55592
+# HELP aws_ec2_instance_store_csi_read_seconds_total Total time spent on read operations
+# TYPE aws_ec2_instance_store_csi_read_seconds_total counter
+aws_ec2_instance_store_csi_read_seconds_total{instance_id="i-0131bee5395cc4317",volume_id="vol-0281cf921f3dbb69b"} 34.52
+# HELP aws_ec2_instance_store_csi_write_ops_total Total number of write operations
+# TYPE aws_ec2_instance_store_csi_write_ops_total counter
+aws_ec2_instance_store_csi_write_ops_total{instance_id="i-0131bee5395cc4317",volume_id="vol-0281cf921f3dbb69b"} 12345
+# HELP aws_ec2_instance_store_csi_write_bytes_total Total bytes written
+# TYPE aws_ec2_instance_store_csi_write_bytes_total counter
+aws_ec2_instance_store_csi_write_bytes_total{instance_id="i-0131bee5395cc4317",volume_id="vol-0281cf921f3dbb69b"} 987654321
 `
 
-const (
-	dummyInstanceID   = "i-0000000000"
-	dummyClusterName  = "cluster-name"
-	dummyInstanceType = "instance-type"
-	dummyNodeName     = "hostname"
-)
-
-type mockHostInfoProvider struct{}
-
-func (m mockHostInfoProvider) GetClusterName() string {
-	return dummyClusterName
-}
-
-func (m mockHostInfoProvider) GetInstanceID() string {
-	return dummyInstanceID
-}
-
-func (m mockHostInfoProvider) GetInstanceType() string {
-	return dummyInstanceType
-}
-
-type mockConsumer struct {
+type mockLisConsumer struct {
 	t        *testing.T
 	called   *bool
 	expected map[string]struct {
@@ -65,13 +51,13 @@ type mockConsumer struct {
 	}
 }
 
-func (m mockConsumer) Capabilities() consumer.Capabilities {
+func (m mockLisConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
 		MutatesData: false,
 	}
 }
 
-func (m mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (m mockLisConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	assert.Equal(m.t, 1, md.ResourceMetrics().Len())
 
 	scrapedMetricCnt := 0
@@ -79,7 +65,7 @@ func (m mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) erro
 	for i := 0; i < scopeMetrics.Len(); i++ {
 		metric := scopeMetrics.At(i)
 		// skip prometheus metadata metrics including "up"
-		if !strings.HasPrefix(metric.Name(), "aws_ebs") {
+		if !strings.HasPrefix(metric.Name(), "aws_ec2_instance_store_csi") {
 			continue
 		}
 		metadata, ok := m.expected[metric.Name()]
@@ -99,13 +85,66 @@ func (m mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) erro
 	return nil
 }
 
-func TestNewNVMEScraperEndToEnd(t *testing.T) {
+func TestGetLisScraperConfig(t *testing.T) {
+	mockProvider := mockHostInfoProvider{}
+
+	config := GetLisScraperConfig(mockProvider)
+
+	assert.Equal(t, lisJobName, config.JobName)
+	assert.Equal(t, lisScraperMetricsPath, config.MetricsPath)
+	assert.Len(t, config.ServiceDiscoveryConfigs, 1)
+	assert.NotEmpty(t, config.MetricRelabelConfigs)
+
+	// Verify service discovery config
+	sdConfig := config.ServiceDiscoveryConfigs[0]
+	assert.NotNil(t, sdConfig)
+
+	// Verify metric relabel configs
+	relabelConfigs := config.MetricRelabelConfigs
+	assert.NotEmpty(t, relabelConfigs)
+
+	// Check that the first relabel config keeps LIS metrics
+	keepConfig := relabelConfigs[0]
+	assert.Equal(t, relabel.Keep, keepConfig.Action)
+	assert.Equal(t, "aws_ec2_instance_store_csi_.*", keepConfig.Regex.String())
+}
+
+func TestLisMetricRelabelConfig(t *testing.T) {
+	mockProvider := mockHostInfoProvider{}
+	relabelConfigs := getLisMetricRelabelConfig(mockProvider)
+
+	assert.NotEmpty(t, relabelConfigs)
+
+	// Test keep config for LIS metrics
+	keepConfig := relabelConfigs[0]
+	assert.Equal(t, relabel.Keep, keepConfig.Action)
+	assert.Equal(t, "aws_ec2_instance_store_csi_.*", keepConfig.Regex.String())
+
+	// Test drop config for histogram metrics
+	dropConfig := relabelConfigs[1]
+	assert.Equal(t, relabel.Drop, dropConfig.Action)
+	assert.Equal(t, ".*_bucket|.*_sum|.*_count.*", dropConfig.Regex.String())
+
+	// Test cluster name injection
+	found := false
+	for _, config := range relabelConfigs {
+		if config.TargetLabel == ci.ClusterNameKey {
+			assert.Equal(t, relabel.Replace, config.Action)
+			assert.Equal(t, dummyClusterName, config.Replacement)
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "ClusterName relabel config not found")
+}
+
+func TestNewLisNVMEScraperEndToEnd(t *testing.T) {
 	t.Setenv("HOST_NAME", dummyNodeName)
 	expected := map[string]struct {
 		value  float64
 		labels map[string]string
 	}{
-		"aws_ebs_csi_read_seconds_total": {
+		"aws_ec2_instance_store_csi_read_seconds_total": {
 			value: 34.52,
 			labels: map[string]string{
 				ci.NodeNameKey:    "hostname",
@@ -114,8 +153,26 @@ func TestNewNVMEScraperEndToEnd(t *testing.T) {
 				ci.VolumeID:       "vol-0281cf921f3dbb69b",
 			},
 		},
-		"aws_ebs_csi_read_ops_total": {
+		"aws_ec2_instance_store_csi_read_ops_total": {
 			value: 55592,
+			labels: map[string]string{
+				ci.NodeNameKey:    "hostname",
+				ci.ClusterNameKey: dummyClusterName,
+				ci.InstanceID:     "i-0131bee5395cc4317",
+				ci.VolumeID:       "vol-0281cf921f3dbb69b",
+			},
+		},
+		"aws_ec2_instance_store_csi_write_ops_total": {
+			value: 12345,
+			labels: map[string]string{
+				ci.NodeNameKey:    "hostname",
+				ci.ClusterNameKey: dummyClusterName,
+				ci.InstanceID:     "i-0131bee5395cc4317",
+				ci.VolumeID:       "vol-0281cf921f3dbb69b",
+			},
+		},
+		"aws_ec2_instance_store_csi_write_bytes_total": {
+			value: 987654321,
 			labels: map[string]string{
 				ci.NodeNameKey:    "hostname",
 				ci.ClusterNameKey: dummyClusterName,
@@ -126,7 +183,7 @@ func TestNewNVMEScraperEndToEnd(t *testing.T) {
 	}
 
 	consumerCalled := false
-	mConsumer := mockConsumer{
+	mConsumer := mockLisConsumer{
 		t:        t,
 		called:   &consumerCalled,
 		expected: expected,
@@ -141,7 +198,7 @@ func TestNewNVMEScraperEndToEnd(t *testing.T) {
 		Consumer:          mConsumer,
 		Host:              componenttest.NewNopHost(),
 		HostInfoProvider:  mockHostInfoProvider{},
-		ScraperConfigs:    GetEbsScraperConfig(mockHostInfoProvider{}),
+		ScraperConfigs:    GetLisScraperConfig(mockHostInfoProvider{}),
 		Logger:            settings.Logger,
 	})
 	assert.NoError(t, err)
@@ -152,9 +209,9 @@ func TestNewNVMEScraperEndToEnd(t *testing.T) {
 
 	targets := []*mocks.TestData{
 		{
-			Name: "nvme",
+			Name: "nvme-lis",
 			Pages: []mocks.MockPrometheusResponse{
-				{Code: 200, Data: renameMetric},
+				{Code: 200, Data: lisRenameMetric},
 			},
 		},
 	}
@@ -196,7 +253,7 @@ func TestNewNVMEScraperEndToEnd(t *testing.T) {
 		TelemetrySettings: scraper.Settings,
 		ID:                component.NewID(component.MustNewType("prometheus")),
 	}
-	scraper.PrometheusReceiver, err = promFactory.CreateMetrics(scraper.Ctx, params, &promConfig, mConsumer)
+	scraper.PrometheusReceiver, err = promFactory.CreateMetrics(t.Context(), params, &promConfig, mConsumer)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
@@ -216,7 +273,11 @@ func TestNewNVMEScraperEndToEnd(t *testing.T) {
 	assert.True(t, consumerCalled)
 }
 
-func TestNvmeScraperJobName(t *testing.T) {
+func TestLisNvmeScraperJobName(t *testing.T) {
 	// needs to start with containerInsights
-	assert.True(t, strings.HasPrefix(jobName, "containerInsightsNVMeEBSScraper"))
+	assert.True(t, strings.HasPrefix(lisJobName, "containerInsights"))
+
+	mockProvider := mockHostInfoProvider{}
+	config := GetLisScraperConfig(mockProvider)
+	assert.Equal(t, "containerInsightsNVMeLISScraper", config.JobName)
 }

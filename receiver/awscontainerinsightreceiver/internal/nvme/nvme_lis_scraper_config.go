@@ -17,50 +17,45 @@ import (
 )
 
 const (
-	collectionInterval        = 60 * time.Second
-	jobName                   = "containerInsightsNVMeEBSScraper"
-	scraperMetricsPath        = "/metrics"
-	scraperK8sServiceSelector = "app=ebs-csi-node"
+	lisCollectionInterval        = 60 * time.Second
+	lisJobName                   = "containerInsightsNVMeLISScraper"
+	lisScraperMetricsPath        = "/metrics"
+	lisScraperK8sServiceSelector = "app=nvme-csi-plugin"
+	lisNamespaceDiscoveryName    = "kube-system"
 )
 
-type hostInfoProvider interface {
-	GetClusterName() string
-	GetInstanceID() string
-	GetInstanceType() string
-}
-
-func GetEbsScraperConfig(hostInfoProvider hostInfoProvider) *config.ScrapeConfig {
+func GetLisScraperConfig(hostInfoProvider hostInfoProvider) *config.ScrapeConfig {
 	return &config.ScrapeConfig{
-		ScrapeInterval:         model.Duration(collectionInterval),
-		ScrapeTimeout:          model.Duration(collectionInterval),
+		ScrapeInterval:         model.Duration(lisCollectionInterval),
+		ScrapeTimeout:          model.Duration(lisCollectionInterval),
 		ScrapeProtocols:        config.DefaultScrapeProtocols,
-		JobName:                jobName,
+		JobName:                lisJobName,
 		Scheme:                 "http",
-		MetricsPath:            scraperMetricsPath,
+		MetricsPath:            lisScraperMetricsPath,
 		ScrapeFallbackProtocol: config.PrometheusText0_0_4,
 		ServiceDiscoveryConfigs: discovery.Configs{
 			&kubernetes.SDConfig{
 				Role: kubernetes.RoleService,
 				NamespaceDiscovery: kubernetes.NamespaceDiscovery{
-					Names: []string{"kube-system"},
+					Names: []string{lisNamespaceDiscoveryName},
 				},
 				Selectors: []kubernetes.SelectorConfig{
 					{
 						Role:  kubernetes.RoleService,
-						Label: scraperK8sServiceSelector,
+						Label: lisScraperK8sServiceSelector,
 					},
 				},
 			},
 		},
-		MetricRelabelConfigs: getMetricRelabelConfig(hostInfoProvider),
+		MetricRelabelConfigs: getLisMetricRelabelConfig(hostInfoProvider),
 	}
 }
 
-func getMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config {
+func getLisMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config {
 	return []*relabel.Config{
 		{
 			SourceLabels: model.LabelNames{"__name__"},
-			Regex:        relabel.MustNewRegexp("aws_ebs_csi_.*"),
+			Regex:        relabel.MustNewRegexp("aws_ec2_instance_store_csi_.*"),
 			Action:       relabel.Keep,
 		},
 
@@ -70,7 +65,13 @@ func getMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config
 			Regex:        relabel.MustNewRegexp(".*_bucket|.*_sum|.*_count.*"),
 			Action:       relabel.Drop,
 		},
-		// Hacky way to inject static values (clusterName/instanceId/nodeName/volumeID)
+		// Below metrics are NVMe data collection metrics which are not supported to maintain parity with EBS NVMe metrics
+		{
+			SourceLabels: model.LabelNames{"__name__"},
+			Regex:        relabel.MustNewRegexp(".*_nvme_collector_.*"),
+			Action:       relabel.Drop,
+		},
+		// Inject static values (clusterName/instanceId/nodeName/volumeID)
 		{
 			SourceLabels: model.LabelNames{"instance_id"},
 			TargetLabel:  ci.NodeNameKey,

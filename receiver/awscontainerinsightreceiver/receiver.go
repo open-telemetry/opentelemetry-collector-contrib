@@ -60,7 +60,8 @@ type awsContainerInsightReceiver struct {
 	prometheusScraper        *k8sapiserver.PrometheusScraper
 	podResourcesStore        *stores.PodResourcesStore
 	dcgmScraper              *prometheusscraper.SimplePrometheusScraper
-	nvmeScraper              *prometheusscraper.SimplePrometheusScraper
+	nvmeEBSScraper           *prometheusscraper.SimplePrometheusScraper
+	nvmeLISScraper           *prometheusscraper.SimplePrometheusScraper
 	neuronMonitorScraper     *prometheusscraper.SimplePrometheusScraper
 	efaSysfsScraper          *efa.Scraper
 }
@@ -212,9 +213,13 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
 		}
-		err = acir.initNVMeEbsScraper(ctx, host, hostInfo, localNodeDecorator)
+		err = acir.initNVMeEBSScraper(ctx, host, hostInfo, localNodeDecorator)
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start NVME EBS scraper", zap.Error(err))
+		}
+		err = acir.initNVMeLISScraper(ctx, host, hostInfo, localNodeDecorator)
+		if err != nil {
+			acir.settings.Logger.Debug("Unable to start NVME LIS scraper", zap.Error(err))
 		}
 		err = acir.initPodResourcesStore()
 		if err != nil {
@@ -329,7 +334,7 @@ func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, ho
 	return err
 }
 
-func (acir *awsContainerInsightReceiver) initNVMeEbsScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, localNodeDecorator stores.Decorator) error {
+func (acir *awsContainerInsightReceiver) initNVMeEBSScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, localNodeDecorator stores.Decorator) error {
 	decoConsumer := decoratorconsumer.DecorateConsumer{
 		ContainerOrchestrator: ci.EKS,
 		NextConsumer:          acir.nextConsumer,
@@ -344,13 +349,38 @@ func (acir *awsContainerInsightReceiver) initNVMeEbsScraper(ctx context.Context,
 		TelemetrySettings: acir.settings,
 		Consumer:          &decoConsumer,
 		Host:              host,
-		ScraperConfigs:    nvme.GetScraperConfig(hostInfo),
+		ScraperConfigs:    nvme.GetEbsScraperConfig(hostInfo),
 		HostInfoProvider:  hostInfo,
 		Logger:            acir.settings.Logger,
 	}
 
 	var err error
-	acir.nvmeScraper, err = prometheusscraper.NewSimplePrometheusScraper(scraperOpts)
+	acir.nvmeEBSScraper, err = prometheusscraper.NewSimplePrometheusScraper(scraperOpts)
+	return err
+}
+
+func (acir *awsContainerInsightReceiver) initNVMeLISScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, localNodeDecorator stores.Decorator) error {
+	decoConsumer := decoratorconsumer.DecorateConsumer{
+		ContainerOrchestrator: ci.EKS,
+		NextConsumer:          acir.nextConsumer,
+		MetricType:            ci.TypeNodeNVME,
+		MetricToUnitMap:       nvme.MetricToUnit,
+		K8sDecorator:          localNodeDecorator,
+		Logger:                acir.settings.Logger,
+	}
+
+	scraperOpts := prometheusscraper.SimplePrometheusScraperOpts{
+		Ctx:               ctx,
+		TelemetrySettings: acir.settings,
+		Consumer:          &decoConsumer,
+		Host:              host,
+		ScraperConfigs:    nvme.GetLisScraperConfig(hostInfo),
+		HostInfoProvider:  hostInfo,
+		Logger:            acir.settings.Logger,
+	}
+
+	var err error
+	acir.nvmeLISScraper, err = prometheusscraper.NewSimplePrometheusScraper(scraperOpts)
 	return err
 }
 
@@ -445,8 +475,11 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	if acir.neuronMonitorScraper != nil {
 		acir.neuronMonitorScraper.Shutdown()
 	}
-	if acir.nvmeScraper != nil {
-		acir.nvmeScraper.Shutdown()
+	if acir.nvmeEBSScraper != nil {
+		acir.nvmeEBSScraper.Shutdown()
+	}
+	if acir.nvmeLISScraper != nil {
+		acir.nvmeLISScraper.Shutdown()
 	}
 	if acir.efaSysfsScraper != nil {
 		acir.efaSysfsScraper.Shutdown()
@@ -495,8 +528,12 @@ func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error 
 		acir.neuronMonitorScraper.GetMetrics()
 	}
 
-	if acir.nvmeScraper != nil {
-		acir.nvmeScraper.GetMetrics()
+	if acir.nvmeEBSScraper != nil {
+		acir.nvmeEBSScraper.GetMetrics()
+	}
+
+	if acir.nvmeLISScraper != nil {
+		acir.nvmeLISScraper.GetMetrics()
 	}
 
 	if acir.efaSysfsScraper != nil {
