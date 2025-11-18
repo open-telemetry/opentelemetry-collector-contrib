@@ -51,7 +51,12 @@ type pubSubPushReceiver struct {
 
 var _ receiver.Logs = (*pubSubPushReceiver)(nil)
 
-func newPubSubPushReceiver(ctx context.Context, cfg *Config, set receiver.Settings) (*pubSubPushReceiver, error) {
+func newPubSubPushReceiver(
+	ctx context.Context,
+	cfg *Config,
+	set receiver.Settings,
+	nextLogs consumer.Logs,
+) (*pubSubPushReceiver, error) {
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create storage client: %w", err)
@@ -61,11 +66,8 @@ func newPubSubPushReceiver(ctx context.Context, cfg *Config, set receiver.Settin
 		cfg:           cfg,
 		settings:      set,
 		storageClient: storageClient,
+		nextLogs:      nextLogs,
 	}, nil
-}
-
-func (p *pubSubPushReceiver) registerLogsConsumer(lc consumer.Logs) {
-	p.nextLogs = lc
 }
 
 func addHandlerFunc[T any](
@@ -98,33 +100,23 @@ func addHandlerFunc[T any](
 }
 
 func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) error {
-	start := false
 	mux := http.NewServeMux()
-	// If this is in the logs pipeline, load the encoding extension for logs and
-	// add a handler function in the logs' endpoint.
-	if p.nextLogs != nil {
-		start = true
-		logsUnmarshaler, errLoad := loadEncodingExtension[encoding.LogsUnmarshalerExtension](
-			host, p.cfg.Encoding, "logs",
-		)
-		if errLoad != nil {
-			return fmt.Errorf("failed to load encoding extension: %w", errLoad)
-		}
-		addHandlerFunc(
-			mux,
-			"/",
-			logsUnmarshaler.UnmarshalLogs,
-			p.nextLogs.ConsumeLogs,
-			p.storageClient,
-			p.cfg.IncludeMetadata,
-			p.settings.Logger,
-		)
-	}
 
-	if !start {
-		// should never happen
-		return errors.New("failed to start Google Cloud Pub/Sub Push Receiver: no pipeline configured")
+	logsUnmarshaler, errLoad := loadEncodingExtension[encoding.LogsUnmarshalerExtension](
+		host, p.cfg.Encoding, "logs",
+	)
+	if errLoad != nil {
+		return fmt.Errorf("failed to load encoding extension: %w", errLoad)
 	}
+	addHandlerFunc(
+		mux,
+		"/",
+		logsUnmarshaler.UnmarshalLogs,
+		p.nextLogs.ConsumeLogs,
+		p.storageClient,
+		p.cfg.IncludeMetadata,
+		p.settings.Logger,
+	)
 
 	server, err := p.cfg.ToServer(ctx, host, p.settings.TelemetrySettings, mux)
 	if err != nil {

@@ -172,14 +172,6 @@ func TestStartShutdown(t *testing.T) {
 		pubSubReceiver *pubSubPushReceiver
 		expectedErr    string
 	}{
-		"no_next_consumer": {
-			pubSubReceiver: &pubSubPushReceiver{
-				cfg: &Config{
-					Encoding: component.MustNewID("fails"),
-				},
-			},
-			expectedErr: "failed to start",
-		},
 		"invalid_encoding": {
 			pubSubReceiver: &pubSubPushReceiver{
 				cfg: &Config{
@@ -252,7 +244,7 @@ func newTestRequest(t *testing.T, attrs map[string]string, data []byte, subscrip
 
 func newTestPubSubPushReceiver(t *testing.T, cfg *Config) *pubSubPushReceiver {
 	startTestStorageEmulator(t) // we start the emulator so the storage client creation is successful
-	r, err := newPubSubPushReceiver(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	r, err := newPubSubPushReceiver(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	return r
