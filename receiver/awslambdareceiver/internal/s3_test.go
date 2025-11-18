@@ -19,17 +19,9 @@ import (
 func TestS3ServiceProvider(t *testing.T) {
 	provider := S3ServiceProvider{}
 
-	require.Nil(t, provider.service)
-	require.NoError(t, provider.error)
-
-	s1, err := provider.GetService(t.Context())
+	service, err := provider.GetService(t.Context())
 	require.NoError(t, err)
-
-	s2, err := provider.GetService(t.Context())
-	require.NoError(t, err)
-
-	require.Equal(t, s1, s2)
-	require.NoError(t, provider.error)
+	require.NotNil(t, service)
 }
 
 func TestS3ServiceReadObject(t *testing.T) {

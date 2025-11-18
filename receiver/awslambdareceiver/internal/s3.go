@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -33,25 +32,16 @@ type S3Provider interface {
 	GetService(ctx context.Context) (S3Service, error)
 }
 
-// S3ServiceProvider is a helper to derive reusable, lazy initialized S3Service for any dependent component.
-type S3ServiceProvider struct {
-	service S3Service
-	once    sync.Once
-	error   error
-}
+// S3ServiceProvider provides S3Service instances.
+type S3ServiceProvider struct{}
 
 func (p *S3ServiceProvider) GetService(ctx context.Context) (S3Service, error) {
-	p.once.Do(func() {
-		cfg, err := config.LoadDefaultConfig(ctx)
-		if err != nil {
-			p.error = fmt.Errorf("unable to load AWS SDK config: %w", err)
-			return
-		}
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
+	}
 
-		p.service = &s3ServiceClient{api: s3.NewFromConfig(cfg)}
-	})
-
-	return p.service, p.error
+	return &s3ServiceClient{api: s3.NewFromConfig(cfg)}, nil
 }
 
 // s3ServiceClient implements the S3Service
