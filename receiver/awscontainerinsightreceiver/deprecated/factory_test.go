@@ -26,10 +26,16 @@ func TestNewFactory(t *testing.T) {
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	f := NewFactory()
-	cfg := awscontainerinsightreceiver.CreateDefaultConfig()
-	
+	cfg := &awscontainerinsightreceiver.Config{
+		CollectionInterval:        60,
+		ContainerOrchestrator:     "eks",
+		TagService:                true,
+		PrefFullPodName:           false,
+		AddFullPodNameMetricLabel: false,
+	}
+
 	params := receivertest.NewNopSettings(f.Type())
-	
+
 	metricsReceiver, err := f.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
@@ -41,7 +47,13 @@ func TestDeprecationWarningOnStart(t *testing.T) {
 	logger := zap.New(core)
 	
 	f := NewFactory()
-	cfg := awscontainerinsightreceiver.CreateDefaultConfig()
+	cfg := &awscontainerinsightreceiver.Config{
+		CollectionInterval:        60,
+		ContainerOrchestrator:     "eks",
+		TagService:                true,
+		PrefFullPodName:           false,
+		AddFullPodNameMetricLabel: false,
+	}
 	
 	params := receivertest.NewNopSettings(f.Type())
 	params.Logger = logger
