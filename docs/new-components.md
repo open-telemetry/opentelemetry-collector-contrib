@@ -8,6 +8,8 @@
 > your component in this repository to be able to use or distribute your component: you can just 
 > host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/).
 
+## Requirements
+
 You may donate an existing component or propose a whole new one. If you are writing a new component from scratch, **before** any code is written, [open an
 issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
@@ -19,7 +21,19 @@ providing the following information:
 * The configuration options your component will accept. This will give us a better understanding of what it does, and 
   how it may be implemented.
 
-Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
+> [!IMPORTANT]  
+> Unstable Collector interfaces may undergo breaking changes. Component creators
+> must be available to update or review their components when such changes happen, otherwise the component will be
+> excluded from the default builds.
+
+Maintenance of components is the responsibility of contributors who authored them. If the original author or
+some other contributor does not maintain the component it may be excluded from the default build. The component **will**
+be excluded if it causes build problems, has failing tests, or otherwise causes problems to the rest of the repository
+and its contributors.
+
+## Implementation
+
+Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implement a component is to:
 
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
@@ -28,16 +42,6 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
-
-> [!IMPORTANT]  
-> The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
-> must be available to update or review their components when such changes happen, otherwise the component will be
-> excluded from the default builds.
-
-Generally, maintenance of components is the responsibility of contributors who authored them. If the original author or
-some other contributor does not maintain the component it may be excluded from the default build. The component **will**
-be excluded if it causes build problems, has failing tests, or otherwise causes problems to the rest of the repository
-and its contributors.
 
 - Create your component under the proper folder and use Go standard package naming recommendations.
 - Use a boiler-plate Makefile that just references the one at top level, ie.: `include ../../Makefile.Common` - this
@@ -136,7 +140,8 @@ When submitting a component to the community, consider breaking it down into sep
   * Please add the component
     to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
-### Releasing New Components
+## Releasing New Components
+
 After a component has been merged it must be added to the
 [OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
 to be included in the distributed otelcol-contrib binaries and docker images.
