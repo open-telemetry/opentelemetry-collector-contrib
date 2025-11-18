@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 )
@@ -77,6 +78,8 @@ func getEncodingFormat(logType string) string {
 		return constants.GCPFormatVPCFlowLog
 	case armorlog.LoadBalancerLogSuffix:
 		return constants.GCPFormatLoadBalancerLog
+	case proxynlb.ConnectionsLogNameSuffix:
+		return constants.GCPFormatProxyNLBLog
 	default:
 		return ""
 	}
@@ -505,6 +508,12 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 		}
 		// Fall through to default payload handling for non-armor load balancer logs
 		// TODO Add support for more log types
+	case constants.GCPFormatProxyNLBLog:
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
+		if err := proxynlb.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse Proxy NLB log JSON payload: %w", err)
+		}
+		return nil
 	}
 
 	// if the log type was not recognized, add the payload to the log record body

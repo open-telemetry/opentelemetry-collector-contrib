@@ -7,6 +7,7 @@ const (
 	FormatAuditLog        = "auditlog"
 	FormatVPCFlowLog      = "vpcflow"
 	FormatLoadBalancerLog = "load-balancer"
+	FormatProxyNLBLog     = "proxy-nlb"
 
 	FormatIdentificationTag = "encoding.format"
 
@@ -15,4 +16,5 @@ const (
 	GCPFormatAuditLog        = GCPFormatPrefix + FormatAuditLog
 	GCPFormatVPCFlowLog      = GCPFormatPrefix + FormatVPCFlowLog
 	GCPFormatLoadBalancerLog = GCPFormatPrefix + FormatLoadBalancerLog
+	GCPFormatProxyNLBLog     = GCPFormatPrefix + FormatProxyNLBLog
 )

@@ -153,3 +153,9 @@ var protocolNames = map[uint32]string{
 	147: "bit-emu",
 	255: "reserved",
 }
+
+// ProtocolName returns the textual protocol name for the provided protocol number.
+func ProtocolName(protocol uint32) (string, bool) {
+	name, ok := protocolNames[protocol]
+	return name, ok
+}
