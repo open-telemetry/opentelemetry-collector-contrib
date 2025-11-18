@@ -16,7 +16,7 @@
 
 ## Description
 
-The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum, histogram, and exponential histogram metrics to monotonic, delta metrics. Non-monotonic sums are excluded.
+The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic sum, histogram, and exponential histogram metrics from cumulative to delta aggregation temporality. Non-monotonic sums are excluded. Delta metrics are excluded from any conversion and forwarded without changes.
 
 ## Configuration
 
