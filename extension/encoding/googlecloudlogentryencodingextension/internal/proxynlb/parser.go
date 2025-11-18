@@ -29,12 +29,18 @@ const (
 )
 
 type loadBalancerLog struct {
-	Type                string      `json:"@type"`
-	Connection          *connection `json:"connection"`
-	StartTime           *time.Time  `json:"startTime"`
-	EndTime             *time.Time  `json:"endTime"`
-	ServerBytesReceived string      `json:"serverBytesReceived"`
-	ServerBytesSent     string      `json:"serverBytesSent"`
+	Type       string      `json:"@type"`
+	Connection *connection `json:"connection"`
+	StartTime  *time.Time  `json:"startTime"`
+	EndTime    *time.Time  `json:"endTime"`
+
+	// ServerBytesReceived and ServerBytesSent are string-encoded 64-bit integers.
+	// Although the official documentation (https://docs.cloud.google.com/load-balancing/docs/tcp/tcp-ssl-proxy-logging-monitoring)
+	// specifies these fields as integers, the actual
+	// JSON payload from Cloud Logging seems to stringify int64/uint64 values to
+	// preserve precision
+	ServerBytesReceived string `json:"serverBytesReceived"`
+	ServerBytesSent     string `json:"serverBytesSent"`
 }
 
 type connection struct {
