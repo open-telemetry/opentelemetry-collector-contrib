@@ -444,7 +444,7 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 			}
 
 			_, ok = tsp.idToTrace[trace.id]
-			if !ok && len(tsp.idToTrace) >= int(tsp.cfg.NumTraces) {
+			if !ok && uint64(len(tsp.idToTrace)) >= tsp.cfg.NumTraces {
 				tsp.waitForSpace(tickChan)
 			}
 
@@ -495,7 +495,7 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 	if tsp.blockOnOverflow {
 		// Ticks are not guaranteed to drop data, since they may process an
 		// empty batch. We loop until we have space for a new trace.
-		for len(tsp.idToTrace) >= int(tsp.cfg.NumTraces) {
+		for uint64(len(tsp.idToTrace)) >= tsp.cfg.NumTraces {
 			// Recursively iter with a nil workChan to wait for space.
 			tsp.iter(tickChan, nil)
 		}
