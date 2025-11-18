@@ -121,9 +121,11 @@ func TestLogsQueryReceiver_BothDatasourceFields(t *testing.T) {
 }
 
 func TestLogsQueryReceiver_NullValue(t *testing.T) {
+	col1 := "col1"
+	col1Value := "42"
 	fakeClient := &sqlquery.FakeDBClient{
 		StringMaps: [][]sqlquery.StringMap{
-			{{"col1": "42"}},
+			{{col1: col1Value}},
 		},
 		// fakeClient.QueryRows will return ErrNullValueWarning on top of the StringMaps
 		ErrNullValueWarning: true,
@@ -137,8 +139,8 @@ func TestLogsQueryReceiver_NullValue(t *testing.T) {
 		query: sqlquery.Query{
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn:       "col1",
-					AttributeColumns: []string{"col1"},
+					BodyColumn:       col1,
+					AttributeColumns: []string{col1},
 				},
 			},
 		},
@@ -148,7 +150,7 @@ func TestLogsQueryReceiver_NullValue(t *testing.T) {
 	logs, err := queryReceiver.collect(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, 1, logs.LogRecordCount())
-	assert.Equal(t, "42", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+	assert.Equal(t, col1Value, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
 
 	// ensure that the warning is logged
 	all := recorded.All()
