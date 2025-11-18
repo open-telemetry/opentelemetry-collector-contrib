@@ -206,7 +206,8 @@ func getFunctionHash(name, systemName, fileName string, startLine int64) uint64 
 
 // populateFunction helps to populate deduplicated functions.
 func populateFunction(dst *profile.Profile, functionMap map[uint64]*profile.Function,
-	name, systemName, fileName string, startLine int64) *profile.Function {
+	name, systemName, fileName string, startLine int64,
+) *profile.Function {
 	fnHash := getFunctionHash(name, systemName, fileName, startLine)
 	if existingFn, ok := functionMap[fnHash]; ok {
 		return existingFn
@@ -238,7 +239,8 @@ func getMappingHash(start, limit, offset uint64, file string) uint64 {
 
 // populateMapping helps to populate deduplicated mappings.
 func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mapping,
-	start, limit, offset uint64, fileName string) *profile.Mapping {
+	start, limit, offset uint64, fileName string,
+) *profile.Mapping {
 	mHash := getMappingHash(start, limit, offset, fileName)
 	if existingMapping, ok := mappingMap[mHash]; ok {
 		return existingMapping
@@ -278,7 +280,8 @@ func getLocationHash(m *profile.Mapping, addr uint64, lines []profile.Line) uint
 
 // populateLocation helps to populate deduplicated locations.
 func populateLocation(dst *profile.Profile, locationMap map[uint64]*profile.Location,
-	m *profile.Mapping, addr uint64, lines []profile.Line) *profile.Location {
+	m *profile.Mapping, addr uint64, lines []profile.Line,
+) *profile.Location {
 	lHash := getLocationHash(m, addr, lines)
 	if existingLocation, ok := locationMap[lHash]; ok {
 		return existingLocation
