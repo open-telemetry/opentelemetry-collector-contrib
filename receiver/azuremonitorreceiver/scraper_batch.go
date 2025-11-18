@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -37,14 +36,14 @@ type azureType struct {
 
 func newBatchScraper(conf *Config, settings receiver.Settings) *azureBatchScraper {
 	return &azureBatchScraper{
-		cfg:                   conf,
-		receiverSettings:      settings,
-		settings:              settings.TelemetrySettings,
-		mutex:                 &sync.Mutex{},
-		time:                  &timeWrapper{},
-		clientOptionsResolver: newClientOptionsResolver(conf.Cloud),
-		mbs:                   newConcurrentMapImpl[*metadata.MetricsBuilder](),
-		lowerCaseServices:     stringSliceToLower(conf.Services),
+		cfg:                      conf,
+		receiverSettings:         settings,
+		settings:                 settings.TelemetrySettings,
+		mutex:                    &sync.Mutex{},
+		time:                     &timeWrapper{},
+		clientOptionsResolver:    newClientOptionsResolver(conf.Cloud),
+		mbs:                      newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		storageAccountHackConfig: newStorageAccountHackConfig(conf.Services),
 	}
 }
 
@@ -64,12 +63,10 @@ type azureBatchScraper struct {
 	regions map[string]map[string]struct{}
 	mbs     concurrentMetricsBuilderMap[*metadata.MetricsBuilder]
 
-	// lowerCaseServices is a duplicate of cfg.Services, but in lower case.
-	// Used to avoid a performance drop when checking if a service is enabled.
-	lowerCaseServices     []string
-	mutex                 *sync.Mutex
-	time                  timeNowIface
-	clientOptionsResolver ClientOptionsResolver
+	mutex                    *sync.Mutex
+	time                     timeNowIface
+	clientOptionsResolver    ClientOptionsResolver
+	storageAccountHackConfig storageAccountHackConfig
 }
 
 func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetrics.Client, error) {
@@ -325,28 +322,49 @@ func (s *azureBatchScraper) hackResources(resources []*armresources.GenericResou
 	for _, resource := range resources {
 		hackedResources = append(hackedResources, resource)
 		if resource.Type != nil && *resource.Type == storageAccountType {
-			for i, subType := range storageAccountSubTypes {
-				if slices.Contains(s.lowerCaseServices, fullStorageAccountSubTypesLowerCase[i]) {
-					hackedResource, err := copyResource(resource)
-					if err != nil {
-						s.settings.Logger.Error("failed to create a hack resource",
-							zap.String("resource type", *resource.Type),
-							zap.String("hack resource type", fullStorageAccountSubTypes[i]),
-							zap.Error(err),
-						)
-					}
-					if hackedResource != nil {
-						// Create a fake new resource with type and ID corresponding to the sub resource.
-						// The rest of the attributes (location, tags, etc...) are copied from the original resource.
-						hackedResource.Type = to.Ptr(fullStorageAccountSubTypes[i])
-						hackedResource.ID = to.Ptr(fmt.Sprintf("%s/%s/default", *resource.ID, subType))
-						hackedResources = append(hackedResources, hackedResource)
-					}
+			if s.storageAccountHackConfig.askedBlobServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/blobServices", fmt.Sprintf("%s/blobServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedFileServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/fileServices", fmt.Sprintf("%s/fileServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedQueueServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/queueServices", fmt.Sprintf("%s/queueServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedTableServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/tableServices", fmt.Sprintf("%s/tableServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
 				}
 			}
 		}
 	}
 	return hackedResources
+}
+
+// hackResource creates a fake new resource with give type and ID.
+// The rest of the attributes (location, tags, etc...) are copied from the original resource.
+// TODO: duplicate
+func (s *azureBatchScraper) hackResource(resource *armresources.GenericResourceExpanded, newResourceType, newResourceID string) *armresources.GenericResourceExpanded {
+	hackedResource, err := copyResource(resource)
+	if err != nil {
+		s.settings.Logger.Error("failed to create a hack resource",
+			zap.String("resource type", *resource.Type),
+			zap.String("hack resource type", newResourceType),
+			zap.String("hack resource ID", newResourceID),
+			zap.Error(err),
+		)
+	}
+	if hackedResource != nil {
+		hackedResource.Type = to.Ptr(newResourceType)
+		hackedResource.ID = to.Ptr(newResourceID)
+	}
+	return hackedResource
 }
 
 // TODO: duplicate
