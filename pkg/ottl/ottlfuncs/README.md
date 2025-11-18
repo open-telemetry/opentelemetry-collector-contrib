@@ -580,6 +580,7 @@ Examples:
 `CommunityID(sourceIP, sourcePort, destinationIP, destinationPort, Optional[protocol], Optional[seed])`
 
 The `CommunityID` converter generates a network hash flow. Community ID is a standardized flow hashing algorithm that produces consistent hash values for network connections, useful when correlating network traffic across different monitoring systems.
+The output format is base64 encoding string of <2-byte-seed><source-IP-bytes><destination-IP-bytes><1-byte-protocol><2-byte-source-port><2-byte-destination-port>.
 
 `sourceIP` is a source IP address (IPv4 or IPv6).
 `sourcePort` is a source port (must be between 1 and 65535).

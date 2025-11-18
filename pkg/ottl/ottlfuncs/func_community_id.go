@@ -137,15 +137,15 @@ func validateAndExtractParams[K any](
 		return nil, fmt.Errorf("destination port must be between 1 and 65535, got %d", dstPort)
 	}
 
-	protocolValue := protocolMap["TCP"] // defaults to TCP
+	protocolValue := communityIDProtocols["TCP"] // defaults to TCP
 	if !protocol.IsEmpty() {
 		protocolStr, err := protocol.Get().Get(ctx, tCtx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get protocol: %w", err)
 		}
 
-		var ok bool 
-		protocolValue, ok = protocolMap[protocolStr]
+		var ok bool
+		protocolValue, ok = communityIDProtocols[protocolStr]
 		if !ok {
 			return nil, fmt.Errorf("unsupported protocol: %s", protocolStr)
 		}
