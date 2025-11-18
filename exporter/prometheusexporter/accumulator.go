@@ -367,7 +367,8 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
-	return
+
+	return n
 }
 
 // Collect returns a slice with relevant aggregated metrics and their resource attributes.
