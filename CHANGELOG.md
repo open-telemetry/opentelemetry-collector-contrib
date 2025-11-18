@@ -61,6 +61,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   It also returns an error if the body exceeds the configured limit.
   
 
+### 🚩 Deprecations 🚩
+
+- `receiver/awscontainerinsight`: The receiver type 'awscontainerinsightreceiver' is deprecated and will be removed in a future version. Use 'awscontainerinsight' instead. (#44052)
+  The deprecated receiver type will continue to work but will log a deprecation warning when started.
+  Please update your configuration files to use 'awscontainerinsight' instead of 'awscontainerinsightreceiver'.
+
 ### 🧰 Bug fixes 🧰
 
 - `cmd/opampsupervisor`: Redacts HTTP headers in debug message (#43781)
