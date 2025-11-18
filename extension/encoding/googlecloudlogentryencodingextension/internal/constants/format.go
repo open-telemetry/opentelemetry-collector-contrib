@@ -4,13 +4,15 @@
 package constants // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 
 const (
-	FormatAuditLog   = "auditlog"
-	FormatVPCFlowLog = "vpcflow"
+	FormatAuditLog        = "auditlog"
+	FormatVPCFlowLog      = "vpcflow"
+	FormatLoadBalancerLog = "load-balancer"
 
 	FormatIdentificationTag = "encoding.format"
 
 	// GCP-specific format prefixes
-	GCPFormatPrefix     = "gcp."
-	GCPFormatAuditLog   = GCPFormatPrefix + FormatAuditLog
-	GCPFormatVPCFlowLog = GCPFormatPrefix + FormatVPCFlowLog
+	GCPFormatPrefix          = "gcp."
+	GCPFormatAuditLog        = GCPFormatPrefix + FormatAuditLog
+	GCPFormatVPCFlowLog      = GCPFormatPrefix + FormatVPCFlowLog
+	GCPFormatLoadBalancerLog = GCPFormatPrefix + FormatLoadBalancerLog
 )
