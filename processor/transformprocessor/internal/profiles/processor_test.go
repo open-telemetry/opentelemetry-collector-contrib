@@ -885,7 +885,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 				{Statements: []string{`set(profile.original_payload_format, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(profile.original_payload_format, ParseJSON("true"))`}},
 			},
-			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+			wantErrorWith: "could not convert parsed value of type \"Bool\" to JSON object",
 		},
 		{
 			name:      "resource: statements group with error mode",
@@ -905,7 +905,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+			wantErrorWith: "could not convert parsed value of type \"Bool\" to JSON object",
 		},
 		{
 			name:      "scope: statements group with error mode",
@@ -925,7 +925,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+			wantErrorWith: "could not convert parsed value of type \"Bool\" to JSON object",
 		},
 	}
 
