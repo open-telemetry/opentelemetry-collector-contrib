@@ -36,9 +36,10 @@ func NewConfig() *Config {
 // NewConfigWithID creates a new JSON parser config with default values
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
-		Format:       "",
-		MaxLogSize:   0, // unlimited
+		ParserConfig:            helper.NewParserConfig(operatorID, operatorType),
+		AddMetadataFromFilePath: true,
+		Format:                  "",
+		MaxLogSize:              0, // unlimited
 	}
 }
 
