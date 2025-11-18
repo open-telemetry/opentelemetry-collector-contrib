@@ -1081,7 +1081,7 @@ func TestExtractionRules(t *testing.T) {
 			podCopy := pod.DeepCopy()
 			maps.Copy(podCopy.Annotations, tc.additionalAnnotations)
 			maps.Copy(podCopy.Labels, tc.additionalLabels)
-			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules, c.Associations)
+			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)
@@ -1237,7 +1237,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 
 			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
-			transformedPod := removeUnnecessaryPodData(pod, c.Rules, c.Associations)
+			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)
@@ -2556,7 +2556,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			c := WatchClient{Rules: tt.rules}
 			// manually call the data removal function here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
-			transformedPod := removeUnnecessaryPodData(tt.pod, c.Rules, c.Associations)
+			transformedPod := removeUnnecessaryPodData(tt.pod, c.Rules)
 			assert.Equal(t, tt.want, c.extractPodContainersAttributes(transformedPod))
 		})
 	}
@@ -3462,7 +3462,7 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 			job.OwnerReferences = tc.jobOwners
 
 			// Emulate informer transforms (like other tests do)
-			transformedPod := removeUnnecessaryPodData(pod, c.Rules, c.Associations)
+			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
 
 			// Feed caches
 			c.handleJobAdd(job)
@@ -3812,228 +3812,6 @@ func TestDeploymentHashSuffixPattern(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := deploymentHashSuffixPattern.MatchString(tt.input)
 			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestContainerCacheAndPodAssociation(t *testing.T) {
-	tests := []struct {
-		name                 string
-		associations         []Association
-		rules                ExtractionRules
-		expectPodAssociation bool
-		expectPopulationType string // "none", "minimal", "full"
-		checkAttrsPopulated  bool   // when true, verify attributes are populated
-	}{
-		{
-			name: "container-id-only-in-associations",
-			associations: []Association{
-				{
-					Name: "container-id-association",
-					Sources: []AssociationSource{
-						{
-							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
-						},
-					},
-				},
-			},
-			rules: ExtractionRules{
-				PodName: true,
-				PodUID:  true,
-			},
-			expectPodAssociation: true,
-			expectPopulationType: "minimal", // Only ByID populated
-			checkAttrsPopulated:  false,
-		},
-		{
-			name: "non-container-rules-only",
-			associations: []Association{
-				{
-					Name: "pod-name-association",
-					Sources: []AssociationSource{
-						{
-							From: ResourceSource,
-							Name: string(conventions.K8SPodUIDKey),
-						},
-					},
-				},
-			},
-			rules: ExtractionRules{
-				PodName: true,
-			},
-			expectPodAssociation: false,
-			expectPopulationType: "none",
-			checkAttrsPopulated:  false,
-		},
-		{
-			name: "container-rules-without-association",
-			associations: []Association{
-				{
-					Name: "pod-name-association",
-					Sources: []AssociationSource{
-						{
-							From: ResourceSource,
-							Name: string(conventions.K8SPodNameKey),
-						},
-					},
-				},
-			},
-			rules: ExtractionRules{
-				ContainerName:      true,
-				ContainerImageName: true,
-			},
-			expectPodAssociation: false,
-			expectPopulationType: "full", // Both ByID and ByName populated
-			checkAttrsPopulated:  true,
-		},
-		{
-			name: "all-container-extraction-rules",
-			associations: []Association{
-				{
-					Name: "container-id-association",
-					Sources: []AssociationSource{
-						{
-							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
-						},
-					},
-				},
-			},
-			rules: ExtractionRules{
-				ContainerName:             true,
-				ContainerID:               true,
-				ContainerImageName:        true,
-				ContainerImageTag:         true,
-				ContainerImageRepoDigests: true,
-				ServiceInstanceID:         true,
-				ServiceVersion:            true,
-			},
-			expectPodAssociation: true,
-			expectPopulationType: "full",
-			checkAttrsPopulated:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			wc, _ := newTestClientWithRulesAndFilters(t, Filters{})
-			wc.Rules = tt.rules
-			wc.Associations = tt.associations
-
-			pod := &api_v1.Pod{
-				ObjectMeta: meta_v1.ObjectMeta{
-					Name:      "test-pod",
-					Namespace: "default",
-					UID:       "pod-uid-123",
-					Annotations: map[string]string{
-						"service.version":     "v1.2.3",
-						"service.instance.id": "instance-abc-123",
-					},
-				},
-				Spec: api_v1.PodSpec{
-					Containers: []api_v1.Container{
-						{
-							Name:  "app-container",
-							Image: "myregistry.io/myapp:1.0.0",
-						},
-						{
-							Name:  "sidecar-container",
-							Image: "sidecar:latest",
-						},
-					},
-				},
-				Status: api_v1.PodStatus{
-					PodIP: "10.1.1.1",
-					ContainerStatuses: []api_v1.ContainerStatus{
-						{
-							Name:        "app-container",
-							ContainerID: "abc123def456",
-							ImageID:     "myregistry.io/myapp@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-						},
-						{
-							Name:        "sidecar-container",
-							ContainerID: "xyz789uvw012",
-							ImageID:     "docker.io/library/sidecar@sha256:fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
-						},
-					},
-				},
-			}
-
-			wc.handlePodAdd(pod)
-
-			podID := newPodIdentifier("connection", "", pod.Status.PodIP)
-			cachedPod, found := wc.GetPod(podID)
-			require.True(t, found, "Pod should be found in cache")
-
-			switch tt.expectPopulationType {
-			case "none":
-				assert.Empty(t, cachedPod.Containers.ByID, "Containers.ByID should be empty for 'none' type")
-				assert.Empty(t, cachedPod.Containers.ByName, "Containers.ByName should be empty for 'none' type")
-			case "minimal":
-				if assert.NotEmpty(t, cachedPod.Containers.ByID, "Containers.ByID should be populated") {
-					assert.Contains(t, cachedPod.Containers.ByID, "abc123def456", "First container should be indexed by ID")
-					assert.Contains(t, cachedPod.Containers.ByID, "xyz789uvw012", "Second container should be indexed by ID")
-				}
-				assert.Empty(t, cachedPod.Containers.ByName, "Containers.ByName should be empty")
-			case "full":
-				if assert.NotEmpty(t, cachedPod.Containers.ByID, "Containers.ByID should be populated") {
-					assert.Contains(t, cachedPod.Containers.ByID, "abc123def456", "First container should be indexed by ID")
-					assert.Contains(t, cachedPod.Containers.ByID, "xyz789uvw012", "Second container should be indexed by ID")
-				}
-				if assert.NotEmpty(t, cachedPod.Containers.ByName, "Containers.ByName should be populated") {
-					assert.Contains(t, cachedPod.Containers.ByName, "app-container", "First container should be indexed by name")
-					assert.Contains(t, cachedPod.Containers.ByName, "sidecar-container", "Second container should be indexed by name")
-				}
-			}
-
-			// Verify container attributes are populated when applicable with ExtractionRules
-			// Detailed attribute value validation is covered by Test_extractPodContainersAttributes
-			// This test focuses on cache integration and ensuring attributes exist when rules are enabled
-			if tt.checkAttrsPopulated {
-				checkContainerAttrs := func(mapName string, containerMap map[string]*Container) {
-					for key, container := range containerMap {
-						if tt.rules.ContainerName {
-							assert.NotEmpty(t, container.Name, "%s[%s]: Name should be populated when extraction rule enabled", mapName, key)
-						}
-						if tt.rules.ContainerImageName {
-							assert.NotEmpty(t, container.ImageName, "%s[%s]: ImageName should be populated when extraction rule enabled", mapName, key)
-						}
-						if tt.rules.ContainerImageTag {
-							assert.NotEmpty(t, container.ImageTag, "%s[%s]: ImageTag should be populated when extraction rule enabled", mapName, key)
-						}
-						if tt.rules.ServiceInstanceID {
-							assert.NotEmpty(t, container.ServiceInstanceID, "%s[%s]: ServiceInstanceID should be populated when extraction rule enabled", mapName, key)
-						}
-						if tt.rules.ServiceVersion {
-							assert.NotEmpty(t, container.ServiceVersion, "%s[%s]: ServiceVersion should be populated when extraction rule enabled", mapName, key)
-						}
-						if tt.rules.ContainerID || tt.rules.ContainerImageRepoDigests {
-							assert.NotEmpty(t, container.Statuses, "%s[%s]: Statuses should be populated when ContainerID or ImageRepoDigests extraction rule enabled", mapName, key)
-						}
-					}
-				}
-
-				checkContainerAttrs("Containers.ByID", cachedPod.Containers.ByID)
-				checkContainerAttrs("Containers.ByName", cachedPod.Containers.ByName)
-			}
-
-			if tt.expectPodAssociation {
-				associationPodID := newPodIdentifier("resource_attribute", string(conventions.ContainerIDKey), "abc123def456")
-				foundPod, associationFound := wc.GetPod(associationPodID)
-
-				if assert.True(t, associationFound, "Pod should be found by container.id association") {
-					assert.Equal(t, "test-pod", foundPod.Name)
-					assert.Equal(t, "pod-uid-123", foundPod.PodUID)
-					assert.NotEmpty(t, foundPod.Containers.ByID, "Associated pod should have container indexing")
-					assert.Contains(t, foundPod.Containers.ByID, "abc123def456", "Associated pod should contain the lookup container")
-				}
-			} else {
-				// Verify pod is NOT found by container.id association when not expected
-				associationPodID := newPodIdentifier("resource_attribute", string(conventions.ContainerIDKey), "abc123def456")
-				_, associationFound := wc.GetPod(associationPodID)
-				assert.False(t, associationFound, "Pod should NOT be found by container.id association")
-			}
 		})
 	}
 }

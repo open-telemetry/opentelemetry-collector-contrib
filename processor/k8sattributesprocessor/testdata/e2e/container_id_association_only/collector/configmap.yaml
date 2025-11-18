@@ -23,11 +23,9 @@ data:
           - k8s.deployment.name
           - k8s.node.name
           - k8s.cluster.uid
-          {{- if .WithContainerMetadata }}
           - k8s.container.name
           - container.image.name
           - container.image.tag
-          {{- end }}
           labels:
           - from: pod
             key: app
