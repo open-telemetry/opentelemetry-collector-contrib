@@ -35,6 +35,7 @@ const (
 	SCRAMSHA256          = "SCRAM-SHA-256"
 	PLAIN                = "PLAIN"
 	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER" //nolint:gosec // These aren't credentials.
+	OIDCFILE             = "OIDCFILE"
 )
 
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
@@ -252,7 +253,7 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 		opts = append(opts, kgo.SASL(auth.AsMechanism()))
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL)
+		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, clientCfg.ClientID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -295,7 +296,7 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	return opts, nil
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
+func configureKgoSASL(cfg *configkafka.SASLConfig, clientID string) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -308,6 +309,19 @@ func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 			token, _, err := signer.GenerateAuthToken(ctx, cfg.AWSMSK.Region)
 			return oauth.Auth{Token: token}, err
+		})
+	case OIDCFILE:
+		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
+			tokenProvider, cancel := NewOIDCTokenProvider(ctx, clientID,
+				cfg.OIDCFILE.ClientSecretFilePath, cfg.OIDCFILE.TokenURL,
+				cfg.OIDCFILE.Scopes, cfg.OIDCFILE.EndPointParams,
+				cfg.OIDCFILE.AuthStyle, cfg.OIDCFILE.ExpiryBuffer)
+			_ = cancel // Store cancel function for cleanup if needed
+			token, err := tokenProvider.GetToken()
+			if err != nil {
+				return oauth.Auth{}, err
+			}
+			return oauth.Auth{Token: token.AccessToken}, nil
 		})
 	default:
 		return nil, fmt.Errorf("unsupported SASL mechanism: %s", cfg.Mechanism)
