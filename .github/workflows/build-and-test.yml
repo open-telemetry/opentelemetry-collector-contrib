@@ -344,6 +344,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -372,6 +373,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -410,6 +412,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -428,6 +431,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -539,6 +543,7 @@ jobs:
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
@@ -585,6 +590,7 @@ jobs:
         with:
           fetch-depth: 0
 
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - run: |
           cp ../configs/build-and-test/package.json .
           cp ../configs/build-and-test/package-lock.json .
