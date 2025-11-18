@@ -269,26 +269,43 @@ type policyDecisionMetrics struct {
 	spansSampled  int64
 }
 
-type policyMetrics struct {
+type policyTickMetrics struct {
 	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled, decisionDropped int64
 	tracesSampledByPolicyDecision                                                                  []map[samplingpolicy.Decision]policyDecisionMetrics
+	cumulativeExecutionTime                                                                        []perPolicyExecutionTime
 }
 
-func newPolicyMetrics(numPolicies int) *policyMetrics {
+// perPolicyExecutionTime is a struct for holding the cumulative execution time
+// and number of executions of a policy. This is an optimization to avoid
+// instrumentation overhead in the decision making loop.
+type perPolicyExecutionTime struct {
+	executionTime  time.Duration
+	executionCount int64
+}
+
+func newPolicyTickMetrics(numPolicies int) *policyTickMetrics {
 	tracesSampledByPolicyDecision := make([]map[samplingpolicy.Decision]policyDecisionMetrics, numPolicies)
 	for i := range tracesSampledByPolicyDecision {
 		tracesSampledByPolicyDecision[i] = make(map[samplingpolicy.Decision]policyDecisionMetrics)
 	}
-	return &policyMetrics{
+	return &policyTickMetrics{
 		tracesSampledByPolicyDecision: tracesSampledByPolicyDecision,
+		cumulativeExecutionTime:       make([]perPolicyExecutionTime, numPolicies),
 	}
 }
 
-func (m *policyMetrics) addDecision(policyIndex int, decision samplingpolicy.Decision, spansSampled int64) {
+func (m *policyTickMetrics) addDecision(policyIndex int, decision samplingpolicy.Decision, spansSampled int64) {
 	stats := m.tracesSampledByPolicyDecision[policyIndex][decision]
 	stats.tracesSampled++
 	stats.spansSampled += spansSampled
 	m.tracesSampledByPolicyDecision[policyIndex][decision] = stats
+}
+
+func (m *policyTickMetrics) addDecisionTime(policyIndex int, decisionTime time.Duration) {
+	perPolicyExecutionTime := m.cumulativeExecutionTime[policyIndex]
+	perPolicyExecutionTime.executionTime += decisionTime
+	perPolicyExecutionTime.executionCount++
+	m.cumulativeExecutionTime[policyIndex] = perPolicyExecutionTime
 }
 
 func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error {
@@ -380,8 +397,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	}
 
 	ctx := context.Background()
-	metrics := newPolicyMetrics(len(tsp.policies))
+	metrics := newPolicyTickMetrics(len(tsp.policies))
 	startTime := time.Now()
+	globalTracesSampledByDecision := make(map[samplingpolicy.Decision]int64)
 
 	batch, _ := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
 	batchLen := len(batch)
@@ -396,8 +414,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.DecisionTime = time.Now()
 
 		decision := tsp.makeDecision(id, trace, metrics)
-
-		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttributes[decision])
+		globalTracesSampledByDecision[decision]++
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -413,10 +430,14 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		}
 	}
 
-	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Millisecond))
+	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, time.Since(startTime).Milliseconds())
 	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
 	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
+
+	for decision, count := range globalTracesSampledByDecision {
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, count, decisionToAttributes[decision])
+	}
 
 	for i, p := range tsp.policies {
 		for decision, stats := range metrics.tracesSampledByPolicyDecision[i] {
@@ -425,6 +446,8 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(tsp.ctx, stats.spansSampled, p.attribute, decisionToAttributes[decision])
 			}
 		}
+		tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionTimeSum.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionTime.Microseconds(), p.attribute)
+		tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionCount.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionCount, p.attribute)
 	}
 
 	tsp.logger.Debug("Sampling policy evaluation completed",
@@ -437,7 +460,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	)
 }
 
-func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyMetrics) samplingpolicy.Decision {
+func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyTickMetrics) samplingpolicy.Decision {
 	finalDecision := samplingpolicy.NotSampled
 	samplingDecisions := map[samplingpolicy.Decision]*policy{
 		samplingpolicy.Error:            nil,
@@ -449,13 +472,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	}
 
 	ctx := context.Background()
-	startTime := time.Now()
 
 	// Check all policies before making a final decision.
 	for i, p := range tsp.policies {
+		startTime := time.Now()
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
-		latency := time.Since(startTime)
-		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(latency/time.Microsecond), p.attribute)
+		metrics.addDecisionTime(i, time.Since(startTime))
 
 		if err != nil {
 			if samplingDecisions[samplingpolicy.Error] == nil {
