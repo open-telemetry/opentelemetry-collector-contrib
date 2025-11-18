@@ -344,6 +344,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -372,6 +373,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -410,6 +412,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -428,6 +431,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -494,6 +498,7 @@ jobs:
             arch: s390x
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
