@@ -30,15 +30,17 @@ body:
   - type: textarea
     attributes:
       label: Telemetry data types supported
-      description: Any combination of traces, metrics and/or logs is valid here.
+      description: Any combination of traces, metrics, logs and/or profiles is valid here.
     validations:
       required: true
   - type: input
     attributes:
       label: Code Owner(s)
-      description: A code owner is responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
-        Please list one or more members or aspiring members of the OpenTelemetry project who will serve as code owners.
-        Having a code owner is strongly recommended. However, you may use the issue to try to find a code owner for your component.
+      description: Code owners are responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
+        Please list two or more members or aspiring members of the OpenTelemetry project who will serve as code owners.
+        Having at least two code owners is strongly recommended. However, you may use the issue to try to find code owners for your component.
+    validations:
+      required: true
   - type: input
     attributes:
       label: Sponsor (optional)
