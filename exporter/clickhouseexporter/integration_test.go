@@ -144,7 +144,7 @@ func pushConcurrentlyNoError(t *testing.T, fn func() error) {
 	)
 
 	wg.Add(count)
-	for i := 0; i < count; i++ {
+	for range count {
 		go func() {
 			defer wg.Done()
 			err := fn()
@@ -165,12 +165,12 @@ var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 	c, chEnv, err := createClickhouseContainer(clickhouseImage)
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to create ClickHouse container \"%s\": %w", clickhouseImage, err))
+		t.Fatalf("failed to create ClickHouse container %q: %v", clickhouseImage, err)
 	}
 	defer func(c testcontainers.Container) {
 		err := c.Terminate(t.Context())
 		if err != nil {
-			fmt.Println(fmt.Errorf("failed to terminate ClickHouse container \"%s\": %w", clickhouseImage, err))
+			t.Logf("failed to terminate ClickHouse container %q: %v", clickhouseImage, err)
 		}
 	}(c)
 
