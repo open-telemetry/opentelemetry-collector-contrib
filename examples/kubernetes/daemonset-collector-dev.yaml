@@ -22,6 +22,12 @@ clusterRole:
       resources:
         - 'pods'
         - 'nodes'
+        - 'namespaces'
+        - 'services'
+        - 'endpoints'
+        - 'configmaps'
+        - 'persistentvolumeclaims'
+        - 'persistentvolumes'
       verbs:
         - 'get'
         - 'list'
@@ -33,28 +39,79 @@ clusterRole:
 
 config:
   exporters:
-    debug:
-      verbosity: detailed
+    datadog:
+      traces:
+        span_name_as_resource_name: true
+        trace_buffer: 500
+      hostname: "otelcol-kangyi"
+      api:
+        site: ****
+        key: ****
+      orchestrator:
+        cluster_name: "kangyi-otel-cluster"
+        endpoints:
+          - endpoint: ****
+            key: ***
+  connectors:
+    datadog/connector:
+
+#  processors:
+#    attributes/k8sobjects:
+#      actions:
+#        - key: source
+#          value: k8sobjects-otelcol
+#          action: insert
+#        - key: data_type
+#          value: k8s-oetcol
+#          action: insert
   receivers:
-    kubeletstats:
-      collection_interval: 10s
-      auth_type: 'serviceAccount'
-      endpoint: '${env:K8S_NODE_NAME}:10250'
-      insecure_skip_verify: true
-      k8s_api_config:
-        auth_type: serviceAccount
-      metrics:
-        container.cpu.utilization:
-          enabled: true
-        container.cpu.time:
-          enabled: true
-        container.cpu.usage:
-          enabled: true
-        k8s.container.cpu_limit_utilization:
-          enabled: true
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+        grpc:
+          endpoint: 0.0.0.0:4317
+    filelog:
+      include_file_path: true
+      poll_interval: 500ms
+      include:
+        - /var/log/containers/*.log
+    k8sobjects:
+      auth_type: serviceAccount
+      objects:
+        - name: configmaps
+          mode: pull
+          interval: 15s
+        - name: limitranges
+          mode: pull
+          interval: 15s
+        - name: namespaces
+          mode: pull
+          interval: 15s
+        - name: nodes
+          mode: pull
+          interval: 15s
+        - name: persistentvolumeclaims
+          mode: pull
+          interval: 15s
+        - name: persistentvolumes
+          mode: pull
+          interval: 15s
+        - name: pods
+          mode: pull
+          interval: 15s
 
   service:
     pipelines:
       metrics:
         receivers: [kubeletstats]
         exporters: [debug]
+
+#      logs/orchestrator:
+#        receivers: [ k8sobjects ]
+#        processors: [ batch , attributes/k8sobjects ]
+#        exporters: [ datadog ]
+      logs:
+        receivers: [ otlp ,filelog, k8sobjects]
+        processors: [  batch ]
+        exporters: [ datadog ]
