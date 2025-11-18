@@ -829,7 +829,8 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 				if withStartTime {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
-				return
+
+				return metric
 			},
 		},
 		{
@@ -859,7 +860,7 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 				if withStartTime {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
-				return
+				return metric
 			},
 		},
 	}
