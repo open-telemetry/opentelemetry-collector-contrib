@@ -5,10 +5,10 @@ go 1.24.0
 require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	go.opentelemetry.io/collector/component v1.46.0

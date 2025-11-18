@@ -6,14 +6,14 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.140.1
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
 	github.com/stretchr/testify v1.11.1

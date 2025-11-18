@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.46.0

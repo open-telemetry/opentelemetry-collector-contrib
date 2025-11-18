@@ -7,9 +7,9 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v1.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.140.1
 	github.com/prometheus/prometheus v0.307.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0

@@ -16,9 +16,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.270.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0

@@ -4,8 +4,8 @@ go 1.24.0
 
 require (
 	github.com/gosnmp/gosnmp v1.42.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	go.opentelemetry.io/collector/component v1.46.0

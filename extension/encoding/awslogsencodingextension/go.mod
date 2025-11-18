@@ -6,9 +6,9 @@ require (
 	github.com/aws/aws-lambda-go v1.50.0
 	github.com/goccy/go-json v0.10.5
 	github.com/klauspost/compress v1.18.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0

@@ -5,10 +5,10 @@ go 1.24.0
 require (
 	github.com/elastic/go-docappender/v2 v2.11.3
 	github.com/gorilla/mux v1.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.140.0
 	github.com/shirou/gopsutil/v4 v4.25.10
 	github.com/stretchr/testify v1.11.1
@@ -110,10 +110,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.140.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.140.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.140.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.140.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.140.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.140.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.140.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.140.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.140.0 // indirect

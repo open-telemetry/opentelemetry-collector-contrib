@@ -11,8 +11,8 @@ require (
 	github.com/klauspost/compress v1.18.1
 	github.com/lestrrat-go/strftime v1.1.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
 	go.opentelemetry.io/collector/client v1.46.0

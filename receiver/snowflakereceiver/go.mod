@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/snowflakedb/gosnowflake v1.17.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0

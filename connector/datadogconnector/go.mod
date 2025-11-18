@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datad
 go 1.24.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0

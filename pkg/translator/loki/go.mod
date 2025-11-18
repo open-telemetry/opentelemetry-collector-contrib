@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/go-logfmt/logfmt v0.6.1
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/prometheus/common v0.67.3
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.307.3

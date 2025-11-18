@@ -7,10 +7,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.16
 	github.com/aws/smithy-go v1.23.2
 	github.com/goccy/go-json v0.10.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0

@@ -24,10 +24,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.7
 	github.com/DataDog/datadog-api-client-go/v2 v2.50.0
 	github.com/DataDog/datadog-go/v5 v5.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0

@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/go-logfmt/logfmt v0.6.1
 	github.com/grafana/faro/pkg/go v0.0.0-20250314155512-06a06da3b8bc
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/stretchr/testify v1.11.1
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/zeebo/xxh3 v1.0.2

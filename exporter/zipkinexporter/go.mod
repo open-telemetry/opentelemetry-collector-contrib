@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.140.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.11.1

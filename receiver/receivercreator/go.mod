@@ -5,9 +5,9 @@ go 1.24.0
 require (
 	github.com/expr-lang/expr v1.17.6
 	github.com/go-viper/mapstructure/v2 v2.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0

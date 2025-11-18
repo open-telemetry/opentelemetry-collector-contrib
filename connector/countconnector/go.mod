@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/count
 go 1.24.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.140.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0

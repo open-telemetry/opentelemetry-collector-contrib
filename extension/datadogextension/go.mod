@@ -9,7 +9,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.7
 	github.com/DataDog/datadog-agent/pkg/serializer v0.73.0-rc.7
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componentstatus v0.140.0

@@ -12,8 +12,8 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.6.0
 	github.com/jaegertracing/jaeger-idl v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0
