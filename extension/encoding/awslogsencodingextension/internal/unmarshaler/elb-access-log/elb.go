@@ -237,9 +237,9 @@ type ALBAccessLogRecord struct {
 	TargetIPPort           string // Target IP:Port or -
 	TargetIP               string // Target IP
 	TargetPort             int64  // Target port
-	RequestProcessingTime  string // Time taken to process the request in seconds
-	TargetProcessingTime   string // Time taken for the target to process the request in seconds
-	ResponseProcessingTime string // Time taken to send the response to the client in seconds
+	RequestProcessingTime  string // Time taken to process the request in milliseconds
+	TargetProcessingTime   string // Time taken for the target to process the request in milliseconds
+	ResponseProcessingTime string // Time taken to send the response to the client in milliseconds
 	ELBStatusCode          int64  // Status code from the load balancer
 	TargetStatusCode       string // Status code from the target
 	ReceivedBytes          int64  // Size of the request in bytes
@@ -264,6 +264,10 @@ type ALBAccessLogRecord struct {
 	TargetStatusCodeList   string // List of status codes from targets
 	Classification         string // Classification of the request
 	ClassificationReason   string // Reason for classification
+	ConnectionTraceID      string // The connection traceability ID
+	TransformedHost        string // The transformed host header
+	TransformedURI         string // The URI after it is modified by a URL rewrite transform
+	RequestTransformStatus string // The status of the rewrite transform
 }
 
 // convertTextToALBAccessLogRecord converts a slice of strings into a ALBAccessLogRecord
@@ -299,6 +303,18 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 		TargetStatusCodeList:   fields[26],
 		Classification:         fields[27],
 		ClassificationReason:   fields[28],
+		ConnectionTraceID:      unknownField,
+		TransformedHost:        unknownField,
+		TransformedURI:         unknownField,
+		RequestTransformStatus: unknownField,
+	}
+	if len(fields) >= 30 {
+		record.ConnectionTraceID = fields[29]
+	}
+	if len(fields) >= 33 {
+		record.TransformedHost = fields[30]
+		record.TransformedURI = fields[31]
+		record.RequestTransformStatus = fields[32]
 	}
 	var clientPort string
 	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[3]); err != nil {
@@ -458,27 +474,27 @@ func parseRequestField(raw string) (method, uri, protoName, protoVersion string,
 	method, remaining, _ := strings.Cut(raw, " ")
 	if method == "" {
 		err = fmt.Errorf("unexpected: request field %q has no method", raw)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
 
 	uri, remaining, _ = strings.Cut(remaining, " ")
 	if uri == "" {
 		err = fmt.Errorf("unexpected: request field %q has no URI", raw)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
 
 	protocol, leftover, _ := strings.Cut(remaining, " ")
 	if protocol == "" || leftover != "" {
 		err = fmt.Errorf(`request field %q does not match expected format "<method> <uri> <protocol>"`, raw)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
 
 	protoName, protoVersion, err = netProtocol(protocol)
 	if err != nil {
 		err = fmt.Errorf("invalid protocol in request field: %w", err)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
-	return
+	return method, uri, protoName, protoVersion, err
 }
 
 // netProtocol returns protocol name and version based on proto value

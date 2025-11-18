@@ -9,6 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icmpcheckreceiver/internal/metadata"
 )
 
 var (
@@ -18,6 +20,7 @@ var (
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	Targets                        []PingTarget `mapstructure:"targets"`
 
 	// prevent unkeyed literal initialization

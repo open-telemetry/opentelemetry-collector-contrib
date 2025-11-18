@@ -12,12 +12,20 @@ status:
 sem_conv_version: 1.9.0
 
 attributes:
-  onc_rpc.version:
-    description: ONC/Sun RPC program version.
-    type: int
-  onc_rpc.procedure.name:
-    description: ONC/Sun RPC procedure name.
+  error.type:
+    description: Describes a class of error the operation ended with.
     type: string
+    enum: [format, auth, client]
+  network.io.direction:
+    description: The network IO operation direction.
+    type: string
+    enum:
+      - transmit
+      - receive
+  network.transport:
+    description: OSI transport layer or inter-process communication method.
+    type: string
+    enum: [udp, tcp]
   nfs.operation.name:
     description: NFSv4+ operation name.
     type: string
@@ -25,20 +33,12 @@ attributes:
     description: "NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'."
     type: string
     enum: [hit, miss, nocache]
-  network.transport:
-    description: OSI transport layer or inter-process communication method.
+  onc_rpc.procedure.name:
+    description: ONC/Sun RPC procedure name.
     type: string
-    enum: [udp, tcp]
-  network.io.direction:
-    description: The network IO operation direction.
-    type: string
-    enum:
-      - transmit
-      - receive
-  error.type:
-    description: Describes a class of error the operation ended with.
-    type: string
-    enum: [format, auth, client]
+  onc_rpc.version:
+    description: ONC/Sun RPC program version.
+    type: int
 
 metrics:
   nfs.client.net.count:
@@ -57,39 +57,6 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS client TCP connections accepted
     unit: '{connection}'
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    stability:
-      level: development
-
-  nfs.client.rpc.count:
-    enabled: true
-    description: Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.
-    unit: '{request}'
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    stability:
-      level: development
-
-  nfs.client.rpc.retransmit.count:
-    enabled: true
-    description: Reports the count of kernel NFS client RPC retransmits
-    unit: '{retransmit}'
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    stability:
-      level: development
-
-  nfs.client.rpc.authrefresh.count:
-    enabled: true
-    description: Reports the count of kernel NFS client RPC authentication refreshes
-    unit: '{authrefresh}'
     sum:
       value_type: int
       monotonic: true
@@ -123,11 +90,32 @@ metrics:
     stability:
       level: development
 
-  nfs.server.repcache.requests:
+  nfs.client.rpc.authrefresh.count:
     enabled: true
-    description: Reports the kernel NFS server reply cache request count by cache hit status.
+    description: Reports the count of kernel NFS client RPC authentication refreshes
+    unit: '{authrefresh}'
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability:
+      level: development
+
+  nfs.client.rpc.count:
+    enabled: true
+    description: Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.
     unit: '{request}'
-    attributes: [nfs.server.repcache.status]
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability:
+      level: development
+
+  nfs.client.rpc.retransmit.count:
+    enabled: true
+    description: Reports the count of kernel NFS client RPC retransmits
+    unit: '{retransmit}'
     sum:
       value_type: int
       monotonic: true
@@ -158,17 +146,6 @@ metrics:
     stability:
       level: development
 
-  nfs.server.thread.count:
-    enabled: true
-    description: Reports the count of kernel NFS server available threads
-    unit: '{thread}'
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-    stability:
-      level: development
-
   nfs.server.net.count:
     enabled: true
     description: Reports the count of kernel NFS server TCP segments and UDP datagrams handled.
@@ -185,18 +162,6 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS server TCP connections accepted
     unit: '{connection}'
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    stability:
-      level: development
-
-  nfs.server.rpc.count:
-    enabled: true
-    description: Reports the count of kernel NFS server RPCs handled.
-    unit: '{request}'
-    attributes: [error.type]
     sum:
       value_type: int
       monotonic: true
@@ -224,6 +189,40 @@ metrics:
     sum:
       value_type: int
       monotonic: true
+      aggregation_temporality: cumulative
+    stability:
+      level: development
+  nfs.server.repcache.requests:
+    enabled: true
+    description: Reports the kernel NFS server reply cache request count by cache hit status.
+    unit: '{request}'
+    attributes: [nfs.server.repcache.status]
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability:
+      level: development
+
+  nfs.server.rpc.count:
+    enabled: true
+    description: Reports the count of kernel NFS server RPCs handled.
+    unit: '{request}'
+    attributes: [error.type]
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability:
+      level: development
+
+  nfs.server.thread.count:
+    enabled: true
+    description: Reports the count of kernel NFS server available threads
+    unit: '{thread}'
+    sum:
+      value_type: int
+      monotonic: false
       aggregation_temporality: cumulative
     stability:
       level: development

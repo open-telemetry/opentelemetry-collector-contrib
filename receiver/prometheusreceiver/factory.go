@@ -63,6 +63,7 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	configWarnings(set.Logger, cfg.(*Config))
+	cfg.(*Config).enableNativeHistograms = enableNativeHistogramsGate.IsEnabled()
 	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer)
 }
 

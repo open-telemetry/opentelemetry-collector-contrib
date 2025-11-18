@@ -15,11 +15,14 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
@@ -76,6 +79,9 @@ func TestCreateProcessors(t *testing.T) {
 		}, {
 			configName: "config_traces_invalid.yaml",
 			succeed:    false,
+		}, {
+			configName: "config_profiles.yaml",
+			succeed:    true,
 		},
 	}
 
@@ -142,6 +148,53 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 	}
 
 	tests := []testCase{
+		{
+			name: "with resource functions : statement with added resource func",
+			conditions: TraceFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions(DefaultResourceFunctions()),
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with resource functions : statement with missing resource func",
+			conditions: TraceFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "TestResourceFunc"`,
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions(DefaultResourceFunctions()),
+			},
+		},
+		{
+			name: "with resource functions : only custom functions",
+			conditions: TraceFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc()`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with resource functions : missing default functions",
+			conditions: TraceFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "IsBool"`,
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
 		{
 			name: "with span functions : statement with added span func",
 			conditions: TraceFilters{
@@ -251,10 +304,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 
 			_, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			if tt.wantErrorWith != "" {
-				if err == nil {
-					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
-				}
-				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				assert.ErrorContains(t, err, tt.wantErrorWith)
 				return
 			}
 			require.NoError(t, err)
@@ -271,6 +321,53 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 	}
 
 	tests := []testCase{
+		{
+			name: "with resource functions : statement with added resource func",
+			conditions: LogFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions(DefaultResourceFunctions()),
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with resource functions : statement with missing resource func",
+			conditions: LogFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "TestResourceFunc"`,
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions(DefaultResourceFunctions()),
+			},
+		},
+		{
+			name: "with resource functions : only custom functions",
+			conditions: LogFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc()`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with resource functions : missing default functions",
+			conditions: LogFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "IsBool"`,
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
 		{
 			name: "with log functions : statement with added log func",
 			conditions: LogFilters{
@@ -330,10 +427,7 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 
 			_, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			if tt.wantErrorWith != "" {
-				if err == nil {
-					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
-				}
-				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				assert.ErrorContains(t, err, tt.wantErrorWith)
 				return
 			}
 			require.NoError(t, err)
@@ -350,6 +444,53 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 	}
 
 	tests := []testCase{
+		{
+			name: "with resource functions : statement with added resource func",
+			conditions: MetricFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions(DefaultResourceFunctions()),
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with resource functions : statement with missing resource func",
+			conditions: MetricFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "TestResourceFunc"`,
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions(DefaultResourceFunctions()),
+			},
+		},
+		{
+			name: "with resource functions : only custom functions",
+			conditions: MetricFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc()`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with resource functions : missing default functions",
+			conditions: MetricFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "IsBool"`,
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
 		{
 			name: "with metric functions : statement with added metric func",
 			conditions: MetricFilters{
@@ -459,10 +600,130 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 
 			_, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			if tt.wantErrorWith != "" {
-				if err == nil {
-					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
-				}
-				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				assert.ErrorContains(t, err, tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
+	type testCase struct {
+		name           string
+		conditions     ProfileFilters
+		factoryOptions []FactoryOption
+		wantErrorWith  string
+	}
+
+	tests := []testCase{
+		{
+			name: "with resource functions : statement with added resource func",
+			conditions: ProfileFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions(DefaultResourceFunctions()),
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with resource functions : statement with missing resource func",
+			conditions: ProfileFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "TestResourceFunc"`,
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions(DefaultResourceFunctions()),
+			},
+		},
+		{
+			name: "with resource functions : only custom functions",
+			conditions: ProfileFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc()`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with resource functions : missing default functions",
+			conditions: ProfileFilters{
+				ResourceConditions: []string{
+					`TestResourceFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "IsBool"`,
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+		},
+		{
+			name: "with profile functions : statement with added profile func",
+			conditions: ProfileFilters{
+				ProfileConditions: []string{
+					`TestProfileFunc() and IsBool(true)`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithProfileFunctions(DefaultProfileFunctions()),
+				WithProfileFunctions([]ottl.Factory[ottlprofile.TransformContext]{createTestFuncFactory[ottlprofile.TransformContext]("TestProfileFunc")}),
+			},
+		},
+		{
+			name: "with profile functions : statement with missing profile func",
+			conditions: ProfileFilters{
+				ProfileConditions: []string{
+					`TestProfileFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "TestProfileFunc"`,
+			factoryOptions: []FactoryOption{
+				WithProfileFunctions(DefaultProfileFunctions()),
+			},
+		},
+		{
+			name: "with profile functions : only custom functions",
+			conditions: ProfileFilters{
+				ProfileConditions: []string{
+					`TestProfileFunc()`,
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithProfileFunctions([]ottl.Factory[ottlprofile.TransformContext]{createTestFuncFactory[ottlprofile.TransformContext]("TestProfileFunc")}),
+			},
+		},
+		{
+			name: "with profile functions : missing default functions",
+			conditions: ProfileFilters{
+				ProfileConditions: []string{
+					`TestProfileFunc() and IsBool(true)`,
+				},
+			},
+			wantErrorWith: `undefined function "IsBool"`,
+			factoryOptions: []FactoryOption{
+				WithProfileFunctions([]ottl.Factory[ottlprofile.TransformContext]{createTestFuncFactory[ottlprofile.TransformContext]("TestProfileFunc")}),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactoryWithOptions(tt.factoryOptions...).(xprocessor.Factory)
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.ErrorMode = ottl.IgnoreError
+			oCfg.Profiles = tt.conditions
+
+			_, err := factory.CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			if tt.wantErrorWith != "" {
+				assert.ErrorContains(t, err, tt.wantErrorWith)
 				return
 			}
 			require.NoError(t, err)

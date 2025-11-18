@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -31,14 +30,16 @@ func BenchmarkSampling(b *testing.B) {
 	defer func() {
 		require.NoError(b, tsp.Shutdown(b.Context()))
 	}()
-	metrics := newPolicyMetrics(len(cfg.PolicyCfgs))
+	metrics := newPolicyTickMetrics(len(cfg.PolicyCfgs))
 	sampleBatches := make([]*samplingpolicy.TraceData, 0, len(batches))
 
-	for range batches {
-		sampleBatches = append(sampleBatches, &samplingpolicy.TraceData{
+	for _, batch := range batches {
+		td := &samplingpolicy.TraceData{
 			ArrivalTime:     time.Now(),
-			ReceivedBatches: ptrace.NewTraces(),
-		})
+			ReceivedBatches: batch,
+		}
+		td.SpanCount.Store(int64(batch.SpanCount()))
+		sampleBatches = append(sampleBatches, td)
 	}
 
 	for b.Loop() {
