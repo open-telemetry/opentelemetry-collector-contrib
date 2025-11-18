@@ -382,15 +382,15 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 
 | Original field | Log record attribute |
 |---|---|
-| `jsonPayload.connection.clientIp` | `source.address` |
-| `jsonPayload.connection.clientPort` | `source.port` |
-| `jsonPayload.connection.serverIp` | `destination.address` |
-| `jsonPayload.connection.serverPort` | `destination.port` |
-| `jsonPayload.connection.protocol` | `network.protocol.name` (translated from IANA protocol number, e.g., `tcp`, `udp`, `icmp`) |
-| `jsonPayload.startTime` | `gcp.load_balancing.proxy_nlb.connection.start_time` |
-| `jsonPayload.endTime` | `gcp.load_balancing.proxy_nlb.connection.end_time` |
-| `jsonPayload.serverBytesReceived` | `gcp.load_balancing.proxy_nlb.server.bytes_received` |
-| `jsonPayload.serverBytesSent` | `gcp.load_balancing.proxy_nlb.server.bytes_sent` |
+| `connection.clientIp` | `source.address` |
+| `connection.clientPort` | `source.port` |
+| `connection.serverIp` | `destination.address` |
+| `connection.serverPort` | `destination.port` |
+| `connection.protocol` | `network.protocol.name` (translated from IANA protocol number, e.g., `tcp`, `udp`, `icmp`) |
+| `startTime` | `gcp.load_balancing.proxy_nlb.connection.start_time` |
+| `endTime` | `gcp.load_balancing.proxy_nlb.connection.end_time` |
+| `serverBytesReceived` | `gcp.load_balancing.proxy_nlb.server.bytes_received` |
+| `serverBytesSent` | `gcp.load_balancing.proxy_nlb.server.bytes_sent` |
 
 **Protocol translation**: The numeric protocol field from GCP is automatically translated to human-readable protocol names using the [IANA Protocol Numbers](https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml) standard. Common values include:
 - `6` → `tcp`
