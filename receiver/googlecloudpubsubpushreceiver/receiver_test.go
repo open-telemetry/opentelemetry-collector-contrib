@@ -169,6 +169,8 @@ func TestStartShutdown(t *testing.T) {
 		},
 	}
 
+	startTestStorageEmulator(t)
+
 	tests := map[string]struct {
 		pubSubReceiver *pubSubPushReceiver
 		expectedErr    string
