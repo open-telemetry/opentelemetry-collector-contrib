@@ -93,17 +93,18 @@ func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metric
 // Start registers the main handler function for
 // when lambda is triggered
 func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) error {
+	// Verify we're running in a Lambda environment
+	if os.Getenv("_LAMBDA_SERVER_PORT") == "" || os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
+		return errors.New("receiver must be used in an AWS Lambda environment: required environment variables _LAMBDA_SERVER_PORT and AWS_LAMBDA_RUNTIME_API are not set")
+	}
+
 	handler, err := a.newHandler(ctx, host, a.s3Provider)
 	if err != nil {
 		return fmt.Errorf("failed to create the lambda event handler: %w", err)
 	}
 	a.handler = handler
 
-	// Only start Lambda runtime if we're actually in a Lambda environment
-	// This prevents errors during tests when Lambda environment variables are not set
-	if os.Getenv("_LAMBDA_SERVER_PORT") != "" && os.Getenv("AWS_LAMBDA_RUNTIME_API") != "" {
-		go lambda.StartWithOptions(a.processLambdaEvent, lambda.WithContext(ctx))
-	}
+	go lambda.StartWithOptions(a.processLambdaEvent, lambda.WithContext(ctx))
 	return nil
 }
 

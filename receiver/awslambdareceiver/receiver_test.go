@@ -26,6 +26,10 @@ import (
 )
 
 func TestCreateLogs(t *testing.T) {
+	// Set Lambda environment variables required by Start()
+	t.Setenv("_LAMBDA_SERVER_PORT", "9001")
+	t.Setenv("AWS_LAMBDA_RUNTIME_API", "localhost:9001")
+
 	// Create receiver using factory with S3 encoding config.
 	// Note: The S3Encoding value must match the component ID used when registering the extension.
 	factory := NewFactory()
@@ -69,7 +73,7 @@ func TestCreateLogs(t *testing.T) {
 		}
 	}}
 
-	// Initialize the handler manually (without starting Lambda runtime)
+	// Initialize the handler manually (without starting Lambda runtime to avoid goroutine leaks in tests)
 	awsReceiver := receiver.(*awsLambdaReceiver)
 	handler, err := awsReceiver.newHandler(t.Context(), host, s3Provider)
 	require.NoError(t, err)
@@ -94,6 +98,10 @@ func TestCreateLogs(t *testing.T) {
 }
 
 func TestCreateMetrics(t *testing.T) {
+	// Set Lambda environment variables required by Start()
+	t.Setenv("_LAMBDA_SERVER_PORT", "9001")
+	t.Setenv("AWS_LAMBDA_RUNTIME_API", "localhost:9001")
+
 	// Create receiver using factory with a dummy encoding extension.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -132,7 +140,7 @@ func TestCreateMetrics(t *testing.T) {
 		}
 	}}
 
-	// Initialize the handler manually (without starting Lambda runtime).
+	// Initialize the handler manually (without starting Lambda runtime to avoid goroutine leaks in tests)
 	awsReceiver := receiver.(*awsLambdaReceiver)
 	handler, err := awsReceiver.newHandler(t.Context(), host, s3Provider)
 	require.NoError(t, err)
@@ -165,6 +173,34 @@ func TestCreateMetricsRequiresS3Encoding(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	require.EqualError(t, err, "s3_encoding is required for metrics")
+}
+
+func TestStartRequiresLambdaEnvironment(t *testing.T) {
+	// Ensure Lambda environment variables are not set
+	t.Setenv("_LAMBDA_SERVER_PORT", "")
+	t.Setenv("AWS_LAMBDA_RUNTIME_API", "")
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.S3Encoding = "test_encoding"
+
+	receiver, err := factory.CreateLogs(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, receiver)
+
+	// Start should fail when Lambda environment variables are not set
+	host := mockHost{GetFunc: func() map[component.ID]component.Component {
+		return map[component.ID]component.Component{}
+	}}
+
+	err = receiver.Start(t.Context(), host)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "receiver must be used in an AWS Lambda environment")
 }
 
 func TestProcessLambdaEvent(t *testing.T) {
