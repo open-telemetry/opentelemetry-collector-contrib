@@ -16,7 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-var protocolMap = map[string]uint8{
+var communityIDProtocols = map[string]uint8{
 	"ICMP":  1,
 	"TCP":   6,
 	"UDP":   17,
@@ -97,7 +97,6 @@ func communityID[K any](
 			srcPort, dstPort = dstPort, srcPort
 		}
 
-		// Build the flow, format: <seed:2><protocol:1><src_ip><dst_ip><src_port:2><dst_port:2>
 		return flow(srcIPBytes, srcPort, dstIPBytes, dstPort, params.protocol, params.seed), nil
 	}
 }
@@ -145,8 +144,9 @@ func validateAndExtractParams[K any](
 			return nil, fmt.Errorf("failed to get protocol: %w", err)
 		}
 
-		protocolValue = protocolMap[protocolStr]
-		if protocolValue == 0 {
+		var ok bool 
+		protocolValue, ok = protocolMap[protocolStr]
+		if !ok {
 			return nil, fmt.Errorf("unsupported protocol: %s", protocolStr)
 		}
 	}
@@ -195,6 +195,8 @@ func validateAndExtractParams[K any](
 	}, nil
 }
 
+// flow generates a flow tuple from the given parameters and returns it as a base64 encoded string
+// format: <seed:2><src_ip><dst_ip><protocol:1><src_port:2><dst_port:2>
 func flow(srcIPBytes net.IP, srcPortForHash uint16, dstIPBytes net.IP, dstPortForHash uint16, protoValue uint8, seedValue uint16) string {
 	// Add seed (2 bytes, network order)
 	flowTuple := make([]byte, 2)
