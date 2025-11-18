@@ -250,35 +250,27 @@ func detectTriggerType(data []byte) (eventType, error) {
 
 // extractFirstKey extracts the first JSON key from byte array without parsing it.
 func extractFirstKey(data []byte) (string, error) {
-	pos := 0
-	n := len(data)
+	dec := json.NewDecoder(bytes.NewReader(data))
 
-	// skip any spaces
-	for pos < n && data[pos] <= ' ' {
-		pos++
+	// Read opening brace
+	t, err := dec.Token()
+	if err != nil {
+		return "", errors.New("invalid JSON payload, failed to find the opening bracket")
 	}
-	if pos >= n || data[pos] != '{' {
+	if delim, ok := t.(json.Delim); !ok || delim != '{' {
 		return "", errors.New("invalid JSON payload, failed to find the opening bracket")
 	}
 
-	// advance to opening quote
-	pos++
-	for pos < n && data[pos] <= ' ' {
-		pos++
+	// Read first key
+	t, err = dec.Token()
+	if err != nil {
+		return "", errors.New("invalid JSON payload")
 	}
-	if pos >= n || data[pos] != '"' {
+
+	key, ok := t.(string)
+	if !ok {
 		return "", errors.New("invalid JSON payload, expected a key but found none")
 	}
 
-	// extract the first key
-	pos++
-	keyStart := pos
-	for pos < n {
-		if data[pos] == '"' {
-			return string(data[keyStart:pos]), nil
-		}
-		pos++
-	}
-
-	return "", errors.New("invalid JSON payload")
+	return key, nil
 }
