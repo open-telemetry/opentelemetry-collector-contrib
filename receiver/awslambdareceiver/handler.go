@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
-type consumerFunc[T any] func(context.Context, T) error
+type s3EventConsumerFunc[T any] func(context.Context, events.S3EventRecord, T) error
 
 type unmarshalFunc[T any] func([]byte) (T, error)
 
@@ -33,14 +33,14 @@ type s3Handler[T any] struct {
 	s3Service     internal.S3Service
 	logger        *zap.Logger
 	s3Unmarshaler unmarshalFunc[T]
-	consumer      consumerFunc[T]
+	consumer      s3EventConsumerFunc[T]
 }
 
 func newS3Handler[T any](
 	service internal.S3Service,
 	baseLogger *zap.Logger,
 	unmarshal unmarshalFunc[T],
-	consumer consumerFunc[T],
+	consumer s3EventConsumerFunc[T],
 ) *s3Handler[T] {
 	return &s3Handler[T]{
 		s3Service:     service,
@@ -81,13 +81,7 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 		return fmt.Errorf("failed to unmarshal logs: %w", err)
 	}
 
-	// add observedTimestamp to plogs
-	logs, ok := any(data).(plog.Logs)
-	if ok {
-		setObservedTimestampForAllLogs(logs, parsedEvent.EventTime)
-	}
-
-	if err := s.consumer(ctx, data); err != nil {
+	if err := s.consumer(ctx, parsedEvent, data); err != nil {
 		// consumer errors are marked for retrying
 		return consumererror.NewRetryableError(err)
 	}

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -176,7 +177,14 @@ func newLogsHandler(
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
-	return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalLogs, next.ConsumeLogs), nil
+
+	// Wrapper function that sets observed timestamp for logs
+	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+		setObservedTimestampForAllLogs(logs, event.EventTime)
+		return next.ConsumeLogs(ctx, logs)
+	}
+
+	return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalLogs, logsConsumer), nil
 }
 
 func newMetricsHandler(
@@ -195,7 +203,13 @@ func newMetricsHandler(
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
-	return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, next.ConsumeMetrics), nil
+
+	// Create a wrapper function for metrics (no special processing needed)
+	metricsConsumer := func(ctx context.Context, _ events.S3EventRecord, metrics pmetric.Metrics) error {
+		return next.ConsumeMetrics(ctx, metrics)
+	}
+
+	return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricsConsumer), nil
 }
 
 // loadEncodingExtension tries to load an available extension for the given encoding.

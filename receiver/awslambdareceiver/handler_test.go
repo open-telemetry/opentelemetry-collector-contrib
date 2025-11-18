@@ -102,7 +102,13 @@ func TestProcessLambdaEvent_S3Notification(t *testing.T) {
 			s3Service := internal.NewMockS3Service(ctr)
 			s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return(test.mockContent, nil).AnyTimes()
 
-			handler := newS3Handler(s3Service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, test.eventConsumer.ConsumeLogs)
+			// Wrap the consumer to match the new s3EventConsumerFunc signature
+			logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+				setObservedTimestampForAllLogs(logs, event.EventTime)
+				return test.eventConsumer.ConsumeLogs(ctx, logs)
+			}
+
+			handler := newS3Handler(s3Service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, logsConsumer)
 
 			var event json.RawMessage
 			event, err := json.Marshal(test.mockEvent)
@@ -189,7 +195,12 @@ func TestS3HandlerParseEvent(t *testing.T) {
 	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte(mockContent), nil).AnyTimes()
 
 	var consumer noOpLogsConsumer
-	handler := newS3Handler(s3Service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, consumer.ConsumeLogs)
+	// Wrap the consumer to match the new s3EventConsumerFunc signature
+	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+		setObservedTimestampForAllLogs(logs, event.EventTime)
+		return consumer.ConsumeLogs(ctx, logs)
+	}
+	handler := newS3Handler(s3Service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, logsConsumer)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

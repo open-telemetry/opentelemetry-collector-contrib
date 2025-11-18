@@ -4,11 +4,13 @@
 package awslambdareceiver
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
@@ -37,7 +39,12 @@ func BenchmarkHandleS3Notification(b *testing.B) {
 	service.EXPECT().ReadObject(gomock.Any(), bucket, object).Return([]byte(mockContent), nil).AnyTimes()
 
 	consumer := noOpLogsConsumer{}
-	handler := newS3Handler(service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, consumer.ConsumeLogs)
+	// Wrap the consumer to match the new s3EventConsumerFunc signature
+	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+		setObservedTimestampForAllLogs(logs, event.EventTime)
+		return consumer.ConsumeLogs(ctx, logs)
+	}
+	handler := newS3Handler(service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, logsConsumer)
 
 	b.Run("HandleS3Event", func(b *testing.B) {
 		b.ReportAllocs()
