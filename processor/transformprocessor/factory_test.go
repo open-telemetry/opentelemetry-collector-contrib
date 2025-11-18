@@ -70,14 +70,14 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		ProfileStatements: []common.ContextStatements{},
 	}, cfg)
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestFactoryCreateProcessor_Empty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := xconfmap.Validate(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestFactoryCreateTraces_InvalidActions(t *testing.T) {
@@ -91,7 +91,7 @@ func TestFactoryCreateTraces_InvalidActions(t *testing.T) {
 		},
 	}
 	ap, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, ap)
 }
 
@@ -105,13 +105,12 @@ func TestFactoryCreateTraces(t *testing.T) {
 			Context: "span",
 			Statements: []string{
 				`set(attributes["test"], "pass") where name == "operationA"`,
-				`set(attributes["test error mode"], ParseJSON(1)) where name == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON("1")) where name == "operationA"`,
 			},
 		},
 	}
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NotNil(t, tp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -121,7 +120,7 @@ func TestFactoryCreateTraces(t *testing.T) {
 	assert.False(t, ok)
 
 	err = tp.ConsumeTraces(t.Context(), td)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	val, ok := span.Attributes().Get("test")
 	assert.True(t, ok)
@@ -154,13 +153,12 @@ func TestFactoryCreateMetrics(t *testing.T) {
 			Context: "datapoint",
 			Statements: []string{
 				`set(attributes["test"], "pass") where metric.name == "operationA"`,
-				`set(attributes["test error mode"], ParseJSON(1)) where metric.name == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON("1")) where metric.name == "operationA"`,
 			},
 		},
 	}
 	metricsProcessor, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NotNil(t, metricsProcessor)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	metrics := pmetric.NewMetrics()
 	metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -170,7 +168,7 @@ func TestFactoryCreateMetrics(t *testing.T) {
 	assert.False(t, ok)
 
 	err = metricsProcessor.ConsumeMetrics(t.Context(), metrics)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	val, ok := metric.Sum().DataPoints().At(0).Attributes().Get("test")
 	assert.True(t, ok)
@@ -187,13 +185,12 @@ func TestFactoryCreateLogs(t *testing.T) {
 			Context: "log",
 			Statements: []string{
 				`set(attributes["test"], "pass") where body == "operationA"`,
-				`set(attributes["test error mode"], ParseJSON(1)) where body == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON("1")) where body == "operationA"`,
 			},
 		},
 	}
 	lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NotNil(t, lp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ld := plog.NewLogs()
 	log := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -203,7 +200,7 @@ func TestFactoryCreateLogs(t *testing.T) {
 	assert.False(t, ok)
 
 	err = lp.ConsumeLogs(t.Context(), ld)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	val, ok := log.Attributes().Get("test")
 	assert.True(t, ok)
@@ -307,12 +304,12 @@ func TestFactoryCreateLogProcessor(t *testing.T) {
 			}
 			lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, lp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			ld := tt.createLogs()
 
 			err = lp.ConsumeLogs(t.Context(), ld)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exLd := tt.createLogs()
 			tt.want(exLd)
@@ -400,12 +397,12 @@ func TestFactoryCreateProfileProcessor(t *testing.T) {
 			}
 			lp, err := factory.CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, lp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			pd := tt.createProfiles()
 
 			err = lp.ConsumeProfiles(t.Context(), pd)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), pd)
 		})
@@ -474,12 +471,12 @@ func TestFactoryCreateResourceProcessor(t *testing.T) {
 			}
 			lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, lp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			ld := tt.createLogs()
 
 			err = lp.ConsumeLogs(t.Context(), ld)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exLd := tt.createLogs()
 			tt.want(exLd)
@@ -551,12 +548,12 @@ func TestFactoryCreateScopeProcessor(t *testing.T) {
 			}
 			lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, lp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			ld := tt.createLogs()
 
 			err = lp.ConsumeLogs(t.Context(), ld)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exLd := tt.createLogs()
 			tt.want(exLd)
@@ -633,12 +630,12 @@ func TestFactoryCreateMetricProcessor(t *testing.T) {
 			}
 			mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, mp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			td := tt.createMetrics()
 
 			err = mp.ConsumeMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := tt.createMetrics()
 			tt.want(exTd)
@@ -718,12 +715,12 @@ func TestFactoryCreateDataPointProcessor(t *testing.T) {
 			}
 			mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, mp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			td := tt.createMetrics()
 
 			err = mp.ConsumeMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := tt.createMetrics()
 			tt.want(exTd)
@@ -799,12 +796,12 @@ func TestFactoryCreateSpanProcessor(t *testing.T) {
 			}
 			mp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, mp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			td := tt.createTraces()
 
 			err = mp.ConsumeTraces(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := tt.createTraces()
 			tt.want(exTd)
@@ -879,12 +876,12 @@ func TestFactoryCreateSpanEventProcessor(t *testing.T) {
 			}
 			mp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, mp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			td := tt.createTraces()
 
 			err = mp.ConsumeTraces(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := tt.createTraces()
 			tt.want(exTd)

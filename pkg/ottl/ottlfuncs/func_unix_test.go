@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -34,9 +35,9 @@ func Test_Unix(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Unix(tt.seconds, tt.nanoseconds)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			want := time.Unix(tt.expected, 0)
 			assert.Equal(t, want, result)
 		})
