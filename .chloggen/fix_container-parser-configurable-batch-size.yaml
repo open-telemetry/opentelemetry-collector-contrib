@@ -4,10 +4,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/filelog
+component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add configurable batch size settings to container parser and increase default max log size
+note: Clarify that recombine operator supports `max_batch_size` of 0 for unlimited batching
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43982]
@@ -16,22 +16,8 @@ issues: [43982]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The container parser now supports configurable batch size settings for handling large multiline logs:
-  - `max_batch_size`: Controls batching for CRI/containerd logs with P/F tags (default: 0, unlimited)
-
-  The default `max_log_size` has been increased from 100KB to 10MB to prevent truncation of large logs while still allowing users to override it.
-
-  This addresses issues where multiline logs were truncated when they exceeded the previous limits. Users can now configure these values for applications that produce very long multiline logs such as large stack traces or JSON payloads.
-
-  Example configuration:
-  ```yaml
-  receivers:
-    filelog:
-      include: ["/var/log/containers/*.log"]
-      operators:
-        - type: container
-          max_batch_size: 2000
-  ```
+  Updated documentation to clarify that the recombine operator already supports setting `max_batch_size: 0` to disable batch size limits.
+  This allows unlimited batching, letting entries be combined based only on `max_log_size` and matching conditions.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
