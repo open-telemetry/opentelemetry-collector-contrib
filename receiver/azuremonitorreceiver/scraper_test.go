@@ -143,6 +143,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				mutex:                 &sync.Mutex{},
 				time:                  getTimeMock(),
 				clientOptionsResolver: optionsResolver,
+				lowerCaseServices:     stringSliceToLower(tt.fields.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
@@ -262,6 +263,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			mutex:                 &sync.Mutex{},
 			time:                  getTimeMock(),
 			clientOptionsResolver: optionsResolver,
+			lowerCaseServices:     stringSliceToLower(cfgLimitedMertics.Services),
 
 			// From there, initialize everything that is normally initialized in start() func
 			subscriptions: map[string]*azureSubscription{},
@@ -311,14 +313,16 @@ func getNominalTestScraper() *azureScraper {
 	)
 
 	settings := receivertest.NewNopSettings(metadata.Type)
+	cfg := createDefaultTestConfig()
 
 	return &azureScraper{
-		cfg:                   createDefaultTestConfig(),
+		cfg:                   cfg,
 		settings:              settings.TelemetrySettings,
 		mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
 		mutex:                 &sync.Mutex{},
 		time:                  getTimeMock(),
 		clientOptionsResolver: optionsResolver,
+		lowerCaseServices:     stringSliceToLower(cfg.Services),
 
 		// From there, initialize everything that is normally initialized in start() func
 		subscriptions: map[string]*azureSubscription{},
@@ -487,6 +491,7 @@ func TestAzureScraperHackResources(t *testing.T) {
 				mutex:                 &sync.Mutex{},
 				time:                  getTimeMock(),
 				clientOptionsResolver: optionsResolver,
+				lowerCaseServices:     stringSliceToLower(tt.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
@@ -857,40 +862,30 @@ func TestMapFindInsensitive(t *testing.T) {
 }
 
 func TestSliceFindInsensitive(t *testing.T) {
-	testNamespace := "Microsoft.AAD/DomainServices"
-	testIndex := 1
-	testFilters := []string{
-		"microsoft.insights/components",
-		testNamespace,
-	}
 	tests := []struct {
 		name string
-		key  string
-		want bool
+		arg  []string
+		want []string
 	}{
 		{
-			name: "should find when same case",
-			key:  testNamespace,
-			want: true,
+			name: "should lowercase nil",
+			arg:  nil,
+			want: nil,
 		},
 		{
-			name: "should find when different case",
-			key:  strings.ToLower(testNamespace),
-			want: true,
+			name: "should lowercase empty slice",
+			arg:  []string{},
+			want: []string{},
 		},
 		{
-			name: "should not find when not exists",
-			key:  "microsoft.eventhub/namespaces",
-			want: false,
+			name: "should lowercase slice",
+			arg:  []string{"Alice", "bob"},
+			want: []string{"alice", "bob"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, ok := sliceFindInsensitive(testFilters, tt.key)
-			require.Equal(t, tt.want, ok)
-			if ok {
-				require.Equal(t, testIndex, got)
-			}
+			require.Equal(t, tt.want, stringSliceToLower(tt.arg))
 		})
 	}
 }
