@@ -75,6 +75,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("things")
 				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
 				tCtx.GetLogRecord().Attributes().Remove("conflict")
+				tCtx.GetLogRecord().Attributes().Remove("slice2")
 			},
 		},
 		{
@@ -453,7 +454,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `delete(attributes["slice2"], Index(attributes["slice2"], "not_found"))`,
-			want: func(tCtx ottllog.TransformContext) {
+			want: func(_ ottllog.TransformContext) {
 				// No change as "not_found" does not exist in the slice.
 			},
 		},

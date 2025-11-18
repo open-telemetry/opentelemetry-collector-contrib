@@ -65,18 +65,18 @@ func getMultiSlice(t *testing.T, expected []any) pcommon.Slice {
 		case []any:
 			arr := elem.SetEmptySlice()
 			for _, v := range val {
-				elem := arr.AppendEmpty()
+				subElem := arr.AppendEmpty()
 				switch val := v.(type) {
 				case string:
-					elem.SetStr(val)
+					subElem.SetStr(val)
 				case int64:
-					elem.SetInt(val)
+					subElem.SetInt(val)
 				case int:
-					elem.SetInt(int64(val))
+					subElem.SetInt(int64(val))
 				case bool:
-					elem.SetBool(val)
+					subElem.SetBool(val)
 				case float64:
-					elem.SetDouble(val)
+					subElem.SetDouble(val)
 				default:
 					t.Errorf("unsupported type in test case: %T", v)
 				}
@@ -309,7 +309,7 @@ func TestDelete(t *testing.T) {
 			assert.NoError(t, err)
 
 			res := pcommon.NewSlice()
-			result, err := exprFunc(context.Background(), res)
+			result, err := exprFunc(t.Context(), res)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
 			assert.Equal(t, tc.expected, res)
@@ -425,7 +425,7 @@ func TestDelete_Errors(t *testing.T) {
 			assert.NoError(t, err)
 
 			res := pcommon.NewSlice()
-			_, err = exprFunc(context.Background(), res)
+			_, err = exprFunc(t.Context(), res)
 			assert.ErrorContains(t, err, etc.expectedErr)
 		})
 	}
