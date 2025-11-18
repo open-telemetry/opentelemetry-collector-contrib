@@ -466,7 +466,7 @@ func TestTranslateV2(t *testing.T) {
 				cbneMetric.SetName("test_metric")
 				cbneMetric.SetUnit("")
 				cbneMetric.SetDescription("")
-				// cbneMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				cbneMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 				hist := cbneMetric.SetEmptyHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -497,7 +497,7 @@ func TestTranslateV2(t *testing.T) {
 				expMetric.SetName("test_metric")
 				expMetric.SetUnit("")
 				expMetric.SetDescription("")
-				// expMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				expMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 				expHist := expMetric.SetEmptyExponentialHistogram()
 				expHist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -744,7 +744,7 @@ func TestTranslateV2(t *testing.T) {
 				m.SetName("test_metric")
 				m.SetUnit("")
 				m.SetDescription("")
-				// m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 
 				hist := m.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -828,7 +828,7 @@ func TestTranslateV2(t *testing.T) {
 				m.SetName("test_metric")
 				m.SetUnit("")
 				m.SetDescription("")
-				// m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 
 				hist := m.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -891,7 +891,7 @@ func TestTranslateV2(t *testing.T) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("test_metric")
 				m.SetUnit("")
-				// m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 
 				hist := m.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -981,7 +981,7 @@ func TestTranslateV2(t *testing.T) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("test_metric")
 				m.SetUnit("")
-				// m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 
 				hist := m.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1177,6 +1177,7 @@ func TestTranslateV2(t *testing.T) {
 				m1.SetName("test_hncb_histogram")
 				m1.SetUnit("")
 				m1.SetDescription("")
+				m1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 				hist := m1.SetEmptyHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -1243,6 +1244,7 @@ func TestTranslateV2(t *testing.T) {
 				m1.SetName("test_hncb_histogram_stale")
 				m1.SetUnit("")
 				m1.SetDescription("")
+				m1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 				hist := m1.SetEmptyHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -1395,7 +1397,7 @@ func TestTranslateV2(t *testing.T) {
 				m2.SetName("test_mixed_histogram")
 				m2.SetUnit("")
 				m2.SetDescription("")
-				// m2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				m2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
 				hist2 := m2.SetEmptyExponentialHistogram()
 				hist2.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -1409,6 +1411,154 @@ func TestTranslateV2(t *testing.T) {
 				dp2.SetZeroThreshold(1.0)
 				dp2.Positive().SetOffset(0)
 				dp2.Positive().BucketCounts().FromRaw([]uint64{30, 70})
+
+				return metrics
+			}(),
+		},
+		{
+			name: "unspecified histogram",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"attr1", "attr1", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						CreatedTimestamp: 1,
+						Metadata:         writev2.Metadata{},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountInt{
+									CountInt: 20,
+								},
+								Sum:           30,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountInt{
+									ZeroCountInt: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 2, Length: 1}},
+								PositiveDeltas: []int64{100, 244, 221},
+								NegativeDeltas: []int64{1, 2},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(-4)
+				dp.SetSum(30)
+				dp.SetCount(20)
+				dp.SetZeroCount(2)
+				dp.SetZeroThreshold(1)
+				dp.Positive().SetOffset(0)
+				dp.Positive().BucketCounts().FromRaw([]uint64{100, 344, 0, 0, 0, 565})
+				dp.Negative().BucketCounts().FromRaw([]uint64{1})
+				dp.Negative().SetOffset(-1)
+				dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 3})
+				dp.Attributes().PutStr("attr1", "attr1")
+				return metrics
+			}(),
+		},
+		{
+			name: "unspecified nhcb",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_hncb_histogram", // 1,2
+					"job", "test", // 3, 4
+					"instance", "localhost:8080", // 5, 6
+					"seconds", "Test NHCB histogram", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6},
+						CreatedTimestamp: 123456000,
+						Metadata:         writev2.Metadata{},
+						Histograms: []writev2.Histogram{
+							{
+								Timestamp:    123456789,
+								Schema:       -53, // NHCB schema
+								Sum:          100.5,
+								Count:        &writev2.Histogram_CountInt{CountInt: 180},
+								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 0, Length: 5}, // 5 buckets: 4 custom + 1 overflow
+								},
+								PositiveDeltas: []int64{10, 15, 20, 5, 0}, // Delta counts for each bucket
+							},
+						},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "localhost:8080")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("test_hncb_histogram")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				m1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
+				hist := m1.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.Timestamp(123456000 * int64(time.Millisecond)))
+				dp.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
+				dp.SetSum(100.5)
+				dp.SetCount(180)
+				dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50})
 
 				return metrics
 			}(),
@@ -1509,21 +1659,6 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 		attrs.PutStr("cloud_provider", "gcp")
 		attrs.PutStr("region", "us-central1")
 
-		return metrics
-	}()
-
-	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
-	expectedIndex1 := func() pmetric.Metrics {
-		metrics := pmetric.NewMetrics()
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
-		attrs.PutStr("service.instance.id", "host1")
-		attrs.PutStr("machine_type", "n1-standard-1")
-		attrs.PutStr("cloud_provider", "gcp")
-		attrs.PutStr("region", "us-central1")
-
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("OpenTelemetry Collector")
 		sm.Scope().SetVersion("latest")
@@ -1568,11 +1703,10 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
-
-			// index 0 is related to the target_info metric that is the first request.
+			// Only one metric should be emitted
+			assert.Len(t, mockConsumer.metrics, 1)
+			// index 0 is related to the join between the target_info and the normal metric.
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex0, mockConsumer.metrics[0]))
-			// index 1 is related to the join between the target_info and the normal metric.
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex1, mockConsumer.metrics[1]))
 		})
 	}
 }
@@ -1768,11 +1902,11 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	}
 
 	// As target_info and metric1 have the same job/instance, they generate the same end metric: mockConsumer.metrics[0].
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[1]))
-	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[2]. At this point, the cache is full it should evict the target_info metric to store the metric2.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[0]))
+	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[1]. At this point, the cache is full it should evict the target_info metric to store the metric2.
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[1]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[3]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[2]))
 }
 
 func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
@@ -1829,7 +1963,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 	}
 
 	requests := []*writev2.Request{}
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		requests = append(requests, createRequest("metric_"+strconv.Itoa(i+1), float64(i+1)*10, int64(i+1)*1000))
 	}
 
