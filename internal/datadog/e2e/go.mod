@@ -191,7 +191,7 @@ require (
 	github.com/ebitengine/purego v0.9.0 // indirect
 	github.com/edsrzf/mmap-go v1.2.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
-	github.com/elastic/lunes v0.1.0 // indirect
+	github.com/elastic/lunes v0.2.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.35.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
