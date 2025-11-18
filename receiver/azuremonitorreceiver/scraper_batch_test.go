@@ -230,6 +230,7 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				clientOptionsResolver: optionsResolver,
 				receiverSettings:      settings,
 				settings:              settings.TelemetrySettings,
+				lowerCaseServices:     stringSliceToLower(tt.fields.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
