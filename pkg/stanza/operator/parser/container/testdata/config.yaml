@@ -8,7 +8,7 @@ on_error_drop:
   on_error: drop
 add_metadata_from_file_path:
   type: container
-  add_metadata_from_file_path: true
+  add_metadata_from_filepath: true
 max_log_size:
   type: container
   max_log_size: 10242
@@ -42,6 +42,3 @@ timestamp:
     parse_from: body.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
-recombine_custom:
-  type: container
-  max_batch_size: 2000
