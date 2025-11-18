@@ -111,7 +111,7 @@ func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) erro
 func (a *awsLambdaReceiver) processLambdaEvent(ctx context.Context, event json.RawMessage) error {
 	triggerType, err := detectTriggerType(event)
 	if err != nil {
-		// fail fast: Unknown or Invalid event triggers are suppressed so that they do not get replayed by the lambda framework.
+		// Unknown or invalid event triggers are suppressed so that they do not get replayed by the lambda framework.
 		a.logger.Error("Received an event with invalid OR unsupported trigger type", zap.String(logDeployedTrigger, string(a.handler.handlerType())), zap.Error(err))
 		return nil
 	}
