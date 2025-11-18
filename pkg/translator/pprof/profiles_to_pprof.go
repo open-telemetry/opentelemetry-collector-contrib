@@ -197,10 +197,10 @@ func uint64Tobytes(v uint64) []byte {
 // getFunctionHash returns a non-cryptographic hash as identifier for a Function.
 func getFunctionHash(name, systemName, fileName string, startLine int64) uint64 {
 	h := xxh3.New()
-	h.WriteString(name)
-	h.WriteString(systemName)
-	h.WriteString(fileName)
-	h.Write(uint64Tobytes(uint64(startLine)))
+	h.WriteString(name)                       //nolint:errcheck
+	h.WriteString(systemName)                 //nolint:errcheck
+	h.WriteString(fileName)                   //nolint:errcheck
+	h.Write(uint64Tobytes(uint64(startLine))) //nolint:errcheck
 	return h.Sum64()
 }
 
@@ -230,10 +230,10 @@ func populateFunction(dst *profile.Profile, functionMap map[uint64]*profile.Func
 // getMappingHash returns a non-cryptographic hash as identifier for a Mapping.
 func getMappingHash(start, limit, offset uint64, file string) uint64 {
 	h := xxh3.New()
-	h.Write(uint64Tobytes(start))
-	h.Write(uint64Tobytes(limit))
-	h.Write(uint64Tobytes(offset))
-	h.WriteString(file)
+	h.Write(uint64Tobytes(start))  //nolint:errcheck
+	h.Write(uint64Tobytes(limit))  //nolint:errcheck
+	h.Write(uint64Tobytes(offset)) //nolint:errcheck
+	h.WriteString(file)            //nolint:errcheck
 	return h.Sum64()
 }
 
@@ -265,15 +265,15 @@ func getLocationHash(m *profile.Mapping, addr uint64, lines []profile.Line) uint
 	h := xxh3.New()
 	if m != nil {
 		mHash := getMappingHash(m.Start, m.Limit, m.Offset, m.File)
-		h.Write(uint64Tobytes(mHash))
+		h.Write(uint64Tobytes(mHash)) //nolint:errcheck
 	}
-	h.Write(uint64Tobytes(addr))
+	h.Write(uint64Tobytes(addr)) //nolint:errcheck
 	for _, l := range lines {
-		h.Write(uint64Tobytes(uint64(l.Column)))
-		h.Write(uint64Tobytes(uint64(l.Line)))
+		h.Write(uint64Tobytes(uint64(l.Column))) //nolint:errcheck
+		h.Write(uint64Tobytes(uint64(l.Line)))   //nolint:errcheck
 		fHash := getFunctionHash(l.Function.Name, l.Function.SystemName,
 			l.Function.Filename, l.Function.StartLine)
-		h.Write(uint64Tobytes(fHash))
+		h.Write(uint64Tobytes(fHash)) //nolint:errcheck
 	}
 	return h.Sum64()
 }
