@@ -196,10 +196,12 @@ func TestStartShutdown(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			err := test.pubSubReceiver.Start(t.Context(), mHost)
-			defer func() {
-				err = test.pubSubReceiver.Shutdown(t.Context())
-				require.NoError(t, err)
-			}()
+			if err != nil {
+				defer func() {
+					err = test.pubSubReceiver.Shutdown(t.Context())
+					require.NoError(t, err)
+				}()
+			}
 
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)

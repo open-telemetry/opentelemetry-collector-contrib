@@ -252,8 +252,10 @@ func handlePubSubPushRequest[T any](
 		return nil
 	}
 	if unmarshalData == nil {
-		// not coming from a storage notification, so we can
-		// use the message data instead
+		// Not coming from a storage notification, so we can
+		// use the message data instead. This happens for the
+		// cases in which the log is directly sent to Pub/Sub
+		// instead of being placed in a GCS file.
 		unmarshalData = request.Message.Data
 	}
 
