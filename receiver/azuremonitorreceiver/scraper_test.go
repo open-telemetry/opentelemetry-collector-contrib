@@ -138,12 +138,12 @@ func TestAzureScraperScrape(t *testing.T) {
 			)
 
 			s := &azureScraper{
-				cfg:                   tt.fields.cfg,
-				mb:                    metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
-				mutex:                 &sync.Mutex{},
-				time:                  getTimeMock(),
-				clientOptionsResolver: optionsResolver,
-				lowerCaseServices:     stringSliceToLower(tt.fields.cfg.Services),
+				cfg:                      tt.fields.cfg,
+				mb:                       metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
+				mutex:                    &sync.Mutex{},
+				time:                     getTimeMock(),
+				clientOptionsResolver:    optionsResolver,
+				storageAccountHackConfig: newStorageAccountHackConfig(tt.fields.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
@@ -258,12 +258,12 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 
 		settings := receivertest.NewNopSettings(metadata.Type)
 		s := &azureScraper{
-			cfg:                   cfgLimitedMertics,
-			mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-			mutex:                 &sync.Mutex{},
-			time:                  getTimeMock(),
-			clientOptionsResolver: optionsResolver,
-			lowerCaseServices:     stringSliceToLower(cfgLimitedMertics.Services),
+			cfg:                      cfgLimitedMertics,
+			mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+			mutex:                    &sync.Mutex{},
+			time:                     getTimeMock(),
+			clientOptionsResolver:    optionsResolver,
+			storageAccountHackConfig: newStorageAccountHackConfig(cfgLimitedMertics.Services),
 
 			// From there, initialize everything that is normally initialized in start() func
 			subscriptions: map[string]*azureSubscription{},
@@ -316,13 +316,13 @@ func getNominalTestScraper() *azureScraper {
 	cfg := createDefaultTestConfig()
 
 	return &azureScraper{
-		cfg:                   cfg,
-		settings:              settings.TelemetrySettings,
-		mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-		mutex:                 &sync.Mutex{},
-		time:                  getTimeMock(),
-		clientOptionsResolver: optionsResolver,
-		lowerCaseServices:     stringSliceToLower(cfg.Services),
+		cfg:                      cfg,
+		settings:                 settings.TelemetrySettings,
+		mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mutex:                    &sync.Mutex{},
+		time:                     getTimeMock(),
+		clientOptionsResolver:    optionsResolver,
+		storageAccountHackConfig: newStorageAccountHackConfig(cfg.Services),
 
 		// From there, initialize everything that is normally initialized in start() func
 		subscriptions: map[string]*azureSubscription{},
@@ -485,13 +485,13 @@ func TestAzureScraperHackResources(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			s := &azureScraper{
-				cfg:                   tt.cfg,
-				settings:              settings.TelemetrySettings,
-				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-				mutex:                 &sync.Mutex{},
-				time:                  getTimeMock(),
-				clientOptionsResolver: optionsResolver,
-				lowerCaseServices:     stringSliceToLower(tt.cfg.Services),
+				cfg:                      tt.cfg,
+				settings:                 settings.TelemetrySettings,
+				mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mutex:                    &sync.Mutex{},
+				time:                     getTimeMock(),
+				clientOptionsResolver:    optionsResolver,
+				storageAccountHackConfig: newStorageAccountHackConfig(tt.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
@@ -857,35 +857,6 @@ func TestMapFindInsensitive(t *testing.T) {
 			if ok {
 				require.Equal(t, testStr, got)
 			}
-		})
-	}
-}
-
-func TestSliceFindInsensitive(t *testing.T) {
-	tests := []struct {
-		name string
-		arg  []string
-		want []string
-	}{
-		{
-			name: "should lowercase nil",
-			arg:  nil,
-			want: nil,
-		},
-		{
-			name: "should lowercase empty slice",
-			arg:  []string{},
-			want: []string{},
-		},
-		{
-			name: "should lowercase slice",
-			arg:  []string{"Alice", "bob"},
-			want: []string{"alice", "bob"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, stringSliceToLower(tt.arg))
 		})
 	}
 }

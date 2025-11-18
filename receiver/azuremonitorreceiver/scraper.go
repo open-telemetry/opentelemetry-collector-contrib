@@ -45,14 +45,6 @@ var (
 		"Minimum",
 		"Total",
 	}
-	storageAccountSubTypes     = []string{"blobServices", "fileServices", "queueServices", "tableServices"}
-	fullStorageAccountSubTypes = []string{
-		"Microsoft.Storage/storageAccounts/blobServices",
-		"Microsoft.Storage/storageAccounts/fileServices",
-		"Microsoft.Storage/storageAccounts/queueServices",
-		"Microsoft.Storage/storageAccounts/tableServices",
-	}
-	fullStorageAccountSubTypesLowerCase = stringSliceToLower(fullStorageAccountSubTypes)
 )
 
 const (
@@ -107,15 +99,31 @@ func (*timeWrapper) Now() time.Time {
 	return time.Now()
 }
 
+type storageAccountHackConfig struct {
+	askedBlobServices  bool
+	askedFileServices  bool
+	askedQueueServices bool
+	askedTableServices bool
+}
+
+func newStorageAccountHackConfig(services []string) storageAccountHackConfig {
+	return storageAccountHackConfig{
+		askedBlobServices:  slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/blobServices") }) != -1,
+		askedFileServices:  slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/fileServices") }) != -1,
+		askedQueueServices: slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/queueServices") }) != -1,
+		askedTableServices: slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/tableServices") }) != -1,
+	}
+}
+
 func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 	return &azureScraper{
-		cfg:                   conf,
-		settings:              settings.TelemetrySettings,
-		mb:                    metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
-		mutex:                 &sync.Mutex{},
-		time:                  &timeWrapper{},
-		clientOptionsResolver: newClientOptionsResolver(conf.Cloud),
-		lowerCaseServices:     stringSliceToLower(conf.Services),
+		cfg:                      conf,
+		settings:                 settings.TelemetrySettings,
+		mb:                       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
+		mutex:                    &sync.Mutex{},
+		time:                     &timeWrapper{},
+		clientOptionsResolver:    newClientOptionsResolver(conf.Cloud),
+		storageAccountHackConfig: newStorageAccountHackConfig(conf.Services),
 	}
 }
 
@@ -131,12 +139,10 @@ type azureScraper struct {
 	subscriptionsUpdated time.Time
 	mb                   *metadata.MetricsBuilder
 
-	// lowerCaseServices is a duplicate of cfg.Services, but in lower case.
-	// Used to avoid a performance drop when checking if a service is enabled.
-	lowerCaseServices     []string
-	mutex                 *sync.Mutex
-	time                  timeNowIface
-	clientOptionsResolver ClientOptionsResolver
+	mutex                    *sync.Mutex
+	time                     timeNowIface
+	clientOptionsResolver    ClientOptionsResolver
+	storageAccountHackConfig storageAccountHackConfig
 }
 
 func (s *azureScraper) start(_ context.Context, host component.Host) (err error) {
@@ -345,28 +351,49 @@ func (s *azureScraper) hackResources(resources []*armresources.GenericResourceEx
 	for _, resource := range resources {
 		hackedResources = append(hackedResources, resource)
 		if resource.Type != nil && *resource.Type == storageAccountType {
-			for i, subType := range storageAccountSubTypes {
-				if slices.Contains(s.lowerCaseServices, fullStorageAccountSubTypesLowerCase[i]) {
-					hackedResource, err := copyResource(resource)
-					if err != nil {
-						s.settings.Logger.Error("failed to create a hack resource",
-							zap.String("resource type", *resource.Type),
-							zap.String("hack resource type", fullStorageAccountSubTypes[i]),
-							zap.Error(err),
-						)
-					}
-					if hackedResource != nil {
-						// Create a fake new resource with type and ID corresponding to the sub resource.
-						// The rest of the attributes (location, tags, etc...) are copied from the original resource.
-						hackedResource.Type = to.Ptr(fullStorageAccountSubTypes[i])
-						hackedResource.ID = to.Ptr(fmt.Sprintf("%s/%s/default", *resource.ID, subType))
-						hackedResources = append(hackedResources, hackedResource)
-					}
+			if s.storageAccountHackConfig.askedBlobServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/blobServices", fmt.Sprintf("%s/blobServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedFileServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/fileServices", fmt.Sprintf("%s/fileServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedQueueServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/queueServices", fmt.Sprintf("%s/queueServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedTableServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/tableServices", fmt.Sprintf("%s/tableServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
 				}
 			}
 		}
 	}
 	return hackedResources
+}
+
+// hackResource creates a fake new resource with give type and ID.
+// The rest of the attributes (location, tags, etc...) are copied from the original resource.
+// TODO: duplicate
+func (s *azureScraper) hackResource(resource *armresources.GenericResourceExpanded, newResourceType, newResourceID string) *armresources.GenericResourceExpanded {
+	hackedResource, err := copyResource(resource)
+	if err != nil {
+		s.settings.Logger.Error("failed to create a hack resource",
+			zap.String("resource type", *resource.Type),
+			zap.String("hack resource type", newResourceType),
+			zap.String("hack resource ID", newResourceID),
+			zap.Error(err),
+		)
+	}
+	if hackedResource != nil {
+		hackedResource.Type = to.Ptr(newResourceType)
+		hackedResource.ID = to.Ptr(newResourceID)
+	}
+	return hackedResource
 }
 
 func getResourceGroupFromID(id string) string {
@@ -598,17 +625,6 @@ func getMetricAggregations(metricNamespace, metricName string, filters NestedLis
 	}
 
 	return out
-}
-
-func stringSliceToLower(slice []string) []string {
-	if len(slice) == 0 {
-		return slice
-	}
-	res := make([]string, len(slice))
-	for i, s := range slice {
-		res[i] = strings.ToLower(s)
-	}
-	return res
 }
 
 func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
