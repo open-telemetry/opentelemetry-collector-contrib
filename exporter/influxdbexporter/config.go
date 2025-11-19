@@ -5,6 +5,7 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -110,14 +111,7 @@ func (cfg *Config) Validate() error {
 
 	// Validate precision
 	validPrecisions := []string{"ns", "ms", "s", "us"}
-	validPrecision := false
-	for _, p := range validPrecisions {
-		if cfg.Precision == p {
-			validPrecision = true
-			break
-		}
-	}
-	if !validPrecision {
+	if !slices.Contains(validPrecisions, cfg.Precision) {
 		return fmt.Errorf("invalid precision %q, must be one of: %s",
 			cfg.Precision, strings.Join(validPrecisions, ", "))
 	}
