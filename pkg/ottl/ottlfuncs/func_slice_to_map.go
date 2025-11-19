@@ -77,7 +77,7 @@ func sliceToMap(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]string]) (pc
 		if useValuePath {
 			extractedValue, err := extractValue(elem.Map(), valuePath.Get())
 			if err != nil {
-				return pcommon.Map{}, fmt.Errorf("could not extract value from element: %w", err)
+				return pcommon.Map{}, fmt.Errorf("could not extract value from element %d: %w", i, err)
 			}
 			value = extractedValue
 		}
@@ -94,7 +94,7 @@ func extractValue(m pcommon.Map, path []string) (pcommon.Value, error) {
 
 	val, ok := m.Get(path[0])
 	if !ok {
-		return pcommon.NewValueEmpty(), fmt.Errorf("provided object does not contain the path %v", path)
+		return  pcommon.Value{}, fmt.Errorf("provided object does not contain the path %v", path)
 	}
 
 	if len(path) == 1 {
@@ -102,7 +102,7 @@ func extractValue(m pcommon.Map, path []string) (pcommon.Value, error) {
 	}
 
 	if val.Type() != pcommon.ValueTypeMap {
-		return pcommon.NewValueEmpty(), fmt.Errorf("provided object does not contain the path %v", path)
+		return  pcommon.Value{}, fmt.Errorf("provided object does not contain the path %v", path)
 	}
 
 	return extractValue(val.Map(), path[1:])
