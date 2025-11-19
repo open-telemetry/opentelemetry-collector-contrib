@@ -161,11 +161,9 @@ func (cfg *Config) Validate() error {
 			return errInvalidPermissionBits
 		}
 		cfg.directoryPermissionsParsed = permissions
-	} else {
+	} else if cfg.DirectoryPermissions != "" {
 		// If not creating directories, directory_permissions must not be set.
-		if cfg.DirectoryPermissions != "" {
-			return errDirPermsRequireCreate
-		}
+		return errDirPermsRequireCreate
 	}
 
 	return nil
