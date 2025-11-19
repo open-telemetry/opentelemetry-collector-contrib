@@ -99,8 +99,6 @@ func NewStringAttributeFilter(settings component.TelemetrySettings, key string, 
 // which might be static strings or regular expressions.
 func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	saf.logger.Debug("Evaluating spans in string-tag filter")
-	trace.Lock()
-	defer trace.Unlock()
 	batches := trace.ReceivedBatches
 
 	if saf.invertMatch {
