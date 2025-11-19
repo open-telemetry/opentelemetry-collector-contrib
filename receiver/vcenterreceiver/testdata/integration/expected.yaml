@@ -63,7 +63,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "10952166604800"
+                - asInt: "4355096838144"
                   attributes:
                     - key: disk_state
                       value:
@@ -242,7 +242,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "10952166604800"
+                - asInt: "4355096838144"
                   attributes:
                     - key: disk_state
                       value:
@@ -260,7 +260,7 @@ resourceMetrics:
           - description: The utilization of the datastore.
             gauge:
               dataPoints:
-                - asDouble: 0.390625
+                - asDouble: 0.9765625
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcenter.datastore.disk.utilization
@@ -591,7 +591,7 @@ resourceMetrics:
             stringValue: Resources
         - key: vcenter.vm.id
           value:
-            stringValue: b4689bed-97f0-5bcd-8a4c-07477cc8f06f
+            stringValue: b170c191-7587-5f8e-9a15-08c6a0a11ca5
         - key: vcenter.vm.name
           value:
             stringValue: VM0
@@ -609,7 +609,7 @@ resourceMetrics:
                         stringValue: available
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "233"
                   attributes:
                     - key: disk_state
                       value:
@@ -620,7 +620,7 @@ resourceMetrics:
           - description: The utilization of storage on the virtual machine.
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 2.169981551765865e-06
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.disk.utilization
@@ -680,7 +680,7 @@ resourceMetrics:
             stringValue: Resources
         - key: vcenter.vm.id
           value:
-            stringValue: 12f8928d-f144-5c57-89db-dd2d0902c9fa
+            stringValue: 98e152d0-eae2-5372-a08e-7e034d392eff
         - key: vcenter.vm.name
           value:
             stringValue: VM1
@@ -698,7 +698,7 @@ resourceMetrics:
                         stringValue: available
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "233"
                   attributes:
                     - key: disk_state
                       value:
@@ -709,7 +709,7 @@ resourceMetrics:
           - description: The utilization of storage on the virtual machine.
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 2.169981551765865e-06
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.disk.utilization
@@ -772,7 +772,7 @@ resourceMetrics:
             stringValue: Resources
         - key: vcenter.vm.id
           value:
-            stringValue: bfff331f-7f07-572d-951e-edd3701dc061
+            stringValue: 92d04c2b-0142-5fa3-9cd0-fd78cc9971fc
         - key: vcenter.vm.name
           value:
             stringValue: VM2
@@ -790,7 +790,7 @@ resourceMetrics:
                         stringValue: available
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "233"
                   attributes:
                     - key: disk_state
                       value:
@@ -801,7 +801,7 @@ resourceMetrics:
           - description: The utilization of storage on the virtual machine.
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 2.169981551765865e-06
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.disk.utilization
@@ -864,7 +864,7 @@ resourceMetrics:
             stringValue: Resources
         - key: vcenter.vm.id
           value:
-            stringValue: 6132d223-1566-5921-bc3b-df91ece09a4d
+            stringValue: 2d541848-501a-5248-8a3f-b3e6d2a05526
         - key: vcenter.vm.name
           value:
             stringValue: VM3
@@ -882,7 +882,7 @@ resourceMetrics:
                         stringValue: available
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "233"
                   attributes:
                     - key: disk_state
                       value:
@@ -893,7 +893,7 @@ resourceMetrics:
           - description: The utilization of storage on the virtual machine.
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 2.169981551765865e-06
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.disk.utilization

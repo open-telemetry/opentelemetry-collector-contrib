@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.46.3
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.140.1
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go v1.20.4
 	github.com/twmb/franz-go/pkg/kadm v1.17.1
