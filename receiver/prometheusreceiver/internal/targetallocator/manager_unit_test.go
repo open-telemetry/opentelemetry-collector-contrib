@@ -4,6 +4,7 @@
 package targetallocator
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,9 +12,17 @@ import (
 	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/common/promslog"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
@@ -40,26 +49,59 @@ func TestNewManager(t *testing.T) {
 	assert.Len(t, manager.initialScrapeConfigs, 1)
 }
 
-func TestShutdown(t *testing.T) {
+func TestManagerShutdown(t *testing.T) {
+	// Create a mock target allocator server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		if r.URL.Path == "/scrape_configs" {
+			_, _ = w.Write([]byte("{}"))
+		}
+	}))
+	defer server.Close()
+
 	cfg := &Config{
-		Interval:    30 * time.Second,
+		Interval:    100 * time.Millisecond,
 		CollectorID: "test-collector",
 	}
+	cfg.Endpoint = server.URL
 	promCfg, err := promconfig.Load("", nil)
 	require.NoError(t, err)
 
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, promCfg, false)
+	// Create a logger with observer to capture logs
+	core, logs := observer.New(zapcore.InfoLevel)
+	logger := zap.New(core)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
 
-	// Shutdown should close the channel
+	manager := NewManager(settings, cfg, promCfg, false)
+
+	// Start the manager so the goroutine is running
+	ctx := context.Background()
+
+	// Initialize Prometheus managers using the same pattern as manager_test.go
+	promLogger := promslog.NewNopLogger()
+	reg := prometheus.NewRegistry()
+	sdMetrics, err := discovery.RegisterSDMetrics(reg, discovery.NewRefreshMetrics(reg))
+	require.NoError(t, err)
+	discoveryManager := discovery.NewManager(ctx, promLogger, reg, sdMetrics)
+	require.NotNil(t, discoveryManager)
+
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, promLogger, nil, nil, reg)
+	require.NoError(t, err)
+	defer scrapeManager.Stop()
+
+	err = manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager)
+	require.NoError(t, err)
+
+	// Shutdown the manager
 	manager.Shutdown()
 
-	// Verify the channel is closed
-	select {
-	case <-manager.shutdown:
-		// Channel is closed, test passes
-	default:
-		t.Fatal("shutdown channel was not closed")
-	}
+	// Wait for the shutdown to complete with a timeout
+	require.Eventually(t, func() bool {
+		// Check if the log message "Stopping target allocator" was logged
+		logEntries := logs.FilterMessage("Stopping target allocator")
+		return logEntries.Len() > 0
+	}, 5*time.Second, 50*time.Millisecond, "expected shutdown log message")
 }
 
 func TestInstantiateShard(t *testing.T) {
