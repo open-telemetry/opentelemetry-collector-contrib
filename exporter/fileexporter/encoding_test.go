@@ -99,7 +99,7 @@ func generateProfiles() pprofile.Profiles {
 	rp.Resource().Attributes().PutStr("resource", "R1")
 	p := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 	p.SetProfileID(pprofile.NewProfileIDEmpty())
-	p.SetDuration(pcommon.Timestamp(1 * time.Second / time.Nanosecond))
+	p.SetDurationNano(1000000000)
 	return profiles
 }
 
