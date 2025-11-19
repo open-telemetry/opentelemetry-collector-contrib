@@ -82,6 +82,20 @@ func addHandlerFunc[T any](
 			storageClient,
 			includeMetadata,
 		); err != nil {
+			// Pub/Sub retries everything that is not a valid response. A valid response
+			// has the following HTTP codes: [102, 200, 201, 202, 204].
+			// You can verify this in the official documentation. For this, refer to
+			// https://cloud.google.com/pubsub/docs/push.
+			//
+			// This becomes an issue for permanent errors, because it means that if we
+			// don't return one of those codes, Pub/Sub will keep retrying. This would
+			// only stop retrying if:
+			// 1. We add event arc advanced after Pub/Sub. For this, we need to set the
+			// correct HTTP code for permanent/transient errors. You can refer to
+			// the official documentation for this. See:
+			// https://docs.cloud.google.com/eventarc/advanced/docs/retry-events#transient
+			// 2. Or return 2xx for permanent errors. Since this is not semantically correct,
+			// we are holding on this option.
 			logger.Error("failed to handle Pub/Sub push request", zap.Error(err))
 			code := http.StatusInternalServerError
 			if consumererror.IsPermanent(err) {
