@@ -310,6 +310,7 @@ func (e *datadogExtension) startPeriodicPayloadSending() {
 					return
 				case <-e.payloadSender.channel:
 					// Allow manual triggering of payload sending if needed
+					// Manual triggers should send immediately without delay
 					e.logger.Debug("Manually triggered payload send")
 
 					// Send liveness metric first
@@ -317,16 +318,9 @@ func (e *datadogExtension) startPeriodicPayloadSending() {
 						e.logger.Error("Failed to send manually triggered liveness metric", zap.Error(err))
 					}
 
-					// Wait 1 minute before sending metadata payload
-					select {
-					case <-time.After(1 * time.Minute):
-						// Send metadata payload on manual trigger after delay
-						if _, err := e.httpServer.SendPayload(); err != nil {
-							e.logger.Error("Failed to send manually triggered payload", zap.Error(err))
-						}
-					case <-e.payloadSender.ctx.Done():
-						e.logger.Debug("Stopping during manual trigger delay")
-						return
+					// Send metadata payload immediately on manual trigger
+					if _, err := e.httpServer.SendPayload(); err != nil {
+						e.logger.Error("Failed to send manually triggered payload", zap.Error(err))
 					}
 				}
 			}

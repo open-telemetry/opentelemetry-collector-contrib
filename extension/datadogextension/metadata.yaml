@@ -11,3 +11,8 @@ status:
 tests:
   goleak:
     skip: true
+  config:
+    api:
+      key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      site: "datadoghq.com"
+      fail_on_invalid_key: false
