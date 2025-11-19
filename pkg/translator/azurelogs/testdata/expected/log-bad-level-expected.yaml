@@ -15,6 +15,9 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: cloud.region
+                    value:
+                      stringValue: West US
                   - key: network.peer.address
                     value:
                       stringValue: 13.14.15.16
@@ -34,71 +37,66 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: operationId
-                            value:
-                              stringValue: GetSessions
                           - key: method
                             value:
                               stringValue: GET
+                          - key: backendResponseCode
+                            value:
+                              doubleValue: 200
+                          - key: url
+                            value:
+                              stringValue: https://api.azure-api.net/sessions
+                          - key: apiRevision
+                            value:
+                              stringValue: "1"
                           - key: backendTime
                             value:
                               doubleValue: 54
+                          - key: requestSize
+                            value:
+                              doubleValue: 632
+                          - key: clientTime
+                            value:
+                              doubleValue: 190
+                          - key: clientProtocol
+                            value:
+                              stringValue: HTTP/1.1
+                          - key: responseCode
+                            value:
+                              doubleValue: 200
+                          - key: backendMethod
+                            value:
+                              stringValue: GET
                           - key: apimSubscriptionId
                             value:
                               stringValue: master
                           - key: backendProtocol
                             value:
                               stringValue: HTTP/1.1
-                          - key: requestSize
-                            value:
-                              doubleValue: 632
-                          - key: url
-                            value:
-                              stringValue: https://api.azure-api.net/sessions
-                          - key: apiId
-                            value:
-                              stringValue: demo-api
-                          - key: backendUrl
-                            value:
-                              stringValue: https://api.azurewebsites.net/sessions
-                          - key: apiRevision
-                            value:
-                              stringValue: "1"
                           - key: clientTlsVersion
                             value:
                               stringValue: "1.2"
-                          - key: backendMethod
-                            value:
-                              stringValue: GET
-                          - key: responseCode
-                            value:
-                              doubleValue: 200
-                          - key: cache
-                            value:
-                              stringValue: none
-                          - key: clientProtocol
-                            value:
-                              stringValue: HTTP/1.1
                           - key: responseSize
                             value:
                               doubleValue: 102945
-                          - key: clientTime
+                          - key: backendUrl
                             value:
-                              doubleValue: 190
-                          - key: backendResponseCode
+                              stringValue: https://api.azurewebsites.net/sessions
+                          - key: cache
                             value:
-                              doubleValue: 200
+                              stringValue: none
+                          - key: apiId
+                            value:
+                              stringValue: demo-api
+                          - key: operationId
+                            value:
+                              stringValue: GetSessions
                   - key: result.type
                     value:
                       stringValue: Succeeded
-                  - key: cloud.region
-                    value:
-                      stringValue: West US
             severityNumber: 4
             severityText: "4"
-            spanId: ""
             timeUnixNano: "1698330163341635700"
-            traceId: ""
         scope:
           name: otelcol/azureresourcelogs
           version: 1.2.3
