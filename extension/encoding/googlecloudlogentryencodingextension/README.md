@@ -382,10 +382,10 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 
 | Original field | Log record attribute |
 |---|---|
-| `connection.clientIp` | `source.address` |
-| `connection.clientPort` | `source.port` |
-| `connection.serverIp` | `destination.address` |
-| `connection.serverPort` | `destination.port` |
+| `connection.clientIp` | `client.address` |
+| `connection.clientPort` | `client.port` |
+| `connection.serverIp` | `server.address` |
+| `connection.serverPort` | `server.port` |
 | `connection.protocol` | `network.protocol.name` (translated from IANA protocol number, e.g., `tcp`, `udp`, `icmp`) |
 | `startTime` | `gcp.load_balancing.proxy_nlb.connection.start_time` |
 | `endTime` | `gcp.load_balancing.proxy_nlb.connection.end_time` |

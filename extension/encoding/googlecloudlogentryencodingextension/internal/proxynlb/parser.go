@@ -81,11 +81,11 @@ func handleConnection(conn *connection, attr pcommon.Map) {
 		return
 	}
 
-	shared.PutStr(string(semconv.SourceAddressKey), conn.ClientIP, attr)
-	shared.PutStr(string(semconv.DestinationAddressKey), conn.ServerIP, attr)
+	shared.PutStr(string(semconv.ClientAddressKey), conn.ClientIP, attr)
+	shared.PutInt(string(semconv.ClientPortKey), conn.ClientPort, attr)
 
-	shared.PutInt(string(semconv.SourcePortKey), conn.ClientPort, attr)
-	shared.PutInt(string(semconv.DestinationPortKey), conn.ServerPort, attr)
+	shared.PutStr(string(semconv.ServerAddressKey), conn.ServerIP, attr)
+	shared.PutInt(string(semconv.ServerPortKey), conn.ServerPort, attr)
 
 	if conn.Protocol != nil {
 		if protoName, ok := vpcflowlog.ProtocolName(uint32(*conn.Protocol)); ok {

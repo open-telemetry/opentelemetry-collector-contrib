@@ -55,16 +55,16 @@ resourceLogs:
               - key: log.record.uid
                 value:
                   stringValue: 1d5pdpse2al63
-              - key: source.address
+              - key: client.address
                 value:
                   stringValue: 68.168.189.182
-              - key: destination.address
+              - key: server.address
                 value:
                   stringValue: 35.209.164.189
-              - key: source.port
+              - key: client.port
                 value:
                   intValue: "52885"
-              - key: destination.port
+              - key: server.port
                 value:
                   intValue: "80"
               - key: network.protocol.name

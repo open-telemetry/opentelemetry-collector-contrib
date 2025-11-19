@@ -36,10 +36,10 @@ func TestHandleConnection(t *testing.T) {
 				ServerPort: int64Ptr(80),
 			},
 			expectedAttr: map[string]any{
-				string(semconv.SourceAddressKey):       "68.168.189.182",
-				string(semconv.SourcePortKey):          int64(52900),
-				string(semconv.DestinationAddressKey):  "35.209.164.189",
-				string(semconv.DestinationPortKey):     int64(80),
+				string(semconv.ClientAddressKey):       "68.168.189.182",
+				string(semconv.ClientPortKey):          int64(52900),
+				string(semconv.ServerAddressKey):       "35.209.164.189",
+				string(semconv.ServerPortKey):          int64(80),
 				string(semconv.NetworkProtocolNameKey): "tcp",
 			},
 		},
@@ -50,7 +50,6 @@ func TestHandleConnection(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		tt := tt
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
@@ -118,10 +117,10 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			assertFunc: func(t *testing.T, attr pcommon.Map, err error) {
 				require.NoError(t, err)
 				require.Equal(t, map[string]any{
-					string(semconv.SourceAddressKey):       "68.168.189.182",
-					string(semconv.SourcePortKey):          int64(52900),
-					string(semconv.DestinationAddressKey):  "35.209.164.189",
-					string(semconv.DestinationPortKey):     int64(80),
+					string(semconv.ClientAddressKey):       "68.168.189.182",
+					string(semconv.ClientPortKey):          int64(52900),
+					string(semconv.ServerAddressKey):       "35.209.164.189",
+					string(semconv.ServerPortKey):          int64(80),
 					string(semconv.NetworkProtocolNameKey): "tcp",
 					gcpProxyNLBConnectionStartTime:         "2025-11-17T22:21:57.480419Z",
 					gcpProxyNLBConnectionEndTime:           "2025-11-17T22:21:57.500505Z",
@@ -133,7 +132,6 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		tt := tt
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
