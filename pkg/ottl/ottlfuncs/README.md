@@ -583,9 +583,9 @@ The `CommunityID` converter generates a network hash flow. Community ID is a sta
 The output format is base64 encoding string of <2-byte-seed><source-IP-bytes><destination-IP-bytes><1-byte-protocol><2-byte-source-port><2-byte-destination-port>.
 
 `sourceIP` is a source IP address (IPv4 or IPv6).
-`sourcePort` is a source port (must be between 1 and 65535).
+`sourcePort` is a source port (must be between 0 and 65535).
 `destinationIP` is a destination IP address (IPv4 or IPv6).
-`destinationPort` is a destination port (must be between 1 and 65535).
+`destinationPort` is a destination port (must be between 0 and 65535).
 `protocol` (optional) is a protocol, one of `ICMP`, `TCP`, `UDP`, `RSVP`, `ICMP6` or `SCTP`. Defaults to `TCP` if not specified.
 `seed` (optional) is seed value (must be between 0 and 65535). Defaults to `0` if not specified.
 
