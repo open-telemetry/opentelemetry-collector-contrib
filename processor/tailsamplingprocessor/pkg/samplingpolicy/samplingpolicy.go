@@ -23,6 +23,8 @@ type TraceData struct {
 	ReceivedBatches ptrace.Traces
 	// FinalDecision.
 	FinalDecision Decision
+	// ParentSpan
+	ParentSpan *ptrace.Span
 }
 
 // Decision gives the status of sampling decision.
