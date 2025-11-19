@@ -23,9 +23,9 @@ func NewFactory() receiver.Factory {
 
 func createLogsReceiver(
 	_ context.Context,
-	_ receiver.Settings,
+	set receiver.Settings,
 	cfg component.Config,
-	_ consumer.Logs,
+	nextLogs consumer.Logs,
 ) (receiver.Logs, error) {
-	return newPubSubPushReceiver(cfg.(*Config)), nil
+	return newPubSubPushReceiver(cfg.(*Config), set, nextLogs), nil
 }
