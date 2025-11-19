@@ -224,6 +224,7 @@ components:
     - receiver/apachespark
     - receiver/awscloudwatch
     - receiver/awscontainerinsight
+    - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
     - receiver/awslambda
