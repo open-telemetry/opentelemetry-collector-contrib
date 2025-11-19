@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0
-	cloud.google.com/go/storage v1.57.0
+	cloud.google.com/go/storage v1.57.2
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
