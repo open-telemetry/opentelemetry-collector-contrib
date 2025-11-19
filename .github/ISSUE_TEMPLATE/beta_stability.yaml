@@ -231,6 +231,7 @@ body:
       - receiver/apachespark
       - receiver/awscloudwatch
       - receiver/awscontainerinsight
+      - receiver/awscontainerinsight/deprecated
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
       - receiver/awslambda
