@@ -932,11 +932,11 @@ func TestCreateDirectoryOption(t *testing.T) {
 		nonExistingDir := filepath.Join(base, "nested", "dir2")
 		path := filepath.Join(nonExistingDir, "out.log")
 		cfg := &Config{
-			Path:                  path,
-			FormatType:            formatTypeJSON,
-			CreateDirectory:       true,
-			DirectoryPermissions:  "0755",
-			FlushInterval:         time.Second,
+			Path:                 path,
+			FormatType:           formatTypeJSON,
+			CreateDirectory:      true,
+			DirectoryPermissions: "0755",
+			FlushInterval:        time.Second,
 		}
 		exp, err := createLogsExporter(
 			t.Context(),

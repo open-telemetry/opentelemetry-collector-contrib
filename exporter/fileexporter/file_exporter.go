@@ -70,7 +70,8 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 		if e.conf.directoryPermissionsParsed != 0 {
 			perm = os.FileMode(e.conf.directoryPermissionsParsed)
 		}
-		if err := os.MkdirAll(dir, perm); err != nil {
+		err = os.MkdirAll(dir, perm)
+		if err != nil {
 			return err
 		}
 	}
