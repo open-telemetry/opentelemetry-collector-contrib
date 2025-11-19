@@ -156,6 +156,7 @@ type DimensionClientConfig struct {
 	MaxConnsPerHost     int           `mapstructure:"max_conns_per_host"`
 	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 	Timeout             time.Duration `mapstructure:"timeout"`
+	DropTags            bool          `mapstructure:"drop_tags"`
 }
 
 func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricTranslator, error) {
