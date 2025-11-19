@@ -9,6 +9,7 @@ import (
 	"math"
 	"strings"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -69,6 +70,8 @@ func getMetricTypeFilter(types []string) (map[pmetric.MetricType]bool, error) {
 			res[pmetric.MetricTypeSum] = true
 		case strings.ToLower(pmetric.MetricTypeHistogram.String()):
 			res[pmetric.MetricTypeHistogram] = true
+		case strings.ToLower(pmetric.MetricTypeExponentialHistogram.String()):
+			res[pmetric.MetricTypeExponentialHistogram] = true
 		default:
 			return nil, fmt.Errorf("unsupported metric type filter: %s", t)
 		}
@@ -131,6 +134,28 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
+
+				case pmetric.MetricTypeExponentialHistogram:
+					ms := m.ExponentialHistogram()
+					if ms.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
+						return false
+					}
+					if ms.DataPoints().Len() == 0 {
+						return false
+					}
+
+					baseIdentity := tracking.MetricIdentity{
+						Resource:               rm.Resource(),
+						InstrumentationLibrary: ilm.Scope(),
+						MetricType:             m.Type(),
+						MetricName:             m.Name(),
+						MetricUnit:             m.Unit(),
+					}
+					ctdp.convertExponentialHistogramDataPoints(ms.DataPoints(), baseIdentity)
+
+					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					return ms.DataPoints().Len() == 0
+
 				default:
 					return false
 				}
@@ -195,46 +220,105 @@ func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(dps pmetric.Numb
 	})
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in any, baseIdentity tracking.MetricIdentity) {
-	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
-		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
-			id := baseIdentity
-			id.StartTimestamp = dp.StartTimestamp()
-			id.Attributes = dp.Attributes()
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(dps pmetric.HistogramDataPointSlice, baseIdentity tracking.MetricIdentity) {
+	dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
+		id := baseIdentity
+		id.StartTimestamp = dp.StartTimestamp()
+		id.Attributes = dp.Attributes()
 
-			if dp.Flags().NoRecordedValue() {
-				// drop points with no value
-				return true
+		if dp.Flags().NoRecordedValue() {
+			// drop points with no value
+			return true
+		}
+
+		point := tracking.ValuePoint{
+			ObservedTimestamp: dp.Timestamp(),
+			HistogramValue: &tracking.HistogramPoint{
+				Count:   dp.Count(),
+				Sum:     dp.Sum(),
+				Buckets: dp.BucketCounts().AsRaw(),
+			},
+		}
+
+		trackingPoint := tracking.MetricPoint{
+			Identity: id,
+			Value:    point,
+		}
+		delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
+
+		if valid {
+			dp.SetStartTimestamp(delta.StartTimestamp)
+			dp.SetCount(delta.HistogramValue.Count)
+			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
+				dp.SetSum(delta.HistogramValue.Sum)
 			}
+			dp.BucketCounts().FromRaw(delta.HistogramValue.Buckets)
+			dp.RemoveMin()
+			dp.RemoveMax()
+			return false
+		}
 
-			point := tracking.ValuePoint{
-				ObservedTimestamp: dp.Timestamp(),
-				HistogramValue: &tracking.HistogramPoint{
-					Count:   dp.Count(),
-					Sum:     dp.Sum(),
-					Buckets: dp.BucketCounts().AsRaw(),
+		return !valid
+	})
+}
+
+func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, baseIdentity tracking.MetricIdentity) {
+	dps.RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
+		id := baseIdentity
+		id.StartTimestamp = dp.StartTimestamp()
+		id.Attributes = dp.Attributes()
+
+		if dp.Flags().NoRecordedValue() {
+			// drop points with no value
+			return true
+		}
+
+		point := tracking.ValuePoint{
+			ObservedTimestamp: dp.Timestamp(),
+			ExponentialHistogramValue: &tracking.ExponentialHistogramPoint{
+				Count:         dp.Count(),
+				Sum:           dp.Sum(),
+				Scale:         dp.Scale(),
+				ZeroCount:     dp.ZeroCount(),
+				ZeroThreshold: dp.ZeroThreshold(),
+				Positive: tracking.ExponentialBuckets{
+					Offset:       dp.Positive().Offset(),
+					BucketCounts: dp.Positive().BucketCounts().AsRaw(),
 				},
-			}
+				Negative: tracking.ExponentialBuckets{
+					Offset:       dp.Negative().Offset(),
+					BucketCounts: dp.Negative().BucketCounts().AsRaw(),
+				},
+			},
+		}
+		trackingPoint := tracking.MetricPoint{
+			Identity: id,
+			Value:    point,
+		}
+		delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
 
-			trackingPoint := tracking.MetricPoint{
-				Identity: id,
-				Value:    point,
+		if valid {
+			dp.SetStartTimestamp(delta.StartTimestamp)
+			dp.SetCount(delta.ExponentialHistogramPoint.Count)
+			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
+				dp.SetSum(delta.ExponentialHistogramPoint.Sum)
 			}
-			delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
-
-			if valid {
-				dp.SetStartTimestamp(delta.StartTimestamp)
-				dp.SetCount(delta.HistogramValue.Count)
-				if dp.HasSum() && !math.IsNaN(dp.Sum()) {
-					dp.SetSum(delta.HistogramValue.Sum)
-				}
-				dp.BucketCounts().FromRaw(delta.HistogramValue.Buckets)
-				dp.RemoveMin()
-				dp.RemoveMax()
-				return false
+			// Scale and ZeroThreshold are unchanged
+			dp.SetZeroCount(delta.ExponentialHistogramPoint.ZeroCount)
+			dp.Positive().SetOffset(delta.ExponentialHistogramPoint.Positive.Offset)
+			if len(delta.ExponentialHistogramPoint.Positive.BucketCounts) == 0 {
+				pcommon.NewUInt64Slice()
+				dp.Positive().BucketCounts()
 			}
+			dp.Positive().BucketCounts().FromRaw(delta.ExponentialHistogramPoint.Positive.BucketCounts)
+			dp.Negative().SetOffset(delta.ExponentialHistogramPoint.Negative.Offset)
+			dp.Negative().BucketCounts().FromRaw(delta.ExponentialHistogramPoint.Negative.BucketCounts)
+			// Cannot consistently compute min/max
+			dp.RemoveMin()
+			dp.RemoveMax()
+			return false
+		}
 
-			return !valid
-		})
-	}
+		return !valid
+	})
 }
