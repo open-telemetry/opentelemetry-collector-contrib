@@ -130,7 +130,6 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			attr := pcommon.NewMap()
 			err := ParsePayloadIntoAttributes(tt.payload, attr)
 			if tt.expectedErr != nil {
-				require.Error(t, err)
 				require.ErrorIs(t, err, tt.expectedErr)
 			} else {
 				require.NoError(t, err)
