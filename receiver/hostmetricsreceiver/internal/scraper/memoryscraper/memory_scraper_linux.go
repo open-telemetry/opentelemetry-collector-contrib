@@ -64,11 +64,16 @@ func (s *memoryScraper) recordLinuxMemoryDirtyMetric(now pcommon.Timestamp, memI
 }
 
 func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemLinuxMemoryHugePagesFreeDataPoint(now, int64(memInfo.HugePagesFree))
-	s.mb.RecordSystemLinuxMemoryHugePagesPageSizeDataPoint(now, int64(memInfo.HugePageSize*1024)) // convert from kB to bytes
-	s.mb.RecordSystemLinuxMemoryHugePagesReservedDataPoint(now, int64(memInfo.HugePagesRsvd))
-	s.mb.RecordSystemLinuxMemoryHugePagesSurplusDataPoint(now, int64(memInfo.HugePagesSurp))
-	s.mb.RecordSystemLinuxMemoryHugePagesTotalDataPoint(now, int64(memInfo.HugePagesTotal))
+	// Record page size in bytes
+	s.mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(now, int64(memInfo.HugePageSize*1024)) // convert from kB to bytes
+
+	// Record limit (total huge pages available) in number of pages
+	s.mb.RecordSystemMemoryLinuxHugepagesLimitDataPoint(now, int64(memInfo.HugePagesTotal))
+
+	// Record usage with state attributes in number of pages
+	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesFree), metadata.AttributeStateFree)
+	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesRsvd), metadata.AttributeStateReserved)
+	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesSurp), metadata.AttributeStateSurplus)
 }
 
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {

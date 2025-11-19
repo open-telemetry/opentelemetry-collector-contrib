@@ -14,7 +14,18 @@ attributes:
   state:
     description: Breakdown of memory usage by type.
     type: string
-    enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
+    enum:
+      [
+        buffered,
+        cached,
+        inactive,
+        free,
+        slab_reclaimable,
+        slab_unreclaimable,
+        used,
+        reserved,
+        surplus,
+      ]
 
 metrics:
   system.linux.memory.available:
@@ -38,6 +49,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+
   system.memory.limit:
     enabled: false
     description: Total bytes of memory available.
@@ -48,6 +60,50 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+
+  system.memory.linux.hugepages.limit:
+    enabled: false
+    description: Total number of huge pages available.
+    unit: "{pages}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  system.memory.linux.hugepages.page_size:
+    enabled: false
+    description: System huge page size in bytes.
+    unit: By
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  system.memory.linux.hugepages.usage:
+    enabled: false
+    description: Number of huge pages in use by state.
+    unit: "{pages}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [state]
+
+  system.memory.linux.hugepages.utilization:
+    enabled: false
+    description: Percentage of huge pages in use by state.
+    unit: "1"
+    stability:
+      level: development
+    gauge:
+      value_type: double
+    attributes: [state]
 
   system.memory.page_size:
     enabled: false

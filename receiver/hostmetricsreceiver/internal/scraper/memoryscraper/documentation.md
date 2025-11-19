@@ -24,7 +24,7 @@ Bytes of memory in use.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used``, ``reserved``, ``surplus`` | Recommended |
 
 ## Optional Metrics
 
@@ -52,46 +52,6 @@ The amount of dirty memory according to `/proc/meminfo`.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
-### system.linux.memory.huge_pages.free
-
-The number of free huge pages. (Linux only)
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-### system.linux.memory.huge_pages.page_size
-
-A constant value in bytes for the system's configured huge pages page size. (Linux only)
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### system.linux.memory.huge_pages.reserved
-
-The number of reserved huge pages that are not yet allocated. (Linux only)
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-### system.linux.memory.huge_pages.surplus
-
-The number of surplus huge pages. (Linux only)
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-### system.linux.memory.huge_pages.total
-
-The total number of allocated huge pages in the system. (Linux only)
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
 ### system.memory.limit
 
 Total bytes of memory available.
@@ -99,6 +59,50 @@ Total bytes of memory available.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
+
+### system.memory.linux.hugepages.limit
+
+Total number of huge pages available.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {pages} | Sum | Int | Cumulative | false | Development |
+
+### system.memory.linux.hugepages.page_size
+
+System huge page size in bytes.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### system.memory.linux.hugepages.usage
+
+Number of huge pages in use by state.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {pages} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used``, ``reserved``, ``surplus`` | Recommended |
+
+### system.memory.linux.hugepages.utilization
+
+Percentage of huge pages in use by state.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used``, ``reserved``, ``surplus`` | Recommended |
 
 ### system.memory.page_size
 
@@ -120,4 +124,4 @@ Percentage of memory bytes in use.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used``, ``reserved``, ``surplus`` | Recommended |
