@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -45,25 +46,14 @@ var (
 	benchCtx = scrape.ContextWithTarget(context.Background(), benchTarget)
 )
 
-// BenchmarkAppend benchmarks the Append method of the transaction with different label cardinalities.
-// It tests the performance of appending classic metric types (counters, gauges, summaries, histograms)
-// with varying numbers of labels per series.
+// BenchmarkAppend benchmarks the Append method of the transaction.
+// It tests the performance of appending classic metric types (counters, gauges, summaries, histograms).
 func BenchmarkAppend(b *testing.B) {
-	b.Run("LowCardinality", func(b *testing.B) {
-		benchmarkAppend(b, 2)
-	})
-
-	b.Run("MediumCardinality", func(b *testing.B) {
-		benchmarkAppend(b, 50)
-	})
-
-	b.Run("HighCardinality", func(b *testing.B) {
-		benchmarkAppend(b, 200)
-	})
+	benchmarkAppend(b)
 }
 
-func benchmarkAppend(b *testing.B, cardinality int) {
-	labelSets := generateLabelSets(numSeries, cardinality)
+func benchmarkAppend(b *testing.B) {
+	labelSets := generateLabelSets(numSeries, 50)
 	timestamp := int64(1234567890)
 
 	b.ResetTimer()
@@ -77,31 +67,19 @@ func benchmarkAppend(b *testing.B, cardinality int) {
 		for j, ls := range labelSets {
 			value := float64(j)
 			_, err := tx.Append(0, ls, timestamp, value)
-			if err != nil {
-				b.Fatalf("Failed to append series %d: %v", j, err)
-			}
+			assert.NoError(b, err)
 		}
 	}
 }
 
-// BenchmarkAppendHistogram benchmarks the AppendHistogram method of the transaction with different label cardinalities.
-// It tests the performance of appending native histogram metrics with varying numbers of labels per series.
+// BenchmarkAppendHistogram benchmarks the AppendHistogram method of the transaction.
+// It tests the performance of appending native histogram metrics.
 func BenchmarkAppendHistogram(b *testing.B) {
-	b.Run("LowCardinality", func(b *testing.B) {
-		benchmarkAppendHistogram(b, 2)
-	})
-
-	b.Run("MediumCardinality", func(b *testing.B) {
-		benchmarkAppendHistogram(b, 50)
-	})
-
-	b.Run("HighCardinality", func(b *testing.B) {
-		benchmarkAppendHistogram(b, 200)
-	})
+	benchmarkAppendHistogram(b)
 }
 
-func benchmarkAppendHistogram(b *testing.B, cardinality int) {
-	labelSets := generateLabelSets(numSeries, cardinality)
+func benchmarkAppendHistogram(b *testing.B) {
+	labelSets := generateLabelSets(numSeries, 50)
 	histograms := generateNativeHistograms(numSeries)
 	timestamp := int64(1234567890)
 
@@ -116,9 +94,7 @@ func benchmarkAppendHistogram(b *testing.B, cardinality int) {
 
 		for j := range labelSets {
 			_, err := tx.AppendHistogram(0, labelSets[j], timestamp, histograms[j], nil)
-			if err != nil {
-				b.Fatalf("Failed to append histogram series %d: %v", j, err)
-			}
+			assert.NoError(b, err)
 		}
 	}
 }
@@ -130,96 +106,36 @@ func benchmarkAppendHistogram(b *testing.B, cardinality int) {
 // so they are benchmarked in sub-benchmarks.
 func BenchmarkCommit(b *testing.B) {
 	b.Run("ClassicMetrics", func(b *testing.B) {
-		b.Run("LowCardinality", func(b *testing.B) {
-			b.Run("Baseline", func(b *testing.B) {
-				benchmarkCommit(b, false, 2, false, false)
-			})
-
-			b.Run("WithTargetInfo", func(b *testing.B) {
-				benchmarkCommit(b, false, 2, true, false)
-			})
-
-			b.Run("WithScopeInfo", func(b *testing.B) {
-				benchmarkCommit(b, false, 2, false, true)
-			})
+		b.Run("Baseline", func(b *testing.B) {
+			benchmarkCommit(b, false, false, false)
 		})
 
-		b.Run("MediumCardinality", func(b *testing.B) {
-			b.Run("Baseline", func(b *testing.B) {
-				benchmarkCommit(b, false, 50, false, false)
-			})
-
-			b.Run("WithTargetInfo", func(b *testing.B) {
-				benchmarkCommit(b, false, 50, true, false)
-			})
-
-			b.Run("WithScopeInfo", func(b *testing.B) {
-				benchmarkCommit(b, false, 50, false, true)
-			})
+		b.Run("WithTargetInfo", func(b *testing.B) {
+			benchmarkCommit(b, false, true, false)
 		})
 
-		b.Run("HighCardinality", func(b *testing.B) {
-			b.Run("Baseline", func(b *testing.B) {
-				benchmarkCommit(b, false, 200, false, false)
-			})
-
-			b.Run("WithTargetInfo", func(b *testing.B) {
-				benchmarkCommit(b, false, 200, true, false)
-			})
-
-			b.Run("WithScopeInfo", func(b *testing.B) {
-				benchmarkCommit(b, false, 200, false, true)
-			})
+		b.Run("WithScopeInfo", func(b *testing.B) {
+			benchmarkCommit(b, false, false, true)
 		})
 	})
 
 	b.Run("NativeHistogram", func(b *testing.B) {
-		b.Run("LowCardinality", func(b *testing.B) {
-			b.Run("Baseline", func(b *testing.B) {
-				benchmarkCommit(b, true, 2, false, false)
-			})
-
-			b.Run("WithTargetInfo", func(b *testing.B) {
-				benchmarkCommit(b, true, 2, true, false)
-			})
-
-			b.Run("WithScopeInfo", func(b *testing.B) {
-				benchmarkCommit(b, true, 2, false, true)
-			})
+		b.Run("Baseline", func(b *testing.B) {
+			benchmarkCommit(b, true, false, false)
 		})
 
-		b.Run("MediumCardinality", func(b *testing.B) {
-			b.Run("Baseline", func(b *testing.B) {
-				benchmarkCommit(b, true, 50, false, false)
-			})
-
-			b.Run("WithTargetInfo", func(b *testing.B) {
-				benchmarkCommit(b, true, 50, true, false)
-			})
-
-			b.Run("WithScopeInfo", func(b *testing.B) {
-				benchmarkCommit(b, true, 50, false, true)
-			})
+		b.Run("WithTargetInfo", func(b *testing.B) {
+			benchmarkCommit(b, true, true, false)
 		})
 
-		b.Run("HighCardinality", func(b *testing.B) {
-			b.Run("Baseline", func(b *testing.B) {
-				benchmarkCommit(b, true, 200, false, false)
-			})
-
-			b.Run("WithTargetInfo", func(b *testing.B) {
-				benchmarkCommit(b, true, 200, true, false)
-			})
-
-			b.Run("WithScopeInfo", func(b *testing.B) {
-				benchmarkCommit(b, true, 200, false, true)
-			})
+		b.Run("WithScopeInfo", func(b *testing.B) {
+			benchmarkCommit(b, true, false, true)
 		})
 	})
 }
 
-func benchmarkCommit(b *testing.B, useNativeHistograms bool, cardinality int, withTargetInfo, withScopeInfo bool) {
-	labelSets := generateLabelSets(numSeries, cardinality)
+func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScopeInfo bool) {
+	labelSets := generateLabelSets(numSeries, 50)
 	var histograms []*histogram.Histogram
 	if useNativeHistograms {
 		histograms = generateNativeHistograms(numSeries)
@@ -260,9 +176,7 @@ func benchmarkCommit(b *testing.B, useNativeHistograms bool, cardinality int, wi
 
 		// Benchmark: Only measure Commit
 		err := tx.Commit()
-		if err != nil {
-			b.Fatalf("Failed to commit: %v", err)
-		}
+		assert.NoError(b, err)
 	}
 }
 
