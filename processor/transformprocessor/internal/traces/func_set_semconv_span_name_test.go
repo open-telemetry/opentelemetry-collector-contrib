@@ -140,6 +140,15 @@ func TestSemconvSpanName(t *testing.T) {
 			},
 			want: "GET",
 		},
+		{
+			name:                   "HTTP client span with no semconv attributes",
+			currentSpanName:        "GET /users/123",
+			kind:                   ptrace.SpanKindClient,
+			instrumentationLibrary: "hand crafted",
+			addAttributes: func(attrs pcommon.Map) {
+			},
+			want: "GET /users/123",
+		},
 		// DB CLIENT SPANS
 		{
 			name:            "DB client span with db.system and db.operation.name - postgresql",
@@ -327,6 +336,63 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			},
 			want: "publish ecommerce-exchange",
 		},
+		{
+			name:                   "only messaging.operation, server.address, server.port, messaging.system, no messaging.destination.name...",
+			currentSpanName:        "publish ecommerce-exchange",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.operation", "publish")
+				attrs.PutStr("server.address", "rabbitmq_ecommerce")
+				attrs.PutStr("server.port", "5672")
+				attrs.PutStr("messaging.system", "rabbitmq")
+			},
+			want: "publish rabbitmq_ecommerce:5672",
+		},
+		{
+			name:                   "only messaging.operation, server.address, messaging.system, no , server.port, no messaging.destination.name...",
+			currentSpanName:        "publish ecommerce-exchange",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.operation", "publish")
+				attrs.PutStr("server.address", "rabbitmq_ecommerce")
+				attrs.PutStr("messaging.system", "rabbitmq")
+			},
+			want: "publish rabbitmq_ecommerce",
+		},
+		{
+			name:                   "only messaging.destination.name, messaging.system, no messaging.operation, no...",
+			currentSpanName:        "publish ecommerce-exchange",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.destination.name", "ecommerce-exchange")
+				attrs.PutStr("messaging.system", "rabbitmq")
+			},
+			want: "ecommerce-exchange",
+		},
+		{
+			name:                   "only messaging.operation, messaging.system, no messaging.destination.name, no...",
+			currentSpanName:        "publish ecommerce-exchange",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.operation", "publish")
+				attrs.PutStr("messaging.system", "rabbitmq")
+			},
+			want: "publish",
+		},
+		{
+			name:                   "only messaging.system, no messaging.operation, no messaging.destination.name, no...",
+			currentSpanName:        "publish ecommerce-exchange",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.system", "rabbitmq")
+			},
+			want: "rabbitmq",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -334,7 +400,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			span.SetName(tt.currentSpanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
-			assert.Equal(t, tt.want, SemconvSpanName(span))
+			assert.Equal(t, tt.want, deriveSemconvSpanName(span))
 
 			setSemconvSpanName(ottl.NewTestingOptional("original_span_name"), span)
 			assert.Equal(t, tt.want, span.Name())
@@ -486,6 +552,44 @@ func Test_rpcSpanName(t *testing.T) {
 			},
 			want: "oteldemo.AdService/GetAds",
 		},
+		{
+			name:                   "only 'rpc.grpc.method', no 'rpc.grpc.service'",
+			spanName:               "a_service/GetAds",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("rpc.grpc.status_code", 0)
+				attrs.PutStr("rpc.grpc.method", "GetAds")
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("server.address", "ad")
+			},
+			want: "GetAds",
+		},
+		{
+			name:                   "only 'rpc.grpc.service', no 'rpc.grpc.method'",
+			spanName:               "oteldemo.AdService/a_method",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("rpc.grpc.status_code", 0)
+				attrs.PutStr("rpc.grpc.service", "oteldemo.AdService")
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("server.address", "ad")
+			},
+			want: "oteldemo.AdService/*",
+		},
+		{
+			name:                   "only 'rpc.system', no 'rpc.grpc.service', no 'rpc.grpc.method'",
+			spanName:               "oteldemo.AdService/a_method",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("rpc.grpc.status_code", 0)
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("server.address", "ad")
+			},
+			want: "grpc",
+		},
 	}
 
 	for _, tt := range tests {
@@ -544,7 +648,7 @@ func Test_dbSpanName(t *testing.T) {
 			want: "insert product",
 		},
 		{
-			name:                   "Simulate missing db.query.summary and db.collection.name",
+			name:                   "only 'db.namespace', 'db.operation.name', no 'db.query.summary', no 'db.collection.name'",
 			spanName:               "INSERT ecommerce.product to overwrite",
 			instrumentationLibrary: "hand crafted",
 			kind:                   ptrace.SpanKindClient,
@@ -559,7 +663,7 @@ func Test_dbSpanName(t *testing.T) {
 			want: "INSERT ecommerce_db",
 		},
 		{
-			name:                   "Simulate fallback to server.address:server.port",
+			name:                   "only 'db.system.name', 'server.address', 'server.port', 'db.operation.name', no 'db.namespace', no 'db.collection.name'",
 			spanName:               "INSERT ecommerce.product to overwrite",
 			instrumentationLibrary: "hand crafted",
 			kind:                   ptrace.SpanKindClient,
@@ -571,6 +675,39 @@ func Test_dbSpanName(t *testing.T) {
 				attrs.PutInt("server.port", 5432)
 			},
 			want: "INSERT pg_ecommerce_db:5432",
+		},
+		{
+			name:                   "only 'db.system.name', 'server.address', 'server.port', no 'db.operation.name', no 'db.namespace', no 'db.collection.name'",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("server.address", "pg_ecommerce_db")
+				attrs.PutInt("server.port", 5432)
+			},
+			want: "pg_ecommerce_db:5432",
+		},
+		{
+			name:                   "only 'db.system.name', 'server.address', no 'server.port', no 'db.operation.name', no 'db.namespace', no 'db.collection.name'",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("server.address", "pg_ecommerce_db")
+			},
+			want: "pg_ecommerce_db",
+		},
+		{
+			name:                   "only 'db.system.name', no 'server.address', no 'db.operation.name', no 'db.namespace', no 'db.collection.name'",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.system.name", "postgresql")
+			},
+			want: "postgresql",
 		},
 	}
 

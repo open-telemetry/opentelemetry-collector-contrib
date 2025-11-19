@@ -32,13 +32,12 @@ func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 	if !ok {
 		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
 	}
-	semconvVersion := args.SemconvVersion
 	originalSpanNameAttribute := args.OriginalSpanNameAttribute
 
 	// Currently only v1.37.0 is supported
 	supportedSemconvVersion := "1.37.0"
-	if semconvVersion != supportedSemconvVersion {
-		return nil, fmt.Errorf("unsupported semconv version: %s, supported version: %s", semconvVersion, supportedSemconvVersion)
+	if args.SemconvVersion != supportedSemconvVersion {
+		return nil, fmt.Errorf("unsupported semconv version: %s, supported version: %s", args.SemconvVersion, supportedSemconvVersion)
 	}
 
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
@@ -49,14 +48,14 @@ func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 
 func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) {
 	originalSpanName := span.Name()
-	semConvSpanName := SemconvSpanName(span)
+	semConvSpanName := deriveSemconvSpanName(span)
 	span.SetName(semConvSpanName)
 	if originalSpanName != semConvSpanName && originalSpanNameAttribute.GetOr("") != "" {
 		span.Attributes().PutStr(originalSpanNameAttribute.Get(), originalSpanName)
 	}
 }
 
-func SemconvSpanName(span ptrace.Span) string {
+func deriveSemconvSpanName(span ptrace.Span) string {
 	switch span.Kind() {
 	case ptrace.SpanKindServer:
 		spanName := httpSpanName(span, semconv.HTTPRouteKey)
