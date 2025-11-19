@@ -906,6 +906,49 @@ func TestTranslation(t *testing.T) {
 			},
 		},
 		{
+			testCase:   "TranslateSegmentWithParentId",
+			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "segmentWithParentId.txt"),
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
+				return map[string]any{
+					string(conventions.ServiceNameKey):   *seg.Name,
+					string(conventions.CloudProviderKey): "unknown",
+				}
+			},
+			expectedRecord: types.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int32(1),
+				SegmentsRejectedCount: aws.Int32(0),
+			},
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
+				attrs := pcommon.NewMap()
+				res := perSpanProperties{
+					traceID:      *seg.TraceID,
+					spanID:       *seg.ID,
+					parentSpanID: seg.ParentID,
+					name:         *seg.Name,
+					startTimeSec: *seg.StartTime,
+					endTimeSec:   seg.EndTime,
+					spanKind:     ptrace.SpanKindServer,
+					spanStatus: spanSt{
+						code: ptrace.StatusCodeUnset,
+					},
+					attrs: attrs,
+				}
+				return []perSpanProperties{res}
+				// return nil
+			},
+			verification: func(testCase string,
+				_ *awsxray.Segment,
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
+				assert.NoError(t, err, testCase+": translation should've succeeded")
+				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
+					testCase+": one segment should translate to 1 ResourceSpans")
+
+				actualRs := actualTraces.ResourceSpans().At(0)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
+			},
+		},
+		{
 			testCase:                  "TranslateJsonUnmarshallFailed",
 			expectedUnmarshallFailure: true,
 			samplePath:                filepath.Join("../../../../internal/aws/xray", "testdata", "minCauseIsInvalid.txt"),
