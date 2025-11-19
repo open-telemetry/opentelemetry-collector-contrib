@@ -6,6 +6,7 @@ package awslambdareceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -82,7 +83,18 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 	}
 
 	if err := s.consumer(ctx, parsedEvent, data); err != nil {
-		// consumer errors are marked for retrying
+		// If permanent, return as-is (don't retry)
+		if consumererror.IsPermanent(err) {
+			return err
+		}
+
+		// If already wrapped as a consumererror, return as-is
+		var consumerErr *consumererror.Error
+		if errors.As(err, &consumerErr) {
+			return err
+		}
+
+		// Plain error - wrap as retryable
 		return consumererror.NewRetryableError(err)
 	}
 

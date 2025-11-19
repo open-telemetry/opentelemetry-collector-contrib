@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
@@ -254,6 +255,76 @@ func TestSetObservedTimestampForAllLogs(t *testing.T) {
 				require.Equal(t, expectedTimestamp, logRecord.ObservedTimestamp())
 			}
 		}
+	}
+}
+
+func TestConsumerErrorHandling(t *testing.T) {
+	t.Parallel()
+
+	mockEvent := events.S3Event{
+		Records: []events.S3EventRecord{
+			{
+				EventSource: "aws:s3",
+				S3: events.S3Entity{
+					Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+					Object: events.S3Object{
+						Key:  "test-file.txt",
+						Size: 10,
+					},
+				},
+			},
+		},
+	}
+
+	tests := map[string]struct {
+		consumerErr     error
+		expectRetryable bool
+		expectPermanent bool
+	}{
+		"plain_error": {
+			consumerErr:     errors.New("plain error"),
+			expectRetryable: true,
+			expectPermanent: false,
+		},
+		"permanent_error": {
+			consumerErr:     consumererror.NewPermanent(errors.New("permanent error")),
+			expectRetryable: false,
+			expectPermanent: true,
+		},
+		"etryable_error": {
+			consumerErr:     consumererror.NewRetryableError(errors.New("already retryable")),
+			expectRetryable: true,
+			expectPermanent: false,
+		},
+	}
+
+	ctr := gomock.NewController(t)
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			s3Service := internal.NewMockS3Service(ctr)
+			s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte(mockContent), nil).Times(1)
+
+			// Consumer that returns the test error
+			logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+				return test.consumerErr
+			}
+
+			handler := newS3Handler(s3Service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, logsConsumer)
+
+			event, err := json.Marshal(mockEvent)
+			require.NoError(t, err)
+
+			resultErr := handler.handle(context.Background(), event)
+			require.Error(t, resultErr)
+
+			// Check if the error is permanent
+			if test.expectPermanent {
+				require.True(t, consumererror.IsPermanent(resultErr), "expected permanent error")
+			} else {
+				require.False(t, consumererror.IsPermanent(resultErr), "expected non-permanent error")
+			}
+		})
 	}
 }
 
