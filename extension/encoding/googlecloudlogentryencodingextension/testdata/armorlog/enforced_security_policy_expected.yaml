@@ -37,6 +37,12 @@ resourceLogs:
               - key: gcp.load_balancing.status.details
                 value:
                   stringValue: denied_by_security_policy
+              - key: gcp.load_balancing.cache_decision
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: RESPONSE_HAS_CONTENT_TYPE
+                      - stringValue: CACHE_MODE_USE_ORIGIN_HEADERS
               - key: gcp.load_balancing.backend_target_project_number
                 value:
                   stringValue: projects/8560181848

@@ -1,14 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Find more information about Armor Logs:
-// https://docs.cloud.google.com/armor/docs/request-logging
-
-package armorlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
+package armorlog
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 
 	gojson "github.com/goccy/go-json"
@@ -21,318 +16,220 @@ import (
 const (
 	LoadBalancerLogSuffix = "requests"
 
-	armorLogType = "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry"
+	loadBalancerLogType = "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry"
 
 	// gcpLoadBalancingStatusDetails holds a textual description of the response code
 	gcpLoadBalancingStatusDetails = "gcp.load_balancing.status.details"
-
+	// gcpLoadBalancingScheme holds a string that describes which load balancing scheme was used to route the request.
+	gcpLoadBalancingScheme = "gcp.load_balancing.scheme"
 	// gcpLoadBalancingBackendTargetProjectNumber holds the project number of the backend target
 	gcpLoadBalancingBackendTargetProjectNumber = "gcp.load_balancing.backend_target_project_number"
 
-	// gcpArmorSecurityPolicyType holds security policy type
-	gcpArmorSecurityPolicyType = "gcp.armor.security_policy.type"
+	// Request Metadata fields
+	// gcpLoadBalancingProxyStatus holds why the internal Application Load Balancer returned an HTTP error code.
+	gcpLoadBalancingProxyStatus = "gcp.load_balancing.proxy_status"
+	// gcpLoadBalancingOverrideResponseCode holds the override response code applied to the response sent to the client.
+	gcpLoadBalancingOverrideResponseCode = "gcp.load_balancing.override_response_code"
+	// gcpLoadBalancingErrorService holds the backend service that provided the custom error response.
+	gcpLoadBalancingErrorService = "gcp.load_balancing.error_service"
+	// gcpLoadBalancingCacheDecision holds the cache decision made by the load balancer.
+	gcpLoadBalancingCacheDecision = "gcp.load_balancing.cache_decision"
+	// gcpLoadBalancingBackendNetworkName specifies the VPC network of the backend.
+	gcpLoadBalancingBackendNetworkName = "gcp.load_balancing.backend_network_name"
 
-	// Security policy base attributes
-	// gcpArmorSecurityPolicyName holds the security policy rule that was enforced
-	gcpArmorSecurityPolicyName = "gcp.armor.security_policy.name"
-	// gcpArmorSecurityPolicyPriority holds a numerical priority of the matching rule in the security policy
-	gcpArmorSecurityPolicyPriority = "gcp.armor.security_policy.priority"
-	// gcpArmorSecurityPolicyConfiguredAction holds  the name of the configured action in the matching rule
-	gcpArmorSecurityPolicyConfiguredAction = "gcp.armor.security_policy.configured_action"
-	// gcpArmorSecurityPolicyOutcome holds the outcome of executing the configured action
-	gcpArmorSecurityPolicyOutcome = "gcp.armor.security_policy.outcome"
-
-	// Rate limit action attributes
-	// gcpArmorRateLimitActionKey holds the rate limit key value (up to 36 bytes)
-	gcpArmorRateLimitActionKey = "gcp.armor.security_policy.rate_limit.action.key"
-	// gcpArmorRateLimitActionOutcome holds the outcome of the rate limit action
-	gcpArmorRateLimitActionOutcome = "gcp.armor.security_policy.rate_limit.action.outcome"
-
-	// Extended attributes
-	// gcpArmorWAFRuleExpressionIDs holds the IDs of all preconfigured WAF rule expressions that triggered the rule
-	gcpArmorWAFRuleExpressionIDs = "gcp.armor.security_policy.preconfigured.expr_ids"
-	// gcpArmorThreatIntelligenceCategories holds information about the matched IP address lists from Google Threat Intelligence
-	gcpArmorThreatIntelligenceCategories = "gcp.armor.security_policy.threat_intelligence.categories"
-	// gcpArmorAddressGroupNames holds the names of the matched address groups
-	gcpArmorAddressGroupNames = "gcp.armor.security_policy.address_group.names"
-
-	// Enforced policy attributes
-	// gcpArmorAdaptiveProtectionAutoDeployAlertID holds the alert ID of the events that Adaptive Protection detected
-	gcpArmorAdaptiveProtectionAutoDeployAlertID = "gcp.armor.security_policy.adaptive_protection.auto_deploy.alert_id"
-
-	// Security policy request data attributes
-	// gcpArmorRecaptchaActionTokenScore holds the legitimacy score embedded in a of the reCAPTCHA action-token
-	gcpArmorRecaptchaActionTokenScore = "gcp.armor.request_data.recaptcha_action_token.score" // #nosec G101 -- This is not a credential but an attribute name
-	// gcpArmorRecaptchaSessionTokenScore holds the legitimacy score embedded in a of the reCAPTCHA session-token
-	gcpArmorRecaptchaSessionTokenScore = "gcp.armor.request_data.recaptcha_session_token.score" // #nosec G101
-	// gcpArmorUserIPInfoSource holds a field that is typically the header from which the user IP was resolved
-	gcpArmorUserIPInfoSource = "gcp.armor.request_data.user_ip.source"
-	// gcpArmorRemoteIPInfoAsn holds the five-digit autonomous system number (ASN) for the IP address
-	gcpArmorRemoteIPInfoAsn = "gcp.armor.request_data.remote_ip.asn"
-	// gcpArmorTLSJa4Fingerprint holds a JA4 TTL/SSL fingerprint if the client connects using HTTPS, HTTP/2, or HTTP/3
-	gcpArmorTLSJa4Fingerprint = "tls.client.ja4"
+	// Security/Authentication information
+	// gcpLoadBalancingAuthPolicyInfo stores information of the overall authorization policy result.
+	gcpLoadBalancingAuthPolicyInfoResult = "gcp.load_balancing.auth_policy_info.result"
+	// gcpLoadBalancingAuthPolicyInfoPolicies holds the list of policies that match the request.
+	gcpLoadBalancingAuthPolicyInfoPolicies = "gcp.load_balancing.auth_policy_info.policies"
+	// gcpLoadBalancingAuthPolicyName holds the name of the authorization policy.
+	gcpLoadBalancingAuthPolicyName = "name"
+	// gcpLoadBalancingAuthPolicyResult holds the result of the authorization policy.
+	gcpLoadBalancingAuthPolicyResult = "result"
+	// gcpLoadBalancingAuthPolicyDetails holds the details of the authorization policy.
+	gcpLoadBalancingAuthPolicyDetails = "details"
+	// gcpLoadBalancingTlsInfo specifies the TLS metadata for the connection between the client and the load balancer
+	gcpLoadBalancingTlsInfo = "gcp.load_balancing.tls_info"
+	// gcpLoadBalancingTlsEarlyDataRequest specifies if the request includes early data in the TLS handshake.
+	gcpLoadBalancingTlsEarlyDataRequest = "tls.early_data_request"
+	// gcpLoadBalancingMtlsInfo specifies the mTLS metadata for the connection between the client and the load balancer.
+	gcpLoadBalancingMtlsInfo = "gcp.load_balancing.mtls"
+	// gcpLoadBalancingMtlsClientCertPresent is true if the client has provided a certificate during the TLS handshake.
+	gcpLoadBalancingMtlsClientCertPresent = "mtls.client.cert_present"
+	// gcpLoadBalancingMtlsClientCertChainVerified is true if the client certificate chain is verified against a configured TrustStore
+	gcpLoadBalancingMtlsClientCertChainVerified = "mtls.client.cert_chain_verified"
+	// gcpLoadBalancingMtlsClientCertError holds the predefined string representing the error conditions.
+	gcpLoadBalancingMtlsClientCertError = "mtls.client.cert_error"
+	// gcpLoadBalancingMtlsClientCertSerialNumber holds The serial number of the client certificate
+	gcpLoadBalancingMtlsClientCertSerialNumber = "mtls.client.cert_serial_number"
+	// gcpLoadBalancingMtlsClientCertSpiffeID holds the The SPIFFE ID from the subject alternative name (SAN) field.
+	gcpLoadBalancingMtlsClientCertSpiffeID = "mtls.client.cert_spiffe_id"
+	// gcpLoadBalancingMtlsClientCertUriSans holds the comma-separated Base64-encoded list of the SAN extensions of type URI.
+	gcpLoadBalancingMtlsClientCertUriSans = "mtls.client.cert_uri_sans"
+	// gcpLoadBalancingMtlsClientCertDnsnameSans holds the comma-separated Base64-encoded list of the SAN extensions of type DNSName.
+	gcpLoadBalancingMtlsClientCertDnsnameSans = "mtls.client.cert_dnsname_sans"
+	// gcpLoadBalancingMtlsClientCertLeaf holds the client leaf certificate for an established mTLS connection where the certificate passed validation.
+	gcpLoadBalancingMtlsClientCertLeaf = "mtls.client.cert_leaf"
 )
 
-const (
-	// Security policy type string values
-	securityPolicyTypePreviewEdge  = "previewEdgeSecurityPolicy"
-	securityPolicyTypeEnforcedEdge = "enforcedEdgeSecurityPolicy"
-	securityPolicyTypePreview      = "previewSecurityPolicy"
-	securityPolicyTypeEnforced     = "enforcedSecurityPolicy"
-)
+type loadbalancerlog struct {
+	Type string `json:"@type"`
 
-var (
-	securityPolicyTypeEnforcedBytes     = []byte(securityPolicyTypeEnforced)
-	securityPolicyTypePreviewBytes      = []byte(securityPolicyTypePreview)
-	securityPolicyTypeEnforcedEdgeBytes = []byte(securityPolicyTypeEnforcedEdge)
-	securityPolicyTypePreviewEdgeBytes  = []byte(securityPolicyTypePreviewEdge)
-)
+	// Request Metadata fields
+	StatusDetails              string   `json:"statusDetails"`
+	RemoteIP                   string   `json:"remoteIp"`
+	BackendTargetProjectNumber string   `json:"backendTargetProjectNumber"`
+	ProxyStatus                string   `json:"proxyStatus"`
+	OverrideResponseCode       *int64   `json:"overrideResponseCode"`
+	LoadBalancingScheme        string   `json:"loadBalancingScheme"`
+	ErrorService               string   `json:"errorService"`
+	BackendNetworkName         string   `json:"backendNetworkName"`
+	CacheDecision              []string `json:"cacheDecision"`
 
-type armorlog struct {
-	Type          string `json:"@type"`
-	StatusDetails string `json:"statusDetails"`
+	// Security/Authentication information
+	AuthPolicyInfo *authPolicyInfo `json:"authPolicyInfo"`
+	TlsInfo        *tlsInfo        `json:"tls"`
+	MtlsInfo       *mtlsInfo       `json:"mtls"`
 
-	// Request metadata fields
-	BackendTargetProjectNumber string                     `json:"backendTargetProjectNumber"`
-	RemoteIP                   string                     `json:"remoteIp"`
-	CacheDecision              []string                   `json:"cacheDecision"`
-	SecurityPolicyRequestData  *securityPolicyRequestData `json:"securityPolicyRequestData"`
+	// ToDo: Add support for OrcaLoadReport
 
-	// Security policy fields: exactly one must be non-nil.
-	EnforcedSecurityPolicy     *enforcedSecurityPolicy `json:"enforcedSecurityPolicy"`
-	PreviewSecurityPolicy      *securityPolicyExtended `json:"previewSecurityPolicy"`
-	EnforcedEdgeSecurityPolicy *securityPolicyBase     `json:"enforcedEdgeSecurityPolicy"`
-	PreviewEdgeSecurityPolicy  *securityPolicyBase     `json:"previewEdgeSecurityPolicy"`
+	// Embed Cloud Armor log fields
+	armorlog
 }
 
-type securityPolicyRequestData struct {
-	RecaptchaActionToken  *recaptchaToken `json:"recaptchaActionToken"`
-	RecaptchaSessionToken *recaptchaToken `json:"recaptchaSessionToken"`
-	UserIPInfo            *userIPInfo     `json:"userIpInfo"`
-	RemoteIPInfo          *remoteIPInfo   `json:"remoteIpInfo"`
-	TLSJa4Fingerprint     string          `json:"tlsJa4Fingerprint"`
-	TLSJa3Fingerprint     string          `json:"tlsJa3Fingerprint"`
+type authPolicyInfo struct {
+	OverallResult string       `json:"result"`
+	Policies      []policyInfo `json:"policies"`
 }
 
-type recaptchaToken struct {
-	Score float64 `json:"score"`
+type policyInfo struct {
+	Name    string `json:"name"`
+	Result  string `json:"result"`
+	Details string `json:"details"`
 }
 
-type userIPInfo struct {
-	Source    string `json:"source"`
-	IPAddress string `json:"ipAddress"`
+type tlsInfo struct {
+	EarlyDataRequest bool   `json:"earlyDataRequest"`
+	Protocol         string `json:"protocol"`
+	Cipher           string `json:"cipher"`
 }
 
-type remoteIPInfo struct {
-	IPAddress  string `json:"ipAddress"`
-	RegionCode string `json:"regionCode"`
-	ASN        *int64 `json:"asn"`
+type mtlsInfo struct {
+	ClientCertPresent           *bool  `json:"clientCertPresent"`
+	ClientCertChainVerified     *bool  `json:"clientCertChainVerified"`
+	ClientCertError             string `json:"clientCertError"`
+	ClientCertSha256Fingerprint string `json:"clientCertSha256Fingerprint"`
+	ClientCertSerialNumber      string `json:"clientCertSerialNumber"`
+	ClientCertValidStartTime    string `json:"clientCertValidStartTime"`
+	ClientCertValidEndTime      string `json:"clientCertValidEndTime"`
+	ClientCertSpiffeID          string `json:"clientCertSpiffeId"`
+	ClientCertUriSans           string `json:"clientCertUriSans"`
+	ClientCertDnsnameSans       string `json:"clientCertDnsnameSans"`
+	ClientCertIssuerDn          string `json:"clientCertIssuerDn"`
+	ClientCertSubjectDn         string `json:"clientCertSubjectDn"`
+	ClientCertLeaf              string `json:"clientCertLeaf"`
+	ClientCertChain             string `json:"clientCertChain"`
 }
 
-type securityPolicyBase struct {
-	Name             string `json:"name"`
-	Priority         *int64 `json:"priority"`
-	ConfiguredAction string `json:"configuredAction"`
-	Outcome          string `json:"outcome"`
-}
-
-type securityPolicyExtended struct {
-	securityPolicyBase
-	RateLimitAction      *rateLimitAction    `json:"rateLimitAction"`
-	PreconfiguredExprIDs []string            `json:"preconfiguredExprIds"`
-	ThreatIntelligence   *threatIntelligence `json:"threatIntelligence"`
-	AddressGroup         *addressGroup       `json:"addressGroup"`
-}
-
-type enforcedSecurityPolicy struct {
-	securityPolicyExtended
-	AdaptiveProtection *adaptiveProtection `json:"adaptiveProtection"`
-}
-
-type rateLimitAction struct {
-	Key     string `json:"key"`
-	Outcome string `json:"outcome"`
-}
-
-type adaptiveProtection struct {
-	AutoDeployAlertID string `json:"autoDeployAlertId"`
-}
-
-type threatIntelligence struct {
-	Categories []string `json:"categories"`
-}
-
-type addressGroup struct {
-	Names []string `json:"names"`
-}
-
-func isValid(log armorlog) error {
-	if log.Type != armorLogType {
-		return fmt.Errorf("expected @type to be %s, got %s", armorLogType, log.Type)
+func isValid(log *loadbalancerlog) error {
+	if log.Type != loadBalancerLogType {
+		return fmt.Errorf("expected @type to be %s, got %s", loadBalancerLogType, log.Type)
 	}
-
-	if log.EnforcedSecurityPolicy == nil &&
-		log.PreviewSecurityPolicy == nil &&
-		log.EnforcedEdgeSecurityPolicy == nil &&
-		log.PreviewEdgeSecurityPolicy == nil {
-		return errors.New("at least one of the security policy fields must be non-nil")
-	}
-
 	return nil
 }
 
-func handleRecaptchaTokens(data *securityPolicyRequestData, attr pcommon.Map) {
-	if data.RecaptchaActionToken != nil {
-		attr.PutDouble(gcpArmorRecaptchaActionTokenScore, data.RecaptchaActionToken.Score)
-	}
-
-	if data.RecaptchaSessionToken != nil {
-		attr.PutDouble(gcpArmorRecaptchaSessionTokenScore, data.RecaptchaSessionToken.Score)
-	}
-}
-
-func handleUserIPInfo(info *userIPInfo, attr pcommon.Map) {
-	if info == nil {
-		return
-	}
-
-	shared.PutStr(gcpArmorUserIPInfoSource, info.Source, attr)
-	shared.PutStr(string(semconv.ClientAddressKey), info.IPAddress, attr)
-}
-
-func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) error {
-	if info == nil {
-		return nil
-	}
-
-	shared.PutStr(string(semconv.GeoRegionISOCodeKey), info.RegionCode, attr)
-	shared.PutInt(gcpArmorRemoteIPInfoAsn, info.ASN, attr)
-
-	if _, err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), info.IPAddress, attr); err != nil {
-		return fmt.Errorf("error setting security policy attribute: %w", err)
-	}
-
-	return nil
-}
-
-func handleTLSFingerprints(data *securityPolicyRequestData, attr pcommon.Map) {
-	shared.PutStr(gcpArmorTLSJa4Fingerprint, data.TLSJa4Fingerprint, attr)
-	shared.PutStr(string(semconv.TLSClientJa3Key), data.TLSJa3Fingerprint, attr)
-}
-
-func handleSecurityPolicyRequestData(data *securityPolicyRequestData, attr pcommon.Map) error {
-	if data == nil {
-		return nil
-	}
-
-	handleRecaptchaTokens(data, attr)
-	handleUserIPInfo(data.UserIPInfo, attr)
-	handleTLSFingerprints(data, attr)
-	return handleRemoteIPInfo(data.RemoteIPInfo, attr)
-}
-
-func handleRateLimitAction(rl *rateLimitAction, attr pcommon.Map) {
-	if rl == nil {
-		return
-	}
-
-	shared.PutStr(gcpArmorRateLimitActionKey, rl.Key, attr)
-	shared.PutStr(gcpArmorRateLimitActionOutcome, rl.Outcome, attr)
-}
-
-func handleAddressGroup(ag *addressGroup, attr pcommon.Map) {
-	if ag != nil && len(ag.Names) > 0 {
-		namesSlice := attr.PutEmptySlice(gcpArmorAddressGroupNames)
-		for _, name := range ag.Names {
-			namesSlice.AppendEmpty().SetStr(name)
-		}
-	}
-}
-
-func handleThreatIntelligence(ti *threatIntelligence, attr pcommon.Map) {
-	if ti != nil && len(ti.Categories) > 0 {
-		categoriesSlice := attr.PutEmptySlice(gcpArmorThreatIntelligenceCategories)
-		for _, category := range ti.Categories {
-			categoriesSlice.AppendEmpty().SetStr(category)
-		}
-	}
-}
-
-func handleSecurityPolicyBase(sp *securityPolicyBase, attr pcommon.Map) {
-	shared.PutStr(gcpArmorSecurityPolicyName, sp.Name, attr)
-	shared.PutInt(gcpArmorSecurityPolicyPriority, sp.Priority, attr)
-	shared.PutStr(gcpArmorSecurityPolicyConfiguredAction, sp.ConfiguredAction, attr)
-	shared.PutStr(gcpArmorSecurityPolicyOutcome, sp.Outcome, attr)
-}
-
-func handleSecurityPolicyExtended(sp *securityPolicyExtended, attr pcommon.Map) {
-	handleSecurityPolicyBase(&sp.securityPolicyBase, attr)
-
-	handleRateLimitAction(sp.RateLimitAction, attr)
-	handleThreatIntelligence(sp.ThreatIntelligence, attr)
-	handleAddressGroup(sp.AddressGroup, attr)
-
-	if len(sp.PreconfiguredExprIDs) > 0 {
-		exprIDsSlice := attr.PutEmptySlice(gcpArmorWAFRuleExpressionIDs)
-		for _, id := range sp.PreconfiguredExprIDs {
-			exprIDsSlice.AppendEmpty().SetStr(id)
-		}
-	}
-}
-
-func handleEnforcedSecurityPolicy(sp *enforcedSecurityPolicy, attr pcommon.Map) {
-	handleSecurityPolicyExtended(&sp.securityPolicyExtended, attr)
-
-	if sp.AdaptiveProtection != nil {
-		shared.PutStr(gcpArmorAdaptiveProtectionAutoDeployAlertID, sp.AdaptiveProtection.AutoDeployAlertID, attr)
-	}
-}
-
-func ContainsSecurityPolicyFields(jsonPayload gojson.RawMessage) bool {
-	// Check for the presence of key armor log field names in the raw JSON without unmarshaling
-	// to avoid unnecessary overhead for non-armor load balancer logs.
-	return bytes.Contains(jsonPayload, securityPolicyTypeEnforcedBytes) ||
-		bytes.Contains(jsonPayload, securityPolicyTypePreviewBytes) ||
-		bytes.Contains(jsonPayload, securityPolicyTypeEnforcedEdgeBytes) ||
-		bytes.Contains(jsonPayload, securityPolicyTypePreviewEdgeBytes)
-}
-
-func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
-	var log armorlog
-	if err := gojson.Unmarshal(payload, &log); err != nil {
-		return fmt.Errorf("failed to unmarshal Armor log: %w", err)
-	}
-
-	if err := isValid(log); err != nil {
-		return fmt.Errorf("invalid Armor log: %w", err)
-	}
-
-	shared.PutStr(gcpLoadBalancingStatusDetails, log.StatusDetails, attr)
-
-	// Handle request metadata fields
-	shared.PutStr(gcpLoadBalancingBackendTargetProjectNumber, log.BackendTargetProjectNumber, attr)
+func handleRequestMetadata(log *loadbalancerlog, attr pcommon.Map) error {
 	if _, err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), log.RemoteIP, attr); err != nil {
 		return fmt.Errorf("error setting security policy attribute: %w", err)
 	}
 
-	// Handle security policy request data (all nested fields)
-	if err := handleSecurityPolicyRequestData(log.SecurityPolicyRequestData, attr); err != nil {
-		return fmt.Errorf("error handling Security Policy Request Data: %w", err)
+	shared.PutStr(gcpLoadBalancingStatusDetails, log.StatusDetails, attr)
+	shared.PutStr(gcpLoadBalancingBackendTargetProjectNumber, log.BackendTargetProjectNumber, attr)
+	shared.PutStr(gcpLoadBalancingProxyStatus, log.ProxyStatus, attr)
+	shared.PutInt(gcpLoadBalancingOverrideResponseCode, log.OverrideResponseCode, attr)
+	shared.PutStr(gcpLoadBalancingScheme, log.LoadBalancingScheme, attr)
+	shared.PutStr(gcpLoadBalancingErrorService, log.ErrorService, attr)
+	shared.PutStr(gcpLoadBalancingBackendNetworkName, log.BackendNetworkName, attr)
+
+	if len(log.CacheDecision) > 0 {
+		cacheDecisions := attr.PutEmptySlice(gcpLoadBalancingCacheDecision)
+		for _, decision := range log.CacheDecision {
+			cacheDecisions.AppendEmpty().SetStr(decision)
+		}
+	}
+	return nil
+}
+
+func handleAuthPolicyInfo(authPolicyInfo *authPolicyInfo, attr pcommon.Map) {
+	if authPolicyInfo == nil {
+		return
+	}
+	shared.PutStr(gcpLoadBalancingAuthPolicyInfoResult, authPolicyInfo.OverallResult, attr)
+
+	if len(authPolicyInfo.Policies) > 0 {
+		policiesSlice := attr.PutEmptySlice(gcpLoadBalancingAuthPolicyInfoPolicies)
+		for _, policy := range authPolicyInfo.Policies {
+			policyMap := policiesSlice.AppendEmpty().SetEmptyMap()
+			shared.PutStr(gcpLoadBalancingAuthPolicyName, policy.Name, policyMap)
+			shared.PutStr(gcpLoadBalancingAuthPolicyResult, policy.Result, policyMap)
+			shared.PutStr(gcpLoadBalancingAuthPolicyDetails, policy.Details, policyMap)
+		}
+	}
+}
+
+func handleTlsInfo(tlsInfo *tlsInfo, attr pcommon.Map) {
+	if tlsInfo == nil {
+		return
+	}
+	tlsMap := attr.PutEmptyMap(gcpLoadBalancingTlsInfo)
+	tlsMap.PutBool(gcpLoadBalancingTlsEarlyDataRequest, tlsInfo.EarlyDataRequest)
+	shared.PutStr(string(semconv.TLSProtocolNameKey), tlsInfo.Protocol, tlsMap)
+	shared.PutStr(string(semconv.TLSCipherKey), tlsInfo.Cipher, tlsMap)
+}
+
+func handleMtlsInfo(mtlsInfo *mtlsInfo, attr pcommon.Map) {
+	if mtlsInfo == nil {
+		return
 	}
 
-	switch {
-	case log.PreviewEdgeSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreviewEdge)
-		handleSecurityPolicyBase(log.PreviewEdgeSecurityPolicy, attr)
-	case log.EnforcedEdgeSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypeEnforcedEdge)
-		handleSecurityPolicyBase(log.EnforcedEdgeSecurityPolicy, attr)
-	case log.PreviewSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreview)
-		handleSecurityPolicyExtended(log.PreviewSecurityPolicy, attr)
-	case log.EnforcedSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypeEnforced)
-		handleEnforcedSecurityPolicy(log.EnforcedSecurityPolicy, attr)
+	mtlsMap := attr.PutEmptyMap(gcpLoadBalancingMtlsInfo)
+	shared.PutBool(gcpLoadBalancingMtlsClientCertPresent, mtlsInfo.ClientCertPresent, mtlsMap)
+	shared.PutBool(gcpLoadBalancingMtlsClientCertChainVerified, mtlsInfo.ClientCertChainVerified, mtlsMap)
+	shared.PutStr(gcpLoadBalancingMtlsClientCertError, mtlsInfo.ClientCertError, mtlsMap)
+	shared.PutStr(string(semconv.TLSClientHashSha256Key), mtlsInfo.ClientCertSha256Fingerprint, mtlsMap)
+	shared.PutStr(gcpLoadBalancingMtlsClientCertSerialNumber, mtlsInfo.ClientCertSerialNumber, mtlsMap)
+	shared.PutStr(string(semconv.TLSClientNotBeforeKey), mtlsInfo.ClientCertValidStartTime, mtlsMap)
+	shared.PutStr(string(semconv.TLSClientNotAfterKey), mtlsInfo.ClientCertValidEndTime, mtlsMap)
+	shared.PutStr(gcpLoadBalancingMtlsClientCertSpiffeID, mtlsInfo.ClientCertSpiffeID, mtlsMap)
+	shared.PutStr(gcpLoadBalancingMtlsClientCertUriSans, mtlsInfo.ClientCertUriSans, mtlsMap)
+	shared.PutStr(gcpLoadBalancingMtlsClientCertDnsnameSans, mtlsInfo.ClientCertDnsnameSans, mtlsMap)
+	shared.PutStr(string(semconv.TLSClientIssuerKey), mtlsInfo.ClientCertIssuerDn, mtlsMap)
+	shared.PutStr(string(semconv.TLSClientSubjectKey), mtlsInfo.ClientCertSubjectDn, mtlsMap)
+	shared.PutStr(gcpLoadBalancingMtlsClientCertLeaf, mtlsInfo.ClientCertLeaf, mtlsMap)
+	shared.PutStr(string(semconv.TLSClientCertificateChainKey), mtlsInfo.ClientCertChain, mtlsMap)
+}
+
+func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
+	var log loadbalancerlog
+	if err := gojson.Unmarshal(payload, &log); err != nil {
+		return fmt.Errorf("failed to unmarshal Load Balancer log: %w", err)
+	}
+
+	if err := isValid(&log); err != nil {
+		return err
+	}
+
+	if err := handleRequestMetadata(&log, attr); err != nil {
+		return fmt.Errorf("error handling request metadata: %w", err)
+	}
+
+	handleAuthPolicyInfo(log.AuthPolicyInfo, attr)
+	handleTlsInfo(log.TlsInfo, attr)
+	handleMtlsInfo(log.MtlsInfo, attr)
+
+	// Handle embedded Armor log fields
+	if err := handleArmorLogAttributes(&log.armorlog, attr); err != nil {
+		return fmt.Errorf("error handling embedded Armor log fields: %w", err)
 	}
 
 	return nil

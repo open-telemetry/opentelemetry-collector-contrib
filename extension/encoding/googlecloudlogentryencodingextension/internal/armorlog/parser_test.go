@@ -6,7 +6,7 @@ package armorlog
 import (
 	"testing"
 
-	gojson "github.com/goccy/go-json"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
@@ -14,601 +14,388 @@ import (
 
 func int64ptr(i int64) *int64 { return &i }
 
-func TestContainsSecurityPolicyFields(t *testing.T) {
+func boolptr(v bool) *bool { return &v }
+
+func TestHandleRequestMetadata(t *testing.T) {
 	tests := []struct {
-		name     string
-		payload  string
-		expected bool
+		name        string
+		log         *loadbalancerlog
+		expected    map[string]any
+		expectedErr string
 	}{
 		{
-			name:     "contains enforcedSecurityPolicy",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","enforcedSecurityPolicy":{"name":"test"}}`,
-			expected: true,
+			name: "all fields populated",
+			log: &loadbalancerlog{
+				StatusDetails:              "ok",
+				RemoteIP:                   "192.168.1.100",
+				BackendTargetProjectNumber: "projects/12345",
+				ProxyStatus:                "proxy_ok",
+				OverrideResponseCode:       int64ptr(200),
+				LoadBalancingScheme:        "EXTERNAL",
+				ErrorService:               "error-svc",
+				BackendNetworkName:         "default",
+				CacheDecision:              []string{"CACHE_HIT", "CACHE_MISS"},
+			},
+			expected: map[string]any{
+				string(semconv.NetworkPeerAddressKey):      "192.168.1.100",
+				gcpLoadBalancingStatusDetails:              "ok",
+				gcpLoadBalancingBackendTargetProjectNumber: "projects/12345",
+				gcpLoadBalancingProxyStatus:                "proxy_ok",
+				gcpLoadBalancingOverrideResponseCode:       int64(200),
+				gcpLoadBalancingScheme:                     "EXTERNAL",
+				gcpLoadBalancingErrorService:               "error-svc",
+				gcpLoadBalancingBackendNetworkName:         "default",
+				gcpLoadBalancingCacheDecision:              []any{"CACHE_HIT", "CACHE_MISS"},
+			},
 		},
 		{
-			name:     "contains previewSecurityPolicy",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","previewSecurityPolicy":{"name":"test"}}`,
-			expected: true,
+			name: "empty cache decisions",
+			log: &loadbalancerlog{
+				StatusDetails: "ok",
+				RemoteIP:      "172.16.0.1",
+				CacheDecision: []string{},
+			},
+			expected: map[string]any{
+				string(semconv.NetworkPeerAddressKey): "172.16.0.1",
+				gcpLoadBalancingStatusDetails:         "ok",
+			},
 		},
 		{
-			name:     "contains enforcedEdgeSecurityPolicy",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","enforcedEdgeSecurityPolicy":{"name":"test"}}`,
-			expected: true,
+			name: "nil override response code",
+			log: &loadbalancerlog{
+				StatusDetails:        "ok",
+				RemoteIP:             "1.2.3.4",
+				OverrideResponseCode: nil,
+			},
+			expected: map[string]any{
+				string(semconv.NetworkPeerAddressKey): "1.2.3.4",
+				gcpLoadBalancingStatusDetails:         "ok",
+			},
 		},
 		{
-			name:     "contains previewEdgeSecurityPolicy",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","previewEdgeSecurityPolicy":{"name":"test"}}`,
-			expected: true,
-		},
-		{
-			name:     "no security policy fields",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","someOtherField":"value"}`,
-			expected: false,
-		},
-		{
-			name:     "empty JSON",
-			payload:  `{}`,
-			expected: false,
+			name: "conflicting remote IP",
+			log: &loadbalancerlog{
+				StatusDetails: "ok",
+				RemoteIP:      "10.0.0.1",
+			},
+			expected:    map[string]any{},
+			expectedErr: "already present with different value",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ContainsSecurityPolicyFields(gojson.RawMessage(tt.payload))
-			require.Equal(t, tt.expected, result)
+			attr := pcommon.NewMap()
+
+			// For the conflicting IP test, pre-populate with a different IP
+			if tt.name == "conflicting remote IP" {
+				attr.PutStr(string(semconv.NetworkPeerAddressKey), "different-ip")
+			}
+
+			err := handleRequestMetadata(tt.log, attr)
+
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, attr.AsRaw())
+		})
+	}
+}
+
+func TestHandleAuthPolicyInfo(t *testing.T) {
+	tests := []struct {
+		name     string
+		info     *authPolicyInfo
+		expected map[string]any
+	}{
+		{
+			name:     "nil auth policy info",
+			info:     nil,
+			expected: map[string]any{},
+		},
+		{
+			name: "auth policy with result only",
+			info: &authPolicyInfo{
+				OverallResult: "ALLOW",
+				Policies:      []policyInfo{},
+			},
+			expected: map[string]any{
+				gcpLoadBalancingAuthPolicyInfoResult: "ALLOW",
+			},
+		},
+		{
+			name: "auth policy with single policy",
+			info: &authPolicyInfo{
+				OverallResult: "DENY",
+				Policies: []policyInfo{
+					{
+						Name:    "policy-1",
+						Result:  "DENY",
+						Details: "blocked by rule",
+					},
+				},
+			},
+			expected: map[string]any{
+				gcpLoadBalancingAuthPolicyInfoResult: "DENY",
+				gcpLoadBalancingAuthPolicyInfoPolicies: []any{
+					map[string]any{
+						gcpLoadBalancingAuthPolicyName:    "policy-1",
+						gcpLoadBalancingAuthPolicyResult:  "DENY",
+						gcpLoadBalancingAuthPolicyDetails: "blocked by rule",
+					},
+				},
+			},
+		},
+		{
+			name: "auth policy with multiple policies",
+			info: &authPolicyInfo{
+				OverallResult: "ALLOW",
+				Policies: []policyInfo{
+					{
+						Name:    "policy-1",
+						Result:  "DENY",
+						Details: "denied",
+					},
+					{
+						Name:    "policy-2",
+						Result:  "ALLOW",
+						Details: "allowed",
+					},
+				},
+			},
+			expected: map[string]any{
+				gcpLoadBalancingAuthPolicyInfoResult: "ALLOW",
+				gcpLoadBalancingAuthPolicyInfoPolicies: []any{
+					map[string]any{
+						gcpLoadBalancingAuthPolicyName:    "policy-1",
+						gcpLoadBalancingAuthPolicyResult:  "DENY",
+						gcpLoadBalancingAuthPolicyDetails: "denied",
+					},
+					map[string]any{
+						gcpLoadBalancingAuthPolicyName:    "policy-2",
+						gcpLoadBalancingAuthPolicyResult:  "ALLOW",
+						gcpLoadBalancingAuthPolicyDetails: "allowed",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr := pcommon.NewMap()
+			handleAuthPolicyInfo(tt.info, attr)
+			assert.Equal(t, tt.expected, attr.AsRaw())
+		})
+	}
+}
+
+func TestHandleTlsInfo(t *testing.T) {
+	tests := []struct {
+		name     string
+		info     *tlsInfo
+		expected map[string]any
+	}{
+		{
+			name:     "nil tls info",
+			info:     nil,
+			expected: map[string]any{},
+		},
+		{
+			name: "all fields populated",
+			info: &tlsInfo{
+				EarlyDataRequest: true,
+				Protocol:         "TLSv1.3",
+				Cipher:           "TLS_AES_128_GCM_SHA256",
+			},
+			expected: map[string]any{
+				gcpLoadBalancingTlsInfo: map[string]any{
+					gcpLoadBalancingTlsEarlyDataRequest: true,
+					string(semconv.TLSProtocolNameKey):  "TLSv1.3",
+					string(semconv.TLSCipherKey):        "TLS_AES_128_GCM_SHA256",
+				},
+			},
+		},
+		{
+			name: "early data request false",
+			info: &tlsInfo{
+				EarlyDataRequest: false,
+				Protocol:         "TLSv1.2",
+				Cipher:           "ECDHE-RSA-AES128-GCM-SHA256",
+			},
+			expected: map[string]any{
+				gcpLoadBalancingTlsInfo: map[string]any{
+					gcpLoadBalancingTlsEarlyDataRequest: false,
+					string(semconv.TLSProtocolNameKey):  "TLSv1.2",
+					string(semconv.TLSCipherKey):        "ECDHE-RSA-AES128-GCM-SHA256",
+				},
+			},
+		},
+		{
+			name: "empty protocol and cipher",
+			info: &tlsInfo{
+				EarlyDataRequest: false,
+			},
+			expected: map[string]any{
+				gcpLoadBalancingTlsInfo: map[string]any{
+					gcpLoadBalancingTlsEarlyDataRequest: false,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr := pcommon.NewMap()
+			handleTlsInfo(tt.info, attr)
+			assert.Equal(t, tt.expected, attr.AsRaw())
+		})
+	}
+}
+
+func TestHandleMtlsInfo(t *testing.T) {
+	tests := []struct {
+		name     string
+		info     *mtlsInfo
+		expected map[string]any
+	}{
+		{
+			name:     "nil mtls info",
+			info:     nil,
+			expected: map[string]any{},
+		},
+		{
+			name: "all fields populated",
+			info: &mtlsInfo{
+				ClientCertPresent:           boolptr(true),
+				ClientCertChainVerified:     boolptr(true),
+				ClientCertError:             "",
+				ClientCertSha256Fingerprint: "abc123",
+				ClientCertSerialNumber:      "12345",
+				ClientCertValidStartTime:    "2024-01-01T00:00:00Z",
+				ClientCertValidEndTime:      "2025-01-01T00:00:00Z",
+				ClientCertSpiffeID:          "spiffe://example.com/service",
+				ClientCertUriSans:           "uri:example.com",
+				ClientCertDnsnameSans:       "dns:example.com",
+				ClientCertIssuerDn:          "CN=CA",
+				ClientCertSubjectDn:         "CN=client",
+				ClientCertLeaf:              "-----BEGIN CERTIFICATE-----",
+				ClientCertChain:             "-----BEGIN CERTIFICATE----- chain",
+			},
+			expected: map[string]any{
+				gcpLoadBalancingMtlsInfo: map[string]any{
+					gcpLoadBalancingMtlsClientCertPresent:        true,
+					gcpLoadBalancingMtlsClientCertChainVerified:  true,
+					string(semconv.TLSClientHashSha256Key):       "abc123",
+					gcpLoadBalancingMtlsClientCertSerialNumber:   "12345",
+					string(semconv.TLSClientNotBeforeKey):        "2024-01-01T00:00:00Z",
+					string(semconv.TLSClientNotAfterKey):         "2025-01-01T00:00:00Z",
+					gcpLoadBalancingMtlsClientCertSpiffeID:       "spiffe://example.com/service",
+					gcpLoadBalancingMtlsClientCertUriSans:        "uri:example.com",
+					gcpLoadBalancingMtlsClientCertDnsnameSans:    "dns:example.com",
+					string(semconv.TLSClientIssuerKey):           "CN=CA",
+					string(semconv.TLSClientSubjectKey):          "CN=client",
+					gcpLoadBalancingMtlsClientCertLeaf:           "-----BEGIN CERTIFICATE-----",
+					string(semconv.TLSClientCertificateChainKey): "-----BEGIN CERTIFICATE----- chain",
+				},
+			},
+		},
+		{
+			name: "cert present but not verified",
+			info: &mtlsInfo{
+				ClientCertPresent:       boolptr(true),
+				ClientCertChainVerified: boolptr(false),
+				ClientCertError:         "cert not verified",
+			},
+			expected: map[string]any{
+				gcpLoadBalancingMtlsInfo: map[string]any{
+					gcpLoadBalancingMtlsClientCertPresent:       true,
+					gcpLoadBalancingMtlsClientCertChainVerified: false,
+					gcpLoadBalancingMtlsClientCertError:         "cert not verified",
+				},
+			},
+		},
+		{
+			name: "cert not present",
+			info: &mtlsInfo{
+				ClientCertPresent: boolptr(false),
+			},
+			expected: map[string]any{
+				gcpLoadBalancingMtlsInfo: map[string]any{
+					gcpLoadBalancingMtlsClientCertPresent: false,
+				},
+			},
+		},
+		{
+			name: "nil boolean fields",
+			info: &mtlsInfo{
+				ClientCertSha256Fingerprint: "fingerprint",
+			},
+			expected: map[string]any{
+				gcpLoadBalancingMtlsInfo: map[string]any{
+					string(semconv.TLSClientHashSha256Key): "fingerprint",
+				},
+			},
+		},
+		{
+			name: "partial fields",
+			info: &mtlsInfo{
+				ClientCertPresent:      boolptr(true),
+				ClientCertSerialNumber: "67890",
+				ClientCertSpiffeID:     "spiffe://test.com/app",
+			},
+			expected: map[string]any{
+				gcpLoadBalancingMtlsInfo: map[string]any{
+					gcpLoadBalancingMtlsClientCertPresent:      true,
+					gcpLoadBalancingMtlsClientCertSerialNumber: "67890",
+					gcpLoadBalancingMtlsClientCertSpiffeID:     "spiffe://test.com/app",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr := pcommon.NewMap()
+			handleMtlsInfo(tt.info, attr)
+			assert.Equal(t, tt.expected, attr.AsRaw())
 		})
 	}
 }
 
 func TestIsValid(t *testing.T) {
 	tests := []struct {
-		name       string
-		log        armorlog
-		expectsErr string
+		name    string
+		log     *loadbalancerlog
+		wantErr bool
 	}{
 		{
-			name: "invalid type",
-			log: armorlog{
-				Type:                   "invalid-type",
-				EnforcedSecurityPolicy: &enforcedSecurityPolicy{},
+			name: "valid log type",
+			log: &loadbalancerlog{
+				Type: loadBalancerLogType,
 			},
-			expectsErr: "expected @type to be type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry, got invalid-type",
+			wantErr: false,
 		},
 		{
-			name: "all security policies nil",
-			log: armorlog{
-				Type: armorLogType,
+			name: "invalid log type",
+			log: &loadbalancerlog{
+				Type: "type.googleapis.com/invalid.type",
 			},
-			expectsErr: "at least one of the security policy fields must be non-nil",
-		},
-		{
-			name: "valid log with enforced security policy",
-			log: armorlog{
-				Type:                   armorLogType,
-				EnforcedSecurityPolicy: &enforcedSecurityPolicy{},
-			},
+			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := isValid(tt.log)
-			if tt.expectsErr != "" {
-				require.ErrorContains(t, err, tt.expectsErr)
-				return
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
-			require.NoError(t, err)
-		})
-	}
-}
-
-func TestHandleSecurityPolicyRequestData(t *testing.T) {
-	tests := []struct {
-		name     string
-		data     *securityPolicyRequestData
-		expected map[string]any
-	}{
-		{
-			name:     "nil data",
-			data:     nil,
-			expected: map[string]any{},
-		},
-		{
-			name: "all fields populated",
-			data: &securityPolicyRequestData{
-				RecaptchaActionToken:  &recaptchaToken{Score: 0.9},
-				RecaptchaSessionToken: &recaptchaToken{Score: 0.0},
-				UserIPInfo: &userIPInfo{
-					Source:    "X-Forwarded-For",
-					IPAddress: "192.168.1.1",
-				},
-				RemoteIPInfo: &remoteIPInfo{
-					IPAddress:  "10.0.0.1",
-					RegionCode: "US",
-					ASN:        int64ptr(12345),
-				},
-				TLSJa4Fingerprint: "ja4_fingerprint",
-				TLSJa3Fingerprint: "ja3_fingerprint",
-			},
-			expected: map[string]any{
-				gcpArmorRecaptchaActionTokenScore:     float64(0.9),
-				gcpArmorRecaptchaSessionTokenScore:    float64(0),
-				gcpArmorUserIPInfoSource:              "X-Forwarded-For",
-				string(semconv.ClientAddressKey):      "192.168.1.1",
-				string(semconv.NetworkPeerAddressKey): "10.0.0.1",
-				string(semconv.GeoRegionISOCodeKey):   "US",
-				gcpArmorRemoteIPInfoAsn:               int64(12345),
-				gcpArmorTLSJa4Fingerprint:             "ja4_fingerprint",
-				string(semconv.TLSClientJa3Key):       "ja3_fingerprint",
-			},
-		},
-		{
-			name: "partial fields - recaptcha and tls",
-			data: &securityPolicyRequestData{
-				RecaptchaActionToken: &recaptchaToken{Score: 0.5},
-				TLSJa3Fingerprint:    "ja3_only",
-			},
-			expected: map[string]any{
-				gcpArmorRecaptchaActionTokenScore: float64(0.5),
-				string(semconv.TLSClientJa3Key):   "ja3_only",
-			},
-		},
-		{
-			name: "user ip Info",
-			data: &securityPolicyRequestData{
-				UserIPInfo: &userIPInfo{
-					Source:    "X-Real-IP",
-					IPAddress: "0.0.0.0",
-				},
-			},
-			expected: map[string]any{
-				gcpArmorUserIPInfoSource:         "X-Real-IP",
-				string(semconv.ClientAddressKey): "0.0.0.0",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			attr := pcommon.NewMap()
-			require.NoError(t, handleSecurityPolicyRequestData(tt.data, attr))
-			require.Equal(t, tt.expected, attr.AsRaw())
-		})
-	}
-}
-
-func TestHandleSecurityPolicyBase(t *testing.T) {
-	tests := []struct {
-		name     string
-		policy   *securityPolicyBase
-		expected map[string]any
-	}{
-		{
-			name: "all fields populated",
-			policy: &securityPolicyBase{
-				Name:             "test-policy",
-				Priority:         int64ptr(100),
-				ConfiguredAction: "DENY",
-				Outcome:          "DENY",
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(100),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-			},
-		},
-		{
-			name: "zero priority",
-			policy: &securityPolicyBase{
-				Name:             "policy-zero",
-				Priority:         int64ptr(0),
-				ConfiguredAction: "allow",
-				Outcome:          "accepted",
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "policy-zero",
-				gcpArmorSecurityPolicyPriority:         int64(0),
-				gcpArmorSecurityPolicyConfiguredAction: "allow",
-				gcpArmorSecurityPolicyOutcome:          "accepted",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			attr := pcommon.NewMap()
-			handleSecurityPolicyBase(tt.policy, attr)
-
-			require.Equal(t, tt.expected, attr.AsRaw())
-		})
-	}
-}
-
-func TestHandleThreatIntelligence(t *testing.T) {
-	tests := []struct {
-		name     string
-		ti       *threatIntelligence
-		expected map[string]any
-	}{
-		{
-			name:     "nil threat intelligence",
-			ti:       nil,
-			expected: map[string]any{},
-		},
-		{
-			name: "empty categories",
-			ti: &threatIntelligence{
-				Categories: []string{},
-			},
-			expected: map[string]any{},
-		},
-		{
-			name: "single category",
-			ti: &threatIntelligence{
-				Categories: []string{"malware"},
-			},
-			expected: map[string]any{
-				gcpArmorThreatIntelligenceCategories: []any{"malware"},
-			},
-		},
-		{
-			name: "multiple categories",
-			ti: &threatIntelligence{
-				Categories: []string{"malware", "phishing", "botnet"},
-			},
-			expected: map[string]any{
-				gcpArmorThreatIntelligenceCategories: []any{"malware", "phishing", "botnet"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			attr := pcommon.NewMap()
-			handleThreatIntelligence(tt.ti, attr)
-
-			require.Equal(t, tt.expected, attr.AsRaw())
-		})
-	}
-}
-
-func TestHandleAddressGroup(t *testing.T) {
-	tests := []struct {
-		name     string
-		ag       *addressGroup
-		expected map[string]any
-	}{
-		{
-			name:     "nil address group",
-			ag:       nil,
-			expected: map[string]any{},
-		},
-		{
-			name: "empty names",
-			ag: &addressGroup{
-				Names: []string{},
-			},
-			expected: map[string]any{},
-		},
-		{
-			name: "single name",
-			ag: &addressGroup{
-				Names: []string{"group1"},
-			},
-			expected: map[string]any{
-				gcpArmorAddressGroupNames: []any{"group1"},
-			},
-		},
-		{
-			name: "multiple names",
-			ag: &addressGroup{
-				Names: []string{"group1", "group2", "group3"},
-			},
-			expected: map[string]any{
-				gcpArmorAddressGroupNames: []any{"group1", "group2", "group3"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			attr := pcommon.NewMap()
-			handleAddressGroup(tt.ag, attr)
-
-			require.Equal(t, tt.expected, attr.AsRaw())
-		})
-	}
-}
-
-func TestHandleRateLimitAction(t *testing.T) {
-	tests := []struct {
-		name     string
-		rl       *rateLimitAction
-		expected map[string]any
-	}{
-		{
-			name:     "nil rate limit action",
-			rl:       nil,
-			expected: map[string]any{},
-		},
-		{
-			name: "with key and outcome",
-			rl: &rateLimitAction{
-				Key:     "test-key",
-				Outcome: "rate_limited",
-			},
-			expected: map[string]any{
-				gcpArmorRateLimitActionKey:     "test-key",
-				gcpArmorRateLimitActionOutcome: "rate_limited",
-			},
-		},
-		{
-			name: "empty key and outcome",
-			rl: &rateLimitAction{
-				Key:     "",
-				Outcome: "",
-			},
-			expected: map[string]any{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			attr := pcommon.NewMap()
-			handleRateLimitAction(tt.rl, attr)
-
-			require.Equal(t, tt.expected, attr.AsRaw())
-		})
-	}
-}
-
-func TestHandleSecurityPolicyExtended(t *testing.T) {
-	tests := []struct {
-		name     string
-		policy   *securityPolicyExtended
-		expected map[string]any
-	}{
-		{
-			name: "base fields only",
-			policy: &securityPolicyExtended{
-				securityPolicyBase: securityPolicyBase{
-					Name:             "test-policy",
-					Priority:         int64ptr(10),
-					ConfiguredAction: "DENY",
-					Outcome:          "DENY",
-				},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-			},
-		},
-		{
-			name: "with rate limit action",
-			policy: &securityPolicyExtended{
-				securityPolicyBase: securityPolicyBase{
-					Name:             "test-policy",
-					Priority:         int64ptr(10),
-					ConfiguredAction: "DENY",
-					Outcome:          "DENY",
-				},
-				RateLimitAction: &rateLimitAction{
-					Key:     "rate-key",
-					Outcome: "rate_limited",
-				},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorRateLimitActionKey:             "rate-key",
-				gcpArmorRateLimitActionOutcome:         "rate_limited",
-			},
-		},
-		{
-			name: "with preconfigured expr ids",
-			policy: &securityPolicyExtended{
-				securityPolicyBase: securityPolicyBase{
-					Name:             "test-policy",
-					Priority:         int64ptr(10),
-					ConfiguredAction: "DENY",
-					Outcome:          "DENY",
-				},
-				PreconfiguredExprIDs: []string{"expr1", "expr2"},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorWAFRuleExpressionIDs:           []any{"expr1", "expr2"},
-			},
-		},
-		{
-			name: "with threat intelligence",
-			policy: &securityPolicyExtended{
-				securityPolicyBase: securityPolicyBase{
-					Name:             "test-policy",
-					Priority:         int64ptr(10),
-					ConfiguredAction: "DENY",
-					Outcome:          "DENY",
-				},
-				ThreatIntelligence: &threatIntelligence{
-					Categories: []string{"malware", "phishing"},
-				},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorThreatIntelligenceCategories:   []any{"malware", "phishing"},
-			},
-		},
-		{
-			name: "with address group",
-			policy: &securityPolicyExtended{
-				securityPolicyBase: securityPolicyBase{
-					Name:             "test-policy",
-					Priority:         int64ptr(10),
-					ConfiguredAction: "DENY",
-					Outcome:          "DENY",
-				},
-				AddressGroup: &addressGroup{
-					Names: []string{"group1", "group2"},
-				},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorAddressGroupNames:              []any{"group1", "group2"},
-			},
-		},
-		{
-			name: "all fields populated",
-			policy: &securityPolicyExtended{
-				securityPolicyBase: securityPolicyBase{
-					Name:             "test-policy",
-					Priority:         int64ptr(10),
-					ConfiguredAction: "DENY",
-					Outcome:          "DENY",
-				},
-				RateLimitAction: &rateLimitAction{
-					Key:     "rate-key",
-					Outcome: "rate_limited",
-				},
-				PreconfiguredExprIDs: []string{"expr1"},
-				ThreatIntelligence: &threatIntelligence{
-					Categories: []string{"malware"},
-				},
-				AddressGroup: &addressGroup{
-					Names: []string{"group1"},
-				},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorRateLimitActionKey:             "rate-key",
-				gcpArmorRateLimitActionOutcome:         "rate_limited",
-				gcpArmorWAFRuleExpressionIDs:           []any{"expr1"},
-				gcpArmorThreatIntelligenceCategories:   []any{"malware"},
-				gcpArmorAddressGroupNames:              []any{"group1"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			attr := pcommon.NewMap()
-			handleSecurityPolicyExtended(tt.policy, attr)
-
-			require.Equal(t, tt.expected, attr.AsRaw())
-		})
-	}
-}
-
-func TestHandleEnforcedSecurityPolicy(t *testing.T) {
-	tests := []struct {
-		name     string
-		policy   *enforcedSecurityPolicy
-		expected map[string]any
-	}{
-		{
-			name: "without adaptive protection",
-			policy: &enforcedSecurityPolicy{
-				securityPolicyExtended: securityPolicyExtended{
-					securityPolicyBase: securityPolicyBase{
-						Name:             "test-policy",
-						Priority:         int64ptr(10),
-						ConfiguredAction: "DENY",
-						Outcome:          "DENY",
-					},
-				},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-			},
-		},
-		{
-			name: "with adaptive protection",
-			policy: &enforcedSecurityPolicy{
-				securityPolicyExtended: securityPolicyExtended{
-					securityPolicyBase: securityPolicyBase{
-						Name:             "test-policy",
-						Priority:         int64ptr(10),
-						ConfiguredAction: "DENY",
-						Outcome:          "DENY",
-					},
-				},
-				AdaptiveProtection: &adaptiveProtection{
-					AutoDeployAlertID: "alert-123",
-				},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:                  "test-policy",
-				gcpArmorSecurityPolicyPriority:              int64(10),
-				gcpArmorSecurityPolicyConfiguredAction:      "DENY",
-				gcpArmorSecurityPolicyOutcome:               "DENY",
-				gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-123",
-			},
-		},
-		{
-			name: "with all extended fields and adaptive protection",
-			policy: &enforcedSecurityPolicy{
-				securityPolicyExtended: securityPolicyExtended{
-					securityPolicyBase: securityPolicyBase{
-						Name:             "test-policy",
-						Priority:         int64ptr(10),
-						ConfiguredAction: "DENY",
-						Outcome:          "DENY",
-					},
-					RateLimitAction: &rateLimitAction{
-						Key:     "rate-key",
-						Outcome: "rate_limited",
-					},
-					PreconfiguredExprIDs: []string{"expr1"},
-					ThreatIntelligence: &threatIntelligence{
-						Categories: []string{"malware"},
-					},
-					AddressGroup: &addressGroup{
-						Names: []string{"group1"},
-					},
-				},
-				AdaptiveProtection: &adaptiveProtection{
-					AutoDeployAlertID: "alert-123",
-				},
-			},
-			expected: map[string]any{
-				gcpArmorSecurityPolicyName:                  "test-policy",
-				gcpArmorSecurityPolicyPriority:              int64(10),
-				gcpArmorSecurityPolicyConfiguredAction:      "DENY",
-				gcpArmorSecurityPolicyOutcome:               "DENY",
-				gcpArmorRateLimitActionKey:                  "rate-key",
-				gcpArmorRateLimitActionOutcome:              "rate_limited",
-				gcpArmorWAFRuleExpressionIDs:                []any{"expr1"},
-				gcpArmorThreatIntelligenceCategories:        []any{"malware"},
-				gcpArmorAddressGroupNames:                   []any{"group1"},
-				gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-123",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			attr := pcommon.NewMap()
-			handleEnforcedSecurityPolicy(tt.policy, attr)
-
-			require.Equal(t, tt.expected, attr.AsRaw())
 		})
 	}
 }
@@ -623,23 +410,142 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 		{
 			name:       "invalid json",
 			payload:    `{invalid json}`,
-			expectsErr: "failed to unmarshal Armor log",
+			expectsErr: "failed to unmarshal Load Balancer log",
 		},
 		{
-			name: "invalid armor log type",
+			name: "invalid log type",
 			payload: `{
 				"@type": "invalid-type",
-				"statusDetails": "denied_by_security_policy"
+				"statusDetails": "ok"
 			}`,
-			expectsErr: "invalid Armor log",
+			expectsErr: "expected @type to be",
 		},
 		{
-			name: "different remote ips",
+			name: "minimal load balancer log without armor fields",
+			payload: `{
+				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+				"statusDetails": "ok",
+				"remoteIp": "192.168.1.1"
+			}`,
+			expected: map[string]any{
+				gcpLoadBalancingStatusDetails:         "ok",
+				string(semconv.NetworkPeerAddressKey): "192.168.1.1",
+			},
+		},
+		{
+			name: "load balancer log with request metadata",
+			payload: `{
+				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+				"statusDetails": "ok",
+				"remoteIp": "10.0.0.1",
+				"backendTargetProjectNumber": "projects/12345",
+				"proxyStatus": "proxy_ok",
+				"overrideResponseCode": 301,
+				"loadBalancingScheme": "EXTERNAL",
+				"errorService": "error-svc",
+				"backendNetworkName": "vpc-network",
+				"cacheDecision": ["CACHE_HIT", "CACHE_REVALIDATED"]
+			}`,
+			expected: map[string]any{
+				gcpLoadBalancingStatusDetails:              "ok",
+				string(semconv.NetworkPeerAddressKey):      "10.0.0.1",
+				gcpLoadBalancingBackendTargetProjectNumber: "projects/12345",
+				gcpLoadBalancingProxyStatus:                "proxy_ok",
+				gcpLoadBalancingOverrideResponseCode:       int64(301),
+				gcpLoadBalancingScheme:                     "EXTERNAL",
+				gcpLoadBalancingErrorService:               "error-svc",
+				gcpLoadBalancingBackendNetworkName:         "vpc-network",
+				gcpLoadBalancingCacheDecision:              []any{"CACHE_HIT", "CACHE_REVALIDATED"},
+			},
+		},
+		{
+			name: "load balancer log with auth policy info",
+			payload: `{
+				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+				"statusDetails": "ok",
+				"remoteIp": "172.16.0.1",
+				"authPolicyInfo": {
+					"result": "DENY",
+					"policies": [
+						{
+							"name": "policy-1",
+							"result": "DENY",
+							"details": "blocked"
+						}
+					]
+				}
+			}`,
+			expected: map[string]any{
+				gcpLoadBalancingStatusDetails:         "ok",
+				string(semconv.NetworkPeerAddressKey): "172.16.0.1",
+				gcpLoadBalancingAuthPolicyInfoResult:  "DENY",
+				gcpLoadBalancingAuthPolicyInfoPolicies: []any{
+					map[string]any{
+						gcpLoadBalancingAuthPolicyName:    "policy-1",
+						gcpLoadBalancingAuthPolicyResult:  "DENY",
+						gcpLoadBalancingAuthPolicyDetails: "blocked",
+					},
+				},
+			},
+		},
+		{
+			name: "load balancer log with tls info",
+			payload: `{
+				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+				"statusDetails": "ok",
+				"remoteIp": "1.2.3.4",
+				"tls": {
+					"earlyDataRequest": true,
+					"protocol": "TLSv1.3",
+					"cipher": "TLS_AES_128_GCM_SHA256"
+				}
+			}`,
+			expected: map[string]any{
+				gcpLoadBalancingStatusDetails:         "ok",
+				string(semconv.NetworkPeerAddressKey): "1.2.3.4",
+				gcpLoadBalancingTlsInfo: map[string]any{
+					gcpLoadBalancingTlsEarlyDataRequest: true,
+					string(semconv.TLSProtocolNameKey):  "TLSv1.3",
+					string(semconv.TLSCipherKey):        "TLS_AES_128_GCM_SHA256",
+				},
+			},
+		},
+		{
+			name: "load balancer log with mtls info",
+			payload: `{
+				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+				"statusDetails": "ok",
+				"remoteIp": "5.6.7.8",
+				"mtls": {
+					"clientCertPresent": true,
+					"clientCertChainVerified": true,
+					"clientCertSha256Fingerprint": "abc123",
+					"clientCertSerialNumber": "12345"
+				}
+			}`,
+			expected: map[string]any{
+				gcpLoadBalancingStatusDetails:         "ok",
+				string(semconv.NetworkPeerAddressKey): "5.6.7.8",
+				gcpLoadBalancingMtlsInfo: map[string]any{
+					gcpLoadBalancingMtlsClientCertPresent:       true,
+					gcpLoadBalancingMtlsClientCertChainVerified: true,
+					string(semconv.TLSClientHashSha256Key):      "abc123",
+					gcpLoadBalancingMtlsClientCertSerialNumber:  "12345",
+				},
+			},
+		},
+		{
+			name: "conflicting remote IPs between metadata and armor fields",
 			payload: `{
 				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
 				"statusDetails": "denied_by_security_policy",
 				"remoteIp": "192.168.1.1",
-				"enforcedSecurityPolicy": {},
+				"enforcedSecurityPolicy": {
+					"name": "test-policy",
+					"priority": 1,
+					"configuredAction": "DENY",
+					"outcome": "DENY"
+				},
 				"securityPolicyRequestData": {
 					"remoteIpInfo": {
 						"ipAddress": "10.0.0.1"
@@ -653,20 +559,22 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			payload: `{
 				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
 				"statusDetails": "denied_by_security_policy",
+				"remoteIp": "1.1.1.1",
 				"previewEdgeSecurityPolicy": {
 					"name": "edge-policy",
 					"priority": 5,
-					"configuredAction": "allow",
-					"outcome": "accepted"
+					"configuredAction": "ALLOW",
+					"outcome": "ACCEPT"
 				}
 			}`,
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:          "denied_by_security_policy",
+				string(semconv.NetworkPeerAddressKey):  "1.1.1.1",
 				gcpArmorSecurityPolicyType:             securityPolicyTypePreviewEdge,
 				gcpArmorSecurityPolicyName:             "edge-policy",
 				gcpArmorSecurityPolicyPriority:         int64(5),
-				gcpArmorSecurityPolicyConfiguredAction: "allow",
-				gcpArmorSecurityPolicyOutcome:          "accepted",
+				gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+				gcpArmorSecurityPolicyOutcome:          "ACCEPT",
 			},
 		},
 		{
@@ -674,6 +582,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			payload: `{
 				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
 				"statusDetails": "denied_by_security_policy",
+				"remoteIp": "2.2.2.2",
 				"enforcedEdgeSecurityPolicy": {
 					"name": "edge-policy-enforced",
 					"priority": 10,
@@ -683,6 +592,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			}`,
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:          "denied_by_security_policy",
+				string(semconv.NetworkPeerAddressKey):  "2.2.2.2",
 				gcpArmorSecurityPolicyType:             securityPolicyTypeEnforcedEdge,
 				gcpArmorSecurityPolicyName:             "edge-policy-enforced",
 				gcpArmorSecurityPolicyPriority:         int64(10),
@@ -691,26 +601,32 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "preview security policy",
+			name: "preview security policy with extended fields",
 			payload: `{
 				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
 				"statusDetails": "denied_by_security_policy",
+				"remoteIp": "3.3.3.3",
 				"previewSecurityPolicy": {
 					"name": "preview-policy",
 					"priority": 20,
 					"configuredAction": "DENY",
 					"outcome": "DENY",
-					"preconfiguredExprIds": ["expr1", "expr2"]
+					"preconfiguredExprIds": ["expr1", "expr2"],
+					"threatIntelligence": {
+						"categories": ["botnet"]
+					}
 				}
 			}`,
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:          "denied_by_security_policy",
+				string(semconv.NetworkPeerAddressKey):  "3.3.3.3",
 				gcpArmorSecurityPolicyType:             securityPolicyTypePreview,
 				gcpArmorSecurityPolicyName:             "preview-policy",
 				gcpArmorSecurityPolicyPriority:         int64(20),
 				gcpArmorSecurityPolicyConfiguredAction: "DENY",
 				gcpArmorSecurityPolicyOutcome:          "DENY",
 				gcpArmorWAFRuleExpressionIDs:           []any{"expr1", "expr2"},
+				gcpArmorThreatIntelligenceCategories:   []any{"botnet"},
 			},
 		},
 		{
@@ -718,6 +634,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			payload: `{
 				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
 				"statusDetails": "denied_by_security_policy",
+				"remoteIp": "4.4.4.4",
 				"enforcedSecurityPolicy": {
 					"name": "enforced-policy",
 					"priority": 30,
@@ -725,7 +642,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 					"outcome": "DENY",
 					"rateLimitAction": {
 						"key": "rate-key",
-						"outcome": "rate_limited"
+						"outcome": "RATE_LIMIT_THRESHOLD_EXCEED"
 					},
 					"preconfiguredExprIds": ["expr1"],
 					"threatIntelligence": {
@@ -741,13 +658,14 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			}`,
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:               "denied_by_security_policy",
+				string(semconv.NetworkPeerAddressKey):       "4.4.4.4",
 				gcpArmorSecurityPolicyType:                  securityPolicyTypeEnforced,
 				gcpArmorSecurityPolicyName:                  "enforced-policy",
 				gcpArmorSecurityPolicyPriority:              int64(30),
 				gcpArmorSecurityPolicyConfiguredAction:      "DENY",
 				gcpArmorSecurityPolicyOutcome:               "DENY",
 				gcpArmorRateLimitActionKey:                  "rate-key",
-				gcpArmorRateLimitActionOutcome:              "rate_limited",
+				gcpArmorRateLimitActionOutcome:              "RATE_LIMIT_THRESHOLD_EXCEED",
 				gcpArmorWAFRuleExpressionIDs:                []any{"expr1"},
 				gcpArmorThreatIntelligenceCategories:        []any{"malware", "phishing"},
 				gcpArmorAddressGroupNames:                   []any{"group1", "group2"},
@@ -755,20 +673,28 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "with security policy request data",
+			name: "complete load balancer log with armor and security policy request data",
 			payload: `{
 				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
 				"statusDetails": "denied_by_security_policy",
 				"remoteIp": "1.2.3.4",
-				"backendTargetProjectNumber": "123456789",
+				"backendTargetProjectNumber": "projects/987654",
+				"loadBalancingScheme": "EXTERNAL",
+				"cacheDecision": ["CACHE_MISS"],
+				"tls": {
+					"earlyDataRequest": false,
+					"protocol": "TLSv1.2",
+					"cipher": "ECDHE-RSA-AES128-GCM-SHA256"
+				},
 				"securityPolicyRequestData": {
 					"recaptchaActionToken": { "score": 0.9 },
 					"userIpInfo": { "source": "X-Forwarded-For", "ipAddress": "5.6.7.8" },
-					"tlsJa3Fingerprint": "ja3-fingerprint"
+					"tlsJa3Fingerprint": "ja3-fingerprint",
+					"tlsJa4Fingerprint": "ja4-fingerprint"
 				},
 				"enforcedSecurityPolicy": {
-					"name": "enforced-policy",
-					"priority": 30,
+					"name": "complete-policy",
+					"priority": 100,
 					"configuredAction": "DENY",
 					"outcome": "DENY"
 				}
@@ -776,16 +702,24 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:              "denied_by_security_policy",
 				string(semconv.NetworkPeerAddressKey):      "1.2.3.4",
-				gcpLoadBalancingBackendTargetProjectNumber: "123456789",
-				gcpArmorRecaptchaActionTokenScore:          float64(0.9),
-				gcpArmorUserIPInfoSource:                   "X-Forwarded-For",
-				string(semconv.ClientAddressKey):           "5.6.7.8",
-				string(semconv.TLSClientJa3Key):            "ja3-fingerprint",
-				gcpArmorSecurityPolicyType:                 securityPolicyTypeEnforced,
-				gcpArmorSecurityPolicyName:                 "enforced-policy",
-				gcpArmorSecurityPolicyPriority:             int64(30),
-				gcpArmorSecurityPolicyConfiguredAction:     "DENY",
-				gcpArmorSecurityPolicyOutcome:              "DENY",
+				gcpLoadBalancingBackendTargetProjectNumber: "projects/987654",
+				gcpLoadBalancingScheme:                     "EXTERNAL",
+				gcpLoadBalancingCacheDecision:              []any{"CACHE_MISS"},
+				gcpLoadBalancingTlsInfo: map[string]any{
+					gcpLoadBalancingTlsEarlyDataRequest: false,
+					string(semconv.TLSProtocolNameKey):  "TLSv1.2",
+					string(semconv.TLSCipherKey):        "ECDHE-RSA-AES128-GCM-SHA256",
+				},
+				gcpArmorRecaptchaActionTokenScore:      float64(0.9),
+				gcpArmorUserIPInfoSource:               "X-Forwarded-For",
+				string(semconv.ClientAddressKey):       "5.6.7.8",
+				string(semconv.TLSClientJa3Key):        "ja3-fingerprint",
+				gcpArmorTLSJa4Fingerprint:              "ja4-fingerprint",
+				gcpArmorSecurityPolicyType:             securityPolicyTypeEnforced,
+				gcpArmorSecurityPolicyName:             "complete-policy",
+				gcpArmorSecurityPolicyPriority:         int64(100),
+				gcpArmorSecurityPolicyConfiguredAction: "DENY",
+				gcpArmorSecurityPolicyOutcome:          "DENY",
 			},
 		},
 	}
