@@ -10,6 +10,7 @@ import (
 	"errors"
 	"slices"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchutil"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -132,7 +133,12 @@ func shouldRetryEvent(status int) bool {
 
 func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: tbi.index, Body: body}
+	item := opensearchutil.BulkIndexerItem{
+		Action:     tbi.bulkAction,
+		Index:      tbi.index,
+		DocumentID: ulid.Make().String(),
+		Body:       body,
+	}
 	return item
 }
 

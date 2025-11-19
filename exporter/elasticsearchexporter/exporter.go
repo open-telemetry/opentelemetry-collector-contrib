@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/go-docappender/v2"
+	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -427,7 +428,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, ulid.Make().String(), "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
