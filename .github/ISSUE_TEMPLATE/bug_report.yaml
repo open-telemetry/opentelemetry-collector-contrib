@@ -392,6 +392,7 @@ body:
       label: OpenTelemetry Collector configuration
       description: Please provide the configuration you are using (e.g. the YAML config file).
       placeholder: | # Empty Collector config
+        ```yaml
         receivers:
         exporters:
         processors:
@@ -410,6 +411,7 @@ body:
               receivers: []
               exporters: []
               processors: []
+        ```
       render: yaml
   - type: textarea
     attributes:
