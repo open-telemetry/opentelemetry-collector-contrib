@@ -74,6 +74,13 @@ func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memIn
 	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesFree), metadata.AttributeStateFree)
 	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesRsvd), metadata.AttributeStateReserved)
 	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesSurp), metadata.AttributeStateSurplus)
+
+	// Record utilization with state attributes as percentage
+	if memInfo.HugePagesTotal != 0 {
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesFree)/float64(memInfo.HugePagesTotal), metadata.AttributeStateFree)
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesRsvd)/float64(memInfo.HugePagesTotal), metadata.AttributeStateReserved)
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesSurp)/float64(memInfo.HugePagesTotal), metadata.AttributeStateSurplus)
+	}
 }
 
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
