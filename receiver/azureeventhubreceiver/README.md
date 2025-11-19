@@ -80,7 +80,7 @@ these datapoints.
 Default: `nil`
 
 > [!NOTE]
-> You can opt-in to use the [`azeventhubs`](https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs) sdk by enabling the feature gate
+> You can opt out of using the [`azeventhubs`](https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs) sdk by disabling the feature gate
 > `receiver.azureeventhubreceiver.UseAzeventhubs` when you run the OpenTelemetry Collector. See the following page
 > for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
 >
@@ -132,28 +132,28 @@ The body is represented as a raw byte array.
 
 The "azure" format extracts the Azure log records from the AMQP
 message data, parses them, and maps the fields to OpenTelemetry
-attributes. The table below summarizes the mapping between the 
+attributes. The table below summarizes the mapping between the
 [Azure common log format](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema)
 and the OpenTelemetry attributes.
 
 
-| Azure                            | OpenTelemetry                          | 
+| Azure                            | OpenTelemetry                          |
 |----------------------------------|----------------------------------------|
-| callerIpAddress (optional)       | net.sock.peer.addr (attribute)         | 
-| correlationId (optional)         | azure.correlation.id (attribute)       | 
-| category (optional)              | azure.category (attribute)             | 
-| durationMs (optional)            | azure.duration (attribute)             | 
-| Level (optional)                 | severity_number, severity_text (field) | 
-| location (optional)              | cloud.region (attribute)               | 
-| —                                | cloud.provider (attribute)             | 
+| callerIpAddress (optional)       | net.sock.peer.addr (attribute)         |
+| correlationId (optional)         | azure.correlation.id (attribute)       |
+| category (optional)              | azure.category (attribute)             |
+| durationMs (optional)            | azure.duration (attribute)             |
+| Level (optional)                 | severity_number, severity_text (field) |
+| location (optional)              | cloud.region (attribute)               |
+| —                                | cloud.provider (attribute)             |
 | operationName (required)         | azure.operation.name (attribute)       |
-| operationVersion (optional)      | azure.operation.version (attribute)    | 
-| properties (optional)            | azure.properties (attribute, nested)   | 
-| resourceId (required)            | azure.resource.id (resource attribute) | 
-| resultDescription (optional)     | azure.result.description (attribute)   | 
-| resultSignature (optional)       | azure.result.signature (attribute)     | 
-| resultType (optional)            | azure.result.type (attribute)          | 
-| tenantId (required, tenant logs) | azure.tenant.id (attribute)            | 
+| operationVersion (optional)      | azure.operation.version (attribute)    |
+| properties (optional)            | azure.properties (attribute, nested)   |
+| resourceId (required)            | azure.resource.id (resource attribute) |
+| resultDescription (optional)     | azure.result.description (attribute)   |
+| resultSignature (optional)       | azure.result.signature (attribute)     |
+| resultType (optional)            | azure.result.type (attribute)          |
+| tenantId (required, tenant logs) | azure.tenant.id (attribute)            |
 | time or timeStamp (required)     | time_unix_nano (time takes precedence) |
 | identity (optional)              | azure.identity (attribute, nested)     |
 
