@@ -306,7 +306,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 			s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte(mockContent), nil).Times(1)
 
 			// Consumer that returns the test error
-			logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+			logsConsumer := func(_ context.Context, _ events.S3EventRecord, _ plog.Logs) error {
 				return test.consumerErr
 			}
 
@@ -315,7 +315,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 			event, err := json.Marshal(mockEvent)
 			require.NoError(t, err)
 
-			resultErr := handler.handle(context.Background(), event)
+			resultErr := handler.handle(t.Context(), event)
 			require.Error(t, resultErr)
 
 			// Check if the error is permanent

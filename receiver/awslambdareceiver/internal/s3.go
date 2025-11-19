@@ -35,7 +35,7 @@ type S3Provider interface {
 // S3ServiceProvider provides S3Service instances.
 type S3ServiceProvider struct{}
 
-func (p *S3ServiceProvider) GetService(ctx context.Context) (S3Service, error) {
+func (*S3ServiceProvider) GetService(ctx context.Context) (S3Service, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
