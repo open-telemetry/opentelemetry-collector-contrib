@@ -62,17 +62,17 @@ func (*logsConnector) Capabilities() consumer.Capabilities {
 func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	groups := make(map[consumer.Logs]plog.Logs)
 	var errs error
+	matched := plog.NewLogs()
 	for i := 0; i < len(c.router.routeSlice) && ld.ResourceLogs().Len() > 0; i++ {
 		route := c.router.routeSlice[i]
-		matchedLogs := plog.NewLogs()
 		switch route.statementContext {
 		case "request":
 			if route.requestCondition.matchRequest(ctx) {
-				groupAllLogs(groups, route.consumer, ld)
-				ld = plog.NewLogs() // all logs have been routed
+				// all logs are routed
+				ld.MoveTo(matched)
 			}
 		case "", "resource":
-			plogutil.MoveResourcesIf(ld, matchedLogs,
+			plogutil.MoveResourcesIf(ld, matched,
 				func(rl plog.ResourceLogs) bool {
 					rtx := ottlresource.NewTransformContext(rl.Resource(), rl)
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
@@ -81,7 +81,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 				},
 			)
 		case "log":
-			plogutil.MoveRecordsWithContextIf(ld, matchedLogs,
+			plogutil.MoveRecordsWithContextIf(ld, matched,
 				func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
 					ltx := ottllog.NewTransformContext(lr, sl.Scope(), rl.Resource(), sl, rl)
 					_, isMatch, err := route.logStatement.Execute(ctx, ltx)
@@ -94,9 +94,9 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			if c.config.ErrorMode == ottl.PropagateError {
 				return errs
 			}
-			groupAllLogs(groups, c.router.defaultConsumer, matchedLogs)
+			groupAllLogs(groups, c.router.defaultConsumer, matched)
 		}
-		groupAllLogs(groups, route.consumer, matchedLogs)
+		groupAllLogs(groups, route.consumer, matched)
 	}
 	// anything left wasn't matched by any route. Send to default consumer
 	groupAllLogs(groups, c.router.defaultConsumer, ld)
@@ -111,23 +111,16 @@ func groupAllLogs(
 	cons consumer.Logs,
 	logs plog.Logs,
 ) {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		groupLogs(groups, cons, logs.ResourceLogs().At(i))
-	}
-}
-
-func groupLogs(
-	groups map[consumer.Logs]plog.Logs,
-	cons consumer.Logs,
-	logs plog.ResourceLogs,
-) {
 	if cons == nil {
+		return
+	}
+	if logs.ResourceLogs().Len() == 0 {
 		return
 	}
 	group, ok := groups[cons]
 	if !ok {
 		group = plog.NewLogs()
+		groups[cons] = group
 	}
-	logs.CopyTo(group.ResourceLogs().AppendEmpty())
-	groups[cons] = group
+	logs.ResourceLogs().MoveAndAppendTo(group.ResourceLogs())
 }
