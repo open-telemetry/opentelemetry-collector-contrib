@@ -257,7 +257,7 @@ func extractFirstKey(data []byte) (string, error) {
 	if err != nil {
 		return "", errors.New("invalid JSON payload, failed to find the opening bracket")
 	}
-	if delim, ok := t.(json.Delim); !ok || delim != '{' {
+	if t != json.Delim('{') {
 		return "", errors.New("invalid JSON payload, failed to find the opening bracket")
 	}
 
