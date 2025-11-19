@@ -452,12 +452,6 @@ func Test_e2e_editors(t *testing.T) {
 				})
 			},
 		},
-		{
-			statement: `delete(attributes["slice2"], Index(attributes["slice2"], "not_found"))`,
-			want: func(_ ottllog.TransformContext) {
-				// No change as "not_found" does not exist in the slice.
-			},
-		},
 	}
 
 	for _, tt := range tests {

@@ -248,18 +248,6 @@ func TestDelete(t *testing.T) {
 			}),
 		},
 		{
-			name: "delete with index -1 does nothing",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2, 3, 4, 5}), nil
-				},
-				Setter: setter,
-			},
-			index:    getIntGetter(-1),
-			length:   nilOptional,
-			expected: getSlice(t, []any{0, 1, 2, 3, 4, 5}),
-		},
-		{
 			name: "delete all elements",
 			target: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
@@ -270,18 +258,6 @@ func TestDelete(t *testing.T) {
 			index:    getIntGetter(0),
 			length:   ottl.NewTestingOptional(getIntGetter(5)),
 			expected: getSlice(t, []any{}),
-		},
-		{
-			name: "endIndex exceeds slice length",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2, 3}), nil
-				},
-				Setter: setter,
-			},
-			index:    getIntGetter(1),
-			length:   ottl.NewTestingOptional(getIntGetter(5)),
-			expected: getSlice(t, []any{0}),
 		},
 		{
 			name: "target is pcommon.Value slice",
@@ -305,8 +281,7 @@ func TestDelete(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			exprFunc, err := deleteFrom(tc.target, tc.index, tc.length)
-			assert.NoError(t, err)
+			exprFunc := deleteFrom(tc.target, tc.index, tc.length)
 
 			res := pcommon.NewSlice()
 			result, err := exprFunc(t.Context(), res)
@@ -418,14 +393,37 @@ func TestDelete_Errors(t *testing.T) {
 			length:      ottl.NewTestingOptional(getIntGetter(0)),
 			expectedErr: "length must be positive, got 0",
 		},
+		{
+			name: "deletion range out of bounds",
+			target: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return getSlice(t, []any{0, 1, 2, 3}), nil
+				},
+				Setter: setter,
+			},
+			index:       getIntGetter(2),
+			length:      ottl.NewTestingOptional(getIntGetter(5)),
+			expectedErr: "deletion range [2:7] out of bounds",
+		},
+		{
+			name: "negative index",
+			target: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return getSlice(t, []any{0, 1, 2, 3}), nil
+				},
+				Setter: setter,
+			},
+			index:       getIntGetter(-1),
+			length:      nilOptional,
+			expectedErr: "index -1 out of bounds",
+		},
 	}
 	for _, etc := range errorTestCases {
 		t.Run(etc.name, func(t *testing.T) {
-			exprFunc, err := deleteFrom(etc.target, etc.index, etc.length)
-			assert.NoError(t, err)
+			exprFunc := deleteFrom(etc.target, etc.index, etc.length)
 
 			res := pcommon.NewSlice()
-			_, err = exprFunc(t.Context(), res)
+			_, err := exprFunc(t.Context(), res)
 			assert.ErrorContains(t, err, etc.expectedErr)
 		})
 	}
