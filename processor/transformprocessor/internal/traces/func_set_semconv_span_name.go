@@ -17,6 +17,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
+// Currently only v1.37.0 is supported
+const supportedSemconvVersion = "1.37.0"
+
 type setSemconvSpanNameArguments struct {
 	SemconvVersion            string
 	OriginalSpanNameAttribute ottl.Optional[string]
@@ -32,16 +35,16 @@ func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 	if !ok {
 		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
 	}
-	originalSpanNameAttribute := args.OriginalSpanNameAttribute
-
-	// Currently only v1.37.0 is supported
-	supportedSemconvVersion := "1.37.0"
 	if args.SemconvVersion != supportedSemconvVersion {
 		return nil, fmt.Errorf("unsupported semconv version: %s, supported version: %s", args.SemconvVersion, supportedSemconvVersion)
 	}
 
+	if !args.OriginalSpanNameAttribute.IsEmpty() && args.OriginalSpanNameAttribute.Get() == "" {
+		return nil, errors.New("originalSpanNameAttribute cannot be an empty string")
+	}
+
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		setSemconvSpanName(originalSpanNameAttribute, tCtx.GetSpan())
+		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan())
 		return nil, nil
 	}, nil
 }
@@ -50,7 +53,7 @@ func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span pt
 	originalSpanName := span.Name()
 	semConvSpanName := deriveSemconvSpanName(span)
 	span.SetName(semConvSpanName)
-	if originalSpanName != semConvSpanName && originalSpanNameAttribute.GetOr("") != "" {
+	if originalSpanName != semConvSpanName && !originalSpanNameAttribute.IsEmpty() {
 		span.Attributes().PutStr(originalSpanNameAttribute.Get(), originalSpanName)
 	}
 }
