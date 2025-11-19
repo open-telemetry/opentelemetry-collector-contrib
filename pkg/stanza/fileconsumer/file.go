@@ -189,9 +189,6 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		// If a file is unreadable due to permissions error, store path in map and log error once (unless in debug mode)
 		if os.IsPermission(err) {
 			m.unreadableMu.Lock()
-			if m.unreadable == nil {
-				m.unreadable = make(map[string]struct{})
-			}
 			_, seen := m.unreadable[path]
 			if !seen {
 				m.set.Logger.Error("Failed to open file", zap.Error(err))
