@@ -16,6 +16,8 @@ type TraceData struct {
 	SpanCount int64
 	// ReceivedBatches stores all the batches received for the trace.
 	ReceivedBatches ptrace.Traces
+	// ParentSpan
+	ParentSpan *ptrace.Span
 }
 
 // Decision gives the status of sampling decision.

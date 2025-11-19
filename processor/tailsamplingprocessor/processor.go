@@ -185,10 +185,12 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 		// be more efficient on its single goroutine.
 		batch := []traceBatch{}
 		for traceID, spans := range idToSpansAndScope {
+			rss, parentSpan := newResourceSpanFromSpanAndScopes(rss, spans)
 			batch = append(batch, traceBatch{
-				id:        traceID,
-				rss:       newResourceSpanFromSpanAndScopes(rss, spans),
-				spanCount: int64(len(spans)),
+				id:         traceID,
+				rss:        rss,
+				parentSpan: parentSpan,
+				spanCount:  int64(len(spans)),
 			})
 		}
 		if len(batch) > 0 {
@@ -269,9 +271,10 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 
 // traceBatch contains all spans from a single batch for a single trace.
 type traceBatch struct {
-	id        pcommon.TraceID
-	rss       ptrace.ResourceSpans
-	spanCount int64
+	id         pcommon.TraceID
+	rss        ptrace.ResourceSpans
+	parentSpan *ptrace.Span
+	spanCount  int64
 }
 
 type newPolicyCmd struct {
@@ -486,7 +489,7 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 				tsp.waitForSpace(tickChan)
 			}
 
-			tsp.processTrace(trace.id, trace.rss, trace.spanCount)
+			tsp.processTrace(trace)
 		}
 	case cmd := <-tsp.newPolicyChan:
 		tsp.policies = cmd.policies
@@ -723,7 +726,7 @@ func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceI
 	return idToSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64) {
+func (tsp *tailSamplingSpanProcessor) processTrace(tb traceBatch) {
 	currTime := time.Now()
 
 	var newTraceIDs int64
@@ -732,59 +735,63 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
 	}()
 
-	actualData, traceAlreadyExisted := tsp.idToTrace[id]
+	actualData, traceAlreadyExisted := tsp.idToTrace[tb.id]
 	if !traceAlreadyExisted {
 		actualData = &traceData{
 			arrivalTime: currTime,
 			TraceData: samplingpolicy.TraceData{
-				SpanCount:       spanCount,
+				SpanCount:       tb.spanCount,
 				ReceivedBatches: ptrace.NewTraces(),
 			},
 		}
 
-		tsp.idToTrace[id] = actualData
+		tsp.idToTrace[tb.id] = actualData
 
 		newTraceIDs++
 
 		if !tsp.blockOnOverflow {
-			tsp.deleteTraceQueue.PushBack(id)
+			tsp.deleteTraceQueue.PushBack(tb.id)
 		}
 	} else {
-		actualData.SpanCount += spanCount
+		actualData.SpanCount += tb.spanCount
+	}
+
+	if tb.parentSpan != nil && actualData.TraceData.ParentSpan == nil {
+		actualData.TraceData.ParentSpan = tb.parentSpan
 	}
 
 	finalDecision := actualData.finalDecision
 	switch finalDecision {
 	case samplingpolicy.Sampled:
 		traceTd := ptrace.NewTraces()
-		appendToTraces(traceTd, rss)
+		appendToTraces(traceTd, tb.rss)
 		tsp.forwardSpans(tsp.ctx, traceTd)
 	case samplingpolicy.NotSampled:
-		tsp.releaseNotSampledTrace(id)
+		tsp.releaseNotSampledTrace(tb.id)
 	case samplingpolicy.Unspecified:
 		// If the final decision hasn't been made, add the new spans to the
 		// existing trace.
-		appendToTraces(actualData.ReceivedBatches, rss)
+		appendToTraces(actualData.ReceivedBatches, tb.rss)
 
 		// See if any early decision policies will change the final decision.
 		if tsp.cfg.EarlyDecisions && tsp.earlyEvaluationPossible {
 			// Since rss has been moved set it to the value in actualData.
-			rss = actualData.ReceivedBatches.ResourceSpans().At(actualData.ReceivedBatches.ResourceSpans().Len() - 1)
-			finalDecision = tsp.processEarlyDecisions(id, rss, &actualData.TraceData)
+			rss := actualData.ReceivedBatches.ResourceSpans().At(actualData.ReceivedBatches.ResourceSpans().Len() - 1)
+			finalDecision = tsp.processEarlyDecisions(tb.id, rss, &actualData.TraceData)
 			actualData.finalDecision = finalDecision
 			// If the early decision is to sample or drop the trace release the trace appropriately.
 			switch finalDecision {
 			case samplingpolicy.Sampled:
-				tsp.releaseSampledTrace(tsp.ctx, id, actualData.ReceivedBatches)
+				tsp.releaseSampledTrace(tsp.ctx, tb.id, actualData.ReceivedBatches)
 				return
 			case samplingpolicy.Dropped:
-				tsp.releaseNotSampledTrace(id)
+				tsp.releaseNotSampledTrace(tb.id)
 			}
 		}
 		// If no early sample was done new traces still need to be added to the
 		// current batch.
 		if !traceAlreadyExisted {
-			tsp.decisionBatcher.AddToCurrentBatch(id)
+			tsp.decisionBatcher.AddToCurrentBatch(tb.id)
 		}
 		return
 	default:
@@ -934,24 +941,29 @@ func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans) {
 	rss.MoveTo(rs)
 }
 
-func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) ptrace.ResourceSpans {
+func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, *ptrace.Span) {
 	rs := ptrace.NewResourceSpans()
 	rss.Resource().CopyTo(rs.Resource())
+	var parentSpan *ptrace.Span
 
 	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
 	for _, spanAndScope := range spanAndScopes {
 		// If the scope of the spanAndScope is not in the map, add it to the map and the destination.
+		var sp ptrace.Span
 		if scope, ok := scopePointerToNewScope[spanAndScope.instrumentationScope]; !ok {
 			is := rs.ScopeSpans().AppendEmpty()
 			spanAndScope.instrumentationScope.CopyTo(is.Scope())
 			scopePointerToNewScope[spanAndScope.instrumentationScope] = &is
 
-			sp := is.Spans().AppendEmpty()
-			spanAndScope.span.CopyTo(sp)
+			sp = is.Spans().AppendEmpty()
 		} else {
-			sp := scope.Spans().AppendEmpty()
-			spanAndScope.span.CopyTo(sp)
+			sp = scope.Spans().AppendEmpty()
+		}
+
+		spanAndScope.span.CopyTo(sp)
+		if sp.ParentSpanID().IsEmpty() {
+			parentSpan = &sp
 		}
 	}
-	return rs
+	return rs, parentSpan
 }
