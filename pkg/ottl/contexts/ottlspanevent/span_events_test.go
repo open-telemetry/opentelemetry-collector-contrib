@@ -440,14 +440,14 @@ func Test_newPathGetSetter(t *testing.T) {
 			}
 
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			spanEvent, span, il, resource := createTelemetry()
 
 			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(1))
 
 			got, err := accessor.Get(t.Context(), tCtx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
@@ -455,7 +455,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exSpanEvent, exSpan, exIl, exRes := createTelemetry()
 			exCache := pcommon.NewMap()
@@ -545,7 +545,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			require.NoError(t, err)
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}
@@ -592,7 +592,7 @@ func Test_setAndGetEventIndex(t *testing.T) {
 			accessor, err := pathExpressionParser(getCache)(&pathtest.Path[TransformContext]{
 				N: "event_index",
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			got, err := accessor.Get(t.Context(), tCtx)
 			if tt.expectedErrorMsg != "" {
@@ -600,7 +600,7 @@ func Test_setAndGetEventIndex(t *testing.T) {
 				assert.ErrorContains(t, err, tt.expectedErrorMsg)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}
@@ -629,7 +629,7 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 			_, err := pathExpressionParser(getCache)(path)
 			require.Error(t, err)
 			expectError := fmt.Sprintf(`replace "%s.cache[key]" with "spanevent.cache[key]"`, higherContext)
-			require.Contains(t, err.Error(), expectError)
+			require.ErrorContains(t, err, expectError)
 		})
 	}
 }
@@ -734,7 +734,7 @@ func Test_ParseEnum(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, *actual)
 		})
 	}

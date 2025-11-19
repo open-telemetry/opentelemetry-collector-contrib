@@ -18,7 +18,7 @@ Total CPU seconds broken down by different states.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ Disk bytes transferred.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -46,7 +46,7 @@ The amount of physical memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### process.memory.virtual
 
@@ -54,7 +54,7 @@ Virtual memory size.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ## Optional Metrics
 
@@ -74,7 +74,7 @@ This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {count} | Sum | Int | Cumulative | true | development |
+| {count} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -88,7 +88,7 @@ Percentage of total CPU time used by the process since last scrape, expressed as
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
@@ -102,7 +102,7 @@ Number of disk operations performed by the process.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | development |
+| {operations} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -118,7 +118,7 @@ This metric is only available on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {count} | Sum | Int | Cumulative | false | development |
+| {count} | Sum | Int | Cumulative | false | Development |
 
 ### process.memory.utilization
 
@@ -126,7 +126,7 @@ Percentage of total physical memory that is used by the process.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### process.open_file_descriptors
 
@@ -136,7 +136,7 @@ On Windows this metric captures the number of open handles currently held by the
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {count} | Sum | Int | Cumulative | false | development |
+| {count} | Sum | Int | Cumulative | false | Development |
 
 ### process.paging.faults
 
@@ -146,7 +146,7 @@ This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {faults} | Sum | Int | Cumulative | true | development |
+| {faults} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -162,7 +162,7 @@ This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {signals} | Sum | Int | Cumulative | false | development |
+| {signals} | Sum | Int | Cumulative | false | Development |
 
 ### process.threads
 
@@ -170,7 +170,7 @@ Process threads count.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {threads} | Sum | Int | Cumulative | false | development |
+| {threads} | Sum | Int | Cumulative | false | Development |
 
 ### process.uptime
 
@@ -178,7 +178,7 @@ The time the process has been running.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 ## Resource Attributes
 

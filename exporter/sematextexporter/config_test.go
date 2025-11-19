@@ -53,7 +53,9 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 500 * time.Millisecond,
-					Headers: map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
+					Headers: configopaque.MapList{
+						{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
+					},
 				},
 				QueueSettings: func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
