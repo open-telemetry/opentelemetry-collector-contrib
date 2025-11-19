@@ -12,6 +12,8 @@ import (
 )
 
 // unifiedLoggingReceiver uses exec.Command to run the native macOS `log` command
+//
+//nolint:unused // only used on darwin platform (see config.go)
 type unifiedLoggingReceiver struct {
 	config   *Config
 	logger   *zap.Logger
@@ -19,6 +21,7 @@ type unifiedLoggingReceiver struct {
 	cancel   context.CancelFunc
 }
 
+//nolint:unused // only used on darwin platform (see config.go)
 func newUnifiedLoggingReceiver(
 	config *Config,
 	logger *zap.Logger,
@@ -31,6 +34,7 @@ func newUnifiedLoggingReceiver(
 	}
 }
 
+//nolint:unused // only used on darwin platform (see config.go)
 func (r *unifiedLoggingReceiver) Start(ctx context.Context, _ component.Host) error {
 	r.logger.Info("Starting macOS unified logging receiver")
 
@@ -39,6 +43,7 @@ func (r *unifiedLoggingReceiver) Start(ctx context.Context, _ component.Host) er
 	return nil
 }
 
+//nolint:unused // only used on darwin platform (see config.go)
 func (r *unifiedLoggingReceiver) Shutdown(_ context.Context) error {
 	r.logger.Info("Shutting down macOS unified logging receiver")
 	if r.cancel != nil {
