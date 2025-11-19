@@ -30,5 +30,5 @@ const (
 	AttributeELBChosenCertSerial          = "aws.elb.chosen_cert_serial"           // string
 	AttributeALPNFeProtocol               = "aws.elb.alpn_fe_protocol"             // string
 	AttributeALPNBeProtocol               = "aws.elb.alpn_be_protocol"             // string
-	AttributeALPNClientPreferenceList     = "aws.elb.alpn_client_preference_list"  // string
+	AttributeALPNClientPreferenceList     = "aws.elb.alpn_client_preference_list"  // string list
 )

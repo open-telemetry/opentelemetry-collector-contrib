@@ -399,7 +399,12 @@ func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttri
 	}
 
 	if nlbRecord.ALPNClientPreferenceList != unknownField {
-		recordLog.Attributes().PutStr(AttributeALPNClientPreferenceList, nlbRecord.ALPNClientPreferenceList)
+		splits := strings.Split(nlbRecord.ALPNClientPreferenceList, ",")
+		slice := recordLog.Attributes().PutEmptySlice(AttributeALPNClientPreferenceList)
+
+		for _, split := range splits {
+			slice.AppendEmpty().SetStr(split)
+		}
 	}
 
 	// Set timestamp

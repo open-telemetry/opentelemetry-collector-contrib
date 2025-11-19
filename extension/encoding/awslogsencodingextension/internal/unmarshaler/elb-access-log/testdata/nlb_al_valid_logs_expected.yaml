@@ -96,7 +96,7 @@ resourceLogs:
                   intValue: "2"
               - key: aws.elb.tls_connection_creation_time
                 value:
-                  stringValue: ',"http/1.1"'
+                  stringValue: 2020-04-01T08:51:20
               - key: aws.elb.chosen_cert_arn
                 value:
                   stringValue: arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99
@@ -117,7 +117,10 @@ resourceLogs:
                   stringValue: h2
               - key: aws.elb.alpn_client_preference_list
                 value:
-                  stringValue: h2
+                  arrayValue:
+                    values:
+                      - stringValue: h2
+                      - stringValue: http/1.1
             body: {}
             timeUnixNano: "1585731102000000000"
         scope:
