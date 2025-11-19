@@ -291,7 +291,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 			expectRetryable: false,
 			expectPermanent: true,
 		},
-		"etryable_error": {
+		"retryable_error": {
 			consumerErr:     consumererror.NewRetryableError(errors.New("already retryable")),
 			expectRetryable: true,
 			expectPermanent: false,
