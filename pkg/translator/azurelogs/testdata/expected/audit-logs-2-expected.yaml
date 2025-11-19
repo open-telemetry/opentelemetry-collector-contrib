@@ -15,18 +15,6 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: http.request.header.x-fd-healthprobe
-                    value:
-                      stringValue: HEALTH_PROBE
-                  - key: http.request.header.x-forwarded-for
-                    value:
-                      stringValue: FORWARDED_FOR
-                  - key: http.request.header.x-forwarded-host
-                    value:
-                      stringValue: FORWARDED_HOST
-                  - key: category
-                    value:
-                      stringValue: AppServiceIPSecAuditLogs
                   - key: operation.name
                     value:
                       stringValue: IPSecAuditLog
@@ -39,6 +27,18 @@ resourceLogs:
                   - key: http.request.header.x-azure-fdid
                     value:
                       stringValue: FDID
+                  - key: http.request.header.x-fd-healthprobe
+                    value:
+                      stringValue: HEALTH_PROBE
+                  - key: http.request.header.x-forwarded-for
+                    value:
+                      stringValue: FORWARDED_FOR
+                  - key: http.request.header.x-forwarded-host
+                    value:
+                      stringValue: FORWARDED_HOST
+                  - key: category
+                    value:
+                      stringValue: AppServiceIPSecAuditLogs
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

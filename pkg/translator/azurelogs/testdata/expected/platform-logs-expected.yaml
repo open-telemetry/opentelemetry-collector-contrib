@@ -15,6 +15,9 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: operation.name
+                    value:
+                      stringValue: ContainerLogs
                   - key: container.id
                     value:
                       stringValue: CONTAINER_ID
@@ -25,30 +28,27 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: EventIpAddress
+                          - key: message
                             value:
-                              stringValue: 10.50.0.34
+                              stringValue: Initiating warmup request to container fbehtestapp_1_b8a27b37 for site fbehtestapp
+                          - key: EventStampType
+                            value:
+                              stringValue: Stamp
+                          - key: EventPrimaryStampName
+                            value:
+                              stringValue: waws-prod-blu-479
                           - key: EventStampName
                             value:
                               stringValue: waws-prod-blu-479
                           - key: Host
                             value:
                               stringValue: lw0sdlwk0005XR
-                          - key: EventStampType
+                          - key: EventIpAddress
                             value:
-                              stringValue: Stamp
-                          - key: message
-                            value:
-                              stringValue: Initiating warmup request to container fbehtestapp_1_b8a27b37 for site fbehtestapp
-                          - key: EventPrimaryStampName
-                            value:
-                              stringValue: waws-prod-blu-479
+                              stringValue: 10.50.0.34
                   - key: category
                     value:
                       stringValue: AppServicePlatformLogs
-                  - key: operation.name
-                    value:
-                      stringValue: ContainerLogs
             severityNumber: 9
             severityText: Informational
             timeUnixNano: "1713960235630000000"

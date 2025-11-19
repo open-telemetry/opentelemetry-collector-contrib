@@ -19,105 +19,105 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: instanceId
+                          - key: upstreamSourcePort
                             value:
-                              stringValue: appgw_2
-                          - key: serverRouted
-                            value:
-                              stringValue: 52.239.221.65:443
-                          - key: sslClientCertificateFingerprint
-                            value:
-                              stringValue: ""
+                              stringValue: "21564"
                           - key: WAFMode
                             value:
                               stringValue: Detection
+                          - key: requestQuery
+                            value:
+                              stringValue: ""
+                          - key: serverRouted
+                            value:
+                              stringValue: 52.239.221.65:443
+                          - key: instanceId
+                            value:
+                              stringValue: appgw_2
+                          - key: httpMethod
+                            value:
+                              stringValue: GET
+                          - key: sslClientCertificateIssuerName
+                            value:
+                              stringValue: ""
+                          - key: originalHost
+                            value:
+                              stringValue: 20.110.30.194
+                          - key: transactionId
+                            value:
+                              stringValue: 592d1649f75a8d480a3c4dc6a975309d
                           - key: backendSettingName
                             value:
                               stringValue: StorageStatic-HTTPS-Setting
-                          - key: timeTaken
+                          - key: WAFEvaluationTime
                             value:
-                              doubleValue: 0.034
-                          - key: sslCipher
+                              stringValue: "0.000"
+                          - key: clientIP
                             value:
-                              stringValue: ECDHE-RSA-AES256-GCM-SHA384
-                          - key: originalRequestUriWithArgs
+                              stringValue: 185.42.129.24
+                          - key: sentBytes
                             value:
-                              stringValue: /
+                              doubleValue: 466
+                          - key: clientResponseTime
+                            value:
+                              doubleValue: 0
+                          - key: sslEnabled
+                            value:
+                              stringValue: "on"
+                          - key: ruleName
+                            value:
+                              stringValue: Storage-Static-Rule
+                          - key: serverStatus
+                            value:
+                              stringValue: "200"
+                          - key: httpStatus
+                            value:
+                              doubleValue: 200
                           - key: backendPoolName
                             value:
                               stringValue: StaticStorageAccount
                           - key: userAgent
                             value:
                               stringValue: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36
-                          - key: transactionId
+                          - key: sslCipher
                             value:
-                              stringValue: 592d1649f75a8d480a3c4dc6a975309d
-                          - key: sslClientCertificateIssuerName
-                            value:
-                              stringValue: ""
-                          - key: serverStatus
-                            value:
-                              stringValue: "200"
-                          - key: host
-                            value:
-                              stringValue: 20.110.30.194
-                          - key: clientPort
-                            value:
-                              doubleValue: 45057
-                          - key: sentBytes
-                            value:
-                              doubleValue: 466
-                          - key: WAFEvaluationTime
-                            value:
-                              stringValue: "0.000"
-                          - key: originalHost
-                            value:
-                              stringValue: 20.110.30.194
-                          - key: upstreamSourcePort
-                            value:
-                              stringValue: "21564"
-                          - key: sslEnabled
-                            value:
-                              stringValue: "on"
-                          - key: sslProtocol
-                            value:
-                              stringValue: TLSv1.2
-                          - key: requestQuery
+                              stringValue: ECDHE-RSA-AES256-GCM-SHA384
+                          - key: sslClientCertificateFingerprint
                             value:
                               stringValue: ""
-                          - key: clientResponseTime
+                          - key: timeTaken
                             value:
-                              doubleValue: 0
-                          - key: ruleName
-                            value:
-                              stringValue: Storage-Static-Rule
-                          - key: clientIP
-                            value:
-                              stringValue: 185.42.129.24
-                          - key: serverResponseLatency
-                            value:
-                              stringValue: "0.028"
+                              doubleValue: 0.034
                           - key: httpVersion
                             value:
                               stringValue: HTTP/1.1
-                          - key: receivedBytes
+                          - key: serverResponseLatency
                             value:
-                              doubleValue: 184
-                          - key: httpMethod
+                              stringValue: "0.028"
+                          - key: clientPort
                             value:
-                              stringValue: GET
-                          - key: listenerName
+                              doubleValue: 45057
+                          - key: sslProtocol
                             value:
-                              stringValue: HTTP-Listener
-                          - key: requestUri
+                              stringValue: TLSv1.2
+                          - key: host
                             value:
-                              stringValue: /
+                              stringValue: 20.110.30.194
                           - key: sslClientVerify
                             value:
                               stringValue: NONE
-                          - key: httpStatus
+                          - key: originalRequestUriWithArgs
                             value:
-                              doubleValue: 200
+                              stringValue: /
+                          - key: receivedBytes
+                            value:
+                              doubleValue: 184
+                          - key: requestUri
+                            value:
+                              stringValue: /
+                          - key: listenerName
+                            value:
+                              stringValue: HTTP-Listener
                   - key: category
                     value:
                       stringValue: ApplicationGatewayAccessLog
