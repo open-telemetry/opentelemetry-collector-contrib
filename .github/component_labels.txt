@@ -214,6 +214,7 @@ receiver/apachereceiver receiver/apache
 receiver/apachesparkreceiver receiver/apachespark
 receiver/awscloudwatchreceiver receiver/awscloudwatch
 receiver/awscontainerinsightreceiver receiver/awscontainerinsight
+receiver/awscontainerinsightreceiver/deprecated receiver/awscontainerinsight/deprecated
 receiver/awsecscontainermetricsreceiver receiver/awsecscontainermetrics
 receiver/awsfirehosereceiver receiver/awsfirehose
 receiver/awslambdareceiver receiver/awslambda
