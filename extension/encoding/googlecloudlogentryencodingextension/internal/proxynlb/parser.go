@@ -5,6 +5,7 @@
 package proxynlb // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -26,6 +27,13 @@ const (
 	gcpProxyNLBConnectionEndTime   = "gcp.load_balancing.proxy_nlb.connection.end_time"
 	gcpProxyNLBServerBytesReceived = "gcp.load_balancing.proxy_nlb.server.bytes_received"
 	gcpProxyNLBServerBytesSent     = "gcp.load_balancing.proxy_nlb.server.bytes_sent"
+)
+
+var (
+	ErrUnmarshalPayload    = errors.New("failed to unmarshal Proxy NLB log payload")
+	ErrUnexpectedLogType   = errors.New("unexpected log type")
+	ErrServerBytesReceived = errors.New("failed to add server bytes received")
+	ErrServerBytesSent     = errors.New("failed to add server bytes sent")
 )
 
 type loadBalancerLog struct {
@@ -55,22 +63,22 @@ type connection struct {
 func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 	var log loadBalancerLog
 	if err := gojson.Unmarshal(payload, &log); err != nil {
-		return fmt.Errorf("failed to unmarshal Proxy NLB log payload: %w", err)
+		return fmt.Errorf("%w: %w", ErrUnmarshalPayload, err)
 	}
 
 	if log.Type != "" && log.Type != loadBalancerLogType {
-		return fmt.Errorf("unexpected log type %q, expected %q", log.Type, loadBalancerLogType)
+		return fmt.Errorf("%w: %q, expected %q", ErrUnexpectedLogType, log.Type, loadBalancerLogType)
 	}
 
 	handleConnection(log.Connection, attr)
 	handleTimestamps(log.StartTime, log.EndTime, attr)
 
 	if err := shared.AddStrAsInt(gcpProxyNLBServerBytesReceived, log.ServerBytesReceived, attr); err != nil {
-		return fmt.Errorf("failed to add server bytes received: %w", err)
+		return fmt.Errorf("%w: %w", ErrServerBytesReceived, err)
 	}
 
 	if err := shared.AddStrAsInt(gcpProxyNLBServerBytesSent, log.ServerBytesSent, attr); err != nil {
-		return fmt.Errorf("failed to add server bytes sent: %w", err)
+		return fmt.Errorf("%w: %w", ErrServerBytesSent, err)
 	}
 
 	return nil

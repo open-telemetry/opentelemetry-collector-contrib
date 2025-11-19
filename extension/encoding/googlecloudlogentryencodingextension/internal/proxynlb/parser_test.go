@@ -78,26 +78,21 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		payload    []byte
-		assertFunc func(t *testing.T, attr pcommon.Map, err error)
+		payload      []byte
+		expectedAttr map[string]any
+		expectedErr  error
 	}{
 		"invalid json": {
-			payload: []byte("not-json"),
-			assertFunc: func(t *testing.T, _ pcommon.Map, err error) {
-				require.ErrorContains(t, err, "failed to unmarshal Proxy NLB log payload")
-			},
+			payload:     []byte("not-json"),
+			expectedErr: ErrUnmarshalPayload,
 		},
 		"unexpected type": {
-			payload: []byte(`{"@type":"invalid"}`),
-			assertFunc: func(t *testing.T, _ pcommon.Map, err error) {
-				require.ErrorContains(t, err, "unexpected log type")
-			},
+			payload:     []byte(`{"@type":"invalid"}`),
+			expectedErr: ErrUnexpectedLogType,
 		},
 		"invalid bytes": {
-			payload: []byte(`{"serverBytesReceived":"abc"}`),
-			assertFunc: func(t *testing.T, _ pcommon.Map, err error) {
-				require.ErrorContains(t, err, "failed to add server bytes received")
-			},
+			payload:     []byte(`{"serverBytesReceived":"abc"}`),
+			expectedErr: ErrServerBytesReceived,
 		},
 		"success": {
 			payload: []byte(`{
@@ -114,19 +109,16 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"serverBytesReceived":"83",
 				"serverBytesSent":"853"
 			}`),
-			assertFunc: func(t *testing.T, attr pcommon.Map, err error) {
-				require.NoError(t, err)
-				require.Equal(t, map[string]any{
-					string(semconv.ClientAddressKey):       "68.168.189.182",
-					string(semconv.ClientPortKey):          int64(52900),
-					string(semconv.ServerAddressKey):       "35.209.164.189",
-					string(semconv.ServerPortKey):          int64(80),
-					string(semconv.NetworkProtocolNameKey): "tcp",
-					gcpProxyNLBConnectionStartTime:         "2025-11-17T22:21:57.480419Z",
-					gcpProxyNLBConnectionEndTime:           "2025-11-17T22:21:57.500505Z",
-					gcpProxyNLBServerBytesReceived:         int64(83),
-					gcpProxyNLBServerBytesSent:             int64(853),
-				}, attr.AsRaw())
+			expectedAttr: map[string]any{
+				string(semconv.ClientAddressKey):       "68.168.189.182",
+				string(semconv.ClientPortKey):          int64(52900),
+				string(semconv.ServerAddressKey):       "35.209.164.189",
+				string(semconv.ServerPortKey):          int64(80),
+				string(semconv.NetworkProtocolNameKey): "tcp",
+				gcpProxyNLBConnectionStartTime:         "2025-11-17T22:21:57.480419Z",
+				gcpProxyNLBConnectionEndTime:           "2025-11-17T22:21:57.500505Z",
+				gcpProxyNLBServerBytesReceived:         int64(83),
+				gcpProxyNLBServerBytesSent:             int64(853),
 			},
 		},
 	}
@@ -137,7 +129,13 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 
 			attr := pcommon.NewMap()
 			err := ParsePayloadIntoAttributes(tt.payload, attr)
-			tt.assertFunc(t, attr, err)
+			if tt.expectedErr != nil {
+				require.Error(t, err)
+				require.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedAttr, attr.AsRaw())
+			}
 		})
 	}
 }
