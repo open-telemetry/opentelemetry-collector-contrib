@@ -15,6 +15,51 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: http.response.body.size
+                    value:
+                      intValue: "42"
+                  - key: network.protocol.version
+                    value:
+                      stringValue: "1.1"
+                  - key: server.port
+                    value:
+                      intValue: "80"
+                  - key: http.server.request.duration
+                    value:
+                      doubleValue: 0.42
+                  - key: http.response.status_code
+                    value:
+                      intValue: "200"
+                  - key: user_agent.original
+                    value:
+                      stringValue: Mozilla/5.0
+                  - key: operation.name
+                    value:
+                      stringValue: ""
+                  - key: http.request.header.referer
+                    value:
+                      stringValue: REFERER
+                  - key: url.path
+                    value:
+                      stringValue: /api/test/
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: category
+                    value:
+                      stringValue: AppServiceHTTPLogs
+                  - key: url.domain
+                    value:
+                      stringValue: test.com
+                  - key: http.request.method
+                    value:
+                      stringValue: GET
+                  - key: http.request.body.size
+                    value:
+                      intValue: "4242"
+                  - key: host.name
+                    value:
+                      stringValue: COMPUTER_NAME
                   - key: properties
                     value:
                       kvlistValue:
@@ -22,66 +67,37 @@ resourceLogs:
                           - key: Cookie
                             value:
                               stringValue: ""
+                          - key: EventTime
+                            value:
+                              stringValue: "2024-04-24T11:59:40.9893370Z"
                           - key: Result
                             value:
                               stringValue: Success
+                          - key: EventPrimaryStampName
+                            value:
+                              stringValue: waws-prod-blu-479
                           - key: CsUsername
                             value:
                               stringValue: user@test.com
-                  - key: http.request.method
-                    value:
-                      stringValue: GET
-                  - key: http.request.body.size
-                    value:
-                      intValue: "4242"
-                  - key: http.server.request.duration
-                    value:
-                      doubleValue: 0.42
-                  - key: http.response.status_code
-                    value:
-                      intValue: "200"
+                          - key: Host
+                            value:
+                              stringValue: lw0sdlwk0005XR
+                          - key: EventStampType
+                            value:
+                              stringValue: Stamp
+                          - key: EventStampName
+                            value:
+                              stringValue: waws-prod-blu-479
+                          - key: EventIpAddress
+                            value:
+                              stringValue: 10.50.0.34
                   - key: network.protocol.name
                     value:
                       stringValue: http
-                  - key: http.request.header.referer
-                    value:
-                      stringValue: REFERER
-                  - key: http.response.body.size
-                    value:
-                      intValue: "42"
-                  - key: user_agent.original
-                    value:
-                      stringValue: Mozilla/5.0
-                  - key: network.protocol.version
-                    value:
-                      stringValue: "1.1"
-                  - key: client.address
-                    value:
-                      stringValue: 42.42.42.42
-                  - key: category
-                    value:
-                      stringValue: AppServiceHTTPLogs
-                  - key: operation.name
-                    value:
-                      stringValue: ""
-                  - key: server.port
-                    value:
-                      intValue: "80"
-                  - key: url.path
-                    value:
-                      stringValue: /api/test/
                   - key: url.query
                     value:
                       stringValue: foo=42
-                  - key: url.domain
-                    value:
-                      stringValue: test.com
-                  - key: host.name
-                    value:
-                      stringValue: COMPUTER_NAME
-            spanId: ""
             timeUnixNano: "1713959980989337000"
-            traceId: ""
         scope:
           name: otelcol/azureresourcelogs
           version: 1.2.3

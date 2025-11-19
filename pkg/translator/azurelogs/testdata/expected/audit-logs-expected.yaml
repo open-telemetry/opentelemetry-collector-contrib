@@ -15,18 +15,15 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: operation.name
+                  - key: enduser.id
                     value:
-                      stringValue: Authorization
+                      stringValue: USER_ID
                   - key: client.address
                     value:
                       stringValue: 42.42.42.42
                   - key: network.protocol.name
                     value:
                       stringValue: kudu
-                  - key: enduser.id
-                    value:
-                      stringValue: USER_ID
                   - key: properties
                     value:
                       kvlistValue:
@@ -37,9 +34,10 @@ resourceLogs:
                   - key: category
                     value:
                       stringValue: AppServiceAuditLogs
-            spanId: ""
+                  - key: operation.name
+                    value:
+                      stringValue: Authorization
             timeUnixNano: "1713960080842740000"
-            traceId: ""
         scope:
           name: otelcol/azureresourcelogs
           version: 1.2.3

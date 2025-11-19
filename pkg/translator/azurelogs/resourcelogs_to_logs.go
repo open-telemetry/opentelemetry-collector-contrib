@@ -289,52 +289,6 @@ func parseRawRecord(log *azureLogRecord) (map[string]any, map[string]any) {
 	return known, unknown
 }
 
-// mergeProperties decodes the properties JSON, applies semantic conventions,
-// and merges unknown fields if present.
-// Note: Return type is 'any' to handle primitive property values without double-nesting.
-func mergeProperties(category string, propsJSON []byte, unknown map[string]any) any {
-	props := make(map[string]any)
-	result := copyPropertiesAndApplySemanticConventions(category, propsJSON, props)
-
-	// Check if the content is a map nested under 'properties' (standard map properties case)
-	propertiesContent, isNestedMap := props[azureProperties].(map[string]any)
-	if isNestedMap {
-		// Standard JSON Map Properties (Fixes double nesting for maps)
-		if len(unknown) > 0 {
-			// Merge unknown fields into properties
-			for k, v := range unknown {
-				propertiesContent[k] = v
-			}
-		}
-		// copyPropertiesAndApplySemanticConventions already decided what to return
-		// based on whether semantic convention fields exist
-		if result != nil {
-			// Update props[azureProperties] with merged content and return entire props
-			props[azureProperties] = propertiesContent
-			return props
-		}
-		return propertiesContent
-
-	} else if len(props) == 1 {
-		// Primitive Value
-		if val, ok := props[azureProperties]; ok {
-			// If it's a primitive value (not a map), return it directly,
-			// but only if there are no unknown fields (cannot cleanly merge with primitives).
-			if _, isMap := val.(map[string]any); !isMap && len(unknown) == 0 {
-				return val
-			}
-		}
-	}
-
-	if len(unknown) > 0 {
-		// Merge unknown fields into props
-		for k, v := range unknown {
-			props[k] = v
-		}
-	}
-	return props
-}
-
 // addCommonAzureFields fills attrs with the standard Azure fields.
 func addCommonAzureFields(attrs map[string]any, log *azureLogRecord) {
 	attrs[azureCategory] = log.Category
@@ -375,51 +329,46 @@ func hasCategoryHandler(category string) bool {
 
 func extractRawAttributes(log *azureLogRecord) map[string]any {
 	attrs := map[string]any{}
-	hasProperties := len(log.Properties) > 0
 	_, unknown := parseRawRecord(log)
 
-	// Handle properties + unknown fields merge
-	switch {
-	case hasProperties:
-		// merged will be a map (unwrapped content) or a primitive (unwrapped value)
-		// or a map containing both semantic convention fields and azureProperties
-		merged := mergeProperties(log.Category, log.Properties, unknown)
+	var propsMap map[string]any
+	var propsVal any
 
-		// Check if merged is a map that contains both semantic convention fields and azureProperties
-		if mergedMap, ok := merged.(map[string]any); ok {
-			// Extract azureProperties if present
-			if props, hasProps := mergedMap[azureProperties]; hasProps {
-				// This means mergeProperties returned the entire props map with both
-				// semantic convention fields and azureProperties
-				attrs[azureProperties] = props
-				// Extract semantic convention fields (all other fields) and add them to attrs
-				for k, v := range mergedMap {
-					if k != azureProperties {
-						attrs[k] = v
-					}
-				}
-			} else {
-				// No azureProperties key
-				if hasCategoryHandler(log.Category) {
-					// Category has a handler - these are semantic convention fields
-					// Add them all to attrs at the top level
-					for k, v := range mergedMap {
-						attrs[k] = v
-					}
-				} else {
-					// Category has no handler - this is the unwrapped properties content
-					// Nest it under the 'properties' key
-					attrs[azureProperties] = merged
-				}
+	// Try to parse properties as a map first
+	if len(log.Properties) > 0 {
+		if err := gojson.Unmarshal(log.Properties, &propsMap); err != nil {
+			// If not a map, try to parse as a primitive value
+			if err := json.Unmarshal(log.Properties, &propsVal); err != nil {
+				// If parsing fails, treat as string
+				propsVal = string(log.Properties)
 			}
-		} else {
-			// Primitive value, set it under the 'properties' key
-			attrs[azureProperties] = merged
 		}
+	}
 
-	case len(unknown) > 0:
-		// No "properties" field but unknown fields exist
-		attrs[azureProperties] = unknown
+	// Merge unknown fields into propsMap
+	if len(unknown) > 0 {
+		if propsMap == nil {
+			propsMap = make(map[string]any)
+		}
+		// If we have a primitive property, add it to the map under 'properties' key
+		// so it is preserved when merging with unknown fields
+		if propsVal != nil {
+			propsMap[azureProperties] = propsVal
+			propsVal = nil
+		}
+		for k, v := range unknown {
+			propsMap[k] = v
+		}
+	}
+
+	// Apply semantic conventions if we have a map
+	if propsMap != nil {
+		remainingProps := applySemanticConventions(log.Category, propsMap, attrs)
+		if len(remainingProps) > 0 {
+			attrs[azureProperties] = remainingProps
+		}
+	} else if propsVal != nil {
+		attrs[azureProperties] = propsVal
 	}
 
 	// Add standardized Azure fields
@@ -427,30 +376,8 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 	return attrs
 }
 
-// copyPropertiesAndApplySemanticConventions decodes properties JSON and applies semantic conventions.
-// Returns a non-nil value (the attrs map itself) if semantic convention fields were set and
-// the result should be the entire props map; returns nil if just the properties content should be returned.
-func copyPropertiesAndApplySemanticConventions(category string, properties []byte, attrs map[string]any) map[string]any {
-	if len(properties) == 0 {
-		return nil
-	}
-
-	// TODO @constanca-m: This is a temporary workaround to
-	// this function. This will be removed once category_logs.log
-	// is implemented for all currently supported categories
-	var props map[string]any
-	if err := gojson.Unmarshal(properties, &props); err != nil {
-		var val any
-		if err = json.Unmarshal(properties, &val); err == nil {
-			// Try primitive value
-			attrs[azureProperties] = val
-			return nil
-		}
-		// Otherwise add it as a string
-		attrs[azureProperties] = string(properties)
-		return nil
-	}
-
+// applySemanticConventions extracts known fields into attrs and returns the remaining fields.
+func applySemanticConventions(category string, props map[string]any, attrs map[string]any) map[string]any {
 	var handleFunc func(string, any, map[string]any, map[string]any)
 	switch category {
 	case categoryFrontDoorAccessLog:
@@ -477,31 +404,11 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 		}
 	}
 
-	attrsProps := map[string]any{}
+	remainingProps := make(map[string]any)
 	for field, value := range props {
-		handleFunc(field, value, attrs, attrsProps)
+		handleFunc(field, value, attrs, remainingProps)
 	}
-
-	// Check if any semantic convention fields were set in attrs (before adding azureProperties)
-	hasSemanticConventionFields := false
-	for k := range attrs {
-		if k != azureProperties {
-			hasSemanticConventionFields = true
-			break
-		}
-	}
-
-	if len(attrsProps) > 0 {
-		attrs[azureProperties] = attrsProps
-	}
-
-	// If there are semantic convention fields, return the attrs map to indicate
-	// that the entire props map should be returned; otherwise return nil to indicate
-	// that just the properties content should be returned
-	if hasSemanticConventionFields {
-		return attrs
-	}
-	return nil
+	return remainingProps
 }
 
 func setIf(attrs map[string]any, key string, value *string) {

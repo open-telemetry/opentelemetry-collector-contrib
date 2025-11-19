@@ -25,9 +25,24 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: EventIpAddress
+                            value:
+                              stringValue: 10.50.0.34
+                          - key: EventStampName
+                            value:
+                              stringValue: waws-prod-blu-479
+                          - key: Host
+                            value:
+                              stringValue: lw0sdlwk0005XR
+                          - key: EventStampType
+                            value:
+                              stringValue: Stamp
                           - key: message
                             value:
                               stringValue: Initiating warmup request to container fbehtestapp_1_b8a27b37 for site fbehtestapp
+                          - key: EventPrimaryStampName
+                            value:
+                              stringValue: waws-prod-blu-479
                   - key: category
                     value:
                       stringValue: AppServicePlatformLogs
@@ -36,9 +51,7 @@ resourceLogs:
                       stringValue: ContainerLogs
             severityNumber: 9
             severityText: Informational
-            spanId: ""
             timeUnixNano: "1713960235630000000"
-            traceId: ""
         scope:
           name: otelcol/azureresourcelogs
           version: 1.2.3

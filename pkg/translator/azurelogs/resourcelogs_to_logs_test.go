@@ -260,6 +260,44 @@ func TestExtractRawAttributes(t *testing.T) {
 				azureProperties:    "{\"a\": 1, \"b\": true, \"c\": 1.23, \"d\": \"ok\"}",
 			},
 		},
+		{
+			name: "unknown fields",
+			log: &azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				rawRecord:     json.RawMessage(`{"unknown": "val", "category": "category", "operationName": "operation.name"}`),
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				azureProperties: map[string]any{
+					"unknown": "val",
+				},
+			},
+		},
+		{
+			name: "primitive properties with unknown",
+			log: &azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				Properties:    stringPropertiesRaw,
+				rawRecord:     json.RawMessage(`{"unknown": "val", "category": "category", "operationName": "operation.name", "properties": "str"}`),
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				azureProperties: map[string]any{
+					"properties": "str",
+					"unknown":    "val",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

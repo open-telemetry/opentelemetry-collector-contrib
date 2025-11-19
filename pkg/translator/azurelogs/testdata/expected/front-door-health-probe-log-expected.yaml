@@ -15,15 +15,34 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: operation.name
+                  - key: server.address
                     value:
-                      stringValue: WAF/FirewallLog
+                      stringValue: 42.42.42.42
                   - key: dns.lookup.duration
                     value:
                       doubleValue: 0.00023
                   - key: http.response.status_code
                     value:
                       intValue: "200"
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: POP
+                            value:
+                              stringValue: ""
+                          - key: result
+                            value:
+                              stringValue: ""
+                          - key: healthProbeId
+                            value:
+                              stringValue: AAAA
+                          - key: originName
+                            value:
+                              stringValue: https://probe.net/
+                  - key: http.request.method
+                    value:
+                      stringValue: GET
                   - key: url.full
                     value:
                       stringValue: https://probe.net/health
@@ -33,31 +52,10 @@ resourceLogs:
                   - key: category
                     value:
                       stringValue: FrontDoorHealthProbeLog
-                  - key: http.request.method
+                  - key: operation.name
                     value:
-                      stringValue: GET
-                  - key: server.address
-                    value:
-                      stringValue: 42.42.42.42
-                  - key: properties
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: healthProbeId
-                            value:
-                              stringValue: AAAA
-                          - key: POP
-                            value:
-                              stringValue: ""
-                          - key: originName
-                            value:
-                              stringValue: https://probe.net/
-                          - key: result
-                            value:
-                              stringValue: ""
-            spanId: ""
+                      stringValue: WAF/FirewallLog
             timeUnixNano: "1713960372000000000"
-            traceId: ""
         scope:
           name: otelcol/azureresourcelogs
           version: 1.2.3
