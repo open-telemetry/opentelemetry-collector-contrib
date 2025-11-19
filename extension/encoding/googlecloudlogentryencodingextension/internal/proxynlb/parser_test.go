@@ -92,7 +92,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 		},
 		"invalid bytes": {
 			payload:     []byte(`{"serverBytesReceived":"abc"}`),
-			expectedErr: ErrServerBytesReceived,
+			expectedErr: ErrUnexpectedLogType,
 		},
 		"success": {
 			payload: []byte(`{

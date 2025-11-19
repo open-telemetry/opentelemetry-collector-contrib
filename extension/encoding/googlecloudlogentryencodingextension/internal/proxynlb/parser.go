@@ -66,7 +66,7 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 		return fmt.Errorf("%w: %w", ErrUnmarshalPayload, err)
 	}
 
-	if log.Type != "" && log.Type != loadBalancerLogType {
+	if log.Type != loadBalancerLogType {
 		return fmt.Errorf("%w: %q, expected %q", ErrUnexpectedLogType, log.Type, loadBalancerLogType)
 	}
 
