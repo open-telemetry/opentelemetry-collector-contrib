@@ -186,7 +186,6 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
-
 		// If a file is unreadable due to permissions error, store path in map and log error once (unless in debug mode)
 		if os.IsPermission(err) {
 			m.unreadableMu.Lock()
