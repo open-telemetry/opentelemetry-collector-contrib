@@ -295,11 +295,9 @@ func handlePubSubPushRequest[T any](
 	}
 
 	if err = consume(clCtx, unmarshalled); err != nil {
-		consumeErr := fmt.Errorf("failed to consume unmarshalled request: %w", err)
-		if consumererror.IsPermanent(err) {
-			return consumererror.NewPermanent(consumeErr)
-		}
-		return consumererror.NewRetryableError(consumeErr)
+		// err is already marked as permanent, so any error wrapping that
+		// will be marked as permanent as well
+		return fmt.Errorf("failed to consume unmarshalled request: %w", err)
 	}
 	return nil
 }
