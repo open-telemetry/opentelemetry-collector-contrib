@@ -113,7 +113,7 @@ func TestConfigValidate_InvalidEndpoint(t *testing.T) {
 				CollectorID: tt.collectorID,
 			}
 			cfg.Endpoint = tt.endpoint
-			err := cfg.Validate()
+			err := xconfmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -172,42 +172,6 @@ func TestConvertTLSVersion(t *testing.T) {
 		})
 	}
 }
-
-func TestCheckFile(t *testing.T) {
-	tests := []struct {
-		name        string
-		filename    string
-		expectError bool
-	}{
-		{
-			name:        "empty filename",
-			filename:    "",
-			expectError: false,
-		},
-		{
-			name:        "existing file",
-			filename:    filepath.Join("testdata", "dummy-tls-cert-file"),
-			expectError: false,
-		},
-		{
-			name:        "non-existing file",
-			filename:    "nonexistent.txt",
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := checkFile(tt.filename)
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
 func TestCheckTLSConfig(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -247,7 +211,14 @@ func TestCheckTLSConfig(t *testing.T) {
 				CertFile: tt.certFile,
 				KeyFile:  tt.keyFile,
 			}
-			err := checkTLSConfig(tlsConfig)
+			cfg := &Config{
+				CollectorID: "collector-1",
+				HTTPScrapeConfig: &PromHTTPClientConfig{
+					TLSConfig: tlsConfig,
+				},
+			}
+			cfg.Endpoint = "http://localhost:8080"
+			err := xconfmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
