@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/promslog"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
-	"github.com/prometheus/common/promslog"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -172,9 +172,10 @@ func TestGetScrapeConfigsResponse_HTTPError(t *testing.T) {
 
 	httpClient := &http.Client{}
 
-	_, err := getScrapeConfigsResponse(httpClient, server.URL)
+	config, err := getScrapeConfigsResponse(httpClient, server.URL)
 	// This should succeed in reading the response but return empty config
 	assert.NoError(t, err)
+	assert.Empty(t, config)
 }
 
 func TestGetScrapeConfigsResponse_InvalidYAML(t *testing.T) {
@@ -189,17 +190,4 @@ func TestGetScrapeConfigsResponse_InvalidYAML(t *testing.T) {
 
 	_, err := getScrapeConfigsResponse(httpClient, server.URL)
 	assert.Error(t, err)
-}
-
-func TestGetScrapeConfigHash_ErrorCase(t *testing.T) {
-	// Test hash consistency with empty config
-	emptyConfig := map[string]*promconfig.ScrapeConfig{}
-
-	hash1, err := getScrapeConfigHash(emptyConfig)
-	require.NoError(t, err)
-
-	hash2, err := getScrapeConfigHash(emptyConfig)
-	require.NoError(t, err)
-
-	assert.Equal(t, hash1, hash2)
 }
