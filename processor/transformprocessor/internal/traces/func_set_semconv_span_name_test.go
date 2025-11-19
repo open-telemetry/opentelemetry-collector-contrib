@@ -296,6 +296,30 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			},
 			want: "publish orders",
 		},
+		{
+			name:                   "client messaging span",
+			currentSpanName:        "receive orders",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.destination.name", "orders")
+				attrs.PutStr("messaging.operation", "receive")
+				attrs.PutStr("messaging.system", "kafka")
+			},
+			want: "receive orders",
+		},
+		{
+			name:                   "server messaging span",
+			currentSpanName:        "process orders",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.destination.name", "orders")
+				attrs.PutStr("messaging.operation", "process")
+				attrs.PutStr("messaging.system", "kafka")
+			},
+			want: "process orders",
+		},
 
 		// MESSAGING - RABBIT MQ
 		{
