@@ -83,7 +83,7 @@ linters:
           deny:
             - pkg: github.com/azure/go-autorest
               desc: "This package is deprecated (EOL). Please use an alternative Azure SDK."
-              
+
             - pkg: go.uber.org/atomic
               desc: Use 'sync/atomic' instead of go.uber.org/atomic
 
@@ -139,7 +139,6 @@ linters:
 
     gosec:
       excludes:
-        - G115
         - G402
         - G404
 
