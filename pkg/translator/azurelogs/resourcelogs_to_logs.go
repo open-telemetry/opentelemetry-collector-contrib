@@ -313,20 +313,6 @@ func addCommonAzureFields(attrs map[string]any, log *azureLogRecord) {
 	setIf(attrs, string(conventions.NetworkPeerAddressKey), log.CallerIPAddress)
 }
 
-// hasCategoryHandler checks if a category has a handler function for semantic conventions
-func hasCategoryHandler(category string) bool {
-	switch category {
-	case categoryFrontDoorAccessLog, categoryFrontDoorHealthProbeLog,
-		categoryAppServiceAppLogs, categoryAppServiceAuditLogs,
-		categoryAppServiceAuthenticationLogs, categoryAppServiceConsoleLogs,
-		categoryAppServiceHTTPLogs, categoryAppServiceIPSecAuditLogs,
-		categoryAppServicePlatformLogs:
-		return true
-	default:
-		return false
-	}
-}
-
 func extractRawAttributes(log *azureLogRecord) map[string]any {
 	attrs := map[string]any{}
 	_, unknown := parseRawRecord(log)
@@ -377,7 +363,7 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 }
 
 // applySemanticConventions extracts known fields into attrs and returns the remaining fields.
-func applySemanticConventions(category string, props map[string]any, attrs map[string]any) map[string]any {
+func applySemanticConventions(category string, props, attrs map[string]any) map[string]any {
 	var handleFunc func(string, any, map[string]any, map[string]any)
 	switch category {
 	case categoryFrontDoorAccessLog:
