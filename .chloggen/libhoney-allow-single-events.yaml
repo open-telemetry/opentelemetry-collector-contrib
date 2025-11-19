@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: receiver/libhoney
+note: Allow single events and uncompressed requests
+issues: [44026, 44010]
+subtext: |
+  The receiver required events to be wrapped in an array before. The single-event format
+  was allowed by Honeycomb's API so we have added it here.
+  This fix also allows uncompressed requests again
+change_logs: [user]
