@@ -6,3 +6,4 @@ status:
     development: [logs]
   codeowners:
     active: [Caleb-Hurshman]
+  unsupported_platforms: [linux, windows]
