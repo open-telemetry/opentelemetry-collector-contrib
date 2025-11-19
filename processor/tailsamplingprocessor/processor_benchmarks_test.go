@@ -4,7 +4,6 @@
 package tailsamplingprocessor
 
 import (
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -35,13 +34,12 @@ func BenchmarkSampling(b *testing.B) {
 	sampleBatches := make([]*samplingpolicy.TraceData, 0, len(batches))
 
 	for _, batch := range batches {
-		spanCount := &atomic.Int64{}
-		spanCount.Store(int64(batch.SpanCount()))
-		sampleBatches = append(sampleBatches, &samplingpolicy.TraceData{
+		td := &samplingpolicy.TraceData{
 			ArrivalTime:     time.Now(),
-			SpanCount:       spanCount,
 			ReceivedBatches: batch,
-		})
+		}
+		td.SpanCount.Store(int64(batch.SpanCount()))
+		sampleBatches = append(sampleBatches, td)
 	}
 
 	for b.Loop() {
