@@ -420,15 +420,28 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			span := ptrace.NewSpan()
+			resourceSpans := ptrace.NewResourceSpans()
+			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+			scopeSpans.Scope().SetName(tt.instrumentationLibrary)
+			span := scopeSpans.Spans().AppendEmpty()
 			span.SetName(tt.currentSpanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
-			assert.Equal(t, tt.want, deriveSemconvSpanName(span))
 
-			setSemconvSpanName(ottl.NewTestingOptional("original_span_name"), span)
-			assert.Equal(t, tt.want, span.Name())
-			originalSpanName, ok := span.Attributes().Get("original_span_name")
+			setSemconvNameFunction, err := createSetSemconvSpanNameFunction(ottl.FunctionContext{}, &setSemconvSpanNameArguments{
+				SemconvVersion:            supportedSemconvVersion,
+				OriginalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			})
+
+			require.NoError(t, err)
+			require.NotNil(t, setSemconvNameFunction)
+
+			tCtx := ottlspan.NewTransformContext(span, scopeSpans.Scope(), pcommon.NewResource(), scopeSpans, resourceSpans)
+			_, err = setSemconvNameFunction(t.Context(), tCtx)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, tCtx.GetSpan().Name())
+
+			originalSpanName, ok := tCtx.GetSpan().Attributes().Get("original_span_name")
 			if tt.want == tt.currentSpanName {
 				assert.False(t, ok)
 			} else {
