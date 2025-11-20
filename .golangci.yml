@@ -73,6 +73,27 @@ linters:
         path: pagefile.go # This exclusion is required for Windows only
         text: cachedBytes
 
+      - linters:
+          - revive
+        path: processor/transformprocessor/internal/common/
+        text: "var-naming: avoid meaningless package names"
+
+      - linters:
+          - revive
+        path: internal/healthcheck/internal/common/
+        text: "var-naming: avoid meaningless package names"
+
+      - linters:
+          - revive
+        path: cmd/telemetrygen/internal/common/
+        text: "var-naming: avoid meaningless package names"
+
+      - linters:
+          - revive
+        path: cmd/telemetrygen/pkg/
+        text: "var-naming: avoid meaningless package names"
+
+
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
 
@@ -140,7 +161,6 @@ linters:
 
     gosec:
       excludes:
-        - G115
         - G402
         - G404
 
@@ -262,6 +282,9 @@ linters:
 
       test:
         begin: false
+
+    usetesting:
+      context-background: true
 
 output:
   # The formats used to render issues.
