@@ -49,3 +49,9 @@ type Config struct {
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
+
+// getResolvedArchivePaths returns the resolved archive paths after glob expansion
+// This is used internally by the receiver
+func (cfg *Config) getResolvedArchivePaths() []string {
+	return cfg.resolvedArchivePaths
+}
