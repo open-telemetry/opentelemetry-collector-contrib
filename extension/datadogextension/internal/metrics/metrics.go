@@ -42,6 +42,15 @@ func DefaultMetrics(hostname string, timestamp uint64, tags []string) []datadogV
 				Type: datadog.PtrString("host"),
 			},
 		})
+
+		// Set metric origin to identify these metrics as coming from Datadog Extension
+		// Using OriginProduct = datadog_exporter (19)
+		origin := datadogV2.NewMetricOrigin()
+		origin.SetProduct(19) // datadog_exporter
+
+		metadata := datadogV2.NewMetricMetadata()
+		metadata.SetOrigin(*origin)
+		metrics[i].SetMetadata(*metadata)
 	}
 	return metrics
 }
