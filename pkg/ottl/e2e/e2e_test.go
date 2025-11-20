@@ -1576,7 +1576,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("my.environment.2", "ost")
 			},
 		},
-    {
+		{
 			name:      "map value with nil",
 			statement: `set(body, {"value": nil})`,
 			want: func(tCtx ottllog.TransformContext) {
@@ -1616,7 +1616,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
-    {
+		{
 			statement: `set(attributes["test"], CommunityID("123.124.125.126", 12345, "55.56.57.58", 80, "TCP", 0))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "1:9qr9Z1LViXcNwtLVOHZ3CL8MlyM=")
@@ -1650,8 +1650,8 @@ func Test_e2e_ottl_features(t *testing.T) {
 			statement: `set(attributes["test"], CommunityID("123.124.125.126", 12345, "55.56.57.58", 80, "SCTP", 12))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "1:4KOPjy2bsV43uY/mf4HtwyZkwqM=")
-      },
-    },
+			},
+		},
 	}
 
 	for _, tt := range tests {
