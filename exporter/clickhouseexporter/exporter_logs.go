@@ -6,6 +6,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -19,8 +20,11 @@ import (
 )
 
 type logsExporter struct {
-	db        driver.Conn
-	insertSQL string
+	db             driver.Conn
+	insertSQL      string
+	schemaFeatures struct {
+		EventName bool
+	}
 
 	logger *zap.Logger
 	cfg    *Config
@@ -28,9 +32,8 @@ type logsExporter struct {
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 	return &logsExporter{
-		insertSQL: renderInsertLogsSQL(cfg),
-		logger:    logger,
-		cfg:       cfg,
+		logger: logger,
+		cfg:    cfg,
 	}
 }
 
@@ -46,12 +49,38 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	if e.cfg.shouldCreateSchema() {
-		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
-			return err
+		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); createDBErr != nil {
+			return createDBErr
 		}
 
-		if err := createLogsTable(ctx, e.cfg, e.db); err != nil {
-			return err
+		if createTableErr := createLogsTable(ctx, e.cfg, e.db); createTableErr != nil {
+			return createTableErr
+		}
+	}
+
+	err = e.detectSchemaFeatures(ctx)
+	if err != nil {
+		return fmt.Errorf("schema detection: %w", err)
+	}
+
+	e.renderInsertLogsSQL()
+
+	return nil
+}
+
+const (
+	logsColumnEventName = "EventName"
+)
+
+func (e *logsExporter) detectSchemaFeatures(ctx context.Context) error {
+	columnNames, err := internal.GetTableColumns(ctx, e.db, e.cfg.database(), e.cfg.LogsTableName)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range columnNames {
+		if name == logsColumnEventName {
+			e.schemaFeatures.EventName = true
 		}
 	}
 
@@ -110,7 +139,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					timestamp = r.ObservedTimestamp()
 				}
 
-				appendErr := batch.Append(
+				columnValues := make([]any, 0, 16)
+				columnValues = append(columnValues,
 					timestamp.AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
@@ -127,6 +157,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					scopeAttrMap,
 					logAttrMap,
 				)
+
+				if e.schemaFeatures.EventName {
+					columnValues = append(columnValues, r.EventName())
+				}
+
+				appendErr := batch.Append(columnValues...)
 				if appendErr != nil {
 					return fmt.Errorf("failed to append log row: %w", appendErr)
 				}
@@ -153,8 +189,18 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func renderInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(sqltemplates.LogsInsert, cfg.database(), cfg.LogsTableName)
+func (e *logsExporter) renderInsertLogsSQL() {
+	var featureColumnNames strings.Builder
+	var featureColumnPositions strings.Builder
+
+	if e.schemaFeatures.EventName {
+		featureColumnNames.WriteString(", ")
+		featureColumnNames.WriteString(logsColumnEventName)
+
+		featureColumnPositions.WriteString(", ?")
+	}
+
+	e.insertSQL = fmt.Sprintf(sqltemplates.LogsInsert, e.cfg.database(), e.cfg.LogsTableName, featureColumnNames.String(), featureColumnPositions.String())
 }
 
 func renderCreateLogsTableSQL(cfg *Config) string {

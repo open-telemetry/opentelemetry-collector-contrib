@@ -214,7 +214,11 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 		return writer, nil
 	}
 
-	err := os.MkdirAll(path.Dir(fullPath), 0o755)
+	perm := os.FileMode(0o755)
+	if e.conf.directoryPermissionsParsed != 0 {
+		perm = os.FileMode(e.conf.directoryPermissionsParsed)
+	}
+	err := os.MkdirAll(path.Dir(fullPath), perm)
 	if err != nil {
 		return nil, err
 	}

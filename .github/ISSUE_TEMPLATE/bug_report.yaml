@@ -181,6 +181,7 @@ body:
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
+      - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
@@ -297,6 +298,7 @@ body:
       - receiver/kubeletstats
       - receiver/libhoney
       - receiver/loki
+      - receiver/macosunifiedlogging
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
@@ -391,6 +393,7 @@ body:
       label: OpenTelemetry Collector configuration
       description: Please provide the configuration you are using (e.g. the YAML config file).
       placeholder: | # Empty Collector config
+        ```yaml
         receivers:
         exporters:
         processors:
@@ -409,6 +412,7 @@ body:
               receivers: []
               exporters: []
               processors: []
+        ```
       render: yaml
   - type: textarea
     attributes:
