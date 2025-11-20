@@ -24,8 +24,6 @@ const (
 	AttributeStateSlabReclaimable
 	AttributeStateSlabUnreclaimable
 	AttributeStateUsed
-	AttributeStateReserved
-	AttributeStateSurplus
 )
 
 // String returns the string representation of the AttributeState.
@@ -45,10 +43,6 @@ func (av AttributeState) String() string {
 		return "slab_unreclaimable"
 	case AttributeStateUsed:
 		return "used"
-	case AttributeStateReserved:
-		return "reserved"
-	case AttributeStateSurplus:
-		return "surplus"
 	}
 	return ""
 }
@@ -62,8 +56,40 @@ var MapAttributeState = map[string]AttributeState{
 	"slab_reclaimable":   AttributeStateSlabReclaimable,
 	"slab_unreclaimable": AttributeStateSlabUnreclaimable,
 	"used":               AttributeStateUsed,
-	"reserved":           AttributeStateReserved,
-	"surplus":            AttributeStateSurplus,
+}
+
+// AttributeSystemMemoryLinuxHugepagesState specifies the value system.memory.linux.hugepages.state attribute.
+type AttributeSystemMemoryLinuxHugepagesState int
+
+const (
+	_ AttributeSystemMemoryLinuxHugepagesState = iota
+	AttributeSystemMemoryLinuxHugepagesStateFree
+	AttributeSystemMemoryLinuxHugepagesStateUsed
+	AttributeSystemMemoryLinuxHugepagesStateReserved
+	AttributeSystemMemoryLinuxHugepagesStateSurplus
+)
+
+// String returns the string representation of the AttributeSystemMemoryLinuxHugepagesState.
+func (av AttributeSystemMemoryLinuxHugepagesState) String() string {
+	switch av {
+	case AttributeSystemMemoryLinuxHugepagesStateFree:
+		return "free"
+	case AttributeSystemMemoryLinuxHugepagesStateUsed:
+		return "used"
+	case AttributeSystemMemoryLinuxHugepagesStateReserved:
+		return "reserved"
+	case AttributeSystemMemoryLinuxHugepagesStateSurplus:
+		return "surplus"
+	}
+	return ""
+}
+
+// MapAttributeSystemMemoryLinuxHugepagesState is a helper map of string to AttributeSystemMemoryLinuxHugepagesState attribute value.
+var MapAttributeSystemMemoryLinuxHugepagesState = map[string]AttributeSystemMemoryLinuxHugepagesState{
+	"free":     AttributeSystemMemoryLinuxHugepagesStateFree,
+	"used":     AttributeSystemMemoryLinuxHugepagesStateUsed,
+	"reserved": AttributeSystemMemoryLinuxHugepagesStateReserved,
+	"surplus":  AttributeSystemMemoryLinuxHugepagesStateSurplus,
 }
 
 var MetricsInfo = metricsInfo{
@@ -386,7 +412,7 @@ func (m *metricSystemMemoryLinuxHugepagesUsage) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemMemoryLinuxHugepagesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
+func (m *metricSystemMemoryLinuxHugepagesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemMemoryLinuxHugepagesStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -394,7 +420,7 @@ func (m *metricSystemMemoryLinuxHugepagesUsage) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", stateAttributeValue)
+	dp.Attributes().PutStr("system.memory.linux.hugepages.state", systemMemoryLinuxHugepagesStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -437,7 +463,7 @@ func (m *metricSystemMemoryLinuxHugepagesUtilization) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemMemoryLinuxHugepagesUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stateAttributeValue string) {
+func (m *metricSystemMemoryLinuxHugepagesUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, systemMemoryLinuxHugepagesStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -445,7 +471,7 @@ func (m *metricSystemMemoryLinuxHugepagesUtilization) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("state", stateAttributeValue)
+	dp.Attributes().PutStr("system.memory.linux.hugepages.state", systemMemoryLinuxHugepagesStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -802,13 +828,13 @@ func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(ts p
 }
 
 // RecordSystemMemoryLinuxHugepagesUsageDataPoint adds a data point to system.memory.linux.hugepages.usage metric.
-func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesUsageDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
-	mb.metricSystemMemoryLinuxHugepagesUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesUsageDataPoint(ts pcommon.Timestamp, val int64, systemMemoryLinuxHugepagesStateAttributeValue AttributeSystemMemoryLinuxHugepagesState) {
+	mb.metricSystemMemoryLinuxHugepagesUsage.recordDataPoint(mb.startTime, ts, val, systemMemoryLinuxHugepagesStateAttributeValue.String())
 }
 
 // RecordSystemMemoryLinuxHugepagesUtilizationDataPoint adds a data point to system.memory.linux.hugepages.utilization metric.
-func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
-	mb.metricSystemMemoryLinuxHugepagesUtilization.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(ts pcommon.Timestamp, val float64, systemMemoryLinuxHugepagesStateAttributeValue AttributeSystemMemoryLinuxHugepagesState) {
+	mb.metricSystemMemoryLinuxHugepagesUtilization.recordDataPoint(mb.startTime, ts, val, systemMemoryLinuxHugepagesStateAttributeValue.String())
 }
 
 // RecordSystemMemoryPageSizeDataPoint adds a data point to system.memory.page_size metric.
