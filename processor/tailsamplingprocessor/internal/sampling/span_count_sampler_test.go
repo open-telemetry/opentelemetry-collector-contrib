@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -253,10 +252,8 @@ func newTraceWithMultipleSpans(numberSpans []int32) *samplingpolicy.TraceData {
 		totalNumberSpans += numberSpans[i]
 	}
 
-	traceSpanCount := &atomic.Int64{}
-	traceSpanCount.Store(int64(totalNumberSpans))
 	return &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
-		SpanCount:       traceSpanCount,
+		SpanCount:       int64(totalNumberSpans),
 	}
 }

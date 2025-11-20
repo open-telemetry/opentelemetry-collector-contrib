@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
@@ -915,6 +916,71 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
 		})
 	}
+}
+
+func TestLogsForPropagateError(t *testing.T) {
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.PropagateError,
+		DefaultPipelines: []pipeline.ID{logsDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{logs0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.LogsSink
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+			logsDefault: &defaultSink,
+			logs0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.Error(t, conn.ConsumeLogs(t.Context(), plogutiltest.NewLogs("1", "2", "3")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllLogs(), 0)
+	assert.Empty(t, defaultSink.AllLogs(), 0)
+}
+
+func TestLogsForIgnoreError(t *testing.T) {
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.IgnoreError,
+		DefaultPipelines: []pipeline.ID{logsDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{logs0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.LogsSink
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+			logsDefault: &defaultSink,
+			logs0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, conn.ConsumeLogs(t.Context(), plogutiltest.NewLogs("1", "2", "3")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllLogs())
+	assert.Len(t, defaultSink.AllLogs(), 1)
+	assert.Equal(t, plogutiltest.NewLogs("1", "2", "3"), defaultSink.AllLogs()[0])
 }
 
 func setLogRecordMap(lr plog.LogRecord, key, value string) plog.LogRecord {
