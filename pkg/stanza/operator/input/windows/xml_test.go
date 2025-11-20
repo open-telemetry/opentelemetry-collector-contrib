@@ -42,7 +42,7 @@ func TestParseSeverity(t *testing.T) {
 
 func TestParseBody(t *testing.T) {
 	xml := &EventXML{
-		EventID: EventID{
+		EventID: eventID{
 			ID:         1,
 			Qualifiers: 2,
 		},
@@ -51,7 +51,7 @@ func TestParseBody(t *testing.T) {
 			GUID:            "guid",
 			EventSourceName: "event source",
 		},
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2020-07-30T01:01:01.123456789Z",
 		},
 		Computer: "computer",
@@ -62,8 +62,8 @@ func TestParseBody(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: EventData{
-			Data: []Data{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}},
+		EventData: eventData{
+			Data: []dataItem{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}},
 		},
 		RenderedLevel:    "rendered_level",
 		RenderedTask:     "rendered_task",
@@ -103,7 +103,7 @@ func TestParseBody(t *testing.T) {
 
 func TestParseBodySecurityExecution(t *testing.T) {
 	xml := &EventXML{
-		EventID: EventID{
+		EventID: eventID{
 			ID:         1,
 			Qualifiers: 2,
 		},
@@ -112,7 +112,7 @@ func TestParseBodySecurityExecution(t *testing.T) {
 			GUID:            "guid",
 			EventSourceName: "event source",
 		},
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2020-07-30T01:01:01.123456789Z",
 		},
 		Computer: "computer",
@@ -123,14 +123,14 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: EventData{
-			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
+		EventData: eventData{
+			Data: []dataItem{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
-		Execution: &Execution{
+		Execution: &execution{
 			ProcessID: 13,
 			ThreadID:  102,
 		},
-		Security: &Security{
+		Security: &security{
 			UserID: "my-user-id",
 		},
 		RenderedLevel:    "rendered_level",
@@ -184,7 +184,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 	processorTime := uint(200)
 
 	xml := &EventXML{
-		EventID: EventID{
+		EventID: eventID{
 			ID:         1,
 			Qualifiers: 2,
 		},
@@ -193,7 +193,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 			GUID:            "guid",
 			EventSourceName: "event source",
 		},
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2020-07-30T01:01:01.123456789Z",
 		},
 		Computer: "computer",
@@ -204,10 +204,10 @@ func TestParseBodyFullExecution(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: EventData{
-			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
+		EventData: eventData{
+			Data: []dataItem{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
-		Execution: &Execution{
+		Execution: &execution{
 			ProcessID:     13,
 			ThreadID:      102,
 			ProcessorID:   &processorID,
@@ -216,7 +216,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 			UserTime:      &userTime,
 			ProcessorTime: &processorTime,
 		},
-		Security: &Security{
+		Security: &security{
 			UserID: "my-user-id",
 		},
 		RenderedLevel:    "rendered_level",
@@ -269,7 +269,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 
 func TestParseNoRendered(t *testing.T) {
 	xml := &EventXML{
-		EventID: EventID{
+		EventID: eventID{
 			ID:         1,
 			Qualifiers: 2,
 		},
@@ -278,7 +278,7 @@ func TestParseNoRendered(t *testing.T) {
 			GUID:            "guid",
 			EventSourceName: "event source",
 		},
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2020-07-30T01:01:01.123456789Z",
 		},
 		Computer: "computer",
@@ -289,8 +289,8 @@ func TestParseNoRendered(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: EventData{
-			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
+		EventData: eventData{
+			Data: []dataItem{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
 	}
 
@@ -326,7 +326,7 @@ func TestParseNoRendered(t *testing.T) {
 
 func TestParseBodySecurity(t *testing.T) {
 	xml := &EventXML{
-		EventID: EventID{
+		EventID: eventID{
 			ID:         1,
 			Qualifiers: 2,
 		},
@@ -335,19 +335,19 @@ func TestParseBodySecurity(t *testing.T) {
 			GUID:            "guid",
 			EventSourceName: "event source",
 		},
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2020-07-30T01:01:01.123456789Z",
 		},
 		Computer: "computer",
-		Channel:  "Security",
+		Channel:  "security",
 		RecordID: 1,
 		Level:    "Information",
 		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: EventData{
-			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
+		EventData: eventData{
+			Data: []dataItem{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
 		RenderedLevel:    "rendered_level",
 		RenderedTask:     "rendered_task",
@@ -367,7 +367,7 @@ func TestParseBodySecurity(t *testing.T) {
 		},
 		"system_time": "2020-07-30T01:01:01.123456789Z",
 		"computer":    "computer",
-		"channel":     "Security",
+		"channel":     "security",
 		"record_id":   uint64(1),
 		"level":       "rendered_level",
 		"message":     "message",
@@ -387,9 +387,9 @@ func TestParseBodySecurity(t *testing.T) {
 
 func TestParseEventData(t *testing.T) {
 	xmlMap := &EventXML{
-		EventData: EventData{
+		EventData: eventData{
 			Name:   "EVENT_DATA",
-			Data:   []Data{{Name: "name", Value: "value"}},
+			Data:   []dataItem{{Name: "name", Value: "value"}},
 			Binary: "2D20",
 		},
 	}
@@ -405,8 +405,8 @@ func TestParseEventData(t *testing.T) {
 	require.Equal(t, expectedMap, parsed["event_data"])
 
 	xmlMixed := &EventXML{
-		EventData: EventData{
-			Data: []Data{{Name: "name", Value: "value"}, {Value: "no_name"}},
+		EventData: eventData{
+			Data: []dataItem{{Name: "name", Value: "value"}, {Value: "no_name"}},
 		},
 	}
 
@@ -433,7 +433,7 @@ func TestUnmarshalWithEventData(t *testing.T) {
 	require.NoError(t, err)
 
 	xml := &EventXML{
-		EventID: EventID{
+		EventID: eventID{
 			ID:         16384,
 			Qualifiers: 16384,
 		},
@@ -442,7 +442,7 @@ func TestUnmarshalWithEventData(t *testing.T) {
 			GUID:            "{E23B33B0-C8C9-472C-A5F9-F2BDFEA0F156}",
 			EventSourceName: "Software Protection Platform Service",
 		},
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2022-04-22T10:20:52.3778625Z",
 		},
 		Computer:  "computer",
@@ -452,10 +452,10 @@ func TestUnmarshalWithEventData(t *testing.T) {
 		Message:   "",
 		Task:      "0",
 		Opcode:    "0",
-		Execution: &Execution{},
-		Security:  &Security{},
-		EventData: EventData{
-			Data: []Data{
+		Execution: &execution{},
+		Security:  &security{},
+		EventData: eventData{
+			Data: []dataItem{
 				{Name: "Time", Value: "2022-04-28T19:48:52Z"},
 				{Name: "Source", Value: "RulesEngine"},
 			},
@@ -475,14 +475,14 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 	require.NoError(t, err)
 
 	xml := &EventXML{
-		EventID: EventID{
+		EventID: eventID{
 			ID:         8194,
 			Qualifiers: 0,
 		},
 		Provider: Provider{
 			Name: "VSS",
 		},
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2023-10-19T21:57:58.0685414Z",
 		},
 		Computer: "computer",
@@ -492,13 +492,13 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 		Message:  "",
 		Task:     "0",
 		Opcode:   "0",
-		EventData: EventData{
-			Data:   []Data{{Name: "", Value: "1st_value"}, {Name: "", Value: "2nd_value"}},
+		EventData: eventData{
+			Data:   []dataItem{{Name: "", Value: "1st_value"}, {Name: "", Value: "2nd_value"}},
 			Binary: "2D20",
 		},
 		Keywords:  []string{"0x80000000000000"},
-		Security:  &Security{},
-		Execution: &Execution{},
+		Security:  &security{},
+		Execution: &execution{},
 		Original:  string(data),
 	}
 
@@ -513,14 +513,14 @@ func TestUnmarshalWithUserData(t *testing.T) {
 	require.NoError(t, err)
 
 	xml := &EventXML{
-		EventID: EventID{
+		EventID: eventID{
 			ID: 1102,
 		},
 		Provider: Provider{
 			Name: "Microsoft-Windows-Eventlog",
 			GUID: "{fc65ddd8-d6ef-4962-83d5-6e5cfe9ce148}",
 		},
-		TimeCreated: TimeCreated{
+		TimeCreated: timeCreated{
 			SystemTime: "2023-10-12T10:38:24.543506200Z",
 		},
 		Computer: "test.example.com",
@@ -531,10 +531,10 @@ func TestUnmarshalWithUserData(t *testing.T) {
 		Task:     "104",
 		Opcode:   "0",
 		Keywords: []string{"0x4020000000000000"},
-		Security: &Security{
+		Security: &security{
 			UserID: "S-1-5-18",
 		},
-		Execution: &Execution{
+		Execution: &execution{
 			ProcessID: 1472,
 			ThreadID:  7784,
 		},
