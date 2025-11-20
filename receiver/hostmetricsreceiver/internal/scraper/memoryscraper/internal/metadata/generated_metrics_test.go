@@ -74,10 +74,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(ts, 1, AttributeStateBuffered)
+			mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(ts, 1, AttributeSystemMemoryLinuxHugepagesStateFree)
 
 			allMetricsCount++
-			mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(ts, 1, AttributeStateBuffered)
+			mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(ts, 1, AttributeSystemMemoryLinuxHugepagesStateFree)
 
 			allMetricsCount++
 			mb.RecordSystemMemoryPageSizeDataPoint(ts, 1)
@@ -193,9 +193,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
+					attrVal, ok := dp.Attributes().Get("system.memory.linux.hugepages.state")
 					assert.True(t, ok)
-					assert.Equal(t, "buffered", attrVal.Str())
+					assert.Equal(t, "free", attrVal.Str())
 				case "system.memory.linux.hugepages.utilization":
 					assert.False(t, validatedMetrics["system.memory.linux.hugepages.utilization"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.utilization")
 					validatedMetrics["system.memory.linux.hugepages.utilization"] = true
@@ -208,9 +208,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("state")
+					attrVal, ok := dp.Attributes().Get("system.memory.linux.hugepages.state")
 					assert.True(t, ok)
-					assert.Equal(t, "buffered", attrVal.Str())
+					assert.Equal(t, "free", attrVal.Str())
 				case "system.memory.page_size":
 					assert.False(t, validatedMetrics["system.memory.page_size"], "Found a duplicate in the metrics slice: system.memory.page_size")
 					validatedMetrics["system.memory.page_size"] = true

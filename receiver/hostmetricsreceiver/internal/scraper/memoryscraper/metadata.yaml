@@ -23,9 +23,11 @@ attributes:
         slab_reclaimable,
         slab_unreclaimable,
         used,
-        reserved,
-        surplus,
       ]
+  system.memory.linux.hugepages.state:
+    description: Breakdown of huge pages usage by state.
+    type: string
+    enum: [free, used, reserved, surplus]
 
 metrics:
   system.linux.memory.available:
@@ -93,7 +95,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    attributes: [state]
+    attributes: [system.memory.linux.hugepages.state]
 
   system.memory.linux.hugepages.utilization:
     enabled: false
@@ -103,7 +105,7 @@ metrics:
       level: development
     gauge:
       value_type: double
-    attributes: [state]
+    attributes: [system.memory.linux.hugepages.state]
 
   system.memory.page_size:
     enabled: false

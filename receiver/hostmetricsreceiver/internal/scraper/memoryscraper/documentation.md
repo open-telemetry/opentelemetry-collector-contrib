@@ -24,7 +24,7 @@ Bytes of memory in use.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used``, ``reserved``, ``surplus`` | Recommended |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended |
 
 ## Optional Metrics
 
@@ -88,7 +88,7 @@ Number of huge pages in use by state.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used``, ``reserved``, ``surplus`` | Recommended |
+| system.memory.linux.hugepages.state | Breakdown of huge pages usage by state. | Str: ``free``, ``used``, ``reserved``, ``surplus`` | Recommended |
 
 ### system.memory.linux.hugepages.utilization
 
@@ -102,7 +102,7 @@ Percentage of huge pages in use by state.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used``, ``reserved``, ``surplus`` | Recommended |
+| system.memory.linux.hugepages.state | Breakdown of huge pages usage by state. | Str: ``free``, ``used``, ``reserved``, ``surplus`` | Recommended |
 
 ### system.memory.page_size
 
@@ -124,4 +124,4 @@ Percentage of memory bytes in use.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used``, ``reserved``, ``surplus`` | Recommended |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended |
