@@ -295,11 +295,15 @@ func Test_parseSeverity(t *testing.T) {
 }
 
 func getTestingGetter() any {
-	return ottl.NewTestingLiteralGetter(true, ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return getTestSeverityMapping(), nil
+	getter, _ := ottl.NewTestingLiteralGetter(
+		true,
+		ottl.StandardPMapGetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				return getTestSeverityMapping(), nil
+			},
 		},
-	})
+	)
+	return getter
 }
 
 func getTestSeverityMapping() pcommon.Map {
