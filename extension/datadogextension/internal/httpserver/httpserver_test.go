@@ -219,7 +219,7 @@ const successfulInstanceResponse = `{
     "full_configuration": "",
     "health_status": "",
     "collector_resource_attributes": {},
-    "collector_deployment_type": ""
+    "collector_deployment_type": "unknown"
   },
   "uuid": "test-uuid"
 }`
@@ -296,6 +296,7 @@ func TestHandleMetadata(t *testing.T) {
 						FullComponents:              []payload.CollectorModule{},
 						ActiveComponents:            []payload.ServiceComponent{},
 						CollectorResourceAttributes: map[string]string{},
+						CollectorDeploymentType:     "unknown", // Default value set by config validation
 					},
 				},
 			}
