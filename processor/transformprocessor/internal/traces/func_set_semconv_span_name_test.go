@@ -12,9 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
@@ -198,9 +197,7 @@ func TestSemconvSpanName(t *testing.T) {
 			currentSpanName:        "GET /users/123",
 			kind:                   ptrace.SpanKindClient,
 			instrumentationLibrary: "hand crafted",
-			addAttributes: func(attrs pcommon.Map) {
-			},
-			want: "GET /users/123",
+			want:                   "GET /users/123",
 		},
 		// DB CLIENT SPANS
 		{
