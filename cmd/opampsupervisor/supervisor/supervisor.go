@@ -411,8 +411,8 @@ func (s *Supervisor) getFeatureGates() error {
 	_ = scanner.Scan()
 	for scanner.Scan() {
 		line := scanner.Text()
-		i := strings.Index(line, " ")
-		flag := line[0:i]
+		before, _, _ := strings.Cut(line, " ")
+		flag := before
 
 		if flag == AllowNoPipelinesFeatureGate {
 			s.featureGates[AllowNoPipelinesFeatureGate] = struct{}{}
@@ -660,7 +660,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
-	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
+	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.OpaqueHeaders()))
 	settings := types.StartSettings{
 		OpAMPServerURL:     s.config.Server.Endpoint,
 		Header:             s.config.Server.Headers,
@@ -1400,7 +1400,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 		err := s.ownTelemetryTemplate.Execute(&cfg, data)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not setup own telemetry", zap.Error(err))
-			return
+			return configChanged
 		}
 	}
 	s.agentConfigOwnTelemetrySection.Store(cfg.String())
@@ -1409,7 +1409,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Error composing merged config for own metrics. Ignoring agent self metrics config", zap.Error(err))
-		return
+		return configChanged
 	}
 
 	return configChanged

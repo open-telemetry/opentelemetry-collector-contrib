@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -22,12 +23,16 @@ func Test_deleteKey(t *testing.T) {
 
 	tests := []struct {
 		name string
-		key  string
+		key  ottl.StringGetter[pcommon.Map]
 		want func(pcommon.Map)
 	}{
 		{
 			name: "delete test",
-			key:  "test",
+			key: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+					return "test", nil
+				},
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutBool("test3", true)
 				expectedMap.PutInt("test2", 3)
@@ -35,7 +40,11 @@ func Test_deleteKey(t *testing.T) {
 		},
 		{
 			name: "delete test2",
-			key:  "test2",
+			key: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+					return "test2", nil
+				},
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
@@ -43,7 +52,11 @@ func Test_deleteKey(t *testing.T) {
 		},
 		{
 			name: "delete nothing",
-			key:  "not a valid key",
+			key: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+					return "not a valid key", nil
+				},
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -74,7 +87,7 @@ func Test_deleteKey(t *testing.T) {
 			exprFunc := deleteKey(target, tt.key)
 
 			_, err := exprFunc(nil, scenarioMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
@@ -96,9 +109,13 @@ func Test_deleteKey_bad_input(t *testing.T) {
 		},
 	}
 
-	key := "anything"
+	key := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "anything", nil
+		},
+	}
 
-	exprFunc := deleteKey[any](target, key)
+	exprFunc := deleteKey(target, key)
 	_, err := exprFunc(nil, input)
 	assert.Error(t, err)
 }
@@ -113,9 +130,13 @@ func Test_deleteKey_get_nil(t *testing.T) {
 		},
 	}
 
-	key := "anything"
+	key := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "anything", nil
+		},
+	}
 
-	exprFunc := deleteKey[any](target, key)
+	exprFunc := deleteKey(target, key)
 	_, err := exprFunc(nil, nil)
 	assert.Error(t, err)
 }

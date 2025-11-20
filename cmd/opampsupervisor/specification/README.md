@@ -80,19 +80,18 @@ server:
 
 # Keys with boolean true/false values that enable a particular
 # OpAMP capability.
-# The Supervisor will accept remote configuration from the Server.
-# If enabled the Supervisor will also report RemoteConfig status
-# to the Server.
 capabilities:
+  # The Supervisor will accept remote configuration from the Server.
   accepts_remote_config: # false if unspecified
+
+  # The Supervisor will accept restart requests.
+  accepts_restart_command: # false if unspecified
+
+  # The Supervisor will accept connections settings for OpAMP from the Server.
+  accepts_opamp_connection_settings: # false if unspecified
 
   # The Supervisor will report EffectiveConfig to the Server.
   reports_effective_config: # true if unspecified
-
-  # The Supervisor can accept Collector executable package updates.
-  # If enabled the Supervisor will also report package status to the
-  # Server.
-  accepts_packages: # false if unspecified
 
   # The Collector will report own metrics to the destination specified by
   # the Server.
@@ -100,23 +99,22 @@ capabilities:
 
   # The Collector will report own logs to the destination specified by
   # the Server.
-  reports_own_logs: # true if unspecified
+  reports_own_logs: # false if unspecified
 
   # The Collector will report own traces to the destination specified by
   # the Server.
-  reports_own_traces: # true if unspecified
-
-  # The Collector will accept connections settings for exporters
-  # from the Server.
-  accepts_other_connection_settings: # false if unspecified
-
-  # The Supervisor will accept restart requests.
-  accepts_restart_command: # true if unspecified
+  reports_own_traces: # false if unspecified
 
   # The Collector will report Health.
   reports_health: # true if unspecified
 
-  # The supervisor will report OpAMP heartbeats to the Server.
+  # The Supervisor will report remote config status to the Server.
+  reports_remote_config: # false if unspecified
+
+  # The Supervisor will report available Collector components to the Server.
+  reports_available_components: # false if unspecified
+
+  # The Supervisor will report OpAMP heartbeats to the Server.
   reports_heartbeat: # true if unspecified
 
 storage:
@@ -281,7 +279,8 @@ agent:
     - './custom-config.yaml'
     - './another-custom-config.yaml'
   args:
-    - '--feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient'
+    - '--feature-gates'
+    - 'service.AllowNoPipelines'
   env:
     HOME: '/dev/home'
     GO_HOME: '~/go'
@@ -290,7 +289,7 @@ agent:
 This results in the following Collector process invocation:
 
 ```shell
-./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
+./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates service.AllowNoPipelines
 ```
 
 ### Operation When OpAMP Server is Unavailable

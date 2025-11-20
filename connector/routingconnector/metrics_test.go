@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
@@ -329,7 +329,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rmetric := defaultSink.AllMetrics()[0].ResourceMetrics().At(0)
 		attr, ok := rmetric.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exist")
-		assert.Equal(t, attr.Double(), float64(-1.0))
+		assert.Equal(t, float64(-1.0), attr.Double())
 	})
 
 	t.Run("metric matched by one expression, multiple pipelines", func(t *testing.T) {
@@ -453,9 +453,9 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isResourceString := `IsString(attributes["resourceName"]) == true`
-	require.Contains(t, common.StandardFunctions[ottlresource.TransformContext](), "IsString")
+	require.Contains(t, standardFunctions[ottlresource.TransformContext](), "IsString")
 	isAttributesMap := `IsMap(attributes) == true`
-	require.Contains(t, common.StandardFunctions[ottlresource.TransformContext](), "IsMap")
+	require.Contains(t, standardFunctions[ottlresource.TransformContext](), "IsMap")
 
 	isMetricE := `name == "metricE"`
 	isMetricF := `name == "metricF"`
@@ -1150,4 +1150,69 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
 		})
 	}
+}
+
+func TestMetricsForPropagateError(t *testing.T) {
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.PropagateError,
+		DefaultPipelines: []pipeline.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{metrics0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.MetricsSink
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+			metricsDefault: &defaultSink,
+			metrics0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.Error(t, conn.ConsumeMetrics(t.Context(), pmetricutiltest.NewGauges("1", "2", "3", "4")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllMetrics(), 0)
+	assert.Empty(t, defaultSink.AllMetrics(), 0)
+}
+
+func TestMetricsForIgnoreError(t *testing.T) {
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.IgnoreError,
+		DefaultPipelines: []pipeline.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{metrics0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.MetricsSink
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+			metricsDefault: &defaultSink,
+			metrics0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, conn.ConsumeMetrics(t.Context(), pmetricutiltest.NewGauges("1", "2", "3", "4")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllMetrics(), 0)
+	assert.Len(t, defaultSink.AllMetrics(), 1)
+	assert.Equal(t, pmetricutiltest.NewGauges("1", "2", "3", "4"), defaultSink.AllMetrics()[0])
 }

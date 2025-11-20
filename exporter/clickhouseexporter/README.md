@@ -8,7 +8,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fclickhouse%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fclickhouse) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fclickhouse%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fclickhouse) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_clickhouse)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_clickhouse&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@dmitryax](https://www.github.com/dmitryax), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -374,7 +375,54 @@ Column names and types must be the same to preserve compatibility with the expor
 As long as the column names/types match the `INSERT` statement, you can create whatever kind of table you want.
 See [ClickHouse's LogHouse](https://clickhouse.com/blog/building-a-logging-platform-with-clickhouse-and-saving-millions-over-datadog#schema) as an example of this flexibility.
 
-## Example
+### Upgrading existing tables
+
+Sometimes new columns are added to the exporter in a backwards compatible way.
+The exporter runs a `DESC TABLE` command on startup to determine which of these new columns are available on the table schema.
+
+If you already have tables created by a previous version of the exporter, you will need to add these new columns manually.
+
+Here is an example of a command you can use to update your existing table (adjust database and table names as needed):
+
+```sql
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+```
+
+To find the newest columns available check the `internal/sqltemplates` folder.
+The `CREATE TABLE` statements will always have the latest columns.
+
+In some cases the table changes will not be backwards compatible. Be sure to check the changelog for breaking changes before upgrading your collector.
+
+
+### Optional table upgrades
+
+As mentioned in the previous section, the exporter is able to detect which columns are present on the schema for backwards compatibility.
+Here are some columns you can add to your table to update the schema:
+
+```sql
+-- These 3 columns are part of one feature, you must add all 3 at once.
+ALTER TABLE otel.otel_logs
+  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS LogAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  -- Optional indices
+  ADD INDEX IF NOT EXISTS idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+  ADD INDEX IF NOT EXISTS idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+  ADD INDEX IF NOT EXISTS idx_log_attr_keys LogAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
+
+-- EventName
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1)),
+
+-- These 2 columns are part of one feature, you must add all 2 at once.
+ALTER TABLE otel.otel_traces
+  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  -- Optional indices
+  ADD INDEX IF NOT EXISTS idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+  ADD INDEX IF NOT EXISTS idx_span_attr_keys SpanAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
+```
+
+## Example Config
 
 This example shows how to configure the exporter to send data to a ClickHouse server.
 It uses the native protocol without TLS. The exporter will create the database and tables if they don't exist.

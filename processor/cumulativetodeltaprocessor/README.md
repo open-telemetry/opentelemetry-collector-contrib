@@ -16,7 +16,7 @@
 
 ## Description
 
-The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum and histogram metrics to monotonic, delta metrics. Non-monotonic sums and exponential histograms are excluded.
+The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic sum, histogram, and exponential histogram metrics from cumulative to delta aggregation temporality. Non-monotonic sums are excluded. Delta metrics are excluded from any conversion and forwarded without changes.
 
 ## Configuration
 
@@ -24,8 +24,8 @@ Configuration is specified through a list of metrics. The processor uses metric 
 
 The following settings can be optionally configured:
 
-- `include`: List of metrics names (case-insensitive), patterns or metric types to convert to delta. Valid values are: `sum`, `histogram`.
-- `exclude`: List of metrics names (case-insensitive), patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.** Valid values are: `sum`, `histogram`.
+- `include`: List of metrics names (case-insensitive), patterns or metric types to convert to delta. Valid values for metric types are: `sum`, `histogram`, `exponentialhistogram`.
+- `exclude`: List of metrics names (case-insensitive), patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.** Valid values for metric types are: `sum`, `histogram`, `exponentialhistogram`.
 - `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
 - `initial_value`: Handling of the first observed point for a given metric identity.
   When the collector (re)starts, there's no record of how much of a given cumulative counter has already been converted to delta values.
