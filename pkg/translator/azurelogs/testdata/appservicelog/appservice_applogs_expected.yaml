@@ -15,34 +15,30 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: operation.name
-                    value:
-                      stringValue: AppLog
-                  - key: properties
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: ContainerId
-                            value:
-                              stringValue: CONTAINER_ID
-                          - key: ExceptionClass
-                            value:
-                              stringValue: EXCEPTION_CLASS
-                          - key: Host
-                            value:
-                              stringValue: HOST
-                          - key: Method
-                            value:
-                              stringValue: METHOD
-                          - key: Source
-                            value:
-                              stringValue: FILEPATH
-                          - key: Stacktrace
-                            value:
-                              stringValue: STACKTRACE
                   - key: category
                     value:
                       stringValue: AppServiceAppLogs
+                  - key: code.filepath
+                    value:
+                      stringValue: FILEPATH
+                  - key: code.function
+                    value:
+                      stringValue: METHOD
+                  - key: container.id
+                    value:
+                      stringValue: CONTAINER_ID
+                  - key: exception.stacktrace
+                    value:
+                      stringValue: STACKTRACE
+                  - key: exception.type
+                    value:
+                      stringValue: EXCEPTION_CLASS
+                  - key: host.id
+                    value:
+                      stringValue: HOST
+                  - key: operation.name
+                    value:
+                      stringValue: AppLog
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

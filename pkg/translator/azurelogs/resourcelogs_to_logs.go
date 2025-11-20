@@ -284,19 +284,19 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 		handleFunc = handleFrontDoorAccessLog
 	case categoryFrontDoorHealthProbeLog:
 		handleFunc = handleFrontDoorHealthProbeLog
-	case categoryAppServiceAppLog:
+	case categoryAppServiceAppLogs:
 		handleFunc = handleAppServiceAppLogs
-	case categoryAppServiceAuditLog:
+	case categoryAppServiceAuditLogs:
 		handleFunc = handleAppServiceAuditLogs
-	case categoryAppServiceAuthenticationLog:
+	case categoryAppServiceAuthenticationLogs:
 		handleFunc = handleAppServiceAuthenticationLogs
-	case categoryAppServiceConsoleLog:
+	case categoryAppServiceConsoleLogs:
 		handleFunc = handleAppServiceConsoleLogs
-	case categoryAppServiceHTTPLog:
+	case categoryAppServiceHTTPLogs:
 		handleFunc = handleAppServiceHTTPLogs
-	case categoryAppServiceIPSecAuditLog:
+	case categoryAppServiceIPSecAuditLogs:
 		handleFunc = handleAppServiceIPSecAuditLogs
-	case categoryAppServicePlatformLog:
+	case categoryAppServicePlatformLogs:
 		handleFunc = handleAppServicePlatformLogs
 	default:
 		handleFunc = func(field string, value any, _, attrsProps map[string]any) {
