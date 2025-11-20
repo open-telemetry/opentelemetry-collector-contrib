@@ -197,7 +197,10 @@ func TestSemconvSpanName(t *testing.T) {
 			currentSpanName:        "GET /users/123",
 			kind:                   ptrace.SpanKindClient,
 			instrumentationLibrary: "hand crafted",
-			want:                   "GET /users/123",
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("some_attribute", "some_value")
+			},
+			want: "GET /users/123",
 		},
 		// DB CLIENT SPANS
 		{
