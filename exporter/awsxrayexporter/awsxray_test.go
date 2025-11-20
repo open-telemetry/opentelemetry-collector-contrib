@@ -53,12 +53,14 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	td := constructXrayAndW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 4, "4 spans have xray/w3c trace id")
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have w3c trace id")
@@ -95,7 +97,7 @@ func TestTelemetryEnabled(t *testing.T) {
 
 func BenchmarkForTracesExporter(b *testing.B) {
 	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		ctx := b.Context()
 		td := constructSpanData()

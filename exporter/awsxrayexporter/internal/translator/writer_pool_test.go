@@ -37,7 +37,7 @@ func TestWriterPoolBasic(t *testing.T) {
 
 func BenchmarkWithoutPool(b *testing.B) {
 	logger := zap.NewNop()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		span := constructWriterPoolSpan()
 		b.StartTimer()
@@ -53,7 +53,7 @@ func BenchmarkWithoutPool(b *testing.B) {
 func BenchmarkWithPool(b *testing.B) {
 	logger := zap.NewNop()
 	wp := newWriterPool(2048)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		span := constructWriterPoolSpan()
 		b.StartTimer()
