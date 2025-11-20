@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -377,17 +378,17 @@ func Test_newPathGetSetter(t *testing.T) {
 				return tCtx.cache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			resource := createTelemetry()
 
 			tCtx := NewTransformContext(resource, pmetric.NewResourceMetrics())
 			got, err := accessor.Get(t.Context(), tCtx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exRes := createTelemetry()
 			exCache := pcommon.NewMap()
