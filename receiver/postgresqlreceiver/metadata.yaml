@@ -452,6 +452,16 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  postgresql.table.autovacuum.count:
+    description: Number of times a table has manually been autovacuumed.
+    enabled: false
+    unit: "{autovacuum}"
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
   postgresql.table.count:
     description: Number of user tables in a database.
     stability:
@@ -471,16 +481,6 @@ metrics:
     sum:
       aggregation_temporality: cumulative
       monotonic: false
-      value_type: int
-  postgresql.table.autovacuum.count:
-    description: Number of times a table has manually been autovacuumed.
-    enabled: false
-    unit: "{autovacuum}"
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
       value_type: int
   postgresql.table.vacuum.count:
     description: Number of times a table has manually been vacuumed.
