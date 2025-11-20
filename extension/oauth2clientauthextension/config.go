@@ -72,7 +72,7 @@ type Config struct {
 
 	// Claims is a map of claims to be added to the JWT token. Only used if
 	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
-	Claims map[string]interface{} `mapstructure:"claims,omitempty"`
+	Claims map[string]any `mapstructure:"claims,omitempty"`
 
 	// EndpointParams specifies additional parameters for requests to the token endpoint.
 	EndpointParams url.Values `mapstructure:"endpoint_params"`
