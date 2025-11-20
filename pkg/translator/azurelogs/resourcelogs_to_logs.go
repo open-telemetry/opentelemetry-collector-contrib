@@ -311,7 +311,6 @@ func addCommonAzureFields(attrs map[string]any, log *azureLogRecord) {
 
 	setIf(attrs, string(conventions.CloudRegionKey), log.Location)
 	setIf(attrs, string(conventions.NetworkPeerAddressKey), log.CallerIPAddress)
-	return attrs
 }
 
 func extractRawAttributes(log *azureLogRecord) map[string]any {
