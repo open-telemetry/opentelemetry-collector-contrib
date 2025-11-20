@@ -271,6 +271,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
