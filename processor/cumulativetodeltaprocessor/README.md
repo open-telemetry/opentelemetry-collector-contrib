@@ -161,28 +161,5 @@ To enable the feature gate, start the collector with:
 otelcol --config=config.yaml --feature-gates=processor.cumulativetodelta.defaultmaxstaleness
 ```
 
-**Example Configuration**:
-
-With feature gate enabled (uses default 5-minute staleness):
-
-```yaml
-processors:
-  cumulativetodelta:
-    include:
-      metrics:
-        - system.cpu.time
-```
-
-With feature gate enabled but overriding the default:
-
-```yaml
-processors:
-  cumulativetodelta:
-    max_staleness: 10m  # Explicit value overrides the feature gate default
-    include:
-      metrics:
-        - system.cpu.time
-```
-
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
