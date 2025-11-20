@@ -766,6 +766,18 @@ func Test_dbSpanName(t *testing.T) {
 			},
 			want: "GetCustomer",
 		},
+		{
+			name:                   "only 'db.stored_procedure.name', 'db.system.name' & 'db.namespace', no 'server.address', no 'db.operation.name'",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.stored_procedure.name", "GetCustomer")
+				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("db.namespace", "db1")
+			},
+			want: "db1.GetCustomer",
+		},
 	}
 
 	for _, tt := range tests {
