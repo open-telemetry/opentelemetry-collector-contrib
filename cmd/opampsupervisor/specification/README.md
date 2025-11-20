@@ -279,7 +279,8 @@ agent:
     - './custom-config.yaml'
     - './another-custom-config.yaml'
   args:
-    - '--feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient'
+    - '--feature-gates'
+    - 'service.AllowNoPipelines'
   env:
     HOME: '/dev/home'
     GO_HOME: '~/go'
@@ -288,7 +289,7 @@ agent:
 This results in the following Collector process invocation:
 
 ```shell
-./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
+./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates service.AllowNoPipelines
 ```
 
 ### Operation When OpAMP Server is Unavailable
