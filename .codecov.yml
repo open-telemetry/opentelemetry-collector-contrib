@@ -64,6 +64,10 @@ component_management:
     name: connector_grafanacloud
     paths:
     - connector/grafanacloudconnector/**
+  - component_id: connector_metricsaslogs
+    name: connector_metricsaslogs
+    paths:
+    - connector/metricsaslogsconnector/**
   - component_id: connector_otlpjson
     name: connector_otlpjson
     paths:
