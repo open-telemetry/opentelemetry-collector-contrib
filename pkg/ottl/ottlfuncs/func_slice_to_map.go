@@ -102,7 +102,7 @@ func extractValue(m pcommon.Map, path []string) (pcommon.Value, error) {
 	}
 
 	if val.Type() != pcommon.ValueTypeMap {
-		return  pcommon.Value{}, fmt.Errorf("provided object does not contain the path %v", path)
+		return pcommon.Value{}, fmt.Errorf("provided object does not contain the path %v", path)
 	}
 
 	return extractValue(val.Map(), path[1:])
