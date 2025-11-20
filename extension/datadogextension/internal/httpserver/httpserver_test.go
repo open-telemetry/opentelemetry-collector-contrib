@@ -218,7 +218,8 @@ const successfulInstanceResponse = `{
     },
     "full_configuration": "",
     "health_status": "",
-    "collector_resource_attributes": {}
+    "collector_resource_attributes": {},
+    "collector_deployment_type": ""
   },
   "uuid": "test-uuid"
 }`
