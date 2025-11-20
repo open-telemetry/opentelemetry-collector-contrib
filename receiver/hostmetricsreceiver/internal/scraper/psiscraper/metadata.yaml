@@ -1,0 +1,182 @@
+type: psi
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [alpineq]
+
+sem_conv_version: 1.9.0
+
+metrics:
+  system.psi.cpu.some.avg10:
+    enabled: true
+    description: CPU pressure stall information - some tasks waiting, 10 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.cpu.some.avg300:
+    enabled: true
+    description: CPU pressure stall information - some tasks waiting, 300 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.cpu.some.avg60:
+    enabled: true
+    description: CPU pressure stall information - some tasks waiting, 60 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.cpu.some.total:
+    enabled: true
+    description: CPU pressure stall information - some tasks waiting, total time in microseconds
+    unit: "us"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+
+  system.psi.io.full.avg10:
+    enabled: true
+    description: IO pressure stall information - all tasks waiting, 10 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.io.full.avg300:
+    enabled: true
+    description: IO pressure stall information - all tasks waiting, 300 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.io.full.avg60:
+    enabled: true
+    description: IO pressure stall information - all tasks waiting, 60 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.io.full.total:
+    enabled: true
+    description: IO pressure stall information - all tasks waiting, total time in microseconds
+    unit: "us"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+
+  system.psi.io.some.avg10:
+    enabled: true
+    description: IO pressure stall information - some tasks waiting, 10 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.io.some.avg300:
+    enabled: true
+    description: IO pressure stall information - some tasks waiting, 300 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.io.some.avg60:
+    enabled: true
+    description: IO pressure stall information - some tasks waiting, 60 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.io.some.total:
+    enabled: true
+    description: IO pressure stall information - some tasks waiting, total time in microseconds
+    unit: "us"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+
+  system.psi.memory.full.avg10:
+    enabled: true
+    description: Memory pressure stall information - all tasks waiting, 10 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.memory.full.avg300:
+    enabled: true
+    description: Memory pressure stall information - all tasks waiting, 300 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.memory.full.avg60:
+    enabled: true
+    description: Memory pressure stall information - all tasks waiting, 60 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.memory.full.total:
+    enabled: true
+    description: Memory pressure stall information - all tasks waiting, total time in microseconds
+    unit: "us"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+
+  system.psi.memory.some.avg10:
+    enabled: true
+    description: Memory pressure stall information - some tasks waiting, 10 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.memory.some.avg300:
+    enabled: true
+    description: Memory pressure stall information - some tasks waiting, 300 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.memory.some.avg60:
+    enabled: true
+    description: Memory pressure stall information - some tasks waiting, 60 second average
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+
+  system.psi.memory.some.total:
+    enabled: true
+    description: Memory pressure stall information - some tasks waiting, total time in microseconds
+    unit: "us"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
