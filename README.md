@@ -168,4 +168,3 @@ enforce Collector best practices and consistency across the codebase and compone
 behavior. The facilitators will typically rely on codeowner's detailed review of the code
 when making the final approval decision. 
 
-Testing
