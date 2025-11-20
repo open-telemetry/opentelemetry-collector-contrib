@@ -16,6 +16,56 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
+	tests := []struct {
+		name                      string
+		semconvVersion            string
+		originalSpanNameAttribute ottl.Optional[string]
+		wantError                 bool
+	}{
+		{
+			name:                      "valid semconv version and original span name attribute",
+			semconvVersion:            "1.37.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 false,
+		},
+		{
+			name:                      "valid semconv version and no original span name attribute",
+			semconvVersion:            "1.37.0",
+			originalSpanNameAttribute: ottl.Optional[string]{},
+			wantError:                 false,
+		},
+		{
+			name:                      "valid semconv version and invalid original span name attribute",
+			semconvVersion:            "1.37.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional(""),
+			wantError:                 true,
+		},
+		{
+			name:                      "invalid semconv version and valid original span name attribute",
+			semconvVersion:            "1.38.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSemconvNameFunction, err := createSetSemconvSpanNameFunction(ottl.FunctionContext{}, &setSemconvSpanNameArguments{
+				SemconvVersion:            tt.semconvVersion,
+				OriginalSpanNameAttribute: tt.originalSpanNameAttribute,
+			})
+
+			if tt.wantError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, setSemconvNameFunction)
+				require.NotNil(t, setSemconvNameFunction)
+			}
+		})
+	}
+}
+
 func TestSemconvSpanName(t *testing.T) {
 	tests := []struct {
 		name                   string
