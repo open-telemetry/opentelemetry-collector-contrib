@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -725,7 +724,9 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			ctx := t.Context()
+			// Create a cancellable context so we can stop the discovery manager
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
 
 			allocator, err := setupMockTargetAllocator(tc.responses)
 			require.NoError(t, err, "Failed to create allocator", tc.responses)
@@ -742,6 +743,16 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
+			// Stop the manager's background sync to avoid race conditions when accessing discovery manager
+			// manager.Shutdown() will wait for the background goroutine to finish
+			manager.Shutdown()
+			// Stop the scrape manager first
+			scrapeManager.Stop()
+			// Cancel context to stop discovery manager's background goroutines before calling Refresh
+			cancel()
+			// Wait longer for discovery manager to stop all background refresh goroutines
+			// The discovery manager doesn't provide a way to wait for completion, so we need to sleep
+			time.Sleep(500 * time.Millisecond)
 
 			providers := discoveryManager.Providers()
 			if tc.want.empty {
@@ -752,15 +763,29 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 			require.NotNil(t, providers)
 
+			// Create a new context for the manual Refresh calls since we cancelled the original
+			refreshCtx := context.Background()
+
 			for _, provider := range providers {
 				require.IsType(t, &promHTTP.Discovery{}, provider.Discoverer())
-				httpDiscovery := provider.Discoverer().(*promHTTP.Discovery)
-				refresh, err := httpDiscovery.Refresh(ctx)
-				require.NoError(t, err)
 
 				// are http configs applied?
 				sdConfig := provider.Config().(*promHTTP.SDConfig)
 				require.Equal(t, tc.cfg.HTTPSDConfig.HTTPClientConfig, sdConfig.HTTPClientConfig)
+
+				// Create a NEW HTTP Discovery instance to avoid race conditions with the shared instance
+				// The discovery manager's instance may still be executing even after context cancellation
+				logger := promslog.NewNopLogger()
+				reg := prometheus.NewRegistry()
+				sdMetrics, err := discovery.RegisterSDMetrics(reg, discovery.NewRefreshMetrics(reg))
+				require.NoError(t, err)
+				httpMetrics := sdMetrics["http"]
+				newHTTPDiscovery, err := promHTTP.NewDiscovery(sdConfig, logger, nil, httpMetrics)
+				require.NoError(t, err)
+
+				// Call Refresh on the new instance which is not shared with any background goroutines
+				refresh, err := newHTTPDiscovery.Refresh(refreshCtx)
+				require.NoError(t, err)
 
 				for _, group := range refresh {
 					found := false
@@ -860,7 +885,10 @@ func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 }
 
 func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
-	ctx := t.Context()
+	// Create a cancellable context so we can stop the discovery manager
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
 	initialScrapeConfigs := []*promconfig.ScrapeConfig{
 		{
 			JobName:         "job1",
@@ -944,6 +972,9 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()
+	// Stop the manager's background sync to avoid race conditions when accessing discovery manager
+	// manager.Shutdown() will wait for the background goroutine to finish
+	manager.Shutdown()
 
 	providers := discoveryManager.Providers()
 
@@ -955,6 +986,10 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	require.Equal(t, "job1", manager.promCfg.ScrapeConfigs[0].JobName)
 	require.Equal(t, "job2", manager.promCfg.ScrapeConfigs[1].JobName)
 	require.Equal(t, "job3", manager.promCfg.ScrapeConfigs[2].JobName)
+
+	// Stop the scrape manager and cancel context after all assertions are done
+	scrapeManager.Stop()
+	cancel()
 }
 
 func initPrometheusManagers(ctx context.Context, t *testing.T) (*scrape.Manager, *discovery.Manager) {
@@ -1085,14 +1120,18 @@ func TestInstantiateShard(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Clean up environment
+			var lookup func(string) (string, bool)
 			if tt.setEnv {
-				t.Setenv("SHARD", tt.envVar)
+				lookup = func(s string) (string, bool) {
+					return tt.envVar, true
+				}
 			} else {
-				os.Unsetenv("SHARD")
+				lookup = func(s string) (string, bool) {
+					return "", false
+				}
 			}
 
-			result := instantiateShard(tt.input)
+			result := instantiateShard(tt.input, lookup)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
