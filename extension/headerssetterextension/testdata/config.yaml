@@ -15,3 +15,9 @@ headers_setter/1:
       value: "user_id"
     - key: User-ID
       action: delete
+headers_setter/2:
+  additional_auth: oauth2client
+  headers:
+    - key: X-Custom-Header
+      action: upsert
+      value: custom-value

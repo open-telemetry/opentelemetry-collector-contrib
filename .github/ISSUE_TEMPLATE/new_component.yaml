@@ -22,6 +22,9 @@ body:
     attributes:
       label: Example configuration for the component
       description: This will be used later on when creating `config.go` and added to README as well. See this receiver as an [example](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver#getting-started).
+      placeholder: | # Empty Collector config
+        ```yaml
+        ```
     validations:
       required: true
   - type: textarea

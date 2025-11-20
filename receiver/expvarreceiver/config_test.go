@@ -85,7 +85,11 @@ func TestLoadConfig(t *testing.T) {
 				return
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(configoptional.Optional[configauth.Config]{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg,
+				cmpopts.IgnoreUnexported(metadata.MetricConfig{}),
+				cmpopts.IgnoreUnexported(configoptional.Optional[configauth.Config]{}),
+				cmpopts.IgnoreUnexported(configoptional.Optional[confighttp.CookiesConfig]{}),
+			); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

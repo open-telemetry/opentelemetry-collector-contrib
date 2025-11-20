@@ -7,9 +7,9 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/lightstep/go-expohisto v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.140.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.140.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.140.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0
@@ -26,7 +26,7 @@ require (
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.76.0
+	google.golang.org/grpc v1.77.0
 )
 
 require (
@@ -46,7 +46,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.140.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.140.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.140.0 // indirect

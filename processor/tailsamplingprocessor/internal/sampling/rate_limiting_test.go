@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,32 +19,25 @@ func TestRateLimiter(t *testing.T) {
 	rateLimiter := NewRateLimiting(componenttest.NewNopTelemetrySettings(), 3)
 
 	// Trace span count greater than spans per second
-	traceSpanCount := &atomic.Int64{}
-	traceSpanCount.Store(10)
-	trace.SpanCount = traceSpanCount
+	trace.SpanCount = 10
 	decision, err := rateLimiter.Evaluate(t.Context(), traceID, trace)
 	assert.NoError(t, err)
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 
 	// Trace span count equal to spans per second
-	traceSpanCount = &atomic.Int64{}
-	traceSpanCount.Store(3)
-	trace.SpanCount = traceSpanCount
+	trace.SpanCount = 3
 	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
 	assert.NoError(t, err)
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 
 	// Trace span count less than spans per second
-	traceSpanCount = &atomic.Int64{}
-	traceSpanCount.Store(2)
-	trace.SpanCount = traceSpanCount
+	trace.SpanCount = 2
 	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
 	assert.NoError(t, err)
 	assert.Equal(t, samplingpolicy.Sampled, decision)
 
 	// Trace span count less than spans per second
-	traceSpanCount = &atomic.Int64{}
-	trace.SpanCount = traceSpanCount
+	trace.SpanCount = 0
 	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
 	assert.NoError(t, err)
 	assert.Equal(t, samplingpolicy.Sampled, decision)

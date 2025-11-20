@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.46.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.140.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.76.0
+	google.golang.org/grpc v1.77.0
 )
 
 require (
@@ -36,7 +36,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.46.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.46.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect

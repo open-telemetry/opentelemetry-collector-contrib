@@ -1,4 +1,4 @@
-INSERT INTO "%s"."%s" (
+INSERT INTO %q.%q (
     Timestamp,
     TraceId,
     SpanId,
@@ -14,6 +14,7 @@ INSERT INTO "%s"."%s" (
     ScopeVersion,
     ScopeAttributes,
     LogAttributes
+    %s
 ) VALUES (
     ?,
     ?,
@@ -30,4 +31,5 @@ INSERT INTO "%s"."%s" (
     ?,
     ?,
     ?
-    )
+    %s
+)

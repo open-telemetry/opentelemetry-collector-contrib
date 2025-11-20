@@ -26,13 +26,13 @@ The following configuration options are required:
 
 - `access_token` (no default): The access token is the [authentication token
   provided by Splunk Observability
-  Cloud](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html).
+  Cloud](https://help.splunk.com/en/splunk-observability-cloud/administer/authentication-and-security/authentication-tokens/manage-usage-with-access-tokens).
   The access token can be obtained from the web app.
 - Either `realm` or both `api_url` and `ingest_url`. Both `api_url` and
   `ingest_url` take precedence over `realm`.
   - `realm` (no default): SignalFx realm where the data will be received.
   - `api_url` (no default): Destination to which [properties and
-    tags](https://docs.splunk.com/observability/en/metrics-and-metadata/metrics-finder-metadata-catalog.html)
+    tags](https://help.splunk.com/en/splunk-observability-cloud/data-tools/metric-finder-and-metadata-catalogue)
     are sent. If `realm` is set, this option is derived and will be
     `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
@@ -128,6 +128,7 @@ The following configuration options can also be configured:
   - `max_conns_per_host` (default = 20): The maximum total number of connections the client can keep open per host.
   - `idle_conn_timeout` (default = 30s): The maximum amount of time an idle connection will remain open before closing itself.
   - `timeout` (default = 10s): Amount of time to wait for the dimension HTTP request to complete.
+  - `drop_tags` (default = false): Flag that indicates whether to drop the tags from the metadata sent to Splunk Observability Cloud by the exporter.
 - `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters 
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 

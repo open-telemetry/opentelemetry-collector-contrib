@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 		HTTP: configoptional.Default(HTTPConfig{
 			ServerConfig: confighttp.ServerConfig{
 				Endpoint: endpointStr,
-				// Disable default decompression middleware - we handle it internally for better error logging
+				// The empty array means no decompression attempted.
 				CompressionAlgorithms: []string{},
 			},
 			TracesURLPaths: defaultTracesURLPaths,

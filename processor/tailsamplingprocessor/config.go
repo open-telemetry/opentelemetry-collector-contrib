@@ -45,6 +45,8 @@ const (
 	// OTTLCondition sample traces which match user provided OpenTelemetry Transformation Language
 	// conditions.
 	OTTLCondition PolicyType = "ottl_condition"
+	// BytesLimiting allows all traces until the specified byte limits are satisfied.
+	BytesLimiting PolicyType = "bytes_limiting"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -66,6 +68,8 @@ type sharedPolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	// Configs for bytes limiting filter sampling policy evaluator.
+	BytesLimitingCfg BytesLimitingCfg `mapstructure:"bytes_limiting"`
 	// Configs for span count filter sampling policy evaluator.
 	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
 	// Configs for defining trace_state policy
@@ -219,6 +223,17 @@ type RateLimitingCfg struct {
 	_ struct{}
 }
 
+// BytesLimitingCfg holds the configurable settings to create a bytes limiting
+// sampling policy evaluator using a token bucket algorithm.
+type BytesLimitingCfg struct {
+	// BytesPerSecond sets the limit on the maximum number of bytes that can be processed each second.
+	BytesPerSecond int64 `mapstructure:"bytes_per_second"`
+	// BurstCapacity sets the maximum burst capacity in bytes. If not specified, defaults to 2x BytesPerSecond.
+	// This allows for short bursts of traffic above the sustained rate. It also acts as a
+	// limit for individual trace sizes, a single trace larger than the burst size will not pass.
+	BurstCapacity int64 `mapstructure:"burst_capacity"`
+}
+
 // SpanCountCfg holds the configurable settings to create a Span Count filter sampling
 // policy evaluator
 type SpanCountCfg struct {
@@ -291,4 +306,7 @@ type Config struct {
 	Options []Option `mapstructure:"-"`
 	// Make decision as soon as a policy matches
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
+	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
+	// wait when the processor is shutdown.
+	DropPendingTracesOnShutdown bool `mapstructure:"drop_pending_traces_on_shutdown"`
 }

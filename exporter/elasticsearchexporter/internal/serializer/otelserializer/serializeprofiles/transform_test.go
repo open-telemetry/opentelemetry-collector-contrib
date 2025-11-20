@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
-	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.36.0"
 )
 
 var (
@@ -199,6 +199,7 @@ func TestTransform(t *testing.T) {
 			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
+				rp.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "my_service.name")
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
@@ -273,8 +274,10 @@ func TestTransform(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    42000000000,
 						StackTraceID: wantedTraceID,
+						ServiceName:  "my_service.name",
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 					HostMetadata: HostResourceData{},
 				},
@@ -424,6 +427,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 					HostMetadata: HostResourceData{},
 				},
@@ -538,6 +542,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 				{
@@ -547,6 +552,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 			},
@@ -665,6 +671,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 			},
@@ -721,6 +728,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -748,6 +756,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -773,6 +782,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -800,6 +810,7 @@ func TestStackTraceEvent(t *testing.T) {
 					string(semconv.ContainerNameKey):    "my_container",
 					string(semconv.ContainerIDKey):      "my_container_id",
 					string(semconv.K8SNamespaceNameKey): "my_k8s_namespace_name",
+					string(semconv.HostNameKey):         "my_host_name",
 				})
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
@@ -818,9 +829,11 @@ func TestStackTraceEvent(t *testing.T) {
 				ContainerID:      "my_container_id",
 				ThreadName:       "my_thread",
 				ServiceName:      "my_service",
+				HostName:         "my_host_name",
 				StackTraceID:     stacktraceIDBase64,
 				Frequency:        20,
 				Count:            1,
+				ProjectID:        2,
 			},
 		},
 	} {

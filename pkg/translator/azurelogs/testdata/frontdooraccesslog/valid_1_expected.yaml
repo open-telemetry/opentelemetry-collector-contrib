@@ -101,9 +101,7 @@ resourceLogs:
                 value:
                   stringValue: Microsoft.Cdn/Profiles/AccessLog/Write
             body: {}
-            spanId: ""
             timeUnixNano: "1745500468000000000"
-            traceId: ""
         scope:
           name: otelcol/azureresourcelogs
           version: 1.2.3

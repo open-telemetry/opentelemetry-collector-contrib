@@ -326,6 +326,12 @@ func Test_e2e_editors(t *testing.T) {
 			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
+			statement: `set(attributes["test"], "nil")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "nil")
+			},
+		},
+		{
 			statement: `set(attributes["test"], attributes["unknown"])`,
 			want:      func(_ ottllog.TransformContext) {},
 		},
@@ -1570,6 +1576,46 @@ func Test_e2e_ottl_features(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("my.environment.2", "ost")
 			},
 		},
+		{
+			name:      "map value with nil",
+			statement: `set(body, {"value": nil})`,
+			want: func(tCtx ottllog.TransformContext) {
+				mapValue := tCtx.GetLogRecord().Body().SetEmptyMap()
+				mapValue.PutEmpty("value")
+			},
+		},
+		{
+			name:      "map value with quoted nil",
+			statement: `set(body, {"value": "nil"})`,
+			want: func(tCtx ottllog.TransformContext) {
+				mapValue := tCtx.GetLogRecord().Body().SetEmptyMap()
+				mapValue.PutStr("value", "nil")
+			},
+		},
+		{
+			name:      "slice with nil and quoted nil",
+			statement: `set(attributes["test"], [nil, "nil", nil])`,
+			want: func(tCtx ottllog.TransformContext) {
+				arr := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				arr.AppendEmpty() // nil
+				arr.AppendEmpty().SetStr("nil")
+				arr.AppendEmpty() // nil
+			},
+		},
+		{
+			name:      "where clause with nil",
+			statement: `set(attributes["test"], "pass") where attributes["non_exiting_attrs"] == nil`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause with quoted nil",
+			statement: `set(attributes["test"], "pass") where attributes["nil_string"] == "nil"`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1940,6 +1986,7 @@ func constructLogTransformContext() ottllog.TransformContext {
 	logRecord.Attributes().PutStr("slice", "slice")
 	logRecord.Attributes().PutStr("val", "val2")
 	logRecord.Attributes().PutInt("int_value", 0)
+	logRecord.Attributes().PutStr("nil_string", "nil")
 	arr := logRecord.Attributes().PutEmptySlice("array")
 	arr0 := arr.AppendEmpty()
 	arr0.SetStr("looong")

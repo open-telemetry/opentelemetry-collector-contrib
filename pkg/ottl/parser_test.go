@@ -945,6 +945,46 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:      "editor with quoted nil",
+			statement: `set(attributes["test"], "nil")`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "set",
+					Arguments: []argument{
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &path{
+										Pos: lexer.Position{
+											Offset: 4,
+											Line:   1,
+											Column: 5,
+										},
+										Fields: []field{
+											{
+												Name: "attributes",
+												Keys: []key{
+													{
+														String: ottltest.Strp("test"),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Value: value{
+								String: ottltest.Strp("nil"),
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
 			name:      "editor with Enum",
 			statement: `set(attributes["test"], TEST_ENUM)`,
 			expected: &parsedStatement{
@@ -2100,6 +2140,42 @@ func Test_parseWhere(t *testing.T) {
 				},
 			}),
 		},
+		{
+			statement: `nil == nil`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Comparison: &comparison{
+							Left: value{
+								IsNil: (*isNil)(ottltest.Boolp(true)),
+							},
+							Op: eq,
+							Right: value{
+								IsNil: (*isNil)(ottltest.Boolp(true)),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			statement: `nil == "nil"`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Comparison: &comparison{
+							Left: value{
+								IsNil: (*isNil)(ottltest.Boolp(true)),
+							},
+							Op: eq,
+							Right: value{
+								String: ottltest.Strp("nil"),
+							},
+						},
+					},
+				},
+			}),
+		},
 	}
 
 	// create a test name that doesn't confuse vscode so we can rerun tests with one click
@@ -2177,6 +2253,13 @@ func Test_ParseValueExpression_full(t *testing.T) {
 			valueExpression: `nil`,
 			expected: func() any {
 				return nil
+			},
+		},
+		{
+			name:            "quoted nil",
+			valueExpression: `"nil"`,
+			expected: func() any {
+				return "nil"
 			},
 		},
 		{

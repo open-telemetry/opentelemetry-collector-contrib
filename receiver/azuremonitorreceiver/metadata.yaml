@@ -6,7 +6,8 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [nslaughter, celian-garcia, ishleenk17]
+    active: [celian-garcia, ishleenk17]
+    emeritus: [nslaughter]
 
 resource_attributes:
   azuremonitor.subscription:
