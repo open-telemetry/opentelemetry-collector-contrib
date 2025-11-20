@@ -4,7 +4,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/cumulativetodeltaprocessor
+component: processor/cumulativetodelta
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Add feature gate `processor.cumulativetodelta.defaultmaxstaleness` to set default `max_staleness` to 5 minutes"
