@@ -1,0 +1,9 @@
+type: macosunifiedlogging
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [Caleb-Hurshman]
+  unsupported_platforms: [linux, windows]

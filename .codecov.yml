@@ -780,6 +780,10 @@ component_management:
     name: receiver_loki
     paths:
     - receiver/lokireceiver/**
+  - component_id: receiver_macosunifiedlogging
+    name: receiver_macosunifiedlogging
+    paths:
+    - receiver/macosunifiedloggingreceiver/**
   - component_id: receiver_memcached
     name: receiver_memcached
     paths:
