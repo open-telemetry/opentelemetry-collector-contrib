@@ -30,9 +30,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(400), nil
 				},
 			},
-			mapping: func() any {
-				return getTestingGetter()
-			},
+			mapping:  getTestingGetter,
 			expected: "error",
 		},
 		{
@@ -42,9 +40,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(100), nil
 				},
 			},
-			mapping: func() any {
-				return getTestingGetter()
-			},
+			mapping:  getTestingGetter,
 			expected: "debug",
 		},
 		{
@@ -75,7 +71,7 @@ func Test_parseSeverity(t *testing.T) {
 					return "inf", nil
 				},
 			},
-			mapping:  func() any { return getTestingGetter().(ottl.PMapGetter[any]) },
+			mapping:  getTestingGetter,
 			expected: "info",
 		},
 		{
@@ -85,7 +81,7 @@ func Test_parseSeverity(t *testing.T) {
 					return int64(200), nil
 				},
 			},
-			mapping:  func() any { return getTestingGetter().(ottl.PMapGetter[any]) },
+			mapping:  getTestingGetter,
 			expected: "info",
 		},
 		{
