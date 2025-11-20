@@ -7,7 +7,7 @@ docker_observer/all_settings:
   use_host_bindings: true
   ignore_non_host_bindings: true
   cache_sync_interval: 5m
-  api_version: '1.40'
+  api_version: '1.45'
 docker_observer/use_hostname_if_present:
   use_hostname_if_present: true
 docker_observer/use_host_bindings:
