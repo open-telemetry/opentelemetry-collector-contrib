@@ -65,12 +65,6 @@ func getLisMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Con
 			Regex:        relabel.MustNewRegexp(".*_bucket|.*_sum|.*_count.*"),
 			Action:       relabel.Drop,
 		},
-		// Below metrics are NVMe data collection metrics which are not supported to maintain parity with EBS NVMe metrics
-		{
-			SourceLabels: model.LabelNames{"__name__"},
-			Regex:        relabel.MustNewRegexp(".*_nvme_collector_.*"),
-			Action:       relabel.Drop,
-		},
 		// Inject static values (clusterName/instanceId/nodeName/volumeID)
 		{
 			SourceLabels: model.LabelNames{"instance_id"},
