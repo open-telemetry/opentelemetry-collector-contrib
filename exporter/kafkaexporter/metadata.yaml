@@ -37,7 +37,7 @@ attributes:
 
 telemetry:
   metrics:
-    kafka_broker_closed:
+    kafka_exporter_broker_closed:
       enabled: true
       stability:
         level: development
@@ -49,7 +49,7 @@ telemetry:
         value_type: int
         monotonic: true
       attributes: [node_id]
-    kafka_broker_connects:
+    kafka_exporter_broker_connects:
       enabled: true
       stability:
         level: development
@@ -61,20 +61,18 @@ telemetry:
         value_type: int
         monotonic: true
       attributes: [node_id, outcome]
-    kafka_broker_throttling_duration:
+    kafka_exporter_broker_throttling_duration:
       enabled: true
       stability:
         level: deprecated
       description: The throttling duration in ms imposed by the broker when exporting messages.
-      extended_documentation: Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_throttling_latency.
+      extended_documentation: Only produced when franz-go is enabled. Deprecated in favor of kafka_exporter_broker_throttling_latency.
       optional: true
       unit: ms
       histogram:
         value_type: int
       attributes: [node_id]
-      warnings:
-        if_enabled: This metric is deprecated in favor of kafka_broker_throttling_latency and will be removed soon.
-    kafka_broker_throttling_latency:
+    kafka_exporter_broker_throttling_latency:
       enabled: true
       stability:
         level: development

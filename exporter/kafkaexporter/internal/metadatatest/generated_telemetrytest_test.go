@@ -10,9 +10,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -20,26 +19,26 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.KafkaBrokerClosed.Add(context.Background(), 1)
-	tb.KafkaBrokerConnects.Add(context.Background(), 1)
-	tb.KafkaBrokerThrottlingDuration.Record(context.Background(), 1)
-	tb.KafkaBrokerThrottlingLatency.Record(context.Background(), 1)
+	tb.KafkaExporterBrokerClosed.Add(context.Background(), 1)
+	tb.KafkaExporterBrokerConnects.Add(context.Background(), 1)
+	tb.KafkaExporterBrokerThrottlingDuration.Record(context.Background(), 1)
+	tb.KafkaExporterBrokerThrottlingLatency.Record(context.Background(), 1)
 	tb.KafkaExporterBytes.Add(context.Background(), 1)
 	tb.KafkaExporterBytesUncompressed.Add(context.Background(), 1)
 	tb.KafkaExporterLatency.Record(context.Background(), 1)
 	tb.KafkaExporterMessages.Add(context.Background(), 1)
 	tb.KafkaExporterRecords.Add(context.Background(), 1)
 	tb.KafkaExporterWriteLatency.Record(context.Background(), 1)
-	AssertEqualKafkaBrokerClosed(t, testTel,
+	AssertEqualKafkaExporterBrokerClosed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualKafkaBrokerConnects(t, testTel,
+	AssertEqualKafkaExporterBrokerConnects(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualKafkaBrokerThrottlingDuration(t, testTel,
+	AssertEqualKafkaExporterBrokerThrottlingDuration(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualKafkaBrokerThrottlingLatency(t, testTel,
+	AssertEqualKafkaExporterBrokerThrottlingLatency(t, testTel,
 		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaExporterBytes(t, testTel,

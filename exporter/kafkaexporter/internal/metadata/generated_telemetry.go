@@ -23,19 +23,19 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                          metric.Meter
-	mu                             sync.Mutex
-	registrations                  []metric.Registration
-	KafkaBrokerClosed              metric.Int64Counter
-	KafkaBrokerConnects            metric.Int64Counter
-	KafkaBrokerThrottlingDuration  metric.Int64Histogram
-	KafkaBrokerThrottlingLatency   metric.Float64Histogram
-	KafkaExporterBytes             metric.Int64Counter
-	KafkaExporterBytesUncompressed metric.Int64Counter
-	KafkaExporterLatency           metric.Int64Histogram
-	KafkaExporterMessages          metric.Int64Counter
-	KafkaExporterRecords           metric.Int64Counter
-	KafkaExporterWriteLatency      metric.Float64Histogram
+	meter                                 metric.Meter
+	mu                                    sync.Mutex
+	registrations                         []metric.Registration
+	KafkaExporterBrokerClosed             metric.Int64Counter
+	KafkaExporterBrokerConnects           metric.Int64Counter
+	KafkaExporterBrokerThrottlingDuration metric.Int64Histogram
+	KafkaExporterBrokerThrottlingLatency  metric.Float64Histogram
+	KafkaExporterBytes                    metric.Int64Counter
+	KafkaExporterBytesUncompressed        metric.Int64Counter
+	KafkaExporterLatency                  metric.Int64Histogram
+	KafkaExporterMessages                 metric.Int64Counter
+	KafkaExporterRecords                  metric.Int64Counter
+	KafkaExporterWriteLatency             metric.Float64Histogram
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -67,26 +67,26 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.KafkaBrokerClosed, err = builder.meter.Int64Counter(
-		"otelcol_kafka_broker_closed",
+	builder.KafkaExporterBrokerClosed, err = builder.meter.Int64Counter(
+		"otelcol_kafka_exporter_broker_closed",
 		metric.WithDescription("The total number of connections closed. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaBrokerConnects, err = builder.meter.Int64Counter(
-		"otelcol_kafka_broker_connects",
+	builder.KafkaExporterBrokerConnects, err = builder.meter.Int64Counter(
+		"otelcol_kafka_exporter_broker_connects",
 		metric.WithDescription("The total number of connections opened. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaBrokerThrottlingDuration, err = builder.meter.Int64Histogram(
-		"otelcol_kafka_broker_throttling_duration",
+	builder.KafkaExporterBrokerThrottlingDuration, err = builder.meter.Int64Histogram(
+		"otelcol_kafka_exporter_broker_throttling_duration",
 		metric.WithDescription("The throttling duration in ms imposed by the broker when exporting messages. [Deprecated]"),
 		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaBrokerThrottlingLatency, err = builder.meter.Float64Histogram(
-		"otelcol_kafka_broker_throttling_latency",
+	builder.KafkaExporterBrokerThrottlingLatency, err = builder.meter.Float64Histogram(
+		"otelcol_kafka_exporter_broker_throttling_latency",
 		metric.WithDescription("The throttling latency in seconds imposed by the broker when exporting records. [Development]"),
 		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100}...),

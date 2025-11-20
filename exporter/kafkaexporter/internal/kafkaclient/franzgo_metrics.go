@@ -33,7 +33,7 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 	if err != nil {
 		outcome = "failure"
 	}
-	fpm.tb.KafkaBrokerConnects.Add(
+	fpm.tb.KafkaExporterBrokerConnects.Add(
 		context.Background(),
 		1,
 		metric.WithAttributes(
@@ -46,7 +46,7 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 var _ kgo.HookBrokerDisconnect = FranzProducerMetrics{}
 
 func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
-	fpm.tb.KafkaBrokerClosed.Add(
+	fpm.tb.KafkaExporterBrokerClosed.Add(
 		context.Background(),
 		1,
 		metric.WithAttributes(
@@ -58,15 +58,15 @@ func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ ne
 var _ kgo.HookBrokerThrottle = FranzProducerMetrics{}
 
 func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
-	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
-	fpm.tb.KafkaBrokerThrottlingDuration.Record(
+	// KafkaExporterBrokerThrottlingDuration is deprecated in favor of KafkaExporterBrokerThrottlingLatency.
+	fpm.tb.KafkaExporterBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		),
 	)
-	fpm.tb.KafkaBrokerThrottlingLatency.Record(
+	fpm.tb.KafkaExporterBrokerThrottlingLatency.Record(
 		context.Background(),
 		throttleInterval.Seconds(),
 		metric.WithAttributes(
