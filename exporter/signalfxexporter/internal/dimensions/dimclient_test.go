@@ -186,6 +186,41 @@ func TestDimensionClient(t *testing.T) {
 		require.EqualValues(t, 1, server.requestCount.Load())
 	})
 
+	t.Run("send dimension without tags if dropTags option is set", func(t *testing.T) {
+		server.reset()
+		// set dropTags option
+		client.dropTags = true
+		defer func() { client.dropTags = false }()
+
+		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+			Name:  "host",
+			Value: "test-box",
+			Properties: map[string]*string{
+				"a": newString("b"),
+				"c": newString("d"),
+				"e": nil,
+			},
+			Tags: map[string]bool{
+				"active":     true,
+				"terminated": false,
+			},
+		}))
+
+		server.handleRequest()
+		require.Equal(t, []dim{
+			{
+				Key:   "host",
+				Value: "test-box",
+				Properties: map[string]*string{
+					"a": newString("b"),
+					"c": newString("d"),
+					"e": nil,
+				},
+			},
+		}, server.acceptedDims)
+		require.EqualValues(t, 1, server.requestCount.Load())
+	})
+
 	t.Run("send a distinct prop/tag set for existing dim with server error", func(t *testing.T) {
 		server.reset()
 		server.respCode = http.StatusInternalServerError
