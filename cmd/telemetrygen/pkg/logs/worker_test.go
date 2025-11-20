@@ -270,15 +270,13 @@ func TestLogsWithTraceIDAndSpanID(t *testing.T) {
 
 func TestBatching(t *testing.T) {
 	cfg := &Config{
-		NumLogs: 5,
-		Config: common.Config{
-			WorkerCount: 1,
-			Batch:       true,
-			BatchSize:   3,
-		},
+		NumLogs:        5,
 		SeverityText:   "Info",
 		SeverityNumber: 9,
 	}
+	cfg.WorkerCount = 1
+	cfg.Batch = true
+	cfg.BatchSize = 3
 	m := &mockExporter{}
 	expFunc := func() (sdklog.Exporter, error) {
 		return m, nil
@@ -301,14 +299,12 @@ func TestBatching(t *testing.T) {
 
 func TestNoBatching(t *testing.T) {
 	cfg := &Config{
-		NumLogs: 5,
-		Config: common.Config{
-			WorkerCount: 1,
-			Batch:       false, // batching disabled
-		},
+		NumLogs:        5,
 		SeverityText:   "Info",
 		SeverityNumber: 9,
 	}
+	cfg.WorkerCount = 1
+	cfg.Batch = false // batching disabled
 	m := &mockExporter{}
 	expFunc := func() (sdklog.Exporter, error) {
 		return m, nil
