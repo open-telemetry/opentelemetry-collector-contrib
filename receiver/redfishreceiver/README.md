@@ -60,7 +60,7 @@ receivers:
   redfish:
     collection_interval: 60s
     servers:
-    - host: https://16.1.15.1
+    - base_url: https://16.1.15.1
       username: "${BMC_USER}"
       password: "${BMC_PASSWORD}"
       insecure: true
