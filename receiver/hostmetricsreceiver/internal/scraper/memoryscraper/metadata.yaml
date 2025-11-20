@@ -14,16 +14,7 @@ attributes:
   state:
     description: Breakdown of memory usage by type.
     type: string
-    enum:
-      [
-        buffered,
-        cached,
-        inactive,
-        free,
-        slab_reclaimable,
-        slab_unreclaimable,
-        used,
-      ]
+    enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
   system.memory.linux.hugepages.state:
     description: Breakdown of huge pages usage by state.
     type: string
