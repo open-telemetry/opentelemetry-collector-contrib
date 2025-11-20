@@ -160,14 +160,14 @@ func Test_SliceToMap(t *testing.T) {
 			keyPath:          []string{"value", "test"},
 			valuePath:        []string{"notfound"},
 			value:            nestedObj,
-			wantExecutionErr: "could not extract value from element: provided object does not contain the path [notfound]",
+			wantExecutionErr: "could not extract value from element 0: provided object does not contain the path [notfound]",
 		},
 		{
 			name:             "nested object with value path segment resolving to non-map value",
 			keyPath:          []string{"value", "test"},
 			valuePath:        []string{"name", "nothing"},
 			value:            nestedObj,
-			wantExecutionErr: "could not extract value from element: provided object does not contain the path [name nothing]",
+			wantExecutionErr: "could not extract value from element 0: provided object does not contain the path [name nothing]",
 		},
 		{
 			name:    "unsupported type",
