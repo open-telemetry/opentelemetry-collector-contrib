@@ -55,24 +55,25 @@ resourceLogs:
               - key: gcp.armor.request_data.remote_ip.asn
                 value:
                   intValue: "57269"
-              - key: gcp.armor.security_policy.type
-                value:
-                  stringValue: enforcedSecurityPolicy
-              - key: gcp.armor.security_policy.name
-                value:
-                  stringValue: test-armor-policy
-              - key: gcp.armor.security_policy.priority
-                value:
-                  intValue: "1"
-              - key: gcp.armor.security_policy.configured_action
-                value:
-                  stringValue: DENY
-              - key: gcp.armor.security_policy.outcome
-                value:
-                  stringValue: DENY
               - key: gcp.armor.request_data.recaptcha_action_token.score
                 value:
                   doubleValue: 0.9
+              - key: gcp.armor.security_policy.type.enforced
+                value:
+                  kvlistValue:
+                    values:
+                      - key: gcp.armor.security_policy.name
+                        value:
+                          stringValue: test-armor-policy
+                      - key: gcp.armor.security_policy.priority
+                        value:
+                          intValue: "1"
+                      - key: gcp.armor.security_policy.configured_action
+                        value:
+                          stringValue: DENY
+                      - key: gcp.armor.security_policy.outcome
+                        value:
+                          stringValue: DENY
               - key: http.request.method
                 value:
                   stringValue: GET

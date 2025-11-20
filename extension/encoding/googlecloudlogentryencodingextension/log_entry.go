@@ -18,7 +18,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/apploadbalancerlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
@@ -75,7 +75,8 @@ func getEncodingFormat(logType string) string {
 	case vpcflowlog.NetworkManagementNameSuffix,
 		vpcflowlog.ComputeNameSuffix:
 		return constants.GCPFormatVPCFlowLog
-	case armorlog.LoadBalancerLogSuffix:
+	case apploadbalancerlog.GlobalAppLoadBalancerLogSuffix,
+		apploadbalancerlog.RegionalAppLoadBalancerLogSuffix:
 		return constants.GCPFormatLoadBalancerLog
 	default:
 		return ""
@@ -496,7 +497,7 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 	case constants.GCPFormatLoadBalancerLog:
 		// Add encoding.format to scope attributes for Load balancer logs
 		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
-		if err := armorlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+		if err := apploadbalancerlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse Armor log JSON payload: %w", err)
 		}
 		return nil

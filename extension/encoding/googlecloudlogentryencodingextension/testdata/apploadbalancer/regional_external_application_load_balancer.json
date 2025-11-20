@@ -1,0 +1,45 @@
+{
+    "httpRequest": {
+        "latency": "0.002058s",
+        "protocol": "HTTP/2",
+        "remoteIp": "79.117.34.252:60102",
+        "requestMethod": "GET",
+        "requestSize": "44",
+        "requestUrl": "https://34.0.217.72/?curl=",
+        "responseSize": "746",
+        "serverIp": "10.20.0.4:80",
+        "status": 200,
+        "userAgent": "curl/8.7.1"
+    },
+    "insertId": "1043fs2f1ss3li",
+    "jsonPayload": {
+        "@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+        "backendTargetProjectNumber": "projects/8560181848",
+        "tls": {
+        "cipher": "TLS_CHACHA20_POLY1305_SHA256",
+        "protocol": "TLSv1.3"
+        }
+    },
+    "logName": "projects/elastic-observability/logs/loadbalancing.googleapis.com%2Fexternal_regional_requests",
+    "receiveTimestamp": "2025-11-20T14:18:55.974065255Z",
+    "resource": {
+        "labels": {
+        "backend_name": "gcp-fixture-alb-backend-mig",
+        "backend_scope": "europe-southwest1-a",
+        "backend_scope_type": "ZONE",
+        "backend_target_name": "gcp-fixture-alb-backend-service",
+        "backend_target_type": "BACKEND_SERVICE",
+        "backend_type": "INSTANCE_GROUP",
+        "forwarding_rule_name": "gcp-fixture-alb-forwarding-rule",
+        "matched_url_path_rule": "UNMATCHED",
+        "network_name": "gcp-fixture-alb-network",
+        "project_id": "elastic-observability",
+        "region": "europe-southwest1",
+        "target_proxy_name": "gcp-fixture-alb-https-proxy",
+        "url_map_name": "gcp-fixture-alb-url-map"
+        },
+        "type": "http_external_regional_lb_rule"
+    },
+    "severity": "INFO",
+    "timestamp": "2025-11-20T14:18:48.230937Z"
+}

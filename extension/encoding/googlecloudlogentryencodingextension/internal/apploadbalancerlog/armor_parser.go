@@ -4,7 +4,7 @@
 // Find more information about Armor Logs:
 // https://docs.cloud.google.com/armor/docs/request-logging
 
-package armorlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
+package apploadbalancerlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
 
 import (
 	"fmt"
@@ -16,8 +16,11 @@ import (
 )
 
 const (
-	// gcpArmorSecurityPolicyType holds security policy type
-	gcpArmorSecurityPolicyType = "gcp.armor.security_policy.type"
+	// Security policy types
+	gcpArmorSecurityPolicyTypeEnforced     = "gcp.armor.security_policy.type.enforced"
+	gcpArmorSecurityPolicyTypePreview      = "gcp.armor.security_policy.type.preview"
+	gcpArmorSecurityPolicyTypeEnforcedEdge = "gcp.armor.security_policy.type.enforced_edge"
+	gcpArmorSecurityPolicyTypePreviewEdge  = "gcp.armor.security_policy.type.preview_edge"
 
 	// Security policy base attributes
 	// gcpArmorSecurityPolicyName holds the security policy rule that was enforced
@@ -58,21 +61,6 @@ const (
 	gcpArmorRemoteIPInfoAsn = "gcp.armor.request_data.remote_ip.asn"
 	// gcpArmorTLSJa4Fingerprint holds a JA4 TTL/SSL fingerprint if the client connects using HTTPS, HTTP/2, or HTTP/3
 	gcpArmorTLSJa4Fingerprint = "tls.client.ja4"
-)
-
-const (
-	// Security policy type string values
-	securityPolicyTypePreviewEdge  = "previewEdgeSecurityPolicy"
-	securityPolicyTypeEnforcedEdge = "enforcedEdgeSecurityPolicy"
-	securityPolicyTypePreview      = "previewSecurityPolicy"
-	securityPolicyTypeEnforced     = "enforcedSecurityPolicy"
-)
-
-var (
-	securityPolicyTypeEnforcedBytes     = []byte(securityPolicyTypeEnforced)
-	securityPolicyTypePreviewBytes      = []byte(securityPolicyTypePreview)
-	securityPolicyTypeEnforcedEdgeBytes = []byte(securityPolicyTypeEnforcedEdge)
-	securityPolicyTypePreviewEdgeBytes  = []byte(securityPolicyTypePreviewEdge)
 )
 
 type armorlog struct {
@@ -253,23 +241,27 @@ func handleEnforcedSecurityPolicy(sp *enforcedSecurityPolicy, attr pcommon.Map) 
 	}
 }
 
-func handleArmorLogAttributes(armorlog *armorlog, attr pcommon.Map) error {
-	switch {
-	case armorlog.PreviewEdgeSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreviewEdge)
-		handleSecurityPolicyBase(armorlog.PreviewEdgeSecurityPolicy, attr)
-	case armorlog.EnforcedEdgeSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypeEnforcedEdge)
-		handleSecurityPolicyBase(armorlog.EnforcedEdgeSecurityPolicy, attr)
-	case armorlog.PreviewSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreview)
-		handleSecurityPolicyExtended(armorlog.PreviewSecurityPolicy, attr)
-	case armorlog.EnforcedSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypeEnforced)
-		handleEnforcedSecurityPolicy(armorlog.EnforcedSecurityPolicy, attr)
-	default:
-		return nil // No security policy fields to process means this is not an armor log entry.
+func handleSecurityPolicies(armorlog *armorlog, attr pcommon.Map) {
+	if armorlog.PreviewEdgeSecurityPolicy != nil {
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyTypePreviewEdge)
+		handleSecurityPolicyBase(armorlog.PreviewEdgeSecurityPolicy, policyMap)
 	}
+	if armorlog.EnforcedEdgeSecurityPolicy != nil {
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyTypeEnforcedEdge)
+		handleSecurityPolicyBase(armorlog.EnforcedEdgeSecurityPolicy, policyMap)
+	}
+	if armorlog.PreviewSecurityPolicy != nil {
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyTypePreview)
+		handleSecurityPolicyExtended(armorlog.PreviewSecurityPolicy, policyMap)
+	}
+	if armorlog.EnforcedSecurityPolicy != nil {
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyTypeEnforced)
+		handleEnforcedSecurityPolicy(armorlog.EnforcedSecurityPolicy, policyMap)
+	}
+}
+
+func handleArmorLogAttributes(armorlog *armorlog, attr pcommon.Map) error {
+	handleSecurityPolicies(armorlog, attr)
 
 	if err := handleSecurityPolicyRequestData(armorlog.SecurityPolicyRequestData, attr); err != nil {
 		return fmt.Errorf("error handling Security Policy Request Data: %w", err)

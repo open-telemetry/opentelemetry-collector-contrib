@@ -200,6 +200,21 @@ func TestPayloads(t *testing.T) {
 			logFilename:      "testdata/armorlog/enforced_edge_security_policy.json",
 			expectedFilename: "testdata/armorlog/enforced_edge_security_policy_expected.yaml",
 		},
+		{
+			name:             "armor log - two security policies",
+			logFilename:      "testdata/armorlog/two_security_policies.json",
+			expectedFilename: "testdata/armorlog/two_security_policies_expected.yaml",
+		},
+		{
+			name:             "application load balancer log - regional",
+			logFilename:      "testdata/apploadbalancer/regional_external_application_load_balancer.json",
+			expectedFilename: "testdata/apploadbalancer/regional_external_application_load_balancer_expected.yaml",
+		},
+		{
+			name:             "application load balancer log - global",
+			logFilename:      "testdata/apploadbalancer/global_external_application_load_balancer.json",
+			expectedFilename: "testdata/apploadbalancer/global_external_application_load_balancer_expected.yaml",
+		},
 	}
 
 	extension := newTestExtension(t, Config{})

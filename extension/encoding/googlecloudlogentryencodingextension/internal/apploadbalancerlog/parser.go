@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package armorlog
+package apploadbalancerlog
 
 import (
 	"fmt"
@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	LoadBalancerLogSuffix = "requests"
+	GlobalAppLoadBalancerLogSuffix   = "requests"
+	RegionalAppLoadBalancerLogSuffix = "loadbalancing.googleapis.com%2Fexternal_regional_requests"
 
 	loadBalancerLogType = "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry"
 
@@ -32,6 +33,8 @@ const (
 	gcpLoadBalancingOverrideResponseCode = "gcp.load_balancing.override_response_code"
 	// gcpLoadBalancingErrorService holds the backend service that provided the custom error response.
 	gcpLoadBalancingErrorService = "gcp.load_balancing.error_service"
+	// gcpLoadBalancingCacheID holds the cache ID used by the load balancer.
+	gcpLoadBalancingCacheID = "gcp.load_balancing.cache_id"
 	// gcpLoadBalancingCacheDecision holds the cache decision made by the load balancer.
 	gcpLoadBalancingCacheDecision = "gcp.load_balancing.cache_decision"
 	// gcpLoadBalancingBackendNetworkName specifies the VPC network of the backend.
@@ -48,10 +51,10 @@ const (
 	gcpLoadBalancingAuthPolicyResult = "result"
 	// gcpLoadBalancingAuthPolicyDetails holds the details of the authorization policy.
 	gcpLoadBalancingAuthPolicyDetails = "details"
-	// gcpLoadBalancingTlsInfo specifies the TLS metadata for the connection between the client and the load balancer
-	gcpLoadBalancingTlsInfo = "gcp.load_balancing.tls_info"
-	// gcpLoadBalancingTlsEarlyDataRequest specifies if the request includes early data in the TLS handshake.
-	gcpLoadBalancingTlsEarlyDataRequest = "tls.early_data_request"
+	// gcpLoadBalancingTLSInfo specifies the TLS metadata for the connection between the client and the load balancer
+	gcpLoadBalancingTLSInfo = "gcp.load_balancing.tls_info"
+	// gcpLoadBalancingTLSEarlyDataRequest specifies if the request includes early data in the TLS handshake.
+	gcpLoadBalancingTLSEarlyDataRequest = "tls.early_data_request"
 	// gcpLoadBalancingMtlsInfo specifies the mTLS metadata for the connection between the client and the load balancer.
 	gcpLoadBalancingMtlsInfo = "gcp.load_balancing.mtls"
 	// gcpLoadBalancingMtlsClientCertPresent is true if the client has provided a certificate during the TLS handshake.
@@ -64,8 +67,8 @@ const (
 	gcpLoadBalancingMtlsClientCertSerialNumber = "mtls.client.cert_serial_number"
 	// gcpLoadBalancingMtlsClientCertSpiffeID holds the The SPIFFE ID from the subject alternative name (SAN) field.
 	gcpLoadBalancingMtlsClientCertSpiffeID = "mtls.client.cert_spiffe_id"
-	// gcpLoadBalancingMtlsClientCertUriSans holds the comma-separated Base64-encoded list of the SAN extensions of type URI.
-	gcpLoadBalancingMtlsClientCertUriSans = "mtls.client.cert_uri_sans"
+	// gcpLoadBalancingMtlsClientCertURISans holds the comma-separated Base64-encoded list of the SAN extensions of type URI.
+	gcpLoadBalancingMtlsClientCertURISans = "mtls.client.cert_uri_sans"
 	// gcpLoadBalancingMtlsClientCertDnsnameSans holds the comma-separated Base64-encoded list of the SAN extensions of type DNSName.
 	gcpLoadBalancingMtlsClientCertDnsnameSans = "mtls.client.cert_dnsname_sans"
 	// gcpLoadBalancingMtlsClientCertLeaf holds the client leaf certificate for an established mTLS connection where the certificate passed validation.
@@ -84,11 +87,12 @@ type loadbalancerlog struct {
 	LoadBalancingScheme        string   `json:"loadBalancingScheme"`
 	ErrorService               string   `json:"errorService"`
 	BackendNetworkName         string   `json:"backendNetworkName"`
+	CacheID                    string   `json:"cacheId"`
 	CacheDecision              []string `json:"cacheDecision"`
 
 	// Security/Authentication information
 	AuthPolicyInfo *authPolicyInfo `json:"authPolicyInfo"`
-	TlsInfo        *tlsInfo        `json:"tls"`
+	TLSInfo        *tlsInfo        `json:"tls"`
 	MtlsInfo       *mtlsInfo       `json:"mtls"`
 
 	// ToDo: Add support for OrcaLoadReport
@@ -109,7 +113,7 @@ type policyInfo struct {
 }
 
 type tlsInfo struct {
-	EarlyDataRequest bool   `json:"earlyDataRequest"`
+	EarlyDataRequest *bool  `json:"earlyDataRequest"`
 	Protocol         string `json:"protocol"`
 	Cipher           string `json:"cipher"`
 }
@@ -123,7 +127,7 @@ type mtlsInfo struct {
 	ClientCertValidStartTime    string `json:"clientCertValidStartTime"`
 	ClientCertValidEndTime      string `json:"clientCertValidEndTime"`
 	ClientCertSpiffeID          string `json:"clientCertSpiffeId"`
-	ClientCertUriSans           string `json:"clientCertUriSans"`
+	ClientCertURISans           string `json:"clientCertURISans"`
 	ClientCertDnsnameSans       string `json:"clientCertDnsnameSans"`
 	ClientCertIssuerDn          string `json:"clientCertIssuerDn"`
 	ClientCertSubjectDn         string `json:"clientCertSubjectDn"`
@@ -150,6 +154,7 @@ func handleRequestMetadata(log *loadbalancerlog, attr pcommon.Map) error {
 	shared.PutStr(gcpLoadBalancingScheme, log.LoadBalancingScheme, attr)
 	shared.PutStr(gcpLoadBalancingErrorService, log.ErrorService, attr)
 	shared.PutStr(gcpLoadBalancingBackendNetworkName, log.BackendNetworkName, attr)
+	shared.PutStr(gcpLoadBalancingCacheID, log.CacheID, attr)
 
 	if len(log.CacheDecision) > 0 {
 		cacheDecisions := attr.PutEmptySlice(gcpLoadBalancingCacheDecision)
@@ -177,12 +182,12 @@ func handleAuthPolicyInfo(authPolicyInfo *authPolicyInfo, attr pcommon.Map) {
 	}
 }
 
-func handleTlsInfo(tlsInfo *tlsInfo, attr pcommon.Map) {
+func handleTLSInfo(tlsInfo *tlsInfo, attr pcommon.Map) {
 	if tlsInfo == nil {
 		return
 	}
-	tlsMap := attr.PutEmptyMap(gcpLoadBalancingTlsInfo)
-	tlsMap.PutBool(gcpLoadBalancingTlsEarlyDataRequest, tlsInfo.EarlyDataRequest)
+	tlsMap := attr.PutEmptyMap(gcpLoadBalancingTLSInfo)
+	shared.PutBool(gcpLoadBalancingTLSEarlyDataRequest, tlsInfo.EarlyDataRequest, tlsMap)
 	shared.PutStr(string(semconv.TLSProtocolNameKey), tlsInfo.Protocol, tlsMap)
 	shared.PutStr(string(semconv.TLSCipherKey), tlsInfo.Cipher, tlsMap)
 }
@@ -201,7 +206,7 @@ func handleMtlsInfo(mtlsInfo *mtlsInfo, attr pcommon.Map) {
 	shared.PutStr(string(semconv.TLSClientNotBeforeKey), mtlsInfo.ClientCertValidStartTime, mtlsMap)
 	shared.PutStr(string(semconv.TLSClientNotAfterKey), mtlsInfo.ClientCertValidEndTime, mtlsMap)
 	shared.PutStr(gcpLoadBalancingMtlsClientCertSpiffeID, mtlsInfo.ClientCertSpiffeID, mtlsMap)
-	shared.PutStr(gcpLoadBalancingMtlsClientCertUriSans, mtlsInfo.ClientCertUriSans, mtlsMap)
+	shared.PutStr(gcpLoadBalancingMtlsClientCertURISans, mtlsInfo.ClientCertURISans, mtlsMap)
 	shared.PutStr(gcpLoadBalancingMtlsClientCertDnsnameSans, mtlsInfo.ClientCertDnsnameSans, mtlsMap)
 	shared.PutStr(string(semconv.TLSClientIssuerKey), mtlsInfo.ClientCertIssuerDn, mtlsMap)
 	shared.PutStr(string(semconv.TLSClientSubjectKey), mtlsInfo.ClientCertSubjectDn, mtlsMap)
@@ -224,7 +229,7 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 	}
 
 	handleAuthPolicyInfo(log.AuthPolicyInfo, attr)
-	handleTlsInfo(log.TlsInfo, attr)
+	handleTLSInfo(log.TLSInfo, attr)
 	handleMtlsInfo(log.MtlsInfo, attr)
 
 	// Handle embedded Armor log fields

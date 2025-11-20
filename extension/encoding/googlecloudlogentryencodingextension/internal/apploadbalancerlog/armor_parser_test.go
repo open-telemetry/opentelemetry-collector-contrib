@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package armorlog
+package apploadbalancerlog
 
 import (
 	"testing"
@@ -531,14 +531,16 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "no security policy fields - not an armor log",
+			name: "no security policy fields - only SecurityPolicyRequestData",
 			log: &armorlog{
 				SecurityPolicyRequestData: &securityPolicyRequestData{
 					RecaptchaActionToken: &recaptchaToken{Score: 0.9},
 				},
 			},
-			expected: map[string]any{},
-			wantErr:  false,
+			expected: map[string]any{
+				gcpArmorRecaptchaActionTokenScore: float64(0.9),
+			},
+			wantErr: false,
 		},
 		{
 			name: "enforced security policy only",
@@ -555,11 +557,12 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyType:             securityPolicyTypeEnforced,
-				gcpArmorSecurityPolicyName:             "test-policy",
-				gcpArmorSecurityPolicyPriority:         int64(100),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
+				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+					gcpArmorSecurityPolicyName:             "test-policy",
+					gcpArmorSecurityPolicyPriority:         int64(100),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+				},
 			},
 			wantErr: false,
 		},
@@ -576,11 +579,12 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyType:             securityPolicyTypePreview,
-				gcpArmorSecurityPolicyName:             "preview-policy",
-				gcpArmorSecurityPolicyPriority:         int64(50),
-				gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
-				gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				gcpArmorSecurityPolicyTypePreview: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-policy",
+					gcpArmorSecurityPolicyPriority:         int64(50),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
 			},
 			wantErr: false,
 		},
@@ -595,11 +599,12 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyType:             securityPolicyTypeEnforcedEdge,
-				gcpArmorSecurityPolicyName:             "edge-policy",
-				gcpArmorSecurityPolicyPriority:         int64(75),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
+				gcpArmorSecurityPolicyTypeEnforcedEdge: map[string]any{
+					gcpArmorSecurityPolicyName:             "edge-policy",
+					gcpArmorSecurityPolicyPriority:         int64(75),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+				},
 			},
 			wantErr: false,
 		},
@@ -614,11 +619,12 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyType:             securityPolicyTypePreviewEdge,
-				gcpArmorSecurityPolicyName:             "preview-edge-policy",
-				gcpArmorSecurityPolicyPriority:         int64(25),
-				gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
-				gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				gcpArmorSecurityPolicyTypePreviewEdge: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-edge-policy",
+					gcpArmorSecurityPolicyPriority:         int64(25),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
 			},
 			wantErr: false,
 		},
@@ -647,15 +653,16 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyType:                  securityPolicyTypeEnforced,
-				gcpArmorSecurityPolicyName:                  "test-policy",
-				gcpArmorSecurityPolicyPriority:              int64(100),
-				gcpArmorSecurityPolicyConfiguredAction:      "DENY",
-				gcpArmorSecurityPolicyOutcome:               "DENY",
-				gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-456",
-				gcpArmorRecaptchaActionTokenScore:           float64(0.8),
-				gcpArmorUserIPInfoSource:                    "X-Forwarded-For",
-				string(semconv.ClientAddressKey):            "1.2.3.4",
+				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+					gcpArmorSecurityPolicyName:                  "test-policy",
+					gcpArmorSecurityPolicyPriority:              int64(100),
+					gcpArmorSecurityPolicyConfiguredAction:      "DENY",
+					gcpArmorSecurityPolicyOutcome:               "DENY",
+					gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-456",
+				},
+				gcpArmorRecaptchaActionTokenScore: float64(0.8),
+				gcpArmorUserIPInfoSource:          "X-Forwarded-For",
+				string(semconv.ClientAddressKey):  "1.2.3.4",
 			},
 			wantErr: false,
 		},
@@ -687,18 +694,129 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyType:             securityPolicyTypePreview,
-				gcpArmorSecurityPolicyName:             "full-preview",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorRateLimitActionKey:             "rl-key",
-				gcpArmorRateLimitActionOutcome:         "RATE_LIMITED",
-				gcpArmorWAFRuleExpressionIDs:           []any{"expr1", "expr2"},
-				gcpArmorThreatIntelligenceCategories:   []any{"botnet"},
-				gcpArmorAddressGroupNames:              []any{"addr-group-1"},
-				string(semconv.TLSClientJa3Key):        "ja3-hash",
-				gcpArmorTLSJa4Fingerprint:              "ja4-hash",
+				gcpArmorSecurityPolicyTypePreview: map[string]any{
+					gcpArmorSecurityPolicyName:             "full-preview",
+					gcpArmorSecurityPolicyPriority:         int64(10),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+					gcpArmorRateLimitActionKey:             "rl-key",
+					gcpArmorRateLimitActionOutcome:         "RATE_LIMITED",
+					gcpArmorWAFRuleExpressionIDs:           []any{"expr1", "expr2"},
+					gcpArmorThreatIntelligenceCategories:   []any{"botnet"},
+					gcpArmorAddressGroupNames:              []any{"addr-group-1"},
+				},
+				string(semconv.TLSClientJa3Key): "ja3-hash",
+				gcpArmorTLSJa4Fingerprint:       "ja4-hash",
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple policies - enforced and preview",
+			log: &armorlog{
+				EnforcedSecurityPolicy: &enforcedSecurityPolicy{
+					securityPolicyExtended: securityPolicyExtended{
+						securityPolicyBase: securityPolicyBase{
+							Name:             "enforced-policy",
+							Priority:         int64ptr(100),
+							ConfiguredAction: "DENY",
+							Outcome:          "DENY",
+						},
+					},
+				},
+				PreviewSecurityPolicy: &securityPolicyExtended{
+					securityPolicyBase: securityPolicyBase{
+						Name:             "preview-policy",
+						Priority:         int64ptr(50),
+						ConfiguredAction: "ALLOW",
+						Outcome:          "ACCEPT",
+					},
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+					gcpArmorSecurityPolicyName:             "enforced-policy",
+					gcpArmorSecurityPolicyPriority:         int64(100),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+				},
+				gcpArmorSecurityPolicyTypePreview: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-policy",
+					gcpArmorSecurityPolicyPriority:         int64(50),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "all four policy types with request data",
+			log: &armorlog{
+				EnforcedSecurityPolicy: &enforcedSecurityPolicy{
+					securityPolicyExtended: securityPolicyExtended{
+						securityPolicyBase: securityPolicyBase{
+							Name:             "enforced-policy",
+							Priority:         int64ptr(100),
+							ConfiguredAction: "DENY",
+							Outcome:          "DENY",
+						},
+					},
+					AdaptiveProtection: &adaptiveProtection{
+						AutoDeployAlertID: "alert-123",
+					},
+				},
+				PreviewSecurityPolicy: &securityPolicyExtended{
+					securityPolicyBase: securityPolicyBase{
+						Name:             "preview-policy",
+						Priority:         int64ptr(50),
+						ConfiguredAction: "ALLOW",
+						Outcome:          "ACCEPT",
+					},
+				},
+				EnforcedEdgeSecurityPolicy: &securityPolicyBase{
+					Name:             "enforced-edge-policy",
+					Priority:         int64ptr(75),
+					ConfiguredAction: "DENY",
+					Outcome:          "DENY",
+				},
+				PreviewEdgeSecurityPolicy: &securityPolicyBase{
+					Name:             "preview-edge-policy",
+					Priority:         int64ptr(25),
+					ConfiguredAction: "ALLOW",
+					Outcome:          "ACCEPT",
+				},
+				SecurityPolicyRequestData: &securityPolicyRequestData{
+					RecaptchaActionToken: &recaptchaToken{Score: 0.95},
+					TLSJa3Fingerprint:    "ja3-fingerprint",
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+					gcpArmorSecurityPolicyName:                  "enforced-policy",
+					gcpArmorSecurityPolicyPriority:              int64(100),
+					gcpArmorSecurityPolicyConfiguredAction:      "DENY",
+					gcpArmorSecurityPolicyOutcome:               "DENY",
+					gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-123",
+				},
+				gcpArmorSecurityPolicyTypePreview: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-policy",
+					gcpArmorSecurityPolicyPriority:         int64(50),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
+				gcpArmorSecurityPolicyTypeEnforcedEdge: map[string]any{
+					gcpArmorSecurityPolicyName:             "enforced-edge-policy",
+					gcpArmorSecurityPolicyPriority:         int64(75),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+				},
+				gcpArmorSecurityPolicyTypePreviewEdge: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-edge-policy",
+					gcpArmorSecurityPolicyPriority:         int64(25),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
+				gcpArmorRecaptchaActionTokenScore: float64(0.95),
+				string(semconv.TLSClientJa3Key):   "ja3-fingerprint",
 			},
 			wantErr: false,
 		},
