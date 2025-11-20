@@ -7,6 +7,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+const (
+	awsLogsEncoding = "awslogs_encoding"
+	s3ARNPrefix     = "arn:aws:s3:::"
+)
+
 type Config struct {
 	// S3Encoding identifies the encoding of the S3 objects that trigger the Lambda.
 	//
