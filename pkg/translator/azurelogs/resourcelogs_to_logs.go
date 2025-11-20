@@ -311,18 +311,22 @@ func addCommonAzureFields(attrs map[string]any, log *azureLogRecord) {
 
 	setIf(attrs, string(conventions.CloudRegionKey), log.Location)
 	setIf(attrs, string(conventions.NetworkPeerAddressKey), log.CallerIPAddress)
+	return attrs
 }
 
 func extractRawAttributes(log *azureLogRecord) map[string]any {
 	attrs := map[string]any{}
 	_, unknown := parseRawRecord(log)
 
-	var propsMap map[string]any
+	// TODO @constanca-m: This is a temporary workaround to
+	// this function. This will be removed once category_logs.log
+	// is implemented for all currently supported categories
+	var props map[string]any
 	var propsVal any
 
 	// Try to parse properties as a map first
 	if len(log.Properties) > 0 {
-		if err := gojson.Unmarshal(log.Properties, &propsMap); err != nil {
+		if err := gojson.Unmarshal(log.Properties, &props); err != nil {
 			// If not a map, try to parse as a primitive value
 			if err := json.Unmarshal(log.Properties, &propsVal); err != nil {
 				// If parsing fails, treat as string
@@ -331,25 +335,25 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 		}
 	}
 
-	// Merge unknown fields into propsMap
+	// Merge unknown fields into props
 	if len(unknown) > 0 {
-		if propsMap == nil {
-			propsMap = make(map[string]any)
+		if props == nil {
+			props = make(map[string]any)
 		}
 		// If we have a primitive property, add it to the map under 'properties' key
 		// so it is preserved when merging with unknown fields
 		if propsVal != nil {
-			propsMap[azureProperties] = propsVal
+			props[azureProperties] = propsVal
 			propsVal = nil
 		}
 		for k, v := range unknown {
-			propsMap[k] = v
+			props[k] = v
 		}
 	}
 
 	// Apply semantic conventions if we have a map
-	if propsMap != nil {
-		remainingProps := applySemanticConventions(log.Category, propsMap, attrs)
+	if props != nil {
+		remainingProps := applySemanticConventions(log.Category, props, attrs)
 		if len(remainingProps) > 0 {
 			attrs[azureProperties] = remainingProps
 		}
