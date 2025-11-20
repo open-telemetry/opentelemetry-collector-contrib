@@ -24,12 +24,12 @@ const (
 	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
 	categoryFrontdoorWebApplicationFirewallLog = "FrontDoorWebApplicationFirewallLog"
 	categoryAppServiceAppLog                   = "AppServiceAppLog"
-	categoryAppServiceAuditLogs                = "AppServiceAuditLogs"
-	categoryAppServiceAuthenticationLogs       = "AppServiceAuthenticationLogs"
-	categoryAppServiceConsoleLogs              = "AppServiceConsoleLogs"
-	categoryAppServiceHTTPLogs                 = "AppServiceHTTPLogs"
-	categoryAppServiceIPSecAuditLogs           = "AppServiceIPSecAuditLogs"
-	categoryAppServicePlatformLogs             = "AppServicePlatformLogs"
+	categoryAppServiceAuditLog                 = "AppServiceAuditLogs"
+	categoryAppServiceAuthenticationLog        = "AppServiceAuthenticationLogs"
+	categoryAppServiceConsoleLog               = "AppServiceConsoleLogs"
+	categoryAppServiceHTTPLog                  = "AppServiceHTTPLogs"
+	categoryAppServiceIPSecAuditLog            = "AppServiceIPSecAuditLogs"
+	categoryAppServicePlatformLog              = "AppServicePlatformLogs"
 
 	// attributeAzureRef holds the request tracking reference, also
 	// placed in the request header "X-Azure-Ref".
@@ -97,18 +97,18 @@ func addRecordAttributes(category string, data []byte, record plog.LogRecord) er
 		err = addFrontDoorWAFLogProperties(data, record)
 	case categoryAppServiceAppLog:
 		err = addAppServiceAppLogProperties(data, record)
-	case categoryAppServiceAuditLogs:
-		err = addAppServiceAuditLogsProperties(data, record)
-	case categoryAppServiceAuthenticationLogs:
-		err = addAppServiceAuthenticationLogsProperties(data, record)
-	case categoryAppServiceConsoleLogs:
-		err = addAppServiceConsoleLogsProperties(data, record)
-	case categoryAppServiceHTTPLogs:
-		err = addAppServiceHTTPLogsProperties(data, record)
-	case categoryAppServiceIPSecAuditLogs:
-		err = addAppServiceIPSecAuditLogsProperties(data, record)
-	case categoryAppServicePlatformLogs:
-		err = addAppServicePlatformLogsProperties(data, record)
+	case categoryAppServiceAuditLog:
+		err = addAppServiceAuditLogProperties(data, record)
+	case categoryAppServiceAuthenticationLog:
+		err = addAppServiceAuthenticationLogProperties(data, record)
+	case categoryAppServiceConsoleLog:
+		err = addAppServiceConsoleLogProperties(data, record)
+	case categoryAppServiceHTTPLog:
+		err = addAppServiceHTTPLogProperties(data, record)
+	case categoryAppServiceIPSecAuditLog:
+		err = addAppServiceIPSecAuditLogProperties(data, record)
+	case categoryAppServicePlatformLog:
+		err = addAppServicePlatformLogProperties(data, record)
 	default:
 		err = errUnsupportedCategory
 	}
@@ -518,44 +518,44 @@ func addAppServiceAppLogProperties(_ []byte, _ plog.LogRecord) error {
 	return errStillToImplement
 }
 
-// addAppServiceAuditLogsProperties parses the App Service access log, and adds
+// addAppServiceAuditLogProperties parses the App Service access log, and adds
 // the relevant attributes to the record
-func addAppServiceAuditLogsProperties(_ []byte, _ plog.LogRecord) error {
+func addAppServiceAuditLogProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
 }
 
-// addAppServiceAuthenticationLogsProperties parses the App Service access log, and adds
+// addAppServiceAuthenticationLogProperties parses the App Service access log, and adds
 // the relevant attributes to the record
-func addAppServiceAuthenticationLogsProperties(_ []byte, _ plog.LogRecord) error {
+func addAppServiceAuthenticationLogProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
 }
 
-// addAppServiceConsoleLogsProperties parses the App Service access log, and adds
+// addAppServiceConsoleLogProperties parses the App Service access log, and adds
 // the relevant attributes to the record
-func addAppServiceConsoleLogsProperties(_ []byte, _ plog.LogRecord) error {
+func addAppServiceConsoleLogProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
 }
 
-// addAppServiceHTTPLogsProperties parses the App Service access log, and adds
+// addAppServiceHTTPLogProperties parses the App Service access log, and adds
 // the relevant attributes to the record
-func addAppServiceHTTPLogsProperties(_ []byte, _ plog.LogRecord) error {
+func addAppServiceHTTPLogProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
 }
 
-// addAppServiceIPSecAuditLogsProperties parses the App Service access log, and adds
+// addAppServiceIPSecAuditLogProperties parses the App Service access log, and adds
 // the relevant attributes to the record
-func addAppServiceIPSecAuditLogsProperties(_ []byte, _ plog.LogRecord) error {
+func addAppServiceIPSecAuditLogProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
 }
 
-// addAppServicePlatformLogsProperties parses the App Service access log, and adds
+// addAppServicePlatformLogProperties parses the App Service access log, and adds
 // the relevant attributes to the record
-func addAppServicePlatformLogsProperties(_ []byte, _ plog.LogRecord) error {
+func addAppServicePlatformLogProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
 }
