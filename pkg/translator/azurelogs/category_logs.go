@@ -30,6 +30,7 @@ const (
 	categoryAppServiceHTTPLogs                 = "AppServiceHTTPLogs"
 	categoryAppServiceIPSecAuditLogs           = "AppServiceIPSecAuditLogs"
 	categoryAppServicePlatformLogs             = "AppServicePlatformLogs"
+	categoryActivityResourceHealthLogs         = "ActivityResourceHealthLogs"
 
 	// attributeAzureRef holds the request tracking reference, also
 	// placed in the request header "X-Azure-Ref".
@@ -109,6 +110,8 @@ func addRecordAttributes(category string, data []byte, record plog.LogRecord) er
 		err = addAppServiceIPSecAuditLogsProperties(data, record)
 	case categoryAppServicePlatformLogs:
 		err = addAppServicePlatformLogsProperties(data, record)
+	case categoryActivityResourceHealthLogs:
+		err = addActivityResourceHealthLogsProperties(data, record)
 	default:
 		err = errUnsupportedCategory
 	}
@@ -558,4 +561,29 @@ func addAppServiceIPSecAuditLogsProperties(_ []byte, _ plog.LogRecord) error {
 func addAppServicePlatformLogsProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
+}
+
+type resourceHealthLogProperties struct {
+	Title                string `json:"title"`
+	Details              string `json:"details"`
+	CurrentHealthStatus  string `json:"currentHealthStatus"`
+	PreviousHealthStatus string `json:"previousHealthStatus"`
+	Type                 string `json:"type"`
+	Cause                string `json:"cause"`
+}
+
+func addActivityResourceHealthLogsProperties(data []byte, record plog.LogRecord) error {
+	var properties resourceHealthLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse ResourceHealth properties: %w", err)
+	}
+
+	putStr("azure.resource_health.title", properties.Title, record)
+	putStr("azure.resource_health.details", properties.Details, record)
+	putStr("azure.resource_health.current_status", properties.CurrentHealthStatus, record)
+	putStr("azure.resource_health.previous_status", properties.PreviousHealthStatus, record)
+	putStr("azure.resource_health.type", properties.Type, record)
+	putStr("azure.resource_health.cause", properties.Cause, record)
+
+	return nil
 }

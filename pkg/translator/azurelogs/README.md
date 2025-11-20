@@ -81,3 +81,14 @@ The mapping for this category is as follows:
 | `securityCurves`      | `tls.curve`                                                                                                                           |
 | `securityCipher`      | `tls.cipher`                                                                                                                          |
 | `OriginIP`            | Split in:<br>1.`server.address`<br>2.`server.port`                                                                                    |
+
+### Resource Health Logs
+
+| Original Field (JSON)  | Log Record Attribute                           |
+|------------------------|------------------------------------------------|
+| `title`                | `azure.resource_health.title`                  |
+| `details`              | `azure.resource_health.details`                |
+| `currentHealthStatus`  | `azure.resource_health.current_status`         |
+| `previousHealthStatus` | `azure.resource_health.previous_status`        |
+| `type`                 | `azure.resource_health.type`                   |
+| `cause`                | `azure.resource_health.cause`                  |

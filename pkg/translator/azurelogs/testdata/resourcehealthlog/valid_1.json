@@ -1,0 +1,22 @@
+{
+  "records": [
+    {
+      "time": "2025-04-24T12:49:14.6241035Z",
+      "correlationId": "bfe2c91a-c7aa-4815-bc02-e4ee3485eed0",
+      "level": "Informational",
+      "resultType": "Active",
+      "operationName": "Microsoft.Resourcehealth/healthevent/Activated/action",
+      "resourceId": "/SUBSCRIPTIONS/12CABCB4-86E8-404F-A3D2-1DC9982F45CA/RESOURCEGROUPS/CONSTANCA-MANTEIGAS-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/CONSTANCA-MANTEIGAS-FRONTDOOR-PROFILE",
+      "properties": {
+        "title": "Unknown",
+        "details": "Unknown",
+        "currentHealthStatus": "Unavailable",
+        "previousHealthStatus": "Available",
+        "type": "Downtime",
+        "cause": "Unknown"
+      },
+      "category": "ResourceHealth",
+      "location": "global"
+    }
+  ]
+}
