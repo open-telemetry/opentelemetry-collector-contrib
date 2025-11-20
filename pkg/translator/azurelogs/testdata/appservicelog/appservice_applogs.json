@@ -3,7 +3,7 @@
         {
             "time": "2024-04-24T12:06:12.0000000Z",
             "resourceId": "/RESOURCE_ID",
-            "category": "AppServiceAppLogs",
+            "category": "AppServiceAppLog",
             "operationName": "AppLog",
             "properties": {
                 "ContainerId": "CONTAINER_ID",

@@ -23,7 +23,7 @@ const (
 	categoryFrontDoorAccessLog                 = "FrontDoorAccessLog"
 	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
 	categoryFrontdoorWebApplicationFirewallLog = "FrontDoorWebApplicationFirewallLog"
-	categoryAppServiceAppLogs                  = "AppServiceAppLogs"
+	categoryAppServiceAppLog                   = "AppServiceAppLog"
 	categoryAppServiceAuditLogs                = "AppServiceAuditLogs"
 	categoryAppServiceAuthenticationLogs       = "AppServiceAuthenticationLogs"
 	categoryAppServiceConsoleLogs              = "AppServiceConsoleLogs"
@@ -95,8 +95,8 @@ func addRecordAttributes(category string, data []byte, record plog.LogRecord) er
 		err = addFrontDoorHealthProbeLogProperties(data, record)
 	case categoryFrontdoorWebApplicationFirewallLog:
 		err = addFrontDoorWAFLogProperties(data, record)
-	case categoryAppServiceAppLogs:
-		err = addAppServiceAppLogsProperties(data, record)
+	case categoryAppServiceAppLog:
+		err = addAppServiceAppLogProperties(data, record)
 	case categoryAppServiceAuditLogs:
 		err = addAppServiceAuditLogsProperties(data, record)
 	case categoryAppServiceAuthenticationLogs:
@@ -511,9 +511,9 @@ func addFrontDoorWAFLogProperties(data []byte, record plog.LogRecord) error {
 	return nil
 }
 
-// addAppServiceAppLogsProperties parses the App Service access log, and adds
+// addAppServiceAppLogProperties parses the App Service access log, and adds
 // the relevant attributes to the record
-func addAppServiceAppLogsProperties(_ []byte, _ plog.LogRecord) error {
+func addAppServiceAppLogProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
 }

@@ -35,7 +35,7 @@ resourceLogs:
                       stringValue: STACKTRACE
                   - key: category
                     value:
-                      stringValue: AppServiceAppLogs
+                      stringValue: AppServiceAppLog
                   - key: operation.name
                     value:
                       stringValue: AppLog
