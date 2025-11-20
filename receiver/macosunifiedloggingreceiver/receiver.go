@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:unused // only used on darwin platform (see config.go)
-
 package macosunifiedloggingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver"
 
 import (
@@ -24,6 +22,8 @@ import (
 )
 
 // unifiedLoggingReceiver uses exec.Command to run the native macOS `log` command
+//
+//nolint:unused // only used on darwin platform
 type unifiedLoggingReceiver struct {
 	config   *Config
 	logger   *zap.Logger
@@ -31,6 +31,7 @@ type unifiedLoggingReceiver struct {
 	cancel   context.CancelFunc
 }
 
+//nolint:unused // only used on darwin platform
 func newUnifiedLoggingReceiver(
 	config *Config,
 	logger *zap.Logger,
@@ -43,6 +44,7 @@ func newUnifiedLoggingReceiver(
 	}
 }
 
+//nolint:unused // only used on darwin platform
 func (r *unifiedLoggingReceiver) Start(ctx context.Context, _ component.Host) error {
 	r.logger.Info("Starting macOS unified logging receiver")
 
@@ -55,6 +57,7 @@ func (r *unifiedLoggingReceiver) Start(ctx context.Context, _ component.Host) er
 	return nil
 }
 
+//nolint:unused // only used on darwin platform
 func (r *unifiedLoggingReceiver) Shutdown(_ context.Context) error {
 	r.logger.Info("Shutting down macOS unified logging receiver")
 	if r.cancel != nil {
@@ -64,6 +67,8 @@ func (r *unifiedLoggingReceiver) Shutdown(_ context.Context) error {
 }
 
 // readLogs runs the log command and processes output
+//
+//nolint:unused // only used on darwin platform
 func (r *unifiedLoggingReceiver) readLogs(ctx context.Context) {
 	// Run immediately on startup
 	if r.config.ArchivePath == "" {
@@ -73,6 +78,7 @@ func (r *unifiedLoggingReceiver) readLogs(ctx context.Context) {
 	}
 }
 
+//nolint:unused // only used on darwin platform
 func (r *unifiedLoggingReceiver) readFromArchive(ctx context.Context) {
 	resolvedPaths := r.config.getResolvedArchivePaths()
 	r.logger.Info("Reading from archive mode", zap.Int("archive_count", len(resolvedPaths)))
@@ -93,6 +99,7 @@ func (r *unifiedLoggingReceiver) readFromArchive(ctx context.Context) {
 	r.logger.Info("Finished reading archive logs")
 }
 
+//nolint:unused // only used on darwin platform
 func (r *unifiedLoggingReceiver) readFromLive(ctx context.Context) {
 	// Run immediately on startup
 	_, err := r.runLogCommand(ctx, "")
@@ -137,6 +144,8 @@ func (r *unifiedLoggingReceiver) readFromLive(ctx context.Context) {
 // runLogCommand executes the log command and processes output
 // Returns the number of logs processed
 // archivePath should be empty string for live mode, or a specific archive path for archive mode
+//
+//nolint:unused // only used on darwin platform
 func (r *unifiedLoggingReceiver) runLogCommand(ctx context.Context, archivePath string) (int, error) {
 	// Build the log command arguments
 	args := r.buildLogCommandArgs(archivePath)
@@ -170,12 +179,10 @@ func (r *unifiedLoggingReceiver) runLogCommand(ctx context.Context, archivePath 
 
 	var processedCount int
 	isFirstLine := true
-	var killed bool
 	for scanner.Scan() {
 		select {
 		case <-ctx.Done():
 			_ = cmd.Process.Kill()
-			killed = true
 			return processedCount, ctx.Err()
 		default:
 			line := scanner.Bytes()
@@ -210,15 +217,14 @@ func (r *unifiedLoggingReceiver) runLogCommand(ctx context.Context, archivePath 
 		return processedCount, fmt.Errorf("error reading log output: %w", err)
 	}
 
-	// Check if the process was killed due to context cancellation
-	if !killed {
-		r.logger.Info("Processed logs", zap.Int("count", processedCount))
-	}
+	r.logger.Info("Processed logs", zap.Int("count", processedCount))
 	return processedCount, nil
 }
 
 // buildLogCommandArgs constructs the arguments for the log command
 // archivePath should be empty string for live mode, or a specific archive path for archive mode
+//
+//nolint:unused // only used on darwin platform
 func (r *unifiedLoggingReceiver) buildLogCommandArgs(archivePath string) []string {
 	args := []string{"show"}
 
@@ -255,6 +261,8 @@ func (r *unifiedLoggingReceiver) buildLogCommandArgs(archivePath string) []strin
 }
 
 // processLogLine processes a log line and sends it to the consumer
+//
+//nolint:unused // only used on darwin platform
 func (r *unifiedLoggingReceiver) processLogLine(ctx context.Context, line []byte) error {
 	// Convert to OTel plog
 	logs := plog.NewLogs()
@@ -290,6 +298,8 @@ func (r *unifiedLoggingReceiver) processLogLine(ctx context.Context, line []byte
 }
 
 // mapMessageTypeToSeverity maps log messageType to OTel severity
+//
+//nolint:unused // only used on darwin platform
 func mapMessageTypeToSeverity(msgType string) plog.SeverityNumber {
 	switch msgType {
 	case "Error":
@@ -307,6 +317,8 @@ func mapMessageTypeToSeverity(msgType string) plog.SeverityNumber {
 
 // isCompletionLine checks if a line is a completion/status message from the log command
 // These lines should be filtered out (e.g., {"count":540659,"finished":1})
+//
+//nolint:unused // only used on darwin platform
 func isCompletionLine(line []byte) bool {
 	// Trim whitespace
 	trimmed := bytes.TrimSpace(line)
