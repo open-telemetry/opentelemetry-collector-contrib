@@ -146,7 +146,7 @@ func TestOAuthJwtGrantTypeSettings(t *testing.T) {
 				Iss:                    "my-issuer",
 				Audience:               "my-audience",
 				ClientCertificateKeyID: "1234",
-				Claims:                 map[string]interface{}{"random": "value"},
+				Claims:                 map[string]any{"random": "value"},
 				Timeout:                2,
 				ExpiryBuffer:           10 * time.Second,
 				TLS: configtls.ClientConfig{
@@ -227,10 +227,21 @@ func TestRoundTripper(t *testing.T) {
 		shouldError bool
 	}{
 		{
+			name: "returns_empty_grant_http_round_tripper",
+			settings: &Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			shouldError: false,
+		},
+		{
 			name: "returns_client_credentials_grant_http_round_tripper",
 			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
+				GrantType:    "client_credentials",
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 			},
@@ -246,6 +257,17 @@ func TestRoundTripper(t *testing.T) {
 				Scopes:               []string{"resource.read"},
 			},
 			shouldError: false,
+		},
+		{
+			name: "invalid_grant_type_returns_error",
+			settings: &Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testsecret",
+				GrantType:    "worong_grant_type",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			shouldError: true,
 		},
 	}
 
@@ -375,16 +397,16 @@ func TestJwtOAuth(t *testing.T) {
 
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
-			require.NoErrorf(t, r.ParseForm(), "Failed to parse form")
+			assert.NoErrorf(t, r.ParseForm(), "Failed to parse form")
 			auth = r.FormValue("assertion")
 		}
 
 		jwtParts := strings.Split(auth, ".")
-		require.Lenf(t, jwtParts, 3, "Expected JWT to have 3 parts, got %d", len(jwtParts))
+		assert.Lenf(t, jwtParts, 3, "Expected JWT to have 3 parts, got %d", len(jwtParts))
 
 		// Decode the JWT payload.
 		payload, err := base64.RawURLEncoding.DecodeString(jwtParts[1])
-		require.NoErrorf(t, err, "Failed to decode JWT payload: %v", err)
+		assert.NoErrorf(t, err, "Failed to decode JWT payload: %v", err)
 
 		var jwt struct {
 			Aud     string `json:"aud"`
@@ -395,13 +417,13 @@ func TestJwtOAuth(t *testing.T) {
 		}
 
 		err = json.Unmarshal(payload, &jwt)
-		require.NoErrorf(t, err, "Failed to unmarshal JWT payload: %v", err)
+		assert.NoErrorf(t, err, "Failed to unmarshal JWT payload: %v", err)
 
-		require.Equalf(t, "common-test", jwt.Aud, "Expected aud to be 'common-test', got '%s'", jwt.Aud)
-		require.Equalf(t, "A B", jwt.Scope, "Expected scope to be 'A B', got '%s'", jwt.Scope)
-		require.Equalf(t, "common", jwt.Sub, "Expected sub to be 'common', got '%s'", jwt.Sub)
-		require.Equalf(t, "https://example.com", jwt.Iss, "Expected iss to be 'https://example.com', got '%s'", jwt.Iss)
-		require.Equalf(t, 1, jwt.Integer, "Expected integer to be 1, got '%d'", jwt.Integer)
+		assert.Equalf(t, "common-test", jwt.Aud, "Expected aud to be 'common-test', got '%s'", jwt.Aud)
+		assert.Equalf(t, "A B", jwt.Scope, "Expected scope to be 'A B', got '%s'", jwt.Scope)
+		assert.Equalf(t, "common", jwt.Sub, "Expected sub to be 'common', got '%s'", jwt.Sub)
+		assert.Equalf(t, "https://example.com", jwt.Iss, "Expected iss to be 'https://example.com', got '%s'", jwt.Iss)
+		assert.Equalf(t, 1, jwt.Integer, "Expected integer to be 1, got '%d'", jwt.Integer)
 
 		w.Header().Add("Content-Type", "application/json")
 
@@ -420,7 +442,7 @@ func TestJwtOAuth(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
-		require.Equalf(t, "Bearer 12345", auth, "bad auth, expected %s, got %s", "Bearer 12345", auth)
+		assert.Equalf(t, "Bearer 12345", auth, "bad auth, expected %s, got %s", "Bearer 12345", auth)
 		fmt.Fprintln(w, "Hello, client")
 	}))
 	defer ts.Close()
@@ -434,7 +456,7 @@ func TestJwtOAuth(t *testing.T) {
 		GrantType:                "urn:ietf:params:oauth:grant-type:jwt-bearer",
 		Scopes:                   []string{"A", "B"},
 		TokenURL:                 serverURL.String(),
-		Claims: map[string]interface{}{
+		Claims: map[string]any{
 			"iss":     "https://example.com",
 			"aud":     "common-test",
 			"sub":     "common",

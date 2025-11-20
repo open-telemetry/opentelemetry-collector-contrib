@@ -15,6 +15,10 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+const (
+	grantTypeClientCredentials = "client_credentials"
+)
+
 func newClientCredentialsGrantTypeConfig(cfg *Config) *clientCredentialsConfig {
 	return &clientCredentialsConfig{
 		Config: clientcredentials.Config{
@@ -109,6 +113,7 @@ func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, err
 func (c *clientCredentialsConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
 	return oauth2.ReuseTokenSourceWithExpiry(nil, clientCredentialsTokenSource{ctx: ctx, config: c}, c.ExpiryBuffer)
 }
+
 func (c *clientCredentialsConfig) TokenEndpoint() string {
 	return c.TokenURL
 }

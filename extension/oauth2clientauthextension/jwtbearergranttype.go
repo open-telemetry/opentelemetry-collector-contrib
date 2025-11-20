@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	grantTypeJWTBearer = "urn:ietf:params:oauth:grant-type:jwt-bearer"
+	grantTypeJWTBearer = "urn:ietf:params:oauth:grant-type:jwt-bearer" //nolint:gosec // false positive, this is the grant-type name
 )
 
 func newJwtGrantTypeConfig(cfg *Config) (*jwtGrantTypeConfig, error) {
@@ -160,7 +160,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		"exp": jwt.NewNumericDate(expiration),
 	}
 
-	if len(scopes) > 0 {
+	if scopes != "" {
 		claims["scope"] = scopes
 	}
 
@@ -179,7 +179,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	v := url.Values{}
 	v.Set("grant_type", grantTypeJWTBearer)
 	v.Set("assertion", payload)
-	if len(scopes) > 0 {
+	if scopes != "" {
 		v.Set("scope", scopes)
 	}
 
