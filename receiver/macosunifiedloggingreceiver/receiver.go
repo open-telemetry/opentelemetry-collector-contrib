@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:unused // only used on darwin platform (see config.go)
+
 package macosunifiedloggingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver"
 
 import (
@@ -22,8 +24,6 @@ import (
 )
 
 // unifiedLoggingReceiver uses exec.Command to run the native macOS `log` command
-//
-//nolint:unused // only used on darwin platform (see config.go)
 type unifiedLoggingReceiver struct {
 	config   *Config
 	logger   *zap.Logger
@@ -31,7 +31,6 @@ type unifiedLoggingReceiver struct {
 	cancel   context.CancelFunc
 }
 
-//nolint:unused // only used on darwin platform (see config.go)
 func newUnifiedLoggingReceiver(
 	config *Config,
 	logger *zap.Logger,
@@ -44,7 +43,6 @@ func newUnifiedLoggingReceiver(
 	}
 }
 
-//nolint:unused // only used on darwin platform (see config.go)
 func (r *unifiedLoggingReceiver) Start(ctx context.Context, _ component.Host) error {
 	r.logger.Info("Starting macOS unified logging receiver")
 
@@ -57,7 +55,6 @@ func (r *unifiedLoggingReceiver) Start(ctx context.Context, _ component.Host) er
 	return nil
 }
 
-//nolint:unused // only used on darwin platform (see config.go)
 func (r *unifiedLoggingReceiver) Shutdown(_ context.Context) error {
 	r.logger.Info("Shutting down macOS unified logging receiver")
 	if r.cancel != nil {
@@ -271,7 +268,7 @@ func (r *unifiedLoggingReceiver) processLogLine(ctx context.Context, line []byte
 
 	// Parse timestamp and severity when using JSON formats
 	if r.config.Format == "ndjson" || r.config.Format == "json" {
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		if err := json.Unmarshal(line, &logEntry); err == nil {
 			// Parse and set timestamp
 			if ts, ok := logEntry["timestamp"].(string); ok {
