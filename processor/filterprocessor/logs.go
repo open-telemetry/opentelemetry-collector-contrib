@@ -46,6 +46,7 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 			if err != nil {
 				return nil, err
 			}
+			flp.skipResourceExpr = applyActionToExpr(flp.skipResourceExpr, cfg.Logs.Action)
 		}
 
 		if cfg.Logs.LogConditions != nil {
@@ -53,7 +54,9 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 			if err != nil {
 				return nil, err
 			}
+			flp.skipLogRecordExpr = applyActionToExpr(flp.skipLogRecordExpr, cfg.Logs.Action)
 		}
+
 		return flp, nil
 	}
 
