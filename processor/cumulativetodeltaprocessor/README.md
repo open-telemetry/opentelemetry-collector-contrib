@@ -137,6 +137,52 @@ processors:
 
 - [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The cumulativetodelta processor's calculates delta by remembering the previous value of a metric.  For this reason, the calculation is only accurate if the metric is continuously sent to the same instance of the collector.  As a result, the cumulativetodelta processor may not work as expected if used in a deployment of multiple collectors.  When using this processor it is best for the data source to being sending data to a single collector.
 
+## Feature Gates
+
+### `processor.cumulativetodelta.defaultmaxstaleness`
+
+**Stage**: Alpha (disabled by default)
+
+**Description**: When enabled, the `max_staleness` configuration parameter defaults to 5 minutes instead of 0 (infinite retention).
+
+**Behavioral Changes**:
+
+- **When disabled (default)**: The processor retains metric state indefinitely (`max_staleness: 0`). This matches the current behavior but can lead to unbounded memory growth in long-running collector instances, especially when tracking metrics with high cardinality or frequently changing attribute values.
+
+- **When enabled**: The processor automatically sets `max_staleness` to 5 minutes if not explicitly configured. State entries are removed 5 minutes after they were last observed, preventing unbounded memory growth. This is recommended for production deployments with dynamic workloads.
+
+**Note**: If you explicitly configure `max_staleness` in your configuration, that value will be used regardless of the feature gate setting.
+
+**Usage**:
+
+To enable the feature gate, start the collector with:
+
+```shell
+otelcol --config=config.yaml --feature-gates=processor.cumulativetodelta.defaultmaxstaleness
+```
+
+**Example Configuration**:
+
+With feature gate enabled (uses default 5-minute staleness):
+
+```yaml
+processors:
+  cumulativetodelta:
+    include:
+      metrics:
+        - system.cpu.time
+```
+
+With feature gate enabled but overriding the default:
+
+```yaml
+processors:
+  cumulativetodelta:
+    max_staleness: 10m  # Explicit value overrides the feature gate default
+    include:
+      metrics:
+        - system.cpu.time
+```
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
