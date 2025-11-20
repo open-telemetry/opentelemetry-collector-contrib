@@ -1,0 +1,203 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
+
+import (
+	context "context"
+	reflect "reflect"
+
+	s3 "github.com/aws/aws-sdk-go-v2/service/s3"
+	gomock "go.uber.org/mock/gomock"
+)
+
+// Mocks3API is a mock of s3API interface.
+type Mocks3API struct {
+	ctrl     *gomock.Controller
+	recorder *Mocks3APIMockRecorder
+	_        struct{} // prevent unkeyed literal initialization
+}
+
+// Mocks3APIMockRecorder is the mock recorder for Mocks3API.
+type Mocks3APIMockRecorder struct {
+	mock *Mocks3API
+}
+
+// NewMocks3API creates a new mock instance.
+func NewMocks3API(ctrl *gomock.Controller) *Mocks3API {
+	mock := &Mocks3API{ctrl: ctrl}
+	mock.recorder = &Mocks3APIMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *Mocks3API) EXPECT() *Mocks3APIMockRecorder {
+	return m.recorder
+}
+
+// DeleteObject mocks base method.
+func (m *Mocks3API) DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteObject", varargs...)
+	ret0, _ := ret[0].(*s3.DeleteObjectOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteObject indicates an expected call of DeleteObject.
+func (mr *Mocks3APIMockRecorder) DeleteObject(ctx, params any, optFns ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObject", reflect.TypeOf((*Mocks3API)(nil).DeleteObject), varargs...)
+}
+
+// GetObject mocks base method.
+func (m *Mocks3API) GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetObject", varargs...)
+	ret0, _ := ret[0].(*s3.GetObjectOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetObject indicates an expected call of GetObject.
+func (mr *Mocks3APIMockRecorder) GetObject(ctx, params any, optFns ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObject", reflect.TypeOf((*Mocks3API)(nil).GetObject), varargs...)
+}
+
+// ListObjectsV2 mocks base method.
+func (m *Mocks3API) ListObjectsV2(ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListObjectsV2", varargs...)
+	ret0, _ := ret[0].(*s3.ListObjectsV2Output)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListObjectsV2 indicates an expected call of ListObjectsV2.
+func (mr *Mocks3APIMockRecorder) ListObjectsV2(ctx, params any, optFns ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectsV2", reflect.TypeOf((*Mocks3API)(nil).ListObjectsV2), varargs...)
+}
+
+// MockS3Service is a mock of S3Service interface.
+type MockS3Service struct {
+	ctrl     *gomock.Controller
+	recorder *MockS3ServiceMockRecorder
+	_        struct{} // prevent unkeyed literal initialization
+}
+
+// MockS3ServiceMockRecorder is the mock recorder for MockS3Service.
+type MockS3ServiceMockRecorder struct {
+	mock *MockS3Service
+}
+
+// NewMockS3Service creates a new mock instance.
+func NewMockS3Service(ctrl *gomock.Controller) *MockS3Service {
+	mock := &MockS3Service{ctrl: ctrl}
+	mock.recorder = &MockS3ServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockS3Service) EXPECT() *MockS3ServiceMockRecorder {
+	return m.recorder
+}
+
+// DeleteObject mocks base method.
+func (m *MockS3Service) DeleteObject(ctx context.Context, bucketName, objectKey string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteObject", ctx, bucketName, objectKey)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteObject indicates an expected call of DeleteObject.
+func (mr *MockS3ServiceMockRecorder) DeleteObject(ctx, bucketName, objectKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObject", reflect.TypeOf((*MockS3Service)(nil).DeleteObject), ctx, bucketName, objectKey)
+}
+
+// ListObjects mocks base method.
+func (m *MockS3Service) ListObjects(ctx context.Context, bucketName, continuationToken, prefix string) (*s3.ListObjectsV2Output, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListObjects", ctx, bucketName, continuationToken, prefix)
+	ret0, _ := ret[0].(*s3.ListObjectsV2Output)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListObjects indicates an expected call of ListObjects.
+func (mr *MockS3ServiceMockRecorder) ListObjects(ctx, bucketName, continuationToken, prefix any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjects", reflect.TypeOf((*MockS3Service)(nil).ListObjects), ctx, bucketName, continuationToken, prefix)
+}
+
+// ReadObject mocks base method.
+func (m *MockS3Service) ReadObject(ctx context.Context, bucketName, objectKey string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadObject", ctx, bucketName, objectKey)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadObject indicates an expected call of ReadObject.
+func (mr *MockS3ServiceMockRecorder) ReadObject(ctx, bucketName, objectKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadObject", reflect.TypeOf((*MockS3Service)(nil).ReadObject), ctx, bucketName, objectKey)
+}
+
+// MockS3Provider is a mock of S3Provider interface.
+type MockS3Provider struct {
+	ctrl     *gomock.Controller
+	recorder *MockS3ProviderMockRecorder
+	_        struct{} // prevent unkeyed literal initialization
+}
+
+// MockS3ProviderMockRecorder is the mock recorder for MockS3Provider.
+type MockS3ProviderMockRecorder struct {
+	mock *MockS3Provider
+}
+
+// NewMockS3Provider creates a new mock instance.
+func NewMockS3Provider(ctrl *gomock.Controller) *MockS3Provider {
+	mock := &MockS3Provider{ctrl: ctrl}
+	mock.recorder = &MockS3ProviderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockS3Provider) EXPECT() *MockS3ProviderMockRecorder {
+	return m.recorder
+}
+
+// GetService mocks base method.
+func (m *MockS3Provider) GetService(ctx context.Context) (S3Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetService", ctx)
+	ret0, _ := ret[0].(S3Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetService indicates an expected call of GetService.
+func (mr *MockS3ProviderMockRecorder) GetService(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockS3Provider)(nil).GetService), ctx)
+}

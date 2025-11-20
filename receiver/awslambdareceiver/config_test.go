@@ -28,9 +28,9 @@ func TestLoadConfig(t *testing.T) {
 		expectError string
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, "awslogs_encoding"),
+			id: component.NewIDWithName(metadata.Type, awsLogsEncoding),
 			expected: &Config{
-				S3Encoding: "awslogs_encoding",
+				S3Encoding: awsLogsEncoding,
 			},
 		},
 		{
