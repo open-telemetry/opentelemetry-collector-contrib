@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_kafka_broker_closed
+### otelcol_kafka_receiver_broker_closed
 
 The total number of connections closed. [Development]
 
@@ -22,7 +22,7 @@ Only produced when franz-go is enabled.
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
 
-### otelcol_kafka_broker_connects
+### otelcol_kafka_receiver_broker_connects
 
 The total number of connections opened. [Development]
 
@@ -39,7 +39,7 @@ Only produced when franz-go is enabled.
 | node_id | The Kafka node ID. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
 
-### otelcol_kafka_broker_throttling_duration
+### otelcol_kafka_receiver_broker_throttling_duration
 
 The throttling duration in ms imposed by the broker when receiving messages. [Deprecated]
 
@@ -55,7 +55,7 @@ Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_thro
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
 
-### otelcol_kafka_broker_throttling_latency
+### otelcol_kafka_receiver_broker_throttling_latency
 
 The throttling latency in seconds imposed by the broker when receiving records. [Development]
 

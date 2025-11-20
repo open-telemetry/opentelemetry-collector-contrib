@@ -583,7 +583,7 @@ func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration
 	if err != nil {
 		outcome = "failure"
 	}
-	c.telemetryBuilder.KafkaBrokerConnects.Add(
+	c.telemetryBuilder.KafkaReceiverBrokerConnects.Add(
 		context.Background(),
 		1,
 		metric.WithAttributes(
@@ -594,7 +594,7 @@ func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration
 }
 
 func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
-	c.telemetryBuilder.KafkaBrokerClosed.Add(
+	c.telemetryBuilder.KafkaReceiverBrokerClosed.Add(
 		context.Background(),
 		1,
 		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
@@ -602,13 +602,13 @@ func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) 
 }
 
 func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
-	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
-	c.telemetryBuilder.KafkaBrokerThrottlingDuration.Record(
+	// KafkaReceiverBrokerThrottlingDuration is deprecated in favor of KafkaReceiverBrokerThrottlingLatency.
+	c.telemetryBuilder.KafkaReceiverBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
 		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
 	)
-	c.telemetryBuilder.KafkaBrokerThrottlingLatency.Record(
+	c.telemetryBuilder.KafkaReceiverBrokerThrottlingLatency.Record(
 		context.Background(),
 		throttleInterval.Seconds(),
 		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),

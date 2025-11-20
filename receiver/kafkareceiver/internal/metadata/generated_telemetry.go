@@ -26,10 +26,10 @@ type TelemetryBuilder struct {
 	meter                                    metric.Meter
 	mu                                       sync.Mutex
 	registrations                            []metric.Registration
-	KafkaBrokerClosed                        metric.Int64Counter
-	KafkaBrokerConnects                      metric.Int64Counter
-	KafkaBrokerThrottlingDuration            metric.Int64Histogram
-	KafkaBrokerThrottlingLatency             metric.Float64Histogram
+	KafkaReceiverBrokerClosed                metric.Int64Counter
+	KafkaReceiverBrokerConnects              metric.Int64Counter
+	KafkaReceiverBrokerThrottlingDuration    metric.Int64Histogram
+	KafkaReceiverBrokerThrottlingLatency     metric.Float64Histogram
 	KafkaReceiverBytes                       metric.Int64Counter
 	KafkaReceiverBytesUncompressed           metric.Int64Counter
 	KafkaReceiverCurrentOffset               metric.Int64Gauge
@@ -76,26 +76,26 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.KafkaBrokerClosed, err = builder.meter.Int64Counter(
-		"otelcol_kafka_broker_closed",
+	builder.KafkaReceiverBrokerClosed, err = builder.meter.Int64Counter(
+		"otelcol_kafka_receiver_broker_closed",
 		metric.WithDescription("The total number of connections closed. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaBrokerConnects, err = builder.meter.Int64Counter(
-		"otelcol_kafka_broker_connects",
+	builder.KafkaReceiverBrokerConnects, err = builder.meter.Int64Counter(
+		"otelcol_kafka_receiver_broker_connects",
 		metric.WithDescription("The total number of connections opened. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaBrokerThrottlingDuration, err = builder.meter.Int64Histogram(
-		"otelcol_kafka_broker_throttling_duration",
+	builder.KafkaReceiverBrokerThrottlingDuration, err = builder.meter.Int64Histogram(
+		"otelcol_kafka_receiver_broker_throttling_duration",
 		metric.WithDescription("The throttling duration in ms imposed by the broker when receiving messages. [Deprecated]"),
 		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaBrokerThrottlingLatency, err = builder.meter.Float64Histogram(
-		"otelcol_kafka_broker_throttling_latency",
+	builder.KafkaReceiverBrokerThrottlingLatency, err = builder.meter.Float64Histogram(
+		"otelcol_kafka_receiver_broker_throttling_latency",
 		metric.WithDescription("The throttling latency in seconds imposed by the broker when receiving records. [Development]"),
 		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100}...),

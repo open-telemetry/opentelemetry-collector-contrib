@@ -36,7 +36,7 @@ attributes:
 
 telemetry:
   metrics:
-    kafka_broker_closed:
+    kafka_receiver_broker_closed:
       enabled: true
       description: The total number of connections closed.
       extended_documentation: Only produced when franz-go is enabled.
@@ -48,7 +48,7 @@ telemetry:
         value_type: int
         monotonic: true
       attributes: [node_id]
-    kafka_broker_connects:
+    kafka_receiver_broker_connects:
       enabled: true
       description: The total number of connections opened.
       extended_documentation: Only produced when franz-go is enabled.
@@ -60,7 +60,7 @@ telemetry:
         value_type: int
         monotonic: true
       attributes: [node_id, outcome]
-    kafka_broker_throttling_duration:
+    kafka_receiver_broker_throttling_duration:
       enabled: true
       stability:
         level: deprecated
@@ -73,7 +73,7 @@ telemetry:
       attributes: [node_id]
       warnings:
         if_enabled: This metric is deprecated in favor of kafka_broker_throttling_latency and will be removed soon.
-    kafka_broker_throttling_latency:
+    kafka_receiver_broker_throttling_latency:
       enabled: true
       description: The throttling latency in seconds imposed by the broker when receiving records.
       extended_documentation: Only produced when franz-go is enabled.
