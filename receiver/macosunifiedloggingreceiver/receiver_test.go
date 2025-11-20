@@ -9,6 +9,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,62 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
+
+func setupFakeLogBinary(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	scriptPath := filepath.Join(dir, "log")
+	script := `#!/bin/sh
+set -e
+if [ -n "$FAKE_LOG_CALLS_FILE" ]; then
+  cmd=""
+  if [ "$#" -gt 0 ]; then
+    cmd="$1"
+    shift
+    for arg in "$@"
+    do
+      cmd="$cmd $arg"
+    done
+  fi
+  printf "%s\n" "$cmd" >> "$FAKE_LOG_CALLS_FILE"
+fi
+
+if [ -n "$FAKE_LOG_STREAM_LINE" ]; then
+  while true
+  do
+    printf "%s\n" "$FAKE_LOG_STREAM_LINE"
+    if [ -n "$FAKE_LOG_STREAM_DELAY" ]; then
+      sleep "$FAKE_LOG_STREAM_DELAY"
+    fi
+  done
+fi
+
+if [ -n "$FAKE_LOG_OUTPUT_PATH" ] && [ -f "$FAKE_LOG_OUTPUT_PATH" ]; then
+  cat "$FAKE_LOG_OUTPUT_PATH"
+fi
+`
+	require.NoError(t, os.WriteFile(scriptPath, []byte(script), 0o755))
+	t.Setenv("PATH", dir+":"+os.Getenv("PATH"))
+}
+
+func writeFakeLogOutput(t *testing.T, lines ...string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "log_output.txt")
+	content := strings.Join(lines, "\n") + "\n"
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+	return path
+}
+
+func readRecordedCalls(t *testing.T, path string) []string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	trimmed := strings.TrimSpace(string(data))
+	if trimmed == "" {
+		return nil
+	}
+	return strings.Split(trimmed, "\n")
+}
 
 func TestBuildLogCommandArgs(t *testing.T) {
 	t.Run("with ndjson format", func(t *testing.T) {
@@ -441,4 +498,130 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		require.NotNil(t, receiver)
 		require.Equal(t, 1, len(receiver.config.getResolvedArchivePaths()))
 	})
+}
+
+func TestRunLogCommandSkipsHeaderAndCompletionLines(t *testing.T) {
+	setupFakeLogBinary(t)
+	outputPath := writeFakeLogOutput(t,
+		"Timestamp               Thread     Type        Activity             PID",
+		"** Processed 10 entries, done. **",
+		"2024-01-01 12:00:00.000000-0700  localhost app[123]: Final log line",
+	)
+	t.Setenv("FAKE_LOG_OUTPUT_PATH", outputPath)
+
+	sink := &consumertest.LogsSink{}
+	receiver := newUnifiedLoggingReceiver(&Config{Format: "default"}, zap.NewNop(), sink)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	count, err := receiver.runLogCommand(ctx, "")
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
+
+	allLogs := sink.AllLogs()
+	require.Len(t, allLogs, 1)
+	logRecord := allLogs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	require.Equal(t, "2024-01-01 12:00:00.000000-0700  localhost app[123]: Final log line", logRecord.Body().Str())
+}
+
+// func TestRunLogCommandRespectsContextCancellation(t *testing.T) {
+// 	setupFakeLogBinary(t)
+// 	t.Setenv("FAKE_LOG_STREAM_LINE", `{"timestamp":"2024-01-01 12:00:00.000000-0700","eventMessage":"Test","messageType":"Info"}`)
+// 	t.Setenv("FAKE_LOG_STREAM_DELAY", "0.01")
+
+// 	sink := &consumertest.LogsSink{}
+// 	receiver := newUnifiedLoggingReceiver(&Config{Format: "ndjson"}, zap.NewNop(), sink)
+
+// 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+// 	defer cancel()
+
+// 	count, err := receiver.runLogCommand(ctx, "")
+// 	require.Error(t, err)
+// 	require.ErrorIs(t, err, context.DeadlineExceeded)
+// 	require.Greater(t, count, 0)
+// }
+
+func TestReadFromArchiveProcessesAllResolvedPaths(t *testing.T) {
+	setupFakeLogBinary(t)
+	outputPath := writeFakeLogOutput(t, `{"timestamp":"2024-01-01 12:00:00.000000-0700","eventMessage":"Archive","messageType":"Info"}`)
+	t.Setenv("FAKE_LOG_OUTPUT_PATH", outputPath)
+
+	callsFile := filepath.Join(t.TempDir(), "calls.txt")
+	t.Setenv("FAKE_LOG_CALLS_FILE", callsFile)
+
+	archiveRoot := t.TempDir()
+	archiveOne := filepath.Join(archiveRoot, "one.logarchive")
+	archiveTwo := filepath.Join(archiveRoot, "two.logarchive")
+	require.NoError(t, os.MkdirAll(archiveOne, 0o755))
+	require.NoError(t, os.MkdirAll(archiveTwo, 0o755))
+
+	cfg := &Config{
+		Format: "ndjson",
+	}
+	cfg.resolvedArchivePaths = []string{archiveOne, archiveTwo}
+
+	sink := &consumertest.LogsSink{}
+	receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
+
+	receiver.readFromArchive(context.Background())
+
+	calls := readRecordedCalls(t, callsFile)
+	require.Len(t, calls, 2)
+
+	callSet := map[string]bool{}
+	for _, call := range calls {
+		if strings.Contains(call, archiveOne) {
+			callSet[archiveOne] = true
+		}
+		if strings.Contains(call, archiveTwo) {
+			callSet[archiveTwo] = true
+		}
+	}
+	require.True(t, callSet[archiveOne])
+	require.True(t, callSet[archiveTwo])
+
+	allLogs := sink.AllLogs()
+	require.Len(t, allLogs, 2)
+}
+
+func TestReadFromLiveUsesBackoffLoop(t *testing.T) {
+	setupFakeLogBinary(t)
+	outputPath := writeFakeLogOutput(t, `{"timestamp":"2024-01-01 12:00:00.000000-0700","eventMessage":"Live","messageType":"Info"}`)
+	t.Setenv("FAKE_LOG_OUTPUT_PATH", outputPath)
+
+	callsFile := filepath.Join(t.TempDir(), "live_calls.txt")
+	t.Setenv("FAKE_LOG_CALLS_FILE", callsFile)
+
+	cfg := &Config{
+		Format:          "ndjson",
+		MaxPollInterval: 150 * time.Millisecond,
+	}
+
+	sink := &consumertest.LogsSink{}
+	receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan struct{})
+	go func() {
+		receiver.readFromLive(ctx)
+		close(done)
+	}()
+
+	time.Sleep(250 * time.Millisecond)
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("readFromLive did not stop after cancellation")
+	}
+
+	calls := readRecordedCalls(t, callsFile)
+	require.GreaterOrEqual(t, len(calls), 2, "expected initial run plus at least one ticker iteration")
+
+	allLogs := sink.AllLogs()
+	require.GreaterOrEqual(t, len(allLogs), 2)
 }
