@@ -455,6 +455,20 @@ Initial amount of memory consumed by Redis at startup in bytes
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+### redis.mode
+
+Redis server mode
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {mode} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Recommended |
+
 ### redis.replication.replica_offset
 
 Offset for redis replica
@@ -476,6 +490,54 @@ Redis node's role
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | role | Redis node's role | Str: ``replica``, ``primary`` | Recommended |
+
+### redis.sentinel.masters
+
+Number of masters monitored by Sentinel.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {master} | Gauge | Int | Development |
+
+### redis.sentinel.running_scripts
+
+Number of running Sentinel scripts.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {script} | Gauge | Int | Development |
+
+### redis.sentinel.scripts_queue_length
+
+Length of Sentinel scripts queue.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {script} | Gauge | Int | Development |
+
+### redis.sentinel.simulate_failure_flags
+
+Simulated failure flags bitmask.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {flag} | Gauge | Int | Development |
+
+### redis.sentinel.tilt_since_seconds
+
+Duration in seconds of current TILT, or -1 if not in TILT mode.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | Development |
+
+### redis.sentinel.total_tilt
+
+Total TILT occurrences since start.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {event} | Sum | Int | Cumulative | true | Development |
 
 ### redis.tracking_total_keys
 

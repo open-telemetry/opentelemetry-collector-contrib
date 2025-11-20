@@ -213,6 +213,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisMemoryUsedMemoryStartupDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordRedisModeDataPoint(ts, 1, AttributeModeCluster)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisNetInputDataPoint(ts, 1)
@@ -238,6 +241,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordRedisRoleDataPoint(ts, 1, AttributeRoleReplica)
+
+			allMetricsCount++
+			mb.RecordRedisSentinelMastersDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisSentinelRunningScriptsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisSentinelScriptsQueueLengthDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisSentinelSimulateFailureFlagsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisSentinelTiltSinceSecondsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisSentinelTotalTiltDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -829,6 +850,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.mode":
+					assert.False(t, validatedMetrics["redis.mode"], "Found a duplicate in the metrics slice: redis.mode")
+					validatedMetrics["redis.mode"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Redis server mode", ms.At(i).Description())
+					assert.Equal(t, "{mode}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("mode")
+					assert.True(t, ok)
+					assert.Equal(t, "cluster", attrVal.Str())
 				case "redis.net.input":
 					assert.False(t, validatedMetrics["redis.net.input"], "Found a duplicate in the metrics slice: redis.net.input")
 					validatedMetrics["redis.net.input"] = true
@@ -924,6 +960,80 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("role")
 					assert.True(t, ok)
 					assert.Equal(t, "replica", attrVal.Str())
+				case "redis.sentinel.masters":
+					assert.False(t, validatedMetrics["redis.sentinel.masters"], "Found a duplicate in the metrics slice: redis.sentinel.masters")
+					validatedMetrics["redis.sentinel.masters"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of masters monitored by Sentinel.", ms.At(i).Description())
+					assert.Equal(t, "{master}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.sentinel.running_scripts":
+					assert.False(t, validatedMetrics["redis.sentinel.running_scripts"], "Found a duplicate in the metrics slice: redis.sentinel.running_scripts")
+					validatedMetrics["redis.sentinel.running_scripts"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of running Sentinel scripts.", ms.At(i).Description())
+					assert.Equal(t, "{script}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.sentinel.scripts_queue_length":
+					assert.False(t, validatedMetrics["redis.sentinel.scripts_queue_length"], "Found a duplicate in the metrics slice: redis.sentinel.scripts_queue_length")
+					validatedMetrics["redis.sentinel.scripts_queue_length"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Length of Sentinel scripts queue.", ms.At(i).Description())
+					assert.Equal(t, "{script}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.sentinel.simulate_failure_flags":
+					assert.False(t, validatedMetrics["redis.sentinel.simulate_failure_flags"], "Found a duplicate in the metrics slice: redis.sentinel.simulate_failure_flags")
+					validatedMetrics["redis.sentinel.simulate_failure_flags"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Simulated failure flags bitmask.", ms.At(i).Description())
+					assert.Equal(t, "{flag}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.sentinel.tilt_since_seconds":
+					assert.False(t, validatedMetrics["redis.sentinel.tilt_since_seconds"], "Found a duplicate in the metrics slice: redis.sentinel.tilt_since_seconds")
+					validatedMetrics["redis.sentinel.tilt_since_seconds"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Duration in seconds of current TILT, or -1 if not in TILT mode.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.sentinel.total_tilt":
+					assert.False(t, validatedMetrics["redis.sentinel.total_tilt"], "Found a duplicate in the metrics slice: redis.sentinel.total_tilt")
+					validatedMetrics["redis.sentinel.total_tilt"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total TILT occurrences since start.", ms.At(i).Description())
+					assert.Equal(t, "{event}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "redis.slaves.connected":
 					assert.False(t, validatedMetrics["redis.slaves.connected"], "Found a duplicate in the metrics slice: redis.slaves.connected")
 					validatedMetrics["redis.slaves.connected"] = true
