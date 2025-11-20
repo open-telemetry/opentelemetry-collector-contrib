@@ -40,7 +40,7 @@ func (r *rateLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *sam
 		r.spansInCurrentSecond = 0
 	}
 
-	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount.Load()
+	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount
 	if spansInSecondIfSampled < r.spansPerSecond {
 		r.spansInCurrentSecond = spansInSecondIfSampled
 		return samplingpolicy.Sampled, nil

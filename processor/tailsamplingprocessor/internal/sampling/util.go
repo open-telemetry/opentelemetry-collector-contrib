@@ -94,9 +94,6 @@ func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, che
 }
 
 func SetAttrOnScopeSpans(data *samplingpolicy.TraceData, attrName, attrKey string) {
-	data.Lock()
-	defer data.Unlock()
-
 	rs := data.ReceivedBatches.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		rss := rs.At(i)
