@@ -27,5 +27,5 @@ func createLogsReceiver(
 	cfg component.Config,
 	nextLogs consumer.Logs,
 ) (receiver.Logs, error) {
-	return newPubSubPushReceiver(cfg.(*Config), set, nextLogs), nil
+	return newPubSubPushReceiver(cfg.(*Config), set, nextLogs)
 }
