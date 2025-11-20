@@ -177,6 +177,7 @@ components:
     - pkg/xk8stest
     - processor/akamaidetector
     - processor/attributes
+    - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
     - processor/datadogsemantics
