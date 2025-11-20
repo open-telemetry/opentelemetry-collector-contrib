@@ -125,7 +125,7 @@ correctly associate the matching container to the resource:
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
 
-Please note, however, that only `container.id` attribute can be used for source rules in the pod_association.
+Please note, however, that only `container.id` attribute can be used for source rules in the pod_association. To use `container.id` in pod association, at least one container attribute must be included in the `metadata` extraction configuration (e.g., `container.id`, `container.image.name`, etc.).
 
 Example for extracting container level attributes:
 
