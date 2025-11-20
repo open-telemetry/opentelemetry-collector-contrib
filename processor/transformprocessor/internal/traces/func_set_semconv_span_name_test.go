@@ -374,7 +374,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			want: "publish rabbitmq_ecommerce:5672",
 		},
 		{
-			name:                   "only messaging.operation, server.address, messaging.system, no , server.port, no messaging.destination.name...",
+			name:                   "only messaging.operation, server.address, messaging.system, no server.port, no messaging.destination.name...",
 			currentSpanName:        "publish ecommerce-exchange",
 			instrumentationLibrary: "hand crafted",
 			kind:                   ptrace.SpanKindProducer,
@@ -732,6 +732,50 @@ func Test_dbSpanName(t *testing.T) {
 				attrs.PutStr("db.system.name", "postgresql")
 			},
 			want: "postgresql",
+		},
+		{
+			name:                   "only 'db.operation' & 'db.system.name', no 'server.address', no 'db.namespace', no 'db.collection.name'",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.operation.name", "INSERT")
+				attrs.PutStr("db.system.name", "postgresql")
+			},
+			want: "INSERT",
+		},
+		{
+			name:                   "only 'db.operation' & 'db.system.name', no 'server.address', no 'db.namespace', no 'db.collection.name'",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.operation.name", "INSERT")
+				attrs.PutStr("db.system.name", "postgresql")
+			},
+			want: "INSERT",
+		},
+		{
+			name:                   "only 'db.collection.name' & 'db.system.name', no 'server.address', no 'db.namespace', no 'db.operation.name'",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.collection.name", "product")
+				attrs.PutStr("db.system.name", "postgresql")
+			},
+			want: "product",
+		},
+		{
+			name:                   "only 'db.stored_procedure.name' & 'db.system.name', no 'server.address', no 'db.namespace', no 'db.operation.name'",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.stored_procedure.name", "GetCustomer")
+				attrs.PutStr("db.system.name", "postgresql")
+			},
+			want: "GetCustomer",
 		},
 	}
 
