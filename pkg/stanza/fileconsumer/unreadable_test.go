@@ -66,7 +66,7 @@ func TestUnreadableFileLoggedOnce(t *testing.T) {
 	t.Logf("unreadable map after first poll: %v", keys)
 
 	// Verify the unreadable map recorded the path
-	require.Equal(t, 1, len(operator.unreadable), "expected unreadable map to have one entry after first poll")
+	require.Len(t, operator.unreadable, 1, "expected unreadable map to have one entry after first poll")
 
 	// Count error messages with the exact message
 	countErrMsgs := 0
@@ -99,7 +99,7 @@ func TestUnreadableFileLoggedOnce(t *testing.T) {
 	require.Equal(t, 1, countErrMsgs2, "expected still exactly one 'Failed to open file' error after second poll")
 
 	// Verify the unreadable map still contains the entry (no reinitialization)
-	require.Equal(t, 1, len(operator.unreadable), "expected unreadable map to still have one entry after second poll")
+	require.Len(t, operator.unreadable, 1, "expected unreadable map to still have one entry after second poll")
 
 	// Now make the file readable again and poll; should emit an info message
 	require.NoError(t, os.Chmod(f.Name(), 0o644))
