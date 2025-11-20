@@ -4,6 +4,7 @@
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 )
@@ -169,12 +170,12 @@ func (entry *Entry) Copy() *Entry {
 		Timestamp:         entry.Timestamp,
 		Severity:          entry.Severity,
 		SeverityText:      entry.SeverityText,
-		Attributes:        copyInterfaceMap(entry.Attributes),
-		Resource:          copyInterfaceMap(entry.Resource),
+		Attributes:        copyAnyMap(entry.Attributes),
+		Resource:          copyAnyMap(entry.Resource),
 		Body:              copyValue(entry.Body),
-		TraceID:           copyByteArray(entry.TraceID),
-		SpanID:            copyByteArray(entry.SpanID),
-		TraceFlags:        copyByteArray(entry.TraceFlags),
+		TraceID:           bytes.Clone(entry.TraceID),
+		SpanID:            bytes.Clone(entry.SpanID),
+		TraceFlags:        bytes.Clone(entry.TraceFlags),
 		ScopeName:         entry.ScopeName,
 	}
 }
