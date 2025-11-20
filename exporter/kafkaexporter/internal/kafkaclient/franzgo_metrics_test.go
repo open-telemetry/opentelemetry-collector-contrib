@@ -33,7 +33,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
-		metadatatest.AssertEqualKafkaBrokerConnects(
+		metadatatest.AssertEqualKafkaExporterBrokerConnects(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{
@@ -67,7 +67,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
-		metadatatest.AssertEqualKafkaBrokerClosed(
+		metadatatest.AssertEqualKafkaExporterBrokerClosed(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{
@@ -311,7 +311,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
-		metadatatest.AssertEqualKafkaBrokerThrottlingDuration(
+		metadatatest.AssertEqualKafkaExporterBrokerThrottlingDuration(
 			t,
 			testTel,
 			[]metricdata.HistogramDataPoint[int64]{
@@ -329,7 +329,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 			},
 			metricdatatest.IgnoreTimestamp(),
 		)
-		metadatatest.AssertEqualKafkaBrokerThrottlingLatency(
+		metadatatest.AssertEqualKafkaExporterBrokerThrottlingLatency(
 			t,
 			testTel,
 			[]metricdata.HistogramDataPoint[float64]{
