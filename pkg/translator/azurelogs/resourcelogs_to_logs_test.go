@@ -313,7 +313,7 @@ func TestUnmarshalLogs_AzureCdnAccessLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -354,7 +354,7 @@ func TestUnmarshalLogs_FrontDoorWebApplicationFirewallLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -395,7 +395,7 @@ func TestUnmarshalLogs_FrontDoorAccessLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -478,7 +478,7 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(expectedDir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
