@@ -22,8 +22,10 @@ import (
 var _ resolver = (*dnsResolver)(nil)
 
 const (
-	defaultResInterval = 5 * time.Second
-	defaultResTimeout  = time.Second
+	defaultResInterval        = 5 * time.Second
+	defaultResTimeout         = time.Second
+	defaultQuarantineDuration = 30 * time.Second
+	defaultQuarantineEnabled  = false
 )
 
 var (
@@ -36,7 +38,8 @@ var (
 )
 
 type dnsResolver struct {
-	logger *zap.Logger
+	logger     *zap.Logger
+	quarantine *QuarantineSettings
 
 	hostname    string
 	port        string
@@ -64,6 +67,7 @@ func newDNSResolver(
 	port string,
 	interval time.Duration,
 	timeout time.Duration,
+	quarantine *QuarantineSettings,
 	tb *metadata.TelemetryBuilder,
 ) (*dnsResolver, error) {
 	if hostname == "" {
@@ -75,9 +79,21 @@ func newDNSResolver(
 	if timeout == 0 {
 		timeout = defaultResTimeout
 	}
+	// If quarantine is not set, use the default quarantine settings
+	if quarantine == nil {
+		quarantine = &QuarantineSettings{
+			Enabled:  defaultQuarantineEnabled,
+			Duration: defaultQuarantineDuration,
+		}
+	}
+	// If quarantine duration is not set, use the default quarantine duration
+	if quarantine.Duration <= 0 {
+		quarantine.Duration = defaultQuarantineDuration
+	}
 
 	return &dnsResolver{
 		logger:      logger,
+		quarantine:  quarantine,
 		hostname:    hostname,
 		port:        port,
 		resolver:    &net.Resolver{},
