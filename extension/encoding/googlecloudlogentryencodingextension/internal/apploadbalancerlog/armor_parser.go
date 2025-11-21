@@ -4,7 +4,7 @@
 // Find more information about Armor Logs:
 // https://docs.cloud.google.com/armor/docs/request-logging
 
-package apploadbalancerlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
+package apploadbalancerlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/apploadbalancerlog"
 
 import (
 	"fmt"
