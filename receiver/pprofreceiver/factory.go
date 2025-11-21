@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	pproftranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
@@ -55,6 +56,7 @@ type pprofReceiver struct {
 	telemetrySettings component.TelemetrySettings
 	config            *Config
 	done              chan struct{}
+	errGrp            errgroup.Group
 }
 
 func (r *pprofReceiver) convert(p []byte) (pprofile.Profiles, error) {
@@ -75,47 +77,48 @@ func (r *pprofReceiver) Start(_ context.Context, _ component.Host) error {
 	runtime.SetBlockProfileRate(r.config.BlockProfileFraction)
 	runtime.SetMutexProfileFraction(r.config.MutexProfileFraction)
 
-	go func() {
-		timer := time.NewTicker(r.config.CollectionInterval)
-		collecting := false
-		payload := make([]byte, 0, 8096)
-		buf := bytes.NewBuffer(payload)
-		writer := bufio.NewWriter(buf)
-		for {
-			select {
-			case <-r.done:
-				pprof.StopCPUProfile()
-				return
-			case <-timer.C:
-				if collecting {
-					pprof.StopCPUProfile()
-					_ = writer.Flush()
-					collecting = false
-					pp, err := r.convert(buf.Bytes())
-					buf.Reset()
-					if err != nil {
-						r.telemetrySettings.Logger.Error("error processing profile", zap.Error(err))
-					} else {
-						err = r.consumer.ConsumeProfiles(context.Background(), pp)
-						if err != nil {
-							r.telemetrySettings.Logger.Error("failed to ingest pprof profile", zap.Error(err))
-						}
-					}
-				} else {
-					err := pprof.StartCPUProfile(writer)
-					if err != nil {
-						r.telemetrySettings.Logger.Error("failed to start CPU profile", zap.Error(err))
-					}
-					collecting = true
-				}
-			}
-		}
-	}()
+	r.errGrp.Go(r.run)
 
 	return nil
 }
 
+func (r *pprofReceiver) run() error {
+	timer := time.NewTicker(r.config.CollectionInterval)
+	collecting := false
+	buf := bytes.NewBuffer(make([]byte, 0, 8096))
+	writer := bufio.NewWriter(buf)
+	for {
+		select {
+		case <-r.done:
+			pprof.StopCPUProfile()
+			return nil
+		case <-timer.C:
+			if collecting {
+				pprof.StopCPUProfile()
+				_ = writer.Flush()
+				collecting = false
+				pp, err := r.convert(buf.Bytes())
+				buf.Reset()
+				if err != nil {
+					r.telemetrySettings.Logger.Error("error processing profile", zap.Error(err))
+				} else {
+					err = r.consumer.ConsumeProfiles(context.Background(), pp)
+					if err != nil {
+						r.telemetrySettings.Logger.Error("failed to ingest pprof profile", zap.Error(err))
+					}
+				}
+			} else {
+				err := pprof.StartCPUProfile(writer)
+				if err != nil {
+					r.telemetrySettings.Logger.Error("failed to start CPU profile", zap.Error(err))
+				}
+				collecting = true
+			}
+		}
+	}
+}
+
 func (r *pprofReceiver) Shutdown(_ context.Context) error {
 	close(r.done)
-	return nil
+	return r.errGrp.Wait()
 }
