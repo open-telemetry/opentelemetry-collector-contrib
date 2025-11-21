@@ -48,14 +48,16 @@ var (
 )
 
 const (
-	attributeLocation      = "location"
-	attributeName          = "name"
-	attributeResourceGroup = "resource_group"
-	attributeResourceType  = "type"
-	metadataPrefix         = "metadata_"
-	tagPrefix              = "tags_"
-	truncateTimeGrain      = time.Minute
-	filterAllAggregations  = "*"
+	attributeLocation        = "location"
+	attributeName            = "name"
+	attributeResourceGroup   = "resource_group"
+	attributeResourceType    = "type"
+	attributeMetricNamespace = "metric_namespace"
+	attributeTimegrain       = "timegrain"
+	metadataPrefix           = "metadata_"
+	tagPrefix                = "tags_"
+	truncateTimeGrain        = time.Minute
+	filterAllAggregations    = "*"
 )
 
 // azureSubscription is an extract of armsubscriptions.Subscription.
@@ -69,6 +71,7 @@ type azureSubscription struct {
 
 type azureResource struct {
 	attributes                map[string]*string
+	metricsNamespaces         []string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
 	tags                      map[string]*string
@@ -76,6 +79,7 @@ type azureResource struct {
 }
 
 type metricsCompositeKey struct {
+	namespace    string
 	dimensions   string // comma separated sorted dimensions
 	aggregations string // comma separated sorted aggregations
 	timeGrain    string
@@ -356,29 +360,33 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, subscr
 
 	s.resources[subscriptionID][resourceID].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
 
-	pager := clientMetricsDefinitions.NewListPager(resourceID, nil)
-	for pager.More() {
-		nextResult, err := pager.NextPage(ctx)
-		if err != nil {
-			s.settings.Logger.Error("failed to get Azure Metrics definitions data", zap.Error(err))
-			return
-		}
-
-		for _, v := range nextResult.Value {
-			metricName := *v.Name.Value
-			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
-			if len(metricAggregations) == 0 {
-				continue
+	for _, namespace := range s.resources[subscriptionID][resourceID].metricsNamespaces {
+		resourceURI, opts := buildMetricsDefinitionParameters(resourceID, namespace)
+		pager := clientMetricsDefinitions.NewListPager(resourceURI, opts)
+		for pager.More() {
+			nextResult, err := pager.NextPage(ctx)
+			if err != nil {
+				s.settings.Logger.Error("failed to get Azure Metrics definitions data", zap.Error(err))
+				return
 			}
 
-			timeGrain := *v.MetricAvailabilities[0].TimeGrain
-			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, *s.resources[subscriptionID][resourceID].resourceType, metricName)
-			compositeKey := metricsCompositeKey{
-				timeGrain:    timeGrain,
-				dimensions:   serializeDimensions(dimensions),
-				aggregations: strings.Join(metricAggregations, ","),
+			for _, v := range nextResult.Value {
+				metricName := *v.Name.Value
+				metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
+				if len(metricAggregations) == 0 {
+					continue
+				}
+
+				timeGrain := *v.MetricAvailabilities[0].TimeGrain
+				dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, *s.resources[subscriptionID][resourceID].resourceType, metricName)
+				compositeKey := metricsCompositeKey{
+					namespace:    *v.Namespace,
+					timeGrain:    timeGrain,
+					dimensions:   serializeDimensions(dimensions),
+					aggregations: strings.Join(metricAggregations, ","),
+				}
+				s.storeMetricsDefinition(subscriptionID, resourceID, metricName, compositeKey)
 			}
-			s.storeMetricsDefinition(subscriptionID, resourceID, metricName, compositeKey)
 		}
 	}
 	s.resources[subscriptionID][resourceID].metricsDefinitionsUpdated = time.Now()
@@ -404,19 +412,20 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 		return
 	}
 
-	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
-		if updatedAt.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
+	for compositeKey, metricsByCompositeKey := range res.metricsByCompositeKey {
+		if updatedAt.Sub(metricsByCompositeKey.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
 		}
-		metricsByGrain.metricsValuesUpdated = updatedAt
+		metricsByCompositeKey.metricsValuesUpdated = updatedAt
 
 		start := 0
 
-		for start < len(metricsByGrain.metrics) {
-			end := min(start+s.cfg.MaximumNumberOfMetricsInACall, len(metricsByGrain.metrics))
+		for start < len(metricsByCompositeKey.metrics) {
+			end := min(start+s.cfg.MaximumNumberOfMetricsInACall, len(metricsByCompositeKey.metrics))
 
 			opts := getResourceMetricsValuesRequestOptions(
-				metricsByGrain.metrics,
+				metricsByCompositeKey.metrics,
+				compositeKey.namespace,
 				compositeKey.dimensions,
 				compositeKey.timeGrain,
 				compositeKey.aggregations,
@@ -451,6 +460,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 						name := tagPrefix + tagName
 						attributes[name] = value
 					}
+					attributes[attributeMetricNamespace] = &compositeKey.namespace
 					for _, metricValue := range timeseriesElement.Data {
 						s.processTimeseriesData(resourceID, metric, metricValue, attributes)
 					}
@@ -462,6 +472,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 
 func getResourceMetricsValuesRequestOptions(
 	metrics []string,
+	metricsNamespace string,
 	dimensionsStr string,
 	timeGrain string,
 	aggregationsStr string,
@@ -470,12 +481,13 @@ func getResourceMetricsValuesRequestOptions(
 	top int32,
 ) armmonitor.MetricsClientListOptions {
 	return armmonitor.MetricsClientListOptions{
-		Metricnames: to.Ptr(strings.Join(metrics[start:end], ",")),
-		Interval:    to.Ptr(timeGrain),
-		Timespan:    to.Ptr(timeGrain),
-		Aggregation: to.Ptr(aggregationsStr),
-		Top:         to.Ptr(top),
-		Filter:      buildDimensionsFilter(dimensionsStr),
+		Metricnames:     to.Ptr(strings.Join(metrics[start:end], ",")),
+		Metricnamespace: to.Ptr(metricsNamespace),
+		Interval:        to.Ptr(timeGrain),
+		Timespan:        to.Ptr(timeGrain),
+		Aggregation:     to.Ptr(aggregationsStr),
+		Top:             to.Ptr(top),
+		Filter:          buildDimensionsFilter(dimensionsStr),
 	}
 }
 
@@ -586,4 +598,16 @@ func filterResourceTags(tagFilterList map[string]struct{}, resourceTags map[stri
 	}
 
 	return includedTags
+}
+
+func buildMetricsDefinitionParameters(resourceID, metricNamespace string) (string, *armmonitor.MetricDefinitionsClientListOptions) {
+	resourceURI := resourceID
+	// TODO: this strong assumption is probably not true.
+	steps := strings.Split(metricNamespace, "/")
+	if len(steps) == 3 {
+		resourceURI = fmt.Sprintf("%s/%s/default", resourceID, steps[2])
+	}
+	return resourceURI, &armmonitor.MetricDefinitionsClientListOptions{
+		Metricnamespace: to.Ptr(metricNamespace),
+	}
 }

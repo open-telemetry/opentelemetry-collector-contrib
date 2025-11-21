@@ -247,6 +247,7 @@ type Config struct {
 	TenantID                          string                        `mapstructure:"tenant_id"`
 	ResourceGroups                    []string                      `mapstructure:"resource_groups"`
 	Services                          []string                      `mapstructure:"services"`
+	MetricsNamespaces                 map[string][]string           `mapstructure:"namespaces"`
 	Metrics                           NestedListAlias               `mapstructure:"metrics"`
 	CacheResources                    float64                       `mapstructure:"cache_resources"`
 	CacheResourcesDefinitions         float64                       `mapstructure:"cache_resources_definitions"`
