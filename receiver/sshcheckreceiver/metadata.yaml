@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [nslaughter]
+    emeritus: [nslaughter]
 
 resource_attributes:
   ssh.endpoint:
