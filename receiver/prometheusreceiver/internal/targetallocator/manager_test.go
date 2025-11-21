@@ -4,7 +4,6 @@
 package targetallocator
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -75,7 +74,7 @@ func TestManagerShutdown(t *testing.T) {
 	manager := NewManager(settings, cfg, promCfg, false)
 
 	// Start the manager so the goroutine is running
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Initialize Prometheus managers using the same pattern as manager_test.go
 	promLogger := promslog.NewNopLogger()
@@ -143,11 +142,11 @@ func TestInstantiateShard(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var lookup func(string) (string, bool)
 			if tt.setEnv {
-				lookup = func(s string) (string, bool) {
+				lookup = func(_ string) (string, bool) {
 					return tt.envVar, true
 				}
 			} else {
-				lookup = func(s string) (string, bool) {
+				lookup = func(_ string) (string, bool) {
 					return "", false
 				}
 			}

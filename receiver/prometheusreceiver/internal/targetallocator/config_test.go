@@ -172,6 +172,7 @@ func TestConvertTLSVersion(t *testing.T) {
 		})
 	}
 }
+
 func TestCheckTLSConfig(t *testing.T) {
 	tests := []struct {
 		name        string
