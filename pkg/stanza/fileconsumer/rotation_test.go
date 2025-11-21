@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -494,4 +495,167 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	require.NoError(t, operator2.Start(persister))
 	sink2.ExpectTokens(t, log2, log3)
 	require.NoError(t, operator2.Stop())
+}
+
+// TestOnTruncateReadWholeFile tests that when on_truncate is set to "read_whole_file",
+// the whole file is read from the beginning after a copytruncate rotation
+func TestOnTruncateReadWholeFile(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.OnTruncate = OnTruncateReadWholeFile
+	cfg.PollInterval = 100 * time.Millisecond
+
+	temp := filetest.OpenTemp(t, tempDir)
+	tempCopy := filetest.OpenTempWithPattern(t, tempDir, "*.copy.log")
+
+	// Write initial logs
+	log1 := []byte("log line 1")
+	log2 := []byte("log line 2")
+	filetest.WriteString(t, temp, string(log1)+"\n")
+	filetest.WriteString(t, temp, string(log2)+"\n")
+
+	// Start the operator and expect initial logs
+	operator, sink := testManager(t, cfg)
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, operator.Start(persister))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectTokens(t, log1, log2)
+
+	// Perform copytruncate: copy file to backup and truncate original
+	require.NoError(t, temp.Sync())
+	_, err := temp.Seek(0, 0)
+	require.NoError(t, err)
+	_, err = io.Copy(tempCopy, temp)
+	require.NoError(t, err)
+	require.NoError(t, tempCopy.Close())
+	require.NoError(t, temp.Truncate(0))
+	_, err = temp.Seek(0, 0)
+	require.NoError(t, err)
+
+	// Write new logs to the truncated file
+	log3 := []byte("log line 3")
+	log4 := []byte("log line 4")
+	filetest.WriteString(t, temp, string(log3)+"\n")
+	filetest.WriteString(t, temp, string(log4)+"\n")
+
+	// With read_whole_file, we should see log3 and log4
+	// (the file is re-read from the beginning after truncation)
+	sink.ExpectTokens(t, log3, log4)
+}
+
+// TestOnTruncateReadNew tests that when on_truncate is set to "read_new",
+// only new data added after the truncation point is read
+func TestOnTruncateReadNew(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.OnTruncate = OnTruncateReadNew
+	cfg.PollInterval = 100 * time.Millisecond
+
+	temp := filetest.OpenTemp(t, tempDir)
+	tempCopy := filetest.OpenTempWithPattern(t, tempDir, "*.copy.log")
+
+	// Write initial logs
+	log1 := []byte("log line 1")
+	log2 := []byte("log line 2")
+	filetest.WriteString(t, temp, string(log1)+"\n")
+	filetest.WriteString(t, temp, string(log2)+"\n")
+
+	// Start the operator and expect initial logs
+	operator, sink := testManager(t, cfg)
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, operator.Start(persister))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectTokens(t, log1, log2)
+
+	// Perform copytruncate: copy file to backup and truncate original
+	require.NoError(t, temp.Sync())
+	_, err := temp.Seek(0, 0)
+	require.NoError(t, err)
+	_, err = io.Copy(tempCopy, temp)
+	require.NoError(t, err)
+	require.NoError(t, tempCopy.Close())
+	require.NoError(t, temp.Truncate(0))
+	_, err = temp.Seek(0, 0)
+	require.NoError(t, err)
+
+	// Write new logs to the truncated file (less than the previous offset)
+	log3 := []byte("log3")
+	filetest.WriteString(t, temp, string(log3)+"\n")
+
+	// With read_new, we should see log3 because offset is reset to current file size (0)
+	// So when log3 is written, it will be read
+	sink.ExpectTokens(t, log3)
+
+	// Write more data to verify continued reading
+	log4 := []byte("log line 4")
+	filetest.WriteString(t, temp, string(log4)+"\n")
+	sink.ExpectTokens(t, log4)
+}
+
+// TestOnTruncateIgnore tests that when on_truncate is set to "ignore" (default),
+// the old offset is kept, meaning no data is read until the file grows past it
+func TestOnTruncateIgnore(t *testing.T) {
+	t.Parallel()
+
+	identicalPrefix := string(bytes.Repeat([]byte("x"), 100)) // 100 bytes of 'x'
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.OnTruncate = OnTruncateIgnore
+	cfg.FingerprintSize = 100 // Match the prefix size
+
+	// Manager #1 (manual polling)
+	op1, sink1 := testManager(t, cfg)
+	op1.persister = testutil.NewUnscopedMockPersister()
+
+	// Create file and write initial logs
+	temp := filetest.OpenTemp(t, tempDir)
+	log1 := []byte(identicalPrefix + " - log line 1")
+	log2 := []byte(identicalPrefix + " - log line 2")
+	filetest.WriteString(t, temp, string(log1)+"\n")
+	filetest.WriteString(t, temp, string(log2)+"\n")
+
+	// First poll: read the existing logs
+	op1.poll(t.Context())
+	sink1.ExpectTokens(t, log1, log2)
+
+	// Stop op1 and persist metadata
+	require.NoError(t, op1.Stop())
+
+	// Simulate copytruncate - truncate file and write new shorter content
+	require.NoError(t, temp.Truncate(0))
+	_, err := temp.Seek(0, 0)
+	require.NoError(t, err)
+
+	// Write the SAME prefix to maintain fingerprint, but with new shorter content
+	log3 := []byte(identicalPrefix + " - new short log")
+	filetest.WriteString(t, temp, string(log3)+"\n")
+
+	// Manager #2 resumes from persisted metadata
+	op2, sink2 := testManager(t, cfg)
+	op2.persister = op1.persister
+
+	// Load metadata from op1's tracker into op2's tracker
+	metadata := op1.tracker.GetMetadata()
+	op2.tracker.LoadMetadata(metadata)
+
+	// On poll, with "ignore" mode, the old offset should be kept
+	// Since the file is smaller than the old offset, nothing should be read
+	op2.poll(t.Context())
+	sink2.ExpectNoCalls(t)
+
+	require.NoError(t, op2.Stop())
 }

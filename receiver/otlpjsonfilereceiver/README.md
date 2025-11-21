@@ -42,3 +42,39 @@ receivers:
     exclude:
       - "/var/log/example.log"
 ```
+
+## Configuration
+
+| Field                      | Default          | Description                                                                                                                                                                                                                                                     |
+|----------------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `include`                  | required         | A list of file glob patterns that match the file paths to be read.                                                                                                                                                                                              |
+| `exclude`                  | []               | A list of file glob patterns to exclude from reading. This is applied against the paths matched by `include`.                                                                                                                                                   |
+| `encoding`                            | `utf-8`                              | The encoding of the file being read. See the list of [supported encodings below](#supported-encodings) for available options.                                                                                                                                   |
+| `poll_interval`            | 200ms            | The duration between filesystem polls.                                                                                                                                                                                                                          |
+| `start_at`                 | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`.                                                                                                                                                                        |
+| `fingerprint_size`         | `1kb`            | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint.                                                                                                                                                     |
+| `max_concurrent_files`     | 1024             | The maximum number of log files from which logs will be read concurrently.                                                                                                                                                                                      |
+| `max_log_size`             | `1MiB`           | The maximum size of a log entry to read. A log entry will be truncated if it is larger than `max_log_size`.                                                                                                                                                     |
+| `storage`                  | none             | The ID of a storage extension to be used to store file offsets.                                                                                                                                                                                                 |
+| `on_truncate`              | `ignore`         | Behavior when a file with the same fingerprint is detected but with a smaller size (indicating a copytruncate rotation). Options are `ignore`, `read_whole_file`, or `read_new`. See [handling copytruncate rotation](#handling-copytruncate-rotation).        |
+| `replay_file`              | `false`          | If `true`, the receiver will not track file offsets and will re-read files from the beginning on every poll.                                                                                                                                                    |
+
+For additional configuration options, see the [File Log Receiver documentation](../filelogreceiver/README.md#configuration).
+
+### Handling Copytruncate Rotation
+
+When log files are rotated using the `copytruncate` strategy (where the file is copied and then truncated in place), the receiver can detect when a file has been truncated by comparing the stored offset with the current file size. The `on_truncate` setting controls how the receiver behaves when truncation is detected:
+
+- `ignore` (default): The receiver keeps the original offset and will not read any data until the file grows past the original offset. This prevents duplicate log ingestion when a file is rotated.
+- `read_whole_file`: The receiver resets the offset to 0 and reads the entire file from the beginning. Use this mode when you want to ensure no data loss, even if it means potentially re-reading some logs.
+- `read_new`: The receiver updates the offset to the current file size (the position after truncation). This allows reading new data that is written after the truncation without re-reading existing content.
+
+**Example configuration:**
+
+```yaml
+receivers:
+  otlpjsonfile:
+    include:
+      - /var/log/otlp/*.json
+    on_truncate: read_whole_file  # Read entire file after copytruncate rotation
+```
