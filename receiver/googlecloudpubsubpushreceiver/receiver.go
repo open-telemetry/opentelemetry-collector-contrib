@@ -41,7 +41,7 @@ const (
 	messageIDMetadataKey       = "message_id"
 	deliveryAttemptMetadataKey = "delivery_attempt"
 
-	bucketNameAttr = "bucket_name"
+	bucketNameAttr = "gcp.gcs.bucket.name"
 )
 
 type pubSubPushReceiver struct {
