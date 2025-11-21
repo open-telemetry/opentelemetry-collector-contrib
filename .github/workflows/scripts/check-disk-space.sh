@@ -13,8 +13,9 @@ if [ "$used_space" -gt 14336 ]; then
 fi
 if [ "$free_space" -lt 15000 ]; then
   echo "WARNING: The amount of space remaining is dangerously low."
-  if [ "$GITHUB_REPOSITORY_OWNER" = "open-telemetry" ] && { [ "$GITHUB_REF" = "refs/heads/main" ] || [ "$GITHUB_HEAD_REF" = "jade-guiton-dd:check-disk-space" ]; }; then
+  echo "GITHUB_REPOSITORY_OWNER=$GITHUB_REPOSITORY_OWNER; GITHUB_REF=$GITHUB_REF; GITHUB_HEAD_REF=$GITHUB_HEAD_REF"
+  #if [ "$GITHUB_REPOSITORY_OWNER" = "open-telemetry" ] && [ "$GITHUB_REF" = "refs/heads/main" ] then
     echo "Adding comment on tracking issue..."
     gh issue comment 44458 -b "Job $GITHUB_JOB in workflow $GITHUB_WORKFLOW ended with $free_space MiB of disk space"
-  fi
+  #fi
 fi
