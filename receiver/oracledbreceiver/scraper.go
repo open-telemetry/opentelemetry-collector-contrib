@@ -540,6 +540,7 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
 			}
+			s.lastExecutionTimestamp = currentCollectionTime
 		}
 	}
 
@@ -681,7 +682,6 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 		s.logger.Debug("Log records for this scrape", zap.Int("count", hitCount))
 	}
 
-	s.lastExecutionTimestamp = collectionTime
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 
 	return errors.Join(errs...)
@@ -885,7 +885,9 @@ func (s *oracleScraper) calculateLookbackSeconds() int {
 		return int(s.topQueryCollectCfg.CollectionInterval.Seconds())
 	}
 
-	const vsqlRefreshLagSec = 10 * time.Second // Buffer to account for v$sql maximum refresh latency
+	// vsqlRefreshLagSec is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
+	// PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
+	const vsqlRefreshLagSec = 10 * time.Second
 
 	return int(math.Ceil(time.Now().
 		Add(vsqlRefreshLagSec).
