@@ -18,8 +18,9 @@ import (
 )
 
 var validMetricTypes = map[string]bool{
-	strings.ToLower(pmetric.MetricTypeSum.String()):       true,
-	strings.ToLower(pmetric.MetricTypeHistogram.String()): true,
+	strings.ToLower(pmetric.MetricTypeSum.String()):                  true,
+	strings.ToLower(pmetric.MetricTypeHistogram.String()):            true,
+	strings.ToLower(pmetric.MetricTypeExponentialHistogram.String()): true,
 }
 
 var validMetricTypeList = maps.Keys(validMetricTypes)
