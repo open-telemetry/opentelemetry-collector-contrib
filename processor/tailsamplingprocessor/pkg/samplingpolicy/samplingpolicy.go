@@ -61,6 +61,11 @@ type EarlyEvaluator interface {
 	// EarlyEvaluate does the actual evaluation of the batch of spans. Any
 	// implementations must only return Sampled, NotSampled, Dropped, or
 	// Unspecified decisions. Any other values will be treated as Unspecified.
+	//
+	// The `ReceivedBatches` on allData should not be iterated through each
+	// time this function is called. It is included for implementations that
+	// wait for a trigger, such as the parent span being received, before
+	// looking across all the received spans.
 	EarlyEvaluate(ctx context.Context, traceID pcommon.TraceID, newData ptrace.ResourceSpans, allData *TraceData) (Decision, error)
 }
 
