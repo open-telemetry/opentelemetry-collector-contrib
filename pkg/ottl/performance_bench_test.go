@@ -5,6 +5,7 @@ package ottl_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -517,4 +518,133 @@ func newBenchmarkSpanContext(attributeCount int) ottlspan.TransformContext {
 	}
 
 	return ottlspan.NewTransformContext(span, scope, resource, scopeSpans, resourceSpans)
+}
+
+func BenchmarkSliceToMap(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create log parser: %v", err)
+	}
+
+	stmtsNoPaths := []string{
+		`set(log.attributes["mapped_no_paths"], SliceToMap(log.attributes["arr"]))`,
+	}
+	stmtsKeyOnly := []string{
+		`set(log.attributes["mapped_key_only"], SliceToMap(log.attributes["arr"], ["id"]))`,
+	}
+	stmtsKeyAndValue := []string{
+		`set(log.attributes["mapped_key_value"], SliceToMap(log.attributes["arr"], ["id"], ["nested","k"]))`,
+	}
+
+	parsedNoPaths, err := parser.ParseStatements(stmtsNoPaths)
+	if err != nil {
+		b.Fatalf("failed to parse SliceToMap no-paths statements: %v", err)
+	}
+	seqNoPaths := ottllog.NewStatementSequence(parsedNoPaths, settings)
+
+	parsedKeyOnly, err := parser.ParseStatements(stmtsKeyOnly)
+	if err != nil {
+		b.Fatalf("failed to parse SliceToMap key-only statements: %v", err)
+	}
+	seqKeyOnly := ottllog.NewStatementSequence(parsedKeyOnly, settings)
+
+	parsedKeyAndValue, err := parser.ParseStatements(stmtsKeyAndValue)
+	if err != nil {
+		b.Fatalf("failed to parse SliceToMap key+value statements: %v", err)
+	}
+	seqKeyAndValue := ottllog.NewStatementSequence(parsedKeyAndValue, settings)
+
+	sizes := []struct {
+		label string
+		n     int
+	}{
+		{"small", 50},
+		{"medium", 200},
+	}
+
+	for _, sz := range sizes {
+		// no_paths: arr is slice of primitives
+		b.Run("SliceToMap/no_paths/"+sz.label, func(b *testing.B) {
+			ctx := b.Context()
+			tc := newSliceContextWithPrimitiveArr(sz.n)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if err := seqNoPaths.Execute(ctx, tc); err != nil {
+					b.Fatalf("execute failed: %v", err)
+				}
+			}
+		})
+
+		// key_only: arr is slice of maps
+		b.Run("SliceToMap/key_only/"+sz.label, func(b *testing.B) {
+			ctx := b.Context()
+			tc := newSliceContextWithMapArr(sz.n)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if err := seqKeyOnly.Execute(ctx, tc); err != nil {
+					b.Fatalf("execute failed: %v", err)
+				}
+			}
+		})
+
+		// key_and_value: arr is slice of maps
+		b.Run("SliceToMap/key_and_value/"+sz.label, func(b *testing.B) {
+			ctx := b.Context()
+			tc := newSliceContextWithMapArr(sz.n)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if err := seqKeyAndValue.Execute(ctx, tc); err != nil {
+					b.Fatalf("execute failed: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func newSliceContextWithPrimitiveArr(arrSize int) ottllog.TransformContext {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+
+	lr.SetTimestamp(pcommon.Timestamp(1710000000000000000))
+	lr.SetObservedTimestamp(pcommon.Timestamp(1710000000000000000))
+
+	arr := lr.Attributes().PutEmptySlice("arr")
+	arr.EnsureCapacity(arrSize)
+	for i := 0; i < arrSize; i++ {
+		arr.AppendEmpty().SetStr("v_" + strconv.Itoa(i))
+	}
+
+	return ottllog.NewTransformContext(lr, sl.Scope(), rl.Resource(), sl, rl)
+}
+
+func newSliceContextWithMapArr(arrSize int) ottllog.TransformContext {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+
+	lr.SetTimestamp(pcommon.Timestamp(1710000000000000000))
+	lr.SetObservedTimestamp(pcommon.Timestamp(1710000000000000000))
+
+	arr := lr.Attributes().PutEmptySlice("arr")
+	arr.EnsureCapacity(arrSize)
+	for i := 0; i < arrSize; i++ {
+		elem := arr.AppendEmpty()
+		m := elem.SetEmptyMap()
+		m.PutStr("id", "item_"+strconv.Itoa(i))
+		m.PutInt("val", int64(i))
+		nm := m.PutEmptyMap("nested")
+		nm.PutStr("k", "v_"+strconv.Itoa(i))
+	}
+
+	return ottllog.NewTransformContext(lr, sl.Scope(), rl.Resource(), sl, rl)
 }
