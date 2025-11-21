@@ -84,11 +84,42 @@ The mapping for this category is as follows:
 
 ### Resource Health Logs
 
-| Original Field (JSON)  | Log Record Attribute                           |
-|------------------------|------------------------------------------------|
-| `title`                | `azure.resource_health.title`                  |
-| `details`              | `azure.resource_health.details`                |
-| `currentHealthStatus`  | `azure.resource_health.current_status`         |
-| `previousHealthStatus` | `azure.resource_health.previous_status`        |
-| `type`                 | `azure.resource_health.type`                   |
-| `cause`                | `azure.resource_health.cause`                  |
+| Original Field (JSON)  | Log Record Attribute                           | Description                                    |
+|------------------------|------------------------------------------------|------------------------------------------------|
+| `title`                | `azure.resource_health.title`                  | Title of the health event.                     |
+| `details`              | `azure.resource_health.details`                | Details of the health event.                   |
+| `currentHealthStatus`  | `azure.resource_health.current_status`         | Current health status of the resource.         |
+| `previousHealthStatus` | `azure.resource_health.previous_status`        | Previous health status of the resource.        |
+| `type`                 | `azure.resource_health.type`                   | Type of the health event.                      |
+| `cause`                | `azure.resource_health.cause`                  | Cause of the health event.                     |
+
+### Service Health Logs
+
+| Original Field (JSON)  | Log Record Attribute                           | Description                                                                           |
+|------------------------|------------------------------------------------|---------------------------------------------------------------------------------------|
+| `title`                | `azure.service_health.title`                   | A user-friendly, localized title for the communication.                               |
+| `service`              | `azure.service_health.service`                 | The name of the service impacted by the event.                                        |
+| `region`               | `azure.service_health.region`                  | The name of the region impacted by the event.                                         |
+| `communication`        | `azure.service_health.communication`           | Localized details of the communication.                                               |
+| `incidentType`         | `azure.service_health.incident_type`           | Identifies the category of a health event.                                            |
+| `trackingId`           | `azure.service_health.tracking_id`             | The incident ID associated with this event.                                           |
+| `impactStartTime`      | `azure.service_health.impact_start_time`       | The start time of the impact.                                                         |
+| `impactMitigationTime` | `azure.service_health.impact_mitigation_time`  | The time when the impact was mitigated.                                               |
+| `stage`                | `azure.service_health.stage`                   | Describes the current stage of the event.                                             |
+| `impactedServices`     | `azure.service_health.impacted_services`       | Array of impacted services. Each service is a map containing `service_name`, `service_id`, `service_guid`, and a nested `impacted_regions` array (each with `region_name` and `region_id`). |
+| `defaultLanguageTitle` | `azure.service_health.default_language_title`  | The communication title in English.                                                   |
+| `defaultLanguageContent`| `azure.service_health.default_language_content`| The communication content in English.                                                 |
+| `communicationId`      | `azure.service_health.communication_id`        | Unique identifier for the communication.                                              |
+| `maintenanceId`        | `azure.service_health.maintenance_id`          | Unique identifier for the maintenance event.                                          |
+| `maintenanceType`      | `azure.service_health.maintenance_type`        | The type of maintenance.                                                              |
+| `isHIR`                | `azure.service_health.is_hir`                  | Indicates if it is a HIR event.                                                       |
+| `IsSynthetic`          | `azure.service_health.is_synthetic`            | Indicates if the event is synthetic.                                                  |
+| `impactType`           | `azure.service_health.impact_type`             | The type of impact.                                                                   |
+| `emailTemplateId`      | `azure.service_health.email_template_id`       | ID of the email template used.                                                        |
+| `emailTemplateFullVersion`| `azure.service_health.email_template_full_version`| Full version of the email template.                                                 |
+| `emailTemplateLocale`  | `azure.service_health.email_template_locale`   | Locale of the email template.                                                         |
+| `smsText`              | `azure.service_health.sms_text`                | Text content of the SMS notification.                                                 |
+| `impactCategory`       | `azure.service_health.impact_category`         | Category of the impact.                                                               |
+| `communicationRouteType`| `azure.service_health.communication_route_type`| Route type of the communication.                                                      |
+| `version`              | `azure.service_health.version`                 | Version of the log schema.                                                            |
+```

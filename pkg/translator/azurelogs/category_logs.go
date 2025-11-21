@@ -30,7 +30,8 @@ const (
 	categoryAppServiceHTTPLogs                 = "AppServiceHTTPLogs"
 	categoryAppServiceIPSecAuditLogs           = "AppServiceIPSecAuditLogs"
 	categoryAppServicePlatformLogs             = "AppServicePlatformLogs"
-	categoryActivityResourceHealthLogs         = "ActivityResourceHealthLogs"
+	categoryActivityResourceHealthLogs         = "ResourceHealth"
+	categoryServiceHealth                      = "ServiceHealth"
 
 	// attributeAzureRef holds the request tracking reference, also
 	// placed in the request header "X-Azure-Ref".
@@ -112,6 +113,8 @@ func addRecordAttributes(category string, data []byte, record plog.LogRecord) er
 		err = addAppServicePlatformLogsProperties(data, record)
 	case categoryActivityResourceHealthLogs:
 		err = addActivityResourceHealthLogsProperties(data, record)
+	case categoryServiceHealth:
+		err = addServiceHealthLogsProperties(data, record)
 	default:
 		err = errUnsupportedCategory
 	}
@@ -584,6 +587,133 @@ func addActivityResourceHealthLogsProperties(data []byte, record plog.LogRecord)
 	putStr("azure.resource_health.previous_status", properties.PreviousHealthStatus, record)
 	putStr("azure.resource_health.type", properties.Type, record)
 	putStr("azure.resource_health.cause", properties.Cause, record)
+
+	return nil
+}
+
+type ImpactedRegion struct {
+	RegionName string `json:"RegionName"`
+	RegionId   string `json:"RegionId"`
+}
+
+type ImpactedService struct {
+	ImpactedRegions []ImpactedRegion `json:"ImpactedRegions"`
+	ServiceName     string           `json:"ServiceName"`
+	ServiceId       string           `json:"ServiceId"`
+	ServiceGuid     string           `json:"ServiceGuid"`
+}
+
+type serviceHealthLogProperties struct {
+	Title                    string            `json:"title"`
+	Service                  string            `json:"service"`
+	Region                   string            `json:"region"`
+	Communication            string            `json:"communication"`
+	IncidentType             string            `json:"incidentType"`
+	TrackingID               string            `json:"trackingId"`
+	ImpactStartTime          string            `json:"impactStartTime"`
+	ImpactMitigationTime     string            `json:"impactMitigationTime"`
+	Stage                    string            `json:"stage"`
+	ImpactedServices         []ImpactedService `json:"impactedServices"`
+	DefaultLanguageTitle     string            `json:"defaultLanguageTitle"`
+	DefaultLanguageContent   string            `json:"defaultLanguageContent"`
+	CommunicationID          string            `json:"communicationId"`
+	MaintenanceID            string            `json:"maintenanceId"`
+	MaintenanceType          string            `json:"maintenanceType"`
+	IsHIR                    bool              `json:"isHIR"`
+	IsSynthetic              string            `json:"IsSynthetic"`
+	ImpactType               string            `json:"impactType"`
+	EmailTemplateID          string            `json:"emailTemplateId"`
+	EmailTemplateFullVersion string            `json:"emailTemplateFullVersion"`
+	EmailTemplateLocale      string            `json:"emailTemplateLocale"`
+	SMSText                  string            `json:"smsText"`
+	ImpactCategory           string            `json:"impactCategory"`
+	CommunicationRouteType   string            `json:"communicationRouteType"`
+	Version                  string            `json:"version"`
+}
+
+// UnmarshalJSON implements custom unmarshaling to handle impactedServices as a JSON string
+func (p *serviceHealthLogProperties) UnmarshalJSON(data []byte) error {
+	// Create a type alias to avoid recursion
+	type Alias serviceHealthLogProperties
+	aux := &struct {
+		ImpactedServicesRaw gojson.RawMessage `json:"impactedServices"`
+		*Alias
+	}{
+		Alias: (*Alias)(p),
+	}
+
+	if err := gojson.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Handle impactedServices - it might be a JSON string or direct array
+	if len(aux.ImpactedServicesRaw) > 0 {
+		// Try to unmarshal as string first
+		var impactedServicesStr string
+		if err := gojson.Unmarshal(aux.ImpactedServicesRaw, &impactedServicesStr); err == nil {
+			// It's a string, unmarshal the string content
+if err := gojson.Unmarshal([]byte(impactedServicesStr), &p.ImpactedServices); err != nil {
+return fmt.Errorf("failed to parse impactedServices string: %w", err)
+}
+} else {
+// Try as direct array
+if err := gojson.Unmarshal(aux.ImpactedServicesRaw, &p.ImpactedServices); err != nil {
+return fmt.Errorf("failed to parse impactedServices array: %w", err)
+}
+}
+}
+
+return nil
+}
+func addServiceHealthLogsProperties(data []byte, record plog.LogRecord) error {
+	var properties serviceHealthLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse ServiceHealth properties: %w", err)
+	}
+
+	putStr("azure.service_health.title", properties.Title, record)
+	putStr("azure.service_health.service", properties.Service, record)
+	putStr("azure.service_health.region", properties.Region, record)
+	putStr("azure.service_health.communication", properties.Communication, record)
+	putStr("azure.service_health.incident_type", properties.IncidentType, record)
+	putStr("azure.service_health.tracking_id", properties.TrackingID, record)
+	putStr("azure.service_health.impact_start_time", properties.ImpactStartTime, record)
+	putStr("azure.service_health.impact_mitigation_time", properties.ImpactMitigationTime, record)
+	putStr("azure.service_health.stage", properties.Stage, record)
+
+	// Add impactedServices as array
+	if len(properties.ImpactedServices) > 0 {
+		servicesArray := record.Attributes().PutEmptySlice("azure.service_health.impacted_services")
+		for _, svc := range properties.ImpactedServices {
+			serviceMap := servicesArray.AppendEmpty().SetEmptyMap()
+			serviceMap.PutStr("service_name", svc.ServiceName)
+			serviceMap.PutStr("service_id", svc.ServiceId)
+			serviceMap.PutStr("service_guid", svc.ServiceGuid)
+
+			regionsArray := serviceMap.PutEmptySlice("impacted_regions")
+			for _, region := range svc.ImpactedRegions {
+				regionMap := regionsArray.AppendEmpty().SetEmptyMap()
+				regionMap.PutStr("region_name", region.RegionName)
+				regionMap.PutStr("region_id", region.RegionId)
+			}
+		}
+	}
+
+	putStr("azure.service_health.default_language_title", properties.DefaultLanguageTitle, record)
+	putStr("azure.service_health.default_language_content", properties.DefaultLanguageContent, record)
+	putStr("azure.service_health.communication_id", properties.CommunicationID, record)
+	putStr("azure.service_health.maintenance_id", properties.MaintenanceID, record)
+	putStr("azure.service_health.maintenance_type", properties.MaintenanceType, record)
+	record.Attributes().PutBool("azure.service_health.is_hir", properties.IsHIR)
+	putStr("azure.service_health.is_synthetic", properties.IsSynthetic, record)
+	putStr("azure.service_health.impact_type", properties.ImpactType, record)
+	putStr("azure.service_health.email_template_id", properties.EmailTemplateID, record)
+	putStr("azure.service_health.email_template_full_version", properties.EmailTemplateFullVersion, record)
+	putStr("azure.service_health.email_template_locale", properties.EmailTemplateLocale, record)
+	putStr("azure.service_health.sms_text", properties.SMSText, record)
+	putStr("azure.service_health.impact_category", properties.ImpactCategory, record)
+	putStr("azure.service_health.communication_route_type", properties.CommunicationRouteType, record)
+	putStr("azure.service_health.version", properties.Version, record)
 
 	return nil
 }
