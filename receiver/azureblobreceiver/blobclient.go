@@ -19,17 +19,21 @@ type blobClient interface {
 type azureBlobClient struct {
 	serviceClient *azblob.Client
 	logger        *zap.Logger
+	deleteOnread  bool
 }
 
 var _ blobClient = (*azureBlobClient)(nil)
 
+func (bc *azureBlobClient) deleteBlob(ctx context.Context, containerName, blobName string) {
+	_, blobDeleteErr := bc.serviceClient.DeleteBlob(ctx, containerName, blobName, nil)
+	if blobDeleteErr != nil {
+		bc.logger.Error("failed to delete blob", zap.Error(blobDeleteErr))
+	}
+}
 func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error) {
-	defer func() {
-		_, blobDeleteErr := bc.serviceClient.DeleteBlob(ctx, containerName, blobName, nil)
-		if blobDeleteErr != nil {
-			bc.logger.Error("failed to delete blob", zap.Error(blobDeleteErr))
-		}
-	}()
+	if bc.deleteOnread {
+		defer bc.deleteBlob(ctx, containerName, blobName)
+	}
 
 	get, err := bc.serviceClient.DownloadStream(ctx, containerName, blobName, nil)
 	if err != nil {
@@ -45,7 +49,7 @@ func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName
 	return downloadedData, err
 }
 
-func newBlobClientFromConnectionString(connectionString string, logger *zap.Logger) (*azureBlobClient, error) {
+func newBlobClientFromConnectionString(connectionString string, deleteOnRead bool, logger *zap.Logger) (*azureBlobClient, error) {
 	serviceClient, err := azblob.NewClientFromConnectionString(connectionString, nil)
 	if err != nil {
 		return nil, err
@@ -54,10 +58,11 @@ func newBlobClientFromConnectionString(connectionString string, logger *zap.Logg
 	return &azureBlobClient{
 		serviceClient,
 		logger,
+		deleteOnRead,
 	}, nil
 }
 
-func newBlobClientFromCredential(storageAccountURL string, cred azcore.TokenCredential, logger *zap.Logger) (*azureBlobClient, error) {
+func newBlobClientFromCredential(storageAccountURL string, cred azcore.TokenCredential, deleteOnRead bool, logger *zap.Logger) (*azureBlobClient, error) {
 	serviceClient, err := azblob.NewClient(storageAccountURL, cred, nil)
 	if err != nil {
 		return nil, err
@@ -66,5 +71,6 @@ func newBlobClientFromCredential(storageAccountURL string, cred azcore.TokenCred
 	return &azureBlobClient{
 		serviceClient,
 		logger,
+		deleteOnRead,
 	}, nil
 }

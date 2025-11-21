@@ -56,6 +56,11 @@ func getEvent(eventData []byte) *eventhub.Event {
 }
 
 func getBlobEventHandler(tb testing.TB, blobClient blobClient) *azureBlobEventHandler {
-	blobEventHandler := newBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(tb))
+	cfg := &Config{
+		EventHub: EventHubConfig{EndPoint: eventHubString},
+		Logs:     LogsConfig{ContainerName: logsContainerName, Encodings: nil},
+		Traces:   TracesConfig{ContainerName: tracesContainerName, Encodings: nil},
+	}
+	blobEventHandler := newBlobEventHandler(cfg, blobClient, zaptest.NewLogger(tb))
 	return blobEventHandler
 }

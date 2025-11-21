@@ -45,10 +45,11 @@ func NewFactory() receiver.Factory {
 
 func (*blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
-		Logs:           LogsConfig{ContainerName: logsContainerName},
-		Traces:         TracesConfig{ContainerName: tracesContainerName},
-		Authentication: ConnectionStringAuth,
-		Cloud:          defaultCloud,
+		Logs:            LogsConfig{ContainerName: logsContainerName, Encodings: nil},
+		Traces:          TracesConfig{ContainerName: tracesContainerName, Encodings: nil},
+		Authentication:  ConnectionStringAuth,
+		Cloud:           defaultCloud,
+		DeleteAfterRead: true,
 	}
 }
 
@@ -122,7 +123,7 @@ func (*blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger)
 
 	switch cfg.Authentication {
 	case ConnectionStringAuth:
-		bc, err = newBlobClientFromConnectionString(cfg.ConnectionString, logger)
+		bc, err = newBlobClientFromConnectionString(cfg.ConnectionString, cfg.DeleteAfterRead, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +132,7 @@ func (*blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger)
 		if err != nil {
 			return nil, err
 		}
-		bc, err = newBlobClientFromCredential(cfg.StorageAccountURL, cred, logger)
+		bc, err = newBlobClientFromCredential(cfg.StorageAccountURL, cred, cfg.DeleteAfterRead, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +141,7 @@ func (*blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger)
 		if err != nil {
 			return nil, err
 		}
-		bc, err = newBlobClientFromCredential(cfg.StorageAccountURL, cred, logger)
+		bc, err = newBlobClientFromCredential(cfg.StorageAccountURL, cred, cfg.DeleteAfterRead, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -148,6 +149,5 @@ func (*blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger)
 		return nil, fmt.Errorf("unknown authentication %v", cfg.Authentication)
 	}
 
-	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
-		nil
+	return newBlobEventHandler(cfg, bc, logger), nil
 }

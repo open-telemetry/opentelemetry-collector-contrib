@@ -38,7 +38,14 @@ type blobReceiver struct {
 	obsrecv            *receiverhelper.ObsReport
 }
 
-func (b *blobReceiver) Start(ctx context.Context, _ component.Host) error {
+func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
+	extensions := host.GetExtensions()
+	if logsEncoding := b.blobEventHandler.getLogsEncoding(); logsEncoding != nil {
+		b.logsUnmarshaler = extensions[*logsEncoding].(plog.Unmarshaler)
+	}
+	if tracesEncoding := b.blobEventHandler.getTracesEncoding(); tracesEncoding != nil {
+		b.tracesUnmarshaler = extensions[*tracesEncoding].(ptrace.Unmarshaler)
+	}
 	err := b.blobEventHandler.run(ctx)
 
 	return err
