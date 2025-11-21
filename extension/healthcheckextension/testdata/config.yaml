@@ -32,3 +32,54 @@ health_check/response-body:
   response_body:
     healthy: I'm OK
     unhealthy: I'm not well
+health_check/v2-http-only:
+  http:
+    endpoint: "localhost:13133"
+    status:
+      enabled: true
+      path: "/status"
+    config:
+      enabled: false
+      path: "/config"
+health_check/v2-grpc-only:
+  grpc:
+    endpoint: "localhost:13132"
+    transport: tcp
+health_check/v2-both-protocols:
+  http:
+    endpoint: "localhost:13133"
+    status:
+      enabled: true
+      path: "/status"
+    config:
+      enabled: true
+      path: "/config"
+  grpc:
+    endpoint: "localhost:13132"
+    transport: tcp
+  component_health:
+    include_permanent_errors: true
+    include_recoverable_errors: true
+    recovery_duration: 1m
+health_check/v2-missing-protocol:
+health_check/v2-http-missing-endpoint:
+  http:
+    endpoint: ""
+health_check/v2-grpc-missing-endpoint:
+  grpc:
+    endpoint: ""
+health_check/v2-invalid-status-path:
+  http:
+    endpoint: "localhost:13133"
+    status:
+      enabled: true
+      path: "invalid"
+health_check/v2-invalid-config-path:
+  http:
+    endpoint: "localhost:13133"
+    status:
+      enabled: true
+      path: "/status"
+    config:
+      enabled: true
+      path: "invalid"
