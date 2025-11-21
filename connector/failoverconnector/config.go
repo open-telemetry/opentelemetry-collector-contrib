@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -19,7 +20,7 @@ var (
 type Config struct {
 	// QueueSettings use the exporterhelper sending_queue to move the queue to the connector to avoid data being stuck
 	// in the queue of an unhealthy exporter
-	QueueSettings exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// PipelinePriority is the list of pipeline level priorities in a 1 - n configuration, multiple pipelines can
 	// sit at a single priority level and will be routed in a fanout. If any pipeline at a level fails, the

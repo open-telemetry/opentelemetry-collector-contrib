@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -40,12 +41,15 @@ func createDefaultConfig() component.Config {
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
 	otlpDefaultCfg.ClientConfig.Endpoint = "placeholder:4317"
 
+	defQueue := exporterhelper.NewDefaultQueueConfig()
+
 	return &Config{
 		// By default we disable resilience options on loadbalancing exporter level
 		// to maintain compatibility with workflow in previous versions
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
+		QueueSettings: configoptional.Default(*defQueue.Get()),
 	}
 }
 
@@ -75,7 +79,7 @@ func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config
 	if cfg.TimeoutSettings.Timeout > 0 {
 		options = append(options, exporterhelper.WithTimeout(cfg.TimeoutSettings))
 	}
-	if cfg.QueueSettings.Enabled {
+	if cfg.QueueSettings.HasValue() {
 		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
 	}
 	if cfg.Enabled {

@@ -9,6 +9,7 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -25,9 +26,9 @@ type Config struct {
 
 	// Timeout is the maximum duration allowed to connecting and sending the
 	// data to the Carbon/Graphite backend. The default value is 5s.
-	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueConfig     exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	RetryConfig     configretry.BackOffConfig       `mapstructure:"retry_on_failure"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueConfig     configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	RetryConfig     configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
 	ResourceToTelemetryConfig resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`

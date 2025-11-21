@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
@@ -82,9 +83,9 @@ func TestSyncBulkIndexer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var reqCnt atomic.Int64
 			cfg := Config{
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 					NumConsumers: 1,
-				},
+				}),
 				MetadataKeys: []string{"x-test"},
 			}
 			esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{

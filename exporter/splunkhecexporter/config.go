@@ -76,7 +76,7 @@ type DeprecatedBatchConfig struct {
 // Config defines configuration for Splunk exporter.
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	// DeprecatedBatcher is the deprecated batcher configuration.
 	DeprecatedBatcher DeprecatedBatchConfig `mapstructure:"batcher"`
