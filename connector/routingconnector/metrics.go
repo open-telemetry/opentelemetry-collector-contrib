@@ -62,56 +62,69 @@ func (*metricsConnector) Capabilities() consumer.Capabilities {
 
 func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	groups := make(map[consumer.Metrics]pmetric.Metrics)
-	var errs error
+	matched := pmetric.NewMetrics()
 	for i := 0; i < len(c.router.routeSlice) && md.ResourceMetrics().Len() > 0; i++ {
+		var errs error
 		route := c.router.routeSlice[i]
-		matchedMetrics := pmetric.NewMetrics()
 		switch route.statementContext {
 		case "request":
 			if route.requestCondition.matchRequest(ctx) {
-				groupAllMetrics(groups, route.consumer, md)
-				md = pmetric.NewMetrics() // all metrics have been routed
+				// all metrics are routed
+				md.MoveTo(matched)
 			}
 		case "", "resource":
-			pmetricutil.MoveResourcesIf(md, matchedMetrics,
+			pmetricutil.MoveResourcesIf(md, matched,
 				func(rs pmetric.ResourceMetrics) bool {
 					rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
-					errs = errors.Join(errs, err)
+					// If error during statement evaluation consider it as not a match.
+					if err != nil {
+						errs = errors.Join(errs, err)
+						return false
+					}
 					return isMatch
 				},
 			)
 		case "metric":
-			pmetricutil.MoveMetricsWithContextIf(md, matchedMetrics,
+			pmetricutil.MoveMetricsWithContextIf(md, matched,
 				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
 					mtx := ottlmetric.NewTransformContext(m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
 					_, isMatch, err := route.metricStatement.Execute(ctx, mtx)
-					errs = errors.Join(errs, err)
+					// If error during statement evaluation consider it as not a match.
+					if err != nil {
+						errs = errors.Join(errs, err)
+						return false
+					}
 					return isMatch
 				},
 			)
 		case "datapoint":
-			pmetricutil.MoveDataPointsWithContextIf(md, matchedMetrics,
+			pmetricutil.MoveDataPointsWithContextIf(md, matched,
 				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
 					dptx := ottldatapoint.NewTransformContext(dp, m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
 					_, isMatch, err := route.dataPointStatement.Execute(ctx, dptx)
-					errs = errors.Join(errs, err)
+					// If error during statement evaluation consider it as not a match.
+					if err != nil {
+						errs = errors.Join(errs, err)
+						return false
+					}
 					return isMatch
 				},
 			)
 		}
-		if errs != nil {
-			if c.config.ErrorMode == ottl.PropagateError {
-				return errs
-			}
-			groupAllMetrics(groups, c.router.defaultConsumer, matchedMetrics)
+		if errs != nil && c.config.ErrorMode == ottl.PropagateError {
+			return errs
 		}
-		groupAllMetrics(groups, route.consumer, matchedMetrics)
+		groupAllMetrics(groups, route.consumer, matched)
 	}
 	// anything left wasn't matched by any route. Send to default consumer
 	groupAllMetrics(groups, c.router.defaultConsumer, md)
+	var errs error
 	for consumer, group := range groups {
-		errs = errors.Join(errs, consumer.ConsumeMetrics(ctx, group))
+		err := consumer.ConsumeMetrics(ctx, group)
+		if err != nil {
+			errs = errors.Join(errs, err)
+		}
 	}
 	return errs
 }
@@ -121,23 +134,16 @@ func groupAllMetrics(
 	cons consumer.Metrics,
 	metrics pmetric.Metrics,
 ) {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-		groupMetrics(groups, cons, metrics.ResourceMetrics().At(i))
-	}
-}
-
-func groupMetrics(
-	groups map[consumer.Metrics]pmetric.Metrics,
-	consumer consumer.Metrics,
-	metrics pmetric.ResourceMetrics,
-) {
-	if consumer == nil {
+	if cons == nil {
 		return
 	}
-	group, ok := groups[consumer]
+	if metrics.ResourceMetrics().Len() == 0 {
+		return
+	}
+	group, ok := groups[cons]
 	if !ok {
 		group = pmetric.NewMetrics()
+		groups[cons] = group
 	}
-	metrics.CopyTo(group.ResourceMetrics().AppendEmpty())
-	groups[consumer] = group
+	metrics.ResourceMetrics().MoveAndAppendTo(group.ResourceMetrics())
 }

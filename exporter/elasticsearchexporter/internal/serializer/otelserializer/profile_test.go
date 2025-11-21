@@ -139,6 +139,7 @@ func TestSerializeProfile(t *testing.T) {
 					"host.id":                       "localhost",
 					"process.executable.name":       "libc.so.6",
 					"process.thread.name":           "",
+					"profiling.project.id":          json.Number("2"),
 				},
 				{
 					"script": map[string]any{
