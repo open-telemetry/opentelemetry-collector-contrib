@@ -1304,6 +1304,27 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], SliceToMap(attributes["primitiveValuesSlice"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("0", "value1")
+				m.PutInt("1", 42)
+				m.PutBool("2", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["nonexistent_key"], ["value"]))`,
+			wantErr:   true,
+			want:      func(_ ottllog.TransformContext) {},
+			errMsg:    "could not extract key from element",
+		},
+		{
+			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"], ["nonexistent_value"]))`,
+			wantErr:   true,
+			want:      func(_ ottllog.TransformContext) {},
+			errMsg:    "provided object does not contain the path",
+		},
+		{
 			statement: `set(attributes["test"], {"list":[{"foo":"bar"}]})`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
@@ -2013,6 +2034,11 @@ func constructLogTransformContext() ottllog.TransformContext {
 	s3.AppendEmpty().SetStr("slice2")
 	s3m1 := s3.AppendEmpty().SetEmptyMap()
 	s3m1.PutStr("name", "foo")
+
+	s4 := logRecord.Attributes().PutEmptySlice("primitiveValuesSlice")
+	s4.AppendEmpty().SetStr("value1")
+	s4.AppendEmpty().SetInt(42)
+	s4.AppendEmpty().SetBool(true)
 
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
