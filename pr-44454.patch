@@ -1,0 +1,709 @@
+diff --git a/.github/workflows/build-and-test-arm.yml b/.github/workflows/build-and-test-arm.yml
+index 92dae2972d615..5fabc936f54f5 100644
+--- a/.github/workflows/build-and-test-arm.yml
++++ b/.github/workflows/build-and-test-arm.yml
+@@ -25,6 +25,7 @@ jobs:
+     if: ${{ github.actor != 'dependabot[bot]' && (!contains(github.event.pull_request.labels.*.name, 'Skip ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -36,6 +37,7 @@ jobs:
+       - name: Install Tools
+         if: steps.go-setup.outputs.cache-hit != 'true'
+         run: make install-tools
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   arm-unittest-matrix:
+     needs: [setup-environment]
+     if: ${{ github.actor != 'dependabot[bot]' && (!contains(github.event.pull_request.labels.*.name, 'Skip ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+@@ -63,6 +65,7 @@ jobs:
+     runs-on: ubuntu-22.04-arm
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -98,6 +101,7 @@ jobs:
+           else
+             echo "Tests passed or were skipped. Continuing."
+           fi
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   arm-unittest:
+     if: ${{ github.actor != 'dependabot[bot]' && (!contains(github.event.pull_request.labels.*.name, 'Skip ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+     runs-on: ubuntu-24.04
+@@ -122,6 +126,7 @@ jobs:
+       issues: write
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -138,3 +143,4 @@ jobs:
+         run: |
+           make install-tools
+           ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/build-and-test-darwin.yaml b/.github/workflows/build-and-test-darwin.yaml
+index 788ddf4972385..ec8442153bd03 100644
+--- a/.github/workflows/build-and-test-darwin.yaml
++++ b/.github/workflows/build-and-test-darwin.yaml
+@@ -32,6 +32,7 @@ jobs:
+     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -43,6 +44,7 @@ jobs:
+       - name: Install Tools
+         if: steps.go-setup.outputs.cache-hit != 'true'
+         run: make install-tools
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   darwin-build-unittest-binary:
+     needs: [setup-environment]
+     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+@@ -54,6 +56,7 @@ jobs:
+     timeout-minutes: 120
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -71,6 +74,7 @@ jobs:
+           name: testbinaries
+           path: ./testbinaries.zip
+           retention-days: 1
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   darwin-unittest-matrix:
+     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+     needs: [darwin-build-unittest-binary]
+@@ -82,6 +86,7 @@ jobs:
+     runs-on: ${{ matrix.os }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -94,6 +99,7 @@ jobs:
+         run: unzip testbinaries.zip
+       - name: Run Unit Tests
+         run: make -j2 gorunbuilttest GROUP=cgo
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   darwin-unittest:
+     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+     runs-on: macos-latest
+diff --git a/.github/workflows/build-and-test-windows.yml b/.github/workflows/build-and-test-windows.yml
+index 0f48a033e63d8..afda1b2c48206 100644
+--- a/.github/workflows/build-and-test-windows.yml
++++ b/.github/workflows/build-and-test-windows.yml
+@@ -33,6 +33,7 @@ jobs:
+     runs-on: ${{ matrix.os }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -44,6 +45,7 @@ jobs:
+       - name: Install Tools
+         if: steps.go-setup.outputs.cache-hit != 'true'
+         run: make install-tools
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   windows-smoke-build:
+     needs: [setup-environment]
+@@ -70,6 +72,7 @@ jobs:
+         run: make genotelcontribcol
+       - name: Build Collector
+         run: make otelcontribcol
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   windows-unittest-matrix:
+     needs: [setup-environment]
+@@ -105,6 +108,7 @@ jobs:
+       CGO_ENABLED: ${{ matrix.os == 'windows-11-arm' && '0' || '' }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -150,6 +154,7 @@ jobs:
+           else
+             echo "Tests passed or were skipped. Continuing."
+           fi
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   windows-unittest:
+     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+     runs-on: windows-latest
+@@ -178,6 +183,7 @@ jobs:
+       issues: write
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -200,3 +206,4 @@ jobs:
+         run: |
+           make install-tools
+           ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/build-and-test.yml b/.github/workflows/build-and-test.yml
+index 137caae7e498e..9e455e2146160 100644
+--- a/.github/workflows/build-and-test.yml
++++ b/.github/workflows/build-and-test.yml
+@@ -27,6 +27,7 @@ jobs:
+     if: ${{ github.actor != 'dependabot[bot]' }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -38,6 +39,7 @@ jobs:
+       - name: Install Tools
+         if: steps.go-setup.outputs.cache-hit != 'true'
+         run: make install-tools
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   check-collector-module-version:
+     runs-on: ubuntu-24.04
+     needs: [setup-environment]
+@@ -74,6 +76,7 @@ jobs:
+     needs: [setup-environment]
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -87,6 +90,7 @@ jobs:
+         run: make install-tools
+       - name: Lint
+         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   lint:
+     if: ${{ github.actor != 'dependabot[bot]' && always() }}
+     runs-on: ubuntu-24.04
+@@ -129,6 +133,7 @@ jobs:
+     steps:
+       - name: Checkout Repo
+         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -142,11 +147,13 @@ jobs:
+         run: make install-tools
+       - name: Run `govulncheck`
+         run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   checks:
+     runs-on: ubuntu-24.04
+     needs: [setup-environment]
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -207,6 +214,7 @@ jobs:
+         run: |
+           make generate-gh-issue-templates
+           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   unittest-matrix:
+     strategy:
+       fail-fast: false
+@@ -234,6 +242,7 @@ jobs:
+     needs: [setup-environment]
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -250,6 +259,7 @@ jobs:
+         with:
+           path: ~/.cache/go-build
+           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+       # Unit tests without JUnit output are much faster, so it's fine to run on every PR and every go version.
+       # The only time we don't run them is when we already ran them with JUnit output.
+@@ -359,6 +369,7 @@ jobs:
+           key: docker-${{ matrix.group }}
+       - name: Run Integration Tests
+         run: make gointegration-test GROUP=${{ matrix.group }}
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   integration-sudo-tests-matrix:
+     strategy:
+@@ -388,6 +399,7 @@ jobs:
+           key: docker-${{ matrix.group }}
+       - name: Run Integration Tests
+         run: make --no-print-directory -C ${{ matrix.group }} mod-integration-sudo-test
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+ 
+   integration-tests:
+@@ -426,6 +438,7 @@ jobs:
+         run: make install-tools
+       - name: Correctness
+         run: make -C testbed run-correctness-traces-tests
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   correctness-metrics:
+     runs-on: ubuntu-24.04
+     needs: [setup-environment]
+@@ -445,15 +458,18 @@ jobs:
+         run: make install-tools
+       - name: Correctness
+         run: make -C testbed run-correctness-metrics-tests
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   build-examples:
+     runs-on: ubuntu-24.04
+     needs: [setup-environment]
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - run: make genotelcontribcol
+       - name: Build Examples
+         run: make build-examples
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   cross-compile:
+     runs-on: ubuntu-24.04
+@@ -519,6 +535,7 @@ jobs:
+         with:
+           name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
+           path: ./bin/*
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   publish-check:
+     runs-on: ubuntu-24.04
+@@ -577,6 +594,7 @@ jobs:
+         run: |
+           docker push otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA"
+           docker push otel/opentelemetry-collector-contrib-dev:latest
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   publish-stable:
+     runs-on: ubuntu-24.04
+     needs: [lint, unittest, integration-tests]
+@@ -628,6 +646,7 @@ jobs:
+         env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+   rotate-milestone:
+     # This job updates the "next release" milestone
+     # to the latest released version and creates a new milestone
+@@ -671,6 +690,7 @@ jobs:
+       issues: write
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -693,3 +713,4 @@ jobs:
+         run: |
+           make install-tools
+           ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/changelog.yml b/.github/workflows/changelog.yml
+index cae38f2a8b2de..4c222798e439b 100644
+--- a/.github/workflows/changelog.yml
++++ b/.github/workflows/changelog.yml
+@@ -34,6 +34,7 @@ jobs:
+         with:
+           # Fetch complete history depth only if the PR is not a chore.
+           fetch-depth: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]') && '0' || '1' }}
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         with:
+           go-version: oldstable
+@@ -94,3 +95,4 @@ jobs:
+         with:
+           args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
+           failIfEmpty: false
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/check-codeowners.yaml b/.github/workflows/check-codeowners.yaml
+index 5eb18e8489306..da5559d058dbb 100644
+--- a/.github/workflows/check-codeowners.yaml
++++ b/.github/workflows/check-codeowners.yaml
+@@ -35,7 +35,7 @@ jobs:
+     if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector-contrib' }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+-
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -63,3 +63,5 @@ jobs:
+           cd pr
+           GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} ../.tools/githubgen codeowners
+           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gencodeowners" or apply this diff and commit the changes in this PR.' && git diff && exit 1)
++
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/codeql-analysis.yml b/.github/workflows/codeql-analysis.yml
+index 43e78ac689c2e..b8c686f05c963 100644
+--- a/.github/workflows/codeql-analysis.yml
++++ b/.github/workflows/codeql-analysis.yml
+@@ -45,3 +45,5 @@ jobs:
+       - name: Perform CodeQL Analysis
+         uses: github/codeql-action/analyze@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v4
+         timeout-minutes: 60
++
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/e2e-tests-windows.yml b/.github/workflows/e2e-tests-windows.yml
+index 872bcbc95de81..f45cb19bb01d3 100644
+--- a/.github/workflows/e2e-tests-windows.yml
++++ b/.github/workflows/e2e-tests-windows.yml
+@@ -54,6 +54,7 @@ jobs:
+         with:
+           name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
+           path: ./bin/*
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   supervisor-test:
+     strategy:
+@@ -68,6 +69,7 @@ jobs:
+     needs: [collector-build]
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -88,6 +90,7 @@ jobs:
+         run: |
+           cd cmd/opampsupervisor
+           go test -v --tags=e2e
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   windows-supervisor-service-test:
+     strategy:
+@@ -100,6 +103,7 @@ jobs:
+     steps:
+       - name: Checkout Repo
+         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -134,3 +138,4 @@ jobs:
+         run: |
+           Remove-Service opampsupervisor
+           Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\opampsupervisor
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/e2e-tests.yml b/.github/workflows/e2e-tests.yml
+index 264a71e85d096..db00489bbe000 100644
+--- a/.github/workflows/e2e-tests.yml
++++ b/.github/workflows/e2e-tests.yml
+@@ -45,12 +45,14 @@ jobs:
+         with:
+           name: collector-binary
+           path: ./bin/*
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   supervisor-test:
+     runs-on: ubuntu-24.04
+     needs: collector-build
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -69,6 +71,7 @@ jobs:
+         run: |
+           cd cmd/opampsupervisor
+           go test -v --tags=e2e
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   docker-build:
+     runs-on: ubuntu-24.04
+@@ -97,6 +100,7 @@ jobs:
+         with:
+           name: otelcontribcol
+           path: /tmp/otelcontribcol.tar
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   kubernetes-test-matrix:
+     env:
+@@ -117,6 +121,7 @@ jobs:
+     needs: docker-build
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -150,6 +155,7 @@ jobs:
+         run: |
+           cd ${{ matrix.component }}
+           go test -v --tags=e2e
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   kubernetes-test:
+     if: ${{ github.actor != 'dependabot[bot]' && always() }}
+diff --git a/.github/workflows/golden.yml b/.github/workflows/golden.yml
+index 4cac3943e9d36..cab365d25b6f6 100644
+--- a/.github/workflows/golden.yml
++++ b/.github/workflows/golden.yml
+@@ -28,6 +28,7 @@ jobs:
+     if: ${{ github.actor != 'dependabot[bot]' }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -54,6 +55,7 @@ jobs:
+           push: false
+           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/golden:dev
+           platforms: linux/amd64,linux/arm64,linux/s390x,linux/ppc64le
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   publish-latest:
+     runs-on: ubuntu-24.04
+@@ -62,6 +64,7 @@ jobs:
+       packages: write
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -94,6 +97,7 @@ jobs:
+           push: true
+           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/golden:latest
+           platforms: linux/amd64,linux/arm64,linux/s390x,linux/ppc64le
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   publish-stable:
+     runs-on: ubuntu-24.04
+@@ -102,6 +106,7 @@ jobs:
+       packages: write
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -137,3 +142,4 @@ jobs:
+           push: true
+           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/golden:${{ steps.github_tag.outputs.tag }}
+           platforms: linux/amd64,linux/arm64,linux/s390x,linux/ppc64le
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/lint-workflow-files.yml b/.github/workflows/lint-workflow-files.yml
+index 5a1a4efd55131..2f9dcfa81c863 100644
+--- a/.github/workflows/lint-workflow-files.yml
++++ b/.github/workflows/lint-workflow-files.yml
+@@ -20,7 +20,7 @@ jobs:
+     steps:
+       - name: Checkout code
+         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+-
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -44,3 +44,5 @@ jobs:
+       - name: All linting checks passed
+         if: success()
+         run: echo "✅ All linting checks passed."
++
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/load-tests.yml b/.github/workflows/load-tests.yml
+index 181fa8bb3cd08..e634a1edcbe41 100644
+--- a/.github/workflows/load-tests.yml
++++ b/.github/workflows/load-tests.yml
+@@ -29,6 +29,7 @@ jobs:
+       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -50,6 +51,7 @@ jobs:
+       - name: Split Loadtest Jobs
+         id: splitloadtest
+         run: ./.github/workflows/scripts/setup_e2e_tests.sh
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   loadtest:
+     runs-on: oracle-bare-metal-64cpu-512gb-x86-64
+@@ -59,6 +61,7 @@ jobs:
+       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -102,6 +105,7 @@ jobs:
+         with:
+           name: benchmark-results-${{steps.filename.outputs.name}}
+           path: testbed/tests/results/${{steps.filename.outputs.name}}.json
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   update-benchmarks:
+     runs-on: ubuntu-24.04
+diff --git a/.github/workflows/prepare-release.yml b/.github/workflows/prepare-release.yml
+index 062242c6ef909..20baa4245cc4c 100644
+--- a/.github/workflows/prepare-release.yml
++++ b/.github/workflows/prepare-release.yml
+@@ -46,3 +46,4 @@ jobs:
+           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+           CURRENT_BETA: ${{ inputs.current-beta }}
+         run: ./.github/workflows/scripts/release-prepare-release.sh
++      - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/prometheus-compliance-tests.yml b/.github/workflows/prometheus-compliance-tests.yml
+index 7beab2fbb5076..3cfc3d7f16fb1 100644
+--- a/.github/workflows/prometheus-compliance-tests.yml
++++ b/.github/workflows/prometheus-compliance-tests.yml
+@@ -68,3 +68,4 @@ jobs:
+           # Skipping Staleness test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved
+           go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" -skip "TestRemoteWrite/otelcollector/Staleness" ./ |& tee ./test-report.txt
+         working-directory: compliance/remotewrite/sender
++      - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/scoped-test.yaml b/.github/workflows/scoped-test.yaml
+index 9ab0b330e487b..df99c1f6393e1 100644
+--- a/.github/workflows/scoped-test.yaml
++++ b/.github/workflows/scoped-test.yaml
+@@ -100,6 +100,8 @@ jobs:
+         run: |
+           make for-affected-components CMD="make lint test-twice"
+ 
++      - run: ./.github/workflows/scripts/check-disk-space.sh
++
+   scoped-tests:
+     # Keeps the name of the job required for merging in the GH configuration, make it
+     # wait for all runners completion
+diff --git a/.github/workflows/scripts/check-disk-space.sh b/.github/workflows/scripts/check-disk-space.sh
+new file mode 100755
+index 0000000000000..f6e247499e9d5
+--- /dev/null
++++ b/.github/workflows/scripts/check-disk-space.sh
+@@ -0,0 +1,17 @@
++#!/usr/bin/env bash
++#
++# Copyright The OpenTelemetry Authors
++# SPDX-License-Identifier: Apache-2.0
++
++declare BASELINE_SPACE
++
++free_space=$(df -BM --output=avail / | sed '1d;s/[^0-9]//g')
++used_space=$((BASELINE_SPACE - free_space))
++echo "Job used $used_space MiB of disk space, $free_space MiB remain."
++if [ "$used_space" -gt 14336 ]; then
++  echo "WARNING: The amount of space used exceeds the 14 GiB guaranteed by Github."
++fi
++if [ "$free_space" -lt 1024 ]; then
++  echo "WARNING: The amount of space remaining is dangerously low."
++  # TODO: Make this warning more visible
++fi
+diff --git a/.github/workflows/scripts/free-disk-space.sh b/.github/workflows/scripts/free-disk-space.sh
+index d43846660a14d..ad493062367ab 100755
+--- a/.github/workflows/scripts/free-disk-space.sh
++++ b/.github/workflows/scripts/free-disk-space.sh
+@@ -3,8 +3,9 @@
+ # Copyright The OpenTelemetry Authors
+ # SPDX-License-Identifier: Apache-2.0
+ 
+-echo "Available disk space before:"
+-df -h /
++contrib_dir="$(dirname -- "$0")/../../.."
++initial_checkout_size=$(du -BM -s "$contrib_dir" | sed 's/[^0-9]//g')
++space_before_cleanup=$(df -BM --output=avail / | sed '1d;s/[^0-9]//g')
+ 
+ # The Android SDK is the biggest culprit for the lack of disk space in CI.
+ # It is installed into /usr/local/lib/android manually (ie. not with apt) by this script:
+@@ -13,5 +14,8 @@ df -h /
+ echo "Deleting unused Android SDK and tools..."
+ sudo rm -rf /usr/local/lib/android
+ 
+-echo "Available disk space after:"
+-df -h /
++free_space=$(df -BM --output=avail / | sed '1d;s/[^0-9]//g')
++echo "Freed $((free_space - space_before_cleanup)) MiB of disk space."
++
++# Hypothetical free space with the cleanup but without checkout
++echo "BASELINE_SPACE=$((free_space + initial_checkout_size))" >> "$GITHUB_ENV"
+diff --git a/.github/workflows/telemetrygen.yml b/.github/workflows/telemetrygen.yml
+index 297b4be7fda67..30851fd061b3a 100644
+--- a/.github/workflows/telemetrygen.yml
++++ b/.github/workflows/telemetrygen.yml
+@@ -28,6 +28,7 @@ jobs:
+     if: ${{ github.actor != 'dependabot[bot]' }}
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -58,6 +59,7 @@ jobs:
+           push: false
+           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:dev
+           platforms: linux/amd64,linux/arm64,linux/s390x,linux/ppc64le,linux/riscv64
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   publish-latest:
+     runs-on: ubuntu-24.04
+@@ -66,6 +68,7 @@ jobs:
+       packages: write
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -102,6 +105,7 @@ jobs:
+           push: true
+           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+           platforms: linux/amd64,linux/arm64,linux/s390x,linux/ppc64le,linux/riscv64
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+ 
+   publish-stable:
+     runs-on: ubuntu-24.04
+@@ -110,6 +114,7 @@ jobs:
+       packages: write
+     steps:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -149,3 +154,4 @@ jobs:
+           push: true
+           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:${{ steps.github_tag.outputs.tag }}
+           platforms: linux/amd64,linux/arm64,linux/s390x,linux/ppc64le,linux/riscv64
++      - run: ./.github/workflows/scripts/check-disk-space.sh
+diff --git a/.github/workflows/tidy-dependencies.yml b/.github/workflows/tidy-dependencies.yml
+index 467d5362e9c16..01a554be84acc 100644
+--- a/.github/workflows/tidy-dependencies.yml
++++ b/.github/workflows/tidy-dependencies.yml
+@@ -24,6 +24,7 @@ jobs:
+       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+         with:
+           ref: ${{ github.head_ref }}
++      - run: ./.github/workflows/scripts/free-disk-space.sh
+       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+         id: go-setup
+         with:
+@@ -52,3 +53,4 @@ jobs:
+       - uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0 # v1
+         with:
+           labels: renovatebot
++      - run: ./.github/workflows/scripts/check-disk-space.sh
