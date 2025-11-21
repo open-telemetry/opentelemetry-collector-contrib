@@ -250,6 +250,77 @@ func TestStringTagFilter_InvalidRegex(t *testing.T) {
 	})
 }
 
+func TestStringTagFilter_EarlyEvaluate(t *testing.T) {
+	cases := []struct {
+		Desc                  string
+		Trace                 *samplingpolicy.TraceData
+		filterCfg             *TestStringAttributeCfg
+		Decision              samplingpolicy.Decision
+		DisableInvertDecision bool
+	}{
+		{
+			Desc:      "nonmatching node attribute key",
+			Trace:     newTraceStringAttrs(map[string]any{"non_matching": "value"}, "", ""),
+			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "nonmatching node attribute value",
+			Trace:     newTraceStringAttrs(map[string]any{"example": "non_matching"}, "", ""),
+			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "matching node attribute",
+			Trace:     newTraceStringAttrs(map[string]any{"example": "value"}, "", ""),
+			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
+			Decision:  samplingpolicy.Sampled,
+		},
+		{
+			Desc:      "nonmatching span attribute key",
+			Trace:     newTraceStringAttrs(nil, "nonmatching", "value"),
+			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "nonmatching span attribute value",
+			Trace:     newTraceStringAttrs(nil, "example", "nonmatching"),
+			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
+			Decision:  samplingpolicy.Unspecified,
+		},
+		{
+			Desc:      "matching span attribute",
+			Trace:     newTraceStringAttrs(nil, "example", "value"),
+			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
+			Decision:  samplingpolicy.Sampled,
+		},
+		{
+			Desc:      "matching span attribute with regex",
+			Trace:     newTraceStringAttrs(nil, "example", "grpc.health.v1.HealthCheck"),
+			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"v[0-9]+.HealthCheck$"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize},
+			Decision:  samplingpolicy.Sampled,
+		},
+		{
+			Desc:      "nonmatching span attribute with regex",
+			Trace:     newTraceStringAttrs(nil, "example", "grpc.health.v1.HealthCheck"),
+			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"v[a-z]+.HealthCheck$"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize},
+			Decision:  samplingpolicy.Unspecified,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			filter, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values, c.filterCfg.EnabledRegexMatching, c.filterCfg.CacheMaxSize, c.filterCfg.InvertMatch)
+			require.NoError(t, err)
+			traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+			rs := c.Trace.ReceivedBatches.ResourceSpans().At(0)
+			decision, err := filter.(samplingpolicy.EarlyEvaluator).EarlyEvaluate(t.Context(), traceID, rs, c.Trace)
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
 func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
 	trace := newTraceStringAttrs(map[string]any{"example": "value"}, "", "")
 	filter, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"value"}, false, 0, false)

@@ -89,6 +89,78 @@ func TestNumericTagFilter(t *testing.T) {
 	}
 }
 
+func TestNumericTagFilter_EarlyEvaluate(t *testing.T) {
+	empty := map[string]any{}
+	minVal := int64(math.MinInt32)
+	maxVal := int64(math.MaxInt32)
+	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", &minVal, &maxVal, false).(samplingpolicy.EarlyEvaluator)
+
+	resAttr := map[string]any{}
+	resAttr["example"] = 8
+
+	cases := []struct {
+		Desc     string
+		Trace    *samplingpolicy.TraceData
+		Decision samplingpolicy.Decision
+	}{
+		{
+			Desc:     "nonmatching span attribute",
+			Trace:    newTraceIntAttrs(empty, "non_matching", math.MinInt32),
+			Decision: samplingpolicy.Unspecified,
+		},
+		{
+			Desc:     "span attribute at the lower limit",
+			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
+			Decision: samplingpolicy.Sampled,
+		},
+		{
+			Desc:     "resource attribute at the lower limit",
+			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32}, "non_matching", math.MinInt32),
+			Decision: samplingpolicy.Sampled,
+		},
+		{
+			Desc:     "span attribute at the upper limit",
+			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
+			Decision: samplingpolicy.Sampled,
+		},
+		{
+			Desc:     "resource attribute at the upper limit",
+			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt),
+			Decision: samplingpolicy.Sampled,
+		},
+		{
+			Desc:     "span attribute below min limit",
+			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32-1),
+			Decision: samplingpolicy.Unspecified,
+		},
+		{
+			Desc:     "resource attribute below min limit",
+			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32 - 1}, "non_matching", math.MinInt32),
+			Decision: samplingpolicy.Unspecified,
+		},
+		{
+			Desc:     "span attribute above max limit",
+			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
+			Decision: samplingpolicy.Unspecified,
+		},
+		{
+			Desc:     "resource attribute above max limit",
+			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32 + 1}, "non_matching", math.MaxInt32),
+			Decision: samplingpolicy.Unspecified,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			u, _ := uuid.NewRandom()
+			rs := c.Trace.ReceivedBatches.ResourceSpans().At(0)
+			decision, err := filter.EarlyEvaluate(t.Context(), pcommon.TraceID(u), rs, c.Trace)
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
 func TestNumericTagFilterInverted(t *testing.T) {
 	empty := map[string]any{}
 	minVal := int64(math.MinInt32)

@@ -23,6 +23,8 @@ type TraceData struct {
 	ReceivedBatches ptrace.Traces
 	// FinalDecision.
 	FinalDecision Decision
+	// ParentSpan
+	ParentSpan *ptrace.Span
 }
 
 // Decision gives the status of sampling decision.
@@ -57,6 +59,21 @@ const (
 type Evaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
+}
+
+// EarlyEvaluator uses partial traces (newData) in order to make a sampling
+// decision. The partial data could be as little as a single span, up to all
+// the spans for a given resource.
+type EarlyEvaluator interface {
+	// EarlyEvaluate does the actual evaluation of the batch of spans. Any
+	// implementations must only return Sampled, NotSampled, Dropped, or
+	// Unspecified decisions. Any other values will be treated as Unspecified.
+	//
+	// The `ReceivedBatches` on allData should not be iterated through each
+	// time this function is called. It is included for implementations that
+	// wait for a trigger, such as the parent span being received, before
+	// looking across all the received spans.
+	EarlyEvaluate(ctx context.Context, traceID pcommon.TraceID, newData ptrace.ResourceSpans, allData *TraceData) (Decision, error)
 }
 
 type Extension interface {
