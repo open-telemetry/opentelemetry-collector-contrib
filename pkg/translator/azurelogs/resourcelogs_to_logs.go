@@ -223,6 +223,8 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	putStrPtr(attributeAzureCorrelationID, log.CorrelationID, record)
 	record.Attributes().PutStr(attributeAzureOperationName, log.OperationName)
 	putStrPtr(attributeAzureOperationVersion, log.OperationVersion, record)
+	putStrPtr(string(conventions.CloudRegionKey), log.Location, record)
+	putStrPtr(azureResultType, log.ResultType, record)
 	// TODO Keep adding other common fields, like tenant ID
 }
 

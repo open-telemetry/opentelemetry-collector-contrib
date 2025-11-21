@@ -1,0 +1,54 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/12CABCB4-86E8-404F-A3D2-1DC9982F45CA/RESOURCEGROUPS/CONSTANCA-MANTEIGAS-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/CONSTANCA-MANTEIGAS-FRONTDOOR-PROFILE
+        - key: event.name
+          value:
+            stringValue: az.resource.log
+    scopeLogs:
+      - scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3
+        logRecords:
+          - timeUnixNano: "1745498954624103500"
+            severityNumber: 9
+            severityText: Informational
+            attributes:
+              - key: azure.category
+                value:
+                  stringValue: ResourceHealth
+              - key: azure.correlation_id
+                value:
+                  stringValue: bfe2c91a-c7aa-4815-bc02-e4ee3485eed0
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Resourcehealth/healthevent/Activated/action
+              - key: azure.resource_health.cause
+                value:
+                  stringValue: Unknown
+              - key: azure.resource_health.current_status
+                value:
+                  stringValue: Unavailable
+              - key: azure.resource_health.details
+                value:
+                  stringValue: Unknown
+              - key: azure.resource_health.previous_status
+                value:
+                  stringValue: Available
+              - key: azure.resource_health.title
+                value:
+                  stringValue: Unknown
+              - key: azure.resource_health.type
+                value:
+                  stringValue: Downtime
+              - key: cloud.region
+                value:
+                  stringValue: global
+              - key: result.type
+                value:
+                  stringValue: Active
