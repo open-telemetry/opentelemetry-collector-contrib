@@ -56,6 +56,7 @@ const (
 	tagPrefix              = "tags_"
 	truncateTimeGrain      = time.Minute
 	filterAllAggregations  = "*"
+	storageAccountType     = "Microsoft.Storage/storageAccounts"
 )
 
 // azureSubscription is an extract of armsubscriptions.Subscription.
@@ -98,14 +99,31 @@ func (*timeWrapper) Now() time.Time {
 	return time.Now()
 }
 
+type storageAccountHackConfig struct {
+	askedBlobServices  bool
+	askedFileServices  bool
+	askedQueueServices bool
+	askedTableServices bool
+}
+
+func newStorageAccountHackConfig(services []string) storageAccountHackConfig {
+	return storageAccountHackConfig{
+		askedBlobServices:  slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/blobServices") }) != -1,
+		askedFileServices:  slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/fileServices") }) != -1,
+		askedQueueServices: slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/queueServices") }) != -1,
+		askedTableServices: slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/tableServices") }) != -1,
+	}
+}
+
 func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 	return &azureScraper{
-		cfg:                   conf,
-		settings:              settings.TelemetrySettings,
-		mb:                    metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
-		mutex:                 &sync.Mutex{},
-		time:                  &timeWrapper{},
-		clientOptionsResolver: newClientOptionsResolver(conf.Cloud),
+		cfg:                      conf,
+		settings:                 settings.TelemetrySettings,
+		mb:                       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
+		mutex:                    &sync.Mutex{},
+		time:                     &timeWrapper{},
+		clientOptionsResolver:    newClientOptionsResolver(conf.Cloud),
+		storageAccountHackConfig: newStorageAccountHackConfig(conf.Services),
 	}
 }
 
@@ -121,9 +139,10 @@ type azureScraper struct {
 	subscriptionsUpdated time.Time
 	mb                   *metadata.MetricsBuilder
 
-	mutex                 *sync.Mutex
-	time                  timeNowIface
-	clientOptionsResolver ClientOptionsResolver
+	mutex                    *sync.Mutex
+	time                     timeNowIface
+	clientOptionsResolver    ClientOptionsResolver
+	storageAccountHackConfig storageAccountHackConfig
 }
 
 func (s *azureScraper) start(_ context.Context, host component.Host) (err error) {
@@ -290,7 +309,7 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 			s.settings.Logger.Error("failed to get Azure Resources data", zap.Error(err))
 			return
 		}
-		for _, resource := range nextResult.Value {
+		for _, resource := range s.hackResources(nextResult.Value) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -317,6 +336,64 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 	}
 
 	s.subscriptions[subscriptionID].resourcesUpdated = time.Now()
+}
+
+// hackResources is a workaround specially done for the storageAccount metrics.
+// Every StorageAccount resources have some implicit sub resources (/blobServices/default, fileServices/default, etc...) that are not returned by the API.
+// We need to add them manually to the resources and resourceTypes map.
+// Note that we do that hack only if the user has asked the sub resource types explicitly in the services config.
+// Example:
+// For each resource with id .../Microsoft.Storage/storageAccount/myResource of type Microsoft.Storage/storageAccount,
+// It will create a fake resource with id .../Microsoft.Storage/storageAccount/myResource/blobServices/default of type Microsoft.Storage/storageAccounts/blobServices.
+// TODO: duplicate
+func (s *azureScraper) hackResources(resources []*armresources.GenericResourceExpanded) []*armresources.GenericResourceExpanded {
+	var hackedResources []*armresources.GenericResourceExpanded
+	for _, resource := range resources {
+		hackedResources = append(hackedResources, resource)
+		if resource.Type != nil && *resource.Type == storageAccountType {
+			if s.storageAccountHackConfig.askedBlobServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/blobServices", fmt.Sprintf("%s/blobServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedFileServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/fileServices", fmt.Sprintf("%s/fileServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedQueueServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/queueServices", fmt.Sprintf("%s/queueServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+			if s.storageAccountHackConfig.askedTableServices {
+				if r := s.hackResource(resource, "Microsoft.Storage/storageAccounts/tableServices", fmt.Sprintf("%s/tableServices/default", *resource.ID)); r != nil {
+					hackedResources = append(hackedResources, r)
+				}
+			}
+		}
+	}
+	return hackedResources
+}
+
+// hackResource creates a fake new resource with give type and ID.
+// The rest of the attributes (location, tags, etc...) are copied from the original resource.
+// TODO: duplicate
+func (s *azureScraper) hackResource(resource *armresources.GenericResourceExpanded, newResourceType, newResourceID string) *armresources.GenericResourceExpanded {
+	hackedResource, err := copyResource(resource)
+	if err != nil {
+		s.settings.Logger.Error("failed to create a hack resource",
+			zap.String("resource type", *resource.Type),
+			zap.String("hack resource type", newResourceType),
+			zap.String("hack resource ID", newResourceID),
+			zap.Error(err),
+		)
+	}
+	if hackedResource != nil {
+		hackedResource.Type = to.Ptr(newResourceType)
+		hackedResource.ID = to.Ptr(newResourceID)
+	}
+	return hackedResource
 }
 
 func getResourceGroupFromID(id string) string {
@@ -586,4 +663,17 @@ func filterResourceTags(tagFilterList map[string]struct{}, resourceTags map[stri
 	}
 
 	return includedTags
+}
+
+func copyResource(original *armresources.GenericResourceExpanded) (*armresources.GenericResourceExpanded, error) {
+	hackedResourceStr, err := original.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	var newResource armresources.GenericResourceExpanded
+	err = newResource.UnmarshalJSON(hackedResourceStr)
+	if err != nil {
+		return nil, err
+	}
+	return &newResource, nil
 }
