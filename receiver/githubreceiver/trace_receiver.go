@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v76/github"
+	"github.com/google/go-github/v79/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -157,14 +157,14 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		td, err = gtr.handleWorkflowRun(e)
+		td, err = gtr.handleWorkflowRun(e, p)
 	case *github.WorkflowJobEvent:
 		if strings.ToLower(e.GetWorkflowJob().GetStatus()) != "completed" {
 			gtr.logger.Debug("workflow job not complete, skipping...", zap.String("status", e.GetWorkflowJob().GetStatus()))
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		td, err = gtr.handleWorkflowJob(e)
+		td, err = gtr.handleWorkflowJob(e, p)
 	case *github.PingEvent:
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

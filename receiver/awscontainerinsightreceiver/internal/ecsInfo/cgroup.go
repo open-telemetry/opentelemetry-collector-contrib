@@ -213,8 +213,8 @@ func getCGroupMountPoint(mountConfigPath string) (string, error) {
 			fields = strings.Split(text, " ")
 			// safe as mountinfo encodes mountpoints with spaces as \040.
 			// an example: 26 22 0:23 / /cgroup/cpu rw,relatime - cgroup cgroup rw,cpu
-			index               = strings.Index(text, " - ")
-			postSeparatorFields = strings.Fields(text[index+3:])
+			_, after, _         = strings.Cut(text, " - ")
+			postSeparatorFields = strings.Fields(after)
 			numPostFields       = len(postSeparatorFields)
 		)
 		// this is an error as we can't detect if the mount is for "cgroup"

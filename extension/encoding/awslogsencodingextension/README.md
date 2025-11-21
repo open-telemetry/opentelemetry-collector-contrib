@@ -267,11 +267,18 @@ If you're using the old format values you should update the encoding extension c
 | `challengeResponse`           | _Currently not supported_                                                                        |
 | `oversizeFields`              | _Currently not supported_                                                                        |
 
-### CloudTrail log record fields
+### CloudTrail record fields
 
-[CloudTrail log record fields](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) are mapped this way in the resulting OpenTelemetry log:
+Processed CloudTrail records come in two formats,
 
-| CloudTrail field                                          | Attribute in OpenTelemetry log                                            |
+- CloudTrail event records
+- CloudTrail digest record
+
+#### CloudTrail event records
+
+[CloudTrail event records](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) get mapped with following attributes in the resulting OpenTelemetry log:
+
+| CloudTrail event field                                    | Attribute in OpenTelemetry log                                            |
 |-----------------------------------------------------------|---------------------------------------------------------------------------|
 | `apiVersion`                                              | `aws.cloudtrail.api_version`                                              |
 | `eventID`                                                 | `aws.cloudtrail.event_id`                                                 |
@@ -316,6 +323,34 @@ If you're using the old format values you should update the encoding extension c
 | `userIdentity.sessionContext.sessionIssuer.accountId`     | `aws.user_identity.session_context.issuer.account_id`                     |
 | `userIdentity.sessionContext.sessionIssuer.userName`      | `aws.user_identity.session_context.issuer.user_name`                      |
 
+#### CloudTrail digest record
+
+[CloudTrail digest record](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-digest-file-structure.html) get mapped with following attributes in the resulting OpenTelemetry log:
+
+| CloudTrail digest field  | Attribute in OpenTelemetry log                    |
+|--------------------------|---------------------------------------------------|
+| awsAccountId             | cloud.account.id                                  |
+| digestEndTime            | aws.cloudtrail.digest.end_time                    |
+| digestS3Bucket           | aws.cloudtrail.digest.s3_bucket                   |
+| digestS3Object           | aws.cloudtrail.digest.s3_object                   |
+| newestEventTime          | aws.cloudtrail.digest.newest_event                |
+| oldestEventTime          | aws.cloudtrail.digest.oldest_event                |
+| previousDigestS3Bucket   | aws.cloudtrail.digest.previous_s3_bucket          |
+| previousDigestS3Object   | aws.cloudtrail.digest.previous_s3_object          |
+| logFiles.s3Bucket        | aws.cloudtrail.digest.log_files.s3_bucket         |
+| logFiles.s3Object        | aws.cloudtrail.digest.log_files.s3_bucket         |
+| logFiles.newestEventTime | aws.cloudtrail.digest.log_files.newest_event_time |
+| logFiles.oldestEventTime | aws.cloudtrail.digest.log_files.oldest_event_time |
+
+Following fields are not included in the derived OpenTelemetry log:
+- digestPublicKeyFingerprint
+- digestSignatureAlgorithm
+- previousDigestHashValue
+- previousDigestHashAlgorithm
+- previousDigestSignature
+- logFiles.hashValue
+- logFiles.hashAlgorithm
+
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
 
 ### ELB Access Log Fields
@@ -327,38 +362,42 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html).
 
 
-| **AWS Field**                | **OpenTelemetry Field(s)**                                           |
-|------------------------------|----------------------------------------------------------------------|
-| type                         | `network.protocol.name`                                              |
-| time                         | Log timestamp                                                        |
-| elb                          | `cloud.resource_id`                                                  |
-| client:port                  | `client.address`, `client.port`                                      |
-| received_bytes               | `http.request.size`                                                  |
-| sent_bytes                   | `http.response.size`                                                 |
-| "request"                    | `url.full`, `http.request.method`, `network.protocol.version`        |
-| ssl_cipher                   | `tls.cipher`                                                         |
-| ssl_protocol                 | `tls.protocol.version`                                               |
-| elb_status_code              | `aws.elb.status.code`                                                |
-| user_agent                   | `user_agent.original`                                                |
-| domain_name                  | `url.domain`                                                         |
-| target:port                  | _Currently not supported_                                |
-| request_processing_time      | _Currently not supported_                                |
-| target_processing_time       | _Currently not supported_                                |
-| response_processing_time     | _Currently not supported_                                |
-| target_status_code           | _Currently not supported_                                |
-| target_group_arn             | _Currently not supported_                                |
-| "trace_id"                   | _Currently not supported_                                |
-| "chosen_cert_arn"            | _Currently not supported_                                |
-| matched_rule_priority        | _Currently not supported_                                |
-| request_creation_time        | _Currently not supported_                                |
-| "actions_executed"           | _Currently not supported_                                |
-| "redirect_url"               | _Currently not supported_                                |
-| "error_reason"               | _Currently not supported_                                |
-| "target:port_list"           | _Currently not supported_                                |
-| "target_status_code_list"    | _Currently not supported_                                |
-| "classification"             | _Currently not supported_                                |
-| "classification_reason"      | _Currently not supported_                                |
-| conn_trace_id                | _Currently not supported_                                |
+| **AWS Field**             | **OpenTelemetry Field(s)**                                    |
+|---------------------------|---------------------------------------------------------------|
+| type                      | `network.protocol.name`                                       |
+| time                      | Log timestamp                                                 |
+| elb                       | `cloud.resource_id`                                           |
+| client:port               | `client.address`, `client.port`                               |
+| received_bytes            | `http.request.size`                                           |
+| sent_bytes                | `http.response.size`                                          |
+| "request"                 | `url.full`, `http.request.method`, `network.protocol.version` |
+| ssl_cipher                | `tls.cipher`                                                  |
+| ssl_protocol              | `tls.protocol.version`                                        |
+| elb_status_code           | `aws.elb.status.code`                                         |
+| user_agent                | `user_agent.original`                                         |
+| domain_name               | `url.domain`                                                  |
+| target:port               | `destination.address`, `destination.port`                     |
+| request_processing_time   | `aws.alb.request_processing_time`                             |
+| target_processing_time    | `aws.elb.target_processing_time`                              |
+| response_processing_time  | `aws.elb.response_processing_time`                            |
+| target_status_code        | `aws.elb.backend.status.code`                                 |
+| target_group_arn          | `aws.elb.target_group_arn`                                    |
+| "trace_id"                | `aws.elb.aws_trace_id`                                        |
+| "chosen_cert_arn"         | `aws.elb.chosen_cert_arn`                                     |
+| matched_rule_priority     | _Currently not supported_                                     |
+| request_creation_time     | _Currently not supported_                                     |
+| "actions_executed"        | `aws.elb.actions_executed`                                    |
+| "redirect_url"            | `aws.elb.redirect_url`                                        |
+| "error_reason"            | `aws.elb.error_reason`                                        |
+| "target:port_list"        | _Currently not supported_                                     |
+| "target_status_code_list" | _Currently not supported_                                     |
+| "classification"          | `aws.elb.classification`                                      |
+| "classification_reason"   | `aws.elb.classification_reason`                               |
+| conn_trace_id             | `aws.elb.connection_trace_id`                                 |
+| transformed_host          | `aws.elb.transformed_host`                                    |
+| transformed_uri           | `aws.elb.transformed_uri`                                     |
+| request_transform_status  | `aws.elb.request_transform_status`                            |
+
 
 #### Network Load Balancer (NLB)
 

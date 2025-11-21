@@ -3,7 +3,6 @@
 package sampling
 
 import (
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,9 +27,7 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 var traceID = pcommon.TraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *samplingpolicy.TraceData {
-	spanCount := &atomic.Int64{}
-	spanCount.Store(1)
-	trace := &samplingpolicy.TraceData{SpanCount: spanCount, ReceivedBatches: ptrace.NewTraces()}
+	trace := &samplingpolicy.TraceData{SpanCount: 1, ReceivedBatches: ptrace.NewTraces()}
 	return trace
 }
 
@@ -49,11 +46,9 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *samplingpol
 	))
 	span.Attributes().PutInt(key, val)
 
-	spanCount := &atomic.Int64{}
-	spanCount.Store(1)
 	return &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
-		SpanCount:       spanCount,
+		SpanCount:       1,
 	}
 }
 
@@ -174,8 +169,10 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 
 func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
 	// The first policy does not match, the second matches through invert
-	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
-	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
+	n1, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
+	require.NoError(t, err)
+	n2, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
+	require.NoError(t, err)
 	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20, "eval-1"}, {n2, 20, "eval-2"}}, FakeTimeProvider{}, false)
 
 	for i := 1; i <= 10; i++ {
@@ -192,8 +189,10 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
 
 func TestCompositeEvaluatorInverseSampled_AlwaysSampled_RecordSubPolicy(t *testing.T) {
 	// The first policy does not match, the second matches through invert
-	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
-	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
+	n1, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
+	require.NoError(t, err)
+	n2, err := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
+	require.NoError(t, err)
 	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20, "eval-1"}, {n2, 20, "eval-2"}}, FakeTimeProvider{}, true)
 
 	for i := 1; i <= 10; i++ {

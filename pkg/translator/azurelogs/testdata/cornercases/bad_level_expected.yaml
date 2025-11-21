@@ -1,0 +1,102 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: cloud.region
+                    value:
+                      stringValue: West US
+                  - key: network.peer.address
+                    value:
+                      stringValue: 13.14.15.16
+                  - key: category
+                    value:
+                      stringValue: GatewayLogs
+                  - key: correlation.id
+                    value:
+                      stringValue: 128bc026-5ead-40c7-8853-ebb32bc077a3
+                  - key: duration
+                    value:
+                      intValue: "243"
+                  - key: operation.name
+                    value:
+                      stringValue: Microsoft.ApiManagement/GatewayLogs
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: method
+                            value:
+                              stringValue: GET
+                          - key: backendResponseCode
+                            value:
+                              doubleValue: 200
+                          - key: url
+                            value:
+                              stringValue: https://api.azure-api.net/sessions
+                          - key: apiRevision
+                            value:
+                              stringValue: "1"
+                          - key: backendTime
+                            value:
+                              doubleValue: 54
+                          - key: requestSize
+                            value:
+                              doubleValue: 632
+                          - key: clientTime
+                            value:
+                              doubleValue: 190
+                          - key: clientProtocol
+                            value:
+                              stringValue: HTTP/1.1
+                          - key: responseCode
+                            value:
+                              doubleValue: 200
+                          - key: backendMethod
+                            value:
+                              stringValue: GET
+                          - key: apimSubscriptionId
+                            value:
+                              stringValue: master
+                          - key: backendProtocol
+                            value:
+                              stringValue: HTTP/1.1
+                          - key: clientTlsVersion
+                            value:
+                              stringValue: "1.2"
+                          - key: responseSize
+                            value:
+                              doubleValue: 102945
+                          - key: backendUrl
+                            value:
+                              stringValue: https://api.azurewebsites.net/sessions
+                          - key: cache
+                            value:
+                              stringValue: none
+                          - key: apiId
+                            value:
+                              stringValue: demo-api
+                          - key: operationId
+                            value:
+                              stringValue: GetSessions
+                  - key: result.type
+                    value:
+                      stringValue: Succeeded
+            severityNumber: 4
+            severityText: "4"
+            timeUnixNano: "1698330163341635700"
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

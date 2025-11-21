@@ -325,18 +325,30 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 		}
 	}
 
+	if !e.config.BlobNameFormat.SerialNumEnabled {
+		// No serial number enabled, return the formatted blob name
+		return e.parseTimeInBlobName(now, format), nil
+	}
+
 	if e.config.BlobNameFormat.SerialNumBeforeExtension {
 		// Append a random number and do so before the file extension if there is one
 		ext := filepath.Ext(format)
 		formatWithoutExt := strings.TrimSuffix(format, ext)
 		randInt := randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange))
-		blobName = fmt.Sprintf("%s_%d%s", now.Format(formatWithoutExt), randInt, ext)
+		blobName = fmt.Sprintf("%s_%d%s", e.parseTimeInBlobName(now, formatWithoutExt), randInt, ext)
 	} else {
 		// Appends the random number after any potential file extension to minimize performance impact when high throughput
-		blobName = fmt.Sprintf("%s_%d", now.Format(format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)))
+		blobName = fmt.Sprintf("%s_%d", e.parseTimeInBlobName(now, format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)))
 	}
 
 	return blobName, nil
+}
+
+func (e *azureBlobExporter) parseTimeInBlobName(now time.Time, format string) string {
+	if !e.config.BlobNameFormat.TimeParserEnabled {
+		return format
+	}
+	return now.Format(format)
 }
 
 func (*azureBlobExporter) Capabilities() consumer.Capabilities {
