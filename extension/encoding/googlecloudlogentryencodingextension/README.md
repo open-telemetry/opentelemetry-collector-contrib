@@ -357,8 +357,8 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 | `proxyStatus` | `gcp.load_balancing.proxy_status` |
 | `overrideResponseCode` | `gcp.load_balancing.override_response_code` |
 | `errorService` | `gcp.load_balancing.error_service` |
-| `cacheId` | `gcp.load_balancing.cache_id` |
-| `cacheDecision` | `gcp.load_balancing.cache_decision` |
+| `cacheId` | `gcp.load_balancing.cache.id` |
+| `cacheDecision` | `gcp.load_balancing.cache.decision` |
 | `backendNetworkName` | `gcp.load_balancing.backend_network_name` |
 | `authPolicyInfo.result` | `gcp.load_balancing.auth_policy_info.result` |
 | `authPolicyInfo.policies` | `gcp.load_balancing.auth_policy_info.policies` |
@@ -374,14 +374,14 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 | `mtls.clientCertIssuerDn` | `tls.client.issuer` |
 | `mtls.clientCertSubjectDn` | `tls.client.subject` |
 | `mtls.clientCertChain` | `tls.client.certificate_chain` |
-| `mtls.clientCertPresent` | `mtls.client.cert_present` |
-| `mtls.clientCertChainVerified` | `mtls.client.cert_chain_verified` |
-| `mtls.clientCertError` | `mtls.client.cert_error` |
-| `mtls.clientCertSerialNumber` | `mtls.client.cert_serial_number` |
-| `mtls.clientCertSpiffeId` | `mtls.client.cert_spiffe_id` |
-| `mtls.clientCertURISans` | `mtls.client.cert_uri_sans` |
-| `mtls.clientCertDnsnameSans` | `mtls.client.cert_dnsname_sans` |
-| `mtls.clientCertLeaf` | `mtls.client.cert_leaf` |
+| `mtls.clientCertPresent` | `mtls.client_cert.present` |
+| `mtls.clientCertChainVerified` | `mtls.client_cert.chain_verified` |
+| `mtls.clientCertError` | `mtls.client_cert.error` |
+| `mtls.clientCertSerialNumber` | `mtls.client_cert.serial_number` |
+| `mtls.clientCertSpiffeId` | `mtls.client_cert.spiffe_id` |
+| `mtls.clientCertURISans` | `mtls.client_cert.uri_sans` |
+| `mtls.clientCertDnsnameSans` | `mtls.client_cert.dnsname_sans` |
+| `mtls.clientCertLeaf` | `mtls.client_cert.leaf` |
 
 **Note:** Application Load Balancer logs may contain embedded Cloud Armor security policy information. When present, these policies are parsed according to the Cloud Armor logs mapping (see below).
 

@@ -498,7 +498,7 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 		// Add encoding.format to scope attributes for Load balancer logs
 		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
 		if err := apploadbalancerlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
-			return fmt.Errorf("failed to parse Armor log JSON payload: %w", err)
+			return fmt.Errorf("failed to parse Load Balancer log JSON payload: %w", err)
 		}
 		return nil
 		// TODO Add support for more log types

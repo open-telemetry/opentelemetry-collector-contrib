@@ -37,7 +37,7 @@ resourceLogs:
               - key: gcp.load_balancing.status.details
                 value:
                   stringValue: failed_to_pick_backend
-              - key: gcp.load_balancing.cache_decision
+              - key: gcp.load_balancing.cache.decision
                 value:
                   arrayValue:
                     values:
