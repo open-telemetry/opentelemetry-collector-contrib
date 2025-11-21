@@ -5,11 +5,11 @@ package transport // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"net"
-	"strings"
 	"sync"
 	"time"
 
@@ -140,25 +140,21 @@ func (t *tcpServer) handleConnection(
 		// Notice that it is possible for the function to return with error at
 		// the same time that it returns data (typically the error is io.EOF in
 		// this case).
-		bytes, err := reader.ReadBytes(byte('\n'))
-
+		data, err := reader.ReadBytes(byte('\n'))
+		trimmedData := bytes.TrimSpace(data)
 		var numReceivedMetricPoints int
-		line := strings.TrimSpace(string(bytes))
-		if line != "" {
+		if len(trimmedData) != 0 {
 			if !reporterActive {
 				ctx = t.reporter.OnDataReceived(context.Background())
 				reporterActive = true
 			}
 			numReceivedMetricPoints++
-			var metric pmetric.Metric
-			metric, err = p.Parse(line)
+			var metrics pmetric.Metrics
+			metrics, err = p.Parse(trimmedData)
 			if err != nil {
 				t.reporter.OnTranslationError(ctx, err)
 				continue
 			}
-			metrics := pmetric.NewMetrics()
-			newMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-			metric.MoveTo(newMetric)
 			err = nextConsumer.ConsumeMetrics(ctx, metrics)
 			t.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 			reporterActive = false
