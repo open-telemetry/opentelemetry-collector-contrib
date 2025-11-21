@@ -42,6 +42,17 @@ extensions:
     timeout: 2s
     # buffer time before token expiry to refresh
     expiry_buffer: 10s
+
+  oauth2client/jwt-bearer-grant-type:
+    client_id: someclientid
+    client_certificate_key: secret_key
+    grant_type: urn:ietf:params:oauth:grant-type:jwt-bearer
+    token_url: https://example.com/oauth2/default/v1/token
+    signature_algorithm: RS512
+    endpoint_params:
+      audience: someaudience
+    scopes: ["api.metrics"]
+    timeout: 1s
     
 receivers:
   hostmetrics:
@@ -57,33 +68,43 @@ exporters:
     auth:
       authenticator: oauth2client
       
-  otlp/withauth:
+  otlp/withjwtauth:
     endpoint: 0.0.0.0:5000
     tls:
       ca_file: /tmp/certs/ca.pem
     auth:
-      authenticator: oauth2client
+      authenticator: oauth2client/jwt-bearer-grant-type
 
 service:
-  extensions: [oauth2client]
+  extensions: [oauth2client,oauth2client/jwt-bearer-grant-type]
   pipelines:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlphttp/withauth, otlp/withauth]
+      exporters: [otlphttp/withauth, otlp/withjwtauth]
 ```
 
 Following are the configuration fields
 
 - [**token_url**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.2) - The resource server's token endpoint URLs.
 - [**client_id**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.2) - The client identifier issued to the client.
+- [**grant_type**](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3) - **Optional** OAuth2 grant type to use. It can be one of "client_credentials" or "urn:ietf:params:oauth:grant-type:jwt-bearer" and defaults to "client_credentials"
 - **client_id_file** - The file path to retrieve the client identifier issued to the client.
   The extension reads this file and updates the client ID used whenever it needs to issue a new token. This enables dynamically changing the client credentials by modifying the file contents when, for example, they need to rotate. <!-- Intended whitespace for compact new line -->  
   This setting takes precedence over `client_id`.
-- [**client_secret**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1) - The secret string associated with above identifier.
+- [**client_secret**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1) - The secret string associated with above identifier. This is required when grant_type is "client_credentials"
 - **client_secret_file** - The file path to retrieve the secret string associated with above identifier.
   The extension reads this file and updates the client secret used whenever it needs to issue a new token. This enables dynamically changing the client credentials by modifying the file contents when, for example, they need to rotate. <!-- Intended whitespace for compact new line -->  
   This setting takes precedence over `client_secret`.
+- **client_certificate_key** - The private key used to sign the jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523). This is required when grant_type is "urn:ietf:params:oauth:grant-type:jwt-bearer"
+- **client_certificate_key_file** - The file path to retrieve the secret string associated with above identifier.
+  The extension reads this file and updates the client key used whenever it needs to issue a new token. This enables dynamically changing the credentials by modifying the file contents when, for example, they need to rotate. <!-- Intended whitespace for compact new line -->  
+  This setting takes precedence over `client_certificate_key`.
+- **client_certificate_key_id** - **Optional** [kid](https://datatracker.ietf.org/doc/html/rfc7515#section-4.1.4) used to sign the jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523).
+- **signature_algorithm** - **Optional** RSA algorithm used to sign jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) and defaults to "RS256".
+- **iss** - **Optional** client identifier used added to jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) and defaults to "client_id".
+- **audience**: - **Optional** intended audience of the jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) and defaults to "token_url".
+- **claims**: - **Optional** extra claims to be added to jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523).
 - [**endpoint_params**](https://github.com/golang/oauth2/blob/master/clientcredentials/clientcredentials.go#L44) - Additional parameters that are sent to the token endpoint.
 - [**scopes**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3) - **Optional** optional requested permissions associated for the client.
 - [**timeout**](https://golang.org/src/net/http/client.go#L90) -  **Optional** specifies the timeout on the underlying client to authorization server for fetching the tokens (initial and while refreshing).
