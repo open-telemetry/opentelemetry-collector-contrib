@@ -27,7 +27,7 @@ type TelemetryBuilder struct {
 	mu                             sync.Mutex
 	registrations                  []metric.Registration
 	GcpPubsubInputUncompressedSize metric.Float64Histogram
-	GcpPubsubRequestsActiveCount   metric.Int64UpDownCounter
+	HTTPServerRequestActiveCount   metric.Int64UpDownCounter
 	HTTPServerRequestDuration      metric.Float64Histogram
 }
 
@@ -67,8 +67,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithExplicitBucketBoundaries([]float64{1024, 2560, 5120, 10240, 25600, 51200, 102400, 256000, 512000, 1.048576e+06, 2.62144e+06, 5.24288e+06, 1.048576e+07, 2.62144e+07, 5.24288e+07, 1.048576e+08, 2.62144e+08, 5.36870912e+08, 1.073741824e+09, 1.610612736e+09, 2.147483648e+09}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.GcpPubsubRequestsActiveCount, err = builder.meter.Int64UpDownCounter(
-		"otelcol_gcp.pubsub.requests.active.count",
+	builder.HTTPServerRequestActiveCount, err = builder.meter.Int64UpDownCounter(
+		"otelcol_http.server.request.active.count",
 		metric.WithDescription("Number of active requests. [Development]"),
 		metric.WithUnit("{count}"),
 	)

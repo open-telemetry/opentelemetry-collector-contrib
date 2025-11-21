@@ -26,7 +26,7 @@ telemetry:
         bucket_boundaries: [1024, 2560, 5120, 10240, 25600, 51200, 102400, 256000, 512000, 1048576, 2621440, 5242880, 10485760, 26214400, 52428800, 104857600, 262144000, 536870912, 1073741824, 1610612736, 2147483648]
       attributes:
         - gcp.gcs.bucket.name
-    gcp.pubsub.requests.active.count:
+    http.server.request.active.count:
       stability:
         level: development
       enabled: true

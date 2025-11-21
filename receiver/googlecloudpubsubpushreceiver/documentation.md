@@ -20,7 +20,7 @@ Size of uncompressed incoming log data in bytes (either direct Pub/Sub message p
 | ---- | ----------- | ------ |
 | gcp.gcs.bucket.name | Bucket name. | Any Str |
 
-### otelcol_gcp.pubsub.requests.active.count
+### otelcol_http.server.request.active.count
 
 Number of active requests. [Development]
 

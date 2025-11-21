@@ -21,12 +21,12 @@ func TestSetupTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	defer tb.Shutdown()
 	tb.GcpPubsubInputUncompressedSize.Record(context.Background(), 1)
-	tb.GcpPubsubRequestsActiveCount.Add(context.Background(), 1)
+	tb.HTTPServerRequestActiveCount.Add(context.Background(), 1)
 	tb.HTTPServerRequestDuration.Record(context.Background(), 1)
 	AssertEqualGcpPubsubInputUncompressedSize(t, testTel,
 		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualGcpPubsubRequestsActiveCount(t, testTel,
+	AssertEqualHTTPServerRequestActiveCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualHTTPServerRequestDuration(t, testTel,

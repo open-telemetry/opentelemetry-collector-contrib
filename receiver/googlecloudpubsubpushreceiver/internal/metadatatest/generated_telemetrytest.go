@@ -36,9 +36,9 @@ func AssertEqualGcpPubsubInputUncompressedSize(t *testing.T, tt *componenttest.T
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualGcpPubsubRequestsActiveCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualHTTPServerRequestActiveCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_gcp.pubsub.requests.active.count",
+		Name:        "otelcol_http.server.request.active.count",
 		Description: "Number of active requests. [Development]",
 		Unit:        "{count}",
 		Data: metricdata.Sum[int64]{
@@ -47,7 +47,7 @@ func AssertEqualGcpPubsubRequestsActiveCount(t *testing.T, tt *componenttest.Tel
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_gcp.pubsub.requests.active.count")
+	got, err := tt.GetMetric("otelcol_http.server.request.active.count")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

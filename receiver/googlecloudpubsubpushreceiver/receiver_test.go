@@ -273,13 +273,13 @@ func TestTelemetry(t *testing.T) {
 	}()
 
 	<-started
-	metadatatest.AssertEqualGcpPubsubRequestsActiveCount(t, tel, []metricdata.DataPoint[int64]{{
+	metadatatest.AssertEqualHTTPServerRequestActiveCount(t, tel, []metricdata.DataPoint[int64]{{
 		Value:      1,
 		Attributes: attribute.NewSet(),
 	}}, metricdatatest.IgnoreTimestamp())
 	done <- true
 	wg.Wait()
-	metadatatest.AssertEqualGcpPubsubRequestsActiveCount(t, tel, []metricdata.DataPoint[int64]{{
+	metadatatest.AssertEqualHTTPServerRequestActiveCount(t, tel, []metricdata.DataPoint[int64]{{
 		Value:      0,
 		Attributes: attribute.NewSet(),
 	}}, metricdatatest.IgnoreTimestamp())
