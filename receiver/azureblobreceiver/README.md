@@ -27,10 +27,13 @@ The following settings can be optionally configured:
 
 - `auth` (default = connection_string): Specifies the used authentication method. Supported values are `connection_string`, `service_principal`, `default`.
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
+- `delete_after_read` (default = "true"): Defines If receiver should delete the blob on storage account after download it.
 - `logs:`
   `  container_name:` (default = "logs"): Name of the blob container with the logs
+  `  encoding:` (default = nil): Name of encoding extension that will be used to Unmarshal Logs ( [Encoding Extension Root ](/extension/encoding/README.md) )
 - `traces:`
   `  container_name:` (default = "traces"): Name of the blob container with the traces
+  `  encoding:` (default = nil): Name of encoding extension that will be used to Unmarshal Traces ( [Encoding Extension Root ](/extension/encoding/README.md) )
 
 Authenticating using a connection string requires configuration of the following additional setting:
 
