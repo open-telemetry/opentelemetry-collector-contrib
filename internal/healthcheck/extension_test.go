@@ -32,6 +32,7 @@ func TestComponentStatus(t *testing.T) {
 	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	t.Cleanup(func() { require.NoError(t, ext.Shutdown(t.Context())) })
 
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
