@@ -3,9 +3,15 @@
 
 package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver"
 
-import "time"
+import (
+	"time"
+
+	"go.opentelemetry.io/collector/config/confighttp"
+)
 
 type Config struct {
+	confighttp.ClientConfig `mapstructure:",squash"`
+
 	// CollectionInterval sets how frequently profiles should be collected.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 

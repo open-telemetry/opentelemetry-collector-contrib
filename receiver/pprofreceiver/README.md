@@ -24,4 +24,9 @@ receivers:
   pprof:
 ```
 
-In a future iteration, this receiver will support collecting pprof data from a remote pprof endpoint.
+Collector with remote endpoint:
+```yaml
+receivers:
+  pprof:
+    endpoint: "http://localhost:6060/debug/pprof/profile?seconds=1"
+```
