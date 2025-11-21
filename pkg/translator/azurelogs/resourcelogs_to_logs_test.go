@@ -260,6 +260,44 @@ func TestExtractRawAttributes(t *testing.T) {
 				azureProperties:    "{\"a\": 1, \"b\": true, \"c\": 1.23, \"d\": \"ok\"}",
 			},
 		},
+		{
+			name: "unknown fields",
+			log: &azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				rawRecord:     json.RawMessage(`{"unknown": "val", "category": "category", "operationName": "operation.name"}`),
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				azureProperties: map[string]any{
+					"unknown": "val",
+				},
+			},
+		},
+		{
+			name: "primitive properties with unknown",
+			log: &azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				Properties:    stringPropertiesRaw,
+				rawRecord:     json.RawMessage(`{"unknown": "val", "category": "category", "operationName": "operation.name", "properties": "str"}`),
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				azureProperties: map[string]any{
+					"properties": "str",
+					"unknown":    "val",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -363,6 +401,47 @@ func TestUnmarshalLogs_FrontDoorAccessLog(t *testing.T) {
 	t.Parallel()
 
 	dir := "testdata/frontdooraccesslog"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+		expectsErr       string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+
+			if test.expectsErr != "" {
+				require.ErrorContains(t, err, test.expectsErr)
+				return
+			}
+
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_VNetFlowLog(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/azurevnetflowlog"
 	tests := map[string]struct {
 		logFilename      string
 		expectedFilename string
