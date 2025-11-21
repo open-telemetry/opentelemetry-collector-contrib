@@ -25,6 +25,9 @@ const DefaultSourceIdentifier = "DefaultSourceIdentifier"
 type Transformer struct {
 	helper.TransformerOperator
 	matchFirstLine        bool
+	stateMachineEnabled   bool
+	compiledStates        []CompiledState
+	currentState          string
 	prog                  *vm.Program
 	maxBatchSize          int
 	maxUnmatchedBatchSize int
@@ -50,6 +53,18 @@ type sourceBatch struct {
 	recombined             *bytes.Buffer
 	firstEntryObservedTime time.Time
 	matchDetected          bool
+}
+
+type State struct {
+	Name      string `yaml:"name"`
+	Condition string `yaml:"condition"`
+	Cont      string `yaml:"cont"`
+}
+
+type CompiledState struct {
+	Name string      `yaml:"name"`
+	Prog *vm.Program `yaml:"prog"`
+	Cont string      `yaml:"cont"`
 }
 
 func (t *Transformer) Start(_ operator.Persister) error {
@@ -98,7 +113,7 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 	return t.ProcessBatchWith(ctx, entries, t.Process)
 }
 
-func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
+func (t *Transformer) processNonStateMachine(ctx context.Context, e *entry.Entry) error {
 	// Lock the recombine operator because process can't run concurrently
 	t.Lock()
 	defer t.Unlock()
@@ -148,7 +163,90 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// This is neither the first entry of a new log,
 	// nor the last entry of a log, so just add it to the batch
 	t.addToBatch(ctx, e, s, matches)
+
 	return nil
+}
+
+func (t *Transformer) processStateMachine(ctx context.Context, e *entry.Entry) error {
+	// Lock the recombine operator because process can't run concurrently
+	t.Lock()
+	defer t.Unlock()
+
+	// Get the environment for executing the expression.
+	// In the future, we may want to provide access to the currently
+	// batched entries so users can do comparisons to other entries
+	// rather than just use absolute rules.
+	env := helper.GetExprEnv(e)
+	defer helper.PutExprEnv(env)
+
+	var s string
+	err := e.Read(t.sourceIdentifier, &s)
+	if err != nil {
+		t.Logger().Warn("entry does not contain the source_identifier, so it may be pooled with other sources")
+		s = DefaultSourceIdentifier
+	}
+
+	if s == "" {
+		s = DefaultSourceIdentifier
+	}
+
+	// Look for transitions
+	for _, state := range t.compiledStates {
+		if state.Name == t.currentState {
+			m, err := expr.Run(state.Prog, env)
+			if err != nil {
+				return t.HandleEntryError(ctx, e, err)
+			}
+
+			// this is guaranteed to be a boolean because of expr.AsBool
+			matches := m.(bool)
+
+			if matches {
+				// Add the current log to the new batch
+				t.addToBatch(ctx, e, s, matches)
+				t.currentState = state.Cont
+				return nil
+			}
+		}
+	}
+
+	// If state machine ended. Set current state as start_state.
+	if err := t.flushSource(ctx, s); err != nil {
+		return err
+	}
+
+	t.currentState = "start_state"
+
+	for _, state := range t.compiledStates {
+		if state.Name == t.currentState {
+			m, err := expr.Run(state.Prog, env)
+			if err != nil {
+				return t.HandleEntryError(ctx, e, err)
+			}
+
+			// this is guaranteed to be a boolean because of expr.AsBool
+			matches := m.(bool)
+
+			if matches {
+				// Add the current log to the new batch
+				t.addToBatch(ctx, e, s, matches)
+				t.currentState = state.Cont
+				return nil
+			}
+		}
+	}
+
+	// If no match.
+	t.addToBatch(ctx, e, s, false)
+
+	return nil
+}
+
+func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
+	if t.stateMachineEnabled {
+		return t.processStateMachine(ctx, e)
+	}
+	return t.processNonStateMachine(ctx, e)
 }
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
