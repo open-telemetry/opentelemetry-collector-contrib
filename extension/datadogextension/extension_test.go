@@ -4,8 +4,14 @@
 package datadogextension
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
@@ -17,6 +23,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 	"github.com/DataDog/datadog-agent/pkg/serializer/types"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -778,4 +785,246 @@ func (m *failAfterFirstCallSerializer) GetCallCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.callCount
+}
+
+func TestExtensionLivenessMetric(t *testing.T) {
+	t.Run("sends liveness metric with configured hostname", func(t *testing.T) {
+		metricsReceived := make(chan []byte, 1)
+
+		// Mock metrics server to capture the liveness metric
+		metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v2/series" {
+				body, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+				metricsReceived <- body
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"status":"ok"}`))
+			}
+		}))
+		defer metricsServer.Close()
+
+		// Create extension with test config
+		cfg := &Config{
+			API: datadogconfig.APIConfig{
+				Key:  "test-api-key-1234567890123456",
+				Site: metricsServer.URL,
+			},
+			Hostname: "test-hostname-configured",
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.BuildInfo{
+				Version: "test-version",
+				Command: "test-collector",
+			},
+		}
+
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname-configured"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+
+		// Manually send liveness metric
+		err = ext.sendLivenessMetric(t.Context())
+		require.NoError(t, err)
+
+		// Verify metric was sent
+		select {
+		case data := <-metricsReceived:
+			// Decompress gzip
+			buf := bytes.NewBuffer(data)
+			reader, err := gzip.NewReader(buf)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			// Decode JSON
+			dec := json.NewDecoder(reader)
+			var payload datadogV2.MetricPayload
+			require.NoError(t, dec.Decode(&payload))
+
+			// Verify the metric
+			require.GreaterOrEqual(t, len(payload.Series), 1)
+			metric := payload.Series[0]
+
+			assert.Equal(t, "otel.datadog_extension.running", metric.Metric)
+			assert.Equal(t, datadogV2.METRICINTAKETYPE_GAUGE, metric.GetType())
+			assert.Len(t, metric.Points, 1)
+			assert.Equal(t, 1.0, *metric.Points[0].Value)
+
+			// Verify hostname resource
+			require.Len(t, metric.Resources, 1)
+			assert.Equal(t, "test-hostname-configured", *metric.Resources[0].Name)
+
+			// Verify tags
+			assert.Contains(t, metric.Tags, "version:test-version")
+			assert.Contains(t, metric.Tags, "command:test-collector")
+			assert.Contains(t, metric.Tags, "hostname_source:config")
+
+		case <-time.After(5 * time.Second):
+			t.Fatal("timeout waiting for liveness metric")
+		}
+	})
+
+	t.Run("sends liveness metric with inferred hostname", func(t *testing.T) {
+		metricsReceived := make(chan []byte, 1)
+
+		// Mock metrics server
+		metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v2/series" {
+				body, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+				metricsReceived <- body
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"status":"ok"}`))
+			}
+		}))
+		defer metricsServer.Close()
+
+		// Create extension without configured hostname
+		cfg := &Config{
+			API: datadogconfig.APIConfig{
+				Key:  "test-api-key-1234567890123456",
+				Site: metricsServer.URL,
+			},
+			// No Hostname set - will be inferred
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.BuildInfo{
+				Version: "test-version",
+				Command: "test-collector",
+			},
+		}
+
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "inferred-hostname"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+
+		// Manually send liveness metric
+		err = ext.sendLivenessMetric(t.Context())
+		require.NoError(t, err)
+
+		// Verify metric was sent
+		select {
+		case data := <-metricsReceived:
+			// Decompress gzip
+			buf := bytes.NewBuffer(data)
+			reader, err := gzip.NewReader(buf)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			// Decode JSON
+			dec := json.NewDecoder(reader)
+			var payload datadogV2.MetricPayload
+			require.NoError(t, dec.Decode(&payload))
+
+			// Verify the metric
+			require.GreaterOrEqual(t, len(payload.Series), 1)
+			metric := payload.Series[0]
+
+			assert.Equal(t, "otel.datadog_extension.running", metric.Metric)
+
+			// Verify hostname resource
+			require.Len(t, metric.Resources, 1)
+			assert.Equal(t, "inferred-hostname", *metric.Resources[0].Name)
+
+			// Verify hostname_source tag is "inferred"
+			assert.Contains(t, metric.Tags, "hostname_source:inferred")
+
+		case <-time.After(5 * time.Second):
+			t.Fatal("timeout waiting for liveness metric")
+		}
+	})
+
+	t.Run("liveness metric sent periodically", func(t *testing.T) {
+		metricsReceived := make(chan []byte, 10)
+
+		// Mock metrics server
+		metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v2/series" {
+				body, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+				metricsReceived <- body
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"status":"ok"}`))
+			}
+		}))
+		defer metricsServer.Close()
+
+		// Create extension
+		cfg := &Config{
+			API: datadogconfig.APIConfig{
+				Key:  "test-api-key-1234567890123456",
+				Site: metricsServer.URL,
+			},
+			Hostname: "test-hostname",
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "test-version", Command: "test-collector"},
+		}
+
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+
+		// Mock the serializer
+		mockSerializer := &mockSerializer{}
+		ext.serializer = mockSerializer
+
+		// Start the extension
+		err = ext.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+
+		// Trigger NotifyConfig which starts periodic sending
+		err = ext.NotifyConfig(t.Context(), confmap.New())
+		require.NoError(t, err)
+
+		// Verify initial liveness metric was sent on startup
+		select {
+		case data := <-metricsReceived:
+			buf := bytes.NewBuffer(data)
+			var reader *gzip.Reader
+			reader, err = gzip.NewReader(buf)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			dec := json.NewDecoder(reader)
+			var payload datadogV2.MetricPayload
+			require.NoError(t, dec.Decode(&payload))
+
+			require.GreaterOrEqual(t, len(payload.Series), 1)
+			assert.Equal(t, "otel.datadog_extension.running", payload.Series[0].Metric)
+
+		case <-time.After(5 * time.Second):
+			t.Fatal("timeout waiting for initial liveness metric")
+		}
+
+		// Cleanup
+		err = ext.Shutdown(t.Context())
+		require.NoError(t, err)
+	})
 }
