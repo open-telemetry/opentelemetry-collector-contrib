@@ -43,6 +43,9 @@ const (
 	azureResultSignature   = "result.signature"
 	azureResultDescription = "result.description"
 	azureTenantID          = "tenant.id"
+
+	// Identity claims
+	identityClaimEmail = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
 )
 
 var errMissingTimestamp = errors.New("missing timestamp")
@@ -334,21 +337,26 @@ func setIf(attrs map[string]any, key string, value *string) {
 	}
 }
 
-// addIdentityAttributes extracts identity details from Activity Logs like Recommendation
+// addIdentityAttributes extracts identity details
+//
+// The `identity` field is part of the Top-level common schema for
+// resource logs and it's also in use in the activity logs.
+//
+// We're applying the strategy to only pick the identity elements
+// that we know are useful. This approach also minimizes the risk
+// of accidentally including sensitive data.
 func addIdentityAttributes(identity any, record plog.LogRecord) {
 	identityMap, ok := identity.(map[string]any)
 	if !ok {
 		return
 	}
 
-	// Extract claims details (used by Recommendation and other Activity Logs)
+	// Extract known claims details we want to include in the
+	// log record.
 	if claims, ok := identityMap["claims"].(map[string]any); ok {
 		// Extract common claim fields
-		if email, ok := claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"].(string); ok && email != "" {
+		if email, ok := claims[identityClaimEmail].(string); ok && email != "" {
 			record.Attributes().PutStr(string(conventions.UserEmailKey), email)
 		}
-		// Store the complete claims data
-		claimsMap := record.Attributes().PutEmptyMap("azure.identity.claims")
-		_ = claimsMap.FromRaw(claims)
 	}
 }

@@ -58,13 +58,6 @@ resourceLogs:
               - key: user.email
                 value:
                   stringValue: Microsoft.Advisor
-              - key: azure.identity.claims
-                value:
-                  kvlistValue:
-                    values:
-                      - key: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress
-                        value:
-                          stringValue: Microsoft.Advisor
             body: {}
             severityNumber: 9
             severityText: Informational
