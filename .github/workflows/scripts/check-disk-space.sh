@@ -5,9 +5,9 @@
 
 # Depends on variables defined in free-disk-space.sh
 
-declare baseline_space free_space
+declare baseline_space
 
-get_free_space
+free_space=$(df -BM --output=avail / | sed '1d;s/[^0-9]//g')
 used_space=$((baseline_space - free_space))
 echo "Job used $used_space MiB of disk space, $free_space MiB remain."
 if [ "$used_space" -gt 14336 ]; then
