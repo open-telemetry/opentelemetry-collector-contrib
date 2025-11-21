@@ -18,4 +18,4 @@ free_space=$(df -BM --output=avail / | sed '1d;s/[^0-9]//g')
 echo "Freed $((free_space - space_before_cleanup)) MiB of disk space."
 
 # Hypothetical free space with the cleanup but without checkout
-export baseline_space=$((free_space + initial_checkout_size))
+echo "BASELINE_SPACE=$((free_space + initial_checkout_size))" >> "$GITHUB_ENV"
