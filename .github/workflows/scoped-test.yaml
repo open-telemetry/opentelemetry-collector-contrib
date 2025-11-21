@@ -100,6 +100,8 @@ jobs:
         run: |
           make for-affected-components CMD="make lint test-twice"
 
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
   scoped-tests:
     # Keeps the name of the job required for merging in the GH configuration, make it
     # wait for all runners completion

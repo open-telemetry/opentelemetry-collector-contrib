@@ -27,6 +27,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -38,6 +39,7 @@ jobs:
       - name: Install Tools
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   check-collector-module-version:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
@@ -74,6 +76,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -87,6 +90,7 @@ jobs:
         run: make install-tools
       - name: Lint
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
@@ -129,6 +133,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -142,11 +147,13 @@ jobs:
         run: make install-tools
       - name: Run `govulncheck`
         run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   checks:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -207,6 +214,7 @@ jobs:
         run: |
           make generate-gh-issue-templates
           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   unittest-matrix:
     strategy:
       fail-fast: false
@@ -234,6 +242,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -250,6 +259,7 @@ jobs:
         with:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
       # Unit tests without JUnit output are much faster, so it's fine to run on every PR and every go version.
       # The only time we don't run them is when we already ran them with JUnit output.
@@ -359,6 +369,7 @@ jobs:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP=${{ matrix.group }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   integration-sudo-tests-matrix:
     strategy:
@@ -388,6 +399,7 @@ jobs:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
         run: make --no-print-directory -C ${{ matrix.group }} mod-integration-sudo-test
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
 
   integration-tests:
@@ -426,6 +438,7 @@ jobs:
         run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   correctness-metrics:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
@@ -445,15 +458,18 @@ jobs:
         run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   build-examples:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - run: make genotelcontribcol
       - name: Build Examples
         run: make build-examples
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   cross-compile:
     runs-on: ubuntu-24.04
@@ -519,6 +535,7 @@ jobs:
         with:
           name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: ./bin/*
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   publish-check:
     runs-on: ubuntu-24.04
@@ -577,6 +594,7 @@ jobs:
         run: |
           docker push otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA"
           docker push otel/opentelemetry-collector-contrib-dev:latest
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   publish-stable:
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
@@ -628,6 +646,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   rotate-milestone:
     # This job updates the "next release" milestone
     # to the latest released version and creates a new milestone
@@ -671,6 +690,7 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -693,3 +713,4 @@ jobs:
         run: |
           make install-tools
           ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
+      - run: ./.github/workflows/scripts/check-disk-space.sh
