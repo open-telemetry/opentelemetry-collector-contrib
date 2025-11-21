@@ -25,6 +25,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24.9"
@@ -45,6 +46,7 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   check-collector-module-version:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -82,6 +84,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24.9"
@@ -109,6 +112,7 @@ jobs:
           key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
@@ -301,6 +305,7 @@ jobs:
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
@@ -450,9 +455,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - run: make genotelcontribcol
       - name: Build Examples
         run: make build-examples
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   cross-compile:
     runs-on: ubuntu-latest
