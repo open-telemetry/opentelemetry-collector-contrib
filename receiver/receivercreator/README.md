@@ -115,6 +115,9 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 | k8s.pod.name       | \`pod.name\`      |
 | k8s.pod.uid        | \`pod.uid\`       |
 | k8s.namespace.name | \`pod.namespace\` |
+| k8s.container.name   | \`container_name\`  |
+| container.image.name | \`container_image\` |
+| container.id         | \`container_id\`    |
 
 `type == "pod.container"`
 
