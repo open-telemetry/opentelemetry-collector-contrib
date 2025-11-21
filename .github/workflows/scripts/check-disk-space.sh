@@ -11,7 +11,7 @@ echo "Job used $used_space MiB of disk space, $free_space MiB remain."
 if [ "$used_space" -gt 14336 ]; then
   echo "WARNING: The amount of space used exceeds the 14 GiB guaranteed by Github."
 fi
-if [ "$free_space" -lt 14500 ]; then
+if [ "$free_space" -lt 15000 ]; then
   echo "WARNING: The amount of space remaining is dangerously low."
   if [ "$GITHUB_REPOSITORY_OWNER" = "open-telemetry" ] && { [ "$GITHUB_REF" = "refs/heads/main" ] || [ "$GITHUB_HEAD_REF" = "jade-guiton-dd:check-disk-space" ]; }; then
     echo "Adding comment on tracking issue..."

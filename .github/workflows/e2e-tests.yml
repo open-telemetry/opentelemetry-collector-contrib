@@ -101,6 +101,8 @@ jobs:
           name: otelcontribcol
           path: /tmp/otelcontribcol.tar
       - run: ./.github/workflows/scripts/check-disk-space.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   kubernetes-test-matrix:
     env:
