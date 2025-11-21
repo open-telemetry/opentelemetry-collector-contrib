@@ -6,9 +6,10 @@ package internal
 import (
 	"testing"
 
-	fakemetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/scrape"
+
+	fakemetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 func TestMetadataForMetric_Internal(t *testing.T) {
@@ -124,8 +125,4 @@ func TestMetadataForMetric_PrefersInternalOverExternal(t *testing.T) {
 	if m.MetricFamily != scrapeUpMetricName {
 		t.Fatalf("expected family %q from internal map, got %q", scrapeUpMetricName, m.MetricFamily)
 	}
-}
-
-func TestEmptyMetadataStore_ImplementsInterface(t *testing.T) {
-	var _ scrape.MetricMetadataStore = emptyMetadataStore{}
 }

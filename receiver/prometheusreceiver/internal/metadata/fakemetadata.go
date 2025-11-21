@@ -1,27 +1,27 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package metadata
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 
 import "github.com/prometheus/prometheus/scrape"
 
 // FakeMetadataStore implements scrape.MetricMetadataStore for tests.
 // It is safe to use from other packages' tests
-type fakeMetadataStore struct {
+type FakeMetadataStore struct {
 	data map[string]scrape.MetricMetadata
 }
 
 // NewFakeMetadataStore creates a FakeMetadataStore initialized with the given metadata.
-func NewFakeMetadataStore(init map[string]scrape.MetricMetadata) *fakeMetadataStore {
+func NewFakeMetadataStore(init map[string]scrape.MetricMetadata) *FakeMetadataStore {
 	// copy defensively to avoid external mutation
 	cp := make(map[string]scrape.MetricMetadata, len(init))
 	for k, v := range init {
 		cp[k] = v
 	}
-	return &fakeMetadataStore{data: cp}
+	return &FakeMetadataStore{data: cp}
 }
 
-func (f fakeMetadataStore) ListMetadata() []scrape.MetricMetadata {
+func (f FakeMetadataStore) ListMetadata() []scrape.MetricMetadata {
 	out := make([]scrape.MetricMetadata, 0, len(f.data))
 	for _, m := range f.data {
 		out = append(out, m)
@@ -29,15 +29,15 @@ func (f fakeMetadataStore) ListMetadata() []scrape.MetricMetadata {
 	return out
 }
 
-func (f fakeMetadataStore) GetMetadata(name string) (scrape.MetricMetadata, bool) {
+func (f FakeMetadataStore) GetMetadata(name string) (scrape.MetricMetadata, bool) {
 	m, ok := f.data[name]
 	return m, ok
 }
 
-func (f fakeMetadataStore) SizeMetadata() int {
+func (f FakeMetadataStore) SizeMetadata() int {
 	return len(f.data)
 }
 
-func (f fakeMetadataStore) LengthMetadata() int {
+func (f FakeMetadataStore) LengthMetadata() int {
 	return len(f.data)
 }

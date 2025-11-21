@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	fakemetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -27,11 +26,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	fakemetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 const (
@@ -2312,8 +2313,8 @@ func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {
 	require.True(t, hasAnother, "custom label should be copied")
 }
 
-func newTxn(t *testing.T, useMetadata bool, enableNative bool) *transaction {
-	ctx := context.Background()
+func newTxn(t *testing.T, useMetadata, enableNative bool) *transaction {
+	ctx := t.Context()
 	lbls := labels.FromMap(map[string]string{
 		string(model.InstanceLabel): "localhost:1234",
 		string(model.JobLabel):      "job-a",
