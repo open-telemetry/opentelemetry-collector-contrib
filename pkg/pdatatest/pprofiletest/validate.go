@@ -103,7 +103,7 @@ func validateSample(dic pprofile.ProfilesDictionary, pp pprofile.Profile, sample
 	}
 
 	startTime := uint64(pp.Time().AsTime().UnixNano())
-	endTime := startTime + uint64(pp.Duration().AsTime().UnixNano())
+	endTime := startTime + pp.DurationNano()
 	for i := range sample.TimestampsUnixNano().Len() {
 		ts := sample.TimestampsUnixNano().At(i)
 		if ts < startTime || ts >= endTime {

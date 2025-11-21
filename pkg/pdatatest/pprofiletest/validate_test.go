@@ -348,7 +348,7 @@ func Test_validateSample(t *testing.T) {
 			profile: func() pprofile.Profile {
 				pp := pprofile.NewProfile()
 				pp.SetTime(1)
-				pp.SetDuration(1)
+				pp.SetDurationNano(1)
 				return pp
 			}(),
 			sample: func() pprofile.Sample {
@@ -364,7 +364,7 @@ func Test_validateSample(t *testing.T) {
 			profile: func() pprofile.Profile {
 				pp := pprofile.NewProfile()
 				pp.SetTime(1)
-				pp.SetDuration(1)
+				pp.SetDurationNano(1)
 				return pp
 			}(),
 			sample: func() pprofile.Sample {
@@ -380,7 +380,7 @@ func Test_validateSample(t *testing.T) {
 			profile: func() pprofile.Profile {
 				pp := pprofile.NewProfile()
 				pp.SetTime(1)
-				pp.SetDuration(1)
+				pp.SetDurationNano(1)
 				return pp
 			}(),
 			sample: func() pprofile.Sample {

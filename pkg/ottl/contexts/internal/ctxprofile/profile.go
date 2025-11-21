@@ -115,11 +115,11 @@ func accessTime[K Context]() ottl.StandardGetSetter[K] {
 func accessDurationUnixNano[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().Duration().AsTime().UnixNano(), nil
+			return tCtx.GetProfile().DurationNano(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if t, ok := val.(int64); ok {
-				tCtx.GetProfile().SetDuration(pcommon.NewTimestampFromTime(time.Unix(0, t)))
+				tCtx.GetProfile().SetDurationNano(uint64(t))
 			}
 			return nil
 		},
@@ -129,11 +129,11 @@ func accessDurationUnixNano[K Context]() ottl.StandardGetSetter[K] {
 func accessDuration[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().Duration().AsTime(), nil
+			return tCtx.GetProfile().DurationNano(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if t, ok := val.(time.Time); ok {
-				tCtx.GetProfile().SetDuration(pcommon.NewTimestampFromTime(t))
+				tCtx.GetProfile().SetDurationNano(uint64(t.Nanosecond()))
 			}
 			return nil
 		},
