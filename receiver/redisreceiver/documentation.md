@@ -284,7 +284,7 @@ Indicate Redis cluster is enabled
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### redis.cluster.known_nodes
 
