@@ -15,30 +15,15 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: dns.lookup.duration
-                    value:
-                      doubleValue: 0.00023
-                  - key: http.request.method
-                    value:
-                      stringValue: GET
-                  - key: http.response.status_code
-                    value:
-                      intValue: "200"
-                  - key: category
-                    value:
-                      stringValue: FrontDoorHealthProbeLog
                   - key: operation.name
                     value:
                       stringValue: WAF/FirewallLog
+                  - key: http.response.status_code
+                    value:
+                      intValue: "200"
                   - key: url.full
                     value:
                       stringValue: https://probe.net/health
-                  - key: http.request.duration
-                    value:
-                      doubleValue: 0.042
-                  - key: server.address
-                    value:
-                      stringValue: 42.42.42.42
                   - key: properties
                     value:
                       kvlistValue:
@@ -46,15 +31,30 @@ resourceLogs:
                           - key: POP
                             value:
                               stringValue: ""
+                          - key: healthProbeId
+                            value:
+                              stringValue: AAAA
                           - key: result
                             value:
                               stringValue: ""
                           - key: originName
                             value:
                               stringValue: https://probe.net/
-                          - key: healthProbeId
-                            value:
-                              stringValue: AAAA
+                  - key: http.request.method
+                    value:
+                      stringValue: GET
+                  - key: dns.lookup.duration
+                    value:
+                      doubleValue: 0.00023
+                  - key: server.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: http.request.duration
+                    value:
+                      doubleValue: 0.042
+                  - key: category
+                    value:
+                      stringValue: FrontDoorHealthProbeLog
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

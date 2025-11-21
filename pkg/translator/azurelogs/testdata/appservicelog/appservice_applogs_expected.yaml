@@ -15,30 +15,30 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: operation.name
+                  - key: container.id
                     value:
-                      stringValue: IPSecAuditLog
-                  - key: client.address
+                      stringValue: CONTAINER_ID
+                  - key: exception.type
                     value:
-                      stringValue: 42.42.42.42
-                  - key: url.domain
+                      stringValue: EXCEPTION_CLASS
+                  - key: host.id
                     value:
                       stringValue: HOST
-                  - key: http.request.header.x-azure-fdid
+                  - key: code.function
                     value:
-                      stringValue: FDID
-                  - key: http.request.header.x-fd-healthprobe
+                      stringValue: METHOD
+                  - key: code.filepath
                     value:
-                      stringValue: HEALTH_PROBE
-                  - key: http.request.header.x-forwarded-for
+                      stringValue: FILEPATH
+                  - key: exception.stacktrace
                     value:
-                      stringValue: FORWARDED_FOR
-                  - key: http.request.header.x-forwarded-host
-                    value:
-                      stringValue: FORWARDED_HOST
+                      stringValue: STACKTRACE
                   - key: category
                     value:
-                      stringValue: AppServiceIPSecAuditLogs
+                      stringValue: AppServiceAppLogs
+                  - key: operation.name
+                    value:
+                      stringValue: AppLog
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

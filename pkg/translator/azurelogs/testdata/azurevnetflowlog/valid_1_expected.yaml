@@ -19,6 +19,15 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: flowLogGUID
+                            value:
+                              stringValue: 00000000-0000-0000-0000-000000000000
+                          - key: macAddress
+                            value:
+                              stringValue: "000000000000"
+                          - key: flowLogResourceID
+                            value:
+                              stringValue: /SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.NETWORK/NETWORKWATCHERS/NETWORKWATCHER_EASTUS2/FLOWLOGS/TEST-VNET-FLOWLOG
                           - key: flowRecords
                             value:
                               kvlistValue:
@@ -47,21 +56,12 @@ resourceLogs:
                                                                     values:
                                                                       - stringValue: 1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,E,NX,1,66,1,635
                                                                       - stringValue: 1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,B,NX,0,0,0,0
-                          - key: flowLogGUID
-                            value:
-                              stringValue: 00000000-0000-0000-0000-000000000000
-                          - key: flowLogResourceID
-                            value:
-                              stringValue: /SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.NETWORK/NETWORKWATCHERS/NETWORKWATCHER_EASTUS2/FLOWLOGS/TEST-VNET-FLOWLOG
                           - key: targetResourceID
                             value:
                               stringValue: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet
                           - key: flowLogVersion
                             value:
                               doubleValue: 4
-                          - key: macAddress
-                            value:
-                              stringValue: "000000000000"
                   - key: category
                     value:
                       stringValue: FlowLogFlowEvent

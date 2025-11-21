@@ -17,28 +17,16 @@ resourceLogs:
                 values:
                   - key: operation.name
                     value:
-                      stringValue: AppLog
-                  - key: code.function
-                    value:
-                      stringValue: METHOD
-                  - key: code.filepath
-                    value:
-                      stringValue: FILEPATH
-                  - key: exception.stacktrace
-                    value:
-                      stringValue: STACKTRACE
+                      stringValue: ConsoleLog
                   - key: container.id
                     value:
                       stringValue: CONTAINER_ID
-                  - key: exception.type
-                    value:
-                      stringValue: EXCEPTION_CLASS
                   - key: host.id
                     value:
                       stringValue: HOST
                   - key: category
                     value:
-                      stringValue: AppServiceAppLogs
+                      stringValue: AppServiceConsoleLogs
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

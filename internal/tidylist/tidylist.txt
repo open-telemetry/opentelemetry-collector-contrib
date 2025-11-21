@@ -279,6 +279,7 @@ receiver/kafkareceiver
 receiver/kubeletstatsreceiver
 receiver/libhoneyreceiver
 receiver/lokireceiver
+receiver/macosunifiedloggingreceiver
 receiver/memcachedreceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
