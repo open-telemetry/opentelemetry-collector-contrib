@@ -1,37 +1,95 @@
 # Adding new components
 
-> [!NOTE]  
-> The OpenTelemetry Collector has a pluggable architecture that allows you to build your own
-> [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom
-> components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector
-> Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include
-> your component in this repository to be able to use or distribute your component: you can just 
-> host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/).
+This page explains how to add your own components to an OpenTelemetry Collector and to the
+opentelemetry-collector-contrib repository.
 
-## Requirements
+The OpenTelemetry Collector has a pluggable architecture that allows you to build your own
+[distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom
+components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector
+Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include
+your component in this repository to be able to use or distribute your component: you can just  host
+it in your own repository as a Go module and [add it to the OpenTelemetry
+registry](https://opentelemetry.io/ecosystem/registry/).
 
-You may donate an existing component or propose a whole new one. If you are writing a new component from scratch, **before** any code is written, [open an
+We recommend hosting your component outside of this repository as a first step.
+If you put the effort into it, your component can get to have the same level of quality and maintenance as one in this repository.
+
+## Hosting your component outside of opentelemetry-collector-contrib (Recommended)
+
+As a first step, we recommend that you **build** your component outside of the
+opentelemetry-collector-contrib repository. This is the fastest way to get to use your component and
+to publish it for others to consume if you want to. A component is a Go module (library) built using
+the `go.opentelemetry.io/collector` set of libraries. These libraries contain examples (e.g. see the
+example on the [`go.opentelemetry.io/collector/exporter` module
+documentation](https://pkg.go.dev/go.opentelemetry.io/collector/exporter)). The official
+opentelemetry.io documentation also has [a section on how to build various kinds of
+components](https://opentelemetry.io/docs/collector/building/). You can also use existing
+implementations on this repository as a reference.
+
+To **use** your component you can [use the OpenTelemetry Collector
+Builder](https://opentelemetry.io/docs/collector/custom-collector/). Even if you don't publish your
+component, you may [specify a local folder using the `replaces` option of the
+builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder#configuration)
+to include it in your build.
+
+If you want to **publish** your component for other people to try it out, you can do so for free
+using Github or other git forges. To do so, you need to [publish your component as a Go
+module](https://go.dev/doc/modules/publishing). You can publish multiple components from a single
+repository by including the path to the component in the tag: for example, the [`filelog`
+receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver#file-log-receiver)
+v0.139.0 version is [available as a Go
+module](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver@v0.139.0)
+because we pushed the
+[`receiver/filelogreceiver/v0.139.0](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver)
+git tag to this repository. We recommend you make a release at least every time there is a breaking
+change on any of the Go modules you depend on.
+
+Finally, to **distribute** your component and make sure others can easily discover it, [add it to
+the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/adding/).
+
+If you think your component fits the requisites to be on the opentelemetry-collector-contrib
+repository, you may choose to donate it following the steps on the next section. If you have
+published your component outside of this repository, your activity, community and popularity within
+your own repository will help you make the case for the component to be accepted.
+
+## Adding your component to the opentelemetry-collector-contrib repository
+
+You may donate an existing component or propose a whole new one. We recommend that you **start by
+building and hosting your component outside of the opentelemetry-collector-contrib repository**.
+After you have gotten some real usage you can contribute your component to this repository.
+
+When you are ready to propose adding your component to this repository, [open an
 issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
 
-* Who's the sponsor for your component. A sponsor is an approver or maintainer who will be the official reviewer of the code and a code owner
-  for the component. You will need to find a sponsor for the component in order for it to be accepted.
-* Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
-  anything else you think is relevant for us to make a decision about accepting the component.
-* The configuration options your component will accept. This will give us a better understanding of what it does, and 
-  how it may be implemented.
+* Who's the **sponsor** for your component. A sponsor is an approver or maintainer who will be the
+  official reviewer of the code and a code owner for the component. You will need to find a sponsor
+  for the component in order for it to be accepted. Ideally, the sponsor is from a different company
+  than you. If the person proposing the component and the sponsor are
+  from the same company, ensure that you have approval on the overall proposal from other approvers
+  and maintainers.
+* Who are the **codeowners** for your component. Codeowners are responsible for the component and
+  will be pinged for any issues or reviews needed. You need at least two codeowners for your
+  component to be accepted. We recommend that the codeowners do not work for the same company.
+* A **list of other components that cover similar use cases**. These could be components inside of
+  this repository or outside of it. If there are competing implementations, invite their maintainers
+  to voice their opinion and collaborate on a common implementation.
+* Some **information about your component**, such as the reasoning behind it, use-cases, telemetry data
+  types supported, and anything else you think is relevant for us to make a decision about accepting
+  the component.
+* The **configuration options** your component will accept. This will give us a better understanding of
+  what it does, and how it may be implemented.
 
 > [!IMPORTANT]  
-> Unstable Collector interfaces may undergo breaking changes. Component creators
-> must be available to update or review their components when such changes happen, otherwise the component will be
-> excluded from the default builds.
+> Unstable Collector interfaces may undergo breaking changes. Codeowners must be available to update
+> or review their components when such changes happen, otherwise the component will be excluded from
+> the default builds.
 
-Maintenance of components is the responsibility of contributors who authored them. If the original author or
-some other contributor does not maintain the component it may be excluded from the default build. The component **will**
-be excluded if it causes build problems, has failing tests, or otherwise causes problems to the rest of the repository
-and its contributors.
+Maintenance of components is the responsibility of the code owners. Unmaintained components may be
+excluded from the default build. The component **will** be excluded if it causes build problems, has
+failing tests, or otherwise causes problems to the rest of the repository and its contributors.
 
-## Implementation
+### Implementation
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implement a component is to:
 

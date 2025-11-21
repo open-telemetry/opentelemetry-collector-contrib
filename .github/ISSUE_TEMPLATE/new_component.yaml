@@ -1,23 +1,31 @@
-name: New component proposal
-description: Suggest a new component for the project
+name: New component proposal or donation
+description: Suggest or donate a new component for the project
 title: "New component: "
 labels: ["Sponsor Needed", "needs triage"]
 body:
   - type: checkboxes
     attributes:
       label: Building and distributing outside this repository
-      description: "The OpenTelemetry Collector has a pluggable architecture that allows you to build your own [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include your component in this repository to be able to use or distribute your component: you can just  host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/)."
+      description: "The OpenTelemetry Collector has a pluggable architecture that allows you to build your own [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include your component in this repository to be able to use or distribute your component: you can just  host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/). We recommend this as a first step."
       options:
-        - label: I understand I can use and distribute my component outside of this repository.
+        - label: I understand I can use and distribute my component outside of this repository and that this is the recommended first step.
           required: true
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Existing implementation
+      description: If donating an existing implementation (recommended), provide a URL for the existing repository where the code is located. Leave blank otherwise
+  - type: textarea
+    attributes:
+      label: Components covering similar use cases
+      description: Provide links to other components in this repository or outside of it that cover similar use cases. Leave blank if you do not know of other implementations.
     validations:
       required: true
   - type: textarea
     attributes:
       label: The purpose and use-cases of the new component
       description: This information can be used later on to populate the README for the component. See an example overview [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
-    validations:
-      required: true
   - type: textarea
     attributes:
       label: Example configuration for the component
@@ -38,7 +46,7 @@ body:
       label: Code Owner(s)
       description: Code owners are responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
         Please list two or more OpenTelemetry members who will serve as code owners.
-        Having at least two code owners is strongly recommended. However, you may use the issue to try to find code owners for your component.
+        Having at least two code owners before opening the issue is strongly recommended. However, you may use the issue to try to find code owners for your component.
     validations:
       required: true
   - type: input
@@ -46,7 +54,7 @@ body:
       label: Sponsor (optional)
       description: "A sponsor is an approver who will be in charge of being the official reviewer of the code.
         Having a sponsor means that your use-case has been validated. If there are no sponsors yet for the component,
-        it's fine: use the issue as a means to try to find a sponsor for your component. If you are unable to find a sponsor, the component can still live in your own source repository and can be included in Collector distributions using the Collector builder."
+        it's fine: use the issue as a means to try to find a sponsor for your component. We recommend that the sponsor is from a different company than the issue author, or, failing that, that you get approval from an approver/maintainer from a different company. If you are unable to find a sponsor, the component can still live in your own source repository and can be included in Collector distributions using the Collector builder."
   - type: textarea
     attributes:
       label: Additional context
