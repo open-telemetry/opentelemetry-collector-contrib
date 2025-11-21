@@ -61,7 +61,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
 	d.rb.SetCloudPlatform(conventions.CloudPlatformAzureVM.Value.AsString())
-	d.rb.SetHostName(compute.Name)
+	d.rb.SetHostName(compute.OSProfile.ComputerName)
 	d.rb.SetCloudRegion(compute.Location)
 	d.rb.SetHostID(compute.VMID)
 	d.rb.SetCloudAccountID(compute.SubscriptionID)
