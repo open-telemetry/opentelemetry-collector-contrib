@@ -370,6 +370,8 @@ jobs:
       - name: Run Integration Tests
         run: make gointegration-test GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   integration-sudo-tests-matrix:
     strategy:
