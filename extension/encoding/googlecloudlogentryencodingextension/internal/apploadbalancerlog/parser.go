@@ -34,9 +34,9 @@ const (
 	// gcpLoadBalancingErrorService holds the backend service that provided the custom error response.
 	gcpLoadBalancingErrorService = "gcp.load_balancing.error_service"
 	// gcpLoadBalancingCacheID holds the cache ID used by the load balancer.
-	gcpLoadBalancingCacheID = "gcp.load_balancing.cache_id"
+	gcpLoadBalancingCacheID = "gcp.load_balancing.cache.id"
 	// gcpLoadBalancingCacheDecision holds the cache decision made by the load balancer.
-	gcpLoadBalancingCacheDecision = "gcp.load_balancing.cache_decision"
+	gcpLoadBalancingCacheDecision = "gcp.load_balancing.cache.decision"
 	// gcpLoadBalancingBackendNetworkName specifies the VPC network of the backend.
 	gcpLoadBalancingBackendNetworkName = "gcp.load_balancing.backend_network_name"
 
@@ -58,21 +58,21 @@ const (
 	// gcpLoadBalancingMtlsInfo specifies the mTLS metadata for the connection between the client and the load balancer.
 	gcpLoadBalancingMtlsInfo = "gcp.load_balancing.mtls"
 	// gcpLoadBalancingMtlsClientCertPresent is true if the client has provided a certificate during the TLS handshake.
-	gcpLoadBalancingMtlsClientCertPresent = "mtls.client.cert_present"
+	gcpLoadBalancingMtlsClientCertPresent = "mtls.client_cert.present"
 	// gcpLoadBalancingMtlsClientCertChainVerified is true if the client certificate chain is verified against a configured TrustStore
-	gcpLoadBalancingMtlsClientCertChainVerified = "mtls.client.cert_chain_verified"
+	gcpLoadBalancingMtlsClientCertChainVerified = "mtls.client_cert.chain_verified"
 	// gcpLoadBalancingMtlsClientCertError holds the predefined string representing the error conditions.
-	gcpLoadBalancingMtlsClientCertError = "mtls.client.cert_error"
+	gcpLoadBalancingMtlsClientCertError = "mtls.client_cert.error"
 	// gcpLoadBalancingMtlsClientCertSerialNumber holds The serial number of the client certificate
-	gcpLoadBalancingMtlsClientCertSerialNumber = "mtls.client.cert_serial_number"
+	gcpLoadBalancingMtlsClientCertSerialNumber = "mtls.client_cert.serial_number"
 	// gcpLoadBalancingMtlsClientCertSpiffeID holds the The SPIFFE ID from the subject alternative name (SAN) field.
-	gcpLoadBalancingMtlsClientCertSpiffeID = "mtls.client.cert_spiffe_id"
+	gcpLoadBalancingMtlsClientCertSpiffeID = "mtls.client_cert.spiffe_id"
 	// gcpLoadBalancingMtlsClientCertURISans holds the comma-separated Base64-encoded list of the SAN extensions of type URI.
-	gcpLoadBalancingMtlsClientCertURISans = "mtls.client.cert_uri_sans"
+	gcpLoadBalancingMtlsClientCertURISans = "mtls.client_cert.uri_sans"
 	// gcpLoadBalancingMtlsClientCertDnsnameSans holds the comma-separated Base64-encoded list of the SAN extensions of type DNSName.
-	gcpLoadBalancingMtlsClientCertDnsnameSans = "mtls.client.cert_dnsname_sans"
+	gcpLoadBalancingMtlsClientCertDnsnameSans = "mtls.client_cert.dnsname_sans"
 	// gcpLoadBalancingMtlsClientCertLeaf holds the client leaf certificate for an established mTLS connection where the certificate passed validation.
-	gcpLoadBalancingMtlsClientCertLeaf = "mtls.client.cert_leaf"
+	gcpLoadBalancingMtlsClientCertLeaf = "mtls.client_cert.leaf"
 )
 
 type loadbalancerlog struct {
