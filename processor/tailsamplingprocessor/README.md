@@ -34,6 +34,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `rate_limiting`: Sample based on the rate of spans per second.
+- `bytes_limiting`: Sample based on the rate of bytes per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
@@ -61,6 +62,8 @@ The following configuration options can also be modified:
     persisting the "drop" decisions for traces that may have already been released from memory.
     By default, the size is 0 and the cache is inactive.
 - `sample_on_first_match`: Make decision as soon as a policy matches
+- `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
+  already ingested.
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
@@ -127,21 +130,26 @@ processors:
          },
          {
             name: test-policy-9,
+            type: bytes_limiting,
+            bytes_limiting: {bytes_per_second: 1024000, burst_capacity: 2048000}
+         },
+         {
+            name: test-policy-10,
             type: span_count,
             span_count: {min_spans: 2, max_spans: 20}
          },
          {
-             name: test-policy-10,
+             name: test-policy-11,
              type: trace_state,
              trace_state: { key: key3, values: [value1, value2] }
          },
          {
-              name: test-policy-11,
+              name: test-policy-12,
               type: boolean_attribute,
               boolean_attribute: {key: key4, value: true}
          },
          {
-              name: test-policy-12,
+              name: test-policy-13,
               type: ottl_condition,
               ottl_condition: {
                    error_mode: ignore,
@@ -229,6 +237,49 @@ processors:
 ```
 
 Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed examples on using the processor.
+
+## Bytes Limiting Policy
+
+The `bytes_limiting` policy uses a token bucket algorithm implemented by [golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate) to control the rate of data throughput based on the accurate protobuf marshaled size of traces calculated using the OpenTelemetry Collector's built-in `ProtoMarshaler.TracesSize()` method. This policy is particularly useful for:
+
+- **Volume control**: Limiting the total amount of trace data processed per unit time
+- **Burst handling**: Allowing short-term spikes in data volume while maintaining long-term rate limits
+- **Memory protection**: Preventing downstream systems from being overwhelmed by large traces
+
+### Configuration
+
+The `bytes_limiting` policy supports the following configuration parameters:
+
+- `bytes_per_second`: The sustained rate at which bytes are allowed through (required)
+- `burst_capacity`: The maximum number of bytes that can be processed in a burst (optional, defaults to 2x `bytes_per_second`)
+
+### Token Bucket Algorithm
+
+The policy implements a token bucket algorithm where:
+
+1. **Tokens represent bytes**: Each token in the bucket represents one byte of trace data
+2. **Continuous refill**: Tokens are added to the bucket at the configured `bytes_per_second` rate
+3. **Burst capacity**: The bucket can hold up to `burst_capacity` tokens for handling traffic bursts
+4. **Consumption**: When a trace arrives, tokens equal to the trace size are consumed from the bucket
+5. **Rejection**: If insufficient tokens are available, the trace is not sampled
+
+### Example Configuration
+
+```yaml
+processors:
+  tail_sampling:
+    policies:
+      - name: volume-control
+        type: bytes_limiting
+        bytes_limiting:
+          bytes_per_second: 1048576    # 1 MB/second sustained rate
+          burst_capacity: 5242880      # 5 MB burst capacity
+```
+
+This configuration allows:
+- A sustained throughput of 1 MB/second (1,048,576 bytes/s)
+- Burst traffic up to 5 MB (5,242,880 bytes) before rate limiting kicks in
+- Smooth handling of variable trace sizes and timing
 
 ## A Practical Example
 
