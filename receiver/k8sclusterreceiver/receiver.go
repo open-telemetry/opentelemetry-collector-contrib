@@ -6,6 +6,7 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,14 +37,27 @@ type kubernetesReceiver struct {
 	config          *Config
 	settings        receiver.Settings
 	metricsConsumer consumer.Metrics
-	cancel          context.CancelFunc
-	obsrecv         *receiverhelper.ObsReport
+	// cancel is the component-level context cancel function, only called during Shutdown
+	// to fully terminate the receiver.
+	cancel context.CancelFunc
+	// sessionCancel is the session-level context cancel function, called when losing leadership
+	// to stop the current informers/ticker while keeping the receiver instance alive for re-election.
+	sessionCancel context.CancelFunc
+	// mu protects sessionCancel and wg during leadership transitions.
+	mu sync.Mutex
+	// wg tracks the session goroutine lifecycle for clean shutdown on leadership loss.
+	wg      *sync.WaitGroup
+	obsrecv *receiverhelper.ObsReport
 }
 
 type getExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
+// startReceiver begins a leadership session by initializing informers and starting watchers.
+// It's called on initial Start (if no leader election) or by the leader elector's onStartLeading callback.
+// When called multiple times due to leadership transitions, initialize() resets per-session state
+// (informer factories and cache sync flags) to ensure clean restarts.
 func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.Host) error {
 	if err := kr.resourceWatcher.initialize(); err != nil {
 		return err
@@ -60,13 +74,25 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 		return err
 	}
 
-	go func() {
+	// Create a leadership-session context so we can stop ONLY the watches/ticker on standby.
+	cctx, cancel := context.WithCancel(ctx)
+	kr.mu.Lock()
+	// replace any previous sessionCancel (should normally be nil when starting fresh)
+	kr.sessionCancel = cancel
+	// track the session worker goroutine
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	kr.wg = wg
+	kr.mu.Unlock()
+
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 		kr.settings.Logger.Info("Starting shared informers and wait for initial cache sync.")
 		for _, informer := range kr.resourceWatcher.informerFactories {
 			if informer == nil {
 				continue
 			}
-			timedContextForInitialSync := kr.resourceWatcher.startWatchingResources(ctx, informer)
+			timedContextForInitialSync := kr.resourceWatcher.startWatchingResources(cctx, informer)
 
 			// Wait till either the initial cache sync times out or until the cancel method
 			// corresponding to this context is called.
@@ -91,12 +117,12 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 		for {
 			select {
 			case <-ticker.C:
-				kr.dispatchMetrics(ctx)
-			case <-ctx.Done():
+				kr.dispatchMetrics(cctx)
+			case <-cctx.Done():
 				return
 			}
 		}
-	}()
+	}(wg)
 	return nil
 }
 
@@ -122,11 +148,12 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		}
 
 		leaderElectorExt.SetCallBackFuncs(
-			func(ctx context.Context) {
-				if err := kr.startReceiver(ctx, host); err != nil {
+			func(cbCtx context.Context) {
+				if err := kr.startReceiver(cbCtx, host); err != nil {
 					kr.settings.Logger.Error("Failed to start receiver", zap.Error(err))
 				}
-			}, func() {
+			},
+			func() {
 				kr.stopReceiver()
 			},
 		)
@@ -140,15 +167,42 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
+// stopReceiver puts the receiver in standby mode by stopping the current leadership session.
+// Unlike Shutdown, this keeps the receiver instance alive and registered with the leader elector,
+// so it can compete for leadership again. The receiver remains ready to restart via the
+// onStartLeading callback when leadership is regained.
+//
+// This implements the "standby" pattern where:
+//   - The session context is cancelled, stopping informers and the metrics collection ticker
+//   - The session goroutine exits cleanly
+//   - All cached Kubernetes state (informer factories) will be reset on the next startReceiver call
+//   - The receiver struct and its registration with leader elector remain intact
 func (kr *kubernetesReceiver) stopReceiver() {
-	kr.settings.Logger.Info("Stopping the receiver")
-	if kr.cancel != nil {
-		kr.cancel()
+	kr.settings.Logger.Info("Stopping the receiver session (standby)")
+	kr.mu.Lock()
+	cancel := kr.sessionCancel
+	wg := kr.wg
+	kr.sessionCancel = nil
+	kr.wg = nil
+	kr.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+
+	// Wait for the session goroutine to exit to avoid overlaps on quick flaps.
+	if wg != nil {
+		wg.Wait()
 	}
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
+	// First stop the active session (if any).
 	kr.stopReceiver()
+	// Then cancel the component-level context.
+	if kr.cancel != nil {
+		kr.cancel()
+	}
 	return nil
 }
 
