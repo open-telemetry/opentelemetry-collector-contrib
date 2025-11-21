@@ -51,6 +51,7 @@ type topicPartition struct {
 type franzConsumer struct {
 	config           *Config
 	topics           []string
+	excludeTopics    []string
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
 	newConsumeFn     newConsumeMessageFunc
@@ -123,6 +124,7 @@ func newFranzKafkaConsumer(
 	config *Config,
 	set receiver.Settings,
 	topics []string,
+	excludeTopics []string,
 	newConsumeFn newConsumeMessageFunc,
 ) (*franzConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -133,6 +135,7 @@ func newFranzKafkaConsumer(
 	return &franzConsumer{
 		config:           config,
 		topics:           topics,
+		excludeTopics:    excludeTopics,
 		newConsumeFn:     newConsumeFn,
 		settings:         set,
 		telemetryBuilder: telemetryBuilder,
@@ -212,6 +215,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		c.config.ClientConfig,
 		c.config.ConsumerConfig,
 		c.topics,
+		c.excludeTopics,
 		c.settings.Logger,
 		opts...,
 	)
