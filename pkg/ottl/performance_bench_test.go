@@ -527,7 +527,6 @@ func BenchmarkSliceToMap(b *testing.B) {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
 
-	// Statements using positional arguments. Change SliceToMap to slice_to_map if you registered a snake_case alias.
 	stmtsNoPaths := []string{
 		`set(log.attributes["mapped_no_paths"], SliceToMap(log.attributes["arr"]))`,
 	}
@@ -609,18 +608,15 @@ func BenchmarkSliceToMap(b *testing.B) {
 	}
 }
 
-// Minimal contexts: only arr plus required plumbing
 func newSliceContextWithPrimitiveArr(arrSize int) ottllog.TransformContext {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	lr := sl.LogRecords().AppendEmpty()
 
-	// Required timestamps to match general style (optional)
 	lr.SetTimestamp(pcommon.Timestamp(1710000000000000000))
 	lr.SetObservedTimestamp(pcommon.Timestamp(1710000000000000000))
 
-	// arr: slice of primitives
 	arr := lr.Attributes().PutEmptySlice("arr")
 	arr.EnsureCapacity(arrSize)
 	for i := 0; i < arrSize; i++ {
@@ -636,11 +632,9 @@ func newSliceContextWithMapArr(arrSize int) ottllog.TransformContext {
 	sl := rl.ScopeLogs().AppendEmpty()
 	lr := sl.LogRecords().AppendEmpty()
 
-	// Required timestamps to match general style (optional)
 	lr.SetTimestamp(pcommon.Timestamp(1710000000000000000))
 	lr.SetObservedTimestamp(pcommon.Timestamp(1710000000000000000))
 
-	// arr: slice of maps with id, val, nested.k
 	arr := lr.Attributes().PutEmptySlice("arr")
 	arr.EnsureCapacity(arrSize)
 	for i := 0; i < arrSize; i++ {
