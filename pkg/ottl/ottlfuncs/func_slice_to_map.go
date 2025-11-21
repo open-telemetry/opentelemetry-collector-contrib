@@ -3,12 +3,12 @@
 
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"golang.org/x/net/context"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
