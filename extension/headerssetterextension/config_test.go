@@ -64,6 +64,22 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "2"),
+			expected: &Config{
+				AdditionalAuth: func() *component.ID {
+					id := component.MustNewID("oauth2client")
+					return &id
+				}(),
+				HeadersConfig: []HeaderConfig{
+					{
+						Key:    stringp("X-Custom-Header"),
+						Value:  stringp("custom-value"),
+						Action: UPSERT,
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {

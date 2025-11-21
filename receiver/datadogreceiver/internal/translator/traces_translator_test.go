@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
@@ -260,7 +260,7 @@ func TestToTraces64to128bits(t *testing.T) {
 	req.Header.Set(header.Lang, "go")
 
 	// Test 1: We reconstructed the 128 bits trace id on both spans
-	cache, _ := simplelru.NewLRU[uint64, pcommon.TraceID](2, func(_ uint64, _ pcommon.TraceID) {})
+	cache, _ := lru.NewWithEvict(2, func(_ uint64, _ pcommon.TraceID) {})
 
 	traces, _ := ToTraces(zap.NewNop(), payload, req, cache)
 	assert.Equal(t, 2, traces.SpanCount(), "Expected 2 spans")
