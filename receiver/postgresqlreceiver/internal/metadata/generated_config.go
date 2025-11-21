@@ -51,6 +51,7 @@ type MetricsConfig struct {
 	PostgresqlRollbacks                MetricConfig `mapstructure:"postgresql.rollbacks"`
 	PostgresqlRows                     MetricConfig `mapstructure:"postgresql.rows"`
 	PostgresqlSequentialScans          MetricConfig `mapstructure:"postgresql.sequential_scans"`
+	PostgresqlTableAutovacuumCount     MetricConfig `mapstructure:"postgresql.table.autovacuum.count"`
 	PostgresqlTableCount               MetricConfig `mapstructure:"postgresql.table.count"`
 	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
 	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
@@ -135,6 +136,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		PostgresqlSequentialScans: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlTableAutovacuumCount: MetricConfig{
 			Enabled: false,
 		},
 		PostgresqlTableCount: MetricConfig{
