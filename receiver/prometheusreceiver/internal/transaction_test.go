@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	fakemetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -2226,9 +2227,9 @@ func newObs(t *testing.T) *receiverhelper.ObsReport {
 func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *testing.T) {
 	tr := newTxn(t, true, true)
 	// metadata says "gauge" → should not be considered native histogram staleness
-	tr.mc = fakeMetadataStore{data: map[string]scrape.MetricMetadata{
+	tr.mc = fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
 		"foo": {MetricFamily: "foo", Type: model.MetricTypeGauge},
-	}}
+	})
 
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
 	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), &rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
@@ -2240,9 +2241,9 @@ func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *test
 func TestGetOrCreateMetricFamily_DistinctFamiliesForNativeVsClassic(t *testing.T) {
 	tr := newTxn(t, true, true)
 	// Provide metadata so normalization doesn't kick in; name is the same family
-	tr.mc = fakeMetadataStore{data: map[string]scrape.MetricMetadata{
+	tr.mc = fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
 		"same_family": {MetricFamily: "same_family", Type: model.MetricTypeHistogram},
-	}}
+	})
 
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
 
@@ -2328,7 +2329,7 @@ func newTxn(t *testing.T, useMetadata bool, enableNative bool) *transaction {
 	)
 	ctx = scrape.ContextWithTarget(ctx, target)
 	if useMetadata {
-		ctx = scrape.ContextWithMetricMetadataStore(ctx, fakeMetadataStore{data: map[string]scrape.MetricMetadata{}})
+		ctx = scrape.ContextWithMetricMetadataStore(ctx, fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{}))
 	}
 	sink := &consumertest.MetricsSink{}
 	settings := receivertest.NewNopSettings(receivertest.NopType)
