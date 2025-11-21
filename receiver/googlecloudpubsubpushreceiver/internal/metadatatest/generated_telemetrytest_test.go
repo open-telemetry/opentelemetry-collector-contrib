@@ -7,10 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
-	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver/internal/metadata"
 )
@@ -20,17 +19,17 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.GooglepubsubpushInputUncompressedLogSize.Record(context.Background(), 1)
-	tb.GooglepubsubpushRequestDuration.Record(context.Background(), 1)
-	tb.GooglepubsubpushRequestsActiveCount.Add(context.Background(), 1)
-	AssertEqualGooglepubsubpushInputUncompressedLogSize(t, testTel,
+	tb.GcpPubsubInputUncompressedSize.Record(context.Background(), 1)
+	tb.GcpPubsubRequestsActiveCount.Add(context.Background(), 1)
+	tb.HTTPServerRequestDuration.Record(context.Background(), 1)
+	AssertEqualGcpPubsubInputUncompressedSize(t, testTel,
 		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualGooglepubsubpushRequestDuration(t, testTel,
-		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualGooglepubsubpushRequestsActiveCount(t, testTel,
+	AssertEqualGcpPubsubRequestsActiveCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualHTTPServerRequestDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))

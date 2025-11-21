@@ -21,9 +21,9 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	return set
 }
 
-func AssertEqualGooglepubsubpushInputUncompressedLogSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
+func AssertEqualGcpPubsubInputUncompressedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_googlepubsubpush.input.uncompressed.log.size",
+		Name:        "otelcol_gcp.pubsub.input.uncompressed.size",
 		Description: "Size of uncompressed incoming log data in bytes (either direct Pub/Sub message payloads or GCS file content retrieved from event notifications). [Development]",
 		Unit:        "By",
 		Data: metricdata.Histogram[float64]{
@@ -31,29 +31,14 @@ func AssertEqualGooglepubsubpushInputUncompressedLogSize(t *testing.T, tt *compo
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_googlepubsubpush.input.uncompressed.log.size")
+	got, err := tt.GetMetric("otelcol_gcp.pubsub.input.uncompressed.size")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualGooglepubsubpushRequestDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
+func AssertEqualGcpPubsubRequestsActiveCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_googlepubsubpush.request.duration",
-		Description: "Duration of requests in seconds. [Development]",
-		Unit:        "s",
-		Data: metricdata.Histogram[float64]{
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_googlepubsubpush.request.duration")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualGooglepubsubpushRequestsActiveCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_googlepubsubpush.requests.active.count",
+		Name:        "otelcol_gcp.pubsub.requests.active.count",
 		Description: "Number of active requests. [Development]",
 		Unit:        "{count}",
 		Data: metricdata.Sum[int64]{
@@ -62,7 +47,22 @@ func AssertEqualGooglepubsubpushRequestsActiveCount(t *testing.T, tt *componentt
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_googlepubsubpush.requests.active.count")
+	got, err := tt.GetMetric("otelcol_gcp.pubsub.requests.active.count")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualHTTPServerRequestDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_http.server.request.duration",
+		Description: "Duration of requests in seconds. [Development]",
+		Unit:        "s",
+		Data: metricdata.Histogram[float64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_http.server.request.duration")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

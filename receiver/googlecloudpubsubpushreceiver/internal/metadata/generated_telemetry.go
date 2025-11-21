@@ -6,10 +6,9 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -23,12 +22,12 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                    metric.Meter
-	mu                                       sync.Mutex
-	registrations                            []metric.Registration
-	GooglepubsubpushInputUncompressedLogSize metric.Float64Histogram
-	GooglepubsubpushRequestDuration          metric.Float64Histogram
-	GooglepubsubpushRequestsActiveCount      metric.Int64UpDownCounter
+	meter                          metric.Meter
+	mu                             sync.Mutex
+	registrations                  []metric.Registration
+	GcpPubsubInputUncompressedSize metric.Float64Histogram
+	GcpPubsubRequestsActiveCount   metric.Int64UpDownCounter
+	HTTPServerRequestDuration      metric.Float64Histogram
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -60,24 +59,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.GooglepubsubpushInputUncompressedLogSize, err = builder.meter.Float64Histogram(
-		"otelcol_googlepubsubpush.input.uncompressed.log.size",
+	builder.GcpPubsubInputUncompressedSize, err = builder.meter.Float64Histogram(
+		"otelcol_gcp.pubsub.input.uncompressed.size",
 		metric.WithDescription("Size of uncompressed incoming log data in bytes (either direct Pub/Sub message payloads or GCS file content retrieved from event notifications). [Development]"),
 		metric.WithUnit("By"),
 		metric.WithExplicitBucketBoundaries([]float64{1024, 2560, 5120, 10240, 25600, 51200, 102400, 256000, 512000, 1.048576e+06, 2.62144e+06, 5.24288e+06, 1.048576e+07, 2.62144e+07, 5.24288e+07, 1.048576e+08, 2.62144e+08, 5.36870912e+08, 1.073741824e+09, 1.610612736e+09, 2.147483648e+09}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.GooglepubsubpushRequestDuration, err = builder.meter.Float64Histogram(
-		"otelcol_googlepubsubpush.request.duration",
+	builder.GcpPubsubRequestsActiveCount, err = builder.meter.Int64UpDownCounter(
+		"otelcol_gcp.pubsub.requests.active.count",
+		metric.WithDescription("Number of active requests. [Development]"),
+		metric.WithUnit("{count}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.HTTPServerRequestDuration, err = builder.meter.Float64Histogram(
+		"otelcol_http.server.request.duration",
 		metric.WithDescription("Duration of requests in seconds. [Development]"),
 		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries([]float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 15, 25, 50, 75, 100, 120, 180, 240, 300}...),
-	)
-	errs = errors.Join(errs, err)
-	builder.GooglepubsubpushRequestsActiveCount, err = builder.meter.Int64UpDownCounter(
-		"otelcol_googlepubsubpush.requests.active.count",
-		metric.WithDescription("Number of active requests. [Development]"),
-		metric.WithUnit("{count}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

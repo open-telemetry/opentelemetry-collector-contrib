@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -40,7 +41,6 @@ const (
 	messageIDMetadataKey       = "message_id"
 	deliveryAttemptMetadataKey = "delivery_attempt"
 
-	statusCodeAttr = "status_code"
 	bucketNameAttr = "bucket_name"
 )
 
@@ -90,12 +90,12 @@ func addHandlerFunc[T any](
 		start := time.Now()
 		handlerCtx := req.Context()
 		code := http.StatusInternalServerError
-		tb.GooglepubsubpushRequestsActiveCount.Add(handlerCtx, 1)
+		tb.GcpPubsubRequestsActiveCount.Add(handlerCtx, 1)
 		defer func() {
-			tb.GooglepubsubpushRequestsActiveCount.Add(handlerCtx, -1)
+			tb.GcpPubsubRequestsActiveCount.Add(handlerCtx, -1)
 			elapsed := time.Since(start)
-			tb.GooglepubsubpushRequestDuration.Record(handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(attribute.Int(statusCodeAttr, code))),
+			tb.HTTPServerRequestDuration.Record(handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
+				attribute.NewSet(attribute.Int(string(semconv.HTTPResponseStatusCodeKey), code))),
 			)
 		}()
 
@@ -304,7 +304,7 @@ func handlePubSubPushRequest[T any](
 	if tb != nil {
 		incomingSize := len(unmarshalData)
 		bucketName := request.Message.Attributes[bucketIDKey] // it will be empty if coming from Pub/Sub directly
-		tb.GooglepubsubpushInputUncompressedLogSize.Record(ctx, float64(incomingSize), metric.WithAttributeSet(
+		tb.GcpPubsubInputUncompressedSize.Record(ctx, float64(incomingSize), metric.WithAttributeSet(
 			attribute.NewSet(attribute.String(bucketNameAttr, bucketName))),
 		)
 	}

@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_googlepubsubpush.input.uncompressed.log.size
+### otelcol_gcp.pubsub.input.uncompressed.size
 
 Size of uncompressed incoming log data in bytes (either direct Pub/Sub message payloads or GCS file content retrieved from event notifications). [Development]
 
@@ -20,7 +20,15 @@ Size of uncompressed incoming log data in bytes (either direct Pub/Sub message p
 | ---- | ----------- | ------ |
 | bucket_name | Bucket name. | Any Str |
 
-### otelcol_googlepubsubpush.request.duration
+### otelcol_gcp.pubsub.requests.active.count
+
+Number of active requests. [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {count} | Sum | Int | false | Development |
+
+### otelcol_http.server.request.duration
 
 Duration of requests in seconds. [Development]
 
@@ -32,12 +40,4 @@ Duration of requests in seconds. [Development]
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| status_code | Request status code. | Any Int |
-
-### otelcol_googlepubsubpush.requests.active.count
-
-Number of active requests. [Development]
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {count} | Sum | Int | false | Development |
+| http.response.status_code | HTTP response status code. | Any Int |

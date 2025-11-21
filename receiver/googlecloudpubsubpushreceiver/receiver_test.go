@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver/internal/metadata"
@@ -272,24 +273,24 @@ func TestTelemetry(t *testing.T) {
 	}()
 
 	<-started
-	metadatatest.AssertEqualGooglepubsubpushRequestsActiveCount(t, tel, []metricdata.DataPoint[int64]{{
+	metadatatest.AssertEqualGcpPubsubRequestsActiveCount(t, tel, []metricdata.DataPoint[int64]{{
 		Value:      1,
 		Attributes: attribute.NewSet(),
 	}}, metricdatatest.IgnoreTimestamp())
 	done <- true
 	wg.Wait()
-	metadatatest.AssertEqualGooglepubsubpushRequestsActiveCount(t, tel, []metricdata.DataPoint[int64]{{
+	metadatatest.AssertEqualGcpPubsubRequestsActiveCount(t, tel, []metricdata.DataPoint[int64]{{
 		Value:      0,
 		Attributes: attribute.NewSet(),
 	}}, metricdatatest.IgnoreTimestamp())
 
-	metadatatest.AssertEqualGooglepubsubpushRequestDuration(t, tel, []metricdata.HistogramDataPoint[float64]{{
+	metadatatest.AssertEqualHTTPServerRequestDuration(t, tel, []metricdata.HistogramDataPoint[float64]{{
 		Attributes: attribute.NewSet(
-			attribute.Int(statusCodeAttr, http.StatusOK),
+			attribute.Int(string(semconv.HTTPResponseStatusCodeKey), http.StatusOK),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 
-	metadatatest.AssertEqualGooglepubsubpushInputUncompressedLogSize(t, tel, []metricdata.HistogramDataPoint[float64]{{
+	metadatatest.AssertEqualGcpPubsubInputUncompressedSize(t, tel, []metricdata.HistogramDataPoint[float64]{{
 		Attributes: attribute.NewSet(
 			attribute.String(bucketNameAttr, ""), // empty, coming directly from Pub/Sub
 		),
