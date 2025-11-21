@@ -26,7 +26,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/net v0.44.0
+	golang.org/x/net v0.46.1-0.20251013234738-63d1a5100f82
 )
 
 require (
