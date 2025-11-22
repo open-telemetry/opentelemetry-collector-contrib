@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/multierr"
 )
@@ -38,6 +39,8 @@ type Config struct {
 	Logs LogsConfig `mapstructure:"logs"`
 	// Traces related configurations
 	Traces TracesConfig `mapstructure:"traces"`
+	// Delete blob after read
+	DeleteAfterRead bool `mapstructure:"delete_after_read"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -52,6 +55,8 @@ type EventHubConfig struct {
 type LogsConfig struct {
 	// Name of the blob container with the logs (default = "logs")
 	ContainerName string `mapstructure:"container_name"`
+	// Service that will handle parsing of blob file
+	Encodings *component.ID `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -59,6 +64,8 @@ type LogsConfig struct {
 type TracesConfig struct {
 	// Name of the blob container with the traces (default = "traces")
 	ContainerName string `mapstructure:"container_name"`
+	// Service that will handle parsing of blob file
+	Encodings *component.ID `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

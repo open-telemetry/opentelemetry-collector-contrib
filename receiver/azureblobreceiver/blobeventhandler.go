@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +18,8 @@ type blobEventHandler interface {
 	close(ctx context.Context) error
 	setLogsDataConsumer(logsDataConsumer logsDataConsumer)
 	setTracesDataConsumer(tracesDataConsumer tracesDataConsumer)
+	getLogsEncoding() *component.ID
+	getTracesEncoding() *component.ID
 }
 
 type azureBlobEventHandler struct {
@@ -24,7 +27,9 @@ type azureBlobEventHandler struct {
 	logsDataConsumer         logsDataConsumer
 	tracesDataConsumer       tracesDataConsumer
 	logsContainerName        string
+	logsEncoding             *component.ID
 	tracesContainerName      string
+	tracesEncoding           *component.ID
 	eventHubConnectionString string
 	hub                      *eventhub.Hub
 	logger                   *zap.Logger
@@ -127,12 +132,22 @@ func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesD
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
+func (p *azureBlobEventHandler) getLogsEncoding() *component.ID {
+	return p.logsEncoding
+}
+
+func (p *azureBlobEventHandler) getTracesEncoding() *component.ID {
+	return p.tracesEncoding
+}
+
+func newBlobEventHandler(cfg *Config, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
 	return &azureBlobEventHandler{
 		blobClient:               blobClient,
-		logsContainerName:        logsContainerName,
-		tracesContainerName:      tracesContainerName,
-		eventHubConnectionString: eventHubConnectionString,
+		logsContainerName:        cfg.Logs.ContainerName,
+		logsEncoding:             cfg.Logs.Encodings,
+		tracesContainerName:      cfg.Traces.ContainerName,
+		tracesEncoding:           cfg.Traces.Encodings,
+		eventHubConnectionString: cfg.EventHub.EndPoint,
 		logger:                   logger,
 	}
 }
