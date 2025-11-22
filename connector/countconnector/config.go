@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -134,9 +135,15 @@ func (c *Config) Validate() error {
 }
 
 func (i *MetricInfo) validateAttributes() error {
+	tmp := pcommon.NewValueEmpty()
+
 	for _, attr := range i.Attributes {
 		if attr.Key == "" {
 			return errors.New("attribute key missing")
+		}
+
+		if err := tmp.FromRaw(attr.DefaultValue); err != nil {
+			return fmt.Errorf("invalid default value specified for attribute %s", attr.Key)
 		}
 	}
 	return nil
