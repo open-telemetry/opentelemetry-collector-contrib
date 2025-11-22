@@ -6,9 +6,13 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"context"
 	"errors"
+	"math"
+	"runtime"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -394,4 +398,122 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 
 	err = input.Stop()
 	require.NoError(t, err)
+}
+
+// TestInputRead_Batching tests that the Input handles MaxEventsPerPoll and MaxReads correctly
+func TestInputRead_Batching(t *testing.T) {
+	originalNextProc := nextProc
+	originalRenderProc := renderProc
+	originalCloseProc := closeProc
+	originalSubscribeProc := subscribeProc
+	originalCreateBookmarkProc := createBookmarkProc
+	originalUpdateBookmarkProc := updateBookmarkProc
+	defer func() {
+		nextProc = originalNextProc
+		renderProc = originalRenderProc
+		closeProc = originalCloseProc
+		subscribeProc = originalSubscribeProc
+		createBookmarkProc = originalCreateBookmarkProc
+		updateBookmarkProc = originalUpdateBookmarkProc
+	}()
+
+	var nextCalls, processedEvents, emittedEvents int
+
+	maxEventsToEmit := -1
+
+	mockBatch := make([]uintptr, 99)
+	producedEvents := 0
+	var pinner runtime.Pinner
+	pinner.Pin(&mockBatch[0])
+	pinner.Pin(&producedEvents)
+	defer pinner.Unpin()
+
+	for i := range mockBatch {
+		mockBatch[i] = uintptr(i)
+	}
+
+	renderProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			return 1, 0, nil
+		},
+	}
+	createBookmarkProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			return 1, 0, nil
+		},
+	}
+	closeProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			return 1, 0, nil
+		},
+	}
+	subscribeProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			return 42, 0, nil
+		},
+	}
+	updateBookmarkProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			return 1, 0, nil
+		},
+	}
+	nextProc = MockProc{
+		call: func(params ...uintptr) (uintptr, uintptr, error) {
+			nextCalls++
+
+			wantsToRead := int(params[1])
+			producedEvents = min(len(mockBatch), wantsToRead)
+			if maxEventsToEmit >= 0 {
+				producedEvents = min(producedEvents, maxEventsToEmit-emittedEvents)
+			}
+
+			*(*uint32)(unsafe.Pointer(params[5])) = uint32(producedEvents)
+			*(*uintptr)(unsafe.Pointer(params[2])) = uintptr(unsafe.Pointer(&mockBatch[0]))
+
+			emittedEvents += producedEvents
+
+			return 1, 0, nil
+		},
+	}
+
+	input := newTestInput()
+
+	input.processEvent = func(_ context.Context, _ Event) error {
+		processedEvents++
+		return nil
+	}
+
+	input.buffer = NewBuffer()
+	input.maxReads = len(mockBatch) - 10
+	input.currentMaxReads = input.maxReads
+	input.maxEventsPerPollCycle = 999
+
+	input.subscription = Subscription{
+		handle:        42,
+		startAt:       "beginning",
+		sessionHandle: 0,
+		channel:       "test-channel",
+	}
+
+	input.read(t.Context())
+
+	requiredNextCalls := int(math.Ceil(float64(input.maxEventsPerPollCycle) / float64(input.maxReads)))
+	assert.Equal(t, input.maxEventsPerPollCycle, input.eventsReadInPollCycle)
+	assert.Equal(t, requiredNextCalls, nextCalls)
+	assert.Equal(t, input.maxEventsPerPollCycle, processedEvents)
+	assert.Equal(t, input.currentMaxReads, input.maxReads)
+
+	nextCalls = 0
+	input.maxEventsPerPollCycle = 0
+	input.eventsReadInPollCycle = 0
+	emittedEvents = 0
+	processedEvents = 0
+	maxEventsToEmit = 420
+	input.read(t.Context())
+
+	// +1 is the 0 event stop call
+	requiredNextCalls = int(math.Ceil(float64(maxEventsToEmit)/float64(input.maxReads))) + 1
+	assert.Equal(t, requiredNextCalls, nextCalls)
+	assert.Equal(t, maxEventsToEmit, processedEvents)
+	assert.Equal(t, input.currentMaxReads, input.maxReads)
 }
