@@ -35,6 +35,7 @@ extensions:
     api:
       key: ${env:DD_API_KEY}
       site: ${env:DD_SITE}
+    deployment_type: gateway  # Options: gateway, daemonset, or unknown (default)
 
 connectors:
   datadog/connector:

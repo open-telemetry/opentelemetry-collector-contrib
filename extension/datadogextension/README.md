@@ -82,6 +82,25 @@ extensions:
 - `timeout`: Timeout for HTTP requests to Datadog.
 - `tls`: TLS settings for outbound connections.
 
+## Deployment Type Configuration
+
+The Datadog Extension supports a `deployment_type` configuration option to indicate how the OpenTelemetry Collector is deployed. This information is included in the metadata payload sent to Datadog and can be used for better observability and fleet management.
+
+**Available options:**
+- `gateway`: Use this when the collector is deployed as a centralized gateway that receives telemetry from multiple sources (e.g., a standalone collector deployment that aggregates data from multiple application instances).
+- `daemonset`: Use this when the collector is deployed as a DaemonSet in Kubernetes or as an agent running on each host (e.g., one collector instance per node).
+- `unknown` (default): Use this when the deployment type doesn't fit the other categories or is not specified.
+
+**Example configuration for a DaemonSet deployment:**
+```yaml
+extensions:
+  datadog:
+    api:
+      key: <YOUR_DATADOG_API_KEY>
+      site: "datadoghq.com"
+    deployment_type: daemonset
+```
+
 ## Notes
 - The extension is in active development. Functionality and configuration options may change as Datadog OpenTelemetry monitoring features evolve.
 - Please see [official documentation on Datadog's website](https://docs.datadoghq.com/opentelemetry/integrations/datadog_extension/) for more details.
