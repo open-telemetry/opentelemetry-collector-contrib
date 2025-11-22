@@ -36,7 +36,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	params := receivertest.NewNopSettings(f.Type())
 
-	metricsReceiver, err := f.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	metricsReceiver, err := f.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
 }
@@ -58,7 +58,7 @@ func TestDeprecationWarningOnStart(t *testing.T) {
 	params := receivertest.NewNopSettings(f.Type())
 	params.Logger = logger
 
-	metricsReceiver, err := f.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	metricsReceiver, err := f.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
 
@@ -74,7 +74,7 @@ func TestDeprecationWarningOnStart(t *testing.T) {
 	wrapper.Metrics = mockReceiver
 
 	// Call Start and verify the warning is logged
-	err = wrapper.Start(context.Background(), nil)
+	err = wrapper.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	// Check that the deprecation warning was logged
@@ -94,5 +94,5 @@ func TestDeprecationWarningOnStart(t *testing.T) {
 // mockMetricsReceiver is a simple mock that implements receiver.Metrics for testing
 type mockMetricsReceiver struct{}
 
-func (m *mockMetricsReceiver) Start(context.Context, component.Host) error { return nil }
-func (m *mockMetricsReceiver) Shutdown(context.Context) error              { return nil }
+func (_ *mockMetricsReceiver) Start(context.Context, component.Host) error { return nil }
+func (_ *mockMetricsReceiver) Shutdown(context.Context) error              { return nil }
