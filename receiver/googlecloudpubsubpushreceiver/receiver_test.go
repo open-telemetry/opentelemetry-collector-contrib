@@ -12,22 +12,30 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"cloud.google.com/go/storage"
 	gojson "github.com/goccy/go-json"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver/internal/metadatatest"
 )
 
 const (
@@ -150,6 +158,7 @@ func TestHandlePubSubPushRequest_Logs(t *testing.T) {
 				test.consumeNext,
 				pubSubReceiver.storageClient,
 				test.includeMetadata,
+				nil,
 			)
 
 			if test.expectedErr != "" {
@@ -210,6 +219,84 @@ func TestStartShutdown(t *testing.T) {
 	}
 }
 
+func TestTelemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
+	require.NoError(t, err)
+
+	p := &pubSubPushReceiver{
+		settings:         receivertest.NewNopSettings(metadata.Type),
+		nextLogs:         consumertest.NewNop(),
+		telemetryBuilder: tb,
+	}
+
+	// We will let the function to unmarshal logs hang so we can test that the
+	// active requests increases. Once we are sure of it, we let the function
+	// return and make sure the active requests went down back to 0.
+	done := make(chan bool, 1)
+	started := make(chan bool, 1)
+	mux := http.NewServeMux()
+	addHandlerFunc(
+		p.telemetryBuilder,
+		mux,
+		"/",
+		func(_ []byte) (plog.Logs, error) {
+			started <- true
+			<-done
+			return plog.Logs{}, nil
+		},
+		p.nextLogs.ConsumeLogs,
+		nil,
+		false,
+		p.settings.Logger,
+	)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	request := newTestRequest(t, map[string]string{}, []byte(dummyLog), "")
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		resp, err := http.Post(
+			server.URL,
+			"application/json",
+			request,
+		)
+		assert.NoError(t, err)
+		defer func() {
+			errBody := resp.Body.Close()
+			assert.NoError(t, errBody)
+		}()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	}()
+
+	<-started
+	metadatatest.AssertEqualHTTPServerRequestActiveCount(t, tel, []metricdata.DataPoint[int64]{{
+		Value:      1,
+		Attributes: attribute.NewSet(),
+	}}, metricdatatest.IgnoreTimestamp())
+	done <- true
+	wg.Wait()
+	metadatatest.AssertEqualHTTPServerRequestActiveCount(t, tel, []metricdata.DataPoint[int64]{{
+		Value:      0,
+		Attributes: attribute.NewSet(),
+	}}, metricdatatest.IgnoreTimestamp())
+
+	metadatatest.AssertEqualHTTPServerRequestDuration(t, tel, []metricdata.HistogramDataPoint[float64]{{
+		Attributes: attribute.NewSet(
+			attribute.Int(string(semconv.HTTPResponseStatusCodeKey), http.StatusOK),
+		),
+	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	metadatatest.AssertEqualGcpPubsubInputUncompressedSize(t, tel, []metricdata.HistogramDataPoint[float64]{{
+		Attributes: attribute.NewSet(
+			attribute.String(bucketNameAttr, ""), // empty, coming directly from Pub/Sub
+		),
+	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+}
+
 type mockHost struct {
 	extensions map[component.ID]component.Component
 }
@@ -243,7 +330,8 @@ func newTestRequest(t *testing.T, attrs map[string]string, data []byte, subscrip
 
 func newTestPubSubPushReceiver(t *testing.T, cfg *Config) *pubSubPushReceiver {
 	startTestStorageEmulator(t) // we start the emulator so the storage client creation is successful
-	r := newPubSubPushReceiver(cfg, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
+	r, err := newPubSubPushReceiver(cfg, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
+	require.NoError(t, err)
 	cl, err := storage.NewClient(t.Context())
 	require.NoError(t, err)
 	r.storageClient = cl
