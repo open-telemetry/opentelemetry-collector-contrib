@@ -1,4 +1,4 @@
-type: awscontainerinsight
+type: awscontainerinsightreceiver
 
 status:
   class: receiver
@@ -12,3 +12,6 @@ status:
 # TODO: Update the receiver to pass the tests
 tests:
   skip_lifecycle: true
+
+
+
