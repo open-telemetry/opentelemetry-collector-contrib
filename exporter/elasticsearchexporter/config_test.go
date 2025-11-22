@@ -555,6 +555,49 @@ func TestConfig_Validate_Environment(t *testing.T) {
 	})
 }
 
+func TestParseCloudID(t *testing.T) {
+	tests := map[string]struct {
+		input       string
+		expectedURL string
+		expectError bool
+	}{
+		"valid cloudid with multiple dollar signs": {
+			input:       "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=",
+			expectedURL: "https://abc123.bar.cloud.es.io",
+			expectError: false,
+		},
+		"valid cloudid with two parts": {
+			input:       "test:ZG9tYWluLmNvbSRlcy1pZA==",
+			expectedURL: "https://es-id.domain.com",
+			expectError: false,
+		},
+		"missing colon": {
+			input:       "invalid",
+			expectError: true,
+		},
+		"invalid base64": {
+			input:       "test:!!!invalid!!!",
+			expectError: true,
+		},
+		"missing dollar sign": {
+			input:       "test:YWJj",
+			expectError: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			url, err := parseCloudID(tt.input)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedURL, url.String())
+			}
+		})
+	}
+}
+
 func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
 	for _, fn := range fns {
