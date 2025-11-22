@@ -23,7 +23,7 @@ using [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/late
 CloudWatch Container Insights has been supported by [ECS Agent](https://github.com/aws/amazon-ecs-agent) and [CloudWatch Agent](https://github.com/aws/amazon-cloudwatch-agent) to collect infrastructure metrics for many resources such as such as CPU, memory, disk, and network. To migrate existing customers to use OpenTelemetry, AWS Container Insights Receiver (together with CloudWatch EMF Exporter) aims to support the same CloudWatch Container Insights experience for the following platforms:  
   * Amazon ECS 
   * Amazon EKS
-  * Kubernetes platforms on Amazon EC2
+  * Kubernetes platforms on Amazon EC2 
 
 ## Design of AWS Container Insights Receiver
 
