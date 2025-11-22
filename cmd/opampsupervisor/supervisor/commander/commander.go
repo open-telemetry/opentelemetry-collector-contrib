@@ -8,10 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -157,23 +159,41 @@ func (c *Commander) startWithPassthroughLogging() error {
 
 	// capture agent output
 	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
-		for scanner.Scan() {
-			line := scanner.Text()
+		reader := bufio.NewReader(stdoutPipe)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					c.logger.Error("Error reading agent stdout", zap.Error(err))
+				}
+				// Trim and log the last line if it exists
+				if line != "" {
+					line = strings.TrimRight(line, "\r\n")
+					colLogger.Info(line)
+				}
+				break
+			}
+			line = strings.TrimRight(line, "\r\n")
 			colLogger.Info(line)
-		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
 		}
 	}()
 	go func() {
-		scanner := bufio.NewScanner(stderrPipe)
-		for scanner.Scan() {
-			line := scanner.Text()
+		reader := bufio.NewReader(stderrPipe)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					c.logger.Error("Error reading agent stderr", zap.Error(err))
+				}
+				// Trim and log the last line if it exists
+				if line != "" {
+					line = strings.TrimRight(line, "\r\n")
+					colLogger.Error(line)
+				}
+				break
+			}
+			line = strings.TrimRight(line, "\r\n")
 			colLogger.Error(line)
-		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
 		}
 	}()
 
@@ -226,23 +246,49 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 	}
 	// capture agent output
 	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
-		for scanner.Scan() {
-			stdout = append(stdout, scanner.Bytes()...)
+		reader := bufio.NewReader(stdoutPipe)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					c.logger.Error("Error reading agent stdout", zap.Error(err))
+				}
+				// Trim and append the last line if it exists
+				// Normalize line endings to \n
+				if line != "" {
+					line = strings.TrimRight(line, "\r\n")
+					stdout = append(stdout, []byte(line)...)
+					stdout = append(stdout, byte('\n'))
+				}
+				break
+			}
+			// Normalize line endings to \n
+			line = strings.TrimRight(line, "\r\n")
+			stdout = append(stdout, []byte(line)...)
 			stdout = append(stdout, byte('\n'))
-		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
 		}
 	}()
 	go func() {
-		scanner := bufio.NewScanner(stderrPipe)
-		for scanner.Scan() {
-			stderr = append(stderr, scanner.Bytes()...)
+		reader := bufio.NewReader(stderrPipe)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					c.logger.Error("Error reading agent stderr", zap.Error(err))
+				}
+				// Trim and append the last line if it exists
+				// Normalize line endings to \n
+				if line != "" {
+					line = strings.TrimRight(line, "\r\n")
+					stderr = append(stderr, []byte(line)...)
+					stderr = append(stderr, byte('\n'))
+				}
+				break
+			}
+			// Normalize line endings to \n
+			line = strings.TrimRight(line, "\r\n")
+			stderr = append(stderr, []byte(line)...)
 			stderr = append(stderr, byte('\n'))
-		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
 		}
 	}()
 
