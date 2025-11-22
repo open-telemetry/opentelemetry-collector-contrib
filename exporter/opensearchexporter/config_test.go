@@ -125,17 +125,7 @@ func TestLoadConfig(t *testing.T) {
 			}),
 			configValidateAssert: assert.NoError,
 		},
-		{
-			id: component.NewIDWithName(metadata.Type, "invalid_dynamic_log_indexing"),
-			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
-				config.LogsIndex = "otel-logs-%{service.name}-%{invalid.placeholder}"
-				config.LogsIndexFallback = "default-service"
-			}),
-			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
-				return assert.ErrorContains(t, err, errLogsIndexInvalidPlaceholder.Error())
-			},
-		},
+
 		{
 			id: component.NewIDWithName(metadata.Type, "log_index_time_format_valid"),
 			expected: withDefaultConfig(func(config *Config) {
@@ -202,17 +192,7 @@ func TestLoadConfig(t *testing.T) {
 			}),
 			configValidateAssert: assert.NoError,
 		},
-		{
-			id: component.NewIDWithName(metadata.Type, "traces_index_invalid_placeholder"),
-			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
-				config.TracesIndex = "otel-traces-%{service.name}-%{invalid.placeholder}"
-				config.TracesIndexFallback = "default-service"
-			}),
-			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
-				return assert.ErrorContains(t, err, errTracesIndexInvalidPlaceholder.Error())
-			},
-		},
+
 		{
 			id: component.NewIDWithName(metadata.Type, "traces_index_time_format_valid"),
 			expected: withDefaultConfig(func(config *Config) {

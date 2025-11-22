@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchutil"
@@ -16,15 +17,14 @@ import (
 )
 
 type logBulkIndexer struct {
-	index       string
 	bulkAction  string
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newLogBulkIndexer(index, bulkAction string, model mappingModel) *logBulkIndexer {
-	return &logBulkIndexer{index, bulkAction, model, nil, nil}
+func newLogBulkIndexer(bulkAction string, model mappingModel) *logBulkIndexer {
+	return &logBulkIndexer{bulkAction, model, nil, nil}
 }
 
 func (lbi *logBulkIndexer) start(client *opensearchapi.Client) error {
@@ -58,22 +58,23 @@ func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
 	lbi.errs = append(lbi.errs, consumererror.NewLogs(err, log))
 }
 
-func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs) {
-	forEachLog(ld, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, log plog.LogRecord) {
-		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, log)
+func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, ir *indexResolver, cfg *Config, timestamp time.Time) {
+	forEachLog(ld, ir, cfg, timestamp, func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord) {
+		indexName := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, timestamp)
+		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, logRecord)
 		if err != nil {
 			lbi.appendPermanentError(err)
 		} else {
 			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchapi.BulkRespItem, itemErr error) {
 				// Setup error handler. The handler handles the per item response status based on the
 				// selective ACKing in the bulk response.
-				lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, log))
+				lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
 			}
-			bi := lbi.newBulkIndexerItem(payload)
+			bi := lbi.newBulkIndexerItem(payload, indexName)
 			bi.OnFailure = ItemFailureHandler
 			err = lbi.bulkIndexer.Add(ctx, bi)
 			if err != nil {
-				lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, log))
+				lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
 			}
 		}
 	})
@@ -109,9 +110,9 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, i
 	}
 }
 
-func (lbi *logBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
+func (lbi *logBulkIndexer) newBulkIndexerItem(document []byte, indexName string) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: lbi.bulkAction, Index: lbi.index, Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: lbi.bulkAction, Index: indexName, Body: body}
 	return item
 }
 
@@ -123,7 +124,7 @@ func newLogOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError fu
 	})
 }
 
-func forEachLog(ld plog.Logs, visitor func(pcommon.Resource, string, pcommon.InstrumentationScope, string, plog.LogRecord)) {
+func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timestamp time.Time, visitor func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord)) {
 	resourceLogs := ld.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		il := resourceLogs.At(i)
@@ -135,7 +136,7 @@ func forEachLog(ld plog.Logs, visitor func(pcommon.Resource, string, pcommon.Ins
 
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log)
+				visitor(indexResolver, cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log)
 			}
 		}
 	}
