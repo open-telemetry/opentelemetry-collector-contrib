@@ -467,6 +467,53 @@ scrape_configs:
 				assert.Equal(t, "Bearer", scrapeConfig.HTTPClientConfig.Authorization.Type)
 			},
 		},
+		{
+			name: "oauth2 client credentials secret preservation",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-client-secredentialscret-auth"
+    oauth2:
+      client_id: "id-1"
+      client_secret: "mySuperSecretClientSecret"
+      token_url: "https://auth.example.com/token"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "test-client-secredentialscret-auth", scrapeConfig.JobName)
+
+				// The critical check: ensure the client_secret is not "<secret>"
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.OAuth2, "basic auth should be configured")
+				secret := string(scrapeConfig.HTTPClientConfig.OAuth2.ClientSecret)
+				assert.Equal(t, "mySuperSecretClientSecret", secret, "client_secret should preserve original value")
+			},
+		},
+		{
+			name: "oauth2 jwt-bearer certificate preservation",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-jwt-bearer-auth"
+    oauth2:
+      client_id: "id-1"
+      client_certificate_key: "mySuperSecretCertificateKey"
+      token_url: "https://auth.example.com/token"
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "test-jwt-bearer-auth", scrapeConfig.JobName)
+
+				// The critical check: ensure the client_certificate_key is not "<secret>"
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.OAuth2, "basic auth should be configured")
+				key := string(scrapeConfig.HTTPClientConfig.OAuth2.ClientCertificateKey)
+				assert.Equal(t, "mySuperSecretCertificateKey", key, "client_certificate_key should preserve original value")
+			},
+		},
 	}
 
 	for _, tt := range tests {
