@@ -94,5 +94,5 @@ func TestDeprecationWarningOnStart(t *testing.T) {
 // mockMetricsReceiver is a simple mock that implements receiver.Metrics for testing
 type mockMetricsReceiver struct{}
 
-func (_ *mockMetricsReceiver) Start(context.Context, component.Host) error { return nil }
-func (_ *mockMetricsReceiver) Shutdown(context.Context) error              { return nil }
+func (*mockMetricsReceiver) Start(context.Context, component.Host) error { return nil }
+func (*mockMetricsReceiver) Shutdown(context.Context) error              { return nil }
