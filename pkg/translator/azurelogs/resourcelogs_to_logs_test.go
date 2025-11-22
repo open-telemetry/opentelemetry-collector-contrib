@@ -313,7 +313,7 @@ func TestUnmarshalLogs_AzureCdnAccessLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -354,7 +354,7 @@ func TestUnmarshalLogs_FrontDoorWebApplicationFirewallLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -395,7 +395,7 @@ func TestUnmarshalLogs_FrontDoorAccessLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -478,7 +478,41 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(expectedDir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_Recommendation(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/recommendation"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
