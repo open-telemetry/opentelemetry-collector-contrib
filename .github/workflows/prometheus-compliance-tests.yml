@@ -68,3 +68,4 @@ jobs:
           # Skipping Staleness test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved
           go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" -skip "TestRemoteWrite/otelcollector/Staleness" ./ |& tee ./test-report.txt
         working-directory: compliance/remotewrite/sender
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh

@@ -45,3 +45,5 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v4
         timeout-minutes: 60
+
+      - run: ./.github/workflows/scripts/check-disk-space.sh
