@@ -45,7 +45,7 @@ func TestDeprecationWarningOnStart(t *testing.T) {
 	// Set up a logger that captures logs
 	core, observed := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
-	
+
 	f := NewFactory()
 	cfg := &awscontainerinsightreceiver.Config{
 		CollectionInterval:        60,
@@ -54,29 +54,29 @@ func TestDeprecationWarningOnStart(t *testing.T) {
 		PrefFullPodName:           false,
 		AddFullPodNameMetricLabel: false,
 	}
-	
+
 	params := receivertest.NewNopSettings(f.Type())
 	params.Logger = logger
-	
+
 	metricsReceiver, err := f.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
-	
+
 	// Verify it's a wrapper
 	wrapper, ok := metricsReceiver.(*deprecatedReceiverWrapper)
 	require.True(t, ok, "Receiver should be wrapped with deprecatedReceiverWrapper")
 	assert.NotNil(t, wrapper.Metrics, "Wrapped receiver should not be nil")
 	assert.NotNil(t, wrapper.logger, "Logger should be set")
-	
+
 	// Test that the wrapper's Start method logs the deprecation warning
 	// Create a mock receiver that implements receiver.Metrics
 	mockReceiver := &mockMetricsReceiver{}
 	wrapper.Metrics = mockReceiver
-	
+
 	// Call Start and verify the warning is logged
 	err = wrapper.Start(context.Background(), nil)
 	require.NoError(t, err)
-	
+
 	// Check that the deprecation warning was logged
 	warningFound := false
 	for _, log := range observed.All() {
@@ -96,4 +96,3 @@ type mockMetricsReceiver struct{}
 
 func (m *mockMetricsReceiver) Start(context.Context, component.Host) error { return nil }
 func (m *mockMetricsReceiver) Shutdown(context.Context) error              { return nil }
-

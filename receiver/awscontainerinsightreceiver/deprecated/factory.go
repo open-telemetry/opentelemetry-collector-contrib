@@ -35,9 +35,7 @@ const (
 	defaultAddFullPodNameMetricLabel = false
 )
 
-var (
-	deprecatedType = component.MustNewType(deprecatedTypeStr)
-)
+var deprecatedType = component.MustNewType(deprecatedTypeStr)
 
 // NewFactory creates a factory for the deprecated AWS container insight receiver.
 // Deprecated: [v0.140.0] Use awscontainerinsight instead.
