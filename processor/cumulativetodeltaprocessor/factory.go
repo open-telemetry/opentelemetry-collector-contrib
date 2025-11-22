@@ -6,9 +6,11 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
@@ -16,6 +18,13 @@ import (
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
+
+var defaultMaxStalenessFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.cumulativetodelta.defaultmaxstaleness",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, max_staleness defaults to 5 minutes instead of 0 (infinite retention). This helps prevent unbounded memory growth in long-running collector instances."),
+	featuregate.WithRegisterFromVersion("v0.141.0"),
+)
 
 // NewFactory returns a new factory for the Metrics Generation processor.
 func NewFactory() processor.Factory {
@@ -26,7 +35,11 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	cfg := &Config{}
+	if defaultMaxStalenessFeatureGate.IsEnabled() {
+		cfg.MaxStaleness = 5 * time.Minute
+	}
+	return cfg
 }
 
 func createMetricsProcessor(
