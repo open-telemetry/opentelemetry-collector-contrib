@@ -116,6 +116,11 @@ type Config struct {
 	//
 	// Keys are case-insensitive and duplicates will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// LoadBalance configures whether data sent will be loadbalanced among configured endpoints
+	// if set to false, data will only be sent to one of the configured endpoints.
+	// If the connection fails, a new target is selected.
+	LoadBalance bool `mapstructure:"loadbalance"`
 }
 
 type TelemetrySettings struct {
