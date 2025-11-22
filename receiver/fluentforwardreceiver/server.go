@@ -10,7 +10,8 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"time"
+	"sync"
+	"sync/atomic"
 
 	"github.com/tinylib/msgp/msgp"
 	"go.uber.org/zap"
@@ -27,6 +28,8 @@ type server struct {
 	outCh            chan<- event
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
+	running          atomic.Bool
+	doneChan         chan struct{}
 }
 
 func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
@@ -34,46 +37,51 @@ func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadat
 		outCh:            outCh,
 		logger:           logger,
 		telemetryBuilder: telemetryBuilder,
+		running:          atomic.Bool{},
+		doneChan:         make(chan struct{}),
 	}
 }
 
-func (s *server) Start(ctx context.Context, listener net.Listener) {
+func (s *server) Start(listener net.Listener) {
 	go func() {
-		s.handleConnections(ctx, listener)
-		if ctx.Err() == nil {
-			panic("logic error in receiver, connections should always be listened for while receiver is running")
-		}
+		defer close(s.doneChan)
+		s.running.Store(true)
+		s.handleConnections(listener)
 	}()
 }
 
-func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
-	for {
+func (s *server) Shutdown() {
+	if !s.running.Swap(false) {
+		return
+	}
+	<-s.doneChan
+}
+
+func (s *server) handleConnections(listener net.Listener) {
+	doneGroup := &sync.WaitGroup{}
+	for s.running.Load() {
 		conn, err := listener.Accept()
-		if ctx.Err() != nil {
+		if !s.running.Load() {
 			return
 		}
 		// If there is an error and the receiver isn't shutdown, we need to
 		// keep trying to accept connections if at all possible. Put in a sleep
 		// to prevent hot loops in case the error persists.
 		if err != nil {
-			timer := time.NewTimer(10 * time.Second)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return
-			case <-timer.C:
-				continue
-			}
+			doneGroup.Wait()
+			continue
 		}
 
-		s.telemetryBuilder.FluentOpenedConnections.Add(ctx, 1)
+		s.telemetryBuilder.FluentOpenedConnections.Add(context.Background(), 1)
 
 		s.logger.Debug("Got connection", zap.String("remoteAddr", conn.RemoteAddr().String()))
 
+		doneGroup.Add(1)
 		go func() {
-			defer s.telemetryBuilder.FluentClosedConnections.Add(ctx, 1)
+			defer doneGroup.Done()
+			defer s.telemetryBuilder.FluentClosedConnections.Add(context.Background(), 1)
 
-			err := s.handleConn(ctx, conn)
+			err := s.handleConn(conn)
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					s.logger.Debug("Closing connection", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Error(err))
@@ -86,10 +94,10 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 	}
 }
 
-func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
+func (s *server) handleConn(conn net.Conn) error {
 	reader := msgp.NewReaderSize(conn, readBufferSize)
 
-	for {
+	for s.running.Load() {
 		mode, err := determineNextEventMode(reader.R)
 		if err != nil {
 			return err
@@ -112,12 +120,12 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 		err = e.DecodeMsg(reader)
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
-				s.telemetryBuilder.FluentParseFailures.Add(ctx, 1)
+				s.telemetryBuilder.FluentParseFailures.Add(context.Background(), 1)
 			}
 			return fmt.Errorf("failed to parse %s mode e: %w", mode.String(), err)
 		}
 
-		s.telemetryBuilder.FluentEventsParsed.Add(ctx, 1)
+		s.telemetryBuilder.FluentEventsParsed.Add(context.Background(), 1)
 
 		s.outCh <- e
 
@@ -132,6 +140,7 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 			}
 		}
 	}
+	return nil
 }
 
 // determineNextEventMode inspects the next bit of data from the given peeker
