@@ -168,6 +168,7 @@ func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	log, err := wal.Open(walPath, &wal.Options{
 		SegmentCacheSize: wc.bufferSize(),
 		NoCopy:           true,
+		AllowEmpty:       true,
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("prometheusremotewriteexporter: failed to open WAL: %w", err)
