@@ -455,6 +455,7 @@ Available Converters:
 
 - [Base64Decode](#base64decode)
 - [Decode](#decode)
+- [CommunityID](#communityid)
 - [Concat](#concat)
 - [ContainsValue](#containsvalue)
 - [ConvertCase](#convertcase)
@@ -573,6 +574,28 @@ Examples:
 
 
 - `Decode(resource.attributes["encoded field"], "us-ascii")`
+
+### CommunityID
+
+`CommunityID(sourceIP, sourcePort, destinationIP, destinationPort, Optional[protocol], Optional[seed])`
+
+The `CommunityID` converter generates a network hash flow. Community ID is a standardized flow hashing algorithm that produces consistent hash values for network connections, useful when correlating network traffic across different monitoring systems.
+The output format is base64 encoding string of <2-byte-seed><source-IP-bytes><destination-IP-bytes><1-byte-protocol><2-byte-source-port><2-byte-destination-port>.
+
+`sourceIP` is a source IP address (IPv4 or IPv6).
+`sourcePort` is a source port (must be between 0 and 65535).
+`destinationIP` is a destination IP address (IPv4 or IPv6).
+`destinationPort` is a destination port (must be between 0 and 65535).
+`protocol` (optional) is a protocol, one of `ICMP`, `TCP`, `UDP`, `RSVP`, `ICMP6` or `SCTP`. Defaults to `TCP` if not specified.
+`seed` (optional) is seed value (must be between 0 and 65535). Defaults to `0` if not specified.
+
+Examples:
+
+- `CommunityID(attributes["source.ip"], attributes["source.port"], attributes["destination.ip"], attributes["destination.port"], "TCP", 1)`
+
+
+- `CommunityID("192.168.1.1", 54321, "10.0.0.1", 90, "UDP", 2)`
+
 
 ### Concat
 
