@@ -45,22 +45,9 @@ func (c *counter[K]) update(ctx context.Context, attrs, scopeAttrs, resourceAttr
 				Name: attr.Key,
 				Value: func() *pcommon.Value {
 					if attr.DefaultValue != nil {
-						switch v := attr.DefaultValue.(type) {
-						case string:
-							if v != "" {
-								strV := pcommon.NewValueStr(v)
-								return &strV
-							}
-						case int:
-							if v != 0 {
-								intV := pcommon.NewValueInt(int64(v))
-								return &intV
-							}
-						case float64:
-							if v != 0 {
-								floatV := pcommon.NewValueDouble(v)
-								return &floatV
-							}
+						val := pcommon.NewValueEmpty()
+						if err := val.FromRaw(attr.DefaultValue); err == nil {
+							return &val
 						}
 					}
 
@@ -69,14 +56,8 @@ func (c *counter[K]) update(ctx context.Context, attrs, scopeAttrs, resourceAttr
 			}
 			value, ok := utilattri.GetDimensionValue(dimension, attrs, scopeAttrs, resourceAttrs)
 			if ok {
-				switch value.Type() {
-				case pcommon.ValueTypeInt:
-					countAttrs.PutInt(attr.Key, value.Int())
-				case pcommon.ValueTypeDouble:
-					countAttrs.PutDouble(attr.Key, value.Double())
-				default:
-					countAttrs.PutStr(attr.Key, value.Str())
-				}
+				countValue, _ := countAttrs.GetOrPutEmpty(attr.Key)
+				value.CopyTo(countValue)
 			}
 		}
 
