@@ -245,7 +245,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 				route.logStatement = statement
 			}
 		} else {
-			pipelineNames := []string{}
+			var pipelineNames []string
 			for _, pipeline := range item.Pipelines {
 				pipelineNames = append(pipelineNames, pipeline.String())
 			}
