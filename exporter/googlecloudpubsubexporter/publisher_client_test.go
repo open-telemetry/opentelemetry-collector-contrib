@@ -6,7 +6,7 @@ package googlecloudpubsubexporter
 import (
 	"testing"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
+	pubsub "cloud.google.com/go/pubsub/v2/apiv1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
@@ -88,7 +88,7 @@ func TestNewPublisherClient(t *testing.T) {
 		client, err := newPublisherClient(ctx, cfg, "test-user-agent 6789")
 		assert.NoError(t, err)
 		require.NotEmpty(t, client)
-		assert.IsType(t, &pubsub.PublisherClient{}, client)
+		assert.IsType(t, &pubsub.TopicAdminClient{}, client)
 		assert.NoError(t, client.Close())
 	})
 
@@ -103,7 +103,7 @@ func TestNewPublisherClient(t *testing.T) {
 		client, err := newPublisherClient(ctx, cfg, "test-user-agent 6789")
 		assert.NoError(t, err)
 		require.NotEmpty(t, client)
-		assert.IsType(t, &pubsub.PublisherClient{}, client)
+		assert.IsType(t, &pubsub.TopicAdminClient{}, client)
 		assert.NoError(t, client.Close())
 	})
 
