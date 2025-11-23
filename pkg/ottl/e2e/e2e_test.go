@@ -1367,6 +1367,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(
+	attributes["test"], 
+	ParseSeverity(severity_number, 
+		{
+			"error":[
+				{"equals": ["err"]},
+                {"range": { "min": 3, "max": 4 }}
+			],
+			"info":[
+                {"range": { "min": 1, "max": 2 }}
+			],
+		}
+	))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "info")
+			},
+		},
+		{
 			statement: `set(attributes["list"], Sort(Keys({"foo": "bar", "baz": "foo"})))`,
 			want: func(tCtx ottllog.TransformContext) {
 				attributes := tCtx.GetLogRecord().Attributes().PutEmptySlice("list")
