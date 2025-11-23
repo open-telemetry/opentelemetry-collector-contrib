@@ -505,6 +505,7 @@ Available Converters:
 - [ParseInt](#parseint)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
@@ -1668,6 +1669,34 @@ Examples:
 - `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(log.attributes["pairs"])`
+
+### ParseSeverity
+
+`ParseSeverity(target, severityMapping)`
+
+The `ParseSeverity` converter returns a `string` that represents one of the log levels defined by `severityMapping`.
+
+`target` is a Getter that returns a string or an integer.
+`severityMapping` is a map containing the log levels, and a list of values they are mapped from. These values can be either
+strings, or map items containing a numeric range, defined by a `min` and `max` key (inclusive bounds), for the given log level.
+A value will be mapped to the given log level if any of these conditions are true. 
+For example, the following mapping will map to the `info` level, if the `target` is either a string with the value `inf`,
+or an integer in the range `[200,299]`:
+
+`{"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}]}`
+
+There is also support for expressing certain status code ranges via a placeholder string. The supported placeholders are the following:
+
+- `"2xx"`: This string matches integer values between `[200,299]`
+- `"3xx"`: This string matches integer values between `[300,399]`
+- `"4xx"`: This string matches integer values between `[400,499]`
+- `"5xx"`: This string matches integer values between `[500,599]`
+
+Examples:
+
+- `ParseSeverity(attributes["log-level"] {"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}]})`
+- `ParseSeverity(attributes["log-level"] {"info":[{"range":"2xx""}]})`
+- `ParseSeverity(severity_number {"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}], "error":[{"range":{"min":400, "max":499}}]})`
 
 ### ParseSimplifiedXML
 
