@@ -14,6 +14,7 @@ connector/datadogconnector connector/datadog
 connector/exceptionsconnector connector/exceptions
 connector/failoverconnector connector/failover
 connector/grafanacloudconnector connector/grafanacloud
+connector/metricsaslogsconnector connector/metricsaslogs
 connector/otlpjsonconnector connector/otlpjson
 connector/roundrobinconnector connector/roundrobin
 connector/routingconnector connector/routing

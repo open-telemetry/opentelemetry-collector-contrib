@@ -1,0 +1,9 @@
+type: metricsaslogs
+
+status:
+  class: connector
+  stability:
+    development: [metrics_to_logs]
+  distributions: []
+  codeowners:
+    active: [atoulme]
