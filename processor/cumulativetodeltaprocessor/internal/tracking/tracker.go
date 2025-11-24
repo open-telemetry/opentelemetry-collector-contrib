@@ -65,10 +65,11 @@ type state struct {
 }
 
 type DeltaValue struct {
-	StartTimestamp pcommon.Timestamp
-	FloatValue     float64
-	IntValue       int64
-	HistogramValue *HistogramPoint
+	StartTimestamp            pcommon.Timestamp
+	FloatValue                float64
+	IntValue                  int64
+	HistogramValue            *HistogramPoint
+	ExponentialHistogramPoint *ExponentialHistogramPoint
 }
 
 func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration, initialValue InitialValue) *MetricTracker {
@@ -120,10 +121,13 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		case pmetric.MetricTypeHistogram:
 			val := metricPoint.HistogramValue.Clone()
 			out.HistogramValue = &val
+		case pmetric.MetricTypeExponentialHistogram:
+			val := metricPoint.ExponentialHistogramValue.Clone()
+			out.ExponentialHistogramPoint = &val
 		case pmetric.MetricTypeSum:
 			out.IntValue = metricPoint.IntValue
 			out.FloatValue = metricPoint.FloatValue
-		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 		}
 		switch t.initialValue {
 		case InitialValueAuto:
@@ -171,6 +175,46 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		}
 
 		out.HistogramValue = &delta
+
+	case pmetric.MetricTypeExponentialHistogram:
+		value := metricPoint.ExponentialHistogramValue
+		prevValue := state.prevPoint.ExponentialHistogramValue
+
+		// Count and ZeroThreshold should only increase when merging, and Scale should only decrease.
+		if value.Count < prevValue.Count || value.ZeroThreshold < prevValue.ZeroThreshold || value.Scale > prevValue.Scale {
+			return out, false
+		}
+
+		delta := value.Clone()
+		delta.Count -= prevValue.Count
+		delta.Sum -= prevValue.Sum
+
+		if value.ZeroThreshold > prevValue.ZeroThreshold {
+			// Coarsen previous histogram zero bucket to match the new histogram.
+			// Find the bucket the threshold falls into, i.e.
+			// the greatest i such that 2**(2**(-scale) * index) < threshold
+			scaleFactor := math.Ldexp(math.Log2E, int(prevValue.Scale))
+			thresholdBucket := int32(math.Ceil(math.Log(value.ZeroThreshold)*scaleFactor) - 1)
+			// If the threshold falls in the middle of a populated bucket the threshold falls into is populated in the old histogram,
+			// then it must also be populated in the new histogram, which has ill-defined semantics,
+			// so we will assume this doesn't happen instead of adjusting the threshold as recommended in the spec.
+			prevValue.ZeroCount += prevValue.Positive.TrimZeros(thresholdBucket)
+			prevValue.ZeroCount += prevValue.Negative.TrimZeros(thresholdBucket)
+		}
+		delta.ZeroCount -= prevValue.ZeroCount
+
+		if value.Scale < prevValue.Scale {
+			// Coarsen previous histogram buckets to match the new histogram.
+			bitsLost := prevValue.Scale - value.Scale
+			prevValue.Scale = value.Scale
+			prevValue.Positive = prevValue.Positive.Coarsen(bitsLost)
+			prevValue.Negative = prevValue.Negative.Coarsen(bitsLost)
+		}
+		delta.Positive = value.Positive.Diff(&prevValue.Positive)
+		delta.Negative = value.Negative.Diff(&prevValue.Negative)
+
+		out.ExponentialHistogramPoint = &delta
+
 	case pmetric.MetricTypeSum:
 		if metricID.IsFloatVal() {
 			value := metricPoint.FloatValue
@@ -195,7 +239,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			out.IntValue = delta
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 	}
 
 	state.prevPoint = metricPoint

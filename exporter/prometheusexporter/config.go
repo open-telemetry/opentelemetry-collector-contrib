@@ -42,6 +42,7 @@ type Config struct {
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
 
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
+	//
 	// Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 

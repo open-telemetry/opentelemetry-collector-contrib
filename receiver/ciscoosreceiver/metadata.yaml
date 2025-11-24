@@ -1,4 +1,4 @@
-type: ciscoosreceiver
+type: ciscoos
 
 status:
   class: receiver

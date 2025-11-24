@@ -19,6 +19,26 @@ You may configure this extension in service, using the following configuration v
 `api::site`: your Datadog site value (e.g. us5.datadoghq.com), defaults to "datadoghq.com"
 `hostname`: custom hostname; if you do not specify one, the extension will try to infer one. Note: If set, this must match the `hostname` value set in the Datadog Exporter, if also enabled in your collector. If `hostname` is left unset in both Datadog Exporter and Datadog Extension, the inferred hostname will match correctly.
 
+## Adding Resource Attributes
+
+The Datadog Extension automatically collects resource attributes from the Collector's internal telemetry and includes them in the metadata payload sent to Datadog. These attributes can be used to provide additional context about your collector instance.
+
+To add custom resource attributes to the Collector's internal telemetry signals (traces, metrics, and logs), configure them under `service::telemetry::resource`:
+
+```yaml
+service:
+  telemetry:
+    resource:
+      deployment.environment.name: 'production'
+      team.name: 'platform'
+      k8s.cluster.name: 'prod-us-east1-cluster-a'
+```
+
+**Note:** The following resource attributes are automatically attached to the Collector's internal telemetry:
+- `service.name`
+- `service.version`
+- `service.instance.id` (randomly generated)
+
 ## Local HTTP Server Functionality
 
 The Datadog Extension includes a local HTTP server that exposes the OpenTelemetry Collector's configuration and metadata. This server is intended to make it easier to inspect and debug the collector's state locally, and to view the collector configuration and metadata that is intended to be displayed in the Datadog app.

@@ -362,38 +362,42 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html).
 
 
-| **AWS Field**                | **OpenTelemetry Field(s)**                                           |
-|------------------------------|----------------------------------------------------------------------|
-| type                         | `network.protocol.name`                                              |
-| time                         | Log timestamp                                                        |
-| elb                          | `cloud.resource_id`                                                  |
-| client:port                  | `client.address`, `client.port`                                      |
-| received_bytes               | `http.request.size`                                                  |
-| sent_bytes                   | `http.response.size`                                                 |
-| "request"                    | `url.full`, `http.request.method`, `network.protocol.version`        |
-| ssl_cipher                   | `tls.cipher`                                                         |
-| ssl_protocol                 | `tls.protocol.version`                                               |
-| elb_status_code              | `aws.elb.status.code`                                                |
-| user_agent                   | `user_agent.original`                                                |
-| domain_name                  | `url.domain`                                                         |
-| target:port                  | _Currently not supported_                                |
-| request_processing_time      | _Currently not supported_                                |
-| target_processing_time       | _Currently not supported_                                |
-| response_processing_time     | _Currently not supported_                                |
-| target_status_code           | _Currently not supported_                                |
-| target_group_arn             | _Currently not supported_                                |
-| "trace_id"                   | _Currently not supported_                                |
-| "chosen_cert_arn"            | _Currently not supported_                                |
-| matched_rule_priority        | _Currently not supported_                                |
-| request_creation_time        | _Currently not supported_                                |
-| "actions_executed"           | _Currently not supported_                                |
-| "redirect_url"               | _Currently not supported_                                |
-| "error_reason"               | _Currently not supported_                                |
-| "target:port_list"           | _Currently not supported_                                |
-| "target_status_code_list"    | _Currently not supported_                                |
-| "classification"             | _Currently not supported_                                |
-| "classification_reason"      | _Currently not supported_                                |
-| conn_trace_id                | _Currently not supported_                                |
+| **AWS Field**             | **OpenTelemetry Field(s)**                                    |
+|---------------------------|---------------------------------------------------------------|
+| type                      | `network.protocol.name`                                       |
+| time                      | Log timestamp                                                 |
+| elb                       | `cloud.resource_id`                                           |
+| client:port               | `client.address`, `client.port`                               |
+| received_bytes            | `http.request.size`                                           |
+| sent_bytes                | `http.response.size`                                          |
+| "request"                 | `url.full`, `http.request.method`, `network.protocol.version` |
+| ssl_cipher                | `tls.cipher`                                                  |
+| ssl_protocol              | `tls.protocol.version`                                        |
+| elb_status_code           | `aws.elb.status.code`                                         |
+| user_agent                | `user_agent.original`                                         |
+| domain_name               | `url.domain`                                                  |
+| target:port               | `destination.address`, `destination.port`                     |
+| request_processing_time   | `aws.alb.request_processing_time`                             |
+| target_processing_time    | `aws.elb.target_processing_time`                              |
+| response_processing_time  | `aws.elb.response_processing_time`                            |
+| target_status_code        | `aws.elb.backend.status.code`                                 |
+| target_group_arn          | `aws.elb.target_group_arn`                                    |
+| "trace_id"                | `aws.elb.aws_trace_id`                                        |
+| "chosen_cert_arn"         | `aws.elb.chosen_cert_arn`                                     |
+| matched_rule_priority     | _Currently not supported_                                     |
+| request_creation_time     | _Currently not supported_                                     |
+| "actions_executed"        | `aws.elb.actions_executed`                                    |
+| "redirect_url"            | `aws.elb.redirect_url`                                        |
+| "error_reason"            | `aws.elb.error_reason`                                        |
+| "target:port_list"        | _Currently not supported_                                     |
+| "target_status_code_list" | _Currently not supported_                                     |
+| "classification"          | `aws.elb.classification`                                      |
+| "classification_reason"   | `aws.elb.classification_reason`                               |
+| conn_trace_id             | `aws.elb.connection_trace_id`                                 |
+| transformed_host          | `aws.elb.transformed_host`                                    |
+| transformed_uri           | `aws.elb.transformed_uri`                                     |
+| request_transform_status  | `aws.elb.request_transform_status`                            |
+
 
 #### Network Load Balancer (NLB)
 

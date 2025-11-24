@@ -194,6 +194,10 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	w.WriteHeader(http.StatusNoContent)
 
+	// Return if metric count is 0.
+	if m.MetricCount() == 0 {
+		return
+	}
 	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
 	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
 	if err != nil {
@@ -341,7 +345,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		description := req.Symbols[ts.Metadata.HelpRef]
 
 		// Handle histograms separately due to their complex mixed-schema processing
-		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM {
+		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
+			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
 			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, modifiedResourceMetric)
 			continue
 		}
@@ -513,6 +518,16 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
 			metricCache[metricIDHash] = histMetric
+			switch ts.Metadata.Type {
+			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
+				histMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+			case writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
+				histMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
+			default:
+				// This default case should not be reached as this function is only called when:
+				// 1. ts.Metadata.Type == METRIC_TYPE_HISTOGRAM, or
+				// 2. ts.Metadata.Type == METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0
+			}
 		} else if len(histMetric.Description()) < len(description) {
 			// When the new description is longer than the existing one, we should update the metric description.
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations

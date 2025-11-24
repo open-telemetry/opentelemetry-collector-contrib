@@ -219,6 +219,10 @@ type ProducerConfig struct {
 	// Whether or not to allow automatic topic creation.
 	// (default enabled).
 	AllowAutoTopicCreation bool `mapstructure:"allow_auto_topic_creation"`
+
+	// Linger controls the linger time for the producer.
+	// (default 10ms).
+	Linger time.Duration `mapstructure:"linger"`
 }
 
 func NewDefaultProducerConfig() ProducerConfig {
@@ -228,6 +232,7 @@ func NewDefaultProducerConfig() ProducerConfig {
 		Compression:            "none",
 		FlushMaxMessages:       0,
 		AllowAutoTopicCreation: true,
+		Linger:                 10 * time.Millisecond,
 	}
 }
 

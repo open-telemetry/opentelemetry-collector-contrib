@@ -24,7 +24,7 @@ import (
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, "ciscoosreceiver", factory.Type().String())
+	assert.Equal(t, "ciscoos", factory.Type().String())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
