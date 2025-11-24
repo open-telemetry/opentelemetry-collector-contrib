@@ -151,7 +151,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
 		}
-		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
+		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount, s.config.MaxQuerySampleCount)
 	case getSQLServerQuerySamplesQuery():
 		resources, err = s.recordDatabaseSampleQuery(ctx)
 	default:
@@ -618,7 +618,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 	return errors.Join(errs...)
 }
 
-func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (pcommon.Resource, error) {
+func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount, maxQuerySampleCount uint) (pcommon.Resource, error) {
 	// Constants are the column names of the database status
 	const (
 		executionCount = "execution_count"
@@ -637,6 +637,11 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		totalWorkerTime = "total_worker_time"
 
 		dbSystemNameVal = "microsoft.sql_server"
+
+		// stored procedure columns
+		storedProcedureId   = "procedure_id"
+		storedProcedureName = "procedure_name"
+		storedProcedureType = "procedure_type"
 	)
 
 	resources := pcommon.NewResource()
@@ -659,20 +664,20 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	for i, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
+		planId := row[storedProcedureId]
 
 		elapsedTimeMicrosecond, err := strconv.ParseInt(row[totalElapsedTime], 10, 64)
 		if err != nil {
-			s.logger.Info(fmt.Sprintf("sqlServerScraperHelper failed getting rows: %s", err))
+			s.logger.Warn(fmt.Sprintf("sqlServerScraperHelper failed getting rows: %s", err))
 			errs = append(errs, err)
 		} else {
 			// we're trying to get the queries that used the most time.
 			// caching the total elapsed time (in microsecond) and compare in the next scrape.
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTime, elapsedTimeMicrosecond); cached && diff > 0 {
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, planId, totalElapsedTime, elapsedTimeMicrosecond); cached && diff > 0 {
 				totalElapsedTimeDiffsMicrosecond[i] = diff
 			}
 		}
 	}
-
 	// sort the rows based on the totalElapsedTimeDiffs in descending order,
 	// only report first T(T=topQueryCount) rows.
 	rows = sortRows(rows, totalElapsedTimeDiffsMicrosecond, topQueryCount)
@@ -694,6 +699,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
+		procId := row[storedProcedureId]
 
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
@@ -707,25 +713,25 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		})
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
-		cached, executionCountVal := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, executionCountVal.(int64))
+		cached, executionCountVal := s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, executionCount, executionCountVal.(int64))
 		if !cached {
 			executionCountVal = int64(0)
 		}
 
 		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt)
-		cached, logicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalReads, logicalReadsVal.(int64))
+		cached, logicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, logicalReads, logicalReadsVal.(int64))
 		if !cached {
 			logicalReadsVal = int64(0)
 		}
 
 		logicalWritesVal := s.retrieveValue(row, logicalWrites, &errs, retrieveInt)
-		cached, logicalWritesVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalWrites, logicalWritesVal.(int64))
+		cached, logicalWritesVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, logicalWrites, logicalWritesVal.(int64))
 		if !cached {
 			logicalWritesVal = int64(0)
 		}
 
 		physicalReadsVal := s.retrieveValue(row, physicalReads, &errs, retrieveInt)
-		cached, physicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, physicalReads, physicalReadsVal.(int64))
+		cached, physicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, physicalReads, physicalReadsVal.(int64))
 		if !cached {
 			physicalReadsVal = int64(0)
 		}
@@ -735,19 +741,19 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		})
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
-		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnedVal.(int64))
+		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, rowsReturned, rowsReturnedVal.(int64))
 		if !cached {
 			rowsReturnedVal = int64(0)
 		}
 
 		totalGrantVal := s.retrieveValue(row, totalGrant, &errs, retrieveInt)
-		cached, totalGrantVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalGrant, totalGrantVal.(int64))
+		cached, totalGrantVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, totalGrant, totalGrantVal.(int64))
 		if !cached {
 			totalGrantVal = int64(0)
 		}
 
 		totalWorkerTimeVal := s.retrieveValue(row, totalWorkerTime, &errs, retrieveInt)
-		cached, totalWorkerTimeVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, totalWorkerTimeVal.(int64))
+		cached, totalWorkerTimeVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, totalWorkerTime, totalWorkerTimeVal.(int64))
 		totalWorkerTimeInSecVal := float64(0)
 		if cached {
 			totalWorkerTimeInSecVal = float64(totalWorkerTimeVal.(int64)) / 1_000_000
@@ -781,7 +787,11 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			totalGrantVal.(int64),
 			s.config.Server,
 			int64(s.config.Port),
-			dbSystemNameVal)
+			dbSystemNameVal,
+			row[storedProcedureId],
+			row[storedProcedureName],
+			row[storedProcedureType],
+		)
 	}
 	return resources, errors.Join(errs...)
 }
@@ -804,24 +814,28 @@ func (s *sqlServerScraperHelper) retrieveValue(
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
 // (1) returns true if the key is cached before
 // (2) returns positive value if the value is larger than the cached value
-func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, column string, val int64) (bool, int64) {
+func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, procedureId, column string, val int64) (bool, int64) {
 	if val < 0 {
 		return false, 0
 	}
 
 	key := queryHash + "-" + queryPlanHash + "-" + column
-
+	if procedureId != "" {
+		key = procedureId + "-" + key
+	}
 	cached, ok := s.cache.Get(key)
 	if !ok {
 		s.cache.Add(key, val)
+		// s.logger.Info("Adding key", zap.String("key", key), zap.Int64("val", val))
 		return false, val
 	}
 
 	if val > cached {
 		s.cache.Add(key, val)
+		// s.logger.Info("Returning cached diff for ", zap.String("key", key), zap.Int64("val", val))
 		return true, val - cached
 	}
-
+	// s.logger.Info("Returning 0", zap.String("key", key), zap.Int64("val", val))
 	return true, 0
 }
 
@@ -929,6 +943,10 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const waitTimeMillisecond = "wait_time"
 	const waitType = "wait_type"
 	const writes = "writes"
+	// stored procedure columns
+	const storedProcedureId = "procedure_id"
+	const storedProcedureName = "procedure_name"
+	const storedProcedureType = "procedure_type"
 
 	rows, err := s.client.QueryRows(
 		ctx,
@@ -1022,7 +1040,9 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		} else {
 			clientAddressVal = row[clientAddress]
 		}
-
+		if row[storedProcedureId] != "0" {
+			s.logger.Info("Stored proc data", zap.String("id", row[storedProcedureId]), zap.String("name", row[storedProcedureName]), zap.String("type", row[storedProcedureType]))
+		}
 		s.lb.RecordDbServerQuerySampleEvent(
 			contextFromQuery,
 			timestamp, clientAddressVal, clientPortVal,
@@ -1038,6 +1058,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
+			row[storedProcedureId], row[storedProcedureName], row[storedProcedureType],
 		)
 
 		if !resourcesAdded {
