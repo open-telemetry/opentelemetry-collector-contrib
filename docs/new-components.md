@@ -7,17 +7,17 @@ The OpenTelemetry Collector has a pluggable architecture that allows you to buil
 [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom
 components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector
 Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include
-your component in this repository to be able to use or distribute your component: you can just  host
+your component in this repository to be able to use or distribute your component: you can just host
 it in your own repository as a Go module and [add it to the OpenTelemetry
 registry](https://opentelemetry.io/ecosystem/registry/).
 
 We recommend hosting your component outside of this repository as a first step.
-If you put the effort into it, your component can get to have the same level of quality and maintenance as one in this repository.
+We recommend hosting your component outside of this repository as a first step. Many high-quality components in the ecosystem start this way, and we'd love to see your component develop and gather community feedback.
 
 ## Hosting your component outside of opentelemetry-collector-contrib (Recommended)
 
 As a first step, we recommend that you **build** your component outside of the
-opentelemetry-collector-contrib repository. This is the fastest way to get to use your component and
+opentelemetry-collector-contrib repository. This is the fastest way to start using your component and
 to publish it for others to consume if you want to. A component is a Go module (library) built using
 the `go.opentelemetry.io/collector` set of libraries. These libraries contain examples (e.g. see the
 example on the [`go.opentelemetry.io/collector/exporter` module
