@@ -49,7 +49,7 @@ type S3UploaderConfig struct {
 	StorageClass string `mapstructure:"storage_class"`
 	// Compression sets the algorithm used to process the payload
 	// before uploading to S3.
-	// Valid values are: `gzip` or no value set.
+	// Valid values are: `gzip`, `zstd`, or no value set.
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// RetryMode specifies the retry mode for S3 client, default is "standard".
