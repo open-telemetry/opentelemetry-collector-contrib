@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"runtime"
 	"strings"
@@ -101,7 +102,22 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
+		QueryParams:             getQueryParamsFromEndpoint(config),
 	}
+}
+
+func getQueryParamsFromEndpoint(config *Config) (queryParams map[string][]string) {
+	endpoints, _ := config.endpoints()
+	// we check the query params set on the first endpoint only
+	// this is enough to replicate to all requests
+	parsedURL, _ := url.Parse(endpoints[0])
+
+	rawQuery := parsedURL.RawQuery
+	if rawQuery != "" {
+		queryParams, _ = url.ParseQuery(rawQuery)
+	}
+
+	return queryParams
 }
 
 func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Value {
