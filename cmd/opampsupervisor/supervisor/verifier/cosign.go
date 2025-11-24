@@ -110,6 +110,11 @@ func (c *cosignVerifier) Verify(packageBytes, signature []byte) error {
 	return nil
 }
 
+// Type returns the "cosign" verifier type.
+func (cosignVerifier) Type() string {
+	return config.VerifierTypeCosign
+}
+
 // parsePackageSignature parses the package signature into a base64 encoded certificate and signature.
 // The signature is expected to be formatted as a space separated cert and signature.
 // The certificate and signature are returned as base64 encoded bytes.
