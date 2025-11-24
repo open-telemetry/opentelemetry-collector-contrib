@@ -40,7 +40,7 @@ receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree
 v0.139.0 version is [available as a Go
 module](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver@v0.139.0)
 because we pushed the
-[`receiver/filelogreceiver/v0.139.0](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver)
+[`receiver/filelogreceiver/v0.139.0`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver)
 git tag to this repository. We recommend you make a release at least every time there is a breaking
 change on any of the Go modules you depend on.
 
