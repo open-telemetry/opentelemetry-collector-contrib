@@ -12,7 +12,7 @@ const azEventHubFeatureGateName = "receiver.azureeventhubreceiver.UseAzeventhubs
 // uses the new azeventhub library or the deprecated azure-event-hubs library
 // for consuming messages. When enabled, the azureeventhub receiver will use the new azeventhub library.
 var azEventHubFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	azEventHubFeatureGateName, featuregate.StageAlpha,
+	azEventHubFeatureGateName, featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the Azure Event Hubs receiver will use the azeventhub library."),
 	featuregate.WithRegisterFromVersion("v0.129.0"),
 )

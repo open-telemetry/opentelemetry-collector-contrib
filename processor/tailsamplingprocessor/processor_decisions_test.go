@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -693,4 +694,57 @@ func TestSampleOnFirstMatch(t *testing.T) {
 
 	// The final decision SHOULD be Sampled.
 	require.Equal(t, 1, nextConsumer.SpanCount())
+}
+
+func TestRateLimiter(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	cfg := Config{
+		DecisionWait:       defaultTestDecisionWait,
+		NumTraces:          defaultNumTraces,
+		SampleOnFirstMatch: true,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "test-policy-1",
+					Type: "rate_limiting",
+					RateLimitingCfg: RateLimitingCfg{
+						SpansPerSecond: 2,
+					},
+				},
+			},
+		},
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	for i := range 11 {
+		require.NoError(t, p.ConsumeTraces(t.Context(), simpleTracesWithID(uInt64ToTraceID(uint64(i)))))
+	}
+	controller.waitForTick()
+	controller.waitForTick()
+
+	// The rate limiter resets every time time.Now().Unix() changes, so
+	// depending on whether this test runs close to the second boundary, the
+	// number of spans sampled will be 1 or 2.
+	require.LessOrEqual(t, nextConsumer.SpanCount(), 2)
+	require.GreaterOrEqual(t, nextConsumer.SpanCount(), 1)
+
+	allTraces := nextConsumer.AllTraces()
+	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+	for _, trace := range allTraces {
+		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
+	}
+
+	require.LessOrEqual(t, len(sampledTraceIDs), 2)
+	require.GreaterOrEqual(t, len(sampledTraceIDs), 1)
 }
