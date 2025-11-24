@@ -18,14 +18,7 @@ The percentage of lost packets.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
-| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
+| % | Gauge | Double | Development |
 
 ### ping.rtt.avg
 
@@ -33,14 +26,7 @@ Average round-trip time in milliseconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
-| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
+| ms | Gauge | Int | Development |
 
 ### ping.rtt.max
 
@@ -48,14 +34,7 @@ Maximum round-trip time in milliseconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
-| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
+| ms | Gauge | Int | Development |
 
 ### ping.rtt.min
 
@@ -63,14 +42,7 @@ Minimum round-trip time in milliseconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
-| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
+| ms | Gauge | Int | Development |
 
 ### ping.rtt.stddev
 
@@ -78,11 +50,11 @@ Standard deviation of round-trip time in milliseconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
-#### Attributes
+## Resource Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | Recommended |
-| net.peer.name | The hostname of the host being pinged. | Any Str | Recommended |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| net.peer.ip | The IP address of the host being pinged. | Any Str | true |
+| net.peer.name | The hostname of the host being pinged. | Any Str | true |

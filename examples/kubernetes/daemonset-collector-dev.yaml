@@ -57,5 +57,4 @@ config:
     pipelines:
       metrics:
         receivers: [kubeletstats]
-        processors: [batch]
         exporters: [debug]

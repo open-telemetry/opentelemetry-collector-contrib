@@ -8,40 +8,40 @@ The following telemetry is emitted by this component.
 
 ### otelcol_fluent_closed_connections
 
-Number of connections closed to the fluentforward receiver [development]
+Number of connections closed to the fluentforward receiver [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | development |
+| 1 | Sum | Int | false | Development |
 
 ### otelcol_fluent_events_parsed
 
-Number of Fluent events parsed successfully [development]
+Number of Fluent events parsed successfully [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | development |
+| 1 | Sum | Int | false | Development |
 
 ### otelcol_fluent_opened_connections
 
-Number of connections opened to the fluentforward receiver [development]
+Number of connections opened to the fluentforward receiver [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | development |
+| 1 | Sum | Int | false | Development |
 
 ### otelcol_fluent_parse_failures
 
-Number of times Fluent messages failed to be decoded [development]
+Number of times Fluent messages failed to be decoded [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | development |
+| 1 | Sum | Int | false | Development |
 
 ### otelcol_fluent_records_generated
 
-Number of log records generated from Fluent forward input [development]
+Number of log records generated from Fluent forward input [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | development |
+| 1 | Sum | Int | false | Development |

@@ -288,7 +288,9 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]configopaque.String{"foo": "bah"}
+			cfg.Headers = configopaque.MapList{
+				{Name: "foo", Value: "bah"},
+			}
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -309,7 +311,9 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]configopaque.String{"User-Agent": "overridden"}
+			cfg.Headers = configopaque.MapList{
+				{Name: "User-Agent", Value: "overridden"},
+			}
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -837,7 +841,10 @@ func TestExporterLogs(t *testing.T) {
 
 		wg.Wait() // <- this blocks forever if the event is not retried
 
-		assert.Equal(t, [3]int64{1, 2, 1}, [3]int64{attempts[0].Load(), attempts[1].Load(), attempts[2].Load()})
+		expected := [3]int64{1, 2, 1}
+		for i := range attempts {
+			assert.Equal(t, expected[i], attempts[i].Load(), "attempt count mismatch for index %d", i)
+		}
 	})
 
 	t.Run("publish logs with dynamic id", func(t *testing.T) {
@@ -2768,7 +2775,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 
 			profile.AttributeIndices().Append(2)
 
-			sample := profile.Sample().AppendEmpty()
+			sample := profile.Samples().AppendEmpty()
 			sample.TimestampsUnixNano().Append(0)
 
 			stack := dic.StackTable().AppendEmpty()

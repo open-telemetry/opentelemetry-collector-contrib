@@ -502,6 +502,8 @@ The list of the populated resource attributes can be found at [kubeadm Detector 
 
 ### Oracle Cloud Infrastructure (OCI) metadata
 
+The OCI detector implements a *fast probe* to the instance metadata service (IMDS) endpoint to quickly verify if the collector is running on OCI. If this probe fails, the detector returns an empty resource and no error. If the probe succeeds, it then fetches instance metadata; if this fetch fails, the detector logs and returns an error so that partial detection is not silently ignored. This behavior makes it possible to differentiate between the case where the collector is not running on OCI, vs it is running on OCI but the IMDS request failed.
+
 Queries the [Oracle Cloud Infrastructure (OCI) metadata service](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/gettingmetadata.htm)
 to retrieve resource attributes related to the OCI instance environment.
 
@@ -669,6 +671,7 @@ If present in the file, the following attributes will be added:
 
 - `dt.entity.host`
 - `host.name`
+- `dt.smartscape.host`
 
 The Dynatrace detector does not require any additional configuration, other than being added to the list of detectors.
 
@@ -683,7 +686,7 @@ processors:
 
 It is strongly recommended to use the `override: false` configuration option, to prevent the detector from overwriting
 existing resource attributes.
-If the Dynatrace host entity identifier attribute `dt.entity.host` or `host.name` are already present on incoming data as it is sent from
+If the Dynatrace host entity identifier attribute `dt.entity.host`, `host.name`, or `dt.smartscape.host` are already present on incoming data as it is sent from
 other sources to the collector, then these describe the monitored entity in the best way.
 Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
 or the collector's host instead, which might be inaccurate.

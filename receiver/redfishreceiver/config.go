@@ -5,6 +5,8 @@ package redfishreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
+	"net/url"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -18,7 +20,7 @@ type redfishConfig struct {
 }
 
 type Server struct {
-	Host             string              `mapstructure:"host"`
+	BaseURL          string              `mapstructure:"base_url"`
 	User             string              `mapstructure:"username"`
 	Pwd              configopaque.String `mapstructure:"password"`
 	Insecure         bool                `mapstructure:"insecure"`
@@ -43,14 +45,20 @@ func (cfg *Config) Validate() error {
 	}
 
 	for i := range cfg.Servers {
-		if cfg.Servers[i].Redfish.Version != "v1" {
-			return errors.New("redfish version must be once of the following values: 'v1'")
+		if _, err := url.ParseRequestURI(cfg.Servers[i].BaseURL); err != nil {
+			return err
 		}
-		if len(cfg.Servers[i].Resources) == 0 {
-			return errors.New("resources must not be empty")
+
+		if strings.TrimSpace(cfg.Servers[i].ComputerSystemID) == "" {
+			return errors.New("computer_system_id must not be empty")
 		}
+
 		if _, err := time.ParseDuration(cfg.Servers[i].Timeout); err != nil && cfg.Servers[i].Timeout != "" {
 			return errors.New("invalid server timeout")
+		}
+
+		if len(cfg.Servers[i].Resources) == 0 {
+			return errors.New("resources must not be empty")
 		}
 	}
 	return nil

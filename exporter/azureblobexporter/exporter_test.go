@@ -139,11 +139,13 @@ func TestGenerateBlobName(t *testing.T) {
 
 	c := &Config{
 		BlobNameFormat: BlobNameFormat{
-			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
-			LogsFormat:     "2006/01/02/logs_15_04_05.json",
-			TracesFormat:   "2006/01/02/traces_15_04_05.json",
-			SerialNumRange: 10000,
-			Params:         map[string]string{},
+			MetricsFormat:     "2006/01/02/metrics_15_04_05.json",
+			LogsFormat:        "2006/01/02/logs_15_04_05.json",
+			TracesFormat:      "2006/01/02/traces_15_04_05.json",
+			SerialNumEnabled:  true,
+			SerialNumRange:    10000,
+			TimeParserEnabled: true,
+			Params:            map[string]string{},
 		},
 	}
 
@@ -171,8 +173,10 @@ func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 			MetricsFormat:            "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:               "2006/01/02/logs_15_04_05.json",
 			TracesFormat:             "2006/01/02/traces_15_04_05", // no extension
+			SerialNumEnabled:         true,
 			SerialNumRange:           10000,
 			SerialNumBeforeExtension: true,
+			TimeParserEnabled:        true,
 			Params:                   map[string]string{},
 		},
 	}
@@ -359,4 +363,64 @@ func TestExporterAppendBlobError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to upload data: append error")
 	mockClient.AssertExpectations(t)
+}
+
+func TestGenerateBlobNameSerialNumberDisabled(t *testing.T) {
+	t.Parallel()
+
+	c := &Config{
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:     "static/metrics.json",
+			SerialNumEnabled:  false,
+			SerialNumRange:    100,
+			TimeParserEnabled: true,
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+
+	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "static/metrics.json", blobName)
+}
+
+func TestGenerateBlobNameTimeParserDisabled(t *testing.T) {
+	t.Parallel()
+
+	layout := "2006/01/02/metrics_15_04_05.json"
+	c := &Config{
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:     layout,
+			SerialNumEnabled:  false,
+			SerialNumRange:    100,
+			TimeParserEnabled: false,
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+
+	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	require.NoError(t, err)
+	assert.Equal(t, layout, blobName)
+}
+
+func TestGenerateBlobNameTimeParserDisabledWithSerialNumber(t *testing.T) {
+	t.Parallel()
+
+	layout := "2006/01/02/metrics_15_04_05.json"
+	c := &Config{
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:            layout,
+			SerialNumEnabled:         true,
+			SerialNumRange:           100,
+			SerialNumBeforeExtension: false,
+			TimeParserEnabled:        false,
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+
+	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(blobName, layout+"_"))
 }

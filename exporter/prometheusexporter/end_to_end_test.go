@@ -138,7 +138,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_scrape_samples_scraped.instance="127.0.0.1:.*",job="otel-collector",otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver\",otel_scope_schema_url=\"\",otel_scope_version=\"latest\". 13 .*`,
 		`. HELP test_scrape_series_added The approximate number of new series in this scrape`,
 		`. TYPE test_scrape_series_added gauge`,
-		`test_scrape_series_added.instance="127.0.0.1:.*",job="otel-collector",otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver\",otel_scope_schema_url=\"\",otel_scope_version=\"latest\". 13 .*`,
+		`test_scrape_series_added.instance="127.0.0.1:.*",job="otel-collector",otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver\",otel_scope_schema_url=\"\",otel_scope_version=\"latest\". (0|13) .*`,
 		`. HELP test_up The scraping was successful`,
 		`. TYPE test_up gauge`,
 		`test_up.instance="127.0.0.1:.*",job="otel-collector",otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver\",otel_scope_schema_url=\"\",otel_scope_version=\"latest\". 1 .*`,

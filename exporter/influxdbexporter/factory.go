@@ -36,8 +36,8 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 5 * time.Second
-	clientConfig.Headers = map[string]configopaque.String{
-		"User-Agent": "OpenTelemetry -> Influx",
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "User-Agent", Value: "OpenTelemetry -> Influx"},
 	}
 
 	return &Config{
@@ -51,6 +51,7 @@ func createDefaultConfig() component.Config {
 		// https://docs.influxdata.com/influxdb/cloud-serverless/write-data/best-practices/optimize-writes/#batch-writes
 		PayloadMaxLines: 10_000,
 		PayloadMaxBytes: 10_000_000,
+		Precision:       "ns",
 	}
 }
 

@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -111,6 +110,8 @@ type Config struct {
 	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 
+	OrchestratorExplorer OrchestratorExplorerConfig `mapstructure:"orchestrator_explorer"`
+
 	// Non-fatal warnings found during configuration loading.
 	warnings []error
 }
@@ -176,11 +177,16 @@ func (c *Config) Validate() error {
 		return errors.New("reporter_period must be 5 minutes or higher")
 	}
 
+	if err := c.OrchestratorExplorer.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
 // It does not validate online; this is handled on startup.
+//
 // Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
 func StaticAPIKeyCheck(key string) error {
 	if key == "" {
@@ -344,31 +350,12 @@ func defaultClientConfig() confighttp.ClientConfig {
 	return client
 }
 
-// newDefaultQueueConfig creates the default exporter queue configuration.
-func newDefaultQueueConfig() exporterhelper.QueueBatchConfig {
-	queueSet := exporterhelper.NewDefaultQueueConfig()
-	// Override batching options since the defaults cause payloads that are over our limits
-	// See e.g. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16834 or https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17566
-	//
-	// The limits were chosen based on the API intake limits:
-	// - Trace intake: 3.2MB
-	// - Log intake: https://docs.datadoghq.com/api/latest/logs/
-	// - Metrics V2 intake: https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
-	queueSet.Batch = configoptional.Default(exporterhelper.BatchConfig{
-		FlushTimeout: 10 * time.Second,
-		Sizer:        exporterhelper.RequestSizerTypeItems,
-		MinSize:      10,
-		MaxSize:      100,
-	})
-	return queueSet
-}
-
 // CreateDefaultConfig creates the default exporter configuration
 func CreateDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: newDefaultQueueConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -421,6 +408,10 @@ func CreateDefaultConfig() component.Config {
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
+		},
+
+		OrchestratorExplorer: OrchestratorExplorerConfig{
+			Enabled: false,
 		},
 
 		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373

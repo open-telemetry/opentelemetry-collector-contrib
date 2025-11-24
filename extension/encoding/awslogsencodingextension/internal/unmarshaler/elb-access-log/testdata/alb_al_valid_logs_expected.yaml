@@ -55,6 +55,36 @@ resourceLogs:
               - key: destination.port
                 value:
                   intValue: "80"
+              - key: aws.elb.actions_executed
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: "authenticate"
+                      - stringValue: "forward"
+              - key: aws.elb.backend.status.code
+                value:
+                  intValue: "200"
+              - key: aws.elb.chosen_cert_arn
+                value:
+                  stringValue: arn:aws:acm:us-east-2:123456789012:certificate/12345678-1234-1234-1234-123456789012
+              - key: aws.elb.aws_trace_id
+                value:
+                  stringValue: Root=1-58337281-1d84f3d73c47ec4e58577259
+              - key: aws.elb.connection_trace_id
+                value:
+                  stringValue: TID_1234abcd5678ef90
+              - key: aws.elb.request_processing_time
+                value:
+                  doubleValue: "0.086"
+              - key: aws.elb.target_processing_time
+                value:
+                  doubleValue: "0.048"
+              - key: aws.elb.response_processing_time
+                value:
+                  doubleValue: "0.037"
+              - key: aws.elb.target_group_arn
+                value:
+                  stringValue: arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067
             body: {}
             timeUnixNano: "1530570180186641000"
           - attributes:
@@ -103,7 +133,124 @@ resourceLogs:
               - key: destination.port
                 value:
                   intValue: "80"
+              - key: aws.elb.actions_executed
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: "authenticate"
+                      - stringValue: "forward"
+              - key: aws.elb.backend.status.code
+                value:
+                  intValue: "200"
+              - key: aws.elb.chosen_cert_arn
+                value:
+                  stringValue: arn:aws:acm:us-east-2:123456789012:certificate/12345678-1234-1234-1234-123456789012
+              - key: aws.elb.aws_trace_id
+                value:
+                  stringValue: Root=1-58337281-1d84f3d73c47ec4e58577259
+              - key: aws.elb.connection_trace_id
+                value:
+                  stringValue: TID_1234abcd5678ef90
+              - key: aws.elb.request_processing_time
+                value:
+                  doubleValue: "0.086"
+              - key: aws.elb.target_processing_time
+                value:
+                  doubleValue: "0.048"
+              - key: aws.elb.response_processing_time
+                value:
+                  doubleValue: "0.037"
+              - key: aws.elb.target_group_arn
+                value:
+                  stringValue: arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067
             body: {}
+            timeUnixNano: "1530570180186641000"
+          - attributes:
+              - key: network.protocol.name
+                value:
+                  stringValue: https
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.1"
+              - key: client.address
+                value:
+                  stringValue: 192.168.131.39
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.full
+                value:
+                  stringValue: https://www.example.com:443/
+              - key: client.port
+                value:
+                  intValue: "2817"
+              - key: http.request.size
+                value:
+                  intValue: "0"
+              - key: http.response.size
+                value:
+                  intValue: "57"
+              - key: aws.elb.status.code
+                value:
+                  intValue: "200"
+              - key: tls.protocol.version
+                value:
+                  stringValue: tlsv1.2
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: user_agent.original
+                value:
+                  stringValue: curl/7.46.0
+              - key: url.domain
+                value:
+                  stringValue: www.example.com
+              - key: destination.address
+                value:
+                  stringValue: 10.0.0.1
+              - key: destination.port
+                value:
+                  intValue: "80"
+              - key: aws.elb.actions_executed
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: "authenticate"
+                      - stringValue: "forward"
+              - key: aws.elb.backend.status.code
+                value:
+                  intValue: "200"
+              - key: aws.elb.chosen_cert_arn
+                value:
+                  stringValue: arn:aws:acm:us-east-2:123456789012:certificate/12345678-1234-1234-1234-123456789012
+              - key: aws.elb.aws_trace_id
+                value:
+                  stringValue: Root=1-58337281-1d84f3d73c47ec4e58577259
+              - key: aws.elb.connection_trace_id
+                value:
+                  stringValue: TID_1234abcd5678ef90
+              - key: aws.elb.request_processing_time
+                value:
+                  doubleValue: "0.086"
+              - key: aws.elb.target_processing_time
+                value:
+                  doubleValue: "0.048"
+              - key: aws.elb.response_processing_time
+                value:
+                  doubleValue: "0.037"
+              - key: aws.elb.target_group_arn
+                value:
+                  stringValue: arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067
+              - key: aws.elb.transformed_host
+                value:
+                  stringValue: transformed.example.com
+              - key: aws.elb.transformed_uri
+                value:
+                  stringValue: https://transformed.example.com/index.html
+              - key: aws.elb.request_transform_status
+                value:
+                  stringValue: TransformSuccess
+            body: { }
             timeUnixNano: "1530570180186641000"
         scope:
           attributes:

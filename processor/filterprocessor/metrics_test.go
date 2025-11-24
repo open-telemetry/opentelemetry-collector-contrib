@@ -557,6 +557,16 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop resource",
+			conditions: MetricFilters{
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
 			name: "drop metrics",
 			conditions: MetricFilters{
 				MetricConditions: []string{
@@ -784,7 +794,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()
-	rm0.Resource().Attributes().PutStr("host.name", "myhost")
+	rm0.Resource().Attributes().PutStr("host.name", "localhost")
 	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
 	rm0ils0.Scope().SetName("scope")
 	fillMetricOne(rm0ils0.Metrics().AppendEmpty())

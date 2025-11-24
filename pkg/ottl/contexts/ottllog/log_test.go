@@ -614,18 +614,18 @@ func Test_newPathGetSetter(t *testing.T) {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			log, il, resource := createTelemetry(tt.bodyType)
 
 			tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 			got, err := accessor.Get(t.Context(), tCtx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exLog, exIl, exRes := createTelemetry(tt.bodyType)
 			exCache := pcommon.NewMap()
@@ -697,7 +697,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			require.NoError(t, err)
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}
@@ -783,7 +783,7 @@ func Test_InvalidBodyIndexing(t *testing.T) {
 	}
 
 	accessor, err := pathExpressionParser(getCache)(&path)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	log, il, resource := createTelemetry("string")
 
@@ -905,7 +905,7 @@ func Test_ParseEnum(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, *actual)
 		})
 	}

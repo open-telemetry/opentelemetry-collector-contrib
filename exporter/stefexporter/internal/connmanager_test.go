@@ -290,16 +290,11 @@ func TestConnManagerFlush(t *testing.T) {
 				// Release the connection first.
 				cm.Release(t.Context(), conn)
 
-				// Advance the clock so that the connection is flush in the background.
-				// We advance the clock twice the reconnect period to guarantee that
-				// all connections are flushed (all connections are expected to be flushed
-				// in one reconnect period, but that's on the edge, we want a guarantee,
-				// that's why double).
-				cm.clock.(*clockwork.FakeClock).Advance(reconnectPeriod * 2)
-
 				// Make sure the flush is done.
 				assert.Eventually(
 					t, func() bool {
+						// Advance the clock so that the connection is flush in the background.
+						cm.clock.(*clockwork.FakeClock).Advance(flushPeriod)
 						return conn.conn.(*mockConn).Flushed()
 					},
 					5*time.Second,

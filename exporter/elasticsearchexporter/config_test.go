@@ -94,7 +94,9 @@ func TestConfig(t *testing.T) {
 					cfg.Timeout = 2 * time.Minute
 					cfg.MaxIdleConns = defaultMaxIdleConns
 					cfg.IdleConnTimeout = defaultIdleConnTimeout
-					cfg.Headers = map[string]configopaque.String{"myheader": "test"}
+					cfg.Headers = configopaque.MapList{
+						{Name: "myheader", Value: "test"},
+					}
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed
 				},
@@ -176,8 +178,8 @@ func TestConfig(t *testing.T) {
 					cfg.Timeout = 2 * time.Minute
 					cfg.MaxIdleConns = defaultMaxIdleConns
 					cfg.IdleConnTimeout = defaultIdleConnTimeout
-					cfg.Headers = map[string]configopaque.String{
-						"myheader": "test",
+					cfg.Headers = configopaque.MapList{
+						{Name: "myheader", Value: "test"},
 					}
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed
@@ -250,8 +252,8 @@ func TestConfig(t *testing.T) {
 					cfg.Timeout = 2 * time.Minute
 					cfg.MaxIdleConns = defaultMaxIdleConns
 					cfg.IdleConnTimeout = defaultIdleConnTimeout
-					cfg.Headers = map[string]configopaque.String{
-						"myheader": "test",
+					cfg.Headers = configopaque.MapList{
+						{Name: "myheader", Value: "test"},
 					}
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed
@@ -551,6 +553,49 @@ func TestConfig_Validate_Environment(t *testing.T) {
 		err := xconfmap.Validate(config)
 		assert.ErrorContains(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
 	})
+}
+
+func TestParseCloudID(t *testing.T) {
+	tests := map[string]struct {
+		input       string
+		expectedURL string
+		expectError bool
+	}{
+		"valid cloudid with multiple dollar signs": {
+			input:       "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=",
+			expectedURL: "https://abc123.bar.cloud.es.io",
+			expectError: false,
+		},
+		"valid cloudid with two parts": {
+			input:       "test:ZG9tYWluLmNvbSRlcy1pZA==",
+			expectedURL: "https://es-id.domain.com",
+			expectError: false,
+		},
+		"missing colon": {
+			input:       "invalid",
+			expectError: true,
+		},
+		"invalid base64": {
+			input:       "test:!!!invalid!!!",
+			expectError: true,
+		},
+		"missing dollar sign": {
+			input:       "test:YWJj",
+			expectError: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			url, err := parseCloudID(tt.input)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedURL, url.String())
+			}
+		})
+	}
 }
 
 func withDefaultConfig(fns ...func(*Config)) *Config {

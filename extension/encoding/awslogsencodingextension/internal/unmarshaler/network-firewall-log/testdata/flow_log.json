@@ -1,0 +1,24 @@
+{
+    "firewall_name": "test-firewall",
+    "availability_zone": "us-east-1a",
+    "event_timestamp": "2025-10-20T10:30:45.123Z",
+    "event": {
+        "event_type": "netflow",
+        "flow_id": 1234567891,
+        "src_ip": "192.168.1.100",
+        "src_port": 54322,
+        "dest_ip": "10.0.1.51",
+        "dest_port": 80,
+        "proto": "TCP",
+        "netflow": {
+            "pkts": 150,
+            "bytes": 45000,
+            "start": "2025-10-20T10:30:40.000Z",
+            "end": "2025-10-20T10:30:45.000Z",
+            "age": 5,
+            "min_ttl": 64,
+            "max_ttl": 64,
+            "tx_cnt": 10
+        }
+    }
+}

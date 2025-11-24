@@ -192,7 +192,15 @@ With above guidelines, you can write code that is more portable and easier to ma
 
 ## Adding New Components
 
-**Before** any code is written, [open an
+> [!NOTE]  
+> The OpenTelemetry Collector has a pluggable architecture that allows you to build your own
+> [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom
+> components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector
+> Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include
+> your component in this repository to be able to use or distribute your component: you can just 
+> host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/).
+
+You may donate an existing component or propose a whole new one. If you are writing a new component from scratch, **before** any code is written, [open an
 issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
 
@@ -213,9 +221,10 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
 
-*NOTICE:* The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
-must be available to update or review their components when such changes happen, otherwise the component will be
-excluded from the default builds.
+> [!IMPORTANT]  
+> The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
+> must be available to update or review their components when such changes happen, otherwise the component will be
+> excluded from the default builds.
 
 Generally, maintenance of components is the responsibility of contributors who authored them. If the original author or
 some other contributor does not maintain the component it may be excluded from the default build. The component **will**
