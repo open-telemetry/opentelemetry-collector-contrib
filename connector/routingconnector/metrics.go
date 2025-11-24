@@ -62,9 +62,9 @@ func (*metricsConnector) Capabilities() consumer.Capabilities {
 
 func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	groups := make(map[consumer.Metrics]pmetric.Metrics)
-	var errs error
 	matched := pmetric.NewMetrics()
 	for i := 0; i < len(c.router.routeSlice) && md.ResourceMetrics().Len() > 0; i++ {
+		var errs error
 		route := c.router.routeSlice[i]
 		switch route.statementContext {
 		case "request":
@@ -77,7 +77,11 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 				func(rs pmetric.ResourceMetrics) bool {
 					rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
-					errs = errors.Join(errs, err)
+					// If error during statement evaluation consider it as not a match.
+					if err != nil {
+						errs = errors.Join(errs, err)
+						return false
+					}
 					return isMatch
 				},
 			)
@@ -86,7 +90,11 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
 					mtx := ottlmetric.NewTransformContext(m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
 					_, isMatch, err := route.metricStatement.Execute(ctx, mtx)
-					errs = errors.Join(errs, err)
+					// If error during statement evaluation consider it as not a match.
+					if err != nil {
+						errs = errors.Join(errs, err)
+						return false
+					}
 					return isMatch
 				},
 			)
@@ -95,23 +103,28 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
 					dptx := ottldatapoint.NewTransformContext(dp, m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
 					_, isMatch, err := route.dataPointStatement.Execute(ctx, dptx)
-					errs = errors.Join(errs, err)
+					// If error during statement evaluation consider it as not a match.
+					if err != nil {
+						errs = errors.Join(errs, err)
+						return false
+					}
 					return isMatch
 				},
 			)
 		}
-		if errs != nil {
-			if c.config.ErrorMode == ottl.PropagateError {
-				return errs
-			}
-			groupAllMetrics(groups, c.router.defaultConsumer, matched)
+		if errs != nil && c.config.ErrorMode == ottl.PropagateError {
+			return errs
 		}
 		groupAllMetrics(groups, route.consumer, matched)
 	}
 	// anything left wasn't matched by any route. Send to default consumer
 	groupAllMetrics(groups, c.router.defaultConsumer, md)
+	var errs error
 	for consumer, group := range groups {
-		errs = errors.Join(errs, consumer.ConsumeMetrics(ctx, group))
+		err := consumer.ConsumeMetrics(ctx, group)
+		if err != nil {
+			errs = errors.Join(errs, err)
+		}
 	}
 	return errs
 }

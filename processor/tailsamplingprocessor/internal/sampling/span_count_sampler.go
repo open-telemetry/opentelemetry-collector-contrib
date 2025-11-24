@@ -15,8 +15,8 @@ import (
 
 type spanCount struct {
 	logger   *zap.Logger
-	minSpans int32
-	maxSpans int32
+	minSpans int64
+	maxSpans int64
 }
 
 var _ samplingpolicy.Evaluator = (*spanCount)(nil)
@@ -25,8 +25,8 @@ var _ samplingpolicy.Evaluator = (*spanCount)(nil)
 func NewSpanCount(settings component.TelemetrySettings, minSpans, maxSpans int32) samplingpolicy.Evaluator {
 	return &spanCount{
 		logger:   settings.Logger,
-		minSpans: minSpans,
-		maxSpans: maxSpans,
+		minSpans: int64(minSpans),
+		maxSpans: int64(maxSpans),
 	}
 }
 
@@ -34,11 +34,11 @@ func NewSpanCount(settings component.TelemetrySettings, minSpans, maxSpans int32
 func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	c.logger.Debug("Evaluating spans counts in filter")
 
-	spanCount := int(traceData.SpanCount.Load())
+	spanCount := traceData.SpanCount
 	switch {
-	case c.maxSpans == 0 && spanCount >= int(c.minSpans):
+	case c.maxSpans == 0 && spanCount >= c.minSpans:
 		return samplingpolicy.Sampled, nil
-	case spanCount >= int(c.minSpans) && spanCount <= int(c.maxSpans):
+	case spanCount >= c.minSpans && spanCount <= c.maxSpans:
 		return samplingpolicy.Sampled, nil
 	default:
 		return samplingpolicy.NotSampled, nil
