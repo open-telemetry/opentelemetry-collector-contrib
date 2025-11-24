@@ -5,6 +5,7 @@ package elasticsearchexporter
 
 import (
 	"compress/gzip"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -350,7 +351,7 @@ func TestConfig(t *testing.T) {
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
-				cfg.QueueBatchConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+				cfg.QueueBatchConfig = configoptional.Default(*cfg.QueueBatchConfig.Get())
 			}),
 		},
 		{
@@ -418,11 +419,18 @@ func TestConfig(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configFile))
 			require.NoError(t, err)
 
+			fmt.Println("START HERE")
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
+			fmt.Println("ONE CALL")
 			require.NoError(t, sub.Unmarshal(cfg))
+			fmt.Println("FINISH")
 
 			assert.NoError(t, xconfmap.Validate(cfg))
+
+			fmt.Println("HEY", cfg.(*Config).QueueBatchConfig.HasValue())
+			fmt.Println("BATCH", cfg.(*Config).QueueBatchConfig.HasValue())
+			
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

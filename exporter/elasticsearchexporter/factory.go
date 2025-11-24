@@ -39,9 +39,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	qs := exporterhelper.NewDefaultQueueConfig()
-	qs.Get().QueueSize = 10
-	qs.Get().BlockOnOverflow = true
-	qs.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
+	qs.QueueSize = 10
+	qs.BlockOnOverflow = true
+	qs.Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: 10 * time.Second,
 		MinSize:      1e+6,
 		MaxSize:      5e+6,
@@ -54,7 +54,7 @@ func createDefaultConfig() component.Config {
 	httpClientConfig.CompressionParams.Level = gzip.BestSpeed
 
 	return &Config{
-		QueueBatchConfig: qs,
+		QueueBatchConfig: configoptional.Some(qs),
 		ClientConfig:     httpClientConfig,
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,

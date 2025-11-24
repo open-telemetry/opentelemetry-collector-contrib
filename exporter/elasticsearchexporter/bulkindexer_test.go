@@ -83,7 +83,7 @@ func TestSyncBulkIndexer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var reqCnt atomic.Int64
 			cfg := Config{
-				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
 					NumConsumers: 1,
 				}),
 				MetadataKeys: []string{"x-test"},

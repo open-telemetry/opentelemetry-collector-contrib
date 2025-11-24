@@ -317,7 +317,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if !conf.IsSet("sending_queue::num_consumers") && conf.IsSet("num_workers") {
 		cfg.QueueBatchConfig.Get().NumConsumers = cfg.NumWorkers
 	}
-	if cfg.QueueBatchConfig.GetOrInsertDefault().Batch.HasValue() {
+	fmt.Println("DANGER DANGER")
+	if cfg.QueueBatchConfig.HasValue() && cfg.QueueBatchConfig.Get().Batch.HasValue() {
 		qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
 		if !conf.IsSet("sending_queue::batch::flush_timeout") && conf.IsSet("flush::interval") {
 			qbCfg.FlushTimeout = cfg.Flush.Interval
@@ -326,6 +327,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			qbCfg.MaxSize = int64(cfg.Flush.Bytes)
 		}
 	}
+	fmt.Println("END (DANGER DANGER)")
 	return nil
 }
 

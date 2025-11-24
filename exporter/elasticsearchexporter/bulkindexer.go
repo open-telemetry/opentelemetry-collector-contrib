@@ -122,7 +122,7 @@ func newSyncBulkIndexer(
 	logger *zap.Logger,
 ) *syncBulkIndexer {
 	var maxFlushBytes int64
-	if config.QueueBatchConfig.Get().Batch.HasValue() {
+	if config.QueueBatchConfig.HasValue() && config.QueueBatchConfig.Get().Batch.HasValue() {
 		batch := config.QueueBatchConfig.Get().Batch.Get()
 		if batch.Sizer == exporterhelper.RequestSizerTypeBytes {
 			maxFlushBytes = batch.MaxSize
