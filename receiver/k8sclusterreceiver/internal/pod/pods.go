@@ -60,30 +60,30 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			LastTerminationState: cs.LastTerminationState,
 		})
 	}
-    for i := range pod.Status.InitContainerStatuses {
-        cs := &pod.Status.InitContainerStatuses[i]
-        newPod.Status.InitContainerStatuses = append(newPod.Status.InitContainerStatuses, corev1.ContainerStatus{
-            Name:                 cs.Name,
-            Image:                cs.Image,
-            ContainerID:          cs.ContainerID,
-            RestartCount:         cs.RestartCount,
-            Ready:                cs.Ready,
-            State:                cs.State,
-            LastTerminationState: cs.LastTerminationState,
-        })
-    }
-    for i := range pod.Status.EphemeralContainerStatuses {
-        cs := &pod.Status.EphemeralContainerStatuses[i]
-        newPod.Status.EphemeralContainerStatuses = append(newPod.Status.EphemeralContainerStatuses, corev1.ContainerStatus{
-            Name:                 cs.Name,
-            Image:                cs.Image,
-            ContainerID:          cs.ContainerID,
-            RestartCount:         cs.RestartCount,
-            Ready:                cs.Ready,
-            State:                cs.State,
-            LastTerminationState: cs.LastTerminationState,
-        })
-    }
+	for i := range pod.Status.InitContainerStatuses {
+		cs := &pod.Status.InitContainerStatuses[i]
+		newPod.Status.InitContainerStatuses = append(newPod.Status.InitContainerStatuses, corev1.ContainerStatus{
+			Name:                 cs.Name,
+			Image:                cs.Image,
+			ContainerID:          cs.ContainerID,
+			RestartCount:         cs.RestartCount,
+			Ready:                cs.Ready,
+			State:                cs.State,
+			LastTerminationState: cs.LastTerminationState,
+		})
+	}
+	for i := range pod.Status.EphemeralContainerStatuses {
+		cs := &pod.Status.EphemeralContainerStatuses[i]
+		newPod.Status.EphemeralContainerStatuses = append(newPod.Status.EphemeralContainerStatuses, corev1.ContainerStatus{
+			Name:                 cs.Name,
+			Image:                cs.Image,
+			ContainerID:          cs.ContainerID,
+			RestartCount:         cs.RestartCount,
+			Ready:                cs.Ready,
+			State:                cs.State,
+			LastTerminationState: cs.LastTerminationState,
+		})
+	}
 	for i := range pod.Spec.Containers {
 		c := &pod.Spec.Containers[i]
 		newPod.Spec.Containers = append(newPod.Spec.Containers, corev1.Container{
@@ -105,18 +105,18 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			},
 		})
 	}
-    for i := range pod.Spec.EphemeralContainers {
-        c := &pod.Spec.EphemeralContainers[i]
-        newPod.Spec.EphemeralContainers = append(newPod.Spec.EphemeralContainers, corev1.EphemeralContainer{
-            EphemeralContainerCommon: corev1.EphemeralContainerCommon{
-                Name: c.Name,
-                Resources: corev1.ResourceRequirements{
-                    Requests: c.Resources.Requests,
-                    Limits:   c.Resources.Limits,
-                },
-            },
-        })
-    }
+	for i := range pod.Spec.EphemeralContainers {
+		c := &pod.Spec.EphemeralContainers[i]
+		newPod.Spec.EphemeralContainers = append(newPod.Spec.EphemeralContainers, corev1.EphemeralContainer{
+			EphemeralContainerCommon: corev1.EphemeralContainerCommon{
+				Name: c.Name,
+				Resources: corev1.ResourceRequirements{
+					Requests: c.Resources.Requests,
+					Limits:   c.Resources.Limits,
+				},
+			},
+		})
+	}
 	return newPod
 }
 
@@ -141,27 +141,15 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 			container.RecordSpecMetrics(logger, mb, c, pod, ts)
 		}
 	}
-<<<<<<< Updated upstream
-    for i := range pod.Spec.EphemeralContainers {
-        ec := pod.Spec.EphemeralContainers[i]
-        // Convert EphemeralContainer to a minimal Container for metrics (name/resources)
-        c := corev1.Container{
-            Name: ec.Name,
-            Resources: ec.Resources,
-        }
-        container.RecordSpecMetrics(logger, mb, c, pod, ts)
-    }
-    
-=======
 	for i := range pod.Spec.EphemeralContainers {
 		ec := pod.Spec.EphemeralContainers[i]
+		// Convert EphemeralContainer to a minimal Container for metrics (name/resources)
 		c := corev1.Container{
 			Name:      ec.Name,
 			Resources: ec.Resources,
 		}
 		container.RecordSpecMetrics(logger, mb, c, pod, ts)
 	}
->>>>>>> Stashed changes
 }
 
 func reasonToInt(reason string) int32 {
