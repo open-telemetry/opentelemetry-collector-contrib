@@ -359,6 +359,75 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	require.Empty(t, loggerCore.errorMessages, "labels were not sanitized properly")
 }
 
+func TestWithoutScopeInfoFlag(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDescription("test description")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(42)
+	dp.Attributes().PutStr("somelabel", "1")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	loggerCore := errorCheckCore{}
+	// Replace accumulator with mock for test control
+	scopeAttributes := pcommon.NewMap()
+	scopeAttributes.PutStr("lib", "clickhouse")
+	scopeAttributes.PutStr("repo", "https://gitlab/project/source")
+	ma := &mockAccumulator{
+		[]pmetric.Metric{metric},
+		pcommon.NewMap(),
+		[]string{"io.opentelemetry.contrib.clickhouse"},
+		[]string{"1.0.0"},
+		[]string{"https://opentelemetry.io/schemas/1.7.0"},
+		[]pcommon.Map{scopeAttributes},
+	}
+
+	withoutScopeCollector := newCollector(&Config{
+		Namespace:        "test_space",
+		SendTimestamps:   false,
+		WithoutScopeInfo: true,
+	}, zap.New(&loggerCore))
+	withoutScopeCollector.accumulator = ma
+	withScopeCollector := newCollector(&Config{
+		Namespace:        "test_space",
+		SendTimestamps:   false,
+		WithoutScopeInfo: false,
+	}, zap.New(&loggerCore))
+	withScopeCollector.accumulator = ma
+
+	withoutScopeCh := make(chan prometheus.Metric, 1)
+	withScopeCh := make(chan prometheus.Metric, 1)
+	go func() {
+		withoutScopeCollector.Collect(withoutScopeCh)
+		close(withoutScopeCh)
+	}()
+	go func() {
+		withScopeCollector.Collect(withScopeCh)
+		close(withScopeCh)
+	}()
+
+	for m := range withoutScopeCh {
+		pbMetric := io_prometheus_client.Metric{}
+		require.NoError(t, m.Write(&pbMetric))
+		actualLabels := []string{}
+		for _, l := range pbMetric.Label {
+			actualLabels = append(actualLabels, *l.Name)
+		}
+		require.ElementsMatch(t, actualLabels, []string{"somelabel"})
+	}
+	for m := range withScopeCh {
+		pbMetric := io_prometheus_client.Metric{}
+		require.NoError(t, m.Write(&pbMetric))
+		actualLabels := []string{}
+		for _, l := range pbMetric.Label {
+			actualLabels = append(actualLabels, *l.Name)
+		}
+		require.ElementsMatch(t, actualLabels, []string{"somelabel", "otel_scope_name", "otel_scope_version", "otel_scope_schema_url" /* scope attributes*/, "otel_scope_lib", "otel_scope_repo"})
+	}
+
+	require.Empty(t, loggerCore.errorMessages, "collector unexpectedly returned an error")
+}
+
 func TestCollectMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
