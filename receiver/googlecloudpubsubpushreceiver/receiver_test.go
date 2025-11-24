@@ -220,15 +220,11 @@ func TestStartShutdown(t *testing.T) {
 }
 
 func TestTelemetry(t *testing.T) {
+	p := newTestPubSubPushReceiver(t, &Config{})
 	tel := componenttest.NewTelemetry()
 	tb, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
-
-	p := &pubSubPushReceiver{
-		settings:         receivertest.NewNopSettings(metadata.Type),
-		nextLogs:         consumertest.NewNop(),
-		telemetryBuilder: tb,
-	}
+	p.telemetryBuilder = tb
 
 	// We will let the function to unmarshal logs hang so we can test that the
 	// active requests increases. Once we are sure of it, we let the function
@@ -246,39 +242,53 @@ func TestTelemetry(t *testing.T) {
 			return plog.Logs{}, nil
 		},
 		p.nextLogs.ConsumeLogs,
-		nil,
+		p.storageClient,
 		false,
 		p.settings.Logger,
 	)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
+	// send long directly to Pub/Sub
+
 	request := newTestRequest(t, map[string]string{}, []byte(dummyLog), "")
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		resp, err := http.Post(
-			server.URL,
-			"application/json",
-			request,
-		)
-		assert.NoError(t, err)
-		defer func() {
-			errBody := resp.Body.Close()
-			assert.NoError(t, errBody)
+	makeRequest := func() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			resp, err := http.Post(
+				server.URL,
+				"application/json",
+				request,
+			)
+			assert.NoError(t, err)
+			defer func() {
+				errBody := resp.Body.Close()
+				assert.NoError(t, errBody)
+			}()
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		}()
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-	}()
+	}
+	pauseRequest := func() {
+		<-started
+	}
+	stopRequest := func() {
+		done <- true
+		wg.Wait()
+	}
 
-	<-started
+	makeRequest()
+	pauseRequest() // so we can test active requests
+
 	metadatatest.AssertEqualHTTPServerRequestActiveCount(t, tel, []metricdata.DataPoint[int64]{{
 		Value:      1,
 		Attributes: attribute.NewSet(),
 	}}, metricdatatest.IgnoreTimestamp())
-	done <- true
-	wg.Wait()
+
+	stopRequest()
+
 	metadatatest.AssertEqualHTTPServerRequestActiveCount(t, tel, []metricdata.DataPoint[int64]{{
 		Value:      0,
 		Attributes: attribute.NewSet(),
@@ -291,10 +301,27 @@ func TestTelemetry(t *testing.T) {
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 
 	metadatatest.AssertEqualGcpPubsubInputUncompressedSize(t, tel, []metricdata.HistogramDataPoint[float64]{{
-		Attributes: attribute.NewSet(
-			attribute.String(bucketNameAttr, ""), // empty, coming directly from Pub/Sub
-		),
+		// no attributes, since it comes directly from Pub/Sub
+		Attributes: attribute.NewSet(),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	// send an event notification to Pub/Sub from placing log in bucket
+
+	request = newTestRequest(t, map[string]string{
+		bucketIDKey:  emulatorBucket,
+		objectIDKey:  emulatorObject,
+		eventTypeKey: eventObjectFinalize,
+	}, nil, "")
+
+	makeRequest()
+	stopRequest()
+
+	metadatatest.AssertEqualGcpPubsubInputUncompressedSize(t, tel, []metricdata.HistogramDataPoint[float64]{
+		// log from first request went directly to Pub/Sub
+		{Attributes: attribute.NewSet()},
+		// log from last request went to emulator bucket
+		{Attributes: attribute.NewSet(attribute.String(bucketNameAttr, emulatorBucket))},
+	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 }
 
 type mockHost struct {
@@ -343,6 +370,8 @@ func startTestStorageEmulator(t *testing.T) {
 		methodPath := r.Method + " " + r.URL.Path
 		switch methodPath {
 		case fmt.Sprintf("GET /%s/%s", emulatorBucket, emulatorObject):
+			w.WriteHeader(http.StatusOK)
+		case fmt.Sprintf("POST /%s/%s", emulatorBucket, emulatorObject):
 			w.WriteHeader(http.StatusOK)
 		default:
 			t.Errorf("Unexpected request: %s", methodPath)

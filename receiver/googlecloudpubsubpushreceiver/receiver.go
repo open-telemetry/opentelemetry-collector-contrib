@@ -303,9 +303,13 @@ func handlePubSubPushRequest[T any](
 
 	if tb != nil {
 		incomingSize := len(unmarshalData)
-		bucketName := request.Message.Attributes[bucketIDKey] // it will be empty if coming from Pub/Sub directly
+		metricAttr := attribute.NewSet()
+		if bucketName := request.Message.Attributes[bucketIDKey]; bucketName != "" {
+			// this field is empty if the log is sent directly to Pub/Sub
+			metricAttr = attribute.NewSet(attribute.String(bucketNameAttr, bucketName))
+		}
 		tb.GcpPubsubInputUncompressedSize.Record(ctx, float64(incomingSize), metric.WithAttributeSet(
-			attribute.NewSet(attribute.String(bucketNameAttr, bucketName))),
+			metricAttr),
 		)
 	}
 	unmarshalled, err := unmarshal(unmarshalData)
