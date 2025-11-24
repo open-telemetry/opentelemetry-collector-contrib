@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -18,7 +18,7 @@ import (
 var _ cache.ResourceEventHandler = (*handler)(nil)
 
 const (
-	epMissingHostnamesMsg = "Endpoints object missing hostnames"
+	epMissingHostnamesMsg = "EndpointSlice object missing hostnames"
 )
 
 type handler struct {
@@ -34,8 +34,7 @@ func (h handler) OnAdd(obj any, _ bool) {
 	var ok bool
 
 	switch object := obj.(type) {
-	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-	case *corev1.Endpoints:
+	case *discoveryv1.EndpointSlice:
 		ok, endpoints = convertToEndpoints(h.returnNames, object)
 		if !ok {
 			h.logger.Warn(epMissingHostnamesMsg, zap.Any("obj", obj))
@@ -61,10 +60,8 @@ func (h handler) OnAdd(obj any, _ bool) {
 
 func (h handler) OnUpdate(oldObj, newObj any) {
 	switch oldEps := oldObj.(type) {
-	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-	case *corev1.Endpoints:
-		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-		newEps, ok := newObj.(*corev1.Endpoints)
+	case *discoveryv1.EndpointSlice:
+		newEps, ok := newObj.(*discoveryv1.EndpointSlice)
 		if !ok {
 			h.logger.Warn("Got an unexpected Kubernetes data type during the update of the pods for a service", zap.Any("obj", newObj))
 			h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
@@ -117,8 +114,7 @@ func (h handler) OnDelete(obj any) {
 	case *cache.DeletedFinalStateUnknown:
 		h.OnDelete(object.Obj)
 		return
-	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-	case *corev1.Endpoints:
+	case *discoveryv1.EndpointSlice:
 		if object != nil {
 			ok, endpoints = convertToEndpoints(h.returnNames, object)
 			if !ok {
@@ -140,19 +136,18 @@ func (h handler) OnDelete(obj any) {
 	}
 }
 
-//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-func convertToEndpoints(retNames bool, eps ...*corev1.Endpoints) (bool, map[string]bool) {
+func convertToEndpoints(retNames bool, eps ...*discoveryv1.EndpointSlice) (bool, map[string]bool) {
 	res := map[string]bool{}
 	for _, ep := range eps {
-		for _, subsets := range ep.Subsets {
-			for _, addr := range subsets.Addresses {
+		for _, endpoint := range ep.Endpoints {
+			for _, addr := range endpoint.Addresses {
 				if retNames {
-					if addr.Hostname == "" {
+					if endpoint.Hostname == nil || *endpoint.Hostname == "" {
 						return false, nil
 					}
-					res[addr.Hostname] = true
+					res[*endpoint.Hostname] = true
 				} else {
-					res[addr.IP] = true
+					res[addr] = true
 				}
 			}
 		}

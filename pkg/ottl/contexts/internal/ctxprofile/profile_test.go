@@ -76,10 +76,6 @@ func TestPathGetSetter(t *testing.T) {
 			val:  int64(234),
 		},
 		{
-			path: "comment_string_indices",
-			val:  []int64{345},
-		},
-		{
 			path: "profile_id",
 			val:  createProfileID(),
 		},
@@ -221,7 +217,6 @@ func newProfileContext(profile pprofile.Profile, dictionary pprofile.ProfilesDic
 
 func createValueType() pprofile.ValueType {
 	vt := pprofile.NewValueType()
-	vt.SetAggregationTemporality(pprofile.AggregationTemporalityDelta)
 	vt.SetTypeStrindex(2)
 	vt.SetUnitStrindex(3)
 	return vt

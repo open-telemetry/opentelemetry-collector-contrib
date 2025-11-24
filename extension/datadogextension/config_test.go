@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
@@ -121,7 +122,8 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 	// Create extension with proxy config
 	set := extension.Settings{
 		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
+			Logger:   zap.NewNop(),
+			Resource: pcommon.NewResource(),
 		},
 	}
 	hostProvider := &mockSourceProvider{

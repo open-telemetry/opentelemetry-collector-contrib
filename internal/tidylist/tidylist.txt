@@ -73,6 +73,7 @@ connector/datadogconnector
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
+connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
@@ -170,7 +171,6 @@ extension/observer/cfgardenobserver
 internal/docker
 extension/observer/dockerobserver
 extension/observer/ecsobserver
-extension/observer/ecstaskobserver
 extension/observer/hostobserver
 pkg/xk8stest
 extension/observer/k8sobserver
@@ -204,6 +204,7 @@ pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
 pkg/translator/opencensus
+pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
@@ -259,6 +260,7 @@ receiver/fluentforwardreceiver
 receiver/githubreceiver
 receiver/gitlabreceiver
 receiver/googlecloudmonitoringreceiver
+receiver/googlecloudpubsubpushreceiver
 receiver/googlecloudpubsubreceiver
 receiver/googlecloudspannerreceiver
 receiver/haproxyreceiver
@@ -278,6 +280,7 @@ receiver/kafkareceiver
 receiver/kubeletstatsreceiver
 receiver/libhoneyreceiver
 receiver/lokireceiver
+receiver/macosunifiedloggingreceiver
 receiver/memcachedreceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
@@ -325,5 +328,6 @@ receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
 receiver/windowsservicereceiver
+receiver/yanggrpcreceiver
 scraper/zookeeperscraper
 receiver/zookeeperreceiver

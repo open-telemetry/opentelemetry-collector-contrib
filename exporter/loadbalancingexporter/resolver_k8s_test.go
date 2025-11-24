@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -30,39 +30,37 @@ func TestK8sResolve(t *testing.T) {
 		returnHostnames bool
 	}
 	type suiteContext struct {
-		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-		endpoint  *corev1.Endpoints
+		endpoint  *discoveryv1.EndpointSlice
 		clientset *fake.Clientset
 		resolver  *k8sResolver
 	}
+	hostname := "pod-0"
+	hostname1 := "pod-1"
 	setupSuite := func(t *testing.T, args args) (*suiteContext, func(*testing.T)) {
 		service, defaultNs, ports, returnHostnames := args.service, args.namespace, args.ports, args.returnHostnames
-		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-		endpoint := &corev1.Endpoints{
+		endpoint := &discoveryv1.EndpointSlice{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      service,
 				Namespace: defaultNs,
+				Labels: map[string]string{
+					"kubernetes.io/service-name": service,
+				},
 			},
-			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-			Subsets: []corev1.EndpointSubset{
+			Endpoints: []discoveryv1.Endpoint{
 				{
-					Addresses: []corev1.EndpointAddress{
-						{
-							Hostname: "pod-0",
-							IP:       "192.168.10.100",
-						},
-					},
+					Addresses: []string{"192.168.10.100"},
+					Hostname:  &hostname,
 				},
 			},
 		}
 		var expectInit []string
-		for _, subset := range endpoint.Subsets {
-			for _, address := range subset.Addresses {
+		for _, endpoint := range endpoint.Endpoints {
+			for _, address := range endpoint.Addresses {
 				for _, port := range args.ports {
 					if returnHostnames {
-						expectInit = append(expectInit, fmt.Sprintf("%s.%s.%s:%d", address.Hostname, service, defaultNs, port))
+						expectInit = append(expectInit, fmt.Sprintf("%s.%s.%s:%d", *endpoint.Hostname, service, defaultNs, port))
 					} else {
-						expectInit = append(expectInit, fmt.Sprintf("%s:%d", address.IP, port))
+						expectInit = append(expectInit, fmt.Sprintf("%s:%d", address, port))
 					}
 				}
 			}
@@ -77,7 +75,7 @@ func TestK8sResolve(t *testing.T) {
 		// Wait for the initial endpoints to be populated by the informer
 		// The informer cache sync only guarantees the cache is ready, but the OnAdd
 		// handler runs asynchronously and may not have completed yet
-		cErr := waitForCondition(t, 1200*time.Millisecond, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+		cErr := waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
 			if _, resErr := res.resolve(ctx); resErr != nil {
 				return false, resErr
 			}
@@ -116,16 +114,13 @@ func TestK8sResolve(t *testing.T) {
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
 				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
-				//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-				endpoint.Subsets = append(endpoint.Subsets, corev1.EndpointSubset{
-					Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11"}},
-				})
+				endpoint.Endpoints = append(endpoint.Endpoints, discoveryv1.Endpoint{Addresses: []string{"10.10.0.11"}})
 				patch := client.MergeFrom(exist)
 				data, err := patch.Data(endpoint)
 				if err != nil {
 					return err
 				}
-				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
 					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
@@ -151,7 +146,7 @@ func TestK8sResolve(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
 					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
@@ -174,16 +169,13 @@ func TestK8sResolve(t *testing.T) {
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
 				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
-				//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-				endpoint.Subsets = append(endpoint.Subsets, corev1.EndpointSubset{
-					Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11", Hostname: "pod-1"}},
-				})
+				endpoint.Endpoints = append(endpoint.Endpoints, discoveryv1.Endpoint{Addresses: []string{"10.10.0.11"}, Hostname: &hostname1})
 				patch := client.MergeFrom(exist)
 				data, err := patch.Data(endpoint)
 				if err != nil {
 					return err
 				}
-				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
 					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
@@ -204,16 +196,15 @@ func TestK8sResolve(t *testing.T) {
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
 				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
-				//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-				endpoint.Subsets = []corev1.EndpointSubset{
-					{Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11"}}},
+				endpoint.Endpoints = []discoveryv1.Endpoint{
+					{Addresses: []string{"10.10.0.11"}},
 				}
 				patch := client.MergeFrom(exist)
 				data, err := patch.Data(endpoint)
 				if err != nil {
 					return err
 				}
-				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
 					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
@@ -230,7 +221,7 @@ func TestK8sResolve(t *testing.T) {
 				ports:     []int32{8080, 9090},
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
-				return suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
+				return suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
 					Delete(t.Context(), args.service, metav1.DeleteOptions{})
 			},
 			expectedEndpoints: nil,

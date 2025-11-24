@@ -3,7 +3,6 @@ on:
   pull_request_target:
     types:
       - opened
-      - labeled
 
 permissions: read-all
 
@@ -31,5 +30,5 @@ jobs:
             **Important reminders:**
             - Please review our [Contributing Guidelines](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md).
             - Don't forget to sign the [Contributor License Agreement (CLA)](https://identity.linuxfoundation.org/projects/cncf) if you haven't already.
-            
+
             A maintainer will review your pull request soon. Thank you for helping make OpenTelemetry better!

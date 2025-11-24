@@ -18,6 +18,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
@@ -74,6 +75,8 @@ func getEncodingFormat(logType string) string {
 	case vpcflowlog.NetworkManagementNameSuffix,
 		vpcflowlog.ComputeNameSuffix:
 		return constants.GCPFormatVPCFlowLog
+	case armorlog.LoadBalancerLogSuffix:
+		return constants.GCPFormatLoadBalancerLog
 	default:
 		return ""
 	}
@@ -239,7 +242,7 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	shared.PutInt(string(semconv.HTTPResponseStatusCodeKey), req.Status, attributes)
 	shared.PutStr(string(semconv.HTTPRequestMethodKey), req.RequestMethod, attributes)
 	shared.PutStr(string(semconv.UserAgentOriginalKey), req.UserAgent, attributes)
-	shared.PutStr(string(semconv.ClientAddressKey), req.RemoteIP, attributes)
+	shared.PutStr(string(semconv.NetworkPeerAddressKey), req.RemoteIP, attributes)
 	shared.PutStr(string(semconv.ServerAddressKey), req.ServerIP, attributes)
 	shared.PutStr(refererHeaderField, req.Referer, attributes)
 	shared.PutBool(gcpCacheLookupField, req.CacheLookup, attributes)
@@ -490,6 +493,17 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 			return fmt.Errorf("failed to parse VPC flow log JSON payload: %w", err)
 		}
 		return nil
+	case constants.GCPFormatLoadBalancerLog:
+		// Add encoding.format to scope attributes for Load balancer logs
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
+		// Quick check to avoid unmarshaling non-armor load balancer logs
+		if armorlog.ContainsSecurityPolicyFields(log.JSONPayload) {
+			if err := armorlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+				return fmt.Errorf("failed to parse Armor log JSON payload: %w", err)
+			}
+			return nil
+		}
+		// Fall through to default payload handling for non-armor load balancer logs
 		// TODO Add support for more log types
 	}
 

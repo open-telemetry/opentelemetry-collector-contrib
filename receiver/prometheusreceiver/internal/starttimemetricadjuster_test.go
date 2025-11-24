@@ -167,6 +167,7 @@ func TestStartTimeMetricMatch(t *testing.T) {
 }
 
 func TestStartTimeMetricFallback(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, removeStartTimeAdjustment, false)()
 	const startTime = pcommon.Timestamp(123 * 1e9)
 	const currentTime = pcommon.Timestamp(126 * 1e9)
 	mockStartTime := time.Now().Add(-10 * time.Hour)

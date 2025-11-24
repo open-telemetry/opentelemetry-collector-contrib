@@ -118,7 +118,7 @@ func TestSerializeProfile(t *testing.T) {
 
 				profile.AttributeIndices().Append(2)
 
-				sample := profile.Sample().AppendEmpty()
+				sample := profile.Samples().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
 				sample.AttributeIndices().Append(3)
 				sample.SetStackIndex(0)
@@ -139,6 +139,7 @@ func TestSerializeProfile(t *testing.T) {
 					"host.id":                       "localhost",
 					"process.executable.name":       "libc.so.6",
 					"process.thread.name":           "",
+					"profiling.project.id":          json.Number("2"),
 				},
 				{
 					"script": map[string]any{
