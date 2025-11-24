@@ -64,8 +64,6 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 		return samplingpolicy.NotSampled, nil
 	}
 
-	trace.Lock()
-	defer trace.Unlock()
 	batches := trace.ReceivedBatches
 
 	for i := 0; i < batches.ResourceSpans().Len(); i++ {

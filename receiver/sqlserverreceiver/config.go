@@ -110,7 +110,7 @@ func directDBConnectionEnabled(config *Config) (bool, error) {
 
 func (cfg *Config) EffectiveLookbackTime() time.Duration {
 	if cfg.LookbackTime == 0 {
-		return 2 * cfg.ControllerConfig.CollectionInterval
+		return 2 * cfg.TopQueryCollection.CollectionInterval
 	}
 	return cfg.LookbackTime
 }
