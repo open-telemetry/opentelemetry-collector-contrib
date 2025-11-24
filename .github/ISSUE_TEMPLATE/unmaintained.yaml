@@ -32,6 +32,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/metricsaslogs
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing
@@ -180,6 +181,7 @@ body:
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
+      - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
@@ -212,6 +214,7 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/azure
       - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
@@ -264,6 +267,7 @@ body:
       - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
+      - receiver/googlecloudpubsubpush
       - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
@@ -295,6 +299,7 @@ body:
       - receiver/kubeletstats
       - receiver/libhoney
       - receiver/loki
+      - receiver/macosunifiedlogging
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas

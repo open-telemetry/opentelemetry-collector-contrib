@@ -174,6 +174,7 @@ receivers:
             path: /events
             health_path: /health
             secret: ${env:SECRET_STRING_VAR}
+            service_name: github-actions  # single logical CI service (See Configuring Service Name section below)
             required_headers:
                 WAF-Header: "value"
         scrapers: # The validation expects at least a dummy scraper config
@@ -188,24 +189,34 @@ of exposed configuration values can be found in [`config.go`](./config.go).
 
 The `service_name` option in the WebHook configuration can be used to set a
 pre-defined `service.name` resource attribute for all traces emitted by the
-receiver. This takes priority over the internal generation of the
-`service.name`. In this configuration, it would be important to create a GitHub
-receiver per GitHub app configured for the set of repositories that match your
-`service.name`.
+receiver. This value should represent the **logical service producing telemetry**
+(as defined by OpenTelemetry resource semantics), not individual repositories or
+components. For CI/CD usage, a typical choice is a single service such as
+`github-actions` (optionally paired with `service.namespace` for ownership and
+uniqueness).
 
-However, a more efficient approach would be to leverage the default generation
-of `service.name` by configuring [Custom Properties][cp] in each GitHub
-repository. To do that simply add a `service_name` key with the desired value in
-each repository and all events sent to the GitHub receiver will properly
-associate with that `service.name`. Alternatively, the `service_name` will be
-derived from the repository name.
+If you choose to set `service_name` explicitly, consider running a separate
+GitHub receiver (and/or GitHub App) for each distinct service that you want to
+model.
 
-The precedence for setting the `service.name` resource attribute is as follows:
+If you do not set `service_name`, the receiver supports deriving it from
+repository metadata. You can configure [Custom Properties][cp] in each GitHub
+repository by adding a `service_name` key; all events from that repository will
+then carry the specified `service.name`. If no custom property is found, the
+receiver will derive `service.name` from the repository name.
 
-1. `service_name` configuration in the WebHook configuration.
-2. `service_name` key in the repository's Custom Properties per repository.
+> **Note:** Deriving `service.name` from repositories is a convenience and may
+> be sufficient for small setups. In larger organizations, mapping repositories
+> directly to `service.name` often leads to many pseudo-services and can make
+> cross-repository analysis harder. Prefer an explicit CI service name when
+> modeling your pipelines as a platform service.
+
+**Precedence for setting `service.name`:**
+
+1. `service_name` in the WebHook configuration.
+2. `service_name` key in the repository’s Custom Properties.
 3. `service_name` derived from the repository name.
-4. `service.name` set to `unknown_service` per the semantic conventions as a fall back.
+4. `service.name` defaults to `unknown_service` per the semantic conventions.
 
 ### Span Events
 

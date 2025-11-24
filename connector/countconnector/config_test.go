@@ -422,6 +422,10 @@ func TestLoadConfig(t *testing.T) {
 								Key:          "request_success",
 								DefaultValue: float64(0.85),
 							},
+							{
+								Key:          "cache_hit",
+								DefaultValue: bool(true),
+							},
 						},
 					},
 				},

@@ -15,7 +15,7 @@ import (
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -48,7 +48,7 @@ type datadogReceiver struct {
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
 
-	traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]
+	traceIDCache *lru.Cache[uint64, pcommon.TraceID]
 }
 
 // Endpoint specifies an API endpoint definition.
@@ -164,9 +164,9 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		return nil, err
 	}
 
-	var cache *simplelru.LRU[uint64, pcommon.TraceID]
+	var cache *lru.Cache[uint64, pcommon.TraceID]
 	if FullTraceIDFeatureGate.IsEnabled() {
-		cache, err = simplelru.NewLRU[uint64, pcommon.TraceID](config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
+		cache, err = lru.NewWithEvict(config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
 			params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
 		})
 		if err != nil {

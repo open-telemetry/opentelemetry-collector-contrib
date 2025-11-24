@@ -166,11 +166,11 @@ func parseStats(resp string) map[string]string {
 	metrics := make(map[string]string)
 
 	for field := range strings.SplitSeq(resp, "\n") {
-		index := strings.Index(field, ": ")
-		if index == -1 {
+		key, value, found := strings.Cut(field, ": ")
+		if !found {
 			continue
 		}
-		metrics[field[:index]] = field[index+2:]
+		metrics[key] = value
 	}
 	return metrics
 }
