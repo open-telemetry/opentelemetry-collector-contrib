@@ -27,7 +27,7 @@ The `container`  parser can be configured to embed certain operations such as th
 Requires `include_file_path: true` in order for the `log.file.path` field to be available for the operator.
 If that's not possible, users can disable the metadata addition with `add_metadata_from_filepath: false`.
 A file path like `"/var/log/pods/some-ns_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"`,
-will produce the following k8s metadata:
+will produce the following k8s metadata as part of the [Entry.resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/entry.md):
 
 ```json
 {
