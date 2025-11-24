@@ -379,7 +379,7 @@ func TestConfigValidate(t *testing.T) {
 					Encoding:     "otlp_proto",
 				},
 			},
-			expectedErr: "logs.exclude_topic is configured but will be ignored because logs.topic does not use regex pattern (must start with '^')",
+			expectedErr: "logs.exclude_topic is configured but logs.topic does not use regex pattern (must start with '^')",
 		},
 		{
 			name: "invalid config with non-regex topic and exclude_topic for metrics",
@@ -390,7 +390,7 @@ func TestConfigValidate(t *testing.T) {
 					Encoding:     "otlp_proto",
 				},
 			},
-			expectedErr: "metrics.exclude_topic is configured but will be ignored because metrics.topic does not use regex pattern (must start with '^')",
+			expectedErr: "metrics.exclude_topic is configured but metrics.topic does not use regex pattern (must start with '^')",
 		},
 		{
 			name: "invalid config with non-regex topic and exclude_topic for traces",
@@ -401,7 +401,7 @@ func TestConfigValidate(t *testing.T) {
 					Encoding:     "otlp_proto",
 				},
 			},
-			expectedErr: "traces.exclude_topic is configured but will be ignored because traces.topic does not use regex pattern (must start with '^')",
+			expectedErr: "traces.exclude_topic is configured but traces.topic does not use regex pattern (must start with '^')",
 		},
 		{
 			name: "invalid config with non-regex topic and exclude_topic for profiles",
@@ -412,7 +412,7 @@ func TestConfigValidate(t *testing.T) {
 					Encoding:     "otlp_proto",
 				},
 			},
-			expectedErr: "profiles.exclude_topic is configured but will be ignored because profiles.topic does not use regex pattern (must start with '^')",
+			expectedErr: "profiles.exclude_topic is configured but profiles.topic does not use regex pattern (must start with '^')",
 		},
 		{
 			name: "valid config without exclude_topic",
