@@ -89,6 +89,12 @@ func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) er
 		_ = srv.Serve(ln)
 	}()
 
+	pe.startCleanup()
+	return nil
+}
+
+// startCleanup starts the background metric cleanup routine
+func (pe *prometheusExporter) startCleanup() {
 	interval := max(pe.config.MetricExpiration/2, time.Second*10)
 	cleanupCtx, cancel := context.WithCancel(context.Background())
 	pe.cleanupCancel = cancel
@@ -106,7 +112,6 @@ func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) er
 			}
 		}
 	}()
-	return nil
 }
 
 func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -120,6 +125,12 @@ func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 }
 
 func (pe *prometheusExporter) Shutdown(ctx context.Context) error {
+	pe.stopCleanup(ctx)
+	return pe.shutdownFunc(ctx)
+}
+
+// stopCleanup stops the background metric cleanup routine
+func (pe *prometheusExporter) stopCleanup(ctx context.Context) {
 	if pe.cleanupCancel != nil {
 		pe.cleanupCancel()
 		done := make(chan struct{})
@@ -134,5 +145,4 @@ func (pe *prometheusExporter) Shutdown(ctx context.Context) error {
 			// timeout exceeded
 		}
 	}
-	return pe.shutdownFunc(ctx)
 }

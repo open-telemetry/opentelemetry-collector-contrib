@@ -938,3 +938,102 @@ func TestNormalizeNamespaceSanitizes(t *testing.T) {
 
 	require.Equal(t, "my_namespace.1", ns2, "UTF-8 allowed should not sanitize ASCII characters")
 }
+
+func TestCleanupMetricFamilies(t *testing.T) {
+	tests := []struct {
+		name              string
+		metricExpiration  time.Duration
+		metrics           func(*collector)
+		expectedRemaining int
+		expectedDeleted   []string
+	}{
+		{
+			name:             "remove expired metrics",
+			metricExpiration: 100 * time.Millisecond,
+			metrics: func(c *collector) {
+				now := time.Now()
+				// expired metric
+				c.metricFamilies.Store("metric1", metricFamily{
+					lastSeen: now.Add(-200 * time.Millisecond),
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("metric1"),
+						Type: io_prometheus_client.MetricType_GAUGE.Enum(),
+					},
+				})
+				// fresh metric
+				c.metricFamilies.Store("metric2", metricFamily{
+					lastSeen: now,
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("metric2"),
+						Type: io_prometheus_client.MetricType_GAUGE.Enum(),
+					},
+				})
+			},
+			expectedRemaining: 1,
+			expectedDeleted:   []string{"metric1"},
+		},
+		{
+			name:             "mixed metric types",
+			metricExpiration: 100 * time.Millisecond,
+			metrics: func(c *collector) {
+				now := time.Now()
+				c.metricFamilies.Store("gauge_expired", metricFamily{
+					lastSeen: now.Add(-200 * time.Millisecond),
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("gauge_expired"),
+						Type: io_prometheus_client.MetricType_GAUGE.Enum(),
+					},
+				})
+				c.metricFamilies.Store("counter_fresh", metricFamily{
+					lastSeen: now,
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("counter_fresh"),
+						Type: io_prometheus_client.MetricType_COUNTER.Enum(),
+					},
+				})
+				c.metricFamilies.Store("histogram_expired", metricFamily{
+					lastSeen: now.Add(-150 * time.Millisecond),
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("histogram_expired"),
+						Type: io_prometheus_client.MetricType_HISTOGRAM.Enum(),
+					},
+				})
+				c.metricFamilies.Store("summary_fresh", metricFamily{
+					lastSeen: now.Add(-50 * time.Millisecond),
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("summary_fresh"),
+						Type: io_prometheus_client.MetricType_SUMMARY.Enum(),
+					},
+				})
+			},
+			expectedRemaining: 2,
+			expectedDeleted:   []string{"gauge_expired", "histogram_expired"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{MetricExpiration: tt.metricExpiration}
+			c := newCollector(cfg, zap.NewNop())
+			tt.metrics(c)
+
+			c.cleanupMetricFamilies()
+
+			remainingCount := 0
+			remainingMetrics := make(map[string]bool)
+			c.metricFamilies.Range(func(key, _ any) bool {
+				remainingCount++
+				remainingMetrics[key.(string)] = true
+				return true
+			})
+
+			require.Equal(t, tt.expectedRemaining, remainingCount, "unexpected number of remaining metrics")
+
+			// Verify expected deleted
+			for _, deleted := range tt.expectedDeleted {
+				_, exists := remainingMetrics[deleted]
+				require.False(t, exists, "metric %s should have been deleted", deleted)
+			}
+		})
+	}
+}
