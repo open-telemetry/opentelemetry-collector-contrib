@@ -5,6 +5,7 @@ package clickhouseexporter
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -755,4 +756,33 @@ func TestConfigDatabase(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+// TestBuildClickHouseOptions_WithCAFileOnly verifies that when only a CAFile is provided,
+// buildClickHouseOptions returns a clean TLS error instead of crashing.
+func TestBuildClickHouseOptions_WithCAFileOnly(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	// Use a valid DSN to ensure parsing succeeds before TLS setup.
+	cfg.Endpoint = "clickhouse://default:password@localhost:9000/default?secure=true"
+
+	// Create a dummy CA file (intentionally invalid to trigger TLS error).
+	tmpFile, err := os.CreateTemp(t.TempDir(), "ca*.pem")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----")
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	cfg.TLS.CAFile = tmpFile.Name()
+
+	// Run buildClickHouseOptions.
+	opt, err := cfg.buildClickHouseOptions()
+
+	// We expect an error since the CA file is invalid.
+	require.Error(t, err, "expected error due to invalid CA file")
+
+	// No panic, but options may be nil since TLS setup failed early.
+	require.Nil(t, opt, "expected nil options when TLS setup fails cleanly")
 }
