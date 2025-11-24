@@ -84,32 +84,34 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 	if marshalErr != nil {
 		return marshalErr
 	}
-	subject := eventDataSlice[0].Subject
-	containerName := strings.Split(strings.Split(subject, "containers/")[1], "/")[0]
-	eventType := eventDataSlice[0].EventType
-	blobName := strings.Split(subject, "blobs/")[1]
+	for _, event := range eventDataSlice {
+		subject := event.Subject
+		containerName := strings.Split(strings.Split(subject, "containers/")[1], "/")[0]
+		eventType := event.EventType
+		blobName := strings.Split(subject, "blobs/")[1]
 
-	if eventType == blobCreatedEventType {
-		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
-		if err != nil {
-			return err
-		}
-		switch containerName {
-		case p.logsContainerName:
-			err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
+		if eventType == blobCreatedEventType {
+			p.logger.Info("Staring reading container name", zap.String("containerName", containerName))
+			blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
 			if err != nil {
 				return err
 			}
-		case p.tracesContainerName:
-			err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
-			if err != nil {
-				return err
+			switch containerName {
+			case p.logsContainerName:
+				err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
+				if err != nil {
+					return err
+				}
+			case p.tracesContainerName:
+				err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
+				if err != nil {
+					return err
+				}
+			default:
+				p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
 			}
-		default:
-			p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
 		}
 	}
-
 	return nil
 }
 
