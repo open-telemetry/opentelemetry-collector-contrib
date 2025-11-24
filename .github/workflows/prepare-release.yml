@@ -46,3 +46,4 @@ jobs:
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CURRENT_BETA: ${{ inputs.current-beta }}
         run: ./.github/workflows/scripts/release-prepare-release.sh
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh

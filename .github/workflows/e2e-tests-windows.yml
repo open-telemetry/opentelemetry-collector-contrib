@@ -54,6 +54,7 @@ jobs:
         with:
           name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: ./bin/*
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   supervisor-test:
     strategy:
@@ -68,6 +69,7 @@ jobs:
     needs: [collector-build]
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -88,6 +90,7 @@ jobs:
         run: |
           cd cmd/opampsupervisor
           go test -v --tags=e2e
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   windows-supervisor-service-test:
     strategy:
@@ -100,6 +103,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         id: go-setup
         with:
@@ -134,3 +138,4 @@ jobs:
         run: |
           Remove-Service opampsupervisor
           Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\opampsupervisor
+      - run: ./.github/workflows/scripts/check-disk-space.sh
