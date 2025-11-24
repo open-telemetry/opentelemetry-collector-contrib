@@ -27,6 +27,11 @@ func Test_scanField(t *testing.T) {
 			expected: "GET http://example.com/index.html HTTP/1.1",
 		},
 		{
+			name:     "Multi byte character handling",
+			input:    `"GET http://example.com/こんにちは HTTP/1.1" otherValue`,
+			expected: "GET http://example.com/こんにちは HTTP/1.1",
+		},
+		{
 			name:     "Quoted array - expects unquoted array",
 			input:    `"a","b","c"`,
 			expected: "a,b,c",

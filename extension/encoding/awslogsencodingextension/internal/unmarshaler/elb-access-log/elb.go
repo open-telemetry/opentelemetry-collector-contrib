@@ -436,8 +436,7 @@ func scanField(logLine string) (value, remainder string, err error) {
 	// preserve values without quotes, terminate at space after the closing quote or at line end
 	var quoteStack []rune
 	var unquotedValue []rune
-	for i := 0; i < len(logLine); i++ {
-		char := rune(logLine[i])
+	for i, char := range logLine {
 		if char == ' ' && len(quoteStack) == 0 {
 			// terminating space found, return the value
 			return string(unquotedValue), logLine[i+1:], nil
