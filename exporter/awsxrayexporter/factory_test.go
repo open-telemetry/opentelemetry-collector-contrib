@@ -19,7 +19,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
+func setSkipTimestampValidation(tb testing.TB, value bool) {
+	tb.Helper()
+	prev := skipTimestampValidationFeatureGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(skipTimestampValidationFeatureGate.ID(), value))
+	tb.Cleanup(func() {
+		require.NoError(tb, featuregate.GlobalRegistry().Set(skipTimestampValidationFeatureGate.ID(), prev))
+	})
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
