@@ -1,6 +1,12 @@
-type: resourcedetectionprocessor/azure
+type: azuredetector
 
-parent: resourcedetection
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+    development: [profiles]
+  codeowners:
+    active: [Aneurysm9, dashpole, paulojmdias]
 
 resource_attributes:
   azure.resourcegroup.name:
@@ -47,3 +53,7 @@ resource_attributes:
     description: The hostname
     type: string
     enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
