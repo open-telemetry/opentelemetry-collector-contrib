@@ -65,6 +65,8 @@ func (packer *logPacker) handleMessageData(envelope *contracts.Envelope, data *c
 	applyResourcesToDataProperties(messageData.Properties, resourceAttributes)
 	applyInstrumentationScopeValueToDataProperties(messageData.Properties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+	applyDeviceTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
 
 	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
@@ -119,6 +121,8 @@ func (packer *logPacker) handleExceptionData(envelope *contracts.Envelope, data 
 	applyResourcesToDataProperties(exceptionData.Properties, resourceAttributes)
 	applyInstrumentationScopeValueToDataProperties(exceptionData.Properties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+	applyDeviceTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
 
 	setAttributesAsProperties(logAttributeMap, exceptionData.Properties)
