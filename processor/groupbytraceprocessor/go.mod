@@ -48,7 +48,7 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.140.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
