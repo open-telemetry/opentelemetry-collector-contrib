@@ -97,7 +97,7 @@ func handleConnection(conn *connection, attr pcommon.Map) {
 
 	if conn.Protocol != nil {
 		if protoName, ok := vpcflowlog.ProtocolName(uint32(*conn.Protocol)); ok {
-			attr.PutStr(string(semconv.NetworkProtocolNameKey), protoName)
+			attr.PutStr(string(semconv.NetworkTransportKey), protoName)
 		}
 	}
 }

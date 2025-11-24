@@ -67,7 +67,7 @@ resourceLogs:
               - key: server.port
                 value:
                   intValue: "80"
-              - key: network.protocol.name
+              - key: network.transport
                 value:
                   stringValue: tcp
               - key: gcp.load_balancing.proxy_nlb.connection.start_time

@@ -223,7 +223,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 
 | Flow log field | Attribute in OpenTelemetry log | Support |
 |---|---|---|
-| `connection.protocol` | `network.protocol.name` | supported |
+| `connection.protocol` | `network.transport` | supported |
 | `connection.src_ip` | `source.address` | supported |
 | `connection.dest_ip` | `destination.address` | supported |
 | `connection.src_port` | `source.port` | supported |
@@ -386,7 +386,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `connection.clientPort` | `client.port` |
 | `connection.serverIp` | `server.address` |
 | `connection.serverPort` | `server.port` |
-| `connection.protocol` | `network.protocol.name` (translated from IANA protocol number, e.g., `tcp`, `udp`, `icmp`) |
+| `connection.protocol` | `network.transport` (translated from IANA protocol number, e.g., `tcp`, `udp`, `icmp`) |
 | `startTime` | `gcp.load_balancing.proxy_nlb.connection.start_time` |
 | `endTime` | `gcp.load_balancing.proxy_nlb.connection.end_time` |
 | `serverBytesReceived` | `gcp.load_balancing.proxy_nlb.server.bytes_received` |
