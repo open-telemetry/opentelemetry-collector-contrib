@@ -29,6 +29,7 @@
                      ELSE stats.statement_end_offset
                      END - stats.statement_start_offset) / 2) + 1) AS query_text,
      ISNULL(qp.query_plan, '') AS query_plan,
+     ISNULL(CASE WHEN qs.object_id > 0 THEN qs.object_id END, '') AS procedure_id,
      ISNULL(CASE WHEN qs.object_id > 0
                      THEN QUOTENAME(OBJECT_SCHEMA_NAME(qs.object_id, st.dbid))
                                      + N'.' + QUOTENAME(OBJECT_NAME(qs.object_id, st.dbid))
