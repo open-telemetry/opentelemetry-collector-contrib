@@ -20,9 +20,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter"
 )
 
 type filterLogProcessor struct {
+	consumers         []common.LogsConsumer
 	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
 	skipLogRecordExpr expr.BoolExpr[ottllog.TransformContext]
 	telemetry         *filterTelemetry
@@ -39,6 +41,23 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
 	}
 	flp.telemetry = fpt
+
+	if len(cfg.LogConditions) > 0 {
+		pc, collectionErr := common.NewLogParserCollection(set.TelemetrySettings, common.WithLogParser(filterottl.StandardLogFuncs()))
+		if collectionErr != nil {
+			return nil, collectionErr
+		}
+		var errors error
+		for _, cs := range cfg.LogConditions {
+			metricConsumer, parseErr := pc.ParseContextConditions(cs)
+			errors = multierr.Append(errors, parseErr)
+			flp.consumers = append(flp.consumers, metricConsumer)
+		}
+		if errors != nil {
+			return nil, errors
+		}
+		return flp, nil
+	}
 
 	if cfg.Logs.ResourceConditions != nil || cfg.Logs.LogConditions != nil {
 		if cfg.Logs.ResourceConditions != nil {
@@ -81,7 +100,28 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (p
 	}
 
 	logCountBeforeFilters := ld.LogRecordCount()
+	var processedLogs plog.Logs
+	var errors error
+	if len(flp.consumers) > 0 {
+		processedLogs, errors = flp.processConditions(ctx, ld)
+	} else {
+		processedLogs, errors = flp.processSkipExpression(ctx, ld)
+	}
 
+	logCountAfterFilters := processedLogs.LogRecordCount()
+	flp.telemetry.record(ctx, int64(logCountBeforeFilters-logCountAfterFilters))
+
+	if errors != nil {
+		flp.logger.Error("failed processing logs", zap.Error(errors))
+		return processedLogs, errors
+	}
+	if processedLogs.ResourceLogs().Len() == 0 {
+		return processedLogs, processorhelper.ErrSkipProcessingData
+	}
+	return processedLogs, nil
+}
+
+func (flp *filterLogProcessor) processSkipExpression(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	var errors error
 	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		resource := rl.Resource()
@@ -114,16 +154,16 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (p
 		})
 		return rl.ScopeLogs().Len() == 0
 	})
+	return ld, errors
+}
 
-	logCountAfterFilters := ld.LogRecordCount()
-	flp.telemetry.record(ctx, int64(logCountBeforeFilters-logCountAfterFilters))
-
-	if errors != nil {
-		flp.logger.Error("failed processing logs", zap.Error(errors))
-		return ld, errors
+func (flp *filterLogProcessor) processConditions(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	var errors error
+	for _, consumer := range flp.consumers {
+		err := consumer.ConsumeLogs(ctx, ld)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
 	}
-	if ld.ResourceLogs().Len() == 0 {
-		return ld, processorhelper.ErrSkipProcessingData
-	}
-	return ld, nil
+	return ld, errors
 }
