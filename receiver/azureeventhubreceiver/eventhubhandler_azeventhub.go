@@ -5,6 +5,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"sync"
@@ -20,6 +21,24 @@ type checkpointSeqNumber struct {
 	// Offset only used for backwards compatibility
 	Offset         string `json:"offset"`
 	SequenceNumber int64  `json:"sequenceNumber"`
+}
+
+// UnmarshalJSON is a custom unmarshaller to allow for backward compatibility
+// with the sequence number field
+func (c *checkpointSeqNumber) UnmarshalJSON(data []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if val, ok := raw["sequenceNumber"]; ok {
+		c.SequenceNumber = int64(val.(float64))
+	} else if val, ok := raw["seqNumber"]; ok {
+		c.SequenceNumber = int64(val.(float64))
+	}
+	if val, ok := raw["offset"]; ok {
+		c.Offset = val.(string)
+	}
+	return nil
 }
 
 type azPartitionClient interface {

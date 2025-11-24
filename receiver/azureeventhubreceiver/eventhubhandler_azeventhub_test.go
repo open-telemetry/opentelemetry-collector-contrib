@@ -344,6 +344,22 @@ func TestStartPos(t *testing.T) {
 
 			expectedSeqNumber: to.Ptr(int64(100)),
 		},
+		{
+			enableStorage: true,
+			applyOffset:   false,
+			offset:        "",
+			namespace:     "test",
+			eventHubName:  "name",
+			consumerGroup: "cg",
+			partitionID:   "0",
+			storageClient: &mockStorageClient{
+				storage: map[string][]byte{
+					"test/name/cg/0": []byte(`{"seqNumber": 200}`),
+				},
+			},
+
+			expectedSeqNumber: to.Ptr(int64(200)),
+		},
 	}
 
 	for _, test := range testCases {
