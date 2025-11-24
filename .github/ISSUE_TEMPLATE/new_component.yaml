@@ -45,7 +45,7 @@ body:
     attributes:
       label: Code Owner(s)
       description: Code owners are responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
-        Please list two or more OpenTelemetry members who will serve as code owners.
+        Please list two or more OpenTelemetry members that are not sponsoring this component who will serve as code owners.
         Having at least two code owners before opening the issue is strongly recommended. However, you may use the issue to try to find code owners for your component.
     validations:
       required: true

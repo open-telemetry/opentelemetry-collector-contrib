@@ -67,10 +67,10 @@ providing the following information:
   for the component in order for it to be accepted. Ideally, the sponsor is from a different company
   than you. If the person proposing the component and the sponsor are
   from the same company, ensure that you have approval on the overall proposal from other approvers
-  and maintainers.
+  and maintainers. You can use the #otel-collector-dev CNCF Slack channel and the Collector SIG meetings for this.
 * Who are the **codeowners** for your component. Codeowners are responsible for the component and
   will be pinged for any issues or reviews needed. You need at least two codeowners for your
-  component to be accepted. We recommend that the codeowners do not work for the same company.
+  component to be accepted, different from the sponsor. We recommend that the codeowners do not work for the same company.
 * A **list of other components that cover similar use cases**. These could be components inside of
   this repository or outside of it. If there are competing implementations, invite their maintainers
   to voice their opinion and collaborate on a common implementation.
