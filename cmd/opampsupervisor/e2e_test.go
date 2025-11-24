@@ -2561,6 +2561,11 @@ func TestSupervisorReportsHeartbeat(t *testing.T) {
 }
 
 func TestSupervisorUpgradesAgent(t *testing.T) {
+	var ext string
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+
 	// Hex encoded hashes of the binaries from v0.135.0
 	// Hashes retrieved from these files of the release:
 	// https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.135.0/opentelemetry-collector-releases_otelcol-contrib_checksums.txt
@@ -2579,19 +2584,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 		t.Skipf("Agent package hashes only available for [linux-amd64, linux-arm64, darwin-arm64, darwin-amd64, windows-amd64] and not available for this OS and architecture: %s-%s", runtime.GOOS, runtime.GOARCH)
 	}
 
-	var ext string
-	if runtime.GOOS == "windows" {
-		ext = ".exe"
-	}
-
-	// Upgrading will overwrite the agent binary
-	// Use a temp dir and copy binary to a new path to not affect other tests
-	tmpDir := t.TempDir()
-	storageDir := filepath.Join(tmpDir, "storage")
 	agentFileName := fmt.Sprintf("otelcontribcol_%s_%s%s", runtime.GOOS, runtime.GOARCH, ext)
-	agentFilePath := filepath.Join("..", "..", "bin", agentFileName)
-	agentFileCopyPath := filepath.Join(tmpDir, agentFileName)
-	copyFile(t, agentFilePath, agentFileCopyPath)
 
 	// Setup for agent package message
 	agentVersion := "0.135.0"
@@ -2605,140 +2598,321 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	sig := getURLContents(t, agentSigURL)
 	signatureField := bytes.Join([][]byte{cert, sig}, []byte(" "))
 
-	// Setup for verifying supervisor response messages
-	versionFound := false
-	agentIDChan := make(chan []byte, 1)
-	packageStatusesChan := make(chan *protobufs.PackageStatuses, 1)
+	t.Run("successful upgrade", func(t *testing.T) {
+		// Upgrading will overwrite the agent binary
+		// Use a temp dir and copy binary to a new path to not affect other tests
+		tmpDir := t.TempDir()
+		storageDir := filepath.Join(tmpDir, "storage")
+		agentFilePath := filepath.Join("..", "..", "bin", agentFileName)
+		agentFileCopyPath := filepath.Join(tmpDir, agentFileName)
+		copyFile(t, agentFilePath, agentFileCopyPath)
 
-	// Start the opamp server
-	server := newOpAMPServer(
-		t,
-		defaultConnectingHandler,
-		types.ConnectionCallbacks{
-			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
-				select {
-				case agentIDChan <- message.InstanceUid:
-				default:
-				}
+		// Setup for verifying supervisor response messages
+		versionFound := false
+		agentIDChan := make(chan []byte, 1)
+		packageStatusesChan := make(chan *protobufs.PackageStatuses, 1)
+		server := newOpAMPServer(
+			t,
+			defaultConnectingHandler,
+			types.ConnectionCallbacks{
+				OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+					select {
+					case agentIDChan <- message.InstanceUid:
+					default:
+					}
 
-				// This will verify the agent version attribute is set to the new version after the upgrade
-				if message.AgentDescription != nil {
-					if message.AgentDescription.IdentifyingAttributes != nil {
-						for _, attr := range message.AgentDescription.IdentifyingAttributes {
-							if attr.Key == string(semconv.ServiceVersionKey) {
-								if attr.Value.GetStringValue() == agentVersion {
-									versionFound = true
+					// This will verify the agent version attribute is set to the new version after the upgrade
+					if message.AgentDescription != nil {
+						if message.AgentDescription.IdentifyingAttributes != nil {
+							for _, attr := range message.AgentDescription.IdentifyingAttributes {
+								if attr.Key == string(semconv.ServiceVersionKey) {
+									if attr.Value.GetStringValue() == agentVersion {
+										versionFound = true
+									}
 								}
 							}
 						}
 					}
-				}
 
-				if message.PackageStatuses != nil {
-					select {
-					case packageStatusesChan <- message.PackageStatuses:
-					default:
+					if message.PackageStatuses != nil {
+						select {
+						case packageStatusesChan <- message.PackageStatuses:
+						default:
+						}
 					}
-				}
 
-				return &protobufs.ServerToAgent{}
-			},
-		},
-	)
-
-	// Start the supervisor
-	s, _ := newSupervisor(t, "upgrade", map[string]string{
-		"url":         server.addr,
-		"storage_dir": storageDir,
-		"agent_path":  agentFileCopyPath,
-	})
-	require.NoError(t, s.Start(t.Context()))
-	defer s.Shutdown()
-
-	// Wait for the supervisor to connect
-	waitForSupervisorConnection(server.supervisorConnected, true)
-	t.Logf("Supervisor connected")
-
-	// Retrieve the ID for use in future messages
-	agentID := <-agentIDChan
-
-	// Verify initial package status
-	// This will be empty because there hasn't been any packages processed yet
-	// https://github.com/open-telemetry/opamp-go/blob/main/client/internal/clientcommon.go#L149-L167
-	ps := <-packageStatusesChan
-	require.Equal(t, &protobufs.PackageStatuses{}, ps)
-
-	// Send the agent package message to trigger supervisor upgrading the collector
-	server.sendToSupervisor(&protobufs.ServerToAgent{
-		InstanceUid: agentID,
-		PackagesAvailable: &protobufs.PackagesAvailable{
-			Packages: map[string]*protobufs.PackageAvailable{
-				"": {
-					Type:    protobufs.PackageType_PackageType_TopLevel,
-					Version: "v" + agentVersion,
-					Hash:    []byte{0x01, 0x02},
-					File: &protobufs.DownloadableFile{
-						DownloadUrl: agentURL,
-						ContentHash: agentHash,
-						Signature:   signatureField,
-					},
+					return &protobufs.ServerToAgent{}
 				},
 			},
-			AllPackagesHash: []byte{0x03, 0x04},
-		},
-	})
-	t.Logf("Sent PackagesAvailable message to supervisor")
+		)
 
-	// Wait for new package statuses and verify we have the first "Installing" status report
-	ps = <-packageStatusesChan
-	require.Equal(t, &protobufs.PackageStatuses{
-		Packages: map[string]*protobufs.PackageStatus{
-			"": {
-				Name:                 "",
-				AgentHasVersion:      "",
-				AgentHasHash:         nil,
-				ServerOfferedVersion: "v" + agentVersion,
-				ServerOfferedHash:    []byte{0x01, 0x02},
-				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
+		// Start the supervisor
+		s, _ := newSupervisor(t, "upgrade", map[string]string{
+			"url":         server.addr,
+			"storage_dir": storageDir,
+			"agent_path":  agentFileCopyPath,
+		})
+		require.NoError(t, s.Start(t.Context()))
+		defer s.Shutdown()
+
+		// Wait for the supervisor to connect
+		waitForSupervisorConnection(server.supervisorConnected, true)
+		t.Logf("Supervisor connected")
+
+		// Retrieve the ID for use in future messages
+		agentID := <-agentIDChan
+
+		// Verify initial package status
+		// This will be empty because there hasn't been any packages processed yet
+		// https://github.com/open-telemetry/opamp-go/blob/main/client/internal/clientcommon.go#L149-L167
+		ps := <-packageStatusesChan
+		require.Equal(t, &protobufs.PackageStatuses{}, ps)
+
+		// Send the agent package message to trigger supervisor upgrading the collector
+		server.sendToSupervisor(&protobufs.ServerToAgent{
+			InstanceUid: agentID,
+			PackagesAvailable: &protobufs.PackagesAvailable{
+				Packages: map[string]*protobufs.PackageAvailable{
+					"": {
+						Type:    protobufs.PackageType_PackageType_TopLevel,
+						Version: "v" + agentVersion,
+						Hash:    []byte{0x01, 0x02},
+						File: &protobufs.DownloadableFile{
+							DownloadUrl: agentURL,
+							ContentHash: agentHash,
+							Signature:   signatureField,
+						},
+					},
+				},
+				AllPackagesHash: []byte{0x03, 0x04},
 			},
-		},
-		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
-	}, ps)
-	t.Logf("Received package_installing status from supervisor")
+		})
+		t.Logf("Sent PackagesAvailable message to supervisor")
 
-	// Handle and verify the various "Downloading" status reports we'll get as the supervisor downloads the agent package
-	for {
+		// Wait for new package statuses and verify we have the first "Installing" status report
 		ps = <-packageStatusesChan
-		// basic checks while downloading the package
-		if ps.Packages[""].Status == protobufs.PackageStatusEnum_PackageStatusEnum_Downloading {
-			require.Equal(t, []byte{0x03, 0x04}, ps.ServerProvidedAllPackagesHash)
-			require.Equal(t, "v"+agentVersion, ps.Packages[""].ServerOfferedVersion)
-			continue
-		}
-		break
-	}
-
-	// Verify the final "Installed" status report
-	require.Equal(t, &protobufs.PackageStatuses{
-		Packages: map[string]*protobufs.PackageStatus{
-			"": {
-				Name:                 "",
-				AgentHasVersion:      "v" + agentVersion,
-				AgentHasHash:         []byte{0x01, 0x02},
-				ServerOfferedVersion: "v" + agentVersion,
-				ServerOfferedHash:    []byte{0x01, 0x02},
-				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installed,
-				DownloadDetails:      ps.Packages[""].DownloadDetails, // Don't need to verify this, set this to pass the test
+		require.Equal(t, &protobufs.PackageStatuses{
+			Packages: map[string]*protobufs.PackageStatus{
+				"": {
+					Name:                 "",
+					AgentHasVersion:      "",
+					AgentHasHash:         nil,
+					ServerOfferedVersion: "v" + agentVersion,
+					ServerOfferedHash:    []byte{0x01, 0x02},
+					Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
+				},
 			},
-		},
-		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
-	}, ps)
-	t.Logf("Received package_installed status from supervisor")
+			ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+		}, ps)
+		t.Logf("Received package_installing status from supervisor")
 
-	// Verify the agent description containing the new version was found
-	require.Eventually(t, func() bool {
-		return versionFound
-	}, 5*time.Second, 250*time.Millisecond, "Agent description after upgrade did not contain the agent version.")
+		// Handle and verify the various "Downloading" status reports we'll get as the supervisor downloads the agent package
+		for {
+			ps = <-packageStatusesChan
+			// basic checks while downloading the package
+			if ps.Packages[""].Status == protobufs.PackageStatusEnum_PackageStatusEnum_Downloading {
+				require.Equal(t, []byte{0x03, 0x04}, ps.ServerProvidedAllPackagesHash)
+				require.Equal(t, "v"+agentVersion, ps.Packages[""].ServerOfferedVersion)
+				continue
+			}
+			break
+		}
+
+		// Verify the final "Installed" status report
+		require.Equal(t, &protobufs.PackageStatuses{
+			Packages: map[string]*protobufs.PackageStatus{
+				"": {
+					Name:                 "",
+					AgentHasVersion:      "v" + agentVersion,
+					AgentHasHash:         []byte{0x01, 0x02},
+					ServerOfferedVersion: "v" + agentVersion,
+					ServerOfferedHash:    []byte{0x01, 0x02},
+					Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installed,
+					DownloadDetails:      ps.Packages[""].DownloadDetails, // Don't need to verify this, set this to pass the check
+				},
+			},
+			ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+		}, ps)
+		t.Logf("Received package_installed status from supervisor")
+
+		// Verify the agent description containing the new version was found
+		require.Eventually(t, func() bool {
+			return versionFound
+		}, 5*time.Second, 250*time.Millisecond, "Agent description after upgrade did not contain the agent version.")
+	})
+
+	t.Run("failed upgrade w/ rollback", func(t *testing.T) {
+		// Upgrading will overwrite the agent binary
+		// Use a temp dir and copy binary to a new path to not affect other tests
+		tmpDir := t.TempDir()
+		storageDir := filepath.Join(tmpDir, "storage")
+		agentFilePath := filepath.Join("..", "..", "bin", agentFileName)
+		agentFileCopyPath := filepath.Join(tmpDir, agentFileName)
+		copyFile(t, agentFilePath, agentFileCopyPath)
+
+		// Get the binary version from the Collector binary
+		// using the `components` command that prints a YAML-encoded
+		// map of information about the Collector build.
+		componentsInfo, err := exec.Command(agentFileCopyPath, "components").Output()
+		require.NoError(t, err)
+		k := koanf.New("::")
+		err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+		require.NoError(t, err)
+		buildinfo := k.StringMap("buildinfo")
+		buildVersion := buildinfo["version"]
+
+		// Setup for verifying supervisor response messages
+		versionFound := false
+		agentIDChan := make(chan []byte, 1)
+		packageStatusesChan := make(chan *protobufs.PackageStatuses, 1)
+		agentDescriptionVersion := atomic.Value{}
+		server := newOpAMPServer(
+			t,
+			defaultConnectingHandler,
+			types.ConnectionCallbacks{
+				OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+					select {
+					case agentIDChan <- message.InstanceUid:
+					default:
+					}
+
+					// This will verify the agent version attribute is set to the new version after the upgrade
+					if message.AgentDescription != nil {
+						if message.AgentDescription.IdentifyingAttributes != nil {
+							for _, attr := range message.AgentDescription.IdentifyingAttributes {
+								if attr.Key == string(semconv.ServiceVersionKey) {
+									if attr.Value.GetStringValue() == agentVersion {
+										versionFound = true
+									}
+									agentDescriptionVersion.Store(attr.Value.GetStringValue())
+								}
+							}
+						}
+					}
+
+					if message.PackageStatuses != nil {
+						select {
+						case packageStatusesChan <- message.PackageStatuses:
+						default:
+						}
+					}
+
+					return &protobufs.ServerToAgent{}
+				},
+			},
+		)
+		defer server.shutdown()
+
+		// Start the supervisor
+		s, _ := newSupervisor(t, "upgrade_fail", map[string]string{
+			"url":         server.addr,
+			"storage_dir": storageDir,
+			"agent_path":  agentFileCopyPath,
+		})
+		require.NoError(t, s.Start(t.Context()))
+		defer s.Shutdown()
+
+		// Wait for the supervisor to connect
+		waitForSupervisorConnection(server.supervisorConnected, true)
+		t.Logf("Supervisor connected")
+
+		// Retrieve the ID for use in future messages
+		agentID := <-agentIDChan
+
+		// Verify initial package status
+		// This will be empty because there hasn't been any packages processed yet
+		// https://github.com/open-telemetry/opamp-go/blob/main/client/internal/clientcommon.go#L149-L167
+		ps := <-packageStatusesChan
+		require.Equal(t, &protobufs.PackageStatuses{}, ps)
+
+		// Send the agent package message to trigger supervisor upgrading the collector
+		server.sendToSupervisor(&protobufs.ServerToAgent{
+			InstanceUid: agentID,
+			PackagesAvailable: &protobufs.PackagesAvailable{
+				Packages: map[string]*protobufs.PackageAvailable{
+					"": {
+						Type:    protobufs.PackageType_PackageType_TopLevel,
+						Version: "v" + agentVersion,
+						Hash:    []byte{0x01, 0x02},
+						File: &protobufs.DownloadableFile{
+							DownloadUrl: agentURL,
+							ContentHash: agentHash,
+							Signature:   signatureField,
+						},
+					},
+				},
+				AllPackagesHash: []byte{0x03, 0x04},
+			},
+		})
+		t.Logf("Sent PackagesAvailable message to supervisor")
+
+		// Wait for new package statuses and verify we have the first "Installing" status report
+		ps = <-packageStatusesChan
+		require.Equal(t, &protobufs.PackageStatuses{
+			Packages: map[string]*protobufs.PackageStatus{
+				"": {
+					Name:                 "",
+					AgentHasVersion:      "",
+					AgentHasHash:         nil,
+					ServerOfferedVersion: "v" + agentVersion,
+					ServerOfferedHash:    []byte{0x01, 0x02},
+					Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
+				},
+			},
+			ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+		}, ps)
+		t.Logf("Received package_installing status from supervisor")
+
+		// Handle and verify the various "Downloading" status reports we'll get as the supervisor downloads the agent package
+		for {
+			ps = <-packageStatusesChan
+			// basic checks while downloading the package
+			if ps.Packages[""].Status == protobufs.PackageStatusEnum_PackageStatusEnum_Downloading {
+				require.Equal(t, []byte{0x03, 0x04}, ps.ServerProvidedAllPackagesHash)
+				require.Equal(t, "v"+agentVersion, ps.Packages[""].ServerOfferedVersion)
+				continue
+			}
+			break
+		}
+
+		// Verify a failed install status
+		require.Equal(t, &protobufs.PackageStatuses{
+			Packages: map[string]*protobufs.PackageStatus{
+				"": {
+					Name:                 "",
+					AgentHasVersion:      "",
+					AgentHasHash:         nil,
+					ServerOfferedVersion: "v" + agentVersion,
+					ServerOfferedHash:    []byte{0x01, 0x02},
+					Status:               protobufs.PackageStatusEnum_PackageStatusEnum_InstallFailed,
+					ErrorMessage:         "failed to install/update the package  downloaded from https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.135.0/otelcol-contrib_0.135.0_darwin_arm64.tar.gz: start updated agent binary: agent process did not start successfully after 7s",
+					DownloadDetails:      ps.Packages[""].DownloadDetails, // Don't need to verify this, set this to pass the check
+				},
+			},
+			ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+		}, ps)
+		t.Logf("Received package_install_failed status from supervisor")
+
+		// Verify the agent description containing the new version was never seen
+		require.False(t, versionFound, "Agent description contained the new version after a failed upgrade.")
+		// Verify a rollback to the original version occurred
+		require.Equal(t, buildVersion, agentDescriptionVersion.Load(), "Last seen agent description version did not match the build version after a failed upgrade.")
+
+		// Verify the collector is running by checking the healthcheck endpoint
+		require.Eventually(t, func() bool {
+			resp, err := http.DefaultClient.Get("http://localhost:13133")
+			if err != nil {
+				t.Logf("Failed healthcheck: %s", err)
+				return false
+			}
+			require.NoError(t, resp.Body.Close())
+			if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+				t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+				return false
+			}
+			return true
+		}, 3*time.Second, 100*time.Millisecond, "Backup collector was not running after failed upgrade.")
+	})
 }
 
 // findRandomPort finds a random port on the host that is not in use.

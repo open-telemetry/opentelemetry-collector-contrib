@@ -6,6 +6,7 @@ package supervisor
 import (
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io"
@@ -13,12 +14,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,7 +31,13 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/open-telemetry/opamp-go/server"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
+	supervisorTelemetry "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -38,10 +47,6 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 const configTemplate = `
@@ -2280,4 +2285,111 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 
 	close(startSignal)
 	wg.Wait()
+}
+
+func TestSupervisor_composeAgentConfigFiles(t *testing.T) {
+	type fields struct {
+		runCtx                         context.Context
+		runCtxCancel                   context.CancelFunc
+		pidProvider                    pidProvider
+		commander                      *commander.Commander
+		config                         config.Supervisor
+		agentDescription               *atomic.Value
+		availableComponents            *atomic.Value
+		persistentState                *persistentState
+		packageManager                 *packageManager
+		noopPipelineTemplate           *template.Template
+		opampextensionTemplate         *template.Template
+		extraTelemetryConfigTemplate   *template.Template
+		ownTelemetryTemplate           *template.Template
+		agentConn                      *atomic.Value
+		agentConfigOwnTelemetrySection *atomic.Value
+		cfgState                       *atomic.Value
+		effectiveConfig                *atomic.Value
+		remoteConfig                   *protobufs.AgentRemoteConfig
+		hasNewConfig                   chan struct{}
+		configApplyTimeout             time.Duration
+		lastHealthFromClient           atomic.Pointer[protobufs.ComponentHealth]
+		opampClient                    client.OpAMPClient
+		doneChan                       chan struct{}
+		agentWG                        sync.WaitGroup
+		updateRestartChan              chan binaryUpdateRequest
+		customMessageToServer          chan *protobufs.CustomMessage
+		customMessageWG                sync.WaitGroup
+		agentReady                     atomic.Bool
+		agentReadyChan                 chan struct{}
+		agentRestarting                atomic.Bool
+		opampServer                    server.OpAMPServer
+		opampServerPort                int
+		healthCheckServer              *http.Server
+		healthCheckServerWG            sync.WaitGroup
+		telemetrySettings              telemetrySettings
+		featureGates                   map[string]struct{}
+		metrics                        *supervisorTelemetry.Metrics
+		heartbeatIntervalSeconds       uint64
+	}
+	type args struct {
+		incomingConfig *protobufs.AgentRemoteConfig
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Supervisor{
+				runCtx:                         tt.fields.runCtx,
+				runCtxCancel:                   tt.fields.runCtxCancel,
+				pidProvider:                    tt.fields.pidProvider,
+				commander:                      tt.fields.commander,
+				config:                         tt.fields.config,
+				agentDescription:               tt.fields.agentDescription,
+				availableComponents:            tt.fields.availableComponents,
+				persistentState:                tt.fields.persistentState,
+				packageManager:                 tt.fields.packageManager,
+				noopPipelineTemplate:           tt.fields.noopPipelineTemplate,
+				opampextensionTemplate:         tt.fields.opampextensionTemplate,
+				extraTelemetryConfigTemplate:   tt.fields.extraTelemetryConfigTemplate,
+				ownTelemetryTemplate:           tt.fields.ownTelemetryTemplate,
+				agentConn:                      tt.fields.agentConn,
+				agentConfigOwnTelemetrySection: tt.fields.agentConfigOwnTelemetrySection,
+				cfgState:                       tt.fields.cfgState,
+				effectiveConfig:                tt.fields.effectiveConfig,
+				remoteConfig:                   tt.fields.remoteConfig,
+				hasNewConfig:                   tt.fields.hasNewConfig,
+				configApplyTimeout:             tt.fields.configApplyTimeout,
+				lastHealthFromClient:           tt.fields.lastHealthFromClient,
+				opampClient:                    tt.fields.opampClient,
+				doneChan:                       tt.fields.doneChan,
+				agentWG:                        tt.fields.agentWG,
+				updateRestartChan:              tt.fields.updateRestartChan,
+				customMessageToServer:          tt.fields.customMessageToServer,
+				customMessageWG:                tt.fields.customMessageWG,
+				agentReady:                     tt.fields.agentReady,
+				agentReadyChan:                 tt.fields.agentReadyChan,
+				agentRestarting:                tt.fields.agentRestarting,
+				opampServer:                    tt.fields.opampServer,
+				opampServerPort:                tt.fields.opampServerPort,
+				healthCheckServer:              tt.fields.healthCheckServer,
+				healthCheckServerWG:            tt.fields.healthCheckServerWG,
+				telemetrySettings:              tt.fields.telemetrySettings,
+				featureGates:                   tt.fields.featureGates,
+				metrics:                        tt.fields.metrics,
+				heartbeatIntervalSeconds:       tt.fields.heartbeatIntervalSeconds,
+			}
+			got, err := s.composeAgentConfigFiles(tt.args.incomingConfig)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Supervisor.composeAgentConfigFiles() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Supervisor.composeAgentConfigFiles() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

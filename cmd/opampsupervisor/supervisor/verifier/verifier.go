@@ -13,6 +13,8 @@ import (
 type Verifier interface {
 	// Verify verifies the authenticity of a package based on the verifier type.
 	Verify(packageBytes, signature []byte) error
+	// Type returns the type of the verifier.
+	Type() string
 }
 
 // NewVerifier creates a new Verifier based on the verifier type.
@@ -33,4 +35,9 @@ type noneVerifier struct{}
 // Verify is the no-op verify function. It always returns no error.
 func (noneVerifier) Verify(_, _ []byte) error {
 	return nil
+}
+
+// Type returns the "none" verifier type.
+func (noneVerifier) Type() string {
+	return config.VerifierTypeNone
 }

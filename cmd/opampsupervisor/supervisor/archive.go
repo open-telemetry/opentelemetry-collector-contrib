@@ -20,10 +20,11 @@ import (
 // It is 1 gibibyte.
 const maxAgentBytes = 1024 * 1024 * 1024
 
-type InstallFunc func(ctx context.Context, archive []byte, binaryName, destination string) error
+// installFunc is a function that unpacks an archive and writes the binary to the given destination.
+type installFunc func(ctx context.Context, archive []byte, binaryName, destination string) error
 
-// NewInstallFunc creates a new InstallFunc based on the archive format.
-func NewInstallFunc(archiveFormat config.Archive) (InstallFunc, error) {
+// NewInstallFunc creates a new installFunc based on the archive format.
+func NewInstallFunc(archiveFormat config.Archive) (installFunc, error) {
 	switch archiveFormat {
 	case config.ArchiveTarGzip:
 		return tarGzipInstall, nil
@@ -54,7 +55,7 @@ func writeBinaryToDestination(binary io.Reader, destination string) error {
 
 // Default Install Func /////////////////////////////////////////////////////////////////////////
 
-var _ InstallFunc = defaultInstall
+var _ installFunc = defaultInstall
 
 // defaultInstall installs an archive with no specific format.
 // It simply writes the binary to the destination file.
@@ -67,7 +68,7 @@ func defaultInstall(_ context.Context, archive []byte, _, destination string) er
 
 // Tarball Install Func /////////////////////////////////////////////////////////////////////////
 
-var _ InstallFunc = tarGzipInstall
+var _ installFunc = tarGzipInstall
 
 // tarGzipInstall installs a tarball archive.
 // Creates a tar reader based on a gzip reader, verifies the binary name exists in the tarball,

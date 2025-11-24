@@ -21,3 +21,5 @@ agent:
   # Observed flaky test failures with default values; larger values allow collector time to start up
   bootstrap_timeout: 7s
   config_apply_timeout: 7s
+  config_files: 
+    - './testdata/collector/upgrade_bad_config.yaml'

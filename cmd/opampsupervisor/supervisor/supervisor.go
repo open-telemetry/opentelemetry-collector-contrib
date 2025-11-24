@@ -163,9 +163,12 @@ type Supervisor struct {
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
-	doneChan      chan struct{}
-	agentWG       sync.WaitGroup
-	agentStopChan chan agentStopRequest
+	doneChan chan struct{}
+	agentWG  sync.WaitGroup
+
+	// updateRestartChan is a channel that is used to request starting a new agent binary or restoring a backup binary.
+	// it facilitates communication between the runAgentProcess goroutine and the packageManager(UpdateContent) goroutine.
+	updateRestartChan chan binaryUpdateRequest
 
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
@@ -207,7 +210,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		agentDescription:               &atomic.Value{},
 		availableComponents:            &atomic.Value{},
 		doneChan:                       make(chan struct{}),
-		agentStopChan:                  make(chan agentStopRequest),
+		updateRestartChan:              make(chan binaryUpdateRequest),
 		customMessageToServer:          make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                      &atomic.Value{},
 		featureGates:                   map[string]struct{}{},
@@ -348,6 +351,11 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}
 
+	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
+	if err != nil {
+		return fmt.Errorf("get supervisor opamp server port: %w", err)
+	}
+
 	agentVersion, err := s.getBootstrapInfo()
 	if err != nil {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
@@ -355,6 +363,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 
 	if s.config.Capabilities.AcceptsPackages || s.config.Capabilities.ReportsPackageStatuses {
 		s.packageManager, err = newPackageManager(
+			s.telemetrySettings.Logger.Named("package-manager"),
 			s.config.Agent.Executable,
 			s.config.Storage.Directory,
 			agentVersion,
@@ -473,12 +482,6 @@ func (s *Supervisor) createTemplates() error {
 func (s *Supervisor) getBootstrapInfo() (agentVersion string, err error) {
 	_, span := s.getTracer().Start(s.runCtx, "GetBootstrapInfo")
 	defer span.End()
-
-	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
-	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
-		return "", err
-	}
 
 	bootstrapConfig, err := s.composeNoopConfig()
 	if err != nil {
@@ -967,13 +970,6 @@ func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
 	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
 	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
 	s.agentDescription.Store(ad)
-
-	if s.opampClient != nil {
-		err := s.opampClient.SetAgentDescription(ad)
-		if err != nil {
-			s.telemetrySettings.Logger.Error("Failed to set agent description.", zap.Error(err))
-		}
-	}
 }
 
 // setAvailableComponents sets the available components of the OpAMP agent
@@ -1552,31 +1548,171 @@ func (s *Supervisor) startAgentCommand() (agentStartStatus, error) {
 	return agentStarting, nil
 }
 
-// stopAgentProcess stops the agent process. The process can be started again by closing the returned channel.
-func (s *Supervisor) stopAgentProcess(ctx context.Context) (chan struct{}, error) {
-	start := make(chan struct{})
-	processStopped := make(chan struct{})
+// binaryUpdateRequest is a request to the runAgentProcess goroutine to stop the agent process and begin the update process.
+type binaryUpdateRequest struct {
+	// processStopped is closed by the runAgentProcess goroutine when the collector process has been shutdown. It contains an error if the process failed to stop.
+	processStopped chan error
+	// restartProcess is closed by the package manager(UpdateContent) goroutine in order to signal to the runAgentProcess goroutine to restart the collector process.
+	// This occurs when the package manager fails the update before the binary has been updated.
+	restartProcess chan struct{}
+	// startUpdatedBinary is used by the package manager(UpdateContent) goroutine in order to signal to the runAgentProcess goroutine to start the updated collector binary.
+	// It contians the path to the backup binary in case the new binary fails to start.
+	startUpdatedBinary chan string
+	// startUpdatedBinaryOutcome is used by the runAgentProcess goroutine to report the outcome of starting the updated binary to the package manager(UpdateContent) goroutine.
+	startUpdatedBinaryOutcome chan error
+}
 
-	s.agentStopChan <- agentStopRequest{
-		processStopped: processStopped,
-		start:          start,
+// updateStopAgentProcess stops the agent process.
+// It returns a channel that can be closed to signal the agent should be restarted,
+// a channel that can be used to signal to the runAgentProcess goroutine to start the updated collector binary,
+// and a channel that can be used to communicate the outcome of starting the updated binary.
+func (s *Supervisor) updateStopAgentProcess(ctx context.Context) (chan struct{}, chan string, chan error, error) {
+	// create channels for the request
+	processStopped := make(chan error)
+	restartProcess := make(chan struct{})
+	startUpdatedBinary := make(chan string)
+	startUpdatedBinaryOutcome := make(chan error)
+
+	s.updateRestartChan <- binaryUpdateRequest{
+		processStopped:            processStopped,
+		restartProcess:            restartProcess,
+		startUpdatedBinary:        startUpdatedBinary,
+		startUpdatedBinaryOutcome: startUpdatedBinaryOutcome,
 	}
 
 	select {
-	case <-processStopped:
+	case err := <-processStopped:
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		// return the channels and nil error if the process stopped successfully
+		return restartProcess, startUpdatedBinary, startUpdatedBinaryOutcome, nil
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, nil, nil, ctx.Err()
 	}
-
-	return start, nil
 }
 
-// agentStopRequest is a request to the agent goroutine to stop the agent.
-type agentStopRequest struct {
-	// processStopped is closed by the agent goroutine when the agent process has been shutdown.
-	processStopped chan struct{}
-	// start is closed by the requester in order to signal to the agent goroutine to start the agent again.
-	start chan struct{}
+// updateStartAgentProcess starts the agent process after the binary has been updated.
+// This is called to start the new binary && to start the restored backup binary after a failed start of the new binary.
+// It returns an error if the agent process fails to start or fails to report a healthy status.
+// This function will stop the agent process if the config is empty and the agent should not be running.
+func (s *Supervisor) updateStartAgentProcess() error {
+	s.telemetrySettings.Logger.Debug("Starting a new agent binary (updated binary or restored backup binary)")
+	// save existing opamp server port, use a random one for bootstrap info
+	existingOpampServerPort := s.opampServerPort
+	newOpampServerPort, err := s.findRandomPort()
+	if err != nil {
+		return fmt.Errorf("find random port for bootstrap info: %w", err)
+	}
+	s.opampServerPort = newOpampServerPort
+
+	// need to get bootstrap info after updating agent binary, immediately restore opamp server port
+	s.telemetrySettings.Logger.Debug("Getting bootstrap info for agent binary")
+	_, err = s.getBootstrapInfo()
+	s.opampServerPort = existingOpampServerPort
+	if err != nil {
+		return fmt.Errorf("get bootstrap info: %w", err)
+	}
+
+	// regen agent config after overwriting with bootstrap
+	s.telemetrySettings.Logger.Debug("Regenerating agent config after bootstrapping")
+	err = s.loadAndWriteInitialMergedConfig()
+	if err != nil {
+		return fmt.Errorf("restore previous configuration: %w", err)
+	}
+
+	// now start the agent
+	s.telemetrySettings.Logger.Debug("Starting agent process")
+	err = s.commander.Start(s.runCtx)
+	if err != nil {
+		return fmt.Errorf("start agent process: %w", err)
+	}
+
+	// wait for a healthy agent status
+	s.telemetrySettings.Logger.Debug("Waiting for a healthy agent status after starting agent process")
+	healthyRestartTimer := time.NewTimer(s.config.Agent.ConfigApplyTimeout)
+	select {
+	case <-healthyRestartTimer.C:
+		lastHealth := s.lastHealthFromClient.Load()
+		if lastHealth == nil || !lastHealth.Healthy {
+			// unhealthy restart
+			return fmt.Errorf("agent process did not start successfully after %s", s.config.Agent.ConfigApplyTimeout)
+		}
+	case <-s.doneChan:
+		return fmt.Errorf("supervisor shutdown while waiting for agent to be healthy")
+	}
+	s.telemetrySettings.Logger.Debug("Agent process started successfully")
+
+	// set agent description after successful start - "ad" set in bootstrap info
+	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
+	if err := s.opampClient.SetAgentDescription(ad); err != nil {
+		return fmt.Errorf("set agent description: %w", err)
+	}
+
+	// check if config is empty and stop the agent if so
+	if s.cfgState.Load().(*configState).configMapIsEmpty {
+		s.telemetrySettings.Logger.Debug("Config is empty, stopping agent process after verifying successful start")
+		if err := s.commander.Stop(s.runCtx); err != nil {
+			return fmt.Errorf("stop agent process after successful start because of empty config: %w", err)
+		}
+		s.telemetrySettings.Logger.Debug("New agent binary started successfully (updated binary or restored backup binary). Config is empty, agent process has been stopped.")
+		return nil
+	}
+	s.telemetrySettings.Logger.Debug("New agent binary started successfully (updated binary or restored backup binary)")
+	return nil
+}
+
+// handleBinaryUpdateRequest handles the binary update request received from the package manager goroutine (UpdateContent).
+// This function stops the existing agent process and then waits for a signal that the binary has been updated.
+// If starting the updated binary fails, the function will restore and start the backup binary.
+func (s *Supervisor) handleBinaryUpdateRequest(updateRequest binaryUpdateRequest) {
+	if err := s.commander.Stop(s.runCtx); err != nil {
+		updateRequest.processStopped <- err
+		return
+	}
+	close(updateRequest.processStopped)
+
+	// wait for signal to
+	// 1. restart existing process after package manager has failed to update the binary
+	// 2. start process after package manager has updated the binary
+	// 3. exit after supervisor shutdown
+	s.telemetrySettings.Logger.Info("Stopped existing agent process. Waiting for signal to restart existing process or start updated binary.")
+	select {
+	case <-updateRequest.restartProcess:
+		// restart the existing agent process
+		s.telemetrySettings.Logger.Info("Received signal to restart existing agent process.")
+		if _, err := s.startAgentCommand(); err != nil {
+			s.telemetrySettings.Logger.Error("Failed to restart existing agent process.", zap.Error(err))
+			return
+		}
+	case backupPath := <-updateRequest.startUpdatedBinary:
+		// try to start the updated agent process
+		s.telemetrySettings.Logger.Info("Received signal to start updated agent process.")
+		startErr := s.updateStartAgentProcess()
+		if startErr == nil {
+			// successful start, report success and continue
+			s.telemetrySettings.Logger.Info("Updated agent process started successfully.")
+			close(updateRequest.startUpdatedBinaryOutcome)
+			return
+		}
+		// failed start, restore & start the backup agent process, report failure
+		s.telemetrySettings.Logger.Error("Failed to start agent process after binary update. Restoring and starting the backup agent process.", zap.Error(startErr))
+		if err := moveFile(backupPath, s.config.Agent.Executable); err != nil {
+			s.telemetrySettings.Logger.Error("Failed to restore backup agent binary.", zap.Error(err))
+			updateRequest.startUpdatedBinaryOutcome <- errors.Join(startErr, err)
+			return
+		}
+		// use this function to start the backup because we've already tried running the new binary and don't know the state of the system anymore
+		if err := s.updateStartAgentProcess(); err != nil {
+			s.telemetrySettings.Logger.Error("Failed to start backup agent process.", zap.Error(err))
+			updateRequest.startUpdatedBinaryOutcome <- errors.Join(startErr, err)
+			return
+		}
+		s.telemetrySettings.Logger.Info("Backup agent process successfully restored.")
+		updateRequest.startUpdatedBinaryOutcome <- startErr
+	case <-s.doneChan:
+		updateRequest.startUpdatedBinaryOutcome <- fmt.Errorf("supervisor shutdown while waiting for signal to restart existing process or start updated binary")
+	}
 }
 
 func (s *Supervisor) runAgentProcess() {
@@ -1715,28 +1851,8 @@ func (s *Supervisor) runAgentProcess() {
 			}
 			return
 
-		case stopRequest := <-s.agentStopChan:
-			err := s.commander.Stop(context.Background())
-			if err != nil {
-				s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
-			}
-
-			close(stopRequest.processStopped)
-
-			select {
-			case <-stopRequest.start:
-				// need to get bootstrap info after updating agent binary
-				_, err := s.getBootstrapInfo()
-				if err != nil {
-					s.telemetrySettings.Logger.Error("Could not get bootstrap info", zap.Error(err))
-				}
-				// now restart the agent
-				_, err = s.startAgentCommand()
-				if err != nil {
-					s.telemetrySettings.Logger.Error("Could not start agent process", zap.Error(err))
-				}
-			case <-s.doneChan:
-			}
+		case updateRestartRequest := <-s.updateRestartChan:
+			s.handleBinaryUpdateRequest(updateRestartRequest)
 		}
 	}
 }
@@ -2026,7 +2142,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.PackagesAvailable != nil {
-		err := msg.PackageSyncer.Sync(context.Background())
+		err := msg.PackageSyncer.Sync(s.runCtx)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Failed to sync PackagesAvailable message", zap.Error(err))
 		}

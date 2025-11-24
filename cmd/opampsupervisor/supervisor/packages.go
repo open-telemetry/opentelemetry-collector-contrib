@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -35,6 +36,8 @@ var (
 // Currently, it only allows for a single top-level package containing the agent
 // to be received.
 type packageManager struct {
+	logger *zap.Logger
+
 	// persistentState is used to track the AllPackagesHash, currently this should evaluate to just the collector package hash
 	persistentState *persistentState
 	// topLevelHash is the collector package hash from the Hash object in the PackageAvailable OpAmp message handled by the OpAmp.Client
@@ -44,7 +47,7 @@ type packageManager struct {
 
 	storageDir   string
 	agentExePath string
-	installFunc  InstallFunc
+	installFunc  installFunc
 	agentBinary  string
 	verifier     verifier.Verifier
 	am           agentManager
@@ -53,12 +56,15 @@ type packageManager struct {
 var _ types.PackagesStateProvider = &packageManager{}
 
 type agentManager interface {
-	// stopAgentProcess stops the agent process.
-	// It returns a channel that can be closed to signal the agent should be started again.
-	stopAgentProcess(ctx context.Context) (chan struct{}, error)
+	// updateStopAgentProcess stops the agent process.
+	// It returns a channel that can be closed to signal the agent should be restarted,
+	// a channel that can be used to signal to the runAgentProcess goroutine to start the updated collector binary,
+	// and a channel that can be used to communicate the outcome of starting the updated binary.
+	updateStopAgentProcess(ctx context.Context) (chan struct{}, chan string, chan error, error)
 }
 
 func newPackageManager(
+	logger *zap.Logger,
 	agentPath,
 	storageDir,
 	agentVersion string,
@@ -91,6 +97,7 @@ func newPackageManager(
 	}
 
 	return &packageManager{
+		logger:          logger,
 		persistentState: persistentState,
 		topLevelHash:    agentHash,
 		topLevelVersion: agentVersion,
@@ -171,21 +178,25 @@ func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 
 // UpdateContent updates the content of the agent package.
 // The order of operations is as follows:
-// 1. Download data from the data stream.
+// 1. Read data from the data stream.
 // 2. Verify the package data matches the expected content hash.
 // 3. Verify the package signature using the configured Verifier.
-// 4. Verify the tarball contains the collector binary.
-// 5. Extract data from tarball to a temporary file.
-// 6. Stop the agent process.
-// 7. Backup the existing agent file.
-// 8. Overwrite the existing agent file with the new agent.
-// 9. Delete the backup after a successful update.
-// Agent process is restarted when this function returns.
+// 4. Verify and install the agent binary from the archive.
+// 5. Stop the existing agent process.
+// 6. Backup the existing agent binary.
+// 7. Write the new agent binary to the configured agent binary path.
+// 8. Signal to start the updated agent binary and wait for the outcome.
+// 9. Delete the backup agent binary after a successful update.
+//
+// If successful, the updated agent binary has been started when this function returns.
+// If the update fails, an attempt to restore and start the backup agent binary will be made.
 func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
 	// Only the agent package is supported.
 	if packageName != agentPackageKey {
 		return errors.New("package does not exist")
 	}
+
+	p.logger.Info("Begin agent binary update.")
 
 	// 1. Read data from the data stream.
 	by, err := io.ReadAll(data)
@@ -199,43 +210,70 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	}
 
 	// 3. Verify the package signature using the configured Verifier.
+	p.logger.Debug("Verifying package signature", zap.String("verifier type", p.verifier.Type()))
 	if err = p.verifier.Verify(by, signature); err != nil {
 		return fmt.Errorf("could not verify package signature: %w", err)
 	}
 
-	// 4, 5: Verify and install the agent binary to a temporary file.
+	// 4. Verify and install the agent binary from the archive.
+	p.logger.Debug("Verifying and installing agent binary from archive")
 	tmpFilePath := filepath.Join(p.storageDir, "collector.tmp")
 	if err = p.installFunc(ctx, by, p.agentBinary, tmpFilePath); err != nil {
 		return fmt.Errorf("install func: %w", err)
 	}
 
-	// 6. Stop the agent process.
-	startAgent, err := p.am.stopAgentProcess(ctx)
+	// 5. Stop the existing agent process.
+	restartProcess, startUpdatedBinary, startUpdatedBinaryOutcome, err := p.am.updateStopAgentProcess(ctx)
 	if err != nil {
 		return fmt.Errorf("stop agent process: %w", err)
 	}
 
-	// We always want to start the agent process again, even if we fail to write the agent file
-	defer close(startAgent)
+	p.logger.Debug("Current agent process stopped. Backing up existing agent binary and writing new agent binary.")
 
-	// 7. Backup the existing agent file.
+	// 6. Backup the existing agent binary.
 	agentBackupPath := filepath.Join(p.storageDir, "collector.bak")
-	if err = renameFile(p.agentExePath, agentBackupPath); err != nil {
-		return fmt.Errorf("rename collector exe path to backup path: %w", err)
+	if err = moveFile(p.agentExePath, agentBackupPath); err != nil {
+		p.logger.Error("Failed to backup existing agent binary. Signaling to restart existing process.", zap.Error(err))
+		close(restartProcess)
+		return fmt.Errorf("move existing agent binary to backup path: %w", err)
 	}
 
-	// 8. Overwrite the existing agent file with the new agent.
-	if err = renameFile(tmpFilePath, p.agentExePath); err != nil {
-		if restoreErr := renameFile(agentBackupPath, p.agentExePath); restoreErr != nil {
-			return errors.Join(fmt.Errorf("rename tmp file to agent executable path: %w", err), fmt.Errorf("restore agent backup: %w", restoreErr))
+	// 7. Write the new agent binary to the configured agent binary path.
+	if err = moveFile(tmpFilePath, p.agentExePath); err != nil {
+		writeErr := fmt.Errorf("write new agent binary to agent executable path: %w", err)
+		// restore the backup agent binary
+		if restoreErr := moveFile(agentBackupPath, p.agentExePath); restoreErr != nil {
+			joinedErr := errors.Join(writeErr, fmt.Errorf("restore agent backup: %w", restoreErr))
+			// failed to restore backup, don't attempt to start the backup
+			p.logger.Error("Failed to write new agent binary to agent executable path. Failed to restore backup. Not signaling to restart existing process.", zap.Error(joinedErr))
+			return joinedErr
 		}
-		return fmt.Errorf("successfully restored backup, but failed to rename tmp file to agent executable path: %w", err)
+		// successfully restored backup, signal to start the backup
+		p.logger.Error("Failed to write new agent binary to agent executable path. Signaling to restart existing process.", zap.Error(writeErr))
+		close(restartProcess)
+		return writeErr
 	}
 
-	// 9. Delete the backup after a successful update.
-	if err = os.Remove(agentBackupPath); err != nil {
-		return fmt.Errorf("delete agent backup: %w", err)
+	// 8. Signal to start the updated agent binary and wait for the outcome.
+	p.logger.Debug("New agent binary written to agent executable path. Signaling to start updated agent binary.")
+	startUpdatedBinary <- agentBackupPath
+	select {
+	case err := <-startUpdatedBinaryOutcome:
+		// failed to start the updated agent binary
+		if err != nil {
+			return fmt.Errorf("start updated agent binary: %w", err)
+		}
+	case <-ctx.Done():
+		return ctx.Err()
 	}
+
+	// 9. Delete the backup agent binary after a successful update.
+	if err = os.Remove(agentBackupPath); err != nil {
+		// this error should not prevent reporting a successful update
+		p.logger.Error("Failed to delete backup agent binary after successful update.", zap.Error(err))
+	}
+
+	p.logger.Info("Agent binary update completed successfully.")
 
 	return nil
 }
@@ -296,9 +334,9 @@ func verifyPackageHash(packageBytes, expectedHash []byte) error {
 	return nil
 }
 
-// renameFile will rename the file at srcPath to dstPath
+// moveFile will move the file at srcPath to dstPath using os.Rename
 // verifies the dstPath is cleared up, calling os.Remove, so a clean rename can occur
-func renameFile(srcPath, dstPath string) error {
+func moveFile(srcPath, dstPath string) error {
 	// verify dstPath is cleared up
 	if _, err := os.Stat(dstPath); err == nil {
 		// delete existing file at dstPath

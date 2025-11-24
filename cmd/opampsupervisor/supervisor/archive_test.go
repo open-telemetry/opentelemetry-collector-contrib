@@ -42,7 +42,7 @@ func TestNewInstallFunc(t *testing.T) {
 func TestInstallFunc(t *testing.T) {
 	testCases := []struct {
 		name          string
-		installFunc   InstallFunc
+		installFunc   installFunc
 		archive       func(t *testing.T) []byte
 		binaryName    string
 		destination   func(dir string) string
