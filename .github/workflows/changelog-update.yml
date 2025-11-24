@@ -16,6 +16,7 @@ jobs:
     steps:
       - name: Checkout action
         uses: actions/checkout@v3
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - name : checkout
         run : |
           git config --global user.name 'Github Action'
@@ -46,3 +47,4 @@ jobs:
           git pull
       - name: push code to aws-cwa-dev
         run: git push origin aws-cwa-dev
+      - run: ./.github/workflows/scripts/check-disk-space.sh

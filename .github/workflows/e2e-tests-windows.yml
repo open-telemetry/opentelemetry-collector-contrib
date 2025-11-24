@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - name: Did windows files changed
         run: echo "changed=$(./.github/workflows/scripts/is_changed_file_windows.sh )" >> "$GITHUB_OUTPUT"
       - run: echo $(./.github/workflows/scripts/is_changed_file_windows.sh ${{ github.event.pull_request.base.sha }} ${{ github.sha }} )
@@ -42,6 +43,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "1.24.9"
@@ -78,6 +80,7 @@ jobs:
     needs: [collector-build]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "1.24.9"
@@ -115,6 +118,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:

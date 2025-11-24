@@ -22,6 +22,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24.9"
@@ -41,3 +42,4 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         timeout-minutes: 60
+      - run: ./.github/workflows/scripts/check-disk-space.sh

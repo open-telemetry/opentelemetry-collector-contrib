@@ -15,6 +15,7 @@ jobs:
       already-opened: ${{ steps.check-versions.outputs.already-opened }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
 
       - id: check-versions
         name: Check versions
@@ -56,6 +57,7 @@ jobs:
       - check-versions
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: ./.github/workflows/scripts/free-disk-space.sh
 
       - name: Update version
         env:
@@ -114,3 +116,4 @@ jobs:
 
           git commit -m "Add change log entry"
           git push
+      - run: ./.github/workflows/scripts/check-disk-space.sh
