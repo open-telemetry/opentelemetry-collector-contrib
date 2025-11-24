@@ -402,6 +402,10 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			req.LogGroupNamePrefix = &auto.Prefix
 		}
 
+		if len(auto.AccountIdentifiers) > 0 {
+			req.AccountIdentifiers = auto.AccountIdentifiers
+		}
+
 		dlgResults, err := l.client.DescribeLogGroups(ctx, req)
 		if err != nil {
 			return groups, fmt.Errorf("unable to list log groups: %w", err)
