@@ -145,12 +145,12 @@ func Test_carbonreceiver_Start(t *testing.T) {
 func Test_carbonreceiver_EndToEnd(t *testing.T) {
 	tests := []struct {
 		name     string
-		configFn func(addr string) *Config
+		configFn func() *Config
 		clientFn func(t *testing.T, addr string) func(client.Metric) error
 	}{
 		{
 			name: "default_config",
-			configFn: func(addr string) *Config {
+			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
 			clientFn: func(t *testing.T, addr string) func(client.Metric) error {
@@ -161,7 +161,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		},
 		{
 			name: "tcp_reconnect",
-			configFn: func(addr string) *Config {
+			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
 			clientFn: func(t *testing.T, addr string) func(client.Metric) error {
@@ -172,7 +172,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		},
 		{
 			name: "default_config_udp",
-			configFn: func(addr string) *Config {
+			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.Transport = confignet.TransportTypeUDP
 				return cfg
@@ -188,8 +188,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			addr := testutil.GetAvailableLocalAddress(t)
-
-			cfg := tt.configFn(addr)
+			cfg := tt.configFn()
 			cfg.Endpoint = addr
 
 			sink := new(consumertest.MetricsSink)
