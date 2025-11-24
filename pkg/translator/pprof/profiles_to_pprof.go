@@ -181,7 +181,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		p.SetTime(pcommon.Timestamp(src.TimeNanos))
 
 		// pprof.Profile.duration_nanos
-		p.SetDuration(pcommon.Timestamp(src.DurationNanos))
+		p.SetDurationNano(uint64(src.DurationNanos))
 
 		// pprof.Profile.period_type
 		p.PeriodType().SetTypeStrindex(lts.getIdxForString(src.PeriodType.Type))

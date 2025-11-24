@@ -67,7 +67,7 @@ type Profile struct {
 	SampleType             ValueTypes
 	Sample                 []Sample
 	TimeNanos              pcommon.Timestamp
-	DurationNanos          pcommon.Timestamp
+	DurationNanos          uint64
 	PeriodType             ValueType
 	Period                 int64
 	DefaultSampleType      ValueType
@@ -99,7 +99,7 @@ func (p *Profile) Transform(dic pprofile.ProfilesDictionary, psp pprofile.ScopeP
 		sa.Transform(dic, pp)
 	}
 	pp.SetTime(p.TimeNanos)
-	pp.SetDuration(p.DurationNanos)
+	pp.SetDurationNano(p.DurationNanos)
 	p.PeriodType.CopyTo(dic, pp.PeriodType())
 	pp.SetPeriod(p.Period)
 	p.DefaultSampleType.Transform(dic, pp)

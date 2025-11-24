@@ -57,7 +57,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "duration",
-			val:  time.Now().UTC(),
+			val:  int64(0),
 		},
 		{
 			path: "period_type",
