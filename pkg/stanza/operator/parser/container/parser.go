@@ -68,6 +68,7 @@ type Parser struct {
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup
 	timeLayout              string
+	pathCache               cache
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
@@ -168,6 +169,9 @@ func (p *Parser) Stop() error {
 		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
 	p.criConsumers.Wait()
+	if p.pathCache != nil {
+		p.pathCache.stop()
+	}
 	return errs
 }
 
@@ -285,18 +289,24 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
 	}
 
+	if p.pathCache != nil {
+		if cached := p.pathCache.get(rawLogPath); cached != nil {
+			if parsedValues, ok := cached.(map[string]any); ok {
+				return p.setK8sMetadataFromParsedValues(e, parsedValues)
+			}
+		}
+	}
+
 	parsedValues, err := helper.MatchValues(rawLogPath, pathMatcher)
 	if err != nil {
 		return errors.New("failed to detect a valid log path")
 	}
 
-	for originalKey, attributeKey := range k8sMetadataMapping {
-		newField := entry.NewResourceField(attributeKey)
-		if err := newField.Set(e, parsedValues[originalKey]); err != nil {
-			return fmt.Errorf("failed to set %v as metadata at %v", originalKey, attributeKey)
-		}
+	if p.pathCache != nil {
+		p.pathCache.add(rawLogPath, parsedValues)
 	}
-	return nil
+
+	return p.setK8sMetadataFromParsedValues(e, parsedValues)
 }
 
 func (p *Parser) consumeEntries(ctx context.Context, entries []*entry.Entry) {
@@ -356,5 +366,15 @@ func parseTime(e *entry.Entry, layout string) error {
 
 	e.Delete(entry.NewAttributeField(parseFrom))
 
+	return nil
+}
+
+func (p *Parser) setK8sMetadataFromParsedValues(e *entry.Entry, parsedValues map[string]any) error {
+	for originalKey, attributeKey := range k8sMetadataMapping {
+		newField := entry.NewResourceField(attributeKey)
+		if err := newField.Set(e, parsedValues[originalKey]); err != nil {
+			return fmt.Errorf("failed to set %v as metadata at %v", originalKey, attributeKey)
+		}
+	}
 	return nil
 }

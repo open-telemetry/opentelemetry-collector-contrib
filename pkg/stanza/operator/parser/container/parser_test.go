@@ -4,6 +4,7 @@
 package container
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -736,4 +737,203 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPathCacheIntegration(t *testing.T) {
+	t.Run("CacheEnabled", func(t *testing.T) {
+		config := NewConfigWithID("test")
+		config.Cache.Size = 128
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := config.Build(set)
+		require.NoError(t, err)
+		parser := op.(*Parser)
+		defer func() { require.NoError(t, parser.Stop()) }()
+
+		require.NotNil(t, parser.pathCache, "cache should be initialized when size > 0")
+		require.Equal(t, uint16(128), parser.pathCache.maxSize())
+	})
+
+	t.Run("CacheDisabled", func(t *testing.T) {
+		config := NewConfigWithID("test")
+		config.Cache.Size = 0
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := config.Build(set)
+		require.NoError(t, err)
+		parser := op.(*Parser)
+		defer func() { require.NoError(t, parser.Stop()) }()
+
+		require.Nil(t, parser.pathCache, "cache should be nil when size is 0")
+	})
+
+	t.Run("CacheReusesParsedPaths", func(t *testing.T) {
+		config := NewConfigWithID("test")
+		config.Cache.Size = 128
+		config.AddMetadataFromFilePath = true
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := config.Build(set)
+		require.NoError(t, err)
+		parser := op.(*Parser)
+		defer func() { require.NoError(t, parser.Stop()) }()
+
+		ctx := t.Context()
+		logPath := "/var/log/pods/default_my-pod_12345-67890/container-name/0.log"
+
+		// Create multiple entries with the same log path
+		entries := []*entry.Entry{
+			{
+				Body: `{"log":"line 1","stream":"stdout","time":"2024-01-01T00:00:00.000000000Z"}`,
+				Attributes: map[string]any{
+					attrs.LogFilePath: logPath,
+				},
+			},
+			{
+				Body: `{"log":"line 2","stream":"stdout","time":"2024-01-01T00:00:01.000000000Z"}`,
+				Attributes: map[string]any{
+					attrs.LogFilePath: logPath,
+				},
+			},
+			{
+				Body: `{"log":"line 3","stream":"stdout","time":"2024-01-01T00:00:02.000000000Z"}`,
+				Attributes: map[string]any{
+					attrs.LogFilePath: logPath,
+				},
+			},
+		}
+
+		fake := testutil.NewFakeOutput(t)
+		parser.OutputOperators = []operator.Operator{fake}
+
+		// Process all entries
+		for _, e := range entries {
+			require.NoError(t, parser.Process(ctx, e))
+		}
+
+		// Verify all entries have the same metadata extracted from path
+		received := fake.Received
+		for i := 0; i < len(entries); i++ {
+			select {
+			case e := <-received:
+				require.Equal(t, "my-pod", e.Resource["k8s.pod.name"])
+				require.Equal(t, "12345-67890", e.Resource["k8s.pod.uid"])
+				require.Equal(t, "container-name", e.Resource["k8s.container.name"])
+				require.Equal(t, "0", e.Resource["k8s.container.restart_count"])
+				require.Equal(t, "default", e.Resource["k8s.namespace.name"])
+			case <-time.After(time.Second):
+				require.FailNow(t, "timeout waiting for entry")
+			}
+		}
+
+		// Verify cache was used (same path should be cached)
+		cached := parser.pathCache.get(logPath)
+		require.NotNil(t, cached, "path should be cached after processing")
+		parsedValues, ok := cached.(map[string]any)
+		require.True(t, ok)
+		require.Equal(t, "my-pod", parsedValues["pod_name"])
+		require.Equal(t, "container-name", parsedValues["container_name"])
+	})
+
+	t.Run("CacheHandlesDifferentPaths", func(t *testing.T) {
+		config := NewConfigWithID("test")
+		config.Cache.Size = 10
+		config.AddMetadataFromFilePath = true
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := config.Build(set)
+		require.NoError(t, err)
+		parser := op.(*Parser)
+		defer func() { require.NoError(t, parser.Stop()) }()
+
+		ctx := t.Context()
+		paths := []string{
+			"/var/log/pods/default_pod1_a1b2c3d4-e5f6-7890-abcd-ef1234567890/container1/0.log",
+			"/var/log/pods/default_pod2_b2c3d4e5-f6a7-8901-bcde-f12345678901/container2/1.log",
+			"/var/log/pods/kube-system_pod3_c3d4e5f6-a7b8-9012-cdef-123456789012/container3/0.log",
+		}
+
+		fake := testutil.NewFakeOutput(t)
+		parser.OutputOperators = []operator.Operator{fake}
+
+		// Process entries with different paths
+		for i, path := range paths {
+			e := &entry.Entry{
+				Body: `{"log":"line","stream":"stdout","time":"2024-01-01T00:00:00.000000000Z"}`,
+				Attributes: map[string]any{
+					attrs.LogFilePath: path,
+				},
+			}
+			require.NoError(t, parser.Process(ctx, e))
+
+			// Verify cache entry exists
+			cached := parser.pathCache.get(path)
+			require.NotNil(t, cached, "path %d should be cached", i)
+		}
+
+		// Verify all paths are in cache
+		for _, path := range paths {
+			cached := parser.pathCache.get(path)
+			require.NotNil(t, cached, "path %s should still be in cache", path)
+		}
+	})
+
+	t.Run("CacheFIFOEviction", func(t *testing.T) {
+		config := NewConfigWithID("test")
+		config.Cache.Size = 3 // Small cache to test eviction
+		config.AddMetadataFromFilePath = true
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := config.Build(set)
+		require.NoError(t, err)
+		parser := op.(*Parser)
+		defer func() { require.NoError(t, parser.Stop()) }()
+
+		ctx := t.Context()
+		fake := testutil.NewFakeOutput(t)
+		parser.OutputOperators = []operator.Operator{fake}
+
+		// Fill cache to capacity
+		uids := []string{
+			"a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+			"b2c3d4e5-f6a7-8901-bcde-f12345678901",
+			"c3d4e5f6-a7b8-9012-cdef-123456789012",
+		}
+		for i := 0; i < 3; i++ {
+			path := "/var/log/pods/default_pod" + strconv.Itoa(i) + "_" + uids[i] + "/container/0.log"
+			e := &entry.Entry{
+				Body: `{"log":"line","stream":"stdout","time":"2024-01-01T00:00:00.000000000Z"}`,
+				Attributes: map[string]any{
+					attrs.LogFilePath: path,
+				},
+			}
+			require.NoError(t, parser.Process(ctx, e))
+		}
+
+		// Add one more to trigger eviction
+		newPath := "/var/log/pods/default_pod4_d4e5f6a7-b8c9-0123-def0-234567890123/container/0.log"
+		e := &entry.Entry{
+			Body: `{"log":"line","stream":"stdout","time":"2024-01-01T00:00:00.000000000Z"}`,
+			Attributes: map[string]any{
+				attrs.LogFilePath: newPath,
+			},
+		}
+		require.NoError(t, parser.Process(ctx, e))
+
+		// First path should be evicted (FIFO)
+		firstPath := "/var/log/pods/default_pod0_a1b2c3d4-e5f6-7890-abcd-ef1234567890/container/0.log"
+		cached := parser.pathCache.get(firstPath)
+		require.Nil(t, cached, "first path should be evicted")
+
+		// New path should be cached
+		cached = parser.pathCache.get(newPath)
+		require.NotNil(t, cached, "new path should be cached")
+	})
+
+	t.Run("CacheStop", func(t *testing.T) {
+		config := NewConfigWithID("test")
+		config.Cache.Size = 128
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := config.Build(set)
+		require.NoError(t, err)
+		parser := op.(*Parser)
+
+		require.NotNil(t, parser.pathCache)
+		require.NoError(t, parser.Stop())
+	})
 }

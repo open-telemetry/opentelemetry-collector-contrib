@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -50,6 +51,10 @@ type Config struct {
 	Format                  string          `mapstructure:"format"`
 	AddMetadataFromFilePath bool            `mapstructure:"add_metadata_from_filepath"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+
+	Cache struct {
+		Size uint16 `mapstructure:"size"`
+	} `mapstructure:"cache"`
 }
 
 // Build will build a Container parser operator.
@@ -78,6 +83,15 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
 		criConsumers:            &wg,
+	}
+
+	if c.Cache.Size > 0 {
+		p.pathCache = newMemoryCache(c.Cache.Size, 0)
+		set.Logger.Debug(
+			"configured container memory cache",
+			zap.String("operator_id", p.ID()),
+			zap.Uint16("size", p.pathCache.maxSize()),
+		)
 	}
 
 	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries)
