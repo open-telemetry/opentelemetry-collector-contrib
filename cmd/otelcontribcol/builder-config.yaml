@@ -238,6 +238,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.140.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver v0.140.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.140.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver v0.140.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver v0.140.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.140.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver v0.140.1
