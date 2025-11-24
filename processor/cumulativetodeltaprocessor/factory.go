@@ -22,7 +22,7 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 var defaultMaxStalenessFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.cumulativetodelta.defaultmaxstaleness",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, max_staleness defaults to 5 minutes instead of 0 (infinite retention). This helps prevent unbounded memory growth in long-running collector instances."),
+	featuregate.WithRegisterDescription("When enabled, max_staleness defaults to 25 hours instead of 0 (infinite retention). This helps prevent unbounded memory growth in long-running collector instances."),
 	featuregate.WithRegisterFromVersion("v0.141.0"),
 )
 
@@ -37,7 +37,7 @@ func NewFactory() processor.Factory {
 func createDefaultConfig() component.Config {
 	cfg := &Config{}
 	if defaultMaxStalenessFeatureGate.IsEnabled() {
-		cfg.MaxStaleness = 5 * time.Minute
+		cfg.MaxStaleness = 25 * time.Hour
 	}
 	return cfg
 }
