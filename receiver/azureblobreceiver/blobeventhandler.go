@@ -91,7 +91,7 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 		blobName := strings.Split(subject, "blobs/")[1]
 
 		if eventType == blobCreatedEventType {
-			p.logger.Info("Staring reading container name", zap.String("containerName", containerName))
+			p.logger.Info("Staring reading blob", zap.String("containerName", containerName), zap.String("blobName", blobName))
 			blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
 			if err != nil {
 				return err
