@@ -1,0 +1,37 @@
+# Test configurations for macOS Unified Logging receiver
+
+# Live mode with default settings
+live_mode_defaults:
+  max_poll_interval: 30s
+  max_log_age: 24h
+
+# Archive mode with all options
+archive_mode_full:
+  archive_path: "./testdata/system_logs.logarchive"
+  predicate: "subsystem == 'com.apple.systempreferences'"
+  start_time: "2024-01-01 00:00:00"
+  end_time: "2024-01-02 00:00:00"
+  max_poll_interval: 60s
+  max_log_age: 48h
+
+# Archive mode minimal
+archive_mode_minimal:
+  archive_path: "./testdata/logs.logarchive"
+
+# Live mode with predicate
+live_mode_predicate:
+  predicate: "process == 'kernel' AND messageType == 'Error'"
+  max_poll_interval: 15s
+  max_log_age: 12h
+
+# Archive mode with time range
+archive_mode_time_range:
+  archive_path: "./testdata/system_logs.logarchive"
+  start_time: "2024-06-01 00:00:00"
+  end_time: "2024-06-01 23:59:59"
+
+# Archive mode with glob pattern
+archive_mode_glob:
+  archive_path: "./testdata/*.logarchive"
+  format: "ndjson"
+
