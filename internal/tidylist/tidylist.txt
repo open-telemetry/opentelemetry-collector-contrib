@@ -73,6 +73,7 @@ connector/datadogconnector
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
+connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
@@ -279,6 +280,7 @@ receiver/kafkareceiver
 receiver/kubeletstatsreceiver
 receiver/libhoneyreceiver
 receiver/lokireceiver
+receiver/macosunifiedloggingreceiver
 receiver/memcachedreceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver

@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*/subscriptions/`)
+var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*(:[a-z0-9\-]+)?/subscriptions/`)
 
 type Config struct {
 	// Google Cloud Project ID where the Pubsub client will connect to

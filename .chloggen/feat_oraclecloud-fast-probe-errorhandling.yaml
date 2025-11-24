@@ -1,0 +1,28 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: "enhancement"
+
+component: processor/resourcedetectionprocessor/oraclecloud
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Oracle Cloud (OCI) resource detection processor now differentiates between running off-platform (expected not to work), and encountering an error when running on-platform (expected to work)"
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [42794]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  - Collectors not running on Oracle Cloud return an empty resource and no error, since we don't expect this case to work.
+  - If the Oracle Cloud platform is detected but metadata fetch fails, the error is now logged and signaled to the processor, since we do expect this case to work.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: ["user"]

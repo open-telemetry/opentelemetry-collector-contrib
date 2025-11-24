@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -899,4 +900,69 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
 		})
 	}
+}
+
+func TestTracesForPropagateError(t *testing.T) {
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.PropagateError,
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{traces0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.TracesSink
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+			tracesDefault: &defaultSink,
+			traces0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.Error(t, conn.ConsumeTraces(t.Context(), ptraceutiltest.NewTraces("1", "2", "3", "4")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllTraces(), 0)
+	assert.Empty(t, defaultSink.AllTraces(), 0)
+}
+
+func TestTracesForIgnoreError(t *testing.T) {
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.IgnoreError,
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{traces0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.TracesSink
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+			tracesDefault: &defaultSink,
+			traces0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, conn.ConsumeTraces(t.Context(), ptraceutiltest.NewTraces("1", "2", "3", "4")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllTraces(), 0)
+	assert.Len(t, defaultSink.AllTraces(), 1)
+	assert.Equal(t, ptraceutiltest.NewTraces("1", "2", "3", "4"), defaultSink.AllTraces()[0])
 }

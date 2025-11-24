@@ -233,8 +233,8 @@ func TestLoadConfig(t *testing.T) {
 		factory := NewFactory()
 		config := factory.CreateDefaultConfig().(*Config)
 
-		config.ControllerConfig.CollectionInterval = 10 * time.Second
-		assert.Equal(t, 2*10*time.Second, config.EffectiveLookbackTime(), "By default the 'EffectiveLookbackTime' value should be 2 * 'CollectionInterval'")
+		config.TopQueryCollection.CollectionInterval = 10 * time.Second
+		assert.Equal(t, 2*config.TopQueryCollection.CollectionInterval, config.EffectiveLookbackTime(), "By default the 'EffectiveLookbackTime' value should be 2 x 'TopQueryCollection.CollectionInterval'")
 
 		config.LookbackTime = 60 * time.Second
 		assert.Equal(t, 60*time.Second, config.EffectiveLookbackTime(), "'EffectiveLookbackTime' should return the user provided 'LookbackTime' if any.")

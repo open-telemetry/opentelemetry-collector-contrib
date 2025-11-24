@@ -76,7 +76,7 @@ func TestHandleHTTPRequestField(t *testing.T) {
 				refererHeaderField:                        "referer",
 				requestServerDurationField:                float64(10),
 				string(semconv.UserAgentOriginalKey):      "test",
-				string(semconv.ClientAddressKey):          "127.0.0.2",
+				string(semconv.NetworkPeerAddressKey):     "127.0.0.2",
 				string(semconv.ServerAddressKey):          "127.0.0.3",
 			},
 		},

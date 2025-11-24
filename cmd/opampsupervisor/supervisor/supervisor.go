@@ -411,8 +411,8 @@ func (s *Supervisor) getFeatureGates() error {
 	_ = scanner.Scan()
 	for scanner.Scan() {
 		line := scanner.Text()
-		i := strings.Index(line, " ")
-		flag := line[0:i]
+		before, _, _ := strings.Cut(line, " ")
+		flag := before
 
 		if flag == AllowNoPipelinesFeatureGate {
 			s.featureGates[AllowNoPipelinesFeatureGate] = struct{}{}
