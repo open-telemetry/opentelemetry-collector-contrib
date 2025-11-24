@@ -6,7 +6,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.1-0.20251120204106-2e9c82787618
-	go.opentelemetry.io/collector/component/componenttest v0.140.0
+	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/extension v1.46.1-0.20251120204106-2e9c82787618
 	go.uber.org/goleak v1.3.0
 )

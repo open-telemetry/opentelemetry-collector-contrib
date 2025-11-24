@@ -18,9 +18,9 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	github.com/zeebo/xxh3 v1.0.2
 	go.opentelemetry.io/collector/component v1.46.1-0.20251120204106-2e9c82787618
-	go.opentelemetry.io/collector/component/componenttest v0.140.0
+	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/pdata v1.46.1-0.20251120204106-2e9c82787618
-	go.opentelemetry.io/collector/pdata/pprofile v0.140.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
 	go.uber.org/goleak v1.3.0
