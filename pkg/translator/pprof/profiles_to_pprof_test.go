@@ -36,7 +36,7 @@ func TestConvertPprofToPprofile(t *testing.T) {
 				t.Fatalf("%s: %s", name, err)
 			}
 
-			pprofile, err := convertPprofToPprofile(p)
+			pprofile, err := ConvertPprofToPprofile(p)
 			switch {
 			case errors.Is(err, tc.expectedError):
 				// The expected error equals the returned error,
