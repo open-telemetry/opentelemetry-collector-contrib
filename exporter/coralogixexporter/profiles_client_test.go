@@ -457,7 +457,7 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetDurationNano(SetDurationNano(uint64(1 * time.Second.Nanoseconds()))
+			profile.SetDurationNano(uint64(1 * time.Second.Nanoseconds()))
 		}
 
 		start := time.Now()
