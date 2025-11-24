@@ -143,18 +143,17 @@ func Test_carbonreceiver_Start(t *testing.T) {
 }
 
 func Test_carbonreceiver_EndToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name     string
-		configFn func() *Config
-		clientFn func(t *testing.T) func(client.Metric) error
+		configFn func(addr string) *Config
+		clientFn func(t *testing.T, addr string) func(client.Metric) error
 	}{
 		{
 			name: "default_config",
-			configFn: func() *Config {
+			configFn: func(addr string) *Config {
 				return createDefaultConfig().(*Config)
 			},
-			clientFn: func(t *testing.T) func(client.Metric) error {
+			clientFn: func(t *testing.T, addr string) func(client.Metric) error {
 				c, err := client.NewGraphite(client.TCP, addr)
 				require.NoError(t, err)
 				return c.SendMetric
@@ -162,10 +161,10 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		},
 		{
 			name: "tcp_reconnect",
-			configFn: func() *Config {
+			configFn: func(addr string) *Config {
 				return createDefaultConfig().(*Config)
 			},
-			clientFn: func(t *testing.T) func(client.Metric) error {
+			clientFn: func(t *testing.T, addr string) func(client.Metric) error {
 				c, err := client.NewGraphite(client.TCP, addr)
 				require.NoError(t, err)
 				return c.SputterThenSendMetric
@@ -173,22 +172,26 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		},
 		{
 			name: "default_config_udp",
-			configFn: func() *Config {
+			configFn: func(addr string) *Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.Transport = confignet.TransportTypeUDP
 				return cfg
 			},
-			clientFn: func(t *testing.T) func(client.Metric) error {
+			clientFn: func(t *testing.T, addr string) func(client.Metric) error {
 				c, err := client.NewGraphite(client.UDP, addr)
 				require.NoError(t, err)
 				return c.SendMetric
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := tt.configFn()
+			addr := testutil.GetAvailableLocalAddress(t)
+
+			cfg := tt.configFn(addr)
 			cfg.Endpoint = addr
+
 			sink := new(consumertest.MetricsSink)
 			recorder := tracetest.NewSpanRecorder()
 			rt := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
@@ -214,7 +217,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				require.NoError(t, r.Shutdown(t.Context()))
 			}()
 
-			snd := tt.clientFn(t)
+			snd := tt.clientFn(t, addr)
 
 			ts := time.Now()
 			carbonMetric := client.Metric{
