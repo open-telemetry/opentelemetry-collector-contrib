@@ -148,7 +148,7 @@ func validateExcludeTopic(signalType, topic, excludeTopic string) error {
 	}
 	if !strings.HasPrefix(topic, "^") {
 		return fmt.Errorf(
-			"%s.exclude_topic is configured but will be ignored because %s.topic does not use regex pattern (must start with '^')",
+			"%s.exclude_topic is configured but %s.topic does not use regex pattern (must start with '^')",
 			signalType, signalType,
 		)
 	}
