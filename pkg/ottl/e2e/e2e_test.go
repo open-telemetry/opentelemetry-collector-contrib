@@ -1166,6 +1166,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(trace_id, TraceID("0102030405060708090a0b0c0d0e0f10"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+			},
+		},
+		{
 			statement: `set(time, TruncateTime(time, Duration("1s")))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().SetTimestamp(pcommon.NewTimestampFromTime(TestLogTimestamp.AsTime().Truncate(time.Second)))

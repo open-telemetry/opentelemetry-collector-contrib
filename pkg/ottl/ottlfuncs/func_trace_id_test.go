@@ -43,18 +43,27 @@ func Test_traceID_validation(t *testing.T) {
 	tests := []struct {
 		name  string
 		bytes []byte
+		err   error
 	}{
 		{
 			name:  "byte slice less than 16 (15)",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+			err:   errTraceIDInvalidLength,
 		},
 		{
 			name:  "byte slice longer than 16 (17)",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17},
+			err:   errTraceIDInvalidLength,
 		},
 		{
 			name:  "byte slice longer than 32 (33)",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33},
+			err:   errTraceIDInvalidLength,
+		},
+		{
+			name:  "invalid hex string",
+			bytes: []byte("ZZ02030405060708090a0b0c0d0e0f10"),
+			err:   errTraceIDHexDecode,
 		},
 	}
 	for _, tt := range tests {
@@ -64,7 +73,7 @@ func Test_traceID_validation(t *testing.T) {
 			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
 			assert.Nil(t, result)
-			assert.ErrorIs(t, err, errTraceIDInvalidLength)
+			assert.ErrorIs(t, err, tt.err)
 		})
 	}
 }
