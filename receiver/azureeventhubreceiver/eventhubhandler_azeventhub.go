@@ -26,17 +26,18 @@ type checkpointSeqNumber struct {
 // UnmarshalJSON is a custom unmarshaller to allow for backward compatibility
 // with the sequence number field
 func (c *checkpointSeqNumber) UnmarshalJSON(data []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(data, &raw); err != nil {
+	// Primary struct shape
+	type Alias checkpointSeqNumber
+	var tmp struct {
+		Alias
+		SeqNumber *int64 `json:"seqNumber"` // fallback
+	}
+	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
-	if val, ok := raw["sequenceNumber"]; ok {
-		c.SequenceNumber = int64(val.(float64))
-	} else if val, ok := raw["seqNumber"]; ok {
-		c.SequenceNumber = int64(val.(float64))
-	}
-	if val, ok := raw["offset"]; ok {
-		c.Offset = val.(string)
+	*c = checkpointSeqNumber(tmp.Alias)
+	if tmp.SeqNumber != nil {
+		c.SequenceNumber = *tmp.SeqNumber
 	}
 	return nil
 }
