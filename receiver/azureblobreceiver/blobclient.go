@@ -30,6 +30,7 @@ func (bc *azureBlobClient) deleteBlob(ctx context.Context, containerName, blobNa
 		bc.logger.Error("failed to delete blob", zap.Error(blobDeleteErr))
 	}
 }
+
 func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error) {
 	if bc.deleteOnread {
 		defer bc.deleteBlob(ctx, containerName, blobName)
