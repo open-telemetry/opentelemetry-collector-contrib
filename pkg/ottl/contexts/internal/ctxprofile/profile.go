@@ -132,11 +132,14 @@ func accessDurationUnixNano[K Context]() ottl.StandardGetSetter[K] {
 func accessDuration[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().DurationNano(), nil
+			return int64(tCtx.GetProfile().DurationNano()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if t, ok := val.(time.Time); ok {
-				tCtx.GetProfile().SetDurationNano(uint64(t.Nanosecond()))
+			if t, ok := val.(int64); ok {
+				if t < 0 {
+					return errors.New("duration_unix_nano must be non-negative")
+				}
+				tCtx.GetProfile().SetDurationNano(uint64(t))
 			}
 			return nil
 		},
