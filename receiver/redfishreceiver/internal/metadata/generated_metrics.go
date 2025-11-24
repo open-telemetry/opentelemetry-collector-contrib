@@ -139,7 +139,7 @@ type metricChassisStatusHealth struct {
 func (m *metricChassisStatusHealth) init() {
 	m.data.SetName("chassis.status.health")
 	m.data.SetDescription("Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).")
-	m.data.SetUnit("{health}")
+	m.data.SetUnit("{statushealth}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -199,7 +199,7 @@ type metricChassisStatusState struct {
 func (m *metricChassisStatusState) init() {
 	m.data.SetName("chassis.status.state")
 	m.data.SetDescription("Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).")
-	m.data.SetUnit("{state}")
+	m.data.SetUnit("{statusstate}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -259,12 +259,12 @@ type metricFanReading struct {
 func (m *metricFanReading) init() {
 	m.data.SetName("fan.reading")
 	m.data.SetDescription("Measures the reading of a chassis fan.")
-	m.data.SetUnit("{%}")
+	m.data.SetUnit("{}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
+func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string, fanReadingUnitsAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -276,6 +276,7 @@ func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("fan.name", fanNameAttributeValue)
+	dp.Attributes().PutStr("fan.reading_units", fanReadingUnitsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -313,7 +314,7 @@ type metricFanStatusHealth struct {
 func (m *metricFanStatusHealth) init() {
 	m.data.SetName("fan.status.health")
 	m.data.SetDescription("Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).")
-	m.data.SetUnit("{health}")
+	m.data.SetUnit("{statushealth}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -367,7 +368,7 @@ type metricFanStatusState struct {
 func (m *metricFanStatusState) init() {
 	m.data.SetName("fan.status.state")
 	m.data.SetDescription("Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).")
-	m.data.SetUnit("{state}")
+	m.data.SetUnit("{statusstate}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -482,7 +483,7 @@ type metricSystemStatusHealth struct {
 func (m *metricSystemStatusHealth) init() {
 	m.data.SetName("system.status.health")
 	m.data.SetDescription("Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).")
-	m.data.SetUnit("{health}")
+	m.data.SetUnit("{statushealth}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -543,7 +544,7 @@ type metricSystemStatusState struct {
 func (m *metricSystemStatusState) init() {
 	m.data.SetName("system.status.state")
 	m.data.SetDescription("Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).")
-	m.data.SetUnit("{state}")
+	m.data.SetUnit("{statusstate}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -604,12 +605,12 @@ type metricTemperatureReading struct {
 func (m *metricTemperatureReading) init() {
 	m.data.SetName("temperature.reading")
 	m.data.SetDescription("Measures the reading of a chassis temperature.")
-	m.data.SetUnit("{%}")
+	m.data.SetUnit("°C")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
+func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -620,7 +621,7 @@ func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
 	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
-	dp.Attributes().PutStr("fan.name", fanNameAttributeValue)
+	dp.Attributes().PutStr("temperature.name", temperatureNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -658,7 +659,7 @@ type metricTemperatureStatusHealth struct {
 func (m *metricTemperatureStatusHealth) init() {
 	m.data.SetName("temperature.status.health")
 	m.data.SetDescription("Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).")
-	m.data.SetUnit("{health}")
+	m.data.SetUnit("{statushealth}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -712,7 +713,7 @@ type metricTemperatureStatusState struct {
 func (m *metricTemperatureStatusState) init() {
 	m.data.SetName("temperature.status.state")
 	m.data.SetDescription("Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).")
-	m.data.SetUnit("{state}")
+	m.data.SetUnit("{statusstate}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -927,8 +928,8 @@ func (mb *MetricsBuilder) RecordChassisStatusStateDataPoint(ts pcommon.Timestamp
 }
 
 // RecordFanReadingDataPoint adds a data point to fan.reading metric.
-func (mb *MetricsBuilder) RecordFanReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
-	mb.metricFanReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue)
+func (mb *MetricsBuilder) RecordFanReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string, fanReadingUnitsAttributeValue string) {
+	mb.metricFanReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue, fanReadingUnitsAttributeValue)
 }
 
 // RecordFanStatusHealthDataPoint adds a data point to fan.status.health metric.
@@ -957,8 +958,8 @@ func (mb *MetricsBuilder) RecordSystemStatusStateDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordTemperatureReadingDataPoint adds a data point to temperature.reading metric.
-func (mb *MetricsBuilder) RecordTemperatureReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
-	mb.metricTemperatureReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue)
+func (mb *MetricsBuilder) RecordTemperatureReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+	mb.metricTemperatureReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, temperatureNameAttributeValue)
 }
 
 // RecordTemperatureStatusHealthDataPoint adds a data point to temperature.status.health metric.

@@ -18,7 +18,7 @@ Average bytes scanned in a database over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
@@ -38,7 +38,7 @@ Total query count for database over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -58,7 +58,7 @@ Blocked query count for warehouse over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
@@ -72,7 +72,7 @@ Average bytes deleted in database over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
@@ -92,7 +92,7 @@ Average bytes written by database over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
@@ -112,7 +112,7 @@ Average time taken to compile query over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -132,7 +132,7 @@ Executed query count for warehouse over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
@@ -146,7 +146,7 @@ Average time spent executing queries in database over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -166,7 +166,7 @@ Overloaded query count for warehouse over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
@@ -180,7 +180,7 @@ Number of compute resources queued for provisioning over the last 24 hour window
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
@@ -194,7 +194,7 @@ Average time spent in warehouse queue due to warehouse being overloaded over the
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -214,7 +214,7 @@ Average time spent in warehouse queue waiting for resources to provision over th
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -234,7 +234,7 @@ Average time spent in warehouse queue waiting for compute resources to be repair
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -254,7 +254,7 @@ Number of bytes of stage storage used by files in all internal stages (named, ta
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 ### snowflake.storage.storage_bytes.total
 
@@ -262,7 +262,7 @@ Number of bytes of table storage used, including bytes for data currently in Tim
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 ### snowflake.total_elapsed_time.avg
 
@@ -270,7 +270,7 @@ Average elapsed time over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -300,7 +300,7 @@ Reported total credits used in the cloud service over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {credits} | Gauge | Double | development |
+| {credits} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -314,7 +314,7 @@ Reported total credits used across account over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {credits} | Gauge | Double | development |
+| {credits} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -328,7 +328,7 @@ Reported total credits used by virtual warehouse service over the last 24 hour w
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {credits} | Gauge | Double | development |
+| {credits} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -342,7 +342,7 @@ Credits used across cloud service for given warehouse over the last 24 hour wind
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {credits} | Gauge | Double | development |
+| {credits} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -356,7 +356,7 @@ Total credits used associated with given warehouse over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {credits} | Gauge | Double | development |
+| {credits} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -370,7 +370,7 @@ Total credits used by virtual warehouse service for given warehouse over the las
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {credits} | Gauge | Double | development |
+| {credits} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -384,7 +384,7 @@ Total login attempts for account over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -400,7 +400,7 @@ Snow pipe credits contotaled over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {credits} | Gauge | Double | development |
+| {credits} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -414,7 +414,7 @@ Average bytes spilled (intermediate results do not fit in memory) by local stora
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
@@ -434,7 +434,7 @@ Average bytes spilled (intermediate results do not fit in memory) by remote stor
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 #### Attributes
 
@@ -454,7 +454,7 @@ Average percentage of data scanned from cache over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
@@ -474,7 +474,7 @@ Number of partitions scanned during query so far over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
@@ -494,7 +494,7 @@ Number of rows deleted from a table (or tables) over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {rows} | Gauge | Double | development |
+| {rows} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -514,7 +514,7 @@ Number of rows inserted into a table (or tables) over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {rows} | Gauge | Double | development |
+| {rows} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -534,7 +534,7 @@ Average number of rows produced by statement over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {rows} | Gauge | Double | development |
+| {rows} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -554,7 +554,7 @@ Average number of rows unloaded during data export over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {rows} | Gauge | Double | development |
+| {rows} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -574,7 +574,7 @@ Average number of rows updated in a table over the last 24 hour window.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {rows} | Gauge | Double | development |
+| {rows} | Gauge | Double | Development |
 
 #### Attributes
 
@@ -594,7 +594,7 @@ Distinct session id's associated with snowflake username over the last 24 hour w
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -608,7 +608,7 @@ Number of bytes of data in Fail-safe.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Double | development |
+| By | Gauge | Double | Development |
 
 ## Resource Attributes
 

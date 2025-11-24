@@ -31,10 +31,6 @@ func ValidateProfile(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error
 		errs = errors.Join(errs, fmt.Errorf("period_type: %w", err))
 	}
 
-	if err := validateIndices(stLen, pp.CommentStrindices()); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("comment_strindices: %w", err))
-	}
-
 	if err := validateIndices(dic.AttributeTable().Len(), pp.AttributeIndices()); err != nil {
 		errs = errors.Join(errs, fmt.Errorf("attribute_indices: %w", err))
 	}
@@ -84,20 +80,14 @@ func validateValueType(stLen int, pvt pprofile.ValueType) error {
 		errs = errors.Join(errs, fmt.Errorf("unit_strindex: %w", err))
 	}
 
-	if pvt.AggregationTemporality() != pprofile.AggregationTemporalityDelta &&
-		pvt.AggregationTemporality() != pprofile.AggregationTemporalityCumulative {
-		errs = errors.Join(errs, fmt.Errorf("aggregation_temporality %d is invalid",
-			pvt.AggregationTemporality()))
-	}
-
 	return errs
 }
 
 func validateSamples(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error {
 	var errs error
 
-	for i := range pp.Sample().Len() {
-		if err := validateSample(dic, pp, pp.Sample().At(i)); err != nil {
+	for i := range pp.Samples().Len() {
+		if err := validateSample(dic, pp, pp.Samples().At(i)); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("sample[%d]: %w", i, err))
 		}
 	}
@@ -145,8 +135,8 @@ func validateLocation(dic pprofile.ProfilesDictionary, loc pprofile.Location) er
 		}
 	}
 
-	for i := range loc.Line().Len() {
-		if err := validateLine(dic, loc.Line().At(i)); err != nil {
+	for i := range loc.Lines().Len() {
+		if err := validateLine(dic, loc.Lines().At(i)); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("line[%d]: %w", i, err))
 		}
 	}

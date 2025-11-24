@@ -217,7 +217,8 @@ const successfulInstanceResponse = `{
       "version": ""
     },
     "full_configuration": "",
-    "health_status": ""
+    "health_status": "",
+    "collector_resource_attributes": {}
   },
   "uuid": "test-uuid"
 }`
@@ -291,8 +292,9 @@ func TestHandleMetadata(t *testing.T) {
 					Hostname: "test-hostname",
 					UUID:     "test-uuid",
 					Metadata: payload.OtelCollector{
-						FullComponents:   []payload.CollectorModule{},
-						ActiveComponents: []payload.ServiceComponent{},
+						FullComponents:              []payload.CollectorModule{},
+						ActiveComponents:            []payload.ServiceComponent{},
+						CollectorResourceAttributes: map[string]string{},
 					},
 				},
 			}

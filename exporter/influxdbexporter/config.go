@@ -5,6 +5,7 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -74,6 +75,9 @@ type Config struct {
 	PayloadMaxLines int `mapstructure:"payload_max_lines"`
 	// PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
 	PayloadMaxBytes int `mapstructure:"payload_max_bytes"`
+
+	// Precision is the timestamp precision for writing data to InfluxDB.
+	Precision string `mapstructure:"precision"`
 }
 
 func (cfg *Config) Validate() error {
@@ -103,6 +107,13 @@ func (cfg *Config) Validate() error {
 	if len(duplicateLogRecordDimensions) > 0 {
 		return fmt.Errorf("duplicate log record dimension(s) configured: %s",
 			strings.Join(maps.Keys(duplicateLogRecordDimensions), ","))
+	}
+
+	// Validate precision
+	validPrecisions := []string{"ns", "ms", "s", "us"}
+	if !slices.Contains(validPrecisions, cfg.Precision) {
+		return fmt.Errorf("invalid precision %q, must be one of: %s",
+			cfg.Precision, strings.Join(validPrecisions, ", "))
 	}
 
 	return nil

@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
 func AssertEqualKafkaBrokerClosed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_closed",
-		Description: "The total number of connections closed. [development]",
+		Description: "The total number of connections closed. [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualKafkaBrokerClosed(t *testing.T, tt *componenttest.Telemetry, dps
 func AssertEqualKafkaBrokerConnects(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_connects",
-		Description: "The total number of connections opened. [development]",
+		Description: "The total number of connections opened. [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualKafkaBrokerConnects(t *testing.T, tt *componenttest.Telemetry, d
 func AssertEqualKafkaBrokerThrottlingDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_throttling_duration",
-		Description: "The throttling duration in ms imposed by the broker when exporting messages. [deprecated]",
+		Description: "The throttling duration in ms imposed by the broker when exporting messages. [Deprecated]",
 		Unit:        "ms",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -71,7 +71,7 @@ func AssertEqualKafkaBrokerThrottlingDuration(t *testing.T, tt *componenttest.Te
 func AssertEqualKafkaBrokerThrottlingLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_throttling_latency",
-		Description: "The throttling latency in seconds imposed by the broker when exporting records. [development]",
+		Description: "The throttling latency in seconds imposed by the broker when exporting records. [Development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -86,7 +86,7 @@ func AssertEqualKafkaBrokerThrottlingLatency(t *testing.T, tt *componenttest.Tel
 func AssertEqualKafkaExporterBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_bytes",
-		Description: "The size in bytes of exported records seen by the broker. [development]",
+		Description: "The size in bytes of exported records seen by the broker. [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -102,7 +102,7 @@ func AssertEqualKafkaExporterBytes(t *testing.T, tt *componenttest.Telemetry, dp
 func AssertEqualKafkaExporterBytesUncompressed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_bytes_uncompressed",
-		Description: "The uncompressed size in bytes of exported messages seen by the client. [development]",
+		Description: "The uncompressed size in bytes of exported messages seen by the client. [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -118,7 +118,7 @@ func AssertEqualKafkaExporterBytesUncompressed(t *testing.T, tt *componenttest.T
 func AssertEqualKafkaExporterLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_latency",
-		Description: "The time it took in ms to export a batch of messages. [deprecated]",
+		Description: "The time it took in ms to export a batch of messages. [Deprecated]",
 		Unit:        "ms",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -133,7 +133,7 @@ func AssertEqualKafkaExporterLatency(t *testing.T, tt *componenttest.Telemetry, 
 func AssertEqualKafkaExporterMessages(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_messages",
-		Description: "The number of exported messages. [deprecated]",
+		Description: "The number of exported messages. [Deprecated]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -149,7 +149,7 @@ func AssertEqualKafkaExporterMessages(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualKafkaExporterRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_records",
-		Description: "The number of exported records. [development]",
+		Description: "The number of exported records. [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -165,7 +165,7 @@ func AssertEqualKafkaExporterRecords(t *testing.T, tt *componenttest.Telemetry, 
 func AssertEqualKafkaExporterWriteLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_write_latency",
-		Description: "The time it took in seconds to export a batch of records. [development]",
+		Description: "The time it took in seconds to export a batch of records. [Development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,

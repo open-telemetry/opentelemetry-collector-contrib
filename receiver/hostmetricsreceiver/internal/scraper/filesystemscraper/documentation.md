@@ -18,7 +18,7 @@ FileSystem inodes used.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {inodes} | Sum | Int | Cumulative | false | development |
+| {inodes} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -36,7 +36,7 @@ Filesystem bytes used.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -64,7 +64,7 @@ Fraction of filesystem bytes used.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 

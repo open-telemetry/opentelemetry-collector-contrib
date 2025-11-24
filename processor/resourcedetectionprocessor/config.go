@@ -47,6 +47,7 @@ type Config struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
 	// Attributes is an allowlist of attributes to add.
 	// If a supplied attribute is not a valid attribute of a supplied detector it will be ignored.
+	//
 	// Deprecated: Please use detector's resource_attributes config instead
 	Attributes []string `mapstructure:"attributes"`
 }

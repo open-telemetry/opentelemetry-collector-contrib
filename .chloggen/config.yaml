@@ -19,6 +19,7 @@ components:
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
+    - connector/metricsaslogs
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
@@ -91,7 +92,6 @@ components:
     - extension/db_storage
     - extension/docker_observer
     - extension/ecs_observer
-    - extension/ecs_task_observer
     - extension/encoding
     - extension/file_storage
     - extension/googleclientauth
@@ -168,6 +168,7 @@ components:
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/opencensus
+    - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
@@ -177,6 +178,7 @@ components:
     - pkg/xk8stest
     - processor/akamaidetector
     - processor/attributes
+    - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
     - processor/datadogsemantics
@@ -226,6 +228,7 @@ components:
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
+    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azureblob
@@ -234,7 +237,7 @@ components:
     - receiver/bigip
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoosreceiver
+    - receiver/ciscoos
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
@@ -253,6 +256,7 @@ components:
     - receiver/gitlab
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
+    - receiver/googlecloudpubsubpush
     - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/hostmetrics
@@ -273,6 +277,7 @@ components:
     - receiver/kubeletstats
     - receiver/libhoney
     - receiver/loki
+    - receiver/macosunifiedlogging
     - receiver/memcached
     - receiver/mongodb
     - receiver/mongodbatlas
@@ -325,11 +330,13 @@ components:
     - receiver/windowseventlog
     - receiver/windowsperfcounters
     - receiver/windowsservice
+    - receiver/yanggrpc
     - receiver/zipkin
     - receiver/zookeeper
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/interfaces
     - scraper/load
     - scraper/memory
     - scraper/network

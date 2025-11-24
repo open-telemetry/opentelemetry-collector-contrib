@@ -36,6 +36,7 @@ type Config struct {
 	ConsumerGroup            string        `mapstructure:"group"`
 	ApplySemanticConventions bool          `mapstructure:"apply_semantic_conventions"`
 	TimeFormats              TimeFormat    `mapstructure:"time_formats"`
+	MetricAggregation        string        `mapstructure:"metric_aggregation"`
 
 	// azeventhub lib specific
 	PollRate      int `mapstructure:"poll_rate"`

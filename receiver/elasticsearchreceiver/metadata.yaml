@@ -753,6 +753,8 @@ metrics:
     enabled: true
   elasticsearch.node.open_files:
     description: The number of open file descriptors held by the node.
+    stability:
+      level: development
     unit: "{files}"
     sum:
       monotonic: false

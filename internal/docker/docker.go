@@ -24,7 +24,7 @@ import (
 
 const userAgent = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
 
-var minimumRequiredDockerAPIVersion = MustNewAPIVersion("1.22")
+var minimumRequiredDockerAPIVersion = MustNewAPIVersion("1.44")
 
 // Container is client.ContainerInspect() response container
 // stats and translated environment string map for potential labels.

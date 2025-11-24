@@ -18,7 +18,7 @@ Measures the duration of the HTTP check.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ Records errors occurring during HTTP check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {error} | Sum | Int | Cumulative | false | development |
+| {error} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -47,7 +47,7 @@ Records errors occurring during HTTP check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -74,7 +74,7 @@ Time spent establishing TCP connection to the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 #### Attributes
 
@@ -89,7 +89,7 @@ Time spent sending the HTTP request to the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 #### Attributes
 
@@ -103,7 +103,7 @@ Time spent performing DNS lookup for the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 #### Attributes
 
@@ -117,7 +117,7 @@ Time spent receiving the HTTP response from the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 #### Attributes
 
@@ -131,7 +131,7 @@ Size of response body in bytes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
@@ -145,7 +145,7 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
@@ -162,7 +162,7 @@ Time spent performing TLS handshake with the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 #### Attributes
 
@@ -176,7 +176,7 @@ Number of response validations that failed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {validation} | Sum | Int | Cumulative | false | development |
+| {validation} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -191,7 +191,7 @@ Number of response validations that passed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {validation} | Sum | Int | Cumulative | false | development |
+| {validation} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

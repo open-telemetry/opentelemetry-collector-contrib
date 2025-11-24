@@ -12,6 +12,7 @@ import (
 )
 
 func TestGetShutdown(t *testing.T) {
+	t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43918")
 	tmpConfigPath := setKubeConfigPath(t)
 	k8sClient := Get(
 		zap.NewNop(),

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
@@ -62,7 +63,7 @@ func TestAccessAttributes_Getter(t *testing.T) {
 	getSetter := AccessAttributes[*mockAttributeContext](mockAttributeSource)
 
 	got, err := getSetter.Getter(t.Context(), ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	m, ok := got.(pcommon.Map)
 	assert.True(t, ok)
@@ -124,7 +125,7 @@ func TestAccessAttributes_Setter(t *testing.T) {
 	m.PutInt("num", 123)
 
 	err := getSetter.Setter(t.Context(), ctx, m)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Verify that the shared attribute table preserves existing entries
 	// The existing attributes should still be in the shared table even though
@@ -218,7 +219,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		got, err := getSetter.Getter(t.Context(), ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Nil(t, got)
 	})
 
@@ -232,7 +233,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		got, err := getSetter.Getter(t.Context(), ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "bar", got)
 	})
 }
@@ -290,7 +291,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		err := getSetter.Setter(t.Context(), ctx, "value1")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Verify existing attributes in shared tables remain unchanged
 		assert.Equal(t, "foo", strTable.At(int(attr.KeyStrindex())),
@@ -335,7 +336,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		err := getSetter.Setter(t.Context(), ctx, "bazinga")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// CRITICAL: Verify all original attributes in shared table remain unchanged
 		// PutAttribute creates new entries rather than modifying existing ones
@@ -409,7 +410,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		err := getSetter.Setter(t.Context(), ctx, 42)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Verify all original attributes in shared tables remain unchanged
 		for _, orig := range originalValues {
