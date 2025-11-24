@@ -19,6 +19,7 @@ components:
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
+    - connector/metricsaslogs
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
