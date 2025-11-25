@@ -83,6 +83,7 @@ components:
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awslogs_encoding
     - extension/awsproxy
+    - extension/azure_encoding
     - extension/azureauth
     - extension/basicauth
     - extension/bearertokenauth
@@ -135,6 +136,7 @@ components:
     - internal/grpcutil
     - internal/healthcheck
     - internal/k8sconfig
+    - internal/k8sinventory
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
