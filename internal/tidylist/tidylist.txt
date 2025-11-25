@@ -73,6 +73,7 @@ connector/datadogconnector
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
+connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
@@ -196,6 +197,7 @@ processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
+internal/k8sinventory
 internal/kubelet
 internal/sqlquery
 internal/tools
@@ -279,6 +281,7 @@ receiver/kafkareceiver
 receiver/kubeletstatsreceiver
 receiver/libhoneyreceiver
 receiver/lokireceiver
+receiver/macosunifiedloggingreceiver
 receiver/memcachedreceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver

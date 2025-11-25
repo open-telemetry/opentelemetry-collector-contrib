@@ -19,6 +19,7 @@ components:
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
+    - connector/metricsaslogs
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
@@ -134,6 +135,7 @@ components:
     - internal/grpcutil
     - internal/healthcheck
     - internal/k8sconfig
+    - internal/k8sinventory
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
@@ -177,6 +179,7 @@ components:
     - pkg/xk8stest
     - processor/akamaidetector
     - processor/attributes
+    - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
     - processor/datadogsemantics
@@ -275,6 +278,7 @@ components:
     - receiver/kubeletstats
     - receiver/libhoney
     - receiver/loki
+    - receiver/macosunifiedlogging
     - receiver/memcached
     - receiver/mongodb
     - receiver/mongodbatlas

@@ -27,6 +27,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/metricsaslogs
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing
@@ -142,6 +143,7 @@ body:
       - internal/grpcutil
       - internal/healthcheck
       - internal/k8sconfig
+      - internal/k8sinventory
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -208,6 +210,7 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/azure
       - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
@@ -292,6 +295,7 @@ body:
       - receiver/kubeletstats
       - receiver/libhoney
       - receiver/loki
+      - receiver/macosunifiedlogging
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
