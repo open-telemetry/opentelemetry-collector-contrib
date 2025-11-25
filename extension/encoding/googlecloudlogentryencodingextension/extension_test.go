@@ -215,8 +215,8 @@ func TestPayloads(t *testing.T) {
 			name:             "application load balancer log - global",
 			logFilename:      "testdata/apploadbalancer/global_external_application_load_balancer.json",
 			expectedFilename: "testdata/apploadbalancer/global_external_application_load_balancer_expected.yaml",
-    },
-    {
+		},
+		{
 			name:             "proxy nlb log - basic connection",
 			logFilename:      "testdata/proxynlb/proxynlb-basic.json",
 			expectedFilename: "testdata/proxynlb/proxynlb-basic_expected.yaml",
