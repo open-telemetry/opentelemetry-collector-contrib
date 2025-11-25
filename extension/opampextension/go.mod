@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/service v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/service/hostcapabilities v0.140.1-0.20251120204106-2e9c82787618
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	google.golang.org/grpc v1.77.0
 	gopkg.in/yaml.v3 v3.0.1
