@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -243,7 +244,7 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 	}
 
 	jobToScrapeConfig := map[string]*promconfig.ScrapeConfig{}
-	envReplacedBody := instantiateShard(body)
+	envReplacedBody := instantiateShard(body, os.LookupEnv)
 	err = yaml.Unmarshal(envReplacedBody, &jobToScrapeConfig)
 	if err != nil {
 		return nil, err
