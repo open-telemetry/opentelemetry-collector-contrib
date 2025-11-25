@@ -32,6 +32,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/metricsaslogs
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing
@@ -147,6 +148,7 @@ body:
       - internal/grpcutil
       - internal/healthcheck
       - internal/k8sconfig
+      - internal/k8sinventory
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
