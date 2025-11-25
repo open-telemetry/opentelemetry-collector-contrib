@@ -4,6 +4,10 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
@@ -119,6 +123,45 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	return conf.Unmarshal(c)
 }
 
+// Validate checks the receiver configuration is valid.
+func (c *Config) Validate() error {
+	// Validate that exclude_topic is only used with regex topic patterns
+	if err := validateExcludeTopic("logs", c.Logs.Topic, c.Logs.ExcludeTopic); err != nil {
+		return err
+	}
+	if err := validateExcludeTopic("metrics", c.Metrics.Topic, c.Metrics.ExcludeTopic); err != nil {
+		return err
+	}
+	if err := validateExcludeTopic("traces", c.Traces.Topic, c.Traces.ExcludeTopic); err != nil {
+		return err
+	}
+	if err := validateExcludeTopic("profiles", c.Profiles.Topic, c.Profiles.ExcludeTopic); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateExcludeTopic checks that exclude_topic is only configured when topic uses regex pattern
+func validateExcludeTopic(signalType, topic, excludeTopic string) error {
+	if excludeTopic == "" {
+		return nil // No exclude_topic configured, nothing to validate
+	}
+	if !strings.HasPrefix(topic, "^") {
+		return fmt.Errorf(
+			"%s.exclude_topic is configured but %s.topic does not use regex pattern (must start with '^')",
+			signalType, signalType,
+		)
+	}
+	// Validate that exclude_topic is a valid regex pattern
+	if _, err := regexp.Compile(excludeTopic); err != nil {
+		return fmt.Errorf(
+			"%s.exclude_topic contains invalid regex pattern: %w",
+			signalType, err,
+		)
+	}
+	return nil
+}
+
 // TopicEncodingConfig holds signal-specific topic and encoding configuration.
 type TopicEncodingConfig struct {
 	// Topic holds the name of the Kafka topic from which messages of the
@@ -135,6 +178,9 @@ type TopicEncodingConfig struct {
 	//
 	// Defaults to "otlp_proto".
 	Encoding string `mapstructure:"encoding"`
+
+	// Optional exclude topic option, used only in regex mode.
+	ExcludeTopic string `mapstructure:"exclude_topic"`
 }
 
 type MessageMarking struct {
