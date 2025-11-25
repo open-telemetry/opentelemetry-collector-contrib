@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.24.0
 
 require (
-	github.com/elastic/go-docappender/v2 v2.11.3
+	github.com/elastic/go-docappender/v2 v2.12.0
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.140.1
@@ -50,7 +50,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/ebitengine/purego v0.9.0 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.7.0 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.8.0 // indirect
 	github.com/elastic/go-elasticsearch/v8 v8.19.0 // indirect
 	github.com/elastic/go-freelru v0.16.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
