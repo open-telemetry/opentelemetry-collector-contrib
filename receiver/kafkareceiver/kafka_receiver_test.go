@@ -761,6 +761,26 @@ func TestNewProfilesReceiver(t *testing.T) {
 	})
 }
 
+func TestExcludeTopicWithSarama(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+		// Configure exclude_topic - only supported with franz-go
+		receiverConfig.Traces.Topic = "^otlp_spans.*"
+		receiverConfig.Traces.ExcludeTopic = "^otlp_spans-test$"
+
+		set, _, _ := mustNewSettings(t)
+		_, err := newTracesReceiver(receiverConfig, set, &consumertest.TracesSink{})
+
+		if franzGoConsumerFeatureGate.IsEnabled() {
+			require.NoError(t, err)
+		} else {
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "exclude_topic is configured but is not supported when using Sarama consumer")
+		}
+	})
+}
+
 func TestComponentStatus(t *testing.T) {
 	runTestForClients(t, func(t *testing.T) {
 		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))

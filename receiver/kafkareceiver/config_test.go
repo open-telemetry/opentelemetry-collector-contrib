@@ -307,6 +307,35 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "regex_topic_with_exclusion"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:        "^logs-.*",
+					ExcludeTopic: "^logs-(test|dev)$",
+					Encoding:     "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:        "^metrics-.*",
+					ExcludeTopic: "^metrics-internal-.*$",
+					Encoding:     "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:        "^traces-.*",
+					ExcludeTopic: "^traces-debug-.*$",
+					Encoding:     "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -320,6 +349,103 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestConfigValidate(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      *Config
+		expectedErr string
+	}{
+		{
+			name: "valid config with regex and exclude_topic",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topic:        "^logs-.*",
+					ExcludeTopic: "^logs-test$",
+					Encoding:     "otlp_proto",
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "invalid config with non-regex topic and exclude_topic for logs",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topic:        "logs",
+					ExcludeTopic: "^logs-test$",
+					Encoding:     "otlp_proto",
+				},
+			},
+			expectedErr: "logs.exclude_topic is configured but logs.topic does not use regex pattern (must start with '^')",
+		},
+		{
+			name: "invalid config with non-regex topic and exclude_topic for metrics",
+			config: &Config{
+				Metrics: TopicEncodingConfig{
+					Topic:        "metrics",
+					ExcludeTopic: "^metrics-test$",
+					Encoding:     "otlp_proto",
+				},
+			},
+			expectedErr: "metrics.exclude_topic is configured but metrics.topic does not use regex pattern (must start with '^')",
+		},
+		{
+			name: "invalid config with non-regex topic and exclude_topic for traces",
+			config: &Config{
+				Traces: TopicEncodingConfig{
+					Topic:        "traces",
+					ExcludeTopic: "^traces-test$",
+					Encoding:     "otlp_proto",
+				},
+			},
+			expectedErr: "traces.exclude_topic is configured but traces.topic does not use regex pattern (must start with '^')",
+		},
+		{
+			name: "invalid config with non-regex topic and exclude_topic for profiles",
+			config: &Config{
+				Profiles: TopicEncodingConfig{
+					Topic:        "profiles",
+					ExcludeTopic: "^profiles-test$",
+					Encoding:     "otlp_proto",
+				},
+			},
+			expectedErr: "profiles.exclude_topic is configured but profiles.topic does not use regex pattern (must start with '^')",
+		},
+		{
+			name: "valid config without exclude_topic",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topic:    "logs",
+					Encoding: "otlp_proto",
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "invalid config with invalid regex in exclude_topic",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topic:        "^logs-.*",
+					ExcludeTopic: "^logs-[invalid(regex",
+					Encoding:     "otlp_proto",
+				},
+			},
+			expectedErr: "logs.exclude_topic contains invalid regex pattern",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectedErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedErr)
+			}
 		})
 	}
 }
