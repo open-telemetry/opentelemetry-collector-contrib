@@ -44,6 +44,11 @@ func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samp
 }
 
 func (l *latency) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, batch ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	// If an upper threshold is set we don't know if there will be a future
+	// span that will cause a not sampled decision.
+	if l.upperThresholdMs > 0 {
+		return samplingpolicy.Unspecified, nil
+	}
 	return batchHasSpanWithCondition(batch, l.condition()), nil
 }
 

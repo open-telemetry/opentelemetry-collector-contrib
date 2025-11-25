@@ -160,18 +160,18 @@ func TestLatency_Evaluate_Bounded(t *testing.T) {
 }
 
 func TestLatency_EarlyEvaluate(t *testing.T) {
-	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 0).(samplingpolicy.EarlyEvaluator)
-
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	now := time.Now()
 
 	cases := []struct {
-		Desc     string
-		Spans    []spanWithTimeAndDuration
-		Decision samplingpolicy.Decision
+		Desc                      string
+		Threshold, UpperThreshold time.Duration
+		Spans                     []spanWithTimeAndDuration
+		Decision                  samplingpolicy.Decision
 	}{
 		{
 			"trace duration shorter than threshold",
+			5 * time.Second, 0,
 			[]spanWithTimeAndDuration{
 				{
 					StartTime: now,
@@ -182,6 +182,7 @@ func TestLatency_EarlyEvaluate(t *testing.T) {
 		},
 		{
 			"trace duration is equal to threshold",
+			5 * time.Second, 0,
 			[]spanWithTimeAndDuration{
 				{
 					StartTime: now,
@@ -192,6 +193,7 @@ func TestLatency_EarlyEvaluate(t *testing.T) {
 		},
 		{
 			"total trace duration is longer than threshold but every single span is shorter",
+			5 * time.Second, 0,
 			[]spanWithTimeAndDuration{
 				{
 					StartTime: now,
@@ -204,16 +206,41 @@ func TestLatency_EarlyEvaluate(t *testing.T) {
 			},
 			samplingpolicy.Sampled,
 		},
+		{
+			"trace duration is longer than upper bound",
+			1 * time.Second, 2 * time.Second,
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  3 * time.Second,
+				},
+			},
+			// TODO: This can be samplingpolicy.NotSampled in the future.
+			samplingpolicy.Unspecified,
+		},
+		{
+			"trace duration is longer than lower bound but less than upper bound",
+			2 * time.Second, 5 * time.Second,
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  4000 * time.Millisecond,
+				},
+			},
+			samplingpolicy.Unspecified,
+		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
+			filter := NewLatency(componenttest.NewNopTelemetrySettings(), c.Threshold.Milliseconds(), c.UpperThreshold.Milliseconds()).(samplingpolicy.EarlyEvaluator)
+
 			trace := newTraceWithSpans(c.Spans)
 			rs := trace.ReceivedBatches.ResourceSpans().At(0)
 			decision, err := filter.EarlyEvaluate(t.Context(), traceID, rs, trace)
 
 			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			assert.Equal(t, c.Decision, decision)
 		})
 	}
 }
