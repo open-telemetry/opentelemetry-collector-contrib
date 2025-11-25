@@ -233,7 +233,7 @@ func TestLatency_EarlyEvaluate(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			filter := NewLatency(componenttest.NewNopTelemetrySettings(), c.Threshold.Milliseconds(), c.UpperThreshold.Milliseconds()).(samplingpolicy.EarlyEvaluator)
+			filter := NewLatency(componenttest.NewNopTelemetrySettings(), c.Threshold.Milliseconds(), c.UpperThreshold.Milliseconds())
 
 			trace := newTraceWithSpans(c.Spans)
 			rs := trace.ReceivedBatches.ResourceSpans().At(0)

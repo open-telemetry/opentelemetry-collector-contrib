@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -133,4 +134,8 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 	}
 
 	return samplingpolicy.NotSampled, nil
+}
+
+func (c *Composite) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, _ ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	return samplingpolicy.Unspecified, nil
 }

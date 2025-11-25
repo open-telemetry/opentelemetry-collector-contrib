@@ -21,10 +21,7 @@ type booleanAttributeFilter struct {
 	invertMatch bool
 }
 
-var (
-	_ samplingpolicy.Evaluator      = (*booleanAttributeFilter)(nil)
-	_ samplingpolicy.EarlyEvaluator = (*booleanAttributeFilter)(nil)
-)
+var _ samplingpolicy.Evaluator = (*booleanAttributeFilter)(nil)
 
 // NewBooleanAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute that match the supplied boolean value.

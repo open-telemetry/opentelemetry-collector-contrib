@@ -22,10 +22,7 @@ type statusCodeFilter struct {
 	statusCodes []ptrace.StatusCode
 }
 
-var (
-	_ samplingpolicy.Evaluator      = (*statusCodeFilter)(nil)
-	_ samplingpolicy.EarlyEvaluator = (*statusCodeFilter)(nil)
-)
+var _ samplingpolicy.Evaluator = (*statusCodeFilter)(nil)
 
 // NewStatusCodeFilter creates a policy evaluator that samples all traces with
 // a given status code.

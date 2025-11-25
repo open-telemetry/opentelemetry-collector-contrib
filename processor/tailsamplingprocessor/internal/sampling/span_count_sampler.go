@@ -20,10 +20,7 @@ type spanCount struct {
 	maxSpans int64
 }
 
-var (
-	_ samplingpolicy.Evaluator      = (*spanCount)(nil)
-	_ samplingpolicy.EarlyEvaluator = (*spanCount)(nil)
-)
+var _ samplingpolicy.Evaluator = (*spanCount)(nil)
 
 // NewSpanCount creates a policy evaluator sampling traces with more than one span per trace
 func NewSpanCount(settings component.TelemetrySettings, minSpans, maxSpans int32) samplingpolicy.Evaluator {

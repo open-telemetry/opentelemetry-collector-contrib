@@ -134,7 +134,7 @@ func TestStatusCodeFilter_EarlyEvaluate(t *testing.T) {
 			statusCodeFilter, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), c.StatusCodesToFilterOn)
 			assert.NoError(t, err)
 
-			decision, err := statusCodeFilter.(samplingpolicy.EarlyEvaluator).EarlyEvaluate(t.Context(), traceID, rs, nil)
+			decision, err := statusCodeFilter.EarlyEvaluate(t.Context(), traceID, rs, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, c.Decision, decision)
 		})

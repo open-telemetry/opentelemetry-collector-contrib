@@ -146,7 +146,7 @@ func TestTraceStateFilter_EarlyEvaluate(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			filter := NewTraceStateFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values).(samplingpolicy.EarlyEvaluator)
+			filter := NewTraceStateFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values)
 			traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 			rs := c.Trace.ReceivedBatches.ResourceSpans().At(0)
 			decision, err := filter.EarlyEvaluate(t.Context(), traceID, rs, c.Trace)

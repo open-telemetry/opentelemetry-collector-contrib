@@ -83,7 +83,7 @@ func TestProbabilisticSampling(t *testing.T) {
 						err      error
 					)
 					if earlyEvaluation {
-						decision, err = probabilisticSampler.(samplingpolicy.EarlyEvaluator).EarlyEvaluate(t.Context(), traceID, rs, trace)
+						decision, err = probabilisticSampler.EarlyEvaluate(t.Context(), traceID, rs, trace)
 					} else {
 						decision, err = probabilisticSampler.Evaluate(t.Context(), traceID, trace)
 					}
