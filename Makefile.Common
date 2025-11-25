@@ -294,10 +294,6 @@ tidy:
 	rm -fr go.sum
 	$(GOCMD) mod tidy -compat=1.24.0
 
-.PHONY: build
-build:
-	$(GOCMD) build ./...
-
 .PHONY: toolchain
 toolchain:
 	$(GOCMD) get toolchain@none

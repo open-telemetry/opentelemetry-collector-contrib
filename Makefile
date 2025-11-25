@@ -174,10 +174,6 @@ gomoddownload:
 gotest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
 
-.PHONY: gobuild
-gobuild:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="build"
-
 .PHONY: gotest-with-cover
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
