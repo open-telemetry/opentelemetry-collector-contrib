@@ -197,6 +197,7 @@ processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
+internal/k8sinventory
 internal/kubelet
 internal/sqlquery
 internal/tools

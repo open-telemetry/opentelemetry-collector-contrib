@@ -135,6 +135,7 @@ components:
     - internal/grpcutil
     - internal/healthcheck
     - internal/k8sconfig
+    - internal/k8sinventory
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
