@@ -743,8 +743,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(tb traceBatch) {
 		actualData.SpanCount += tb.spanCount
 	}
 
-	if tb.parentSpan != nil && actualData.ParentSpan == nil {
-		actualData.ParentSpan = tb.parentSpan
+	if tb.parentSpan != nil && actualData.RootSpan == nil {
+		actualData.RootSpan = tb.parentSpan
 	}
 
 	finalDecision := actualData.FinalDecision
@@ -798,15 +798,14 @@ func (tsp *tailSamplingSpanProcessor) processEarlyDecisions(id pcommon.TraceID, 
 	// Check all policies before making a final decision.
 policyLoop:
 	for _, p := range tsp.policies {
-		earlyEval, ok := p.evaluator.(samplingpolicy.EarlyEvaluator)
-		if !ok {
+		if p.earlyEvaluator == nil {
 			continue
 		}
 
-		decision, err := earlyEval.EarlyEvaluate(tsp.ctx, id, currentSpans, trace)
+		decision, err := p.earlyEvaluator.EarlyEvaluate(tsp.ctx, id, currentSpans, trace)
 		if err != nil {
 			tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, 1)
-			tsp.logger.Debug("Sampling policy error", zap.Error(err))
+			tsp.logger.Debug("Sampling policy error during early evaluation", zap.Error(err))
 			continue
 		}
 

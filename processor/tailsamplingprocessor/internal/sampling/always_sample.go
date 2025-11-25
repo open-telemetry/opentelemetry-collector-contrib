@@ -20,7 +20,7 @@ type alwaysSample struct {
 
 var (
 	_ samplingpolicy.Evaluator      = (*alwaysSample)(nil)
-	_ samplingpolicy.EarlyEvaluator = (*statusCodeFilter)(nil)
+	_ samplingpolicy.EarlyEvaluator = (*alwaysSample)(nil)
 )
 
 // NewAlwaysSample creates a policy evaluator the samples all traces.
