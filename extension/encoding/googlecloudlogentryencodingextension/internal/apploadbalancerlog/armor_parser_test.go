@@ -557,7 +557,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
 					gcpArmorSecurityPolicyName:             "test-policy",
 					gcpArmorSecurityPolicyPriority:         int64(100),
 					gcpArmorSecurityPolicyConfiguredAction: "DENY",
@@ -579,7 +579,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyTypePreview: map[string]any{
+				gcpArmorSecurityPolicyPreview: map[string]any{
 					gcpArmorSecurityPolicyName:             "preview-policy",
 					gcpArmorSecurityPolicyPriority:         int64(50),
 					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
@@ -599,7 +599,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyTypeEnforcedEdge: map[string]any{
+				gcpArmorSecurityPolicyEnforcedEdge: map[string]any{
 					gcpArmorSecurityPolicyName:             "edge-policy",
 					gcpArmorSecurityPolicyPriority:         int64(75),
 					gcpArmorSecurityPolicyConfiguredAction: "DENY",
@@ -619,7 +619,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyTypePreviewEdge: map[string]any{
+				gcpArmorSecurityPolicyPreviewEdge: map[string]any{
 					gcpArmorSecurityPolicyName:             "preview-edge-policy",
 					gcpArmorSecurityPolicyPriority:         int64(25),
 					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
@@ -653,7 +653,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
 					gcpArmorSecurityPolicyName:                  "test-policy",
 					gcpArmorSecurityPolicyPriority:              int64(100),
 					gcpArmorSecurityPolicyConfiguredAction:      "DENY",
@@ -694,7 +694,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyTypePreview: map[string]any{
+				gcpArmorSecurityPolicyPreview: map[string]any{
 					gcpArmorSecurityPolicyName:             "full-preview",
 					gcpArmorSecurityPolicyPriority:         int64(10),
 					gcpArmorSecurityPolicyConfiguredAction: "DENY",
@@ -733,13 +733,13 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
 					gcpArmorSecurityPolicyName:             "enforced-policy",
 					gcpArmorSecurityPolicyPriority:         int64(100),
 					gcpArmorSecurityPolicyConfiguredAction: "DENY",
 					gcpArmorSecurityPolicyOutcome:          "DENY",
 				},
-				gcpArmorSecurityPolicyTypePreview: map[string]any{
+				gcpArmorSecurityPolicyPreview: map[string]any{
 					gcpArmorSecurityPolicyName:             "preview-policy",
 					gcpArmorSecurityPolicyPriority:         int64(50),
 					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
@@ -790,26 +790,26 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
 					gcpArmorSecurityPolicyName:                  "enforced-policy",
 					gcpArmorSecurityPolicyPriority:              int64(100),
 					gcpArmorSecurityPolicyConfiguredAction:      "DENY",
 					gcpArmorSecurityPolicyOutcome:               "DENY",
 					gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-123",
 				},
-				gcpArmorSecurityPolicyTypePreview: map[string]any{
+				gcpArmorSecurityPolicyPreview: map[string]any{
 					gcpArmorSecurityPolicyName:             "preview-policy",
 					gcpArmorSecurityPolicyPriority:         int64(50),
 					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
 					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
 				},
-				gcpArmorSecurityPolicyTypeEnforcedEdge: map[string]any{
+				gcpArmorSecurityPolicyEnforcedEdge: map[string]any{
 					gcpArmorSecurityPolicyName:             "enforced-edge-policy",
 					gcpArmorSecurityPolicyPriority:         int64(75),
 					gcpArmorSecurityPolicyConfiguredAction: "DENY",
 					gcpArmorSecurityPolicyOutcome:          "DENY",
 				},
-				gcpArmorSecurityPolicyTypePreviewEdge: map[string]any{
+				gcpArmorSecurityPolicyPreviewEdge: map[string]any{
 					gcpArmorSecurityPolicyName:             "preview-edge-policy",
 					gcpArmorSecurityPolicyPriority:         int64(25),
 					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",

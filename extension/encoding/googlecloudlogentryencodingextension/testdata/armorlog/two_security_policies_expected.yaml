@@ -55,36 +55,36 @@ resourceLogs:
               - key: gcp.armor.request_data.remote_ip.asn
                 value:
                   intValue: "6939"
-              - key: gcp.armor.security_policy.type.enforced_edge
+              - key: gcp.armor.security_policy.enforced_edge
                 value:
                   kvlistValue:
                     values:
-                      - key: gcp.armor.security_policy.name
+                      - key: name
                         value:
                           stringValue: test-edge-policy
-                      - key: gcp.armor.security_policy.priority
+                      - key: priority
                         value:
                           intValue: "2147483647"
-                      - key: gcp.armor.security_policy.configured_action
+                      - key: configured_action
                         value:
                           stringValue: ALLOW
-                      - key: gcp.armor.security_policy.outcome
+                      - key: outcome
                         value:
                           stringValue: ACCEPT
-              - key: gcp.armor.security_policy.type.enforced
+              - key: gcp.armor.security_policy.enforced
                 value:
                   kvlistValue:
                     values:
-                      - key: gcp.armor.security_policy.name
+                      - key: name
                         value:
                           stringValue: test-armor-policy
-                      - key: gcp.armor.security_policy.priority
+                      - key: priority
                         value:
                           intValue: "2147483647"
-                      - key: gcp.armor.security_policy.configured_action
+                      - key: configured_action
                         value:
                           stringValue: ALLOW
-                      - key: gcp.armor.security_policy.outcome
+                      - key: outcome
                         value:
                           stringValue: ACCEPT
               - key: http.request.method

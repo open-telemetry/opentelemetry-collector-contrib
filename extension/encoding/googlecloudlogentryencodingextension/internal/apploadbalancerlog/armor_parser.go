@@ -17,38 +17,38 @@ import (
 
 const (
 	// Security policy types
-	gcpArmorSecurityPolicyTypeEnforced     = "gcp.armor.security_policy.type.enforced"
-	gcpArmorSecurityPolicyTypePreview      = "gcp.armor.security_policy.type.preview"
-	gcpArmorSecurityPolicyTypeEnforcedEdge = "gcp.armor.security_policy.type.enforced_edge"
-	gcpArmorSecurityPolicyTypePreviewEdge  = "gcp.armor.security_policy.type.preview_edge"
+	gcpArmorSecurityPolicyEnforced     = "gcp.armor.security_policy.enforced"
+	gcpArmorSecurityPolicyPreview      = "gcp.armor.security_policy.preview"
+	gcpArmorSecurityPolicyEnforcedEdge = "gcp.armor.security_policy.enforced_edge"
+	gcpArmorSecurityPolicyPreviewEdge  = "gcp.armor.security_policy.preview_edge"
 
 	// Security policy base attributes
 	// gcpArmorSecurityPolicyName holds the security policy rule that was enforced
-	gcpArmorSecurityPolicyName = "gcp.armor.security_policy.name"
+	gcpArmorSecurityPolicyName = "name"
 	// gcpArmorSecurityPolicyPriority holds a numerical priority of the matching rule in the security policy
-	gcpArmorSecurityPolicyPriority = "gcp.armor.security_policy.priority"
+	gcpArmorSecurityPolicyPriority = "priority"
 	// gcpArmorSecurityPolicyConfiguredAction holds  the name of the configured action in the matching rule
-	gcpArmorSecurityPolicyConfiguredAction = "gcp.armor.security_policy.configured_action"
+	gcpArmorSecurityPolicyConfiguredAction = "configured_action"
 	// gcpArmorSecurityPolicyOutcome holds the outcome of executing the configured action
-	gcpArmorSecurityPolicyOutcome = "gcp.armor.security_policy.outcome"
+	gcpArmorSecurityPolicyOutcome = "outcome"
 
 	// Rate limit action attributes
 	// gcpArmorRateLimitActionKey holds the rate limit key value (up to 36 bytes)
-	gcpArmorRateLimitActionKey = "gcp.armor.security_policy.rate_limit.action.key"
+	gcpArmorRateLimitActionKey = "rate_limit.action.key"
 	// gcpArmorRateLimitActionOutcome holds the outcome of the rate limit action
-	gcpArmorRateLimitActionOutcome = "gcp.armor.security_policy.rate_limit.action.outcome"
+	gcpArmorRateLimitActionOutcome = "rate_limit.action.outcome"
 
 	// Extended attributes
 	// gcpArmorWAFRuleExpressionIDs holds the IDs of all preconfigured WAF rule expressions that triggered the rule
-	gcpArmorWAFRuleExpressionIDs = "gcp.armor.security_policy.preconfigured.expr_ids"
+	gcpArmorWAFRuleExpressionIDs = "preconfigured.expr_ids"
 	// gcpArmorThreatIntelligenceCategories holds information about the matched IP address lists from Google Threat Intelligence
-	gcpArmorThreatIntelligenceCategories = "gcp.armor.security_policy.threat_intelligence.categories"
+	gcpArmorThreatIntelligenceCategories = "threat_intelligence.categories"
 	// gcpArmorAddressGroupNames holds the names of the matched address groups
-	gcpArmorAddressGroupNames = "gcp.armor.security_policy.address_group.names"
+	gcpArmorAddressGroupNames = "address_group.names"
 
 	// Enforced policy attributes
 	// gcpArmorAdaptiveProtectionAutoDeployAlertID holds the alert ID of the events that Adaptive Protection detected
-	gcpArmorAdaptiveProtectionAutoDeployAlertID = "gcp.armor.security_policy.adaptive_protection.auto_deploy.alert_id"
+	gcpArmorAdaptiveProtectionAutoDeployAlertID = "adaptive_protection.auto_deploy.alert_id"
 
 	// Security policy request data attributes
 	// gcpArmorRecaptchaActionTokenScore holds the legitimacy score embedded in a of the reCAPTCHA action-token
@@ -243,19 +243,19 @@ func handleEnforcedSecurityPolicy(sp *enforcedSecurityPolicy, attr pcommon.Map) 
 
 func handleSecurityPolicies(armorlog *armorlog, attr pcommon.Map) {
 	if armorlog.PreviewEdgeSecurityPolicy != nil {
-		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyTypePreviewEdge)
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyPreviewEdge)
 		handleSecurityPolicyBase(armorlog.PreviewEdgeSecurityPolicy, policyMap)
 	}
 	if armorlog.EnforcedEdgeSecurityPolicy != nil {
-		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyTypeEnforcedEdge)
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyEnforcedEdge)
 		handleSecurityPolicyBase(armorlog.EnforcedEdgeSecurityPolicy, policyMap)
 	}
 	if armorlog.PreviewSecurityPolicy != nil {
-		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyTypePreview)
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyPreview)
 		handleSecurityPolicyExtended(armorlog.PreviewSecurityPolicy, policyMap)
 	}
 	if armorlog.EnforcedSecurityPolicy != nil {
-		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyTypeEnforced)
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyEnforced)
 		handleEnforcedSecurityPolicy(armorlog.EnforcedSecurityPolicy, policyMap)
 	}
 }

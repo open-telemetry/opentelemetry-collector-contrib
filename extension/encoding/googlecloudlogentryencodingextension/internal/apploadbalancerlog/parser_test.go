@@ -572,7 +572,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:         "denied_by_security_policy",
 				string(semconv.NetworkPeerAddressKey): "1.1.1.1",
-				gcpArmorSecurityPolicyTypePreviewEdge: map[string]any{
+				gcpArmorSecurityPolicyPreviewEdge: map[string]any{
 					gcpArmorSecurityPolicyName:             "edge-policy",
 					gcpArmorSecurityPolicyPriority:         int64(5),
 					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
@@ -596,7 +596,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:         "denied_by_security_policy",
 				string(semconv.NetworkPeerAddressKey): "2.2.2.2",
-				gcpArmorSecurityPolicyTypeEnforcedEdge: map[string]any{
+				gcpArmorSecurityPolicyEnforcedEdge: map[string]any{
 					gcpArmorSecurityPolicyName:             "edge-policy-enforced",
 					gcpArmorSecurityPolicyPriority:         int64(10),
 					gcpArmorSecurityPolicyConfiguredAction: "DENY",
@@ -624,7 +624,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:         "denied_by_security_policy",
 				string(semconv.NetworkPeerAddressKey): "3.3.3.3",
-				gcpArmorSecurityPolicyTypePreview: map[string]any{
+				gcpArmorSecurityPolicyPreview: map[string]any{
 					gcpArmorSecurityPolicyName:             "preview-policy",
 					gcpArmorSecurityPolicyPriority:         int64(20),
 					gcpArmorSecurityPolicyConfiguredAction: "DENY",
@@ -664,7 +664,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:         "denied_by_security_policy",
 				string(semconv.NetworkPeerAddressKey): "4.4.4.4",
-				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
 					gcpArmorSecurityPolicyName:                  "enforced-policy",
 					gcpArmorSecurityPolicyPriority:              int64(30),
 					gcpArmorSecurityPolicyConfiguredAction:      "DENY",
@@ -721,7 +721,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				string(semconv.ClientAddressKey):  "5.6.7.8",
 				string(semconv.TLSClientJa3Key):   "ja3-fingerprint",
 				gcpArmorTLSJa4Fingerprint:         "ja4-fingerprint",
-				gcpArmorSecurityPolicyTypeEnforced: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
 					gcpArmorSecurityPolicyName:             "complete-policy",
 					gcpArmorSecurityPolicyPriority:         int64(100),
 					gcpArmorSecurityPolicyConfiguredAction: "DENY",

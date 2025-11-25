@@ -52,20 +52,20 @@ resourceLogs:
               - key: gcp.armor.request_data.recaptcha_session_token.score
                 value:
                   doubleValue: 0.0
-              - key: gcp.armor.security_policy.type.enforced_edge
+              - key: gcp.armor.security_policy.enforced_edge
                 value:
                   kvlistValue:
                     values:
-                      - key: gcp.armor.security_policy.name
+                      - key: name
                         value:
                           stringValue: test-edge-policy
-                      - key: gcp.armor.security_policy.priority
+                      - key: priority
                         value:
                           intValue: "1"
-                      - key: gcp.armor.security_policy.configured_action
+                      - key: configured_action
                         value:
                           stringValue: DENY
-                      - key: gcp.armor.security_policy.outcome
+                      - key: outcome
                         value:
                           stringValue: DENY
               - key: http.request.method
