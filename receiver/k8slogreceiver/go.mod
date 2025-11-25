@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251120204106-2e9c82787618
