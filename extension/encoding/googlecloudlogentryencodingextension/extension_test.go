@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -214,6 +215,11 @@ func TestPayloads(t *testing.T) {
 			name:             "application load balancer log - global",
 			logFilename:      "testdata/apploadbalancer/global_external_application_load_balancer.json",
 			expectedFilename: "testdata/apploadbalancer/global_external_application_load_balancer_expected.yaml",
+    },
+    {
+			name:             "proxy nlb log - basic connection",
+			logFilename:      "testdata/proxynlb/proxynlb-basic.json",
+			expectedFilename: "testdata/proxynlb/proxynlb-basic_expected.yaml",
 		},
 	}
 
@@ -322,6 +328,11 @@ func TestGetEncodingFormatFunction(t *testing.T) {
 			name:           "vpc flow log compute",
 			logType:        vpcflowlog.ComputeNameSuffix,
 			expectedFormat: constants.GCPFormatVPCFlowLog,
+		},
+		{
+			name:           "proxy nlb log connections",
+			logType:        proxynlb.ConnectionsLogNameSuffix,
+			expectedFormat: constants.GCPFormatProxyNLBLog,
 		},
 		{
 			name:           "unknown log type",

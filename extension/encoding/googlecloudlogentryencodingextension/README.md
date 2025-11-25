@@ -23,6 +23,7 @@ Currently, this extension [can parse the following logs](#supported-log-types) i
   - [Global External Application Load Balancer](https://docs.cloud.google.com/load-balancing/docs/https/https-logging-monitoring)
   - [Regional External Application Load Balancer](https://docs.cloud.google.com/load-balancing/docs/https/https-reg-logging-monitoring)
   - [Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging) (embedded within load balancer logs) (extension [mapping](#cloud-armor-logs))
+- [Proxy Network Load Balancer logs](https://docs.cloud.google.com/load-balancing/docs/tcp/tcp-ssl-proxy-logging-monitoring#log-records) (extension [mapping](#proxy-network-load-balancer-logs))
 
 For all others logs, the payload will be placed in the log record attribute. In this case, the following configuration options are supported:
 
@@ -128,6 +129,7 @@ Examples:
 
 - Audit Logs: `encoding.format: "gcp.auditlog"`
 - VPC Flow Logs: `encoding.format: "gcp.vpcflow"`
+- Proxy Network Load Balancer Logs: `encoding.format: "gcp.proxy-nlb"`
 
 ### How encoding.format is determined
 
@@ -154,6 +156,7 @@ The following format values are supported in the `googlecloudlogentryencodingext
 | Audit Logs | `auditlog` | Google Cloud audit logs (activity, data access, system event, policy) |
 | VPC Flow Logs | `vpcflow` | Virtual Private Cloud flow log records |
 | Armor Logs | `armorlog` | Google Cloud armor logs (security policies applied) |
+| Proxy Network Load Balancer Logs | `proxy-nlb` | Proxy Network Load Balancer connection logs |
 
 ### Cloud Audit Logs
 
@@ -223,7 +226,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 
 | Flow log field | Attribute in OpenTelemetry log | Support |
 |---|---|---|
-| `connection.protocol` | `network.protocol.name` | supported |
+| `connection.protocol` | `network.transport` | supported |
 | `connection.src_ip` | `source.address` | supported |
 | `connection.dest_ip` | `destination.address` | supported |
 | `connection.src_port` | `source.port` | supported |
@@ -412,3 +415,27 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 | `addressGroup.names` | `gcp.armor.security_policy.address_group.names` |
 
 **Note:** There are 4 different policy types (`enforcedSecurityPolicy`, `previewSecurityPolicy`, `enforcedEdgeSecurityPolicy`, `previewEdgeSecurityPolicy`). Each policy type creates a separate nested attribute structure (e.g., `gcp.armor.security_policy.type.enforced`, `gcp.armor.security_policy.type.preview`, `gcp.armor.security_policy.type.enforced_edge`, `gcp.armor.security_policy.type.preview_edge`) containing the security policy fields listed above. Multiple policy types can be present simultaneously in a single log entry, each represented by its own nested map. All fields explanations are available at [Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging#security_policy_log_entries).
+
+### Proxy Network Load Balancer logs
+
+[Proxy Network Load Balancer connection logs](https://docs.cloud.google.com/load-balancing/docs/tcp/tcp-ssl-proxy-logging-monitoring#log-records) are mapped into OpenTelemetry attributes as follows:
+
+| Original field | Log record attribute |
+|---|---|
+| `connection.clientIp` | `client.address` |
+| `connection.clientPort` | `client.port` |
+| `connection.serverIp` | `server.address` |
+| `connection.serverPort` | `server.port` |
+| `connection.protocol` | `network.transport` (translated from IANA protocol number, e.g., `tcp`, `udp`, `icmp`) |
+| `startTime` | `gcp.load_balancing.proxy_nlb.connection.start_time` |
+| `endTime` | `gcp.load_balancing.proxy_nlb.connection.end_time` |
+| `serverBytesReceived` | `gcp.load_balancing.proxy_nlb.server.bytes_received` |
+| `serverBytesSent` | `gcp.load_balancing.proxy_nlb.server.bytes_sent` |
+
+**Protocol translation**: The numeric protocol field from GCP is automatically translated to human-readable protocol names using the [IANA Protocol Numbers](https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml) standard. Common values include:
+- `6` → `tcp`
+- `17` → `udp`
+- `1` → `icmp`
+
+Resource labels such as `backend_name`, `network_name`, and `load_balancing_scheme` are surfaced automatically via the existing `gcp.label.*` attribute pattern.
+
