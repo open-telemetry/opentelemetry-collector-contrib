@@ -4,7 +4,7 @@
 change_type: "enhancement"
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/k8sevents
+component: receiver/k8s_events
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Remove standby mode behavior on leader election loss. Receiver now fully shuts down when losing leader lease instead of entering standby mode.
