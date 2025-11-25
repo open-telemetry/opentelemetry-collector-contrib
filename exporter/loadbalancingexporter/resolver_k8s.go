@@ -87,10 +87,10 @@ func newK8sResolver(clt kubernetes.Interface,
 		timeout = defaultListWatchTimeout
 	}
 
-	nAddr := strings.SplitN(service, ".", 2)
-	name, namespace := nAddr[0], "default"
-	if len(nAddr) > 1 {
-		namespace = nAddr[1]
+	parts := strings.Split(service, ".")
+	name, namespace := parts[0], "default"
+	if len(parts) > 1 && parts[1] != "" {
+		namespace = parts[1]
 	} else {
 		logger.Info("the namespace for the Kubernetes service wasn't provided, trying to determine the current namespace", zap.String("name", name))
 		if ns, err := getInClusterNamespace(); err == nil {
