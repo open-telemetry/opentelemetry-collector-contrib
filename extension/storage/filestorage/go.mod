@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/extension/xextension v0.140.1-0.20251120204106-2e9c82787618
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require github.com/go-viper/mapstructure/v2 v2.4.0 // indirect

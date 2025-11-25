@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/pdata v1.46.1-0.20251120204106-2e9c82787618
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect

@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/pdata v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/receiver/receivertest v0.140.1-0.20251120204106-2e9c82787618
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require (
