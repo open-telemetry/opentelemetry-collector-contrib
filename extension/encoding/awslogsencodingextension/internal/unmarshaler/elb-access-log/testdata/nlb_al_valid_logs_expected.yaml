@@ -37,15 +37,90 @@ resourceLogs:
               - key: aws.elb.tls.listener.resource_id
                 value:
                   stringValue: g3d4b5e8bb8464cd
-              - key: tls.protocol.version
+              - key: aws.elb.connection_time
                 value:
-                  stringValue: tlsv12
+                  intValue: "5"
+              - key: aws.elb.tls_handshake_time
+                value:
+                  intValue: "2"
+              - key: aws.elb.tls_connection_creation_time
+                value:
+                  stringValue: 2018-12-20T02:59:30
+              - key: aws.elb.chosen_cert_arn
+                value:
+                  stringValue: arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99
               - key: tls.cipher
                 value:
                   stringValue: ECDHE-RSA-AES128-SHA
+              - key: tls.protocol.version
+                value:
+                  stringValue: tlsv12
               - key: url.domain
                 value:
                   stringValue: my-network-loadbalancer-c6e77e28c25b2234.elb.us-east-2.amazonaws.com
+            body: {}
+            timeUnixNano: "1545274780000000000"
+          - attributes:
+              - key: network.protocol.name
+                value:
+                  stringValue: tls
+              - key: network.protocol.version
+                value:
+                  stringValue: "2.0"
+              - key: client.address
+                value:
+                  stringValue: 72.21.218.154
+              - key: client.port
+                value:
+                  intValue: "51341"
+              - key: destination.address
+                value:
+                  stringValue: 172.100.100.185
+              - key: destination.port
+                value:
+                  intValue: "443"
+              - key: http.request.size
+                value:
+                  intValue: "98"
+              - key: http.response.size
+                value:
+                  intValue: "246"
+              - key: aws.elb.tls.listener.resource_id
+                value:
+                  stringValue: g3d4b5e8bb8464cd
+              - key: aws.elb.connection_time
+                value:
+                  intValue: "5"
+              - key: aws.elb.tls_handshake_time
+                value:
+                  intValue: "2"
+              - key: aws.elb.tls_connection_creation_time
+                value:
+                  stringValue: 2020-04-01T08:51:20
+              - key: aws.elb.chosen_cert_arn
+                value:
+                  stringValue: arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-SHA
+              - key: tls.protocol.version
+                value:
+                  stringValue: tlsv12
+              - key: url.domain
+                value:
+                  stringValue: my-network-loadbalancer-c6e77e28c25b2234.elb.us-east-2.amazonaws.com
+              - key: aws.elb.alpn_fe_protocol
+                value:
+                  stringValue: h2
+              - key: aws.elb.alpn_be_protocol
+                value:
+                  stringValue: h2
+              - key: aws.elb.alpn_client_preference_list
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: h2
+                      - stringValue: http/1.1
             body: {}
             timeUnixNano: "1585731102000000000"
         scope:
