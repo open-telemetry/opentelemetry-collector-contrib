@@ -6,6 +6,7 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -31,6 +32,7 @@ type k8seventsReceiver struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
+	mu              sync.Mutex
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -81,7 +83,10 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 		kr.settings.Logger.Info("registering the receiver in leader election")
 
 		elector.SetCallBackFuncs(
-			func(_ context.Context) {
+			func(ctx context.Context) {
+				cctx, cancel := context.WithCancel(ctx)
+				kr.cancel = cancel
+				kr.ctx = cctx
 				kr.settings.Logger.Info("Events Receiver started as leader")
 				if len(kr.config.Namespaces) == 0 {
 					kr.startWatch(corev1.NamespaceAll, k8sInterface)
@@ -118,9 +123,12 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 		kr.cancel()
 	}
 
+	kr.mu.Lock()
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
 	}
+	kr.stopperChanList = nil
+	kr.mu.Unlock()
 	return nil
 }
 
@@ -129,7 +137,9 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 // https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/tools/record/events_cache.go#L327
 func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 	stopperChan := make(chan struct{})
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
+	kr.mu.Unlock()
 	kr.startWatchingNamespace(client, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			if ev, ok := obj.(*corev1.Event); ok {
@@ -145,6 +155,11 @@ func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 }
 
 func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
+	// Check if context is cancelled (receiver has been shut down)
+	if kr.ctx != nil && kr.ctx.Err() != nil {
+		return
+	}
+
 	if kr.allowEvent(ev) {
 		ld := k8sEventToLogData(kr.settings.Logger, ev, kr.settings.BuildInfo.Version)
 
