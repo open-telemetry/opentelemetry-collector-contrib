@@ -32,7 +32,7 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // consumer.Logs.
 type router[C any] struct {
 	resourceParser   ottl.Parser[ottlresource.TransformContext]
-	spanParser       ottl.Parser[ottlspan.TransformContext]
+	spanParser       ottl.Parser[*ottlspan.TransformContext]
 	metricParser     ottl.Parser[ottlmetric.TransformContext]
 	dataPointParser  ottl.Parser[ottldatapoint.TransformContext]
 	logParser        ottl.Parser[ottllog.TransformContext]
@@ -74,7 +74,7 @@ type routingItem[C any] struct {
 	consumer           C
 	requestCondition   *requestCondition
 	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
-	spanStatement      *ottl.Statement[ottlspan.TransformContext]
+	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
 	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
 	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
 	logStatement       *ottl.Statement[ottllog.TransformContext]
