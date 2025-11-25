@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/extension/extensiontest v0.140.1-0.20251120204106-2e9c82787618
+	go.opentelemetry.io/collector/pdata v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/pipeline v1.46.1-0.20251120204106-2e9c82787618
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -61,7 +62,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.46.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.140.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/featuregate v1.46.1-0.20251120204106-2e9c82787618 // indirect
-	go.opentelemetry.io/collector/pdata v1.46.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
