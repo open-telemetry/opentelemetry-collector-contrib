@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.40.0
-	github.com/aws/aws-sdk-go-v2/service/xray v1.36.12
+	github.com/aws/aws-sdk-go-v2/service/xray v1.36.13
 	github.com/aws/smithy-go v1.23.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.140.1
