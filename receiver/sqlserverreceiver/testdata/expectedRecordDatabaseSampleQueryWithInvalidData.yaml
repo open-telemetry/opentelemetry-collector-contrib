@@ -115,6 +115,12 @@ resourceLogs:
               - key: user.name
                 value:
                   stringValue: sa
+              - key: sqlserver.procedure_id
+                value:
+                  stringValue: "0"
+              - key: sqlserver.procedure_name
+                value:
+                  stringValue: ""
             body: {}
             eventName: db.server.query_sample
             spanId: ""

@@ -140,9 +140,6 @@ attributes:
   sqlserver.procedure_name:
     description: The name of the stored procedure, if any
     type: string
-  sqlserver.procedure_type:
-    description: The type code of the stored procedure, if any. Typically 'P'
-    type: string
   sqlserver.query_hash:
     description: Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format.
     type: string
@@ -274,7 +271,6 @@ events:
       - user.name
       - sqlserver.procedure_id
       - sqlserver.procedure_name
-      - sqlserver.procedure_type
 
   db.server.top_query:
     enabled: false
@@ -297,7 +293,6 @@ events:
       - db.system.name
       - sqlserver.procedure_id
       - sqlserver.procedure_name
-      - sqlserver.procedure_type
 
 metrics:
   sqlserver.batch.request.rate:

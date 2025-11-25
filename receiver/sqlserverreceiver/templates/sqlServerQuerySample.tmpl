@@ -44,10 +44,7 @@ SELECT TOP(@top)
     ISNULL(CASE WHEN o.objectid > 0
              THEN QUOTENAME(OBJECT_SCHEMA_NAME(o.objectid, o.dbid))
             + N'.' + QUOTENAME(OBJECT_NAME(o.objectid, o.dbid))
-        END, '') AS procedure_name,
-    ISNULL(CASE WHEN o.objectid > 0
-             THEN CONVERT(sysname, OBJECTPROPERTYEX(o.objectid, 'BaseType'))
-        END, '') AS procedure_type
+        END, '') AS procedure_name
 FROM sys.dm_exec_requests r
          INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
          INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id

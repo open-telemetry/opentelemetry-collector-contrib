@@ -642,7 +642,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// stored procedure columns
 		storedProcedureId   = "procedure_id"
 		storedProcedureName = "procedure_name"
-		storedProcedureType = "procedure_type"
 	)
 
 	resources := pcommon.NewResource()
@@ -665,7 +664,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	for i, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
-		planId := row[storedProcedureId]
+		planId := row[storedProcedureId] // defaulted to '0' if not present
 
 		elapsedTimeMicrosecond, err := strconv.ParseInt(row[totalElapsedTime], 10, 64)
 		if err != nil {
@@ -791,7 +790,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			dbSystemNameVal,
 			row[storedProcedureId],
 			row[storedProcedureName],
-			row[storedProcedureType],
 		)
 	}
 	return resources, errors.Join(errs...)
@@ -821,22 +819,19 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, procedur
 	}
 
 	key := queryHash + "-" + queryPlanHash + "-" + column
-	if procedureId != "" {
+	if procedureId != "0" { // procedureId is '0' when not a stored procedure
 		key = procedureId + "-" + key
 	}
 	cached, ok := s.cache.Get(key)
 	if !ok {
 		s.cache.Add(key, val)
-		// s.logger.Info("Adding key", zap.String("key", key), zap.Int64("val", val))
 		return false, val
 	}
 
 	if val > cached {
 		s.cache.Add(key, val)
-		// s.logger.Info("Returning cached diff for ", zap.String("key", key), zap.Int64("val", val))
 		return true, val - cached
 	}
-	// s.logger.Info("Returning 0", zap.String("key", key), zap.Int64("val", val))
 	return true, 0
 }
 
@@ -947,7 +942,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	// stored procedure columns
 	const storedProcedureId = "procedure_id"
 	const storedProcedureName = "procedure_name"
-	const storedProcedureType = "procedure_type"
 
 	rows, err := s.client.QueryRows(
 		ctx,
@@ -1041,8 +1035,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		} else {
 			clientAddressVal = row[clientAddress]
 		}
-		if row[storedProcedureId] != "0" {
-			s.logger.Info("Stored proc data", zap.String("id", row[storedProcedureId]), zap.String("name", row[storedProcedureName]), zap.String("type", row[storedProcedureType]))
+		if s.logger.Level() == zap.DebugLevel && row[storedProcedureId] != "0" {
+			s.logger.Debug("Stored proc data", zap.String("id", row[storedProcedureId]), zap.String("name", row[storedProcedureName]))
 		}
 		s.lb.RecordDbServerQuerySampleEvent(
 			contextFromQuery,
@@ -1059,7 +1053,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
-			row[storedProcedureId], row[storedProcedureName], row[storedProcedureType],
+			row[storedProcedureId], row[storedProcedureName],
 		)
 
 		if !resourcesAdded {

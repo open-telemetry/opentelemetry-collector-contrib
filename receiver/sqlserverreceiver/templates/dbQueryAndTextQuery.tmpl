@@ -33,10 +33,7 @@
      ISNULL(CASE WHEN qs.object_id > 0
                      THEN QUOTENAME(OBJECT_SCHEMA_NAME(qs.object_id, st.dbid))
                                      + N'.' + QUOTENAME(OBJECT_NAME(qs.object_id, st.dbid))
-                END, '') AS procedure_name,
-     ISNULL(CASE WHEN qs.object_id > 0
-                     THEN CONVERT(sysname, OBJECTPROPERTYEX(qs.object_id, 'BaseType'))  -- 'P' (T-SQL) or 'PC' (CLR), ''))
-                                 END, '') AS procedure_type
+                END, '') AS procedure_name
             FROM qstats AS qs
             JOIN sys.dm_exec_query_stats AS stats
             ON stats.plan_handle = qs.plan_handle

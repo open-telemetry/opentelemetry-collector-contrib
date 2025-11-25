@@ -608,7 +608,6 @@ query sample
 | user.name | Login name associated with the SQL Server session. | Any Str |
 | sqlserver.procedure_id | The SQLServer ID of the stored procedure, if any | Any Str |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str |
-| sqlserver.procedure_type | The type code of the stored procedure, if any. Typically 'P' | Any Str |
 
 ### db.server.top_query
 
@@ -635,7 +634,6 @@ top query
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
 | sqlserver.procedure_id | The SQLServer ID of the stored procedure, if any | Any Str |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str |
-| sqlserver.procedure_type | The type code of the stored procedure, if any. Typically 'P' | Any Str |
 
 ## Resource Attributes
 
