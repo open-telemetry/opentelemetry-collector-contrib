@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251021233722-4ca18825d8c0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
-	github.com/xdg-go/scram v1.1.2
+	github.com/xdg-go/scram v1.2.0
 	go.opentelemetry.io/collector/config/configcompression v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/config/configopaque v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/config/configtls v1.46.1-0.20251120204106-2e9c82787618
