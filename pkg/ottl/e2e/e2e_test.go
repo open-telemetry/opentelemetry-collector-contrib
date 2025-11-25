@@ -1367,6 +1367,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(
+	attributes["test"], 
+	ParseSeverity(severity_number, 
+		{
+			"error":[
+				{"equals": ["err"]},
+                {"range": { "min": 3, "max": 4 }}
+			],
+			"info":[
+                {"range": { "min": 1, "max": 2 }}
+			],
+		}
+	))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "info")
+			},
+		},
+		{
 			statement: `set(attributes["list"], Sort(Keys({"foo": "bar", "baz": "foo"})))`,
 			want: func(tCtx ottllog.TransformContext) {
 				attributes := tCtx.GetLogRecord().Attributes().PutEmptySlice("list")
@@ -1635,6 +1653,42 @@ func Test_e2e_ottl_features(t *testing.T) {
 			statement: `set(attributes["test"], "pass") where attributes["nil_string"] == "nil"`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], CommunityID("123.124.125.126", 12345, "55.56.57.58", 80, "TCP", 0))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1:9qr9Z1LViXcNwtLVOHZ3CL8MlyM=")
+			},
+		},
+		{
+			statement: `set(attributes["test"], CommunityID("123.124.125.126", 12345, "55.56.57.58", 80, "UDP", 1))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1:1viZaClxhTkWejXjxmQXaZzI8F4=")
+			},
+		},
+		{
+			statement: `set(attributes["test"], CommunityID("123.124.125.126", 12345, "55.56.57.58", 80, "ICMP", 9))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1:7tb0A6iknoFJCZmtLXkvScm21Ss=")
+			},
+		},
+		{
+			statement: `set(attributes["test"], CommunityID("123.124.125.126", 12345, "55.56.57.58", 80, "ICMP6", 10))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1:D7dVM6HJooFwvHhLnrMrNMw/UR4=")
+			},
+		},
+		{
+			statement: `set(attributes["test"], CommunityID("123.124.125.126", 12345, "55.56.57.58", 80, "RSVP", 11))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1:cEVbY6jymDAKgyIU4UqMu0WQHTI=")
+			},
+		},
+		{
+			statement: `set(attributes["test"], CommunityID("123.124.125.126", 12345, "55.56.57.58", 80, "SCTP", 12))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1:4KOPjy2bsV43uY/mf4HtwyZkwqM=")
 			},
 		},
 	}

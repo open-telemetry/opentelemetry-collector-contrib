@@ -73,6 +73,7 @@ connector/datadogconnector
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
+connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
@@ -148,6 +149,7 @@ extension/datadogextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
+extension/encoding/azureencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -196,6 +198,7 @@ processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
+internal/k8sinventory
 internal/kubelet
 internal/sqlquery
 internal/tools

@@ -27,6 +27,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/slowsqlconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/connector/metricsaslogsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
@@ -90,6 +91,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
@@ -146,6 +148,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
@@ -254,7 +257,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver      
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icmpcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver

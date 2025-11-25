@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -148,7 +149,7 @@ func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 	)
 	require.NoError(tb, err)
 	return &recreatableOtelCol{
-		tempDir:   tb.TempDir(),
+		tempDir:   testutil.TempDir(tb),
 		factories: factories,
 	}
 }
