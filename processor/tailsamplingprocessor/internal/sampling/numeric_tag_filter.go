@@ -23,10 +23,7 @@ type numericAttributeFilter struct {
 	invertMatch bool
 }
 
-var (
-	_ samplingpolicy.Evaluator      = (*numericAttributeFilter)(nil)
-	_ samplingpolicy.EarlyEvaluator = (*numericAttributeFilter)(nil)
-)
+var _ samplingpolicy.Evaluator = (*numericAttributeFilter)(nil)
 
 // NewNumericAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range. If minValue is nil, it will use math.MinInt64.

@@ -93,7 +93,7 @@ func TestNumericTagFilter_EarlyEvaluate(t *testing.T) {
 	empty := map[string]any{}
 	minVal := int64(math.MinInt32)
 	maxVal := int64(math.MaxInt32)
-	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", &minVal, &maxVal, false).(samplingpolicy.EarlyEvaluator)
+	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", &minVal, &maxVal, false)
 
 	resAttr := map[string]any{}
 	resAttr["example"] = 8

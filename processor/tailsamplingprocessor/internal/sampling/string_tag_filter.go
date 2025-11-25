@@ -33,10 +33,7 @@ type regexStrSetting struct {
 	filterList   []*regexp.Regexp
 }
 
-var (
-	_ samplingpolicy.Evaluator      = (*stringAttributeFilter)(nil)
-	_ samplingpolicy.EarlyEvaluator = (*stringAttributeFilter)(nil)
-)
+var _ samplingpolicy.Evaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.

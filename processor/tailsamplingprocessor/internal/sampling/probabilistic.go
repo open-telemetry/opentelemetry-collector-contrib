@@ -27,10 +27,7 @@ type probabilisticSampler struct {
 	hashSalt  string
 }
 
-var (
-	_ samplingpolicy.Evaluator      = (*probabilisticSampler)(nil)
-	_ samplingpolicy.EarlyEvaluator = (*probabilisticSampler)(nil)
-)
+var _ samplingpolicy.Evaluator = (*probabilisticSampler)(nil)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.

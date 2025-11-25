@@ -287,7 +287,7 @@ func TestSpanCount_EarlyEvaluate(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			filter := NewSpanCount(componenttest.NewNopTelemetrySettings(), c.minSpans, c.maxSpans).(samplingpolicy.EarlyEvaluator)
+			filter := NewSpanCount(componenttest.NewNopTelemetrySettings(), c.minSpans, c.maxSpans)
 			trace := newTraceWithMultipleSpans(c.NumberSpans)
 			rss := trace.ReceivedBatches.ResourceSpans()
 			decision, err := filter.EarlyEvaluate(t.Context(), traceID, rss.At(rss.Len()-1), trace)

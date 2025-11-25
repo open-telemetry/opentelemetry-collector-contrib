@@ -37,8 +37,6 @@ type policy struct {
 	name string
 	// evaluator that decides if a trace is sampled or not by this policy instance.
 	evaluator samplingpolicy.Evaluator
-	// earlyEvaluator is not nil iff this policy can be used for early decisions.
-	earlyEvaluator samplingpolicy.EarlyEvaluator
 	// attribute to use in the telemetry to denote the policy.
 	attribute metric.MeasurementOption
 }
@@ -221,7 +219,6 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 	dropPolicies := make([]*policy, 0, cLen)
 	policyNames := make(map[string]struct{}, cLen)
 
-	earlyEvaluationPossible := false
 	for i := range cfgs {
 		cfg := cfgs[i]
 		if cfg.Name == "" {
@@ -248,10 +245,6 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 			evaluator: eval,
 			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
 		}
-		if earlyEvaluator, ok := eval.(samplingpolicy.EarlyEvaluator); ok {
-			earlyEvaluationPossible = true
-			p.earlyEvaluator = earlyEvaluator
-		}
 
 		if cfg.Type == Drop {
 			dropPolicies = append(dropPolicies, p)
@@ -261,9 +254,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 	}
 
 	// We do not support early evaluation when drop policies are present yet.
-	if len(dropPolicies) > 0 {
-		earlyEvaluationPossible = false
-	}
+	earlyEvaluationPossible := len(dropPolicies) == 0
 
 	// Dropped decision takes precedence over all others, therefore we evaluate them first.
 	return slices.Concat(dropPolicies, policies), earlyEvaluationPossible, nil
@@ -811,11 +802,7 @@ func (tsp *tailSamplingSpanProcessor) processEarlyDecisions(id pcommon.TraceID, 
 	// Check all policies before making a final decision.
 policyLoop:
 	for _, p := range tsp.policies {
-		if p.earlyEvaluator == nil {
-			continue
-		}
-
-		decision, err := p.earlyEvaluator.EarlyEvaluate(tsp.ctx, id, currentSpans, trace)
+		decision, err := p.evaluator.EarlyEvaluate(tsp.ctx, id, currentSpans, trace)
 		if err != nil {
 			tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, 1)
 			tsp.logger.Debug("Sampling policy error during early evaluation", zap.Error(err))

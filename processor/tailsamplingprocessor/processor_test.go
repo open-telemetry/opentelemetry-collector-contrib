@@ -920,15 +920,21 @@ func uInt64ToSpanID(id uint64) pcommon.SpanID {
 }
 
 type mockPolicyEvaluator struct {
-	NextDecision    samplingpolicy.Decision
-	NextError       error
-	EvaluationCount int
+	NextDecision         samplingpolicy.Decision
+	NextError            error
+	EvaluationCount      int
+	EarlyEvaluationCount int
 }
 
 var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
 
 func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	m.EvaluationCount++
+	return m.NextDecision, m.NextError
+}
+
+func (m *mockPolicyEvaluator) EarlyEvaluate(context.Context, pcommon.TraceID, ptrace.ResourceSpans, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	m.EarlyEvaluationCount++
 	return m.NextDecision, m.NextError
 }
 

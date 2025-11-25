@@ -18,10 +18,7 @@ type alwaysSample struct {
 	logger *zap.Logger
 }
 
-var (
-	_ samplingpolicy.Evaluator      = (*alwaysSample)(nil)
-	_ samplingpolicy.EarlyEvaluator = (*alwaysSample)(nil)
-)
+var _ samplingpolicy.Evaluator = (*alwaysSample)(nil)
 
 // NewAlwaysSample creates a policy evaluator the samples all traces.
 func NewAlwaysSample(settings component.TelemetrySettings) samplingpolicy.Evaluator {

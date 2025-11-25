@@ -57,7 +57,7 @@ func TestBooleanTagFilter(t *testing.T) {
 
 func TestBooleanTagFilter_EarlyEvaluate(t *testing.T) {
 	empty := map[string]any{}
-	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true, false).(samplingpolicy.EarlyEvaluator)
+	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true, false)
 
 	resAttr := map[string]any{}
 	resAttr["example"] = 8

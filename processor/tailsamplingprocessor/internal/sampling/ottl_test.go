@@ -178,7 +178,7 @@ func TestOTTL_EarlyEvaluate(t *testing.T) {
 				trace := newTraceWithSpansAttributes(c.Spans)
 				rs := trace.ReceivedBatches.ResourceSpans().At(0)
 
-				decision, err := filter.(samplingpolicy.EarlyEvaluator).EarlyEvaluate(t.Context(), traceID, rs, trace)
+				decision, err := filter.EarlyEvaluate(t.Context(), traceID, rs, trace)
 				assert.Equal(t, err != nil, c.WantErr)
 				assert.Equal(t, decision, c.Decision)
 			}
