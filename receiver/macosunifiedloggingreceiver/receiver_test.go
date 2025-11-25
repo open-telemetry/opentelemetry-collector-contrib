@@ -438,7 +438,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify that multiple archives were resolved
-		resolvedPaths := cfg.getResolvedArchivePaths()
+		resolvedPaths := cfg.resolvedArchivePaths
 		require.Len(t, resolvedPaths, 2, "Should resolve 2 archives matching *.logarchive pattern")
 		require.Contains(t, resolvedPaths, archive1)
 		require.Contains(t, resolvedPaths, archive2)
@@ -448,7 +448,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		sink := &consumertest.LogsSink{}
 		receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
 		require.NotNil(t, receiver)
-		require.Equal(t, 2, len(receiver.config.getResolvedArchivePaths()))
+		require.Equal(t, 2, len(receiver.config.resolvedArchivePaths))
 	})
 
 	t.Run("receiver processes multiple archives with doublestar glob pattern", func(t *testing.T) {
@@ -463,7 +463,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify that all archives were resolved (including subdirectories)
-		resolvedPaths := cfg.getResolvedArchivePaths()
+		resolvedPaths := cfg.resolvedArchivePaths
 		require.Len(t, resolvedPaths, 3, "Should resolve all 3 archives with ** pattern")
 		require.Contains(t, resolvedPaths, archive1)
 		require.Contains(t, resolvedPaths, archive2)
@@ -473,7 +473,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		sink := &consumertest.LogsSink{}
 		receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
 		require.NotNil(t, receiver)
-		require.Equal(t, 3, len(receiver.config.getResolvedArchivePaths()))
+		require.Equal(t, 3, len(receiver.config.resolvedArchivePaths))
 	})
 
 	t.Run("receiver handles single archive path", func(t *testing.T) {
@@ -488,7 +488,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify that single archive was resolved
-		resolvedPaths := cfg.getResolvedArchivePaths()
+		resolvedPaths := cfg.resolvedArchivePaths
 		require.Len(t, resolvedPaths, 1, "Should resolve to single archive")
 		require.Contains(t, resolvedPaths, archive1)
 
@@ -496,7 +496,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		sink := &consumertest.LogsSink{}
 		receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
 		require.NotNil(t, receiver)
-		require.Equal(t, 1, len(receiver.config.getResolvedArchivePaths()))
+		require.Equal(t, 1, len(receiver.config.resolvedArchivePaths))
 	})
 }
 

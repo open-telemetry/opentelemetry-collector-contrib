@@ -51,10 +51,3 @@ type Config struct {
 	_ struct{}
 }
 
-// getResolvedArchivePaths returns the resolved archive paths after glob expansion
-// This is used internally by the receiver
-//
-//nolint:unused // only used on darwin platform
-func (cfg *Config) getResolvedArchivePaths() []string {
-	return cfg.resolvedArchivePaths
-}

@@ -74,7 +74,7 @@ func (r *unifiedLoggingReceiver) readLogs(ctx context.Context) {
 }
 
 func (r *unifiedLoggingReceiver) readFromArchive(ctx context.Context) {
-	resolvedPaths := r.config.getResolvedArchivePaths()
+	resolvedPaths := r.config.resolvedArchivePaths
 	r.logger.Info("Reading from archive mode", zap.Int("archive_count", len(resolvedPaths)))
 
 	wg := &sync.WaitGroup{}
