@@ -143,5 +143,3 @@ func TestCount_SpecificLogMetricWithCondition_Works(t *testing.T) {
 	}
 	require.True(t, found, "expected metric 'log.file.name' not found")
 }
-
-
