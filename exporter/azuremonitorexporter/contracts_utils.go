@@ -43,6 +43,34 @@ func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes p
 	envelope.Tags[contracts.InternalSdkVersion] = getCollectorVersion()
 }
 
+// Sets ai.application.* tags on the envelope
+func applyApplicationTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
+	if serviceVersion, serviceVersionExists := resourceAttributes.Get(string(conventions.ServiceVersionKey)); serviceVersionExists {
+		envelope.Tags[contracts.ApplicationVersion] = serviceVersion.Str()
+	}
+}
+
+// Sets ai.device.* tags on the envelope
+func applyDeviceTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
+	if osName, osNameExists := resourceAttributes.Get(string(conventions.OSNameKey)); osNameExists {
+		deviceOs := osName.Str()
+
+		if osVersion, osVersionExists := resourceAttributes.Get(string(conventions.OSVersionKey)); osVersionExists {
+			deviceOs = deviceOs + " " + osVersion.Str()
+		}
+
+		envelope.Tags[contracts.DeviceOSVersion] = deviceOs
+	}
+
+	if manufacturer, manufacturerExists := resourceAttributes.Get(string(conventions.DeviceManufacturerKey)); manufacturerExists {
+		envelope.Tags[contracts.DeviceModel] = manufacturer.Str()
+	}
+
+	if deviceType, deviceTypeExists := resourceAttributes.Get(string(conventions.DeviceModelIdentifierKey)); deviceTypeExists {
+		envelope.Tags[contracts.DeviceType] = deviceType.Str()
+	}
+}
+
 // Applies internal sdk version tag on the envelope
 func applyInternalSdkVersionTagToEnvelope(envelope *contracts.Envelope) {
 	envelope.Tags[contracts.InternalSdkVersion] = getCollectorVersion()
