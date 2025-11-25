@@ -12,3 +12,45 @@ tests:
   skip_lifecycle: true
   # requires google credentials for the storage client
   skip_shutdown: true
+
+telemetry:
+  metrics:
+    gcp.pubsub.input.uncompressed.size:
+      stability:
+        level: development
+      enabled: true
+      description: Size of uncompressed incoming log data in bytes (either direct Pub/Sub message payloads or GCS file content retrieved from event notifications).
+      unit: By
+      histogram:
+        value_type: double
+        bucket_boundaries: [1024, 2560, 5120, 10240, 25600, 51200, 102400, 256000, 512000, 1048576, 2621440, 5242880, 10485760, 26214400, 52428800, 104857600, 262144000, 536870912, 1073741824, 1610612736, 2147483648]
+      attributes:
+        - gcp.gcs.bucket.name
+    http.server.request.active.count:
+      stability:
+        level: development
+      enabled: true
+      description: Number of active requests.
+      unit: "{count}"
+      sum:
+        value_type: int
+        monotonic: false
+    http.server.request.duration:
+      stability:
+        level: development
+      enabled: true
+      description: Duration of requests in seconds.
+      unit: s
+      histogram:
+        value_type: double
+        bucket_boundaries: [ 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 15, 25, 50, 75, 100, 120, 180, 240, 300 ]
+      attributes:
+        - http.response.status_code
+
+attributes:
+  gcp.gcs.bucket.name:
+    description: Bucket name.
+    type: string
+  http.response.status_code:
+    description: HTTP response status code.
+    type: int
