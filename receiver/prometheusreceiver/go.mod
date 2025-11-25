@@ -17,7 +17,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.140.1
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/common v0.67.3
+	github.com/prometheus/common v0.67.4
 	github.com/prometheus/exporter-toolkit v0.15.0
 	github.com/prometheus/prometheus v0.307.3
 	github.com/stretchr/testify v1.11.1
@@ -46,7 +46,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	go.uber.org/zap/exp v0.3.0
 	golang.org/x/net v0.47.0
 	google.golang.org/protobuf v1.36.10

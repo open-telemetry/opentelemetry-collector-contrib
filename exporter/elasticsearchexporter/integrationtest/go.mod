@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/receiver/receivertest v0.140.1-0.20251120204106-2e9c82787618
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	golang.org/x/sync v0.18.0
 )
 
@@ -134,7 +134,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.67.3 // indirect
+	github.com/prometheus/common v0.67.4 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecs
 go 1.24.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.39.6
+	github.com/aws/aws-sdk-go-v2 v1.40.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.140.1
 	github.com/stretchr/testify v1.11.1
@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require (
