@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/config/configcompression v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/config/configgrpc v0.140.1-0.20251120204106-2e9c82787618
+	go.opentelemetry.io/collector/config/configoptional v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/config/configretry v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/config/configtls v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/confmap v1.46.1-0.20251120204106-2e9c82787618
@@ -58,7 +59,6 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v1.46.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.46.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.46.1-0.20251120204106-2e9c82787618 // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.46.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.140.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.140.1-0.20251120204106-2e9c82787618 // indirect

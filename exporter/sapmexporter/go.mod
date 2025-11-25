@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/component v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/config/configopaque v1.46.1-0.20251120204106-2e9c82787618
+	go.opentelemetry.io/collector/config/configoptional v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/config/configretry v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/confmap v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251120204106-2e9c82787618
@@ -53,7 +54,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.140.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.46.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.140.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.140.1-0.20251120204106-2e9c82787618 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.140.1-0.20251120204106-2e9c82787618 // indirect
