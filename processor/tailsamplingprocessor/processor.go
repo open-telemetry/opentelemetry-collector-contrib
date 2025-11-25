@@ -187,10 +187,10 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 		for traceID, spans := range idToSpansAndScope {
 			rss, parentSpan := newResourceSpanFromSpanAndScopes(rss, spans)
 			batch = append(batch, traceBatch{
-				id:         traceID,
-				rss:        rss,
-				parentSpan: parentSpan,
-				spanCount:  int64(len(spans)),
+				id:        traceID,
+				rss:       rss,
+				rootSpan:  parentSpan,
+				spanCount: int64(len(spans)),
 			})
 		}
 		if len(batch) > 0 {
@@ -271,10 +271,10 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 
 // traceBatch contains all spans from a single batch for a single trace.
 type traceBatch struct {
-	id         pcommon.TraceID
-	rss        ptrace.ResourceSpans
-	parentSpan *ptrace.Span
-	spanCount  int64
+	id        pcommon.TraceID
+	rss       ptrace.ResourceSpans
+	rootSpan  *ptrace.Span
+	spanCount int64
 }
 
 type newPolicyCmd struct {
@@ -756,8 +756,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(tb traceBatch) {
 		actualData.SpanCount += tb.spanCount
 	}
 
-	if tb.parentSpan != nil && actualData.TraceData.ParentSpan == nil {
-		actualData.TraceData.ParentSpan = tb.parentSpan
+	if tb.rootSpan != nil && actualData.TraceData.RootSpan == nil {
+		actualData.TraceData.RootSpan = tb.rootSpan
 	}
 
 	finalDecision := actualData.finalDecision
@@ -811,15 +811,14 @@ func (tsp *tailSamplingSpanProcessor) processEarlyDecisions(id pcommon.TraceID, 
 	// Check all policies before making a final decision.
 policyLoop:
 	for _, p := range tsp.policies {
-		earlyEval, ok := p.evaluator.(samplingpolicy.EarlyEvaluator)
-		if !ok {
+		if p.earlyEvaluator == nil {
 			continue
 		}
 
-		decision, err := earlyEval.EarlyEvaluate(tsp.ctx, id, currentSpans, trace)
+		decision, err := p.earlyEvaluator.EarlyEvaluate(tsp.ctx, id, currentSpans, trace)
 		if err != nil {
 			tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, 1)
-			tsp.logger.Debug("Sampling policy error", zap.Error(err))
+			tsp.logger.Debug("Sampling policy error during early evaluation", zap.Error(err))
 			continue
 		}
 
@@ -944,7 +943,7 @@ func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans) {
 func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, *ptrace.Span) {
 	rs := ptrace.NewResourceSpans()
 	rss.Resource().CopyTo(rs.Resource())
-	var parentSpan *ptrace.Span
+	var rootSpan *ptrace.Span
 
 	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
 	for _, spanAndScope := range spanAndScopes {
@@ -962,8 +961,8 @@ func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []
 
 		spanAndScope.span.CopyTo(sp)
 		if sp.ParentSpanID().IsEmpty() {
-			parentSpan = &sp
+			rootSpan = &sp
 		}
 	}
-	return rs, parentSpan
+	return rs, rootSpan
 }
