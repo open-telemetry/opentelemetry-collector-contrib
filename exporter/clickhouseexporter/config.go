@@ -111,7 +111,7 @@ func createDefaultConfig() component.Config {
 		collectorVersion: "unknown",
 
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,

@@ -356,7 +356,7 @@ func CreateDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 
 		API: APIConfig{
 			Site: "datadoghq.com",

@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -1294,7 +1295,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1346,7 +1347,7 @@ func TestErrorReceivedForbidden(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1400,7 +1401,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.Endpoint = "ftp://example.com:134"
@@ -1439,7 +1440,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1480,7 +1481,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1515,7 +1516,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true

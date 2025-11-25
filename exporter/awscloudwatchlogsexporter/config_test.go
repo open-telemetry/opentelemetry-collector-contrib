@@ -45,11 +45,11 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:      "testing",
 				Endpoint:           "",
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Get().NumConsumers = 1
+					queue.NumConsumers = 1
 					return queue
-				}(),
+				}()),
 			},
 		},
 		{
@@ -66,12 +66,12 @@ func TestLoadConfig(t *testing.T) {
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				LogGroupName:       "test-2",
 				LogStreamName:      "testing",
-				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Get().NumConsumers = 1
-					queue.Get().QueueSize = 2
+					queue.NumConsumers = 1
+					queue.QueueSize = 2
 					return queue
-				}(),
+				}()),
 			},
 		},
 		{

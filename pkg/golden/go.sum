@@ -26,12 +26,6 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-go.opentelemetry.io/collector/featuregate v1.45.1-0.20251117090521-8825f4331bfc h1:e8jFG+LJzWJicKiE77DvXeFc+lrkG39b67wi3XaWvac=
-go.opentelemetry.io/collector/featuregate v1.45.1-0.20251117090521-8825f4331bfc/go.mod h1:d0tiRzVYrytB6LkcYgz2ESFTv7OktRPQe0QEQcPt1L4=
-go.opentelemetry.io/collector/pdata v1.45.1-0.20251117090521-8825f4331bfc h1:i0Rm6XuoDjAnnRZaRI4D1pLCuolS4Fd4+1ERmi+2Uxo=
-go.opentelemetry.io/collector/pdata v1.45.1-0.20251117090521-8825f4331bfc/go.mod h1:tefdCB6I0k7QQGp7TmzMW4ZtqCggcPloS5W03LhgB9s=
-go.opentelemetry.io/collector/pdata/pprofile v0.139.1-0.20251117090521-8825f4331bfc h1:STwIN2HS+wt0qf8Ap3xlAYPteLsnGWy5RE9RXItkoNQ=
-go.opentelemetry.io/collector/pdata/pprofile v0.139.1-0.20251117090521-8825f4331bfc/go.mod h1:f9fCA1HCLFK5OPuj+kRwLcfNSpvhwWNFZwfGqQ1/9vU=
 go.opentelemetry.io/proto/slim/otlp v1.9.0 h1:fPVMv8tP3TrsqlkH1HWYUpbCY9cAIemx184VGkS6vlE=
 go.opentelemetry.io/proto/slim/otlp v1.9.0/go.mod h1:xXdeJJ90Gqyll+orzUkY4bOd2HECo5JofeoLpymVqdI=
 go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.2.0 h1:o13nadWDNkH/quoDomDUClnQBpdQQ2Qqv0lQBjIXjE8=

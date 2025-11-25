@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -71,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: true,
 				},
@@ -144,13 +145,12 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Enabled = true
 					queue.NumConsumers = 2
 					queue.QueueSize = 10
 					return queue
-				}(),
+				}()),
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
 				},
@@ -454,10 +454,9 @@ func TestConfigValidateErrors(t *testing.T) {
 			cfg: &Config{
 				Realm:       "us0",
 				AccessToken: "access_token",
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:   true,
+				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
 					QueueSize: -1,
-				},
+				}),
 			},
 		},
 		{

@@ -430,7 +430,7 @@ func TestConfig(t *testing.T) {
 
 			fmt.Println("HEY", cfg.(*Config).QueueBatchConfig.HasValue())
 			fmt.Println("BATCH", cfg.(*Config).QueueBatchConfig.HasValue())
-			
+
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

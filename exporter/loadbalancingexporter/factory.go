@@ -41,15 +41,13 @@ func createDefaultConfig() component.Config {
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
 	otlpDefaultCfg.ClientConfig.Endpoint = "placeholder:4317"
 
-	defQueue := exporterhelper.NewDefaultQueueConfig()
-
 	return &Config{
 		// By default we disable resilience options on loadbalancing exporter level
 		// to maintain compatibility with workflow in previous versions
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
-		QueueSettings: configoptional.Default(*defQueue.Get()),
+		QueueSettings: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 

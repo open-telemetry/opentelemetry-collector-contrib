@@ -47,7 +47,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	queueCfg := configoptional.None[exporterhelper.QueueBatchConfig]()
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	return &Config{
