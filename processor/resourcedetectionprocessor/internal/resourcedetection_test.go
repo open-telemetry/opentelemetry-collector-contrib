@@ -108,7 +108,11 @@ func TestDetect(t *testing.T) {
 			require.NoError(t, err)
 
 			// Perform initial detection
-			got, _, err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+			err = p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+			require.NoError(t, err)
+
+			// Get the detected resource
+			got, _, err := p.Get(t.Context(), &http.Client{Timeout: 10 * time.Second})
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedResource, got.Attributes().AsRaw())
@@ -153,7 +157,7 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
-	_, _, err = p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
+	err = p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "err1")
 	require.Contains(t, err.Error(), "err2")
@@ -172,7 +176,7 @@ func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
-	_, _, err := p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
+	err := p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.NoError(t, err)
 }
 
@@ -250,7 +254,11 @@ func TestDetectResource_Parallel(t *testing.T) {
 		md2.ch <- struct{}{}
 	}()
 
-	detected, _, err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+	err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+	require.NoError(t, err)
+
+	// Get the detected resource
+	detected, _, err := p.Get(t.Context(), &http.Client{Timeout: 10 * time.Second})
 	require.NoError(t, err)
 	require.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 
@@ -294,7 +302,11 @@ func TestDetectResource_Reconnect(t *testing.T) {
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
-	detected, _, err := p.Refresh(t.Context(), &http.Client{Timeout: 15 * time.Second})
+	err := p.Refresh(t.Context(), &http.Client{Timeout: 15 * time.Second})
+	assert.NoError(t, err)
+
+	// Get the detected resource
+	detected, _, err := p.Get(t.Context(), &http.Client{Timeout: 15 * time.Second})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 
@@ -316,12 +328,15 @@ func TestResourceProvider_RefreshInterval(t *testing.T) {
 	p := NewResourceProvider(zap.NewNop(), 1*time.Second, nil, md)
 
 	// Initial detection
-	got, _, err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+	err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+	require.NoError(t, err)
+
+	got, _, err := p.Get(t.Context(), &http.Client{Timeout: time.Second})
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"a": "1"}, got.Attributes().AsRaw())
 
 	// Simulate a single periodic refresh
-	_, _, err = p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+	err = p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
 	require.NoError(t, err)
 
 	// The cached resource should now be updated

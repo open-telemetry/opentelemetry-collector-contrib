@@ -141,7 +141,7 @@ func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resou
 }
 
 // Refresh recomputes the resource, replacing any previous result.
-func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
+func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) error {
 	ctx, cancel := context.WithTimeout(ctx, client.Timeout)
 	defer cancel()
 
@@ -150,19 +150,21 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pc
 	defer p.mu.Unlock()
 	prev := p.detectedResource
 
-	// Check if we have a previous successfully snapshot
+	// Check if we have a previous successful snapshot
 	hadPrevSuccess := prev != nil && prev.err == nil && !IsEmptyResource(prev.resource)
 
-	// Keep the last good snapshot if the refresh errored OR returned an empty resource.
-	if hadPrevSuccess && (err != nil || IsEmptyResource(res)) {
-		p.logger.Warn("resource refresh yielded empty or error; keeping previous snapshot", zap.Error(err))
-		// Return nil error since we're successfully returning the cached resource
-		return prev.resource, prev.schemaURL, nil
+	// Keep the last good snapshot if the refresh errored.
+	// Note: An empty resource with no error is considered a success (e.g., detector determined
+	// it's not running on that cloud provider), so we accept it rather than keeping stale data.
+	if hadPrevSuccess && err != nil {
+		p.logger.Warn("resource refresh failed; keeping previous snapshot", zap.Error(err))
+		// Return nil error since we're successfully keeping the cached resource
+		return nil
 	}
 
-	// Otherwise, accept the new snapshot.
+	// Accept the new snapshot (even if empty, as long as there was no error).
 	p.detectedResource = &resourceResult{resource: res, schemaURL: schemaURL, err: err}
-	return res, schemaURL, err
+	return err
 }
 
 func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource, string, error) {
@@ -250,6 +252,11 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 		p.logger.Warn("resource detection failed but error propagation is disabled")
 		return pcommon.NewResource(), "", nil
 	}
+
+	// Return merged resources. If feature gate is enabled, also return joined errors from failed detectors.
+	if allowErrorPropagationFeatureGate.IsEnabled() {
+		return res, mergedSchemaURL, joinedErr
+	}
 	return res, mergedSchemaURL, nil
 }
 
@@ -332,7 +339,7 @@ func (p *ResourceProvider) refreshLoop(client *http.Client) {
 	for {
 		select {
 		case <-ticker.C:
-			_, _, err := p.Refresh(context.Background(), client)
+			err := p.Refresh(context.Background(), client)
 			if err != nil {
 				p.logger.Warn("resource refresh failed", zap.Error(err))
 			}

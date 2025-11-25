@@ -31,7 +31,7 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 	ctx = internal.ContextWithClient(ctx, client)
 
 	// Perform initial resource detection
-	_, _, err := rdp.provider.Refresh(ctx, client)
+	err := rdp.provider.Refresh(ctx, client)
 	if err != nil {
 		return err
 	}
