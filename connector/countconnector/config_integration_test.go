@@ -21,6 +21,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
+// Ensure basic count connector configs produce expected metrics.
+// See ./testdata/config-*.yaml for specifics.
+// Test cases:
+// 1) `count:` with empty subconfig uses defaults.
+// 2) `count::logs:` with empty subconfig uses defaults.
+// 3) `count::logs::<custom metric>` overrides default.
+
 func newCountConfigFromYAML(t *testing.T, yamlFile string) *Config {
 	t.Helper()
 
