@@ -139,7 +139,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 
 // processMetrics filters the given metrics based off the filterMetricProcessor's filters.
 func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	if fmp.skipResourceExpr == nil && fmp.skipMetricExpr == nil && fmp.skipDataPointExpr == nil {
+	if fmp.skipResourceExpr == nil && fmp.skipMetricExpr == nil && fmp.skipDataPointExpr == nil && len(fmp.consumers) == 0 {
 		return md, nil
 	}
 

@@ -95,7 +95,7 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 }
 
 func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-	if flp.skipResourceExpr == nil && flp.skipLogRecordExpr == nil {
+	if flp.skipResourceExpr == nil && flp.skipLogRecordExpr == nil && len(flp.consumers) == 0 {
 		return ld, nil
 	}
 

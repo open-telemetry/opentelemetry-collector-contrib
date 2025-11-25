@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
@@ -195,11 +196,12 @@ var (
 
 func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
-		name             string
-		conditions       TraceFilters
-		filterEverything bool
-		want             func(td ptrace.Traces)
-		errorMode        ottl.ErrorMode
+		name              string
+		conditions        TraceFilters
+		contextConditions []common.ContextConditions
+		filterEverything  bool
+		want              func(td ptrace.Traces)
+		errorMode         ottl.ErrorMode
 	}{
 		{
 			name: "drop resource",
@@ -276,10 +278,18 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			want:      func(_ ptrace.Traces) {},
 			errorMode: ottl.IgnoreError,
 		},
+		{
+			name: "with context conditions",
+			contextConditions: []common.ContextConditions{
+				{Conditions: []string{`not IsMatch(span.name, "operation.*")`}},
+			},
+			want:      func(_ ptrace.Traces) {},
+			errorMode: ottl.IgnoreError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Traces: tt.conditions, ErrorMode: tt.errorMode, spanFunctions: defaultSpanFunctionsMap()}
+			cfg := &Config{Traces: tt.conditions, TraceConditions: tt.contextConditions, ErrorMode: tt.errorMode, spanFunctions: defaultSpanFunctionsMap()}
 			processor, err := newFilterSpansProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 

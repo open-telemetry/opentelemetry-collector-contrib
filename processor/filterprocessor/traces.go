@@ -109,7 +109,7 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 
 // processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
 func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	if fsp.skipResourceExpr == nil && fsp.skipSpanExpr == nil && fsp.skipSpanEventExpr == nil {
+	if fsp.skipResourceExpr == nil && fsp.skipSpanExpr == nil && fsp.skipSpanEventExpr == nil && len(fsp.consumers) == 0 {
 		return td, nil
 	}
 
