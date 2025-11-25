@@ -40,8 +40,7 @@ type Manager struct {
 
 	telemetryBuilder *metadata.TelemetryBuilder
 
-	unreadableMu sync.Mutex
-	unreadable   map[string]struct{}
+	unreadable map[string]struct{}
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -188,7 +187,6 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	if err != nil {
 		// If a file is unreadable due to permissions error, store path in map and log error once (unless in debug mode)
 		if os.IsPermission(err) {
-			m.unreadableMu.Lock()
 			_, seen := m.unreadable[path]
 			if !seen {
 				m.set.Logger.Error("Failed to open file", zap.Error(err))
@@ -196,7 +194,6 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 			} else {
 				m.set.Logger.Debug("Failed to open file (already reported)", zap.Error(err))
 			}
-			m.unreadableMu.Unlock()
 		} else {
 			m.set.Logger.Error("Failed to open file", zap.Error(err))
 		}
@@ -204,14 +201,12 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	}
 
 	// Notify if previously unreadable file is now able to be read
-	m.unreadableMu.Lock()
 	if m.unreadable != nil {
 		if _, seen := m.unreadable[path]; seen {
 			m.set.Logger.Info("Previously unreadable file is now readable", zap.String("path", path))
 			delete(m.unreadable, path)
 		}
 	}
-	m.unreadableMu.Unlock()
 
 	fp, err := m.readerFactory.NewFingerprint(file)
 	if err != nil {
