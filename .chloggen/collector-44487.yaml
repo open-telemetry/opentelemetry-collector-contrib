@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/stanza
+component: receiver/filelog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Moved regex result caching into a shared helper and added container parser caching, wiring both container/regex parsers to reduce regex overhead."
