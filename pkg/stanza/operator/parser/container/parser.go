@@ -68,7 +68,7 @@ type Parser struct {
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup
 	timeLayout              string
-	pathCache               cache
+	pathCache               helper.Cache
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
@@ -154,7 +154,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 // any possible race conditions
 func (p *Parser) Stop() error {
 	if p.pathCache != nil {
-		p.pathCache.stop()
+		p.pathCache.Stop()
 	}
 	if !p.asyncConsumerStarted {
 		// nothing is started return
@@ -172,9 +172,6 @@ func (p *Parser) Stop() error {
 		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
 	p.criConsumers.Wait()
-	if p.pathCache != nil {
-		p.pathCache.stop()
-	}
 	return errs
 }
 
@@ -293,7 +290,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 	}
 
 	if p.pathCache != nil {
-		if cached := p.pathCache.get(rawLogPath); cached != nil {
+		if cached := p.pathCache.Get(rawLogPath); cached != nil {
 			if parsedValues, ok := cached.(map[string]any); ok {
 				return p.setK8sMetadataFromParsedValues(e, parsedValues)
 			}
@@ -306,7 +303,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 	}
 
 	if p.pathCache != nil {
-		p.pathCache.add(rawLogPath, parsedValues)
+		p.pathCache.Add(rawLogPath, parsedValues)
 	}
 
 	return p.setK8sMetadataFromParsedValues(e, parsedValues)

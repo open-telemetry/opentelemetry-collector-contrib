@@ -80,11 +80,11 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.Cache.Size > 0 {
-		op.cache = newMemoryCache(c.Cache.Size, 0)
+		op.cache = helper.NewMemoryCache(c.Cache.Size, 0)
 		set.Logger.Debug(
 			"configured memory cache",
 			zap.String("operator_id", op.ID()),
-			zap.Uint16("size", op.cache.maxSize()),
+			zap.Uint16("size", op.cache.MaxSize()),
 		)
 	}
 

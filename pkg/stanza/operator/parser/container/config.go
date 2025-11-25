@@ -86,11 +86,11 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.Cache.Size > 0 {
-		p.pathCache = newMemoryCache(c.Cache.Size, 0)
+		p.pathCache = helper.NewSyncMapCache(c.Cache.Size, 0)
 		set.Logger.Debug(
 			"configured container memory cache",
 			zap.String("operator_id", p.ID()),
-			zap.Uint16("size", p.pathCache.maxSize()),
+			zap.Uint16("size", p.pathCache.MaxSize()),
 		)
 	}
 

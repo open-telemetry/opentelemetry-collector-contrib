@@ -16,12 +16,12 @@ import (
 type Parser struct {
 	helper.ParserOperator
 	regexp *regexp.Regexp
-	cache  cache
+	cache  helper.Cache
 }
 
 func (p *Parser) Stop() error {
 	if p.cache != nil {
-		p.cache.stop()
+		p.cache.Stop()
 	}
 	return nil
 }
@@ -49,7 +49,7 @@ func (p *Parser) parse(value any) (any, error) {
 
 func (p *Parser) match(value string) (any, error) {
 	if p.cache != nil {
-		if x := p.cache.get(value); x != nil {
+		if x := p.cache.Get(value); x != nil {
 			return x, nil
 		}
 	}
@@ -60,7 +60,7 @@ func (p *Parser) match(value string) (any, error) {
 	}
 
 	if p.cache != nil {
-		p.cache.add(value, parsedValues)
+		p.cache.Add(value, parsedValues)
 	}
 
 	return parsedValues, nil

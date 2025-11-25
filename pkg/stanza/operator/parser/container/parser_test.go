@@ -750,7 +750,7 @@ func TestPathCacheIntegration(t *testing.T) {
 		defer func() { require.NoError(t, parser.Stop()) }()
 
 		require.NotNil(t, parser.pathCache, "cache should be initialized when size > 0")
-		require.Equal(t, uint16(128), parser.pathCache.maxSize())
+		require.Equal(t, uint16(128), parser.pathCache.MaxSize())
 	})
 
 	t.Run("CacheDisabled", func(t *testing.T) {
@@ -824,7 +824,7 @@ func TestPathCacheIntegration(t *testing.T) {
 		}
 
 		// Verify cache was used (same path should be cached)
-		cached := parser.pathCache.get(logPath)
+		cached := parser.pathCache.Get(logPath)
 		require.NotNil(t, cached, "path should be cached after processing")
 		parsedValues, ok := cached.(map[string]any)
 		require.True(t, ok)
@@ -863,13 +863,13 @@ func TestPathCacheIntegration(t *testing.T) {
 			require.NoError(t, parser.Process(ctx, e))
 
 			// Verify cache entry exists
-			cached := parser.pathCache.get(path)
+			cached := parser.pathCache.Get(path)
 			require.NotNil(t, cached, "path %d should be cached", i)
 		}
 
 		// Verify all paths are in cache
 		for _, path := range paths {
-			cached := parser.pathCache.get(path)
+			cached := parser.pathCache.Get(path)
 			require.NotNil(t, cached, "path %s should still be in cache", path)
 		}
 	})
@@ -917,11 +917,11 @@ func TestPathCacheIntegration(t *testing.T) {
 
 		// First path should be evicted (FIFO)
 		firstPath := "/var/log/pods/default_pod0_a1b2c3d4-e5f6-7890-abcd-ef1234567890/container/0.log"
-		cached := parser.pathCache.get(firstPath)
+		cached := parser.pathCache.Get(firstPath)
 		require.Nil(t, cached, "first path should be evicted")
 
 		// New path should be cached
-		cached = parser.pathCache.get(newPath)
+		cached = parser.pathCache.Get(newPath)
 		require.NotNil(t, cached, "new path should be cached")
 	})
 
