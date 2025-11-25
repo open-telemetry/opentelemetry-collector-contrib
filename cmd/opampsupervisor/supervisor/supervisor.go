@@ -146,7 +146,7 @@ type Supervisor struct {
 	effectiveConfig *atomic.Value
 
 	// Last received remote config.
-	remoteConfig *protobufs.AgentRemoteConfig
+	remoteConfig atomic.Pointer[protobufs.AgentRemoteConfig]
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig chan struct{}
@@ -1286,7 +1286,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	s.loadLastReceivedOwnTelemetryConfig()
 
 	// compose the initial merged config
-	_, err := s.composeMergedConfig(s.remoteConfig)
+	_, err := s.composeMergedConfig(s.remoteConfig.Load())
 	if err != nil {
 		return fmt.Errorf("could not compose initial merged config: %w", err)
 	}
@@ -1318,7 +1318,7 @@ func (s *Supervisor) loadRemoteConfig() {
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Cannot parse last received remote config", zap.Error(err))
 		} else {
-			s.remoteConfig = config
+			s.remoteConfig.Store(config)
 		}
 	case errors.Is(err, os.ErrNotExist):
 		s.telemetrySettings.Logger.Info("No last received remote config found")
@@ -1406,7 +1406,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 	s.agentConfigOwnTelemetrySection.Store(cfg.String())
 
 	// Need to recalculate the Agent config so that the metric config is included in it.
-	configChanged, err := s.composeMergedConfig(s.remoteConfig)
+	configChanged, err := s.composeMergedConfig(s.remoteConfig.Load())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Error composing merged config for own metrics. Ignoring agent self metrics config", zap.Error(err))
 		return configChanged
@@ -1594,8 +1594,24 @@ func (s *Supervisor) runAgentProcess() {
 				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 			}
 
-			// TODO: decide why the agent stopped. If it was due to bad config, report it to server.
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
+			// If agent crashed while we were waiting for config to be applied (timeout timer is running),
+			// report the config as FAILED immediately rather than waiting for the timeout.
+			// Stop the timer and drain the channel to prevent it from firing later.
+			if !configApplyTimeoutTimer.Stop() {
+				// Timer already fired or was stopped, drain the channel
+				select {
+				case <-configApplyTimeoutTimer.C:
+					// Timer had already fired but we handled the crash first
+				default:
+					// Timer was already stopped
+				}
+			} else {
+				// Timer was running, which means we were waiting for config to be applied.
+				// Report FAILED status immediately.
+				s.telemetrySettings.Logger.Info("Agent crashed during config application, reporting FAILED status")
+				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+					fmt.Sprintf("Agent exited unexpectedly with exit code %d while applying configuration", s.commander.ExitCode()))
+			}
 
 			// Wait 5 seconds before starting again.
 			if !restartTimer.Stop() {
@@ -1859,8 +1875,13 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 	if !s.config.Capabilities.ReportsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 	}
+	remoteConfig := s.remoteConfig.Load()
+	var configHash []byte
+	if remoteConfig != nil {
+		configHash = remoteConfig.GetConfigHash()
+	}
 	rcs := &protobufs.RemoteConfigStatus{
-		LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
+		LastRemoteConfigHash: configHash,
 		Status:               status,
 		ErrorMessage:         errorMessage,
 	}
@@ -1971,11 +1992,14 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 		s.telemetrySettings.Logger.Error("Could not save last received remote config", zap.Error(err))
 	}
 
-	s.remoteConfig = msg
-	s.telemetrySettings.Logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", s.remoteConfig.ConfigHash)))
+	// Clone the message to avoid race conditions when the protobuf is being unmarshaled
+	// while another goroutine reads from it
+	clonedMsg := proto.Clone(msg).(*protobufs.AgentRemoteConfig)
+	s.remoteConfig.Store(clonedMsg)
+	s.telemetrySettings.Logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", msg.ConfigHash)))
 
 	var err error
-	configChanged, err := s.composeMergedConfig(s.remoteConfig)
+	configChanged, err := s.composeMergedConfig(s.remoteConfig.Load())
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Error composing merged config. Reporting failed remote config status: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
@@ -2025,7 +2049,7 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 	}
 
 	// Need to recalculate the Agent config so that the new agent identification is included in it.
-	configChanged, err := s.composeMergedConfig(s.remoteConfig)
+	configChanged, err := s.composeMergedConfig(s.remoteConfig.Load())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Error composing merged config with new instance ID", zap.Error(err))
 		return false
