@@ -492,20 +492,12 @@ func parseRequestField(raw string) (method, uri, protoName, protoVersion string,
 		return method, uri, protoName, protoVersion, err
 	}
 
-	// As some requests contain spaces in the URI, reverse the string and split it again
-	reversed := reverseString(remaining)
-	reversedRemaining, reversedURI, _ := strings.Cut(reversed, " ")
-	uri = reverseString(reversedURI)
-	uri = strings.ReplaceAll(uri, " ", "+")
-	remaining = reverseString(reversedRemaining)
-
+	uri, remaining = cutBackwards(remaining, " ")
+	uri = strings.Trim(uri, "-")
 	if uri == "" {
 		err = fmt.Errorf("unexpected: request field %q has no URI", raw)
 		return method, uri, protoName, protoVersion, err
 	}
-
-	// URL could be misformated with a trailing dash, so ensure it is removed
-	uri = strings.Trim(strings.Trim(uri, "-"), " ")
 
 	// Special case for requests with - method and no protocol/version
 	protocol, leftover, _ := strings.Cut(remaining, " ")
@@ -531,13 +523,13 @@ func parseRequestField(raw string) (method, uri, protoName, protoVersion string,
 	return method, uri, protoName, protoVersion, err
 }
 
-// reverseString reverses a string
-func reverseString(body string) string {
-	runes := []rune(body)
-	for i, j := 0, len(runes)-1; i < len(runes)/2; i, j = i+1, j-1 {
-		runes[i], runes[j] = runes[j], runes[i]
+// cutBackwards cuts a string from the end until a separator is found
+func cutBackwards(s, sep string) (string, string) {
+	i := strings.LastIndex(s, sep)
+	if i < 0 {
+		return "", s
 	}
-	return string(runes)
+	return s[:i], s[i+len(sep):]
 }
 
 // netProtocol returns protocol name and version based on proto value
