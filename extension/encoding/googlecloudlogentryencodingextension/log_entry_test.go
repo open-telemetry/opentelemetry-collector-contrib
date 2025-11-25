@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -432,6 +433,11 @@ func TestGetEncodingFormat(t *testing.T) {
 			name:           "vpc flow log compute",
 			logType:        vpcflowlog.ComputeNameSuffix,
 			expectedFormat: constants.GCPFormatVPCFlowLog,
+		},
+		{
+			name:           "proxy nlb log connections",
+			logType:        proxynlb.ConnectionsLogNameSuffix,
+			expectedFormat: constants.GCPFormatProxyNLBLog,
 		},
 		{
 			name:           "unknown log type",

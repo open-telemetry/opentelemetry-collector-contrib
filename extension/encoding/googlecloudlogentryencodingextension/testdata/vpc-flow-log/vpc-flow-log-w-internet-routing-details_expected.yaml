@@ -28,7 +28,7 @@ resourceLogs:
               - key: gcp.label.target_resource_name
                 value:
                   stringValue: projects/123456789012/global/networks/default
-              - key: network.protocol.name
+              - key: network.transport
                 value:
                   stringValue: icmp
               - key: source.address

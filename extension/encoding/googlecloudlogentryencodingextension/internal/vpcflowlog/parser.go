@@ -162,7 +162,7 @@ func handleConnection(conn *connection, attr pcommon.Map) {
 	// Map protocol number to string
 	if conn.Protocol != nil {
 		if protocolStr, exists := protocolNames[uint32(*conn.Protocol)]; exists {
-			attr.PutStr(string(semconv.NetworkProtocolNameKey), protocolStr)
+			attr.PutStr(string(semconv.NetworkTransportKey), protocolStr)
 		}
 	}
 
