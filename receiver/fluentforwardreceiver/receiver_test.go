@@ -4,7 +4,6 @@
 package fluentforwardreceiver
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net"
@@ -27,9 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
-func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(t.Context())
-
+func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs) {
 	next := new(consumertest.LogsSink)
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
@@ -43,7 +40,7 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 
 	receiver, err := newFluentReceiver(set, conf, next)
 	require.NoError(t, err)
-	require.NoError(t, receiver.Start(ctx, nil))
+	require.NoError(t, receiver.Start(t.Context(), nil))
 
 	connect := func() net.Conn {
 		conn, err := net.Dial("tcp", receiver.(*fluentReceiver).listener.Addr().String())
@@ -51,12 +48,11 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 		return conn
 	}
 
-	go func() {
-		<-ctx.Done()
-		assert.NoError(t, receiver.Shutdown(ctx))
-	}()
+	t.Cleanup(func() {
+		assert.NoError(t, receiver.Shutdown(t.Context()))
+	})
 
-	return connect, next, logObserver, cancel
+	return connect, next, logObserver
 }
 
 func waitForConnectionClose(t *testing.T, conn net.Conn) {
@@ -70,8 +66,7 @@ func waitForConnectionClose(t *testing.T, conn net.Conn) {
 
 // Make sure malformed events don't cause panics.
 func TestMessageEventConversionMalformed(t *testing.T) {
-	connect, _, observedLogs, cancel := setupServer(t)
-	defer cancel()
+	connect, _, observedLogs := setupServer(t)
 
 	eventBytes := parseHexDump("testdata/message-event")
 
@@ -93,8 +88,7 @@ func TestMessageEventConversionMalformed(t *testing.T) {
 }
 
 func TestMessageEvent(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
-	defer cancel()
+	connect, next, _ := setupServer(t)
 
 	eventBytes := parseHexDump("testdata/message-event")
 
@@ -123,8 +117,7 @@ func TestMessageEvent(t *testing.T) {
 }
 
 func TestForwardEvent(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
-	defer cancel()
+	connect, next, _ := setupServer(t)
 
 	eventBytes := parseHexDump("testdata/forward-event")
 
@@ -171,9 +164,8 @@ func TestForwardEvent(t *testing.T) {
 }
 
 func TestEventAcknowledgment(t *testing.T) {
-	connect, _, logs, cancel := setupServer(t)
+	connect, _, logs := setupServer(t)
 	defer func() { fmt.Printf("%v\n", logs.All()) }()
-	defer cancel()
 
 	const chunkValue = "abcdef01234576789"
 
@@ -189,6 +181,7 @@ func TestEventAcknowledgment(t *testing.T) {
 	b = msgp.AppendMapStrStr(b, map[string]string{"chunk": chunkValue})
 
 	conn := connect()
+	defer conn.Close()
 	n, err := conn.Write(b)
 	require.NoError(t, err)
 	require.Equal(t, len(b), n)
@@ -202,8 +195,7 @@ func TestEventAcknowledgment(t *testing.T) {
 }
 
 func TestForwardPackedEvent(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
-	defer cancel()
+	connect, next, _ := setupServer(t)
 
 	eventBytes := parseHexDump("testdata/forward-packed")
 
@@ -264,8 +256,7 @@ func TestForwardPackedEvent(t *testing.T) {
 }
 
 func TestForwardPackedCompressedEvent(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
-	defer cancel()
+	connect, next, _ := setupServer(t)
 
 	eventBytes := parseHexDump("testdata/forward-packed-compressed")
 
@@ -326,9 +317,6 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 }
 
 func TestUnixEndpoint(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
 	next := new(consumertest.LogsSink)
 
 	tmpdir := t.TempDir()
@@ -339,11 +327,12 @@ func TestUnixEndpoint(t *testing.T) {
 
 	receiver, err := newFluentReceiver(receivertest.NewNopSettings(metadata.Type), conf, next)
 	require.NoError(t, err)
-	require.NoError(t, receiver.Start(ctx, nil))
-	defer func() { require.NoError(t, receiver.Shutdown(ctx)) }()
+	require.NoError(t, receiver.Start(t.Context(), nil))
+	defer func() { require.NoError(t, receiver.Shutdown(t.Context())) }()
 
 	conn, err := net.Dial("unix", receiver.(*fluentReceiver).listener.Addr().String())
 	require.NoError(t, err)
+	defer conn.Close()
 
 	n, err := conn.Write(parseHexDump("testdata/message-event"))
 	require.NoError(t, err)
@@ -369,8 +358,7 @@ func makeSampleEvent(tag string) []byte {
 }
 
 func TestHighVolume(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
-	defer cancel()
+	connect, next, _ := setupServer(t)
 
 	const totalRoutines = 8
 	const totalMessagesPerRoutine = 1000
