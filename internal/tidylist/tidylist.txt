@@ -10,7 +10,6 @@ internal/pdatautil
 connector/spanmetricsconnector
 internal/common
 pkg/resourcetotelemetry
-exporter/carbonexporter
 internal/grpcutil
 internal/sharedcomponent
 receiver/otelarrowreceiver

@@ -342,6 +342,5 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/carbonexporter exporter/carbon
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon
