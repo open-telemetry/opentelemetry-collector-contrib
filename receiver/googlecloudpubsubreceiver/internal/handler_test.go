@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
-	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
-	"cloud.google.com/go/pubsub/pstest"
+	pubsub "cloud.google.com/go/pubsub/v2/apiv1"
+	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
+	"cloud.google.com/go/pubsub/v2/pstest"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/api/option"
@@ -46,7 +46,7 @@ func TestCancelStream(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	telemetryBuilder, _ := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
 
-	client, err := pubsub.NewSubscriberClient(ctx, copts...)
+	client, err := pubsub.NewSubscriptionAdminClient(ctx, copts...)
 	assert.NoError(t, err)
 
 	handler, err := NewHandler(ctx, settings, telemetryBuilder, client, "client-id", "projects/my-project/subscriptions/otlp",
