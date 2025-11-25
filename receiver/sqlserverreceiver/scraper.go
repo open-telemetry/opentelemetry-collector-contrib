@@ -645,7 +645,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	rows, err := s.client.QueryRows(
 		ctx,
 		sql.Named("lookbackTime", -int(s.config.EffectiveLookbackTime().Seconds())),
-		sql.Named("topNValue", s.config.TopQueryCount),
+		sql.Named("maxSampleCount", s.config.MaxQuerySampleCount),
 	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {

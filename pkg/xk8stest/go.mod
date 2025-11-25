@@ -5,9 +5,9 @@ go 1.24.0
 require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/stretchr/testify v1.11.1
-	k8s.io/api v0.34.1
-	k8s.io/apimachinery v0.34.1
-	k8s.io/client-go v0.34.1
+	k8s.io/api v0.34.2
+	k8s.io/apimachinery v0.34.2
+	k8s.io/client-go v0.34.2
 )
 
 require (
