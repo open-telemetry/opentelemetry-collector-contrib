@@ -82,6 +82,14 @@ func Test_parseRequestField(t *testing.T) {
 			wantProtoVersion: "1.1",
 		},
 		{
+			name:             "unknown protocol/version",
+			args:             args{raw: "GET http://example.com/ -"},
+			wantMethod:       "GET",
+			wantURI:          "http://example.com/",
+			wantProtoName:    "-",
+			wantProtoVersion: "-",
+		},
+		{
 			name:             "uri with non encoded spaces",
 			args:             args{raw: "GET http://example.com/path to somewhere HTTP/1.1"},
 			wantMethod:       "GET",
