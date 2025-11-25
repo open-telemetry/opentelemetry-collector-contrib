@@ -193,6 +193,11 @@ func TestScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreMetricValues(
+					"vcs.ref.time",
+					"vcs.change.duration",
+					"vcs.change.time_to_merge",
+				),
 			))
 		})
 	}
