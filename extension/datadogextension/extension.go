@@ -9,6 +9,7 @@ import (
 	"time"
 
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
+	ddMetrics "github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
@@ -226,24 +227,20 @@ func (e *datadogExtension) Shutdown(ctx context.Context) error {
 }
 
 // sendLivenessMetric sends the otel.datadog_extension.running metric to indicate the extension is active
-func (e *datadogExtension) sendLivenessMetric(ctx context.Context) error {
+func (e *datadogExtension) sendLivenessMetric(_ context.Context) error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	timestamp := uint64(now)
 	buildTags := metrics.TagsFromBuildInfo(e.info.build)
 
-	// Create the running metric using the same pattern as the exporter
-	v2Series := metrics.DefaultMetrics(e.info.host.Identifier, timestamp, buildTags)
-
 	// Add hostname source tag to indicate whether hostname was configured or inferred
-	for i := range v2Series {
-		v2Series[i].Tags = append(v2Series[i].Tags, "hostname_source:"+e.info.hostnameSource)
-	}
+	allTags := append([]string{}, buildTags...)
+	allTags = append(allTags, "hostname_source:"+e.info.hostnameSource)
 
-	// Convert to agent series format
-	agentSeries := metrics.ConvertToAgentSeries(v2Series, e.info.host.Identifier)
+	// Create the liveness metric serie directly in agent format
+	serie := metrics.CreateLivenessSerie(e.info.host.Identifier, timestamp, allTags)
 
 	// Send using the serializer (forwarder handles retries internally)
-	err := e.serializer.SendSeriesWithMetadata(agentSeries)
+	err := e.serializer.SendSeriesWithMetadata(ddMetrics.Series{serie})
 	if err != nil {
 		e.logger.Error("Failed to send extension liveness metric", zap.Error(err))
 		return err

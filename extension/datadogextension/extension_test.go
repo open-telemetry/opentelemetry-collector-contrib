@@ -706,7 +706,7 @@ func (m *mockSerializer) Stop() {
 	m.state = defaultforwarder.Stopped
 }
 
-func (m *mockSerializer) SendSeriesWithMetadata(series metrics.Series) error {
+func (*mockSerializer) SendSeriesWithMetadata(_ metrics.Series) error {
 	// Mock implementation for tests - just return success
 	return nil
 }

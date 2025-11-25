@@ -9,7 +9,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/serializer v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/tagset v0.73.0-rc.9
-	github.com/DataDog/datadog-api-client-go/v2 v2.50.0
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.140.1
 	github.com/stretchr/testify v1.11.1
@@ -94,6 +93,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.9 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.50.0 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
