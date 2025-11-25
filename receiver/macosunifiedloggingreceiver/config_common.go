@@ -50,4 +50,3 @@ type Config struct {
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
-
