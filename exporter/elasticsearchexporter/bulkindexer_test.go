@@ -186,6 +186,18 @@ func TestSyncBulkIndexer(t *testing.T) {
 	}
 }
 
+func TestQueryParamsParsedFromEndpoints(t *testing.T) {
+	client, err := elasticsearch.NewDefaultClient()
+	require.NoError(t, err)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
+
+	bi := bulkIndexerConfig(client, cfg, true)
+	require.Equal(t, map[string][]string{
+		"pipeline": []string{"test-pipeline"}}, bi.QueryParams)
+
+}
+
 func TestNewBulkIndexer(t *testing.T) {
 	client, err := elasticsearch.NewDefaultClient()
 	require.NoError(t, err)
