@@ -12,7 +12,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -244,7 +243,7 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 	}
 
 	jobToScrapeConfig := map[string]*promconfig.ScrapeConfig{}
-	envReplacedBody := instantiateShard(body, os.LookupEnv)
+	envReplacedBody := instantiateShard(body)
 	err = yaml.Unmarshal(envReplacedBody, &jobToScrapeConfig)
 	if err != nil {
 		return nil, err
@@ -259,6 +258,7 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 // instantiateShard inserts the SHARD environment variable in the returned configuration
 func instantiateShard(body []byte, lookup func(string) (string, bool)) []byte {
 	shard, ok := lookup("SHARD")
+
 	if !ok {
 		shard = "0"
 	}
