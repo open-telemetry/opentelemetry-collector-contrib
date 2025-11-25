@@ -339,45 +339,6 @@ func (cfg *Config) validateExplicitContextConfig() error {
 
 	var errors error
 
-	if len(cfg.TraceConditions) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
-		if err != nil {
-			return err
-		}
-		for _, cs := range cfg.TraceConditions {
-			_, err = pc.ParseContextConditions(cs)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-			}
-		}
-	}
-
-	if len(cfg.MetricConditions) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
-		if err != nil {
-			return err
-		}
-		for _, cs := range cfg.MetricConditions {
-			_, err := pc.ParseContextConditions(cs)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-			}
-		}
-	}
-
-	if len(cfg.LogConditions) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(filterottl.StandardLogFuncs()))
-		if err != nil {
-			return err
-		}
-		for _, cs := range cfg.LogConditions {
-			_, err = pc.ParseContextConditions(cs)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-			}
-		}
-	}
-
 	if cfg.Traces.ResourceConditions != nil {
 		_, err := filterottl.NewBoolExprForResource(cfg.Metrics.ResourceConditions, cfg.resourceFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
