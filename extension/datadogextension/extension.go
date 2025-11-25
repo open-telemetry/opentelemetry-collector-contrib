@@ -5,13 +5,11 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -27,8 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -80,11 +76,6 @@ type datadogExtension struct {
 	// components to assist in payload sending/logging
 	logger     *zap.Logger
 	serializer agentcomponents.SerializerWithForwarder
-	scrubber   scrub.Scrubber // scrubber scrubs sensitive information from error messages
-
-	// components for sending liveness metric
-	metricsAPI *datadogV2.MetricsApi // client sends running metrics to backend
-	retrier    *clientutil.Retrier   // retrier handles retries on requests
 
 	// struct to store extension info
 	info *info
@@ -241,26 +232,21 @@ func (e *datadogExtension) sendLivenessMetric(ctx context.Context) error {
 	buildTags := metrics.TagsFromBuildInfo(e.info.build)
 
 	// Create the running metric using the same pattern as the exporter
-	series := metrics.DefaultMetrics(e.info.host.Identifier, timestamp, buildTags)
+	v2Series := metrics.DefaultMetrics(e.info.host.Identifier, timestamp, buildTags)
 
 	// Add hostname source tag to indicate whether hostname was configured or inferred
-	for i := range series {
-		series[i].Tags = append(series[i].Tags, "hostname_source:"+e.info.hostnameSource)
+	for i := range v2Series {
+		v2Series[i].Tags = append(v2Series[i].Tags, "hostname_source:"+e.info.hostnameSource)
 	}
 
-	// Send the metric with retries
-	_, err := e.retrier.DoWithRetries(ctx, func(context.Context) error {
-		ctx2 := clientutil.GetRequestContext(ctx, string(e.configs.extension.API.Key))
-		_, httpresp, merr := e.metricsAPI.SubmitMetrics(
-			ctx2,
-			datadogV2.MetricPayload{Series: series},
-			*clientutil.GZipSubmitMetricsOptionalParameters,
-		)
-		return clientutil.WrapError(merr, httpresp)
-	})
+	// Convert to agent series format
+	agentSeries := metrics.ConvertToAgentSeries(v2Series, e.info.host.Identifier)
+
+	// Send using the serializer (forwarder handles retries internally)
+	err := e.serializer.SendSeriesWithMetadata(agentSeries)
 	if err != nil {
 		e.logger.Error("Failed to send extension liveness metric", zap.Error(err))
-		return e.scrubber.Scrub(err)
+		return err
 	}
 
 	e.logger.Debug("Successfully sent extension liveness metric",
@@ -393,35 +379,6 @@ func newExtension(
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
 
-	// Create scrubber for error message sanitization
-	scrubber := scrub.NewScrubber()
-
-	// Create metrics API client for sending liveness metric
-	// Construct the metrics endpoint from the site
-	// If site contains http:// or https://, use it as-is (for testing), otherwise construct the API URL
-	metricsEndpoint := cfg.API.Site
-	if metricsEndpoint != "" && metricsEndpoint[0] != 'h' {
-		// Normal case: site is like "datadoghq.com"
-		metricsEndpoint = fmt.Sprintf("https://api.%s", cfg.API.Site)
-	}
-	apiClient := clientutil.CreateAPIClient(
-		set.BuildInfo,
-		metricsEndpoint,
-		cfg.ClientConfig)
-	metricsAPI := datadogV2.NewMetricsApi(apiClient)
-
-	// Create retrier for handling failed requests with backoff
-	retrier := clientutil.NewRetrier(set.Logger, ddConfig.BackOffConfig, scrubber)
-
-	// Optionally validate API key on startup
-	if cfg.API.FailOnInvalidKey {
-		errchan := make(chan error)
-		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
-		if err := <-errchan; err != nil {
-			return nil, err
-		}
-	}
-
 	// Collect resource attributes from TelemetrySettings.Resource
 	// Format: map[string]string
 	resourceMap := make(map[string]string)
@@ -441,9 +398,6 @@ func newExtension(
 		configs:    &configs{extension: cfg},
 		logger:     set.Logger,
 		serializer: serializer,
-		scrubber:   scrubber,
-		metricsAPI: metricsAPI,
-		retrier:    retrier,
 		info: &info{
 			host:               host,
 			hostnameSource:     hostnameSource,

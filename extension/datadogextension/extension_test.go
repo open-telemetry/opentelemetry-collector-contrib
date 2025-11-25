@@ -4,14 +4,8 @@
 package datadogextension
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
@@ -23,7 +17,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 	"github.com/DataDog/datadog-agent/pkg/serializer/types"
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -713,6 +706,39 @@ func (m *mockSerializer) Stop() {
 	m.state = defaultforwarder.Stopped
 }
 
+func (m *mockSerializer) SendSeriesWithMetadata(series metrics.Series) error {
+	// Mock implementation for tests - just return success
+	return nil
+}
+
+// trackingMockSerializer is a mock serializer that tracks series sent
+type trackingMockSerializer struct {
+	mockSerializer
+	mu         sync.RWMutex
+	seriesSent []metrics.Series
+}
+
+func (m *trackingMockSerializer) SendSeriesWithMetadata(series metrics.Series) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.seriesSent = append(m.seriesSent, series)
+	return nil
+}
+
+func (m *trackingMockSerializer) GetSeriesSent() []metrics.Series {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	result := make([]metrics.Series, len(m.seriesSent))
+	copy(result, m.seriesSent)
+	return result
+}
+
+func (m *trackingMockSerializer) ClearSeriesSent() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.seriesSent = nil
+}
+
 func (m *mockSerializer) State() uint32 {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -789,25 +815,15 @@ func (m *failAfterFirstCallSerializer) GetCallCount() int {
 
 func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("sends liveness metric with configured hostname", func(t *testing.T) {
-		metricsReceived := make(chan []byte, 1)
-
-		// Mock metrics server to capture the liveness metric
-		metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/api/v2/series" {
-				body, err := io.ReadAll(r.Body)
-				assert.NoError(t, err)
-				metricsReceived <- body
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte(`{"status":"ok"}`))
-			}
-		}))
-		defer metricsServer.Close()
+		// Create tracking mock serializer
+		mockSerializer := &trackingMockSerializer{}
+		mockSerializer.state = defaultforwarder.Started
 
 		// Create extension with test config
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
-				Site: metricsServer.URL,
+				Site: "datadoghq.com",
 			},
 			Hostname: "test-hostname-configured",
 			HTTPConfig: &httpserver.Config{
@@ -831,67 +847,55 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, ext)
 
+		// Replace serializer with mock
+		ext.serializer = mockSerializer
+
 		// Manually send liveness metric
 		err = ext.sendLivenessMetric(t.Context())
 		require.NoError(t, err)
 
-		// Verify metric was sent
-		select {
-		case data := <-metricsReceived:
-			// Decompress gzip
-			buf := bytes.NewBuffer(data)
-			reader, err := gzip.NewReader(buf)
-			require.NoError(t, err)
-			defer reader.Close()
+		// Verify metric was sent to serializer
+		allSeries := mockSerializer.GetSeriesSent()
+		require.GreaterOrEqual(t, len(allSeries), 1, "expected at least one series to be sent")
 
-			// Decode JSON
-			dec := json.NewDecoder(reader)
-			var payload datadogV2.MetricPayload
-			require.NoError(t, dec.Decode(&payload))
-
-			// Verify the metric
-			require.GreaterOrEqual(t, len(payload.Series), 1)
-			metric := payload.Series[0]
-
-			assert.Equal(t, "otel.datadog_extension.running", metric.Metric)
-			assert.Equal(t, datadogV2.METRICINTAKETYPE_GAUGE, metric.GetType())
-			assert.Len(t, metric.Points, 1)
-			assert.Equal(t, 1.0, *metric.Points[0].Value)
-
-			// Verify hostname resource
-			require.Len(t, metric.Resources, 1)
-			assert.Equal(t, "test-hostname-configured", *metric.Resources[0].Name)
-
-			// Verify tags
-			assert.Contains(t, metric.Tags, "version:test-version")
-			assert.Contains(t, metric.Tags, "command:test-collector")
-			assert.Contains(t, metric.Tags, "hostname_source:config")
-
-		case <-time.After(5 * time.Second):
-			t.Fatal("timeout waiting for liveness metric")
+		// Find the liveness metric in the sent series
+		var livenessMetric *metrics.Serie
+		for _, seriesList := range allSeries {
+			for _, serie := range seriesList {
+				if serie.Name == "otel.datadog_extension.running" {
+					livenessMetric = serie
+					break
+				}
+			}
+			if livenessMetric != nil {
+				break
+			}
 		}
+
+		require.NotNil(t, livenessMetric, "liveness metric not found in sent series")
+
+		// Verify the metric properties
+		assert.Equal(t, "otel.datadog_extension.running", livenessMetric.Name)
+		assert.Equal(t, "test-hostname-configured", livenessMetric.Host)
+		assert.Len(t, livenessMetric.Points, 1)
+		assert.Equal(t, 1.0, livenessMetric.Points[0].Value)
+
+		// Verify tags using CompositeTags.Find method
+		assert.True(t, livenessMetric.Tags.Find(func(tag string) bool { return tag == "version:test-version" }), "expected version tag")
+		assert.True(t, livenessMetric.Tags.Find(func(tag string) bool { return tag == "command:test-collector" }), "expected command tag")
+		assert.True(t, livenessMetric.Tags.Find(func(tag string) bool { return tag == "hostname_source:config" }), "expected hostname_source tag")
 	})
 
 	t.Run("sends liveness metric with inferred hostname", func(t *testing.T) {
-		metricsReceived := make(chan []byte, 1)
-
-		// Mock metrics server
-		metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/api/v2/series" {
-				body, err := io.ReadAll(r.Body)
-				assert.NoError(t, err)
-				metricsReceived <- body
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte(`{"status":"ok"}`))
-			}
-		}))
-		defer metricsServer.Close()
+		// Create tracking mock serializer
+		mockSerializer := &trackingMockSerializer{}
+		mockSerializer.state = defaultforwarder.Started
 
 		// Create extension without configured hostname
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
-				Site: metricsServer.URL,
+				Site: "datadoghq.com",
 			},
 			// No Hostname set - will be inferred
 			HTTPConfig: &httpserver.Config{
@@ -915,62 +919,51 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, ext)
 
+		// Replace serializer with mock
+		ext.serializer = mockSerializer
+
 		// Manually send liveness metric
 		err = ext.sendLivenessMetric(t.Context())
 		require.NoError(t, err)
 
-		// Verify metric was sent
-		select {
-		case data := <-metricsReceived:
-			// Decompress gzip
-			buf := bytes.NewBuffer(data)
-			reader, err := gzip.NewReader(buf)
-			require.NoError(t, err)
-			defer reader.Close()
+		// Verify metric was sent to serializer
+		allSeries := mockSerializer.GetSeriesSent()
+		require.GreaterOrEqual(t, len(allSeries), 1, "expected at least one series to be sent")
 
-			// Decode JSON
-			dec := json.NewDecoder(reader)
-			var payload datadogV2.MetricPayload
-			require.NoError(t, dec.Decode(&payload))
-
-			// Verify the metric
-			require.GreaterOrEqual(t, len(payload.Series), 1)
-			metric := payload.Series[0]
-
-			assert.Equal(t, "otel.datadog_extension.running", metric.Metric)
-
-			// Verify hostname resource
-			require.Len(t, metric.Resources, 1)
-			assert.Equal(t, "inferred-hostname", *metric.Resources[0].Name)
-
-			// Verify hostname_source tag is "inferred"
-			assert.Contains(t, metric.Tags, "hostname_source:inferred")
-
-		case <-time.After(5 * time.Second):
-			t.Fatal("timeout waiting for liveness metric")
+		// Find the liveness metric in the sent series
+		var livenessMetric *metrics.Serie
+		for _, seriesList := range allSeries {
+			for _, serie := range seriesList {
+				if serie.Name == "otel.datadog_extension.running" {
+					livenessMetric = serie
+					break
+				}
+			}
+			if livenessMetric != nil {
+				break
+			}
 		}
+
+		require.NotNil(t, livenessMetric, "liveness metric not found in sent series")
+
+		// Verify the metric properties
+		assert.Equal(t, "otel.datadog_extension.running", livenessMetric.Name)
+		assert.Equal(t, "inferred-hostname", livenessMetric.Host)
+
+		// Verify hostname_source tag is "inferred" using CompositeTags.Find method
+		assert.True(t, livenessMetric.Tags.Find(func(tag string) bool { return tag == "hostname_source:inferred" }), "expected hostname_source:inferred tag")
 	})
 
 	t.Run("liveness metric sent periodically", func(t *testing.T) {
-		metricsReceived := make(chan []byte, 10)
-
-		// Mock metrics server
-		metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/api/v2/series" {
-				body, err := io.ReadAll(r.Body)
-				assert.NoError(t, err)
-				metricsReceived <- body
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte(`{"status":"ok"}`))
-			}
-		}))
-		defer metricsServer.Close()
+		// Create tracking mock serializer
+		mockSerializer := &trackingMockSerializer{}
+		mockSerializer.state = defaultforwarder.Started
 
 		// Create extension
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
-				Site: metricsServer.URL,
+				Site: "datadoghq.com",
 			},
 			Hostname: "test-hostname",
 			HTTPConfig: &httpserver.Config{
@@ -991,8 +984,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, ext)
 
-		// Mock the serializer
-		mockSerializer := &mockSerializer{}
+		// Replace serializer with mock
 		ext.serializer = mockSerializer
 
 		// Start the extension
@@ -1003,25 +995,28 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		err = ext.NotifyConfig(t.Context(), confmap.New())
 		require.NoError(t, err)
 
+		// Wait a bit for the initial liveness metric to be sent
+		time.Sleep(200 * time.Millisecond)
+
 		// Verify initial liveness metric was sent on startup
-		select {
-		case data := <-metricsReceived:
-			buf := bytes.NewBuffer(data)
-			var reader *gzip.Reader
-			reader, err = gzip.NewReader(buf)
-			require.NoError(t, err)
-			defer reader.Close()
+		allSeries := mockSerializer.GetSeriesSent()
+		require.GreaterOrEqual(t, len(allSeries), 1, "expected at least one series to be sent on startup")
 
-			dec := json.NewDecoder(reader)
-			var payload datadogV2.MetricPayload
-			require.NoError(t, dec.Decode(&payload))
-
-			require.GreaterOrEqual(t, len(payload.Series), 1)
-			assert.Equal(t, "otel.datadog_extension.running", payload.Series[0].Metric)
-
-		case <-time.After(5 * time.Second):
-			t.Fatal("timeout waiting for initial liveness metric")
+		// Find the liveness metric
+		foundLiveness := false
+		for _, seriesList := range allSeries {
+			for _, serie := range seriesList {
+				if serie.Name == "otel.datadog_extension.running" {
+					foundLiveness = true
+					assert.Equal(t, "test-hostname", serie.Host)
+					break
+				}
+			}
+			if foundLiveness {
+				break
+			}
 		}
+		assert.True(t, foundLiveness, "liveness metric should have been sent on startup")
 
 		// Cleanup
 		err = ext.Shutdown(t.Context())

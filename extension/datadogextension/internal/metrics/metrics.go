@@ -4,6 +4,8 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/metrics"
 
 import (
+	"github.com/DataDog/datadog-agent/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/tagset"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
@@ -65,4 +67,51 @@ func TagsFromBuildInfo(buildInfo component.BuildInfo) []string {
 		tags = append(tags, "command:"+buildInfo.Command)
 	}
 	return tags
+}
+
+// ConvertToAgentSeries converts datadogV2.MetricSeries to the agent's series.Series format
+// for use with the serializer component
+func ConvertToAgentSeries(v2Series []datadogV2.MetricSeries, hostname string) metrics.Series {
+	var agentSeries metrics.Series
+
+	for _, metric := range v2Series {
+		for _, point := range metric.Points {
+			if point.Timestamp == nil || point.Value == nil {
+				continue
+			}
+
+			// Convert metric type to APIMetricType
+			var metricType metrics.APIMetricType
+			if metric.Type != nil {
+				switch *metric.Type {
+				case datadogV2.METRICINTAKETYPE_GAUGE:
+					metricType = metrics.APIGaugeType
+				case datadogV2.METRICINTAKETYPE_COUNT:
+					metricType = metrics.APICountType
+				case datadogV2.METRICINTAKETYPE_RATE:
+					metricType = metrics.APIRateType
+				default:
+					metricType = metrics.APIGaugeType
+				}
+			} else {
+				metricType = metrics.APIGaugeType
+			}
+
+			// Create agent serie
+			// Note: Tags field expects a CompositeTags type
+			serie := &metrics.Serie{
+				Name:           metric.Metric,
+				Points:         []metrics.Point{{Ts: float64(*point.Timestamp), Value: *point.Value}},
+				Tags:           tagset.NewCompositeTags(metric.Tags, nil),
+				Host:           hostname,
+				MType:          metricType,
+				SourceTypeName: "otel.datadog_extension",
+				Source:         metrics.MetricSourceOpenTelemetryCollectorUnknown,
+			}
+
+			agentSeries = append(agentSeries, serie)
+		}
+	}
+
+	return agentSeries
 }

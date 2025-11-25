@@ -8,9 +8,9 @@ require (
 	github.com/DataDog/datadog-agent/pkg/metrics v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/serializer v0.73.0-rc.9
+	github.com/DataDog/datadog-agent/pkg/tagset v0.73.0-rc.9
 	github.com/DataDog/datadog-api-client-go/v2 v2.50.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.1-0.20251120204106-2e9c82787618
@@ -71,7 +71,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/tagset v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.9 // indirect
@@ -174,6 +173,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.140.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.140.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.140.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.140.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.140.1 // indirect
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect
