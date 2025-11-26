@@ -84,9 +84,11 @@ providing the following information:
 > or review their components when such changes happen, otherwise the component will be excluded from
 > the default builds.
 
-Maintenance of components is the responsibility of the code owners. Unmaintained components may be
-excluded from the default build. The component **will** be excluded if it causes build problems, has
-failing tests, or otherwise causes problems to the rest of the repository and its contributors.
+Maintenance of components is the responsibility of the code owners. [Unmaintained
+components](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#unmaintained)
+will be excluded from the default build. The component **will** be excluded if it causes build
+problems, has failing tests, or otherwise causes problems to the rest of the repository and its
+contributors.
 
 ### Implementation
 
