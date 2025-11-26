@@ -21,7 +21,7 @@ to publish it for others to consume if you want to. A component is a Go module (
 the `go.opentelemetry.io/collector` set of libraries. These libraries contain examples (e.g. see the
 example on the [`go.opentelemetry.io/collector/exporter` module
 documentation](https://pkg.go.dev/go.opentelemetry.io/collector/exporter)). The official
-opentelemetry.io documentation also has [a section on how to build various kinds of
+ documentation also has [a section on how to build various kinds of
 components](https://opentelemetry.io/docs/collector/building/). You can also use existing
 implementations on this repository as a reference.
 
