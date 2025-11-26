@@ -143,7 +143,7 @@ func (c *Config) Validate() error {
 
 	compression := c.S3Uploader.Compression
 	if compression.IsCompressed() {
-		if compression != configcompression.TypeGzip {
+		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
 			errs = multierr.Append(errs, errors.New("unknown compression type"))
 		}
 	}
