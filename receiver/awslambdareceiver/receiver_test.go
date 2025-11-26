@@ -25,8 +25,7 @@ import (
 
 func TestCreateLogs(t *testing.T) {
 	// Set Lambda environment variables required by Start()
-	t.Setenv("_LAMBDA_SERVER_PORT", "9001")
-	t.Setenv("AWS_LAMBDA_RUNTIME_API", "localhost:9001")
+	t.Setenv("AWS_EXECUTION_ENV", "AWS_Lambda_python3.12")
 
 	// Create receiver using factory with S3 encoding config.
 	// Note: The S3Encoding value must match the component ID used when registering the extension.
@@ -95,8 +94,7 @@ func TestCreateLogs(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	// Set Lambda environment variables required by Start()
-	t.Setenv("_LAMBDA_SERVER_PORT", "9001")
-	t.Setenv("AWS_LAMBDA_RUNTIME_API", "localhost:9001")
+	t.Setenv("AWS_EXECUTION_ENV", "AWS_Lambda_python3.12")
 
 	// Create receiver using factory with a dummy encoding extension.
 	factory := NewFactory()
@@ -173,8 +171,7 @@ func TestCreateMetricsRequiresS3Encoding(t *testing.T) {
 
 func TestStartRequiresLambdaEnvironment(t *testing.T) {
 	// Ensure Lambda environment variables are not set
-	t.Setenv("_LAMBDA_SERVER_PORT", "")
-	t.Setenv("AWS_LAMBDA_RUNTIME_API", "")
+	t.Setenv("AWS_EXECUTION_ENV", "")
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
