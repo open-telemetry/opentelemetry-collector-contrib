@@ -664,7 +664,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	for i, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
-		planId := row[storedProcedureID] // defaulted to '0' if not present
+		procID := row[storedProcedureID] // defaulted to '0' if not present
 
 		elapsedTimeMicrosecond, err := strconv.ParseInt(row[totalElapsedTime], 10, 64)
 		if err != nil {
@@ -673,7 +673,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		} else {
 			// we're trying to get the queries that used the most time.
 			// caching the total elapsed time (in microsecond) and compare in the next scrape.
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, planId, totalElapsedTime, elapsedTimeMicrosecond); cached && diff > 0 {
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, totalElapsedTime, elapsedTimeMicrosecond); cached && diff > 0 {
 				totalElapsedTimeDiffsMicrosecond[i] = diff
 			}
 		}
