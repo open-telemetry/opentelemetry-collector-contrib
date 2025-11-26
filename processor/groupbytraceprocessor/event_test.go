@@ -425,6 +425,9 @@ func TestEventShutdown(t *testing.T) {
 	// verify
 	assert.Equal(t, int64(1), traceReceivedFired.Load())
 
+	// wait until the shutdown has returned
+	shutdownWg.Wait()
+
 	// If the code is wrong, there's a chance that the test will still pass
 	// in case the event is processed after the assertion.
 	// Verify that the expired event is not processed (should remain 0)
@@ -432,9 +435,6 @@ func TestEventShutdown(t *testing.T) {
 		return traceExpiredFired.Load() == 0
 	}, 100*time.Millisecond, 5*time.Millisecond)
 	assert.Equal(t, int64(0), traceExpiredFired.Load())
-
-	// wait until the shutdown has returned
-	shutdownWg.Wait()
 }
 
 func TestPeriodicMetrics(t *testing.T) {
