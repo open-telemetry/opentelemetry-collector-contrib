@@ -108,16 +108,19 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 
 func getQueryParamsFromEndpoint(config *Config) (queryParams map[string][]string) {
 	endpoints, _ := config.endpoints()
-	// we check the query params set on the first endpoint only
-	// this is enough to replicate to all requests
-	parsedURL, _ := url.Parse(endpoints[0])
 
-	rawQuery := parsedURL.RawQuery
-	if rawQuery != "" {
-		queryParams, _ = url.ParseQuery(rawQuery)
+	if len(endpoints) != 0 {
+		// we check the query params set on the first endpoint only
+		// this is enough to replicate to all requests
+		parsedURL, _ := url.Parse(endpoints[0])
+
+		rawQuery := parsedURL.RawQuery
+		if rawQuery != "" {
+			queryParams, _ = url.ParseQuery(rawQuery)
+		}
+		return queryParams
 	}
-
-	return queryParams
+	return nil
 }
 
 func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Value {
