@@ -412,7 +412,6 @@ chlog-update: $(CHLOGGEN)
 genotelcontribcol: $(BUILDER)
 	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
 	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
-	bash ./internal/buildscripts/add-deprecated-factory.sh
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
