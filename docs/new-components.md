@@ -11,7 +11,6 @@ your component in this repository to be able to use or distribute your component
 it in your own repository as a Go module and [add it to the OpenTelemetry
 registry](https://opentelemetry.io/ecosystem/registry/).
 
-We recommend hosting your component outside of this repository as a first step.
 We recommend hosting your component outside of this repository as a first step. Many high-quality components in the ecosystem start this way, and we'd love to see your component develop and gather community feedback.
 
 ## Hosting your component outside of opentelemetry-collector-contrib (Recommended)
