@@ -775,8 +775,9 @@ func (tsp *tailSamplingSpanProcessor) processTrace(tb traceBatch) {
 			case samplingpolicy.Sampled:
 				tsp.releaseSampledTrace(tsp.ctx, tb.id, actualData.ReceivedBatches)
 				return
-			case samplingpolicy.Dropped:
+			case samplingpolicy.NotSampled, samplingpolicy.Dropped:
 				tsp.releaseNotSampledTrace(tb.id)
+				return
 			}
 		}
 		// If no early sample was done new traces still need to be added to the

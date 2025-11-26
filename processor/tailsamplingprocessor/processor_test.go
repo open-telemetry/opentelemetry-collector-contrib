@@ -1099,7 +1099,19 @@ func TestEarlyDecision(t *testing.T) {
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
-		PolicyCfgs:              testPolicy,
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    128,
+			NonSampledCacheSize: 128,
+		},
+		PolicyCfgs: []PolicyCfg{
+			{sharedPolicyCfg: sharedPolicyCfg{
+				Name: "test-policy",
+				Type: Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{
+					SamplingPercentage: 50,
+				},
+			}},
+		},
 		Options: []Option{
 			withTestController(controller),
 		},
@@ -1123,9 +1135,12 @@ func TestEarlyDecision(t *testing.T) {
 	}
 	time.Sleep(5 * time.Millisecond)
 
-	// Make sure all traces are sampled before a tick is called.
+	// Make sure about half of traces are sampled before a tick is called.
 	allSampledTraces := nextConsumer.AllTraces()
-	assert.Len(t, allSampledTraces, len(batches))
+	assert.Less(t, len(allSampledTraces), len(batches)*6/10)
+	assert.Greater(t, len(allSampledTraces), len(batches)*4/10)
+	// All traces should be flushed from the map.
+	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
 }
 
 func TestExtension(t *testing.T) {
