@@ -399,7 +399,6 @@ type Associations struct {
 
 // Association represents one association rule
 type Association struct {
-	Name    string
 	Sources []AssociationSource
 }
 
