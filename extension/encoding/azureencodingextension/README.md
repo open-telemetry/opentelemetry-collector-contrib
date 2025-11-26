@@ -142,6 +142,8 @@ Currently supported following Azure Resource Logs export formats:
 
 Currently only subset of available Azure Resource Logs Categories properly translated using OpenTelemetry SemConv.
 
+[Transformation rules from Azure Resource Logs fields to OpenTelemetry](./internal/unmarshaler/logs/README.md).
+
 Unsupported Categories simply copies attributes from "properties" field of incoming Azure Log Record to OpenTelemetry Log Attributes as a strings.
 
 ***time_formats (Optional)***
