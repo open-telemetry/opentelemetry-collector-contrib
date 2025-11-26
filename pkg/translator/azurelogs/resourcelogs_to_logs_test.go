@@ -105,7 +105,7 @@ func TestExtractRawAttributes(t *testing.T) {
 	level := json.Number("Informational")
 	location := "location"
 
-	identity := any("someone")
+	identity := json.RawMessage(`"someone"`)
 
 	properties := map[string]any{
 		"a": float64(1),
@@ -176,7 +176,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:        &goodDuration,
 				CallerIPAddress:   &callerIPAddress,
 				CorrelationID:     &correlationID,
-				Identity:          &identity,
+				Identity:          identity,
 				Level:             &level,
 				Location:          &location,
 				Properties:        propertiesRaw,
@@ -460,6 +460,14 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 		"log_minimum_2": {
 			logFilename:      "cornercases/minimum-2.json",
 			expectedFilename: "cornercases/minimum-2_expected.yaml",
+		},
+		"log_identity_as_string": {
+			logFilename:      "cornercases/identity_as_string.json",
+			expectedFilename: "cornercases/identity_as_string_expected.yaml",
+		},
+		"log_identity_as_object": {
+			logFilename:      "cornercases/identity_as_object.json",
+			expectedFilename: "cornercases/identity_as_object_expected.yaml",
 		},
 	}
 
