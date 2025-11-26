@@ -27,18 +27,16 @@ The `container`  parser can be configured to embed certain operations such as th
 Requires `include_file_path: true` in order for the `log.file.path` field to be available for the operator.
 If that's not possible, users can disable the metadata addition with `add_metadata_from_filepath: false`.
 A file path like `"/var/log/pods/some-ns_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"`,
-will produce the following k8s metadata:
+will produce the following k8s metadata as part of the [Entry.resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/entry.md):
 
 ```json
 {
   "resource": {
-    "attributes": {
-      "k8s.pod.name":                "kube-controller-kind-control-plane",
-      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-      "k8s.container.name":          "kube-controller",
-      "k8s.container.restart_count": "1",
-      "k8s.namespace.name":          "some-ns"
-    }
+    "k8s.pod.name":                "kube-controller-kind-control-plane",
+    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+    "k8s.container.name":          "kube-controller",
+    "k8s.container.restart_count": "1",
+    "k8s.namespace.name":          "some-ns"
   }
 }
 ```
@@ -58,7 +56,7 @@ Note: in this example the `format: docker` is optional since formats can be auto
       `add_metadata_from_filepath` is true by default as well.
 
 <table>
-<tr><td> Input body </td> <td> Output body</td></tr>
+<tr><td> Input entry </td> <td> Output entry</td></tr>
 <tr>
 <td>
 
@@ -83,13 +81,11 @@ Note: in this example the `format: docker` is optional since formats can be auto
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
   "resource": {
-    "attributes": {
-      "k8s.pod.name":                "kube-controller-kind-control-plane",
-      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-      "k8s.container.name":          "kube-controller",
-      "k8s.container.restart_count": "1",
-      "k8s.namespace.name":          "some"
-    }
+    "k8s.pod.name":                "kube-controller-kind-control-plane",
+    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+    "k8s.container.name":          "kube-controller",
+    "k8s.container.restart_count": "1",
+    "k8s.namespace.name":          "some"
   }
 }
 ```
@@ -106,7 +102,7 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input body </td> <td> Output body</td></tr>
+<tr><td> Input entry </td> <td> Output entry</td></tr>
 <tr>
 <td>
 
@@ -132,13 +128,11 @@ Configuration:
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
   "resource": {
-    "attributes": {
-      "k8s.pod.name":                "kube-controller-kind-control-plane",
-      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-      "k8s.container.name":          "kube-controller",
-      "k8s.container.restart_count": "1",
-      "k8s.namespace.name":          "some"
-    }
+    "k8s.pod.name":                "kube-controller-kind-control-plane",
+    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+    "k8s.container.name":          "kube-controller",
+    "k8s.container.restart_count": "1",
+    "k8s.namespace.name":          "some"
   }
 }
 ```
@@ -155,7 +149,7 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input body </td> <td> Output body</td></tr>
+<tr><td> Input entry </td> <td> Output entry</td></tr>
 <tr>
 <td>
 
@@ -181,13 +175,11 @@ Configuration:
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
   "resource": {
-    "attributes": {
-      "k8s.pod.name":                "kube-controller-kind-control-plane",
-      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-      "k8s.container.name":          "kube-controller",
-      "k8s.container.restart_count": "1",
-      "k8s.namespace.name":          "some"
-    }
+    "k8s.pod.name":                "kube-controller-kind-control-plane",
+    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+    "k8s.container.name":          "kube-controller",
+    "k8s.container.restart_count": "1",
+    "k8s.namespace.name":          "some"
   }
 }
 ```
@@ -207,7 +199,7 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input body </td> <td> Output body</td></tr>
+<tr><td> Input entry </td> <td> Output entry</td></tr>
 <tr>
 <td>
 
@@ -238,13 +230,11 @@ Configuration:
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
   "resource": {
-    "attributes": {
-      "k8s.pod.name":                "kube-controller-kind-control-plane",
-      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-      "k8s.container.name":          "kube-controller",
-      "k8s.container.restart_count": "1",
-      "k8s.namespace.name":          "some"
-    }
+    "k8s.pod.name":                "kube-controller-kind-control-plane",
+    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+    "k8s.container.name":          "kube-controller",
+    "k8s.container.restart_count": "1",
+    "k8s.namespace.name":          "some"
   }
 }
 ```
@@ -276,7 +266,7 @@ receivers:
 ```
 
 <table>
-<tr><td> Input body </td> <td> Output body</td></tr>
+<tr><td> Input entry </td> <td> Output entry</td></tr>
 <tr>
 <td>
 
@@ -306,13 +296,63 @@ receivers:
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
   "resource": {
-    "attributes": {
-      "k8s.pod.name":                "kube-controller-kind-control-plane",
-      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-      "k8s.container.name":          "kube-controller",
-      "k8s.container.restart_count": "1",
-      "k8s.namespace.name":          "some"
-    }
+    "k8s.pod.name":                "kube-controller-kind-control-plane",
+    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+    "k8s.container.name":          "kube-controller",
+    "k8s.container.restart_count": "1",
+    "k8s.namespace.name":          "some"
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
+#### Use metadata in operators
+To use the metadata in other operators, use the [Entry.resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/entry.md):
+
+Configuration:
+```yaml
+- type: container
+  format: docker
+  add_metadata_from_filepath: true
+- type: move
+  from: resource["k8s.namespace.name"]
+  to: resource.namespace
+```
+
+<table>
+<tr><td> Input entry </td> <td> Output entry</td></tr>
+<tr>
+<td>
+
+```json
+{
+  "timestamp": "",
+  "body": "{\"log\":\"INFO: log line here\",\"stream\":\"stdout\",\"time\":\"2024-03-30T08:31:20.545192187Z\"}",
+  "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
+  "body": "INFO: log line here",
+  "attributes": {
+    "time": "2024-03-30T08:31:20.545192187Z",
+    "log.iostream":                "stdout",
+    "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "k8s.pod.name":                "kube-controller-kind-control-plane",
+    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+    "k8s.container.name":          "kube-controller",
+    "k8s.container.restart_count": "1",
+    "namespace":          "some"
   }
 }
 ```
