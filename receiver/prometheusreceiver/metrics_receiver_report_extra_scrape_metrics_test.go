@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
@@ -49,13 +49,12 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
+	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, reportExtraScrapeMetrics)()
+
 	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
-
-	err = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableReportExtraScrapeMetrics", reportExtraScrapeMetrics)
-	require.NoError(t, err)
 
 	cms := new(consumertest.MetricsSink)
 	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
@@ -72,8 +71,6 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
 		require.NoError(t, receiver.Shutdown(t.Context()))
 		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
-		err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableReportExtraScrapeMetrics", false)
-		require.NoError(t, err)
 	})
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
