@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1802,7 +1803,7 @@ service:
 		require.NoError(t, s.createTemplates())
 		require.NoError(t, s.loadAndWriteInitialMergedConfig())
 
-		assert.Equal(t, remoteCfg.String(), s.remoteConfig.String())
+		assert.Equal(t, remoteCfg.String(), s.remoteConfig.Load().String())
 
 		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
 		gotMergedConfig = strings.ReplaceAll(gotMergedConfig, "\r\n", "\n")
@@ -2218,4 +2219,65 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		_, err = sendHealthCheckRequest()
 		assert.Error(t, err)
 	})
+}
+
+func TestRemoteConfigConcurrentAccess(t *testing.T) {
+	cfg := setupSupervisorConfig(t, configTemplate)
+	s, err := NewSupervisor(t.Context(), nil, cfg)
+	require.NoError(t, err)
+
+	config1 := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"test.yaml": {
+					Body: []byte("receivers:\n  nop:\nprocessors:\n  nop:\nexporters:\n  nop:\nservice:\n  pipelines:\n    logs:\n      receivers: [nop]\n      processors: [nop]\n      exporters: [nop]"),
+				},
+			},
+		},
+		ConfigHash: []byte("confighash1"),
+	}
+
+	config2 := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"test.yaml": {
+					Body: []byte("receivers:\n  nop:\nprocessors:\n  batch:\nexporters:\n  nop:\nservice:\n  pipelines:\n    logs:\n      receivers: [nop]\n      processors: [batch]\n      exporters: [nop]"),
+				},
+			},
+		},
+		ConfigHash: []byte("confighash2"),
+	}
+
+	s.remoteConfig.Store(config1)
+
+	startSignal := make(chan struct{})
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-startSignal
+		for i := 0; i < 1000; i++ {
+			if i%2 == 0 {
+				s.remoteConfig.Store(config1)
+			} else {
+				s.remoteConfig.Store(config2)
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-startSignal
+		for i := 0; i < 1000; i++ {
+			cfg := s.remoteConfig.Load()
+			if cfg != nil {
+				_ = cfg.GetConfigHash()
+			}
+		}
+	}()
+
+	close(startSignal)
+	wg.Wait()
 }

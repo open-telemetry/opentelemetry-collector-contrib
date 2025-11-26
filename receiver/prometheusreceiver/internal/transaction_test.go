@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	fakemetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 const (
@@ -2212,4 +2213,127 @@ func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 			assert.Equal(t, wmap, gmap)
 		}
 	}
+}
+
+func newObs(t *testing.T) *receiverhelper.ObsReport {
+	obs, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(receivertest.NopType),
+	})
+	require.NoError(t, err)
+	return obs
+}
+
+func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *testing.T) {
+	tr := newTxn(t, true, true)
+	// metadata says "gauge" → should not be considered native histogram staleness
+	tr.mc = fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
+		"foo": {MetricFamily: "foo", Type: model.MetricTypeGauge},
+	})
+
+	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
+	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), &rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
+		string(model.MetricNameLabel): "foo",
+	}))
+	require.False(t, ok, "expected false when metadata type != histogram")
+}
+
+func TestGetOrCreateMetricFamily_DistinctFamiliesForNativeVsClassic(t *testing.T) {
+	tr := newTxn(t, true, true)
+	// Provide metadata so normalization doesn't kick in; name is the same family
+	tr.mc = fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
+		"same_family": {MetricFamily: "same_family", Type: model.MetricTypeHistogram},
+	})
+
+	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
+
+	// First: classic path (addingNativeHistogram=false)
+	tr.addingNativeHistogram = false
+	mfClassic := tr.getOrCreateMetricFamily(rk, emptyScopeID, "same_family")
+
+	// Second: native path (addingNativeHistogram=true)
+	tr.addingNativeHistogram = true
+	mfNative := tr.getOrCreateMetricFamily(rk, emptyScopeID, "same_family")
+
+	require.NotNil(t, mfClassic)
+	require.NotNil(t, mfNative)
+	// Even with the same name, keys include native flag → distinct entries
+	require.NotEqual(t, mfClassic, mfNative, "expected distinct metric family instances for native vs classic")
+}
+
+func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
+	// Build two label sets that differ only in labels likely excluded by getSortedNotUsefulLabels (e.g., _otel_* scope labels)
+	lsA := labels.FromStrings(
+		string(model.MetricNameLabel), "metric_x",
+		"env", "prod",
+		"__name__", "metric_x", // already the metric name label
+		"otel_scope_name", "scope_a",
+	)
+	lsB := labels.FromStrings(
+		string(model.MetricNameLabel), "metric_x",
+		"env", "prod",
+		"otel_scope_name", "scope_b", // differs only in an excluded label
+	)
+
+	var buf []byte
+	hashA, buf := getSeriesRef(buf, lsA, pmetric.MetricTypeSum)
+	hashB, _ := getSeriesRef(buf, lsB, pmetric.MetricTypeSum)
+
+	require.Equal(t, hashA, hashB, "series ref should be equal when differing only by excluded labels")
+}
+
+func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {
+	tr := newTxn(t, false, false)
+	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
+	// Prime nodeResources
+	tr.nodeResources[rk] = CreateResource(rk.job, rk.instance, labels.FromStrings(model.SchemeLabel, "http"))
+
+	ls := labels.FromStrings(
+		string(model.MetricNameLabel), "target_info",
+		string(model.JobLabel), rk.job,
+		string(model.InstanceLabel), rk.instance,
+		"extra", "v",
+		"another", "x",
+	)
+	tr.AddTargetInfo(rk, ls)
+
+	res := tr.nodeResources[rk]
+	attrs := res.Attributes()
+	_, hasJob := attrs.Get(string(model.JobLabel))
+	_, hasInstance := attrs.Get(string(model.InstanceLabel))
+	_, hasName := attrs.Get(string(model.MetricNameLabel))
+	_, hasExtra := attrs.Get("extra")
+	_, hasAnother := attrs.Get("another")
+
+	require.False(t, hasJob, "job label must not be copied to resource attributes")
+	require.False(t, hasInstance, "instance label must not be copied to resource attributes")
+	require.False(t, hasName, "metric name label must not be copied to resource attributes")
+	require.True(t, hasExtra, "custom label should be copied")
+	require.True(t, hasAnother, "custom label should be copied")
+}
+
+func newTxn(t *testing.T, useMetadata, enableNative bool) *transaction {
+	ctx := t.Context()
+	lbls := labels.FromMap(map[string]string{
+		string(model.InstanceLabel): "localhost:1234",
+		string(model.JobLabel):      "job-a",
+	})
+	target := scrape.NewTarget(
+		lbls,
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{
+			model.AddressLabel: "localhost:1234",
+			model.SchemeLabel:  "http",
+		},
+		nil,
+	)
+	ctx = scrape.ContextWithTarget(ctx, target)
+	if useMetadata {
+		ctx = scrape.ContextWithMetricMetadataStore(ctx, fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{}))
+	}
+	sink := &consumertest.MetricsSink{}
+	settings := receivertest.NewNopSettings(receivertest.NopType)
+	// quiet logger
+	settings.Logger = zap.NewNop()
+	return newTransaction(ctx, &nopAdjuster{}, sink, labels.EmptyLabels(), settings, newObs(t), false, enableNative, useMetadata)
 }
