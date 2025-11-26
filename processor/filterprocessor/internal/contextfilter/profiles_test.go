@@ -3,7 +3,6 @@
 
 package contextfilter_test // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter_test"
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -89,7 +88,7 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			}
 			require.NoError(t, err, "error parsing conditions")
 			finalProfiles := constructProfiles()
-			consumeErr := got.ConsumeProfiles(context.Background(), finalProfiles)
+			consumeErr := got.ConsumeProfiles(t.Context(), finalProfiles)
 			switch {
 			case tt.filterEverything && !tt.wantErr:
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
@@ -150,7 +149,7 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			want: func(pd pprofile.Profiles) {
 				pd.ResourceProfiles().RemoveIf(func(rl pprofile.ResourceProfiles) bool {
 					v, _ := rl.Resource().Attributes().Get("host.name")
-					return len(v.AsString()) == 0
+					return v.AsString() == ""
 				})
 			},
 		},
@@ -210,10 +209,11 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 				for _, e := range parseErrs {
 					if e != nil && strings.Contains(e.Error(), tt.wantErrorWith) {
 						found = true
-						assert.True(t, found)
-						return
+						break
 					}
 				}
+				assert.True(t, found, "expected error containing '%s' but none found", tt.wantErrorWith)
+				return
 			}
 
 			for _, e := range parseErrs {
@@ -221,23 +221,17 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			}
 
 			finalProfiles := constructProfiles()
-			var consumeErr error
 
-			// Apply each consumer sequentially
 			for _, consumer := range consumers {
-				if err := consumer.ConsumeProfiles(context.Background(), finalProfiles); err != nil {
+				if err := consumer.ConsumeProfiles(t.Context(), finalProfiles); err != nil {
+					// ErrSkipProcessingData is expected behavior, continue to validate
 					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
-						consumeErr = err
 						break
 					}
-					consumeErr = err
-					break
+					// Unexpected error, fail the test
+					assert.NoError(t, err)
+					return
 				}
-			}
-
-			if consumeErr != nil && errors.Is(consumeErr, processorhelper.ErrSkipProcessingData) {
-				assert.NoError(t, consumeErr)
-				return
 			}
 
 			exTd := constructProfiles()
@@ -279,7 +273,7 @@ func Test_ProcessProfiles_InferredResourceContext(t *testing.T) {
 			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
 			assert.NoError(t, err)
 
-			err = consumer.ConsumeProfiles(context.Background(), td)
+			err = consumer.ConsumeProfiles(t.Context(), td)
 
 			if tt.filteredEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
@@ -300,7 +294,6 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 		want               func(pprofile.Profiles)
 	}{
 		{
-			//condition:          `scope.name == "scope"`,
 			condition:          `IsMatch(scope.name, "scope*")`,
 			filteredEverything: true,
 			want: func(_ pprofile.Profiles) {
@@ -326,7 +319,7 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
 			assert.NoError(t, err)
 
-			err = consumer.ConsumeProfiles(context.Background(), td)
+			err = consumer.ConsumeProfiles(t.Context(), td)
 
 			if tt.filteredEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)

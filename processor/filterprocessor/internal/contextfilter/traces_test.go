@@ -4,7 +4,6 @@
 package contextfilter_test // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter_test"
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -111,7 +110,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			}
 			require.NoError(t, err, "error parsing conditions")
 			finalTraces := constructTraces()
-			consumeErr := got.ConsumeTraces(context.Background(), finalTraces)
+			consumeErr := got.ConsumeTraces(t.Context(), finalTraces)
 			switch {
 			case tt.filterEverything && !tt.wantErr:
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
@@ -145,7 +144,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
-					return len(span.Name()) == 0
+					return span.Name() == ""
 				})
 			},
 		},
@@ -169,7 +168,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 					v, _ := rs.Resource().Attributes().Get("host.name")
-					return len(v.AsString()) == 0
+					return v.AsString() == ""
 				})
 			},
 		},
@@ -226,10 +225,11 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 				for _, e := range parseErrs {
 					if e != nil && strings.Contains(e.Error(), tt.wantErrorWith) {
 						found = true
-						assert.True(t, found)
-						return
+						break
 					}
 				}
+				assert.True(t, found, "expected error containing '%s' but none found", tt.wantErrorWith)
+				return
 			}
 
 			for _, e := range parseErrs {
@@ -237,23 +237,17 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			}
 
 			finalTraces := constructTraces()
-			var consumeErr error
 
-			// Apply each consumer sequentially
 			for _, consumer := range consumers {
-				if err := consumer.ConsumeTraces(context.Background(), finalTraces); err != nil {
+				if err := consumer.ConsumeTraces(t.Context(), finalTraces); err != nil {
+					// ErrSkipProcessingData is expected behavior, continue to validate
 					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
-						consumeErr = err
 						break
 					}
-					consumeErr = err
-					break
+					// Unexpected error, fail the test
+					assert.NoError(t, err)
+					return
 				}
-			}
-
-			if consumeErr != nil && errors.Is(consumeErr, processorhelper.ErrSkipProcessingData) {
-				assert.NoError(t, consumeErr)
-				return
 			}
 
 			exTd := constructTraces()
@@ -302,7 +296,7 @@ func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
 			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
 			assert.NoError(t, err)
 
-			err = consumer.ConsumeTraces(context.Background(), td)
+			err = consumer.ConsumeTraces(t.Context(), td)
 
 			if tt.filteredEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
@@ -355,7 +349,7 @@ func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
 			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
 			assert.NoError(t, err)
 
-			err = consumer.ConsumeTraces(context.Background(), td)
+			err = consumer.ConsumeTraces(t.Context(), td)
 
 			if tt.filteredEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)

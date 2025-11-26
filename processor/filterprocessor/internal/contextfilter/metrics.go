@@ -27,7 +27,7 @@ type metricConditions struct {
 	expr.BoolExpr[ottlmetric.TransformContext]
 }
 
-func (m metricConditions) Context() ContextID {
+func (metricConditions) Context() ContextID {
 	return Metric
 }
 
@@ -58,7 +58,7 @@ type dataPointConditions struct {
 	expr.BoolExpr[ottldatapoint.TransformContext]
 }
 
-func (d dataPointConditions) Context() ContextID {
+func (dataPointConditions) Context() ContextID {
 	return DataPoint
 }
 

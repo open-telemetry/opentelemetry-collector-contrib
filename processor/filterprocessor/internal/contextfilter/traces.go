@@ -26,7 +26,7 @@ type traceConditions struct {
 	expr.BoolExpr[ottlspan.TransformContext]
 }
 
-func (t traceConditions) Context() ContextID {
+func (traceConditions) Context() ContextID {
 	return Span
 }
 
@@ -59,7 +59,7 @@ type spanEventConditions struct {
 	expr.BoolExpr[ottlspanevent.TransformContext]
 }
 
-func (s spanEventConditions) Context() ContextID {
+func (spanEventConditions) Context() ContextID {
 	return SpanEvent
 }
 

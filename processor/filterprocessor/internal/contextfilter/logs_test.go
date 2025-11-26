@@ -4,7 +4,6 @@
 package contextfilter_test // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter_test"
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -100,7 +99,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			}
 			require.NoError(t, err, "error parsing conditions")
 			finalLogs := constructLogs()
-			consumeErr := got.ConsumeLogs(context.Background(), finalLogs)
+			consumeErr := got.ConsumeLogs(t.Context(), finalLogs)
 			switch {
 			case tt.filterEverything && !tt.wantErr:
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
@@ -134,7 +133,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			},
 			want: func(ld plog.Logs) {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
-					return len(log.Body().AsString()) == 0
+					return log.Body().AsString() == ""
 				})
 			},
 		},
@@ -158,7 +157,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			want: func(ld plog.Logs) {
 				ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 					v, _ := rl.Resource().Attributes().Get("host.name")
-					return len(v.AsString()) == 0
+					return v.AsString() == ""
 				})
 			},
 		},
@@ -215,10 +214,11 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 				for _, e := range parseErrs {
 					if e != nil && strings.Contains(e.Error(), tt.wantErrorWith) {
 						found = true
-						assert.True(t, found)
-						return
+						break
 					}
 				}
+				assert.True(t, found, "expected error containing '%s' but none found", tt.wantErrorWith)
+				return
 			}
 
 			for _, e := range parseErrs {
@@ -226,23 +226,17 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			}
 
 			finalLogs := constructLogs()
-			var consumeErr error
 
-			// Apply each consumer sequentially
 			for _, consumer := range consumers {
-				if err := consumer.ConsumeLogs(context.Background(), finalLogs); err != nil {
+				if err := consumer.ConsumeLogs(t.Context(), finalLogs); err != nil {
+					// ErrSkipProcessingData is expected behavior, continue to validate
 					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
-						consumeErr = err
 						break
 					}
-					consumeErr = err
-					break
+					// Unexpected error, fail the test
+					assert.NoError(t, err)
+					return
 				}
-			}
-
-			if consumeErr != nil && errors.Is(consumeErr, processorhelper.ErrSkipProcessingData) {
-				assert.NoError(t, consumeErr)
-				return
 			}
 
 			exTd := constructLogs()
@@ -291,7 +285,7 @@ func Test_ProcessLogs_InferredResourceContext(t *testing.T) {
 			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
 			assert.NoError(t, err)
 
-			err = consumer.ConsumeLogs(context.Background(), td)
+			err = consumer.ConsumeLogs(t.Context(), td)
 
 			if tt.filteredEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
@@ -344,7 +338,7 @@ func Test_ProcessLogs_InferredScopeContext(t *testing.T) {
 			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
 			assert.NoError(t, err)
 
-			err = consumer.ConsumeLogs(context.Background(), td)
+			err = consumer.ConsumeLogs(t.Context(), td)
 
 			if tt.filteredEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)

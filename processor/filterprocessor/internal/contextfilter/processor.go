@@ -25,7 +25,7 @@ type resourceConditions struct {
 	expr.BoolExpr[ottlresource.TransformContext]
 }
 
-func (r resourceConditions) Context() ContextID {
+func (resourceConditions) Context() ContextID {
 	return Resource
 }
 
@@ -103,7 +103,7 @@ type scopeConditions struct {
 	expr.BoolExpr[ottlscope.TransformContext]
 }
 
-func (s scopeConditions) Context() ContextID {
+func (scopeConditions) Context() ContextID {
 	return Scope
 }
 
@@ -191,6 +191,7 @@ type baseContext interface {
 	TracesConsumer
 	MetricsConsumer
 	LogsConsumer
+	ProfilesConsumer
 }
 
 func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
@@ -229,7 +230,7 @@ func parseResourceContextConditions[R any](
 	}
 	errorMode := getErrorMode(pc, contextConditions)
 	rConditions := ottlresource.NewConditionSequence(parsedConditions, pc.Settings, ottlresource.WithConditionSequenceErrorMode(errorMode))
-	result := (baseContext)(resourceConditions{&rConditions})
+	result := baseContext(resourceConditions{&rConditions})
 	return result.(R), nil
 }
 
@@ -244,6 +245,6 @@ func parseScopeContextConditions[R any](
 	}
 	errorMode := getErrorMode(pc, contextConditions)
 	sConditions := ottlscope.NewConditionSequence(parsedConditions, pc.Settings, ottlscope.WithConditionSequenceErrorMode(errorMode))
-	result := (baseContext)(scopeConditions{&sConditions})
+	result := baseContext(scopeConditions{&sConditions})
 	return result.(R), nil
 }
