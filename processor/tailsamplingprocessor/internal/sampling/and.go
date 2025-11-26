@@ -45,6 +45,6 @@ func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samp
 	return samplingpolicy.Sampled, nil
 }
 
-func (c *And) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, _ ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+func (*And) EarlyEvaluate(context.Context, pcommon.TraceID, ptrace.ResourceSpans, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	return samplingpolicy.Unspecified, nil
 }

@@ -57,7 +57,7 @@ func (b *bytesLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *sa
 	return samplingpolicy.NotSampled, nil
 }
 
-func (b *bytesLimiting) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, _ ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+func (*bytesLimiting) EarlyEvaluate(context.Context, pcommon.TraceID, ptrace.ResourceSpans, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	return samplingpolicy.Unspecified, nil
 }
 

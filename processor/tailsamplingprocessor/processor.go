@@ -172,10 +172,10 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 		// be more efficient on its single goroutine.
 		batch := []traceBatch{}
 		for traceID, spans := range idToSpansAndScope {
-			rss, parentSpan := newResourceSpanFromSpanAndScopes(rss, spans)
+			newRSS, parentSpan := newResourceSpanFromSpanAndScopes(rss, spans)
 			batch = append(batch, traceBatch{
 				id:         traceID,
-				rss:        rss,
+				rss:        newRSS,
 				parentSpan: parentSpan,
 				spanCount:  int64(len(spans)),
 			})
