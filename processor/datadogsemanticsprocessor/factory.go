@@ -23,6 +23,7 @@ func NewFactory() processor.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 
@@ -68,6 +69,46 @@ func createTracesProcessor(
 		cfg,
 		next,
 		tp.processTraces,
+		processorhelper.WithCapabilities(consumerCapabilities),
+	)
+}
+
+type logsProcessor struct {
+	overrideIncomingDatadogFields bool
+	attrsTranslator               *attributes.Translator
+}
+
+func newLogsProcessor(
+	set processor.Settings,
+	cfg *Config,
+) (*logsProcessor, error) {
+	attrsTranslator, err := attributes.NewTranslator(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	return &logsProcessor{
+		overrideIncomingDatadogFields: cfg.OverrideIncomingDatadogFields,
+		attrsTranslator:               attrsTranslator,
+	}, nil
+}
+
+func createLogsProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	next consumer.Logs,
+) (processor.Logs, error) {
+	oCfg := cfg.(*Config)
+	lp, err := newLogsProcessor(set, oCfg)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewLogs(
+		ctx,
+		set,
+		cfg,
+		next,
+		lp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
 	)
 }

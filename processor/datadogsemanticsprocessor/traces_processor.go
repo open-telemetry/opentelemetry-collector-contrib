@@ -5,32 +5,17 @@ package datadogsemanticsprocessor // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/attributes"
 	"net/url"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
 	"github.com/DataDog/datadog-agent/pkg/trace/transform"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.32.0"
 )
-
-func (tp *tracesProcessor) insertAttrIfMissingOrShouldOverride(sattr pcommon.Map, key string, value any) (err error) {
-	if _, ok := sattr.Get(key); tp.overrideIncomingDatadogFields || !ok {
-		switch v := value.(type) {
-		case string:
-			sattr.PutStr(key, v)
-		case int64:
-			sattr.PutInt(key, v)
-		default:
-			err = errors.New("unsupported value type")
-		}
-	}
-	return err
-}
 
 func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) (output ptrace.Traces, err error) {
 	rspans := td.ResourceSpans()
@@ -40,10 +25,10 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 		rattr := otelres.Attributes()
 		for j := 0; j < rspan.ScopeSpans().Len(); j++ {
 			serviceVersion := ""
-			if serviceVersionAttr, ok := otelres.Attributes().Get(string(semconv.ServiceVersionKey)); ok {
+			if serviceVersionAttr, ok := rattr.Get(string(semconv.ServiceVersionKey)); ok {
 				serviceVersion = serviceVersionAttr.AsString()
 			}
-			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.version", serviceVersion)
+			err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, rattr, "datadog.version", serviceVersion)
 			if err != nil {
 				return ptrace.Traces{}, err
 			}
@@ -56,14 +41,14 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 			if src, ok := tp.attrsTranslator.ResourceToSource(ctx, otelres, traceutil.SignalTypeSet, nil); ok && src.Kind == source.HostnameKind {
 				datadogHostName = src.Identifier
 			}
-			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.host.name", datadogHostName)
+			err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, rattr, "datadog.host.name", datadogHostName)
 			if err != nil {
 				return ptrace.Traces{}, err
 			}
 
 			// Map VCS (version control system) attributes for source code integration at resource level
 			if vcsRevision, ok := rattr.Get(string(semconv.VCSRefHeadRevisionKey)); ok {
-				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "git.commit.sha", vcsRevision.AsString())
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, rattr, "git.commit.sha", vcsRevision.AsString())
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
@@ -71,7 +56,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 			if vcsRepoURL, ok := rattr.Get(string(semconv.VCSRepositoryURLFullKey)); ok {
 				// Strip protocol from repository URL as required by Datadog
 				cleanURL := stripProtocolFromURL(vcsRepoURL.AsString())
-				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "git.repository_url", cleanURL)
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, rattr, "git.repository_url", cleanURL)
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
@@ -83,7 +68,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				sattr := otelspan.Attributes()
 
 				// Note: default value from GetOTelService is "otlpresourcenoservicename"
-				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.service", traceutil.GetOTelService(otelspan, otelres, true))
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, rattr, "datadog.service", traceutil.GetOTelService(otelspan, otelres, true))
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
@@ -92,32 +77,32 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				if envFromAttr := transform.GetOTelEnv(otelspan, otelres, false); envFromAttr != "" {
 					env = envFromAttr
 				}
-				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env)
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, rattr, "datadog.env", env)
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
 
-				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan, otelres))
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan, otelres))
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
-				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.resource", traceutil.GetOTelResourceV2(otelspan, otelres))
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.resource", traceutil.GetOTelResourceV2(otelspan, otelres))
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
-				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.type", traceutil.GetOTelSpanType(otelspan, otelres))
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.type", traceutil.GetOTelSpanType(otelspan, otelres))
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
 				spanKind := otelspan.Kind()
-				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.span.kind", traceutil.OTelSpanKindName(spanKind))
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.span.kind", traceutil.OTelSpanKindName(spanKind))
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
 
 				// Map VCS (version control system) attributes for source code integration
 				if vcsRevision, ok := sattr.Get(string(semconv.VCSRefHeadRevisionKey)); ok {
-					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "git.commit.sha", vcsRevision.AsString())
+					err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "git.commit.sha", vcsRevision.AsString())
 					if err != nil {
 						return ptrace.Traces{}, err
 					}
@@ -125,7 +110,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				if vcsRepoURL, ok := sattr.Get(string(semconv.VCSRepositoryURLFullKey)); ok {
 					// Strip protocol from repository URL as required by Datadog
 					cleanURL := stripProtocolFromURL(vcsRepoURL.AsString())
-					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "git.repository_url", cleanURL)
+					err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "git.repository_url", cleanURL)
 					if err != nil {
 						return ptrace.Traces{}, err
 					}
@@ -134,26 +119,26 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				metaMap := make(map[string]string)
 				code := transform.GetOTelStatusCode(otelspan, otelres, false)
 				if code != 0 {
-					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.http_status_code", fmt.Sprintf("%d", code))
+					err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.http_status_code", fmt.Sprintf("%d", code))
 					if err != nil {
 						return ptrace.Traces{}, err
 					}
 				}
 				ddError := int64(status2Error(otelspan.Status(), otelspan.Events(), metaMap))
-				err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error", ddError)
+				err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.error", ddError)
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
 				if ddError == 1 {
-					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.msg", metaMap["error.msg"])
+					err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.error.msg", metaMap["error.msg"])
 					if err != nil {
 						return ptrace.Traces{}, err
 					}
-					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.type", metaMap["error.type"])
+					err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.error.type", metaMap["error.type"])
 					if err != nil {
 						return ptrace.Traces{}, err
 					}
-					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.stack", metaMap["error.stack"])
+					err = attributes.InsertAttrIfMissingOrShouldOverride(tp.overrideIncomingDatadogFields, sattr, "datadog.error.stack", metaMap["error.stack"])
 					if err != nil {
 						return ptrace.Traces{}, err
 					}
