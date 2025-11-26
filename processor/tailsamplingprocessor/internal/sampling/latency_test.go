@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
-func TestEvaluate_Latency(t *testing.T) {
+func TestLatency_Evaluate(t *testing.T) {
 	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 0)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
@@ -72,7 +72,7 @@ func TestEvaluate_Latency(t *testing.T) {
 	}
 }
 
-func TestEvaluate_Bounded_Latency(t *testing.T) {
+func TestLatency_Evaluate_Bounded(t *testing.T) {
 	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 10000)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
@@ -155,6 +155,92 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
+func TestLatency_EarlyEvaluate(t *testing.T) {
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	now := time.Now()
+
+	cases := []struct {
+		Desc                      string
+		Threshold, UpperThreshold time.Duration
+		Spans                     []spanWithTimeAndDuration
+		Decision                  samplingpolicy.Decision
+	}{
+		{
+			"trace duration shorter than threshold",
+			5 * time.Second, 0,
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  4500 * time.Millisecond,
+				},
+			},
+			samplingpolicy.Unspecified,
+		},
+		{
+			"trace duration is equal to threshold",
+			5 * time.Second, 0,
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  5000 * time.Millisecond,
+				},
+			},
+			samplingpolicy.Sampled,
+		},
+		{
+			"total trace duration is longer than threshold but every single span is shorter",
+			5 * time.Second, 0,
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  3000 * time.Millisecond,
+				},
+				{
+					StartTime: now.Add(2500 * time.Millisecond),
+					Duration:  3000 * time.Millisecond,
+				},
+			},
+			samplingpolicy.Sampled,
+		},
+		{
+			"trace duration is longer than upper bound",
+			1 * time.Second, 2 * time.Second,
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  3 * time.Second,
+				},
+			},
+			// TODO: This can be samplingpolicy.NotSampled in the future.
+			samplingpolicy.Unspecified,
+		},
+		{
+			"trace duration is longer than lower bound but less than upper bound",
+			2 * time.Second, 5 * time.Second,
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  4000 * time.Millisecond,
+				},
+			},
+			samplingpolicy.Unspecified,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			filter := NewLatency(componenttest.NewNopTelemetrySettings(), c.Threshold.Milliseconds(), c.UpperThreshold.Milliseconds())
+
+			trace := newTraceWithSpans(c.Spans)
+			rs := trace.ReceivedBatches.ResourceSpans().At(0)
+			decision, err := filter.EarlyEvaluate(t.Context(), traceID, rs, trace)
+
+			assert.NoError(t, err)
+			assert.Equal(t, c.Decision, decision)
 		})
 	}
 }

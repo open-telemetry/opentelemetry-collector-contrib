@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -29,5 +30,9 @@ func NewAlwaysSample(settings component.TelemetrySettings) samplingpolicy.Evalua
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (as *alwaysSample) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	as.logger.Debug("Evaluating spans in always-sample filter")
+	return samplingpolicy.Sampled, nil
+}
+
+func (*alwaysSample) EarlyEvaluate(context.Context, pcommon.TraceID, ptrace.ResourceSpans, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	return samplingpolicy.Sampled, nil
 }

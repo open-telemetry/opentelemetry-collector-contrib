@@ -62,3 +62,14 @@ func (r *statusCodeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace 
 		return slices.Contains(r.statusCodes, span.Status().Code())
 	}), nil
 }
+
+func (r *statusCodeFilter) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, newData ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	found := hasInstrumentationLibrarySpanWithCondition(newData.ScopeSpans(), func(span ptrace.Span) bool {
+		return slices.Contains(r.statusCodes, span.Status().Code())
+	}, false)
+
+	if found {
+		return samplingpolicy.Sampled, nil
+	}
+	return samplingpolicy.Unspecified, nil
+}

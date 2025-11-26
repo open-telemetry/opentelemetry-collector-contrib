@@ -101,3 +101,42 @@ func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 		},
 	), nil
 }
+
+func (naf *numericAttributeFilter) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, batch ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	// Do not support the deprecated invert match code for early evaluations.
+	if naf.invertMatch {
+		return samplingpolicy.Unspecified, nil
+	}
+
+	// Get the effective min/max values
+	minVal := int64(math.MinInt64)
+	if naf.minValue != nil {
+		minVal = *naf.minValue
+	}
+	maxVal := int64(math.MaxInt64)
+	if naf.maxValue != nil {
+		maxVal = *naf.maxValue
+	}
+
+	return batchHasResourceOrSpanWithCondition(
+		batch,
+		func(resource pcommon.Resource) bool {
+			if v, ok := resource.Attributes().Get(naf.key); ok {
+				value := v.Int()
+				if value >= minVal && value <= maxVal {
+					return true
+				}
+			}
+			return false
+		},
+		func(span ptrace.Span) bool {
+			if v, ok := span.Attributes().Get(naf.key); ok {
+				value := v.Int()
+				if value >= minVal && value <= maxVal {
+					return true
+				}
+			}
+			return false
+		},
+	), nil
+}

@@ -151,6 +151,36 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 	), nil
 }
 
+func (saf *stringAttributeFilter) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, batch ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	// Do not support the deprecated invert match code for early evaluations.
+	if saf.invertMatch {
+		return samplingpolicy.Unspecified, nil
+	}
+
+	return batchHasResourceOrSpanWithCondition(
+		batch,
+		func(resource pcommon.Resource) bool {
+			if v, ok := resource.Attributes().Get(saf.key); ok {
+				if ok := saf.matcher(v.Str()); ok {
+					return true
+				}
+			}
+			return false
+		},
+		func(span ptrace.Span) bool {
+			if v, ok := span.Attributes().Get(saf.key); ok {
+				truncatableStr := v.Str()
+				if truncatableStr != "" {
+					if ok := saf.matcher(v.Str()); ok {
+						return true
+					}
+				}
+			}
+			return false
+		},
+	), nil
+}
+
 // addFilters compiles all the given filters and stores them as regexes.
 // All regexes are automatically anchored to enforce full string matches.
 func addFilters(exprs []string) ([]*regexp.Regexp, error) {

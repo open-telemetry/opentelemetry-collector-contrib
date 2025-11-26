@@ -20,16 +20,28 @@ func hasResourceOrSpanWithCondition(
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
 
-		resource := rs.Resource()
-		if shouldSampleResource(resource) {
-			return samplingpolicy.Sampled
-		}
-
-		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, false) {
-			return samplingpolicy.Sampled
+		decision := batchHasResourceOrSpanWithCondition(rs, shouldSampleResource, shouldSampleSpan)
+		if decision != samplingpolicy.Unspecified {
+			return decision
 		}
 	}
 	return samplingpolicy.NotSampled
+}
+
+func batchHasResourceOrSpanWithCondition(
+	rs ptrace.ResourceSpans,
+	shouldSampleResource func(resource pcommon.Resource) bool,
+	shouldSampleSpan func(span ptrace.Span) bool,
+) samplingpolicy.Decision {
+	resource := rs.Resource()
+	if shouldSampleResource(resource) {
+		return samplingpolicy.Sampled
+	}
+
+	if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, false) {
+		return samplingpolicy.Sampled
+	}
+	return samplingpolicy.Unspecified
 }
 
 // invertHasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
@@ -76,6 +88,15 @@ func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) 
 		}
 	}
 	return samplingpolicy.NotSampled
+}
+
+// batchHasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true. It
+// is for use in EarlyEvaluators.
+func batchHasSpanWithCondition(rs ptrace.ResourceSpans, shouldSample func(span ptrace.Span) bool) samplingpolicy.Decision {
+	if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSample, false) {
+		return samplingpolicy.Sampled
+	}
+	return samplingpolicy.Unspecified
 }
 
 func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool, invert bool) bool {
