@@ -14,7 +14,7 @@ import (
 )
 
 type DeleteArguments[K any] struct {
-	Target ottl.GetSetter[K]
+	Target ottl.PSliceGetSetter[K]
 	Index  ottl.IntGetter[K]
 	Length ottl.Optional[ottl.IntGetter[K]]
 }
@@ -32,20 +32,11 @@ func createDeleteFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	return deleteFrom(args.Target, args.Index, args.Length), nil
 }
 
-func deleteFrom[K any](target ottl.GetSetter[K], indexGetter ottl.IntGetter[K], lengthGetter ottl.Optional[ottl.IntGetter[K]]) ottl.ExprFunc[K] {
+func deleteFrom[K any](target ottl.PSliceGetSetter[K], indexGetter ottl.IntGetter[K], lengthGetter ottl.Optional[ottl.IntGetter[K]]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
-		}
-
-		targetSlice, ok := t.(pcommon.Slice)
-		if !ok {
-			targetValue, ok := t.(pcommon.Value)
-			if !ok || targetValue.Type() != pcommon.ValueTypeSlice {
-				return nil, fmt.Errorf("target must be a slice type, got %T", t)
-			}
-			targetSlice = targetValue.Slice()
 		}
 
 		index, err := indexGetter.Get(ctx, tCtx)
@@ -61,7 +52,7 @@ func deleteFrom[K any](target ottl.GetSetter[K], indexGetter ottl.IntGetter[K], 
 			}
 		}
 
-		sliceLen := int64(targetSlice.Len())
+		sliceLen := int64(t.Len())
 		endIndex, err := validateBounds(index, length, sliceLen)
 		if err != nil {
 			return nil, err
@@ -72,11 +63,12 @@ func deleteFrom[K any](target ottl.GetSetter[K], indexGetter ottl.IntGetter[K], 
 			return nil, target.Set(ctx, tCtx, pcommon.NewSlice())
 		}
 
+		// ToDo: This would be better with RemoveAt if it was supported.
 		resSlice := pcommon.NewSlice()
 		resSlice.EnsureCapacity(int(sliceLen - (endIndex - index)))
 		for i := int64(0); i < sliceLen; i++ {
 			if i < index || i >= endIndex {
-				targetSlice.At(int(i)).MoveTo(resSlice.AppendEmpty())
+				t.At(int(i)).MoveTo(resSlice.AppendEmpty())
 			}
 		}
 

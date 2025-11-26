@@ -108,136 +108,116 @@ func getMultiSlice(t *testing.T, expected []any) pcommon.Slice {
 	return expectedSlice
 }
 
+func sliceGetSetter(getter func(_ context.Context, _ any) (any, error)) ottl.PSliceGetSetter[any] {
+	sliceGetter := &ottl.StandardPSliceGetter[any]{
+		Getter: getter,
+	}
+	return &ottl.StandardPSliceGetSetter[any]{
+		Getter: sliceGetter.Get,
+		Setter: setter,
+	}
+}
+
 func TestDelete(t *testing.T) {
 	testCases := []struct {
 		name     string
-		target   ottl.GetSetter[any]
+		target   ottl.PSliceGetSetter[any]
 		index    ottl.IntGetter[any]
 		length   ottl.Optional[ottl.IntGetter[any]]
 		expected pcommon.Slice
 	}{
 		{
 			name: "delete single int element",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}), nil
+			}),
 			index:    getIntGetter(3),
 			length:   nilOptional,
 			expected: getSlice(t, []any{0, 1, 2, 4, 5, 6, 7, 8, 9}),
 		},
 		{
 			name: "delete multiple int elements",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}), nil
+			}),
 			index:    getIntGetter(2),
 			length:   ottl.NewTestingOptional(getIntGetter(4)),
 			expected: getSlice(t, []any{0, 1, 6, 7, 8, 9}),
 		},
 		{
 			name: "delete single string element",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{"a", "b", "c", "d", "e"}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{"a", "b", "c", "d", "e"}), nil
+			}),
 			index:    getIntGetter(1),
 			length:   nilOptional,
 			expected: getSlice(t, []any{"a", "c", "d", "e"}),
 		},
 		{
 			name: "delete multiple string elements",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{"a", "b", "c", "d", "e"}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{"a", "b", "c", "d", "e"}), nil
+			}),
 			index:    getIntGetter(1),
 			length:   ottl.NewTestingOptional(getIntGetter(3)),
 			expected: getSlice(t, []any{"a", "e"}),
 		},
 		{
 			name: "delete single bool element",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{true, false, true, false}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{true, false, true, false}), nil
+			}),
 			index:    getIntGetter(2),
 			length:   nilOptional,
 			expected: getSlice(t, []any{true, false, false}),
 		},
 		{
 			name: "delete multiple bool elements",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{true, false, true, false, true}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{true, false, true, false, true}), nil
+			}),
 			index:    getIntGetter(1),
 			length:   ottl.NewTestingOptional(getIntGetter(3)),
 			expected: getSlice(t, []any{true, true}),
 		},
 		{
 			name: "delete single float element",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{1.1, 2.2, 3.3, 4.4}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{1.1, 2.2, 3.3, 4.4}), nil
+			}),
 			index:    getIntGetter(0),
 			length:   nilOptional,
 			expected: getSlice(t, []any{2.2, 3.3, 4.4}),
 		},
 		{
 			name: "delete multiple float elements",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{1.1, 2.2, 3.3, 4.4, 5.5}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{1.1, 2.2, 3.3, 4.4, 5.5}), nil
+			}),
 			index:    getIntGetter(1),
 			length:   ottl.NewTestingOptional(getIntGetter(2)),
 			expected: getSlice(t, []any{1.1, 4.4, 5.5}),
 		},
 		{
 			name: "delete element from multitype slice",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{"a", 1, true, 2.2}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{"a", 1, true, 2.2}), nil
+			}),
 			index:    getIntGetter(2),
 			length:   nilOptional,
 			expected: getSlice(t, []any{"a", 1, 2.2}),
 		},
 		{
 			name: "delete from multi slice",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getMultiSlice(t, []any{
-						[]string{"a", "b", "c"},
-						[]any{"a", 1, true},
-						[]int64{1, 2, 3},
-						[]bool{true, false, true},
-						[]float64{1.1, 2.2, 3.3},
-					}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getMultiSlice(t, []any{
+					[]string{"a", "b", "c"},
+					[]any{"a", 1, true},
+					[]int64{1, 2, 3},
+					[]bool{true, false, true},
+					[]float64{1.1, 2.2, 3.3},
+				}), nil
+			}),
 			index:  getIntGetter(1),
 			length: nilOptional,
 			expected: getMultiSlice(t, []any{
@@ -249,30 +229,24 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "delete all elements",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, "a", 1.1, true, "hello"}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, "a", 1.1, true, "hello"}), nil
+			}),
 			index:    getIntGetter(0),
 			length:   ottl.NewTestingOptional(getIntGetter(5)),
 			expected: getSlice(t, []any{}),
 		},
 		{
 			name: "target is pcommon.Value slice",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					val := pcommon.NewValueSlice()
-					slice := val.Slice()
-					slice.AppendEmpty().SetInt(10)
-					slice.AppendEmpty().SetInt(20)
-					slice.AppendEmpty().SetInt(30)
-					slice.AppendEmpty().SetInt(40)
-					return val, nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				val := pcommon.NewValueSlice()
+				slice := val.Slice()
+				slice.AppendEmpty().SetInt(10)
+				slice.AppendEmpty().SetInt(20)
+				slice.AppendEmpty().SetInt(30)
+				slice.AppendEmpty().SetInt(40)
+				return val, nil
+			}),
 			index:    getIntGetter(2),
 			length:   nilOptional,
 			expected: getSlice(t, []any{10, 20, 40}),
@@ -295,31 +269,25 @@ func TestDelete(t *testing.T) {
 func TestDelete_Errors(t *testing.T) {
 	errorTestCases := []struct {
 		name        string
-		target      ottl.GetSetter[any]
+		target      ottl.PSliceGetSetter[any]
 		index       ottl.IntGetter[any]
 		length      ottl.Optional[ottl.IntGetter[any]]
 		expectedErr string
 	}{
 		{
 			name: "cannot get target",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return nil, errors.New("cannot get target")
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return nil, errors.New("cannot get target")
+			}),
 			index:       getIntGetter(0),
 			length:      nilOptional,
 			expectedErr: "cannot get target",
 		},
 		{
 			name: "index is not int",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, 1, 2}), nil
+			}),
 			index: ottl.StandardIntGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return "invalid_index", nil
@@ -330,12 +298,9 @@ func TestDelete_Errors(t *testing.T) {
 		},
 		{
 			name: "length is not int",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, 1, 2}), nil
+			}),
 			index: getIntGetter(0),
 			length: ottl.NewTestingOptional[ottl.IntGetter[any]](ottl.StandardIntGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
@@ -346,73 +311,55 @@ func TestDelete_Errors(t *testing.T) {
 		},
 		{
 			name: "target is not a slice",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return "not_a_slice", nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return "not_a_slice", nil
+			}),
 			index:       getIntGetter(0),
 			length:      nilOptional,
-			expectedErr: "target must be a slice type, got string",
+			expectedErr: "expected pcommon.Slice but got string",
 		},
 		{
-			name: "target is pcommon.Value but not slice",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					val := pcommon.NewValueInt(42)
-					return val, nil
-				},
-				Setter: setter,
-			},
+			name: "target is pcommon.Value int but not slice",
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				val := pcommon.NewValueInt(42)
+				return val, nil
+			}),
 			index:       getIntGetter(0),
 			length:      nilOptional,
-			expectedErr: "target must be a slice type, got pcommon.Value",
+			expectedErr: "expected pcommon.Slice but got Int",
 		},
 		{
 			name: "index out of bounds",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, 1, 2}), nil
+			}),
 			index:       getIntGetter(5),
 			length:      nilOptional,
 			expectedErr: "index 5 out of bounds",
 		},
 		{
 			name: "length is non-positive",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2, 3}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, 1, 2, 3}), nil
+			}),
 			index:       getIntGetter(1),
 			length:      ottl.NewTestingOptional(getIntGetter(0)),
 			expectedErr: "length must be positive, got 0",
 		},
 		{
 			name: "deletion range out of bounds",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2, 3}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, 1, 2, 3}), nil
+			}),
 			index:       getIntGetter(2),
 			length:      ottl.NewTestingOptional(getIntGetter(5)),
 			expectedErr: "deletion range [2:7] out of bounds",
 		},
 		{
 			name: "negative index",
-			target: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return getSlice(t, []any{0, 1, 2, 3}), nil
-				},
-				Setter: setter,
-			},
+			target: sliceGetSetter(func(_ context.Context, _ any) (any, error) {
+				return getSlice(t, []any{0, 1, 2, 3}), nil
+			}),
 			index:       getIntGetter(-1),
 			length:      nilOptional,
 			expectedErr: "index -1 out of bounds",
