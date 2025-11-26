@@ -54,9 +54,9 @@ The `awslambdareceiver` operates as follows:
 
 The following receiver configuration parameters are supported.
 
-| Name                  | Description                                                                                                                                | Default     | Required |
-|:----------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|----------|
-| `s3_encoding`         | Name of the encoding extension to use for S3 objects                                                                                       | "awslogs_encoding" | Optional |
+| Name          | Description                                                                                                                                                                                        | Required |
+|:--------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `s3_encoding` | Name of the encoding extension to use for S3 objects. For example, `awslogs_encoding` to use AWS logs encoding extensions. When unspecified, falls back to CloudWatch subscription filter handling | Optional |
 
 ### Example Configuration
 
@@ -157,7 +157,10 @@ service:
       exporters: [otlphttp]
 ```
 
-In this example, `awslambdareceiver` is invoked by a CloudWatch Logs subscription filter. The receiver automatically parses the CloudWatch Logs data using the default `awslogs_encoding` extension with cloudwatch format. No explicit encoding configuration is needed. The parsed logs are then sent to an OTLP listener using the `otlphttp` exporter.
+In this example, `awslambdareceiver` is invoked by a CloudWatch Logs subscription filter. 
+`s3_encoding` configuration is omitted since it is not needed for CloudWatch Logs.
+The receiver automatically parses the CloudWatch Logs data using the default `awslogs_encoding` extension with cloudwatch format. 
+No explicit encoding configuration is needed. The parsed logs are then sent to an OTLP listener using the `otlphttp` exporter.
 
 ## Supported Data Types
 

@@ -5,6 +5,7 @@ package awslambdareceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,9 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
-type s3EventConsumerFunc[T any] func(context.Context, events.S3EventRecord, T) error
-
-type unmarshalFunc[T any] func([]byte) (T, error)
+type (
+	unmarshalFunc[T any]       func([]byte) (T, error)
+	s3EventConsumerFunc[T any] func(context.Context, events.S3EventRecord, T) error
+)
 
 type lambdaEventHandler interface {
 	handlerType() eventType
@@ -113,6 +115,53 @@ func (*s3Handler[T]) parseEvent(raw json.RawMessage) (event events.S3EventRecord
 	}
 
 	return message.Records[0], nil
+}
+
+// cwLogsSubscriptionHandler is specialized in CloudWatch log stream subscription filter events
+type cwLogsSubscriptionHandler struct {
+	logger    *zap.Logger
+	unmarshal unmarshalFunc[plog.Logs]
+	consumer  func(context.Context, plog.Logs) error
+}
+
+func newCWLogsSubscriptionHandler(
+	baseLogger *zap.Logger,
+	unmarshal unmarshalFunc[plog.Logs],
+	consumer func(context.Context, plog.Logs) error,
+) *cwLogsSubscriptionHandler {
+	return &cwLogsSubscriptionHandler{
+		logger:    baseLogger.Named("cw-logs-subscription"),
+		unmarshal: unmarshal,
+		consumer:  consumer,
+	}
+}
+
+func (*cwLogsSubscriptionHandler) handlerType() eventType {
+	return cwEvent
+}
+
+func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMessage) error {
+	var log events.CloudwatchLogsEvent
+	if err := gojson.Unmarshal(event, &log); err != nil {
+		return fmt.Errorf("failed to unmarshal cloudwatch event log: %w", err)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(log.AWSLogs.Data)
+	if err != nil {
+		return fmt.Errorf("failed to decode data from cloudwatch logs event: %w", err)
+	}
+
+	data, err := c.unmarshal(decoded)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal logs: %w", err)
+	}
+
+	if err := c.consumer(ctx, data); err != nil {
+		// consumer errors are marked for retrying
+		return consumererror.NewRetryableError(err)
+	}
+
+	return nil
 }
 
 // setObservedTimestampForAllLogs adds observedTimestamp to all logs

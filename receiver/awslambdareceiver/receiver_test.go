@@ -5,6 +5,7 @@ package awslambdareceiver
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -260,7 +261,15 @@ func TestLoadLogsHandler(t *testing.T) {
 		isErr               bool
 	}{
 		{
-			name:       "Prioritize ID based loading - success",
+			name: "Default to CW Subscription filter",
+			factoryMock: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
+				return &mockExtensionWithPLogUnmarshaler{}, nil
+			},
+			isErr:               false,
+			expectedHandlerType: reflect.TypeOf(&cwLogsSubscriptionHandler{}),
+		},
+		{
+			name:       "Logs handler based on S3 encoding",
 			s3Encoding: "my_encoding",
 			hostMock: func() map[component.ID]component.Component {
 				id := component.NewID(component.MustNewType("my_encoding"))
@@ -273,7 +282,7 @@ func TestLoadLogsHandler(t *testing.T) {
 			expectedHandlerType: reflect.TypeFor[*s3Handler[plog.Logs]](),
 		},
 		{
-			name:       "Error if handler loading fails",
+			name:       "Error if no matching S3 encoding extension found",
 			s3Encoding: "custom_encoding",
 			hostMock: func() map[component.ID]component.Component {
 				// no registered extensions matching s3Encoding
@@ -456,6 +465,50 @@ func TestExtractFirstKey(t *testing.T) {
 	}
 }
 
+func TestLoadSubFilterLogUnmarshaler(t *testing.T) {
+	tests := []struct {
+		name        string
+		mockFactory func(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error)
+		expectedErr string
+	}{
+		{
+			name: "successful_case",
+			mockFactory: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
+				return &mockExtensionWithPLogUnmarshaler{}, nil
+			},
+		},
+		{
+			name: "create_extension_error",
+			mockFactory: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
+				return nil, errors.New("mock factory creation error")
+			},
+			expectedErr: "failed to create the extension",
+		},
+		{
+			name: "invalid_unmarshaler",
+			mockFactory: func(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
+				return &mockExtension{}, nil
+			},
+			expectedErr: "does not implement plog.Unmarshaler",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockFactory := &mockExtFactory{
+				CreateFunc: test.mockFactory,
+			}
+
+			_, errP := loadSubFilterLogUnmarshaler(t.Context(), mockFactory)
+			if test.expectedErr != "" {
+				require.ErrorContains(t, errP, test.expectedErr)
+			} else {
+				require.NoError(t, errP)
+			}
+		})
+	}
+}
+
 func TestDetectTriggerType(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -493,6 +546,14 @@ func TestDetectTriggerType(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+type mockExtFactory struct {
+	CreateFunc func(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error)
+}
+
+func (m *mockExtFactory) Create(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error) {
+	return m.CreateFunc(ctx, settings, config)
 }
 
 type mockExtensionWithPLogUnmarshaler struct {
