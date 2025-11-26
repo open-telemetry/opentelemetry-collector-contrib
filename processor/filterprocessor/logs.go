@@ -49,9 +49,9 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 		}
 		var errors error
 		for _, cs := range cfg.LogConditions {
-			metricConsumer, parseErr := pc.ParseContextConditions(cs)
+			logConsumer, parseErr := pc.ParseContextConditions(cs)
 			errors = multierr.Append(errors, parseErr)
-			flp.consumers = append(flp.consumers, metricConsumer)
+			flp.consumers = append(flp.consumers, logConsumer)
 		}
 		if errors != nil {
 			return nil, errors

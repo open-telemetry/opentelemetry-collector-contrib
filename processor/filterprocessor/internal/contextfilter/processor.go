@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/multierr"
@@ -79,6 +80,23 @@ func (r resourceConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	return condErr
 }
 
+func (r resourceConditions) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	var condErr error
+	pd.ResourceProfiles().RemoveIf(func(rprofiles pprofile.ResourceProfiles) bool {
+		tCtx := ottlresource.NewTransformContext(rprofiles.Resource(), rprofiles)
+		condition, err := r.Eval(ctx, tCtx)
+		if err != nil {
+			condErr = multierr.Append(condErr, err)
+			return false
+		}
+		return condition
+	})
+	if pd.ResourceProfiles().Len() == 0 {
+		return processorhelper.ErrSkipProcessingData
+	}
+	return condErr
+}
+
 var _ baseContext = &scopeConditions{}
 
 type scopeConditions struct {
@@ -144,6 +162,26 @@ func (s scopeConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		return rlogs.ScopeLogs().Len() == 0
 	})
 	if ld.ResourceLogs().Len() == 0 {
+		return processorhelper.ErrSkipProcessingData
+	}
+	return condErr
+}
+
+func (s scopeConditions) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	var condErr error
+	pd.ResourceProfiles().RemoveIf(func(rprofiles pprofile.ResourceProfiles) bool {
+		rprofiles.ScopeProfiles().RemoveIf(func(sprofiles pprofile.ScopeProfiles) bool {
+			tCtx := ottlscope.NewTransformContext(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
+			condition, err := s.Eval(ctx, tCtx)
+			if err != nil {
+				condErr = multierr.Append(condErr, err)
+				return false
+			}
+			return condition
+		})
+		return rprofiles.ScopeProfiles().Len() == 0
+	})
+	if pd.ResourceProfiles().Len() == 0 {
 		return processorhelper.ErrSkipProcessingData
 	}
 	return condErr

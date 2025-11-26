@@ -990,6 +990,18 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "context_inferred_profile"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				ProfileConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`profile.attributes["test"] == "pass"`},
+						ErrorMode:  "",
+					},
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "context_inferred_with_error_mode"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
@@ -1022,23 +1034,27 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "mix_trace_conditions"),
-			errorMessage: `cannot use context inferred trace conditions "trace_conditions" and the settings "traces.span", "traces.spanevent" at the same time`,
+			errorMessage: `cannot use context inferred trace conditions "trace_conditions" and the settings "traces.resource", "traces.span", "traces.spanevent" at the same time`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "mix_metric_conditions"),
-			errorMessage: `cannot use context inferred metric conditions "metric_conditions" and the settings "metrics.metric", "metrics.datapoint", "metrics.include", "metrics.exclude" at the same time`,
+			errorMessage: `cannot use context inferred metric conditions "metric_conditions" and the settings "metrics.resource", "metrics.metric", "metrics.datapoint", "metrics.include", "metrics.exclude" at the same time`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "mix_log_conditions"),
-			errorMessage: `cannot use context inferred log conditions "log_conditions" and the settings "logs.log", "logs.include", "logs.exclude" at the same time`,
+			errorMessage: `cannot use context inferred log conditions "log_conditions" and the settings "logs.resource", "logs.log", "logs.include", "logs.exclude" at the same time`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "mix_profile_conditions"),
+			errorMessage: `cannot use context inferred profile conditions "profile_conditions" and the settings "profiles.resource", "profiles.profile" at the same time`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "mix_metric_conditions_with_include"),
-			errorMessage: `cannot use context inferred metric conditions "metric_conditions" and the settings "metrics.metric", "metrics.datapoint", "metrics.include", "metrics.exclude" at the same time`,
+			errorMessage: `cannot use context inferred metric conditions "metric_conditions" and the settings "metrics.resource", "metrics.metric", "metrics.datapoint", "metrics.include", "metrics.exclude" at the same time`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "mix_log_conditions_with_exclude"),
-			errorMessage: `cannot use context inferred log conditions "log_conditions" and the settings "logs.log", "logs.include", "logs.exclude" at the same time`,
+			errorMessage: `cannot use context inferred log conditions "log_conditions" and the settings "logs.resource", "logs.log", "logs.include", "logs.exclude" at the same time`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_trace"),
@@ -1050,6 +1066,10 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_log"),
+			errorMessage: `condition has invalid syntax: 1:11: unexpected token "condition" (expected <opcomparison> Value)`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_profile"),
 			errorMessage: `condition has invalid syntax: 1:11: unexpected token "condition" (expected <opcomparison> Value)`,
 		},
 	}

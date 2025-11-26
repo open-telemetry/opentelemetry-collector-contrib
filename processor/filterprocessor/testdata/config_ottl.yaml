@@ -84,23 +84,23 @@ filter/context_inferred_trace:
   trace_conditions:
     - conditions:
         - span.attributes["test"] == "pass"
-
 filter/context_inferred_metric:
   metric_conditions:
     - conditions:
         - metric.name == "pass"
-
 filter/context_inferred_log:
   log_conditions:
     - conditions:
         - log.attributes["test"] == "pass"
-
+filter/context_inferred_profile:
+  profile_conditions:
+    - conditions:
+        - profile.attributes["test"] == "pass"
 filter/context_inferred_with_error_mode:
   error_mode: ignore
   trace_conditions:
     - conditions:
         - span.attributes["test"] == "pass"
-
 filter/context_inferred_multiple_conditions:
   trace_conditions:
     - conditions:
@@ -153,7 +153,14 @@ filter/mix_log_conditions_with_exclude:
       match_type: strict
       bodies:
         - test_body
-
+        -
+filter/mix_profile_conditions:
+  profile_conditions:
+    - conditions:
+        - profile.attributes["test"] == "pass"
+  profiles:
+    profile:
+      - attributes["test"] == "pass"
 # Bad syntax cases for context inferred conditions
 filter/bad_syntax_context_inferred_trace:
   trace_conditions:
@@ -167,5 +174,9 @@ filter/bad_syntax_context_inferred_metric:
 
 filter/bad_syntax_context_inferred_log:
   log_conditions:
+    - conditions:
+        - malformed condition without quotes
+filter/bad_syntax_context_inferred_profile:
+  profile_conditions:
     - conditions:
         - malformed condition without quotes

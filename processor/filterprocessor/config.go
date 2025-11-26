@@ -53,6 +53,8 @@ type Config struct {
 
 	TraceConditions []common.ContextConditions `mapstructure:"trace_conditions"`
 
+	ProfileConditions []common.ContextConditions `mapstructure:"profile_conditions"`
+
 	resourceFunctions  map[string]ottl.Factory[ottlresource.TransformContext]
 	dataPointFunctions map[string]ottl.Factory[ottldatapoint.TransformContext]
 	logFunctions       map[string]ottl.Factory[ottllog.TransformContext]
@@ -404,18 +406,21 @@ func (cfg *Config) validateInferredContextConfig() error {
 	// Remove the old format.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41176
 	if cfg.TraceConditions != nil && (cfg.Traces.ResourceConditions != nil || cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) {
-		return errors.New(`cannot use context inferred trace conditions "trace_conditions" and the settings "traces.span", "traces.spanevent" at the same time`)
+		return errors.New(`cannot use context inferred trace conditions "trace_conditions" and the settings "traces.resource", "traces.span", "traces.spanevent" at the same time`)
 	}
 	if cfg.MetricConditions != nil && (cfg.Metrics.ResourceConditions != nil || cfg.Metrics.MetricConditions != nil ||
 		cfg.Metrics.DataPointConditions != nil ||
 		cfg.Metrics.Include != nil ||
 		cfg.Metrics.Exclude != nil) {
-		return errors.New(`cannot use context inferred metric conditions "metric_conditions" and the settings "metrics.metric", "metrics.datapoint", "metrics.include", "metrics.exclude" at the same time`)
+		return errors.New(`cannot use context inferred metric conditions "metric_conditions" and the settings "metrics.resource", "metrics.metric", "metrics.datapoint", "metrics.include", "metrics.exclude" at the same time`)
 	}
 	if cfg.LogConditions != nil && (cfg.Logs.ResourceConditions != nil || cfg.Logs.LogConditions != nil ||
 		cfg.Logs.Include != nil ||
 		cfg.Logs.Exclude != nil) {
-		return errors.New(`cannot use context inferred log conditions "log_conditions" and the settings "logs.log", "logs.include", "logs.exclude" at the same time`)
+		return errors.New(`cannot use context inferred log conditions "log_conditions" and the settings "logs.resource", "logs.log", "logs.include", "logs.exclude" at the same time`)
+	}
+	if cfg.ProfileConditions != nil && (cfg.Profiles.ResourceConditions != nil || cfg.Profiles.ProfileConditions != nil) {
+		return errors.New(`cannot use context inferred profile conditions "profile_conditions" and the settings "profiles.resource", "profiles.profile" at the same time`)
 	}
 
 	var errors error
@@ -452,6 +457,19 @@ func (cfg *Config) validateInferredContextConfig() error {
 			return err
 		}
 		for _, cs := range cfg.LogConditions {
+			_, err = pc.ParseContextConditions(cs)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+			}
+		}
+	}
+
+	if len(cfg.ProfileConditions) > 0 {
+		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(filterottl.StandardProfileFuncs()), common.WithProfileErrorMode(cfg.ErrorMode))
+		if err != nil {
+			return err
+		}
+		for _, cs := range cfg.ProfileConditions {
 			_, err = pc.ParseContextConditions(cs)
 			if err != nil {
 				errors = multierr.Append(errors, err)
