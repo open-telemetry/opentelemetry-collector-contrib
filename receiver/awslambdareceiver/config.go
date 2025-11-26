@@ -15,10 +15,10 @@ const (
 type Config struct {
 	// S3Encoding identifies the encoding of the S3 objects that trigger the Lambda.
 	//
-	// If S3Encoding is unspecified, the receiver will return an error for any S3 event notifications.
+	// If S3 data is in multiple formats (ex:- VPC flow logs, CloudTrail logs), you should deploy
+	// separate Lambda functions with specific extension configurations.
 	//
-	// If you have objects with multiple different encodings to handle, you should deploy
-	// separate Lambda functions with different configurations.
+	// If unspecified, the receiver falls back to work with CloudWatch Log subscription encoding extension.
 	S3Encoding string `mapstructure:"s3_encoding"`
 
 	_ struct{} // Prevent unkeyed literal initialization

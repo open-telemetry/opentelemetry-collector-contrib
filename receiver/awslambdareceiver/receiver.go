@@ -17,11 +17,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
@@ -92,8 +94,7 @@ func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metric
 	}, nil
 }
 
-// Start registers the main handler function for
-// when lambda is triggered
+// Start registers the main handler function that get executed when lambda is triggered
 func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) error {
 	// Verify we're running in a Lambda environment
 	if os.Getenv("AWS_EXECUTION_ENV") == "" || !strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") {
@@ -165,9 +166,14 @@ func newLogsHandler(
 	next consumer.Logs,
 	s3Provider internal.S3Provider,
 ) (lambdaEventHandler, error) {
-	// If S3Encoding is not set, return an error
+	// If S3Encoding is not set, then we consider this to be CloudWatch subscription mode
 	if cfg.S3Encoding == "" {
-		return nil, errors.New("s3_encoding is required for logs stored in S3")
+		unmarshaler, err := loadSubFilterLogUnmarshaler(ctx, awslogsencodingextension.NewFactory())
+		if err != nil {
+			return nil, err
+		}
+
+		return newCWLogsSubscriptionHandler(set.Logger, unmarshaler.UnmarshalLogs, next.ConsumeLogs), nil
 	}
 
 	encodingExtension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.S3Encoding, "logs")
@@ -213,7 +219,7 @@ func newMetricsHandler(
 	return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricsConsumer), nil
 }
 
-// loadEncodingExtension tries to load an available extension for the given encoding.
+// loadEncodingExtension attempts to load an available extension for the given encoding.
 func loadEncodingExtension[T any](host component.Host, encoding, signalType string) (T, error) {
 	var zero T
 	var extensionID component.ID
@@ -230,6 +236,36 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 		return zero, fmt.Errorf("extension %q is not a %s unmarshaler", encoding, signalType)
 	}
 	return unmarshaler, nil
+}
+
+type extensionFactory interface {
+	Create(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error)
+}
+
+// loadSubFilterLogUnmarshaler manually loads the encoding extension for cloudwatch subscription filter unmarshaler
+func loadSubFilterLogUnmarshaler(ctx context.Context, logsEncodingFactory extensionFactory) (plog.Unmarshaler, error) {
+	var extensionID component.ID
+	err := extensionID.UnmarshalText([]byte(awsLogsEncoding))
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal identifier: %w", err)
+	}
+
+	// Create the extension using the factory
+	ext, err := logsEncodingFactory.Create(ctx, extension.Settings{ID: extensionID}, &awslogsencodingextension.Config{
+		Format: "cloudwatch",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the extension: %w", err)
+	}
+
+	// Assert that the extension implements plog.Unmarshaler
+	subscriptionFilterLogUnmarshaler, ok := ext.(plog.Unmarshaler)
+	if !ok {
+		return nil, fmt.Errorf("extension %q does not implement plog.Unmarshaler", extensionID.String())
+	}
+
+	// Return the unmarshaler
+	return subscriptionFilterLogUnmarshaler, nil
 }
 
 // detectTriggerType is a helper to derive the eventType based on the payload content.
