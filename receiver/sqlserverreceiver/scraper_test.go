@@ -401,15 +401,15 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	procedureId := "0"
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, totalElapsedTime, 846)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, rowsReturned, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, logicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, logicalWrites, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, physicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, totalWorkerTime, 845)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, totalGrant, 1)
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockClient{
 		instanceName:        scraper.config.InstanceName,
@@ -461,15 +461,15 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	procedureId := "0"
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, totalElapsedTime, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, rowsReturned, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, logicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, logicalWrites, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, physicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, totalWorkerTime, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureId, totalGrant, 1)
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockInvalidClient{
 		mockClient: mockClient{

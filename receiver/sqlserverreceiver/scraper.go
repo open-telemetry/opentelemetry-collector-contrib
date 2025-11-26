@@ -640,7 +640,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		dbSystemNameVal = "microsoft.sql_server"
 
 		// stored procedure columns
-		storedProcedureId   = "procedure_id"
+		storedProcedureID   = "procedure_id"
 		storedProcedureName = "procedure_name"
 	)
 
@@ -649,7 +649,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	rows, err := s.client.QueryRows(
 		ctx,
 		sql.Named("lookbackTime", -int(s.config.EffectiveLookbackTime().Seconds())),
-		sql.Named("maxSampleCount", s.config.MaxQuerySampleCount),
+		sql.Named("maxSampleCount", maxQuerySampleCount),
 	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -664,7 +664,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	for i, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
-		planId := row[storedProcedureId] // defaulted to '0' if not present
+		planId := row[storedProcedureID] // defaulted to '0' if not present
 
 		elapsedTimeMicrosecond, err := strconv.ParseInt(row[totalElapsedTime], 10, 64)
 		if err != nil {
@@ -699,7 +699,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
-		procId := row[storedProcedureId]
+		procId := row[storedProcedureID]
 
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
@@ -788,7 +788,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			s.config.Server,
 			int64(s.config.Port),
 			dbSystemNameVal,
-			row[storedProcedureId],
+			row[storedProcedureID],
 			row[storedProcedureName],
 		)
 	}
@@ -813,14 +813,14 @@ func (s *sqlServerScraperHelper) retrieveValue(
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
 // (1) returns true if the key is cached before
 // (2) returns positive value if the value is larger than the cached value
-func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, procedureId, column string, val int64) (bool, int64) {
+func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, procedureID, column string, val int64) (bool, int64) {
 	if val < 0 {
 		return false, 0
 	}
 
 	key := queryHash + "-" + queryPlanHash + "-" + column
-	if procedureId != "0" { // procedureId is '0' when not a stored procedure
-		key = procedureId + "-" + key
+	if procedureID != "0" { // procedureID is '0' when not a stored procedure
+		key = procedureID + "-" + key
 	}
 	cached, ok := s.cache.Get(key)
 	if !ok {
@@ -940,7 +940,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const waitType = "wait_type"
 	const writes = "writes"
 	// stored procedure columns
-	const storedProcedureId = "procedure_id"
+	const storedProcedureID = "procedure_id"
 	const storedProcedureName = "procedure_name"
 
 	rows, err := s.client.QueryRows(
@@ -1035,8 +1035,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		} else {
 			clientAddressVal = row[clientAddress]
 		}
-		if s.logger.Level() == zap.DebugLevel && row[storedProcedureId] != "0" {
-			s.logger.Debug("Stored proc data", zap.String("id", row[storedProcedureId]), zap.String("name", row[storedProcedureName]))
+		if s.logger.Level() == zap.DebugLevel && row[storedProcedureID] != "0" {
+			s.logger.Debug("Stored proc data", zap.String("id", row[storedProcedureID]), zap.String("name", row[storedProcedureName]))
 		}
 		s.lb.RecordDbServerQuerySampleEvent(
 			contextFromQuery,
@@ -1053,7 +1053,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
-			row[storedProcedureId], row[storedProcedureName],
+			row[storedProcedureID], row[storedProcedureName],
 		)
 
 		if !resourcesAdded {
