@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -95,8 +96,8 @@ func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metric
 // when lambda is triggered
 func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) error {
 	// Verify we're running in a Lambda environment
-	if os.Getenv("_LAMBDA_SERVER_PORT") == "" || os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
-		return errors.New("receiver must be used in an AWS Lambda environment: required environment variables _LAMBDA_SERVER_PORT and AWS_LAMBDA_RUNTIME_API are not set")
+	if os.Getenv("AWS_EXECUTION_ENV") == "" || !strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") {
+		return errors.New("awslambdareceiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
 	}
 
 	handler, err := a.newHandler(ctx, host, a.s3Provider)
