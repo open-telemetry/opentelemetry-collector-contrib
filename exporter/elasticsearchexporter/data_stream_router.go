@@ -15,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
-// var receiverRegex = regexp.MustCompile(`/receiver/(\w+receiver)|/connector/(\w+connector)`)
 var componentsRegex = []*regexp.Regexp{
 	regexp.MustCompile(`/receiver/(\w+receiver)`),
 	regexp.MustCompile(`/connector/(\w+connector)`),
