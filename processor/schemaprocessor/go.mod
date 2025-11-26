@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/otel/schema v0.0.13
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require (
