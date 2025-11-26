@@ -198,6 +198,10 @@ When submitting a component to the community, consider breaking it down into sep
   * Please add the component
     to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
+> [!IMPORTANT]  
+> An 'in development' component that does not make progress towards alpha stability it may be
+> considered unmaintained and may be removed.
+
 ## Releasing New Components
 
 After a component has been merged it must be added to the
