@@ -199,7 +199,7 @@ When submitting a component to the community, consider breaking it down into sep
 
 > [!IMPORTANT]  
 > An 'in development' component that does not make progress towards alpha stability it may be
-> considered unmaintained and may be removed.
+> considered [unmaintained](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#unmaintained) and may be removed.
 
 ## Releasing New Components
 
