@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redac
 go 1.24.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.8
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.9
 	github.com/grafana/clusterurl v0.2.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.1-0.20251120204106-2e9c82787618
@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorhelper v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/processor/processortest v0.140.1-0.20251120204106-2e9c82787618
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.45.0
 )
 
