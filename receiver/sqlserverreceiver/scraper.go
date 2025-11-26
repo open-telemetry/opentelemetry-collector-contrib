@@ -699,7 +699,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
-		procId := row[storedProcedureID]
+		procID := row[storedProcedureID]
 
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
@@ -713,25 +713,25 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		})
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
-		cached, executionCountVal := s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, executionCount, executionCountVal.(int64))
+		cached, executionCountVal := s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, executionCount, executionCountVal.(int64))
 		if !cached {
 			executionCountVal = int64(0)
 		}
 
 		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt)
-		cached, logicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, logicalReads, logicalReadsVal.(int64))
+		cached, logicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, logicalReads, logicalReadsVal.(int64))
 		if !cached {
 			logicalReadsVal = int64(0)
 		}
 
 		logicalWritesVal := s.retrieveValue(row, logicalWrites, &errs, retrieveInt)
-		cached, logicalWritesVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, logicalWrites, logicalWritesVal.(int64))
+		cached, logicalWritesVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, logicalWrites, logicalWritesVal.(int64))
 		if !cached {
 			logicalWritesVal = int64(0)
 		}
 
 		physicalReadsVal := s.retrieveValue(row, physicalReads, &errs, retrieveInt)
-		cached, physicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, physicalReads, physicalReadsVal.(int64))
+		cached, physicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, physicalReads, physicalReadsVal.(int64))
 		if !cached {
 			physicalReadsVal = int64(0)
 		}
@@ -741,19 +741,19 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		})
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
-		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, rowsReturned, rowsReturnedVal.(int64))
+		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, rowsReturned, rowsReturnedVal.(int64))
 		if !cached {
 			rowsReturnedVal = int64(0)
 		}
 
 		totalGrantVal := s.retrieveValue(row, totalGrant, &errs, retrieveInt)
-		cached, totalGrantVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, totalGrant, totalGrantVal.(int64))
+		cached, totalGrantVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, totalGrant, totalGrantVal.(int64))
 		if !cached {
 			totalGrantVal = int64(0)
 		}
 
 		totalWorkerTimeVal := s.retrieveValue(row, totalWorkerTime, &errs, retrieveInt)
-		cached, totalWorkerTimeVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procId, totalWorkerTime, totalWorkerTimeVal.(int64))
+		cached, totalWorkerTimeVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, totalWorkerTime, totalWorkerTimeVal.(int64))
 		totalWorkerTimeInSecVal := float64(0)
 		if cached {
 			totalWorkerTimeInSecVal = float64(totalWorkerTimeVal.(int64)) / 1_000_000
