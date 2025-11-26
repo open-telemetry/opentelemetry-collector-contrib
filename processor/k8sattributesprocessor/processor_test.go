@@ -629,7 +629,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				Name: "k8s.pod.ip",
 				Sources: []kube.AssociationSource{
 					{
 						From: "resource_attribute",
@@ -638,7 +637,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 				},
 			},
 			{
-				Name: "k8s.pod.ip",
 				Sources: []kube.AssociationSource{
 					{
 						From: "resource_attribute",
@@ -647,7 +645,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 				},
 			},
 			{
-				Name: "k8s.pod.ip",
 				Sources: []kube.AssociationSource{
 					{
 						From: "resource_attribute",
@@ -1085,7 +1082,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1126,7 +1122,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1164,7 +1159,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1214,7 +1208,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1387,7 +1380,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1423,7 +1415,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1506,7 +1497,6 @@ func TestProcessorPicksUpPassthroughPodIp(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				Name: "k8s.pod.ip",
 				Sources: []kube.AssociationSource{
 					{
 						From: "resource_attribute",
