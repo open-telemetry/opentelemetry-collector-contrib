@@ -50,6 +50,6 @@ func (r *rateLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *sam
 	return samplingpolicy.NotSampled, nil
 }
 
-func (r *rateLimiting) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, _ ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+func (*rateLimiting) EarlyEvaluate(context.Context, pcommon.TraceID, ptrace.ResourceSpans, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	return samplingpolicy.Unspecified, nil
 }

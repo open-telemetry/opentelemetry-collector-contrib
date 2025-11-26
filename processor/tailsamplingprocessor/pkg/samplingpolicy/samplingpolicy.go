@@ -54,7 +54,7 @@ type Evaluator interface {
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
 
 	// EarlyEvaluate uses partial traces (newData) in order to make a sampling
-	// decison. Any implementations must only return Sampled, NotSampled,
+	// decision. Any implementations must only return Sampled, NotSampled,
 	// Dropped, or Unspecified decisions. Any other values will be treated as
 	// Unspecified.
 	//

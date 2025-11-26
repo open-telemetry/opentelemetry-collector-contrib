@@ -46,6 +46,6 @@ func (c *Drop) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *sam
 	return samplingpolicy.Dropped, nil
 }
 
-func (c *Drop) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, _ ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+func (*Drop) EarlyEvaluate(context.Context, pcommon.TraceID, ptrace.ResourceSpans, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	return samplingpolicy.Unspecified, nil
 }

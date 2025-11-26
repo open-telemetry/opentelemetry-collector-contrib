@@ -136,6 +136,6 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 	return samplingpolicy.NotSampled, nil
 }
 
-func (c *Composite) EarlyEvaluate(_ context.Context, _ pcommon.TraceID, _ ptrace.ResourceSpans, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+func (*Composite) EarlyEvaluate(context.Context, pcommon.TraceID, ptrace.ResourceSpans, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	return samplingpolicy.Unspecified, nil
 }
