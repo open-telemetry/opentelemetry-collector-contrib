@@ -1720,12 +1720,65 @@ func needContainerAttributes(rules ExtractionRules) bool {
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
-	if replicaset, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	switch rs := obj.(type) {
+	case *apps_v1.ReplicaSet:
+		c.addOrUpdateReplicaSetTyped(rs)
+	case *meta_v1.PartialObjectMetadata:
+		c.addOrUpdateReplicaSetMeta(rs)
+	case cache.DeletedFinalStateUnknown:
+		if inner, ok := rs.Obj.(*apps_v1.ReplicaSet); ok {
+			c.addOrUpdateReplicaSetTyped(inner)
+		} else if inner, ok := rs.Obj.(*meta_v1.PartialObjectMetadata); ok {
+			c.addOrUpdateReplicaSetMeta(inner)
+		}
+	default:
+		c.logger.Warn("object received was not ReplicaSet", zap.Any("obj", obj))
 	}
+}
+
+func (c *WatchClient) addOrUpdateReplicaSetTyped(rs *apps_v1.ReplicaSet) {
+	newRS := &ReplicaSet{
+		Name:      rs.GetName(),
+		Namespace: rs.GetNamespace(),
+		UID:       string(rs.GetUID()),
+	}
+	for _, owner := range rs.OwnerReferences {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+			newRS.Deployment = Deployment{
+				Name: owner.Name,
+				UID:  string(owner.UID),
+			}
+			break
+		}
+	}
+	c.m.Lock()
+	if rs.GetUID() != "" {
+		c.ReplicaSets[string(rs.GetUID())] = newRS
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateReplicaSetMeta(rs *meta_v1.PartialObjectMetadata) {
+	newRS := &ReplicaSet{
+		Name:      rs.GetName(),
+		Namespace: rs.GetNamespace(),
+		UID:       string(rs.GetUID()),
+	}
+	for _, owner := range rs.GetOwnerReferences() {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+			newRS.Deployment = Deployment{
+				Name: owner.Name,
+				UID:  string(owner.UID),
+			}
+			break
+		}
+	}
+
+	c.m.Lock()
+	if uid := rs.GetUID(); uid != "" {
+		c.ReplicaSets[string(uid)] = newRS
+	}
+	c.m.Unlock()
 }
 
 func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
