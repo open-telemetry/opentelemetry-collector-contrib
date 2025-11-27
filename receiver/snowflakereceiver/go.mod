@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.140.1
-	github.com/snowflakedb/gosnowflake v1.17.0
+	github.com/snowflakedb/gosnowflake v1.18.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251120204106-2e9c82787618
