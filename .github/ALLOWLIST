@@ -31,5 +31,6 @@ internal/common
 
 receiver/bigipreceiver
 receiver/carbonreceiver
+receiver/k8slogreceiver
 
 # End unmaintained components list
