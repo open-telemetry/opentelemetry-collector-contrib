@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
@@ -291,7 +292,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
 			ctx := t.Context()
-			require.NoError(t, mgp.Start(ctx, nil))
+			require.NoError(t, mgp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
@@ -537,7 +538,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.True(t, mgp.Capabilities().MutatesData)
-			require.NoError(t, mgp.Start(t.Context(), nil))
+			require.NoError(t, mgp.Start(t.Context(), componenttest.NewNopHost()))
 
 			inputMetrics, err := golden.ReadMetrics(filepath.Join("testdata", testCase.testDir, "metrics_input.yaml"))
 			assert.NoError(t, err)
