@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
@@ -148,6 +149,7 @@ func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 		debugexporter.NewFactory(),
 	)
 	require.NoError(tb, err)
+	factories.Telemetry = otelconftelemetry.NewFactory()
 	return &recreatableOtelCol{
 		tempDir:   testutil.TempDir(tb),
 		factories: factories,
