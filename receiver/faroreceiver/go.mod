@@ -5,12 +5,12 @@ go 1.24.0
 require (
 	github.com/grafana/faro/pkg/go v0.0.0-20250314155512-06a06da3b8bc
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component/componentstatus v0.140.1-0.20251120204106-2e9c82787618
-	go.opentelemetry.io/collector/config/confighttp v0.140.1-0.20251120204106-2e9c82787618
+	go.opentelemetry.io/collector/component/componentstatus v0.140.1-0.20251127085441-73f090cd0d59
+	go.opentelemetry.io/collector/config/confighttp v0.140.1-0.20251127085441-73f090cd0d59
 	go.opentelemetry.io/collector/config/configoptional v1.46.1-0.20251127085441-73f090cd0d59
-	go.opentelemetry.io/collector/consumer/consumertest v0.140.1-0.20251120204106-2e9c82787618
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.140.1-0.20251120204106-2e9c82787618
-	go.opentelemetry.io/collector/receiver/receivertest v0.140.1-0.20251120204106-2e9c82787618
+	go.opentelemetry.io/collector/consumer/consumertest v0.140.1-0.20251127085441-73f090cd0d59
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.140.1-0.20251127085441-73f090cd0d59
+	go.opentelemetry.io/collector/receiver/receivertest v0.140.1-0.20251127085441-73f090cd0d59
 	go.uber.org/goleak v1.3.0
 )
 
@@ -46,13 +46,13 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.46.1-0.20251127085441-73f090cd0d59 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251120204106-2e9c82787618 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.140.1-0.20251120204106-2e9c82787618 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.140.1-0.20251120204106-2e9c82787618 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251127085441-73f090cd0d59 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.140.1-0.20251127085441-73f090cd0d59 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.140.1-0.20251127085441-73f090cd0d59 // indirect
 	go.opentelemetry.io/collector/featuregate v1.46.1-0.20251127085441-73f090cd0d59 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.140.1-0.20251120204106-2e9c82787618 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.140.1-0.20251127085441-73f090cd0d59 // indirect
 	go.opentelemetry.io/collector/pipeline v1.46.1-0.20251127085441-73f090cd0d59 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.140.1-0.20251120204106-2e9c82787618 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.140.1-0.20251127085441-73f090cd0d59 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
@@ -75,14 +75,14 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.46.1-0.20251127085441-73f090cd0d59 // indirect
 	go.opentelemetry.io/collector/component v1.46.1-0.20251127085441-73f090cd0d59
-	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251120204106-2e9c82787618
+	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251127085441-73f090cd0d59
 	go.opentelemetry.io/collector/config/configauth v1.46.1-0.20251127085441-73f090cd0d59 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.46.1-0.20251127085441-73f090cd0d59 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.46.1-0.20251127085441-73f090cd0d59 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.46.1-0.20251127085441-73f090cd0d59
 	go.opentelemetry.io/collector/confmap v1.46.1-0.20251127085441-73f090cd0d59
 	go.opentelemetry.io/collector/consumer v1.46.1-0.20251127085441-73f090cd0d59
-	go.opentelemetry.io/collector/consumer/xconsumer v0.140.1-0.20251120204106-2e9c82787618 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.140.1-0.20251127085441-73f090cd0d59 // indirect
 	go.opentelemetry.io/collector/pdata v1.46.1-0.20251127085441-73f090cd0d59
 	go.opentelemetry.io/collector/receiver v1.46.1-0.20251127085441-73f090cd0d59
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
