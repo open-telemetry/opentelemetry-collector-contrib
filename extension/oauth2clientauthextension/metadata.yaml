@@ -12,8 +12,3 @@ status:
 
 tests:
   config:
-  goleak:
-    ignore:
-      top:
-        - "net/http.(*persistConn).readLoop"
-        - "net/http.(*persistConn).writeLoop"
