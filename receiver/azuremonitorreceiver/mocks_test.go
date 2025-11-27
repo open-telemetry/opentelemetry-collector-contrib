@@ -299,12 +299,13 @@ func newResourcesMockData(inputMap map[string][][]*armresources.GenericResourceE
 }
 
 // metricsDefinitionMockInput is used to mock the response of the metrics definition API.
-// Everything is required except dimensions.
+// Everything is required except dimensions and supportedAggregationTypes.
 type metricsDefinitionMockInput struct {
-	namespace  string
-	name       string
-	timeGrain  string
-	dimensions []string
+	namespace                 string                       // required
+	name                      string                       // required
+	timeGrain                 string                       // required
+	dimensions                []string                     // optional
+	supportedAggregationTypes []armmonitor.AggregationType // optional
 }
 
 // newMetricsDefinitionMockData is a helper function to create metrics definition list response.
@@ -325,6 +326,15 @@ func newMetricsDefinitionMockData(inputMap map[string][]metricsDefinitionMockInp
 			for _, dimension := range input.dimensions {
 				toAppend.Dimensions = append(toAppend.Dimensions, &armmonitor.LocalizableString{Value: &dimension})
 			}
+
+			if len(input.supportedAggregationTypes) == 0 {
+				input.supportedAggregationTypes = armmonitor.PossibleAggregationTypeValues()
+			}
+
+			for _, aggregationType := range input.supportedAggregationTypes {
+				toAppend.SupportedAggregationTypes = append(toAppend.SupportedAggregationTypes, &aggregationType)
+			}
+
 			values[i] = &toAppend
 		}
 
