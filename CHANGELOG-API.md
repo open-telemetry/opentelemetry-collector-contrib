@@ -7,6 +7,30 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.140.1
+
+<!-- previous-version -->
+
+## v0.140.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/carbon`: unexport structs ParsedPath, PlaintextPathParser, function NewParser (#43966)
+- `receiver/carbon`: Unexport PathParserHelper (#43997)
+- `receiver/googlecloudpubsub`: Delete and inline functions used for tests (#43964)
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: add orchestrator explorer support in pkg/datadog/config (#44105)
+- `pkg/datadog`: Expose NewConnectorFactory method to instantiate the Datadog connector with injected dependencies. (#43980)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/translator/zipkin`: Restore Zipkin->OTLP translation API (#44004)
+- `receiver/vcenter`: Skip vSAN collection and logging when all vSAN metrics are disabled (#38489)
+
+<!-- previous-version -->
+
 ## v0.139.0
 
 ### 🛑 Breaking changes 🛑
