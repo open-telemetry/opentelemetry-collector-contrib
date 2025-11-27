@@ -106,8 +106,8 @@ func TestDefaultConfigWithFeatureGateEnabled(t *testing.T) {
 	cumulativeToDeltaCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
-	// With feature gate enabled, MaxStaleness should be 25 hours
-	assert.Equal(t, 25*time.Hour, cumulativeToDeltaCfg.MaxStaleness)
+	// With feature gate enabled, MaxStaleness should be 1 hour
+	assert.Equal(t, 1*time.Hour, cumulativeToDeltaCfg.MaxStaleness)
 }
 
 func TestFeatureGateDoesNotOverrideExplicitConfig(t *testing.T) {
@@ -132,7 +132,7 @@ func TestFeatureGateDoesNotOverrideExplicitConfig(t *testing.T) {
 	cumulativeToDeltaCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
-	// The explicitly configured value (10s) should be used, not the feature gate default (25h)
+	// The explicitly configured value (10s) should be used, not the feature gate default (1h)
 	assert.Equal(t, 10*time.Second, cumulativeToDeltaCfg.MaxStaleness)
 }
 

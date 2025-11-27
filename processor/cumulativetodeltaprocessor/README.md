@@ -143,13 +143,13 @@ processors:
 
 **Stage**: Alpha (disabled by default)
 
-**Description**: When enabled, the `max_staleness` configuration parameter defaults to 25 hours instead of 0 (infinite retention).
+**Description**: When enabled, the `max_staleness` configuration parameter defaults to 1 hour instead of 0 (infinite retention).
 
 **Behavioral Changes**:
 
 - **When disabled (default)**: The processor retains metric state indefinitely (`max_staleness: 0`). This matches the current behavior but can lead to unbounded memory growth in long-running collector instances, especially when tracking metrics with high cardinality or frequently changing attribute values.
 
-- **When enabled**: The processor automatically sets `max_staleness` to 25 hours if not explicitly configured. State entries are removed 25 hours after they were last observed, preventing unbounded memory growth. This is recommended for production deployments with dynamic workloads.
+- **When enabled**: The processor automatically sets `max_staleness` to 1 hour if not explicitly configured. State entries are removed 1 hour after they were last observed, preventing unbounded memory growth. This is recommended for production deployments with dynamic workloads.
 
 **Note**: If you explicitly configure `max_staleness` in your configuration, that value will be used regardless of the feature gate setting.
 

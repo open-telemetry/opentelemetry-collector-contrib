@@ -7,7 +7,7 @@ change_type: breaking
 component: processor/cumulativetodelta
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add feature gate `processor.cumulativetodelta.defaultmaxstaleness` to set default `max_staleness` to 25 hours"
+note: "Add feature gate `processor.cumulativetodelta.defaultmaxstaleness` to set default `max_staleness` to 1 hour"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44427]
@@ -16,7 +16,7 @@ issues: [44427]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When the feature gate is enabled, the processor will default to a `max_staleness` of 25 hours instead of 0 (infinite retention).
+  When the feature gate is enabled, the processor will default to a `max_staleness` of 1 hour instead of 0 (infinite retention).
   This prevents unbounded memory growth in long-running collector instances while maintaining backward compatibility.
   The feature gate is in alpha stage and disabled by default. Enable it with `--feature-gates=processor.cumulativetodelta.defaultmaxstaleness`.
   Explicitly configured `max_staleness` values will always take precedence over the feature gate default.
