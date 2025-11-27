@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.9.4
 	github.com/sijms/go-ora/v2 v2.9.0
-	github.com/snowflakedb/gosnowflake v1.17.0
+	github.com/snowflakedb/gosnowflake v1.18.0
 	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251120204106-2e9c82787618
 	go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251120204106-2e9c82787618
