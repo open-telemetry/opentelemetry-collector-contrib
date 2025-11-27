@@ -7,7 +7,6 @@ require (
 	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.140.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.140.1
@@ -431,8 +430,6 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../connector/spanmetricsconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../connector/routingconnector
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../exporter/prometheusexporter
 
