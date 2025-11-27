@@ -53,6 +53,45 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
+	// Check if deprecated fields have been explicitly set
+	// give them  precedence
+	var zeroConfig Config
+	if err := conf.Unmarshal(&zeroConfig); err != nil {
+		return err
+	}
+
+	// handle deprecated topic and exclude_topic for log signal
+	if zeroConfig.Logs.Topic != "" && len(zeroConfig.Logs.Topics) == 0 {
+		c.Logs.Topics = []string{zeroConfig.Logs.Topic}
+	}
+	if zeroConfig.Logs.ExcludeTopic != "" && len(zeroConfig.Logs.ExcludeTopics) == 0 {
+		c.Logs.ExcludeTopics = []string{zeroConfig.Logs.ExcludeTopic}
+	}
+
+	// handle deprecated topic and exclude_topic for metric signal
+	if zeroConfig.Metrics.Topic != "" && len(zeroConfig.Logs.Topics) == 0 {
+		c.Metrics.Topics = []string{zeroConfig.Metrics.Topic}
+	}
+	if zeroConfig.Metrics.ExcludeTopic != "" && len(zeroConfig.Logs.ExcludeTopics) == 0 {
+		c.Metrics.ExcludeTopics = []string{zeroConfig.Metrics.ExcludeTopic}
+	}
+
+	// handle deprecated topic and exclude_topic for trace signal
+	if zeroConfig.Traces.Topic != "" && len(zeroConfig.Logs.Topics) == 0 {
+		c.Traces.Topics = []string{zeroConfig.Traces.Topic}
+	}
+	if zeroConfig.Traces.ExcludeTopic != "" && len(zeroConfig.Logs.ExcludeTopics) == 0 {
+		c.Traces.ExcludeTopics = []string{zeroConfig.Traces.ExcludeTopic}
+	}
+
+	// handle deprecated topic and exclude_topic for profile signal
+	if zeroConfig.Profiles.Topic != "" && len(zeroConfig.Logs.Topics) == 0 {
+		c.Profiles.Topics = []string{zeroConfig.Profiles.Topic}
+	}
+	if zeroConfig.Profiles.ExcludeTopic != "" && len(zeroConfig.Logs.ExcludeTopics) == 0 {
+		c.Profiles.ExcludeTopics = []string{zeroConfig.Profiles.ExcludeTopic}
+	}
+
 	// Set OnPermanentError default value to inherit from OnError for backward compatibility
 	// Only if OnPermanentError was not explicitly set in the config
 	rawConf := conf.Get("message_marking")
@@ -73,45 +112,61 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 // Validate checks the receiver configuration is valid.
 func (c *Config) Validate() error {
 	// Validate that exclude_topic is only used with regex topic patterns
-	if err := validateExcludeTopic("logs", c.Logs.Topic, c.Logs.ExcludeTopic); err != nil {
+	if err := validateExcludeTopic("logs", c.Logs.Topics, c.Logs.ExcludeTopics); err != nil {
 		return err
 	}
-	if err := validateExcludeTopic("metrics", c.Metrics.Topic, c.Metrics.ExcludeTopic); err != nil {
+	if err := validateExcludeTopic("metrics", c.Metrics.Topics, c.Metrics.ExcludeTopics); err != nil {
 		return err
 	}
-	if err := validateExcludeTopic("traces", c.Traces.Topic, c.Traces.ExcludeTopic); err != nil {
+	if err := validateExcludeTopic("traces", c.Traces.Topics, c.Traces.ExcludeTopics); err != nil {
 		return err
 	}
-	if err := validateExcludeTopic("profiles", c.Profiles.Topic, c.Profiles.ExcludeTopic); err != nil {
+	if err := validateExcludeTopic("profiles", c.Profiles.Topics, c.Profiles.ExcludeTopics); err != nil {
 		return err
 	}
 	return nil
 }
 
 // validateExcludeTopic checks that exclude_topic is only configured when topic uses regex pattern
-func validateExcludeTopic(signalType, topic, excludeTopic string) error {
-	if excludeTopic == "" {
+func validateExcludeTopic(signalType string, topics, excludeTopics []string) error {
+	if len(excludeTopics) == 0 {
 		return nil // No exclude_topic configured, nothing to validate
 	}
-	if !strings.HasPrefix(topic, "^") {
+
+	// if none of the configured topic uses regex return error
+	var usesRegex bool
+	for _, topic := range topics {
+		if strings.HasPrefix(topic, "^") {
+			usesRegex = true
+		}
+	}
+
+	if !usesRegex {
 		return fmt.Errorf(
-			"%s.exclude_topic is configured but %s.topic does not use regex pattern (must start with '^')",
+			"%s.exclude_topics is configured but none of the configured %s.topics use regex pattern (must start with '^')",
 			signalType, signalType,
 		)
 	}
-	// Validate that exclude_topic is a valid regex pattern
-	if _, err := regexp.Compile(excludeTopic); err != nil {
-		return fmt.Errorf(
-			"%s.exclude_topic contains invalid regex pattern: %w",
-			signalType, err,
-		)
+
+	for _, excludeTopic := range excludeTopics {
+		// Validate that exclude_topic is a valid regex pattern
+		if _, err := regexp.Compile(excludeTopic); err != nil {
+			return fmt.Errorf(
+				"%s.exclude_topic contains invalid regex pattern: %w",
+				signalType, err,
+			)
+		}
 	}
+
 	return nil
 }
 
 // TopicEncodingConfig holds signal-specific topic and encoding configuration.
 type TopicEncodingConfig struct {
-	// Topic holds the name of the Kafka topic from which messages of the
+	// Deprecated [v0.142.0]: Use Topics
+	Topic string `mapstructure:"topic"`
+
+	// Topics holds the name of the Kafka topic from which messages of the
 	// signal type should be consumed.
 	//
 	// The default depends on the signal type:
@@ -119,15 +174,18 @@ type TopicEncodingConfig struct {
 	//  - "otlp_metrics" for metrics
 	//  - "otlp_logs" for logs
 	//  - "otlp_profiles" for profiles
-	Topic string `mapstructure:"topic"`
+	Topics []string `mapstructure:"topics"`
 
 	// Encoding holds the expected encoding of messages for the signal type
 	//
 	// Defaults to "otlp_proto".
 	Encoding string `mapstructure:"encoding"`
 
-	// Optional exclude topic option, used only in regex mode.
+	// Deprecated [v0.142.0]: Use ExcludeTopics
 	ExcludeTopic string `mapstructure:"exclude_topic"`
+
+	// Optional exclude topics option, used only in regex mode.
+	ExcludeTopics []string `mapstructure:"exclude_topics"`
 }
 
 type MessageMarking struct {

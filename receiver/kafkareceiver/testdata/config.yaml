@@ -1,6 +1,18 @@
+kafka/legacy_topic:
+  metrics:
+    topic: legacy_metric
+    encoding: otlp_proto
+  traces:
+    topic: legacy_spans
+    encoding: otlp_proto
+  logs:
+    topic: legacy_logs
+    encoding: otlp_proto
 kafka/logs:
   logs:
-    topic: logs
+    topic: legacy_topic_log
+    topics: 
+    - logs
     encoding: direct
   session_timeout: 45s
   heartbeat_interval: 15s
