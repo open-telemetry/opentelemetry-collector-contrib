@@ -232,12 +232,12 @@ func TestReplicaSetHandler(t *testing.T) {
 	c, _ := newTestClient(t)
 	assert.Empty(t, c.ReplicaSets)
 
-	replicaset := &apps_v1.ReplicaSet{}
+	replicaset := &meta_v1.PartialObjectMetadata{}
 	c.handleReplicaSetAdd(replicaset)
 	assert.Empty(t, c.ReplicaSets)
 
 	// test add replicaset
-	replicaset = &apps_v1.ReplicaSet{}
+	replicaset = &meta_v1.PartialObjectMetadata{}
 	replicaset.Name = "deployment-aaa"
 	replicaset.Namespace = "namespaceA"
 	replicaset.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
@@ -685,7 +685,7 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	isController := true
-	replicaset := &apps_v1.ReplicaSet{
+	replicaset := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "auth-service-66f5996c7c",
 			Namespace: "ns1",
