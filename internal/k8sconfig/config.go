@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -166,6 +167,25 @@ func MakeDynamicClient(apiConf APIConfig) (dynamic.Interface, error) {
 	}
 
 	return client, nil
+}
+
+// MakeMetadataClient constructs a client-go metadata.Interface using the same APIConfig flow.
+// It mirrors MakeDynamicClient, but uses metadata.NewForConfig.
+func MakeMetadataClient(apiConf APIConfig) (metadata.Interface, error) {
+	if err := apiConf.Validate(); err != nil {
+		return nil, err
+	}
+
+	authConf, err := CreateRestConfig(apiConf)
+	if err != nil {
+		return nil, err
+	}
+
+	mc, err := metadata.NewForConfig(authConf)
+	if err != nil {
+		return nil, err
+	}
+	return mc, nil
 }
 
 // MakeOpenShiftQuotaClient can take configuration if needed for other types of auth

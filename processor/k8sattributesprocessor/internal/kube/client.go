@@ -209,22 +209,9 @@ func New(
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
-			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
+			informersFactory.newReplicaSetInformer = NewReplicaSetMetaInformerProvider(apiCfg)
 		}
 		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
-
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
@@ -1784,19 +1771,6 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
 	}
 	c.m.Unlock()
-}
-
-// This function removes all data from the ReplicaSet except what is required by extraction rules
-func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
-	transformedReplicaset := apps_v1.ReplicaSet{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      replicaset.GetName(),
-			Namespace: replicaset.GetNamespace(),
-			UID:       replicaset.GetUID(),
-		},
-	}
-	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
-	return &transformedReplicaset
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
