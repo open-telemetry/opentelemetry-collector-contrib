@@ -39,7 +39,6 @@ func BenchmarkSampling(b *testing.B) {
 
 	for _, batch := range batches {
 		sampleBatches = append(sampleBatches, &samplingpolicy.TraceData{
-			ArrivalTime:     time.Now(),
 			SpanCount:       0,
 			ReceivedBatches: batch,
 		})
