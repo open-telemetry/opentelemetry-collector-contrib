@@ -152,7 +152,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
 		}
-		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount, s.config.MaxQuerySampleCount)
+		resources, err = s.recordDatabaseQueryTextAndPlan(ctx)
 	case getSQLServerQuerySamplesQuery():
 		resources, err = s.recordDatabaseSampleQuery(ctx)
 	default:
@@ -619,7 +619,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 	return errors.Join(errs...)
 }
 
-func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount, maxQuerySampleCount uint) (pcommon.Resource, error) {
+func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context) (pcommon.Resource, error) {
 	// Constants are the column names of the database status
 	const (
 		executionCount = "execution_count"
@@ -649,7 +649,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	rows, err := s.client.QueryRows(
 		ctx,
 		sql.Named("lookbackTime", -int(s.config.EffectiveLookbackTime().Seconds())),
-		sql.Named("maxSampleCount", maxQuerySampleCount),
+		sql.Named("maxSampleCount", s.config.MaxQuerySampleCount),
 	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -680,7 +680,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	}
 	// sort the rows based on the totalElapsedTimeDiffs in descending order,
 	// only report first T(T=topQueryCount) rows.
-	rows = sortRows(rows, totalElapsedTimeDiffsMicrosecond, topQueryCount)
+	rows = sortRows(rows, totalElapsedTimeDiffsMicrosecond, s.config.TopQueryCount)
 
 	// sort the totalElapsedTimeDiffs in descending order as well
 	sort.Slice(totalElapsedTimeDiffsMicrosecond, func(i, j int) bool { return totalElapsedTimeDiffsMicrosecond[i] > totalElapsedTimeDiffsMicrosecond[j] })
