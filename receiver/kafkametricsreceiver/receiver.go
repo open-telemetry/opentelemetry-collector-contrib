@@ -27,12 +27,12 @@ import (
 // franzGoFeatureGateName is the name of the feature gate for franz-go
 const franzGoFeatureGateName = "receiver.kafkametricsreceiver.UseFranzGo"
 
-// franzGoFeatureGate is a feature gate that controls whether the Kafka receiver
-// uses the franz-go client or the Sarama client for consuming messages. When enabled,
-// the Kafka receiver will use the franz-go client, which is more performant and has
+// franzGoFeatureGate is a feature gate that controls whether the Kafka Metrics receiver
+// uses the franz-go client or the Sarama client for scraping metrics. When enabled,
+// the Kafka Metrics receiver will use the franz-go client, which is more performant and has
 // better support for modern Kafka features.
 var franzGoFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	franzGoFeatureGateName, featuregate.StageAlpha,
+	franzGoFeatureGateName, featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the Kafka Metrics receiver will use the franz-go client to connect to Kafka."),
 	featuregate.WithRegisterFromVersion("v0.137.0"),
 )

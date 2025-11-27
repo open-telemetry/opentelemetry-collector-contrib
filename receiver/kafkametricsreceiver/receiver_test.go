@@ -70,6 +70,7 @@ func TestNewReceiver(t *testing.T) {
 }
 
 func TestNewReceiver_handles_scraper_error(t *testing.T) {
+	setFranzGo(t, false)
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
 	mockScraper := func(context.Context, Config, receiver.Settings) (scraper.Metrics, error) {
