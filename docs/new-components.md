@@ -69,14 +69,14 @@ issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/
 providing the following information:
 
 * Who's the **sponsor** for your component. A sponsor is an approver or maintainer who will be the
-  official reviewer of the code and a code owner for the component. You will need to find a sponsor
-  for the component in order for it to be accepted. Ideally, the sponsor is from a different company
-  than you. If the person proposing the component and the sponsor are
-  from the same company, ensure that you have approval on the overall proposal from other approvers
-  and maintainers. You can use the #otel-collector-dev CNCF Slack channel and the Collector SIG meetings for this.
+  official reviewer of the code and may also be a code owner. You will need to find a sponsor for
+  the component in order for it to be accepted. The sponsor must be from a different company than
+  you. You can use the #otel-collector-dev CNCF Slack channel and the Collector SIG meetings for
+  this.
 * Who are the **codeowners** for your component. Codeowners are responsible for the component and
-  will be pinged for any issues or reviews needed. You need at least two codeowners for your
-  component to be accepted, different from the sponsor. We recommend that the codeowners do not work for the same company.
+  will be pinged for any issues or reviews needed. You need at least three codeowners for your
+  component to be accepted, one of which must be an approver or maintainer (which can be the
+  sponsor). We recommend that the codeowners do not work for the same company.
 * A **list of other components that cover similar use cases**. These could be components inside of
   this repository or outside of it. If there are competing implementations, invite their maintainers
   to voice their opinion and collaborate on a common implementation.

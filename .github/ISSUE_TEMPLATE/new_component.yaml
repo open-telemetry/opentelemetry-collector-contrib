@@ -43,9 +43,10 @@ body:
       required: true
   - type: input
     attributes:
-      label: Code Owner(s)
+      label: Code Owners
       description: Code owners are responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
-        Please list two or more OpenTelemetry members that are not sponsoring this component who will serve as code owners.
+        Please list three or more OpenTelemetry members who will serve as code owners.
+        One of them must be an approver or maintainer in this repository (it can be the same person as the sponsor).
         Having at least two code owners before opening the issue is strongly recommended. However, you may use the issue to try to find code owners for your component.
     validations:
       required: true
@@ -54,7 +55,7 @@ body:
       label: Sponsor (optional)
       description: "A sponsor is an approver who will be in charge of being the official reviewer of the code.
         Having a sponsor means that your use-case has been validated. If there are no sponsors yet for the component,
-        it's fine: use the issue as a means to try to find a sponsor for your component. We recommend that the sponsor is from a different company than the issue author, or, failing that, that you get approval from an approver/maintainer from a different company. If you are unable to find a sponsor, the component can still live in your own source repository and can be included in Collector distributions using the Collector builder."
+        it's fine: use the issue as a means to try to find a sponsor for your component. The sponsor must be from a different company than the issue author. If you are unable to find a sponsor, the component can still live in your own source repository and can be included in Collector distributions using the Collector builder."
   - type: textarea
     attributes:
       label: Additional context
