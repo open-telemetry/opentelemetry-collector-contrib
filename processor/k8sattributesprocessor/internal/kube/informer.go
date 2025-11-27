@@ -207,8 +207,8 @@ func NewReplicaSetMetaInformerProvider(apiCfg k8sconfig.APIConfig) func(client k
 		if err := apiCfg.Validate(); err != nil {
 			return cache.NewSharedIndexInformer(
 				&cache.ListWatch{
-					ListWithContextFunc:  func(ctx context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
-					WatchFuncWithContext: func(ctx context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
+					ListWithContextFunc:  func(context.Context, metav1.ListOptions) (runtime.Object, error) { return nil, err },
+					WatchFuncWithContext: func(context.Context, metav1.ListOptions) (watch.Interface, error) { return nil, err },
 				},
 				&metav1.PartialObjectMetadata{},
 				watchSyncPeriod,
@@ -220,8 +220,8 @@ func NewReplicaSetMetaInformerProvider(apiCfg k8sconfig.APIConfig) func(client k
 		if err != nil {
 			return cache.NewSharedIndexInformer(
 				&cache.ListWatch{
-					ListWithContextFunc:  func(ctx context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
-					WatchFuncWithContext: func(ctx context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
+					ListWithContextFunc:  func(context.Context, metav1.ListOptions) (runtime.Object, error) { return nil, err },
+					WatchFuncWithContext: func(context.Context, metav1.ListOptions) (watch.Interface, error) { return nil, err },
 				},
 				&metav1.PartialObjectMetadata{},
 				watchSyncPeriod,
