@@ -1748,7 +1748,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
-	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
+	if replicaset, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateReplicaSet(replicaset)
 	} else {
 		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
@@ -1757,7 +1757,7 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 
 func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
-	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
+	if replicaset, ok := newRS.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateReplicaSet(replicaset)
 	} else {
 		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
@@ -1766,7 +1766,7 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
-	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
+	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
 		c.m.Lock()
 		key := string(replicaset.UID)
 		delete(c.ReplicaSets, key)
@@ -1776,7 +1776,7 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	}
 }
 
-func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
+func (c *WatchClient) addOrUpdateReplicaSet(replicaset *meta_v1.PartialObjectMetadata) {
 	newReplicaSet := &ReplicaSet{
 		Name:      replicaset.Name,
 		Namespace: replicaset.Namespace,
