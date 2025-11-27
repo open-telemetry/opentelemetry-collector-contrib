@@ -18,7 +18,7 @@ jobs:
       already-added: ${{ steps.check-jmx-metrics-version.outputs.already-added }}
       already-opened: ${{ steps.check-jmx-metrics-version.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - id: check-jmx-metrics-version
         name: Check versions
@@ -64,7 +64,7 @@ jobs:
     needs:
       - check-jmx-metrics-version
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - name: Update version
         env:
@@ -137,7 +137,7 @@ jobs:
       already-added: ${{ steps.check-jmx-scraper-version.outputs.already-added }}
       already-opened: ${{ steps.check-jmx-scraper-version.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - id: check-jmx-scraper-version
         name: Check versions
@@ -183,7 +183,7 @@ jobs:
     needs:
       - check-jmx-scraper-version
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - name: Update version
         env:
