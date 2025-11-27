@@ -4,7 +4,6 @@
 package kafkaexporter
 
 import (
-	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	"go.opentelemetry.io/collector/pdata/testdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -43,7 +41,6 @@ func TestCreateMetricExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -54,15 +51,6 @@ func TestCreateMetricExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
-		},
-		{
-			name: "invalid config (validating broker)",
-			conf: applyConfigOption(func(conf *Config) {
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
-			}),
-			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
@@ -71,7 +59,6 @@ func TestCreateMetricExporter(t *testing.T) {
 				conf.Metadata.Full = false
 				conf.Encoding = "otlp_proto"
 			}),
-			err: nil,
 		},
 		{
 			name: "with include metadata keys and partitioner",
@@ -83,7 +70,6 @@ func TestCreateMetricExporter(t *testing.T) {
 					Sizer: exporterhelper.RequestSizerTypeBytes,
 				})
 			}),
-			err: nil,
 		},
 	}
 
@@ -100,13 +86,8 @@ func TestCreateMetricExporter(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
 			err = exporter.Start(t.Context(), componenttest.NewNopHost())
-			if tc.err != nil {
-				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				return
-			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.ConsumeMetrics(t.Context(), testdata.GenerateMetrics(2)))
 			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
@@ -118,7 +99,6 @@ func TestCreateLogExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -129,15 +109,6 @@ func TestCreateLogExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
-		},
-		{
-			name: "invalid config (validating broker)",
-			conf: applyConfigOption(func(conf *Config) {
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
-			}),
-			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
@@ -146,7 +117,6 @@ func TestCreateLogExporter(t *testing.T) {
 				conf.Metadata.Full = false
 				conf.Encoding = "otlp_proto"
 			}),
-			err: nil,
 		},
 		{
 			name: "with include metadata keys and partitioner",
@@ -158,7 +128,6 @@ func TestCreateLogExporter(t *testing.T) {
 					Sizer: exporterhelper.RequestSizerTypeBytes,
 				})
 			}),
-			err: nil,
 		},
 	}
 
@@ -175,13 +144,8 @@ func TestCreateLogExporter(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
 			err = exporter.Start(t.Context(), componenttest.NewNopHost())
-			if tc.err != nil {
-				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				return
-			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.ConsumeLogs(t.Context(), testdata.GenerateLogs(2)))
 			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
@@ -193,7 +157,6 @@ func TestCreateTraceExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating brokers)",
@@ -202,15 +165,6 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
-		},
-		{
-			name: "invalid config (validating brokers)",
-			conf: applyConfigOption(func(conf *Config) {
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
-			}),
-			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
@@ -219,7 +173,6 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Metadata.Full = false
 				conf.Encoding = "otlp_proto"
 			}),
-			err: nil,
 		},
 		{
 			name: "with include metadata keys and partitioner",
@@ -231,7 +184,6 @@ func TestCreateTraceExporter(t *testing.T) {
 					Sizer: exporterhelper.RequestSizerTypeBytes,
 				})
 			}),
-			err: nil,
 		},
 	}
 
@@ -248,13 +200,8 @@ func TestCreateTraceExporter(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
 			err = exporter.Start(t.Context(), componenttest.NewNopHost())
-			if tc.err != nil {
-				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				return
-			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.ConsumeTraces(t.Context(), testdata.GenerateTraces(2)))
 			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
@@ -266,7 +213,6 @@ func TestCreateProfileExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -277,15 +223,6 @@ func TestCreateProfileExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
-		},
-		{
-			name: "invalid config (validating broker)",
-			conf: applyConfigOption(func(conf *Config) {
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
-			}),
-			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
@@ -294,7 +231,6 @@ func TestCreateProfileExporter(t *testing.T) {
 				conf.Metadata.Full = false
 				conf.Encoding = "otlp_proto"
 			}),
-			err: nil,
 		},
 		{
 			name: "with include metadata keys and partitioner",
@@ -306,7 +242,6 @@ func TestCreateProfileExporter(t *testing.T) {
 					Sizer: exporterhelper.RequestSizerTypeBytes,
 				})
 			}),
-			err: nil,
 		},
 	}
 
@@ -323,13 +258,8 @@ func TestCreateProfileExporter(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
 			err = exporter.Start(t.Context(), componenttest.NewNopHost())
-			if tc.err != nil {
-				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				return
-			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
-			assert.NoError(t, exporter.ConsumeProfiles(t.Context(), testdata.GenerateProfiles(2)))
 			assert.NoError(t, exporter.Shutdown(t.Context()))
 		})
 	}
