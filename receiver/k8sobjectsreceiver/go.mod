@@ -152,6 +152,7 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory => ../../internal/k8sinventory
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
