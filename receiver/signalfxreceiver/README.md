@@ -60,11 +60,11 @@ service:
   pipelines:
     metrics:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
 ```
 ## Access token passthrough

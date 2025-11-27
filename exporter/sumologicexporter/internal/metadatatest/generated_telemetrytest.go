@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
 func AssertEqualExporterRequestsBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_bytes",
-		Description: "Total size of requests (in bytes) [development]",
+		Description: "Total size of requests (in bytes) [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualExporterRequestsBytes(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualExporterRequestsDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_duration",
-		Description: "Duration of HTTP requests (in milliseconds) [development]",
+		Description: "Duration of HTTP requests (in milliseconds) [Development]",
 		Unit:        "ms",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualExporterRequestsDuration(t *testing.T, tt *componenttest.Telemet
 func AssertEqualExporterRequestsRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_records",
-		Description: "Total size of requests (in number of records) [development]",
+		Description: "Total size of requests (in number of records) [Development]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -72,7 +72,7 @@ func AssertEqualExporterRequestsRecords(t *testing.T, tt *componenttest.Telemetr
 func AssertEqualExporterRequestsSent(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_sent",
-		Description: "Number of requests [development]",
+		Description: "Number of requests [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

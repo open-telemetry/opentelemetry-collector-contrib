@@ -21,7 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
+	semconv22 "go.opentelemetry.io/otel/semconv/v1.22.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -452,13 +453,25 @@ func TestEncodeSpanECSMode(t *testing.T) {
 
 	resource := pcommon.NewResource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		string(semconv.CloudProviderKey):         "aws",
-		string(semconv.CloudPlatformKey):         "aws_elastic_beanstalk",
-		string(semconv.DeploymentEnvironmentKey): "BETA",
-		string(semconv.ServiceInstanceIDKey):     "23",
-		string(semconv.ServiceNameKey):           "some-service",
-		string(semconv.ServiceVersionKey):        "env-version-1234",
+		string(semconv.CloudProviderKey):             "aws",
+		string(semconv.CloudPlatformKey):             "aws_elastic_beanstalk",
+		string(semconv22.DeploymentEnvironmentKey):   "BETA",
+		string(semconv.DeploymentEnvironmentNameKey): "BETA",
+		string(semconv.ServiceInstanceIDKey):         "23",
+		string(semconv.ServiceNameKey):               "some-service",
+		string(semconv.ServiceVersionKey):            "env-version-1234",
+		string(semconv.ProcessParentPIDKey):          "42",
+		string(semconv.ProcessExecutableNameKey):     "node",
+		string(semconv.ClientAddressKey):             "12.53.12.1",
+		string(semconv.SourceAddressKey):             "12.53.12.1",
+		string(semconv.FaaSInstanceKey):              "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		string(semconv.FaaSTriggerKey):               "api-gateway",
 	})
+	require.NoError(t, err)
+
+	// add slice attributes
+	processCommandLineSlice := resource.Attributes().PutEmptySlice(string(semconv.ProcessCommandLineKey))
+	err = processCommandLineSlice.FromRaw([]any{"node", "app.js"})
 	require.NoError(t, err)
 
 	scope := pcommon.NewInstrumentationScope()
@@ -470,6 +483,16 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	scope.CopyTo(scopeSpans.Scope())
 
 	span := scopeSpans.Spans().AppendEmpty()
+	err = span.Attributes().FromRaw(map[string]any{
+		string(semconv.MessagingDestinationNameKey): "users_queue",
+		"messaging.operation.name":                  "receive",
+		string(semconv22.DBSystemKey):               "sql",
+		"db.namespace":                              "users",
+		"db.query.text":                             "SELECT * FROM users WHERE user_id=?",
+		string(semconv.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
+	})
+	require.NoError(t, err)
+
 	span.SetName("client span")
 	span.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
@@ -509,14 +532,24 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  "span": {
 		"id": "1920212223242526",
 		"name": "client span",
+		"action": "receive",
+		"kind": "CLIENT",
+		"db": {
+		  "instance": "users",
+		  "statement": "SELECT * FROM users WHERE user_id=?",
+		  "type": "sql"
+		},
+		"message": {
+		  "queue": { "name": "users_queue" }
+		},
 		"links": [
 		  {
-			"span_id": "1112131415161718",
-			"trace_id": "01020304050607080807060504030201"
+			"span"  : { "id": "1112131415161718" },
+			"trace" : { "id": "01020304050607080807060504030201" }
 		  },
 		  {
-			"span_id": "3132333435363738",
-			"trace_id": "21222324252627282827262524232221"
+			"span"  : { "id": "3132333435363738" },
+			"trace" : { "id": "21222324252627282827262524232221" }
 		  }
 		]
 	  },
@@ -539,58 +572,147 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		  "name": "23"
 		},
 		"version": "env-version-1234"
+	  },
+	  "process": {
+		"parent": { "pid": "42" },
+		"title": "node",
+		"args" : ["node", "app.js"]
+	  },
+	  "client": {
+		"ip": "12.53.12.1"
+      },
+	  "source": {
+		"ip": "12.53.12.1"
+      },
+	  "faas": {
+		"id" : "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"trigger": { "type": "api-gateway" }
+	  },
+	  "http": {
+		"response": {
+		  "encoded_body_size": "http.response.encoded_body_size"
+		}
 	  }
 	}`, buf.String())
+}
+
+func TestEncodeSpanECSModeMessageQueueName(t *testing.T) {
+	tests := map[string]struct {
+		processorEvent             string
+		expectedMessageQueuePrefix string
+	}{
+		"processor event: span": {
+			processorEvent:             "span",
+			expectedMessageQueuePrefix: "span",
+		},
+		"processor event: other": {
+			processorEvent:             "other",
+			expectedMessageQueuePrefix: "span",
+		},
+		"processor event missing": {
+			processorEvent:             "",
+			expectedMessageQueuePrefix: "span",
+		},
+		"processor event: transaction": {
+			processorEvent:             "transaction",
+			expectedMessageQueuePrefix: "transaction",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			traces := ptrace.NewTraces()
+			resourceSpans := traces.ResourceSpans().AppendEmpty()
+			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+			span := scopeSpans.Spans().AppendEmpty()
+			err := span.Attributes().FromRaw(map[string]any{
+				"processor.event": test.processorEvent,
+				string(semconv.MessagingDestinationNameKey): "orders_queue",
+			})
+			require.NoError(t, err)
+
+			timestamp := pcommon.Timestamp(1710373859123456789)
+			span.SetStartTimestamp(timestamp)
+
+			var buf bytes.Buffer
+			encoder, _ := newEncoder(MappingECS)
+			err = encoder.encodeSpan(
+				encodingContext{resource: resourceSpans.Resource(), scope: scopeSpans.Scope()},
+				span, elasticsearch.Index{}, &buf,
+			)
+			require.NoError(t, err)
+
+			require.JSONEq(t, fmt.Sprintf(`{
+			  "@timestamp": "2024-03-13T23:50:59.123456789Z",
+              "processor": { "event": %q },
+			  %q: { 
+				"message": { 
+					"queue": { 
+						"name": "orders_queue" 
+						} 
+					} 
+				}
+			}`, test.processorEvent, test.expectedMessageQueuePrefix), buf.String())
+		})
+	}
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		string(semconv.ServiceNameKey):           "foo.bar",
-		string(semconv.ServiceVersionKey):        "1.1.0",
-		string(semconv.ServiceInstanceIDKey):     "i-103de39e0a",
-		string(semconv.TelemetrySDKNameKey):      "opentelemetry",
-		string(semconv.TelemetrySDKVersionKey):   "7.9.12",
-		string(semconv.TelemetrySDKLanguageKey):  "perl",
-		string(semconv.CloudProviderKey):         "gcp",
-		string(semconv.CloudAccountIDKey):        "19347013",
-		string(semconv.CloudRegionKey):           "us-west-1",
-		string(semconv.CloudAvailabilityZoneKey): "us-west-1b",
-		string(semconv.CloudPlatformKey):         "gke",
-		string(semconv.ContainerNameKey):         "happy-seger",
-		string(semconv.ContainerIDKey):           "e69cc5d3dda",
-		string(semconv.ContainerImageNameKey):    "my-app",
-		string(semconv.ContainerRuntimeKey):      "docker",
-		string(semconv.HostNameKey):              "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		string(semconv.HostIDKey):                "i-103de39e0a",
-		string(semconv.HostTypeKey):              "t2.medium",
-		string(semconv.HostArchKey):              "x86_64",
-		string(semconv.ProcessPIDKey):            9833,
-		string(semconv.ProcessCommandLineKey):    "/usr/bin/ssh -l user 10.0.0.16",
-		string(semconv.ProcessExecutablePathKey): "/usr/bin/ssh",
-		string(semconv.ProcessRuntimeNameKey):    "OpenJDK Runtime Environment",
-		string(semconv.ProcessRuntimeVersionKey): "14.0.2",
-		string(semconv.OSTypeKey):                "darwin",
-		string(semconv.OSDescriptionKey):         "Mac OS Mojave",
-		string(semconv.OSNameKey):                "Mac OS X",
-		string(semconv.OSVersionKey):             "10.14.1",
-		string(semconv.DeviceIDKey):              "00000000-54b3-e7c7-0000-000046bffd97",
-		string(semconv.DeviceModelIdentifierKey): "SM-G920F",
-		string(semconv.DeviceModelNameKey):       "Samsung Galaxy S6",
-		string(semconv.DeviceManufacturerKey):    "Samsung",
-		"k8s.namespace.name":                     "default",
-		"k8s.node.name":                          "node-1",
-		"k8s.pod.name":                           "opentelemetry-pod-autoconf",
-		"k8s.pod.uid":                            "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"k8s.deployment.name":                    "coredns",
-		string(semconv.K8SJobNameKey):            "job.name",
-		string(semconv.K8SCronJobNameKey):        "cronjob.name",
-		string(semconv.K8SStatefulSetNameKey):    "statefulset.name",
-		string(semconv.K8SReplicaSetNameKey):     "replicaset.name",
-		string(semconv.K8SDaemonSetNameKey):      "daemonset.name",
-		string(semconv.K8SContainerNameKey):      "container.name",
-		string(semconv.K8SClusterNameKey):        "cluster.name",
+		string(semconv.ServiceNameKey):               "foo.bar",
+		string(semconv22.DeploymentEnvironmentKey):   "BETA",
+		string(semconv.DeploymentEnvironmentNameKey): "BETA",
+		string(semconv.ServiceVersionKey):            "1.1.0",
+		string(semconv.ServiceInstanceIDKey):         "i-103de39e0a",
+		string(semconv.TelemetrySDKNameKey):          "opentelemetry",
+		string(semconv.TelemetrySDKVersionKey):       "7.9.12",
+		string(semconv.TelemetrySDKLanguageKey):      "perl",
+		string(semconv.CloudProviderKey):             "gcp",
+		string(semconv.CloudAccountIDKey):            "19347013",
+		string(semconv.CloudRegionKey):               "us-west-1",
+		string(semconv.CloudAvailabilityZoneKey):     "us-west-1b",
+		string(semconv.CloudPlatformKey):             "gke",
+		string(semconv.ContainerNameKey):             "happy-seger",
+		string(semconv.ContainerIDKey):               "e69cc5d3dda",
+		string(semconv.ContainerImageNameKey):        "my-app",
+		string(semconv22.ContainerRuntimeKey):        "docker",
+		string(semconv.HostNameKey):                  "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		string(semconv.HostIDKey):                    "i-103de39e0a",
+		string(semconv.HostTypeKey):                  "t2.medium",
+		string(semconv.HostArchKey):                  "x86_64",
+		string(semconv.ProcessPIDKey):                9833,
+		string(semconv.ProcessCommandLineKey):        "/usr/bin/ssh -l user 10.0.0.16",
+		string(semconv.ProcessExecutablePathKey):     "/usr/bin/ssh",
+		string(semconv.ProcessRuntimeNameKey):        "OpenJDK Runtime Environment",
+		string(semconv.ProcessRuntimeVersionKey):     "14.0.2",
+		string(semconv.OSTypeKey):                    "darwin",
+		string(semconv.OSDescriptionKey):             "Mac OS Mojave",
+		string(semconv.OSNameKey):                    "Mac OS X",
+		string(semconv.OSVersionKey):                 "10.14.1",
+		string(semconv.DeviceIDKey):                  "00000000-54b3-e7c7-0000-000046bffd97",
+		string(semconv.DeviceModelIdentifierKey):     "SM-G920F",
+		string(semconv.DeviceModelNameKey):           "Samsung Galaxy S6",
+		string(semconv.DeviceManufacturerKey):        "Samsung",
+		"k8s.namespace.name":                         "default",
+		"k8s.node.name":                              "node-1",
+		"k8s.pod.name":                               "opentelemetry-pod-autoconf",
+		"k8s.pod.uid":                                "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"k8s.deployment.name":                        "coredns",
+		string(semconv.K8SJobNameKey):                "job.name",
+		string(semconv.K8SCronJobNameKey):            "cronjob.name",
+		string(semconv.K8SStatefulSetNameKey):        "statefulset.name",
+		string(semconv.K8SReplicaSetNameKey):         "replicaset.name",
+		string(semconv.K8SDaemonSetNameKey):          "daemonset.name",
+		string(semconv.K8SContainerNameKey):          "container.name",
+		string(semconv.K8SClusterNameKey):            "cluster.name",
+		string(semconv.ProcessParentPIDKey):          "42",
+		string(semconv.ProcessExecutableNameKey):     "node",
+		string(semconv.ClientAddressKey):             "12.53.12.1",
+		string(semconv.SourceAddressKey):             "12.53.12.1",
+		string(semconv.FaaSInstanceKey):              "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		string(semconv.FaaSTriggerKey):               "api-gateway",
 	})
 	require.NoError(t, err)
 
@@ -602,7 +724,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	record := plog.NewLogRecord()
 	err = record.Attributes().FromRaw(map[string]any{
-		"event.name": "user-password-change",
+		"event.name":                            "user-password-change",
+		string(semconv.HTTPResponseBodySizeKey): 1024,
 	})
 	require.NoError(t, err)
 	observedTimestamp := pcommon.Timestamp(1710273641123456789)
@@ -655,11 +778,14 @@ func TestEncodeLogECSMode(t *testing.T) {
 		},
 		"process": {
 		  "pid": 9833,
-		  "command_line": "/usr/bin/ssh -l user 10.0.0.16",
-		  "executable": "/usr/bin/ssh"
+		  "args": "/usr/bin/ssh -l user 10.0.0.16",
+		  "executable": "/usr/bin/ssh",
+          "parent": { "pid": "42" },
+		   "title": "node"
 		},
 		"service": {
 		  "name": "foo.bar",
+		  "environment": "BETA",
 		  "version": "1.1.0",
 		  "node": {"name": "i-103de39e0a"},
 		  "runtime": {
@@ -676,6 +802,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "manufacturer": "Samsung"
 		},
 		"event": {"action": "user-password-change"},
+		"http": { "response": {"encoded_body_size": 1024 }} ,
 		"kubernetes": {
 		  "namespace": "default",
 		  "node": {"name": "node-1"},
@@ -691,7 +818,17 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "daemonset": {"name": "daemonset.name"},
 		  "container": {"name": "container.name"}
 		},
-		"orchestrator": {"cluster": {"name": "cluster.name"}}
+		"orchestrator": {"cluster": {"name": "cluster.name"}},
+        "client": {
+			"ip": "12.53.12.1"
+		},
+        "source": {
+			"ip": "12.53.12.1"
+		},
+        "faas": {
+		    "id" : "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		     "trigger": { "type": "api-gateway" }
+	  }
 	}`, buf.String())
 }
 

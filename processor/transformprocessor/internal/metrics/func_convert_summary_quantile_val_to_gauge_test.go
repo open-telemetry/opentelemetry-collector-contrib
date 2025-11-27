@@ -6,7 +6,7 @@ package metrics
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -128,10 +128,10 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			tt.input.CopyTo(actualMetric.AppendEmpty())
 
 			evaluate, err := convertSummaryQuantileValToGauge(tt.key, tt.suffix)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetric, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
@@ -144,7 +144,7 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			sl2 := actualMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 			actualMetric.CopyTo(sl2)
 
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
 }

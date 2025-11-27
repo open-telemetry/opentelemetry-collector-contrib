@@ -164,7 +164,8 @@ func TestNewFranzSyncProducer_TLS(t *testing.T) {
 		// Should fail because the server expects TLS.
 		require.Error(t, tryConnect(nil))
 		filtered := observedLogs.FilterMessage(
-			"failed to connect to broker, it may require TLS but TLS is not configured",
+			// franz-go logs this warning message:
+			"read from broker received EOF during api versions discovery, which often happens when the broker requires TLS and the client is not using it (is TLS misconfigured?)",
 		)
 		assert.NotEmpty(t, filtered.All())
 	})
@@ -483,7 +484,7 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	minAge := 10 * time.Millisecond
 	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
 	client, err := NewFranzConsumerGroup(t.Context(), clientConfig, consumerConfig,
-		topics, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
+		topics, nil, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
 	)
 	require.NoError(t, err)
 	t.Cleanup(client.Close)

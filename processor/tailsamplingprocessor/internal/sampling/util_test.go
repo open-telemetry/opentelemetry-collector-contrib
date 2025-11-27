@@ -63,6 +63,7 @@ func TestSetAttrOnScopeSpans_Many(t *testing.T) {
 
 func BenchmarkSetAttrOnScopeSpans(b *testing.B) {
 	for b.Loop() {
+		b.StopTimer()
 		traces := ptrace.NewTraces()
 
 		for range 5 {
@@ -86,6 +87,5 @@ func BenchmarkSetAttrOnScopeSpans(b *testing.B) {
 
 		b.StartTimer()
 		SetAttrOnScopeSpans(traceData, "test.attr", "value")
-		b.StopTimer()
 	}
 }

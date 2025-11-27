@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
 func AssertEqualLoadbalancerBackendLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_loadbalancer_backend_latency",
-		Description: "Response latency in ms for the backends. [development]",
+		Description: "Response latency in ms for the backends. [Development]",
 		Unit:        "ms",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -39,7 +39,7 @@ func AssertEqualLoadbalancerBackendLatency(t *testing.T, tt *componenttest.Telem
 func AssertEqualLoadbalancerBackendOutcome(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_loadbalancer_backend_outcome",
-		Description: "Number of successes and failures for each endpoint. [development]",
+		Description: "Number of successes and failures for each endpoint. [Development]",
 		Unit:        "{outcomes}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -55,7 +55,7 @@ func AssertEqualLoadbalancerBackendOutcome(t *testing.T, tt *componenttest.Telem
 func AssertEqualLoadbalancerNumBackendUpdates(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_loadbalancer_num_backend_updates",
-		Description: "Number of times the list of backends was updated. [development]",
+		Description: "Number of times the list of backends was updated. [Development]",
 		Unit:        "{updates}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -71,7 +71,7 @@ func AssertEqualLoadbalancerNumBackendUpdates(t *testing.T, tt *componenttest.Te
 func AssertEqualLoadbalancerNumBackends(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_loadbalancer_num_backends",
-		Description: "Current number of backends in use. [development]",
+		Description: "Current number of backends in use. [Development]",
 		Unit:        "{backends}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -85,7 +85,7 @@ func AssertEqualLoadbalancerNumBackends(t *testing.T, tt *componenttest.Telemetr
 func AssertEqualLoadbalancerNumResolutions(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_loadbalancer_num_resolutions",
-		Description: "Number of times the resolver has triggered new resolutions. [development]",
+		Description: "Number of times the resolver has triggered new resolutions. [Development]",
 		Unit:        "{resolutions}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

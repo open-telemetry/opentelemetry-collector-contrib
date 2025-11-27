@@ -28,7 +28,7 @@ resourceLogs:
               - key: log.record.uid
                 value:
                   stringValue: x1ty6xe56du7
-              - key: network.protocol.name
+              - key: network.transport
                 value:
                   stringValue: tcp
               - key: source.address
@@ -94,4 +94,8 @@ resourceLogs:
             body: {}
             observedTimeUnixNano: "1759008881615575788"
             timeUnixNano: "1759008881615575788"
-        scope: {}
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.vpcflow

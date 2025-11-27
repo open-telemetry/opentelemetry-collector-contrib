@@ -46,6 +46,7 @@ type WebHook struct {
 	GitHubHeaders           GitHubHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
 	Secret                  string                         `mapstructure:"secret"`           // secret for webhook
 	ServiceName             string                         `mapstructure:"service_name"`
+	IncludeSpanEvents       bool                           `mapstructure:"include_span_events"` // attach raw webhook event JSON as span events
 }
 
 type GitHubHeaders struct {
