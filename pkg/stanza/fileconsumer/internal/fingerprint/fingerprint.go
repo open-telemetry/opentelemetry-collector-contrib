@@ -12,21 +12,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 const DefaultSize = 1000 // bytes
 
 const MinSize = 16 // bytes
-
-var DecompressedFingerprintFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"filelog.decompressFingerprint",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Computes fingerprint for compressed files by decompressing its data"),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40256"),
-)
 
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file
@@ -42,22 +32,20 @@ func New(first []byte) *Fingerprint {
 // Set decompressData to true to compute fingerprint of compressed files by decompressing its data first
 func NewFromFile(file *os.File, size int, decompressData bool) (*Fingerprint, error) {
 	buf := make([]byte, size)
-	if DecompressedFingerprintFeatureGate.IsEnabled() {
-		if decompressData {
-			if hasGzipExtension(file.Name()) {
-				// If the file is of compressed type, uncompress the data before creating its fingerprint
-				uncompressedData, err := gzip.NewReader(file)
-				if err != nil {
-					return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
-				}
-				defer uncompressedData.Close()
-
-				n, err := uncompressedData.Read(buf)
-				if err != nil && !errors.Is(err, io.EOF) {
-					return nil, fmt.Errorf("error reading fingerprint bytes: %w", err)
-				}
-				return New(buf[:n]), nil
+	if decompressData {
+		if hasGzipExtension(file.Name()) {
+			// If the file is of compressed type, uncompress the data before creating its fingerprint
+			uncompressedData, err := gzip.NewReader(file)
+			if err != nil {
+				return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
 			}
+			defer uncompressedData.Close()
+
+			n, err := uncompressedData.Read(buf)
+			if err != nil && !errors.Is(err, io.EOF) {
+				return nil, fmt.Errorf("error reading fingerprint bytes: %w", err)
+			}
+			return New(buf[:n]), nil
 		}
 	}
 

@@ -243,15 +243,3 @@ will also provide telemetry metrics for the state of the receiver's file consump
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
 are provided.
 
-## Feature Gates
-
-### `filelog.decompressFingerprint`
-
-When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
-
-This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
-
-Schedule for this feature gate is:
-
-- Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.133.0`
