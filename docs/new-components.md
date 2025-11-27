@@ -1,7 +1,7 @@
-# Adding new components
+# Donating new components
 
-This page explains how to add your own components to an OpenTelemetry Collector and to the
-opentelemetry-collector-contrib repository.
+This page explains how to add your own components to an OpenTelemetry Collector and how to donate
+them to the opentelemetry-collector-contrib repository.
 
 The OpenTelemetry Collector has a pluggable architecture that allows you to build your own
 [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom
@@ -11,19 +11,29 @@ your component in this repository to be able to use or distribute your component
 it in your own repository as a Go module and [add it to the OpenTelemetry
 registry](https://opentelemetry.io/ecosystem/registry/).
 
-We recommend hosting your component outside of this repository as a first step. Many high-quality components in the ecosystem start this way, and we'd love to see your component develop and gather community feedback.
+To donate your component you need to start by hosting your component outside of this
+repository as a first step. This ensures your component develops and gather community feedback.
 
-## Hosting your component outside of opentelemetry-collector-contrib (Recommended)
+## Hosting your component outside of opentelemetry-collector-contrib
 
-As a first step, we recommend that you **build** your component outside of the
-opentelemetry-collector-contrib repository. This is the fastest way to start using your component and
-to publish it for others to consume if you want to. A component is a Go module (library) built using
-the `go.opentelemetry.io/collector` set of libraries. These libraries contain examples (e.g. see the
+Components refer to connectors, exporters, extensions, processors, and receivers. As a first step,
+we require that you **build** your component outside of the opentelemetry-collector-contrib
+repository. This is also the fastest way to start using your component and to publish it for others to
+consume if you want to. 
+
+A component is a Go module (library) built using the
+`go.opentelemetry.io/collector` set of libraries. These libraries contain examples (e.g. see the
 example on the [`go.opentelemetry.io/collector/exporter` module
 documentation](https://pkg.go.dev/go.opentelemetry.io/collector/exporter)). The official
  documentation also has [a section on how to build various kinds of
 components](https://opentelemetry.io/docs/collector/building/). You can also use existing
-implementations on this repository as a reference.
+implementations on this repository as a reference. The key criteria to implement a component is to:
+
+* Implement the
+  [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component)
+  interface
+* Provide a configuration structure which defines the configuration of the component
+* Provide the implementation which performs the component operation
 
 To **use** your component you can [use the OpenTelemetry Collector
 Builder](https://opentelemetry.io/docs/collector/custom-collector/). Even if you don't publish your
@@ -47,18 +57,15 @@ Finally, to **distribute** your component and make sure others can easily discov
 the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/adding/).
 
 If you think your component fits the requisites to be on the opentelemetry-collector-contrib
-repository, you may choose to donate it following the steps on the next section. If you have
-published your component outside of this repository, your activity, community and popularity within
-your own repository will help you make the case for the component to be accepted.
+repository, you may choose to donate it following the steps on the next section. Your activity,
+community and popularity within your own repository will help you make the case for the component to
+be accepted.
 
 ## Adding your component to the opentelemetry-collector-contrib repository
 
-You may donate an existing component or propose a whole new one. We recommend that you **start by
-building and hosting your component outside of the opentelemetry-collector-contrib repository**.
-After you have gotten some real usage you can contribute your component to this repository.
-
+After you have gotten some real usage of a component outside of contrib, you can contribute your component to this repository.
 When you are ready to propose adding your component to this repository, [open an
-issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
+issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=Component+donation%3A+)
 providing the following information:
 
 * Who's the **sponsor** for your component. A sponsor is an approver or maintainer who will be the
@@ -90,28 +97,21 @@ will be excluded from the default build. The component **will** be excluded if i
 problems, has failing tests, or otherwise causes problems to the rest of the repository and its
 contributors.
 
-### Implementation
+### Donation
 
-Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implement a component is to:
+Once your donation is accepted, your component will undergo a review process that may imply changes to your component.
+This is expected and it ensures that your component is aligned with the community's and this repo's best practices.
 
-* Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
-* Provide a configuration structure which defines the configuration of the component
-* Provide the implementation which performs the component operation
-* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md)).
+To donate your component to this repository, follow these steps:
 
-Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
-[Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
-
-- Create your component under the proper folder and use Go standard package naming recommendations.
+- Add your component under the proper folder and use Go standard package naming recommendations.
 - Use a boiler-plate Makefile that just references the one at top level, ie.: `include ../../Makefile.Common` - this
   allows you to build your component with required build configurations for the contrib repo while avoiding building the
   full repo during development.
 - Each component has its own go.mod file. This allows custom builds of the collector to take a limited sets of
   dependencies - so run `go mod` commands as appropriate for your component.
-- Implement the needed interface on your component by importing the appropriate component from the core repo. Follow the
-  pattern of existing components regarding config and factory source files and tests.
-- Implement your component as appropriate. Provide end-to-end tests (or mock backend/client as appropriate). Target is
-  to get 80% or more of code coverage.
+- Make sure your code follows the pattern of existing components regarding config and factory source files and tests.
+- Provide end-to-end tests (or mock backend/client as appropriate). Target is to get 80% or more of code coverage.
 - Add a README.md on the root of your component describing its configuration and usage, likely referencing some of the
   yaml files used in the component tests. We also suggest that the yaml files used in tests have comments for all
   available configuration settings so users can copy and modify them as needed.
@@ -159,7 +159,7 @@ package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector
 - Type `make generate`. This will trigger the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
 - Type `make gencodeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file. 
 
-When submitting a component to the community, consider breaking it down into separate PRs as follows:
+When donating a component to the community, break it down into separate PRs as follows:
 
 * **First PR** should include the overall structure of the new component:
   * Readme, configuration, and factory implementation usually using the helper

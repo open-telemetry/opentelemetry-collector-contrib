@@ -1,35 +1,35 @@
-name: New component proposal or donation
-description: Suggest or donate a new component for the project
-title: "New component: "
+name: Component donation
+description: Donate a component to the project
+title: "Component donation: "
 labels: ["Sponsor Needed", "needs triage"]
 body:
   - type: checkboxes
     attributes:
       label: Building and distributing outside this repository
-      description: "The OpenTelemetry Collector has a pluggable architecture that allows you to build your own [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include your component in this repository to be able to use or distribute your component: you can just  host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/). We recommend this as a first step."
+      description: "The OpenTelemetry Collector has a pluggable architecture that allows you to build your own [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include your component in this repository to be able to use or distribute your component: you can just  host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/)."
       options:
-        - label: I understand I can use and distribute my component outside of this repository and that this is the recommended first step.
+        - label: I understand I can use and distribute my component outside of this repository.
           required: true
     validations:
       required: true
   - type: input
     attributes:
-      label: Existing implementation
-      description: If donating an existing implementation (recommended), provide a URL for the existing repository where the code is located. Leave blank otherwise
+      label: Existing component implementation
+      description: Provide a URL for the existing repository where the component code is located.
+      validations:
+        required: true
   - type: textarea
     attributes:
       label: Components covering similar use cases
       description: Provide links to other components in this repository or outside of it that cover similar use cases. Leave blank if you do not know of other implementations.
-    validations:
-      required: true
   - type: textarea
     attributes:
-      label: The purpose and use-cases of the new component
+      label: The purpose and use-cases of the component
       description: This information can be used later on to populate the README for the component. See an example overview [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
   - type: textarea
     attributes:
       label: Example configuration for the component
-      description: This will be used later on when creating `config.go` and added to README as well. See this receiver as an [example](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver#getting-started).
+      description: See this receiver as an [example](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver#getting-started).
       placeholder: | # Empty Collector config
         ```yaml
         ```

@@ -190,9 +190,9 @@ In order to ensure compatibility with different operating systems, code should b
 
 With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
 
-## Adding New Components
+## Donating New Components
 
-See the ['Adding new components' document](docs/new-components.md).
+See the ['Donating new components' document](docs/new-components.md).
 
 ## Semantic Conventions compatibility
 
