@@ -10,11 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
-	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
-	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -23,6 +18,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
+	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 type k8sobjectsreceiver struct {
