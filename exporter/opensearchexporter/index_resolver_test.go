@@ -348,6 +348,28 @@ func TestIndexResolver_ResolveSpanIndex_MultiplePlaceholders(t *testing.T) {
 	}
 }
 
+func TestIndexResolver_ResolveSpanIndex_MultiplePlaceholdersWithFallback(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		TracesIndex:           "%{service.name}-%{missing}-traces",
+		TracesIndexFallback:   "fallback",
+		TracesIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:               "default",
+		Namespace:             "namespace",
+	}
+
+	td := createTestTraceData("myservice")
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+	resource := td.ResourceSpans().At(0).Resource()
+	scope := td.ResourceSpans().At(0).ScopeSpans().At(0).Scope()
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	index := resolver.ResolveSpanIndex(cfg, resource, scope, span, ts)
+	expected := "myservice-fallback-traces-2025.06.07"
+	if index != expected {
+		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
 func TestIndexResolver_ResolveLogRecordIndex_MultiplePlaceholdersWithFallback(t *testing.T) {
 	resolver := newIndexResolver()
 	cfg := &Config{
@@ -365,6 +387,50 @@ func TestIndexResolver_ResolveLogRecordIndex_MultiplePlaceholdersWithFallback(t 
 	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	index := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, ts)
 	expected := "myservice-fallback-logs-2025.06.07"
+	if index != expected {
+		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
+func TestIndexResolver_ResolveLogRecordIndex_WithCustomAttribute(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		LogsIndex:           "otel-logs-%{custom.label}",
+		LogsIndexFallback:   "fallback",
+		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
+	}
+
+	ld := createTestLogDataWithCustomAttribute("myservice", "custom.label", "myapp")
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+	resource := ld.ResourceLogs().At(0).Resource()
+	scope := ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	index := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, ts)
+	expected := "otel-logs-myapp-2025.06.07"
+	if index != expected {
+		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
+func TestIndexResolver_ResolveLogRecordIndex_UnknownPlaceholder(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		LogsIndex:           "otel-logs-%{nonexistent}",
+		LogsIndexFallback:   "",
+		LogsIndexTimeFormat: "yyyy.MM.dd",
+		Dataset:             "default",
+		Namespace:           "namespace",
+	}
+
+	ld := createTestLogData("myservice")
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+	resource := ld.ResourceLogs().At(0).Resource()
+	scope := ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	index := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, ts)
+	expected := "otel-logs-unknown-2025.06.07"
 	if index != expected {
 		t.Errorf("expected %q, got %q", expected, index)
 	}
