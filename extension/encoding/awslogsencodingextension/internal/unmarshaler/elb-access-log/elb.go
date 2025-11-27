@@ -488,20 +488,23 @@ func extractFields(logLine string) ([]string, error) {
 func parseRequestField(raw string) (method, uri, protoName, protoVersion string, err error) {
 	method, remaining, _ := strings.Cut(raw, " ")
 	if method == "" {
-		err = fmt.Errorf("unexpected: request field %q has no method", raw)
+		err = fmt.Errorf("unexpected: field %q has no method section", raw)
 		return method, uri, protoName, protoVersion, err
 	}
 
-	uri, remaining, _ = strings.Cut(remaining, " ")
-	if uri == "" {
-		err = fmt.Errorf("unexpected: request field %q has no URI", raw)
-		return method, uri, protoName, protoVersion, err
-	}
+	var protocol string
 
-	protocol, leftover, _ := strings.Cut(remaining, " ")
-	if protocol == "" || leftover != "" {
-		err = fmt.Errorf(`request field %q does not match expected format "<method> <uri> <protocol>"`, raw)
+	index := strings.LastIndex(remaining, " ")
+	switch {
+	case index == -1:
+		err = fmt.Errorf("unexpected: field %q has no protocol/version section", raw)
 		return method, uri, protoName, protoVersion, err
+	case index == len(remaining)-1:
+		uri = strings.TrimSpace(remaining)
+		protocol = unknownField
+	default:
+		uri = remaining[:index]
+		protocol = remaining[index+1:]
 	}
 
 	protoName, protoVersion, err = netProtocol(protocol)
@@ -509,11 +512,16 @@ func parseRequestField(raw string) (method, uri, protoName, protoVersion string,
 		err = fmt.Errorf("invalid protocol in request field: %w", err)
 		return method, uri, protoName, protoVersion, err
 	}
-	return method, uri, protoName, protoVersion, err
+
+	return method, uri, protoName, protoVersion, nil
 }
 
 // netProtocol returns protocol name and version based on proto value
 func netProtocol(proto string) (string, string, error) {
+	if proto == unknownField {
+		return unknownField, unknownField, nil
+	}
+
 	name, version, found := strings.Cut(proto, "/")
 	if !found || name == "" || version == "" {
 		return "", "", errors.New(`request uri protocol does not follow expected scheme "<name>/<version>"`)
