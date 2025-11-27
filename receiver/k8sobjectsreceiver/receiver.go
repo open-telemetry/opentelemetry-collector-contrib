@@ -18,13 +18,16 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
+	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -38,6 +41,7 @@ type k8sobjectsreceiver struct {
 	obsrecv         *receiverhelper.ObsReport
 	mu              sync.Mutex
 	cancel          context.CancelFunc
+	observerFunc    func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error)
 	wg              sync.WaitGroup
 }
 
@@ -61,19 +65,81 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 			objects[i].exclude[item] = true
 		}
 		// Set default interval if in PullMode and interval is 0
-		if objects[i].Mode == PullMode && objects[i].Interval == 0 {
+		if objects[i].Mode == k8sinventory.PullMode && objects[i].Interval == 0 {
 			objects[i].Interval = defaultPullInterval
 		}
 	}
 
-	return &k8sobjectsreceiver{
+	kr := &k8sobjectsreceiver{
 		setting:  params,
 		config:   config,
 		objects:  objects,
 		consumer: consumer,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
-	}, nil
+	}
+
+	kr.observerFunc = getObserverFunc(kr)
+
+	return kr, nil
+}
+
+func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
+	return func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
+		obsConf := k8sinventory.Config{
+			Gvr:             *object.gvr,
+			Namespaces:      object.Namespaces,
+			LabelSelector:   object.LabelSelector,
+			FieldSelector:   object.FieldSelector,
+			ResourceVersion: object.ResourceVersion,
+		}
+
+		switch object.Mode {
+		case k8sinventory.PullMode:
+			return pullobserver.New(
+				kr.client,
+				pullobserver.Config{
+					Config:   obsConf,
+					Interval: object.Interval,
+				},
+				kr.setting.Logger,
+				func(objects *unstructured.UnstructuredList) {
+					logs := pullObjectsToLogData(objects, time.Now(), object, kr.setting.BuildInfo.Version)
+					obsCtx := kr.obsrecv.StartLogsOp(ctx)
+					logRecordCount := logs.LogRecordCount()
+					err := kr.consumer.ConsumeLogs(obsCtx, logs)
+					kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+				},
+			)
+		case k8sinventory.WatchMode:
+			return watchobserver.New(
+				kr.client,
+				watchobserver.Config{
+					Config: k8sinventory.Config{
+						Gvr:             *object.gvr,
+						Namespaces:      object.Namespaces,
+						LabelSelector:   object.LabelSelector,
+						FieldSelector:   object.FieldSelector,
+						ResourceVersion: object.ResourceVersion,
+					},
+					IncludeInitialState: kr.config.IncludeInitialState,
+					Exclude:             object.exclude,
+				},
+				kr.setting.Logger,
+				func(data *apiWatch.Event) {
+					logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)
+					if err != nil {
+						kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
+					} else {
+						obsCtx := kr.obsrecv.StartLogsOp(ctx)
+						err := kr.consumer.ConsumeLogs(obsCtx, logs)
+						kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
+					}
+				},
+			)
+		}
+		return nil, fmt.Errorf("invalid observer mode: %s", object.Mode)
+	}
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
@@ -138,7 +204,9 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				cctx, cancel := context.WithCancel(ctx)
 				kr.cancel = cancel
 				for _, object := range validConfigs {
-					kr.start(cctx, object)
+					if err := kr.start(cctx, object); err != nil {
+						kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", object.Name))
+					}
 				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
@@ -152,7 +220,9 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		cctx, cancel := context.WithCancel(ctx)
 		kr.cancel = cancel
 		for _, object := range validConfigs {
-			kr.start(cctx, object)
+			if err := kr.start(cctx, object); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -193,120 +263,16 @@ func (kr *k8sobjectsreceiver) stopWatches() {
 	kr.wg.Wait()
 }
 
-func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) {
-	resource := kr.client.Resource(*object.gvr)
-	kr.setting.Logger.Info("Started collecting",
-		zap.Any("gvr", object.gvr),
-		zap.Any("mode", object.Mode),
-		zap.Any("namespaces", object.Namespaces))
-
-	switch object.Mode {
-	case PullMode:
-		if len(object.Namespaces) == 0 {
-			go kr.startPull(ctx, object, resource)
-		} else {
-			for _, ns := range object.Namespaces {
-				go kr.startPull(ctx, object, resource.Namespace(ns))
-			}
-		}
-
-	case WatchMode:
-		if len(object.Namespaces) == 0 {
-			go kr.startWatch(ctx, object, resource)
-		} else {
-			for _, ns := range object.Namespaces {
-				go kr.startWatch(ctx, object, resource.Namespace(ns))
-			}
-		}
-	}
-}
-
-func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
-	stopperChan := make(chan struct{})
-	kr.mu.Lock()
-	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
-	kr.wg.Add(1)
-	kr.mu.Unlock()
-	defer kr.wg.Done()
-	ticker := newTicker(ctx, config.Interval)
-	listOption := metav1.ListOptions{
-		FieldSelector: config.FieldSelector,
-		LabelSelector: config.LabelSelector,
+func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) error {
+	obs, err := kr.observerFunc(ctx, object)
+	if err != nil {
+		return err
 	}
 
-	if config.ResourceVersion != "" {
-		listOption.ResourceVersion = config.ResourceVersion
-		listOption.ResourceVersionMatch = metav1.ResourceVersionMatchExact
-	}
+	stopChan := obs.Start(ctx, &kr.wg)
+	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			objects, err := resource.List(ctx, listOption)
-			if err != nil {
-				kr.setting.Logger.Error("error in pulling object",
-					zap.String("resource", config.gvr.String()),
-					zap.Error(err))
-				continue
-			}
-			if len(objects.Items) == 0 {
-				continue
-			}
-			logs := pullObjectsToLogData(objects, time.Now(), config, kr.setting.BuildInfo.Version)
-			obsCtx := kr.obsrecv.StartLogsOp(ctx)
-			logRecordCount := logs.LogRecordCount()
-			err = kr.consumer.ConsumeLogs(obsCtx, logs)
-			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
-
-		case <-stopperChan:
-			return
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
-	stopperChan := make(chan struct{})
-	kr.mu.Lock()
-	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
-	kr.wg.Add(1)
-	kr.mu.Unlock()
-	defer kr.wg.Done()
-
-	if kr.config.IncludeInitialState {
-		kr.sendInitialState(ctx, config, resource)
-	}
-
-	watchFunc := cache.WatchFuncWithContext(func(ctx context.Context, options metav1.ListOptions) (apiWatch.Interface, error) {
-		options.FieldSelector = config.FieldSelector
-		options.LabelSelector = config.LabelSelector
-		return resource.Watch(ctx, options)
-	})
-
-	cancelCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	cfgCopy := *config
-	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
-		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
-		if err != nil {
-			kr.setting.Logger.Error("could not retrieve a resourceVersion",
-				zap.String("resource", cfgCopy.gvr.String()),
-				zap.Error(err))
-			cancel()
-			return
-		}
-
-		done := kr.doWatch(newCtx, &cfgCopy, resourceVersion, watchFunc, stopperChan)
-		if done {
-			cancel()
-			return
-		}
-
-		// need to restart with a fresh resource version
-		cfgCopy.ResourceVersion = ""
-	}, 0)
+	return nil
 }
 
 // sendInitialState sends the current state of objects as synthetic Added events
