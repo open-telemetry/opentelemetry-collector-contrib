@@ -83,6 +83,7 @@ See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
 ### Compression
 - `none` (default): No compression will be applied
 - `gzip`: Files will be compressed with gzip.
+- `zstd`: Files will be compressed with zstd.
 
 ### resource_attrs_to_s3
 - `s3_bucket`: Defines which resource attribute's value should be used as the S3 bucket.

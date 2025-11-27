@@ -17,6 +17,7 @@ import (
 
 var compressionFileExtensions = map[configcompression.Type]string{
 	configcompression.TypeGzip: ".gz",
+	configcompression.TypeZstd: ".zst",
 }
 
 type PartitionKeyBuilder struct {

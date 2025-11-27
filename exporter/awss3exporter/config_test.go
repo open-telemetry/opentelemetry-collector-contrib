@@ -440,6 +440,25 @@ func TestCompressionName(t *testing.T) {
 		MarshalerName: "otlp_proto",
 	}, e,
 	)
+
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "zstd")].(*Config)
+
+	assert.Equal(t, &Config{
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Compression:       "zstd",
+			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+		},
+		MarshalerName: "otlp_json",
+	}, e,
+	)
 }
 
 func TestResourceAttrsToS3(t *testing.T) {
