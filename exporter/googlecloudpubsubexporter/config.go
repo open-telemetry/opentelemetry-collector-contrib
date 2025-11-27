@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
@@ -38,6 +39,12 @@ type Config struct {
 	Watermark WatermarkConfig `mapstructure:"watermark"`
 	// Ordering configures the ordering keys
 	Ordering OrderingConfig `mapstructure:"ordering"`
+	// LogsSignalConfig allows for custom log configuration
+	LogsSignalConfig SignalConfig `mapstructure:"logs"`
+	// MetricsSignalConfig allows for custom log configuration
+	MetricsSignalConfig SignalConfig `mapstructure:"metrics"`
+	// TracesSignalConfig allows for custom log configuration
+	TracesSignalConfig SignalConfig `mapstructure:"traces"`
 }
 
 // WatermarkConfig customizes the behavior of the watermark
@@ -58,6 +65,14 @@ type OrderingConfig struct {
 	FromResourceAttribute string `mapstructure:"from_resource_attribute"`
 	// RemoveResourceAttribute indicates if the ordering key should be removed from the resource attributes.
 	RemoveResourceAttribute bool `mapstructure:"remove_resource_attribute"`
+}
+
+// SignalConfig holds signal-specific configuration for the Kafka exporter.
+type SignalConfig struct {
+	// Encoding is a custom encoding for the marshaling the data onto the message
+	Encoding component.ID `mapstructure:"encoding"`
+	// Attributes are custom Pub/Sub message attributes
+	Attributes map[string]string `mapstructure:"attributes"`
 }
 
 func (config *Config) Validate() error {
