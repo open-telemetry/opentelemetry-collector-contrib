@@ -1605,6 +1605,8 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
 
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+
 	httpClient, err := se.getHTTPClient(t.Context(), se.conf.ClientConfig, api.OpenRegisterResponsePayload{})
 	require.NoError(t, err)
 
