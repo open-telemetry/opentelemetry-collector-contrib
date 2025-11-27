@@ -25,6 +25,7 @@ var DecompressedFingerprintFeatureGate = featuregate.GlobalRegistry().MustRegist
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Computes fingerprint for compressed files by decompressing its data"),
 	featuregate.WithRegisterFromVersion("v0.128.0"),
+	featuregate.WithRegisterToVersion("v0.142.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40256"),
 )
 
