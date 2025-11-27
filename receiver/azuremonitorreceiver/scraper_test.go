@@ -138,12 +138,12 @@ func TestAzureScraperScrape(t *testing.T) {
 			)
 
 			s := &azureScraper{
-				cfg:                      tt.fields.cfg,
-				mb:                       metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
-				mutex:                    &sync.Mutex{},
-				time:                     getTimeMock(),
-				clientOptionsResolver:    optionsResolver,
-				storageAccountHackConfig: newStorageAccountHackConfig(tt.fields.cfg.Services),
+				cfg:                          tt.fields.cfg,
+				mb:                           metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
+				mutex:                        &sync.Mutex{},
+				time:                         getTimeMock(),
+				clientOptionsResolver:        optionsResolver,
+				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.fields.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
@@ -258,12 +258,12 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 
 		settings := receivertest.NewNopSettings(metadata.Type)
 		s := &azureScraper{
-			cfg:                      cfgLimitedMertics,
-			mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-			mutex:                    &sync.Mutex{},
-			time:                     getTimeMock(),
-			clientOptionsResolver:    optionsResolver,
-			storageAccountHackConfig: newStorageAccountHackConfig(cfgLimitedMertics.Services),
+			cfg:                          cfgLimitedMertics,
+			mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+			mutex:                        &sync.Mutex{},
+			time:                         getTimeMock(),
+			clientOptionsResolver:        optionsResolver,
+			storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfgLimitedMertics.Services),
 
 			// From there, initialize everything that is normally initialized in start() func
 			subscriptions: map[string]*azureSubscription{},
@@ -316,13 +316,13 @@ func getNominalTestScraper() *azureScraper {
 	cfg := createDefaultTestConfig()
 
 	return &azureScraper{
-		cfg:                      cfg,
-		settings:                 settings.TelemetrySettings,
-		mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-		mutex:                    &sync.Mutex{},
-		time:                     getTimeMock(),
-		clientOptionsResolver:    optionsResolver,
-		storageAccountHackConfig: newStorageAccountHackConfig(cfg.Services),
+		cfg:                          cfg,
+		settings:                     settings.TelemetrySettings,
+		mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
 
 		// From there, initialize everything that is normally initialized in start() func
 		subscriptions: map[string]*azureSubscription{},
@@ -358,7 +358,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 	assert.Empty(t, s.resources["subscriptionId1"])
 }
 
-func TestAzureScraperHackResources(t *testing.T) {
+func TestAzureScraperProcessResources(t *testing.T) {
 	cfgWithSubTypes := createDefaultTestConfig()
 	cfgWithoutSubTypes := createDefaultTestConfig()
 	cfgWithoutSubTypes.Services = []string{}
@@ -485,20 +485,20 @@ func TestAzureScraperHackResources(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			s := &azureScraper{
-				cfg:                      tt.cfg,
-				settings:                 settings.TelemetrySettings,
-				mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-				mutex:                    &sync.Mutex{},
-				time:                     getTimeMock(),
-				clientOptionsResolver:    optionsResolver,
-				storageAccountHackConfig: newStorageAccountHackConfig(tt.cfg.Services),
+				cfg:                          tt.cfg,
+				settings:                     settings.TelemetrySettings,
+				mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mutex:                        &sync.Mutex{},
+				time:                         getTimeMock(),
+				clientOptionsResolver:        optionsResolver,
+				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
 				resources:     map[string]map[string]*azureResource{},
 			}
 
-			assert.Equal(t, tt.expected, s.hackResources(tt.resourcesArg))
+			assert.Equal(t, tt.expected, s.processResources(tt.resourcesArg))
 		})
 	}
 }
@@ -859,4 +859,29 @@ func TestMapFindInsensitive(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildSubTypeResource_PointersAreDistinct(t *testing.T) {
+	orig := armresources.GenericResourceExpanded{
+		ID:       to.Ptr("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource"),
+		Type:     to.Ptr("Microsoft.Storage/storageAccounts"),
+		Name:     to.Ptr("myResource"),
+		Location: to.Ptr("westeurope"),
+		Tags: map[string]*string{
+			"env": to.Ptr("prod"),
+		},
+	}
+
+	newType := "Microsoft.Storage/storageAccounts/blobServices"
+	newID := "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource/blobServices/default"
+	cloned := buildSubTypeResource(orig, newType, newID)
+
+	require.NotNil(t, cloned)
+	require.NotEqual(t, orig.ID, cloned.ID)
+	require.NotEqual(t, orig.Type, cloned.Type)
+	require.Equal(t, newID, *cloned.ID)
+	require.Equal(t, newType, *cloned.Type)
+	require.Equal(t, *orig.Name, *cloned.Name)
+	require.Equal(t, *orig.Location, *cloned.Location)
+	require.NotSame(t, orig.Location, cloned.Location)
 }
