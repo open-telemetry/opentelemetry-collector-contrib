@@ -194,7 +194,8 @@ func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 
 	bi := bulkIndexerConfig(client, cfg, true)
 	require.Equal(t, map[string][]string{
-		"pipeline": []string{"test-pipeline"}}, bi.QueryParams) //nolint:gofumpt //query.Params is of []string type
+		"pipeline": {"test-pipeline"},
+	}, bi.QueryParams)
 }
 
 func TestNewBulkIndexer(t *testing.T) {
