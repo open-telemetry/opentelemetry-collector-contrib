@@ -64,7 +64,7 @@ func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	var cwLog events.CloudwatchLogsData
 	decoder := gojson.NewDecoder(reader)
 	if err := decoder.Decode(&cwLog); err != nil {
-		return plog.NewLogs(), fmt.Errorf("failed to decode decompressed reader: %w", err)
+		return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
 	}
 
 	if cwLog.MessageType == "CONTROL_MESSAGE" {
@@ -72,7 +72,7 @@ func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	}
 
 	if err := validateLog(cwLog); err != nil {
-		return plog.NewLogs(), fmt.Errorf("invalid cloudwatch log: %w", err)
+		return plog.Logs{}, fmt.Errorf("invalid cloudwatch log: %w", err)
 	}
 
 	return f.createLogs(cwLog), nil
