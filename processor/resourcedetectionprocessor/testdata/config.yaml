@@ -44,7 +44,6 @@ resourcedetection/system:
   override: false
   system:
     hostname_sources: [os]
-  attributes: ["a", "b"]
 
 resourcedetection/docker:
   detectors: [env, docker]
