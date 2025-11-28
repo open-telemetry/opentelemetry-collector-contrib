@@ -54,44 +54,19 @@ The `awslambdareceiver` operates as follows:
 
 The following receiver configuration parameters are supported.
 
-| Name          | Description                                                                                                                                                                                        | Required |
-|:--------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| `s3_encoding` | Name of the encoding extension to use for S3 objects. For example, `awslogs_encoding` to use AWS logs encoding extensions. When unspecified, falls back to CloudWatch subscription filter handling | Optional |
+| Name                 | Description                                                                                                        |
+|:---------------------|:-------------------------------------------------------------------------------------------------------------------|
+| `encoding_extension` | Required: The name of the encoding extension to load which will decode the data received through supported sources | 
 
 ### Example Configuration
 
-```yaml
-receivers:
-  awslambda:
-    s3_encoding: awslogs_encoding
-
-extensions:
-  awslogs_encoding:
-    format: vpcflow
-    vpcflow:
-      file_format: plain-text
-
-exporters:
-  otlphttp:
-    endpoint: "https://my-backend:443"
-
-service:
-  extensions:
-    - awslogs_encoding
-  pipelines:
-    logs:
-      receivers: [awslambda]
-      exporters: [otlphttp]
-```
-
-## Examples
 
 ### Example 1: VPC Flow Logs from S3
 
 ```yaml
 receivers:
   awslambda:
-    s3_encoding: awslogs_encoding
+    encoding_extension: awslogs_encoding
 
 extensions:
   awslogs_encoding:
@@ -112,14 +87,16 @@ service:
       exporters: [otlphttp]
 ```
 
-In this example, `awslambdareceiver` receives a notification when a new VPC flow log file is stored in an S3 bucket. The receiver fetches the log file from S3 and parses it using the `awslogs_encoding` extension with vpcflow format. The parsed logs are then sent to an OTLP listener using the `otlphttp` exporter.
+In this example, the `awslambdareceiver` is expected to be triggered when a VPC flow log is created at S3 bucket.
+The receiver retrieves the log file from S3 and decodes it using the `awslogs_encoding` extension with the vpcflow format.
+Parsed logs are forwarded to an OTLP listener via the `otlphttp` exporter.
 
 ### Example 2: ELB Access Logs from S3
 
 ```yaml
 receivers:
   awslambda:
-    s3_encoding: awslogs_encoding
+    encoding_extension: awslogs_encoding
 
 extensions:
   awslogs_encoding:
@@ -140,32 +117,37 @@ service:
       exporters: [otlphttp]
 ```
 
-### Example 3: CloudWatch Logs Subscription
+### Example 3: CloudWatch Logs mode
 
 ```yaml
 receivers:
   awslambda:
+    encoding_extension: awslogs_encoding
+
+extensions:
+  awslogs_encoding:
+    format: cloudwatch
 
 exporters:
   otlphttp:
     endpoint: "https://my-backend:443"
 
 service:
+  extensions:
+    - awslogs_encoding
   pipelines:
     logs:
       receivers: [awslambda]
       exporters: [otlphttp]
 ```
 
-In this example, `awslambdareceiver` is invoked by a CloudWatch Logs subscription filter. 
-`s3_encoding` configuration is omitted since it is not needed for CloudWatch Logs.
-The receiver automatically parses the CloudWatch Logs data using the default `awslogs_encoding` extension with cloudwatch format. 
-No explicit encoding configuration is needed. The parsed logs are then sent to an OTLP listener using the `otlphttp` exporter.
+In this example, `awslambdareceiver` is expected to be triggered by a CloudWatch Logs subscription filter.
+The receiver retrieves the logs from the event payload and decodes them using the `awslogs_encoding` extension with the cloudwatch format.
 
 ## Supported Data Types
 
-- **Logs** (Primary support)
-- **Metrics** (Future consideration)
+- **Logs**: Supported through S3 and CloudWatch Logs event sources
+- **Metrics**: Supported through S3
 
 ## AWS Permissions
 

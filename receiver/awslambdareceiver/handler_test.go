@@ -16,8 +16,10 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
@@ -114,8 +116,8 @@ func TestProcessLambdaEvent_S3Notification(t *testing.T) {
 			s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return(test.mockContent, nil).AnyTimes()
 
 			// Wrap the consumer to match the new s3EventConsumerFunc signature
-			logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
-				setObservedTimestampForAllLogs(logs, event.EventTime)
+			logsConsumer := func(ctx context.Context, time time.Time, logs plog.Logs) error {
+				setObservedTimestampForAllLogs(logs, time)
 				return test.eventConsumer.ConsumeLogs(ctx, logs)
 			}
 
@@ -207,8 +209,8 @@ func TestS3HandlerParseEvent(t *testing.T) {
 
 	var consumer noOpLogsConsumer
 	// Wrap the consumer to match the new s3EventConsumerFunc signature
-	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
-		setObservedTimestampForAllLogs(logs, event.EventTime)
+	logsConsumer := func(ctx context.Context, time time.Time, logs plog.Logs) error {
+		setObservedTimestampForAllLogs(logs, time)
 		return consumer.ConsumeLogs(ctx, logs)
 	}
 	handler := newS3Handler(s3Service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, logsConsumer)
@@ -254,8 +256,27 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 		},
 	}
 
-	unmarshaler, err := loadSubFilterLogUnmarshaler(t.Context(), awslogsencodingextension.NewFactory())
-	require.NoError(t, err)
+	var extensionID component.ID
+	err := extensionID.UnmarshalText([]byte("awslogs_encoding"))
+	if err != nil {
+		t.Errorf("failed to unmarshal identifier: %v", err)
+		return
+	}
+
+	factory := awslogsencodingextension.NewFactory()
+	ext, err := factory.Create(t.Context(), extension.Settings{ID: extensionID}, &awslogsencodingextension.Config{
+		Format: "cloudwatch",
+	})
+	if err != nil {
+		t.Errorf("failed to create awslogs encoding extension: %v", err)
+		return
+	}
+
+	subscriptionFilterLogUnmarshaler, ok := ext.(plog.Unmarshaler)
+	if !ok {
+		t.Errorf("extension does not implement log.Unmarshaler")
+		return
+	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -266,11 +287,11 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 			}
 
 			var lambdaEvent json.RawMessage
-			lambdaEvent, err = json.Marshal(cwEvent)
+			lambdaEvent, err := json.Marshal(cwEvent)
 			require.NoError(t, err)
 
-			handler := newCWLogsSubscriptionHandler(zap.NewNop(), unmarshaler.UnmarshalLogs, test.eventConsumer.ConsumeLogs)
-			err := handler.handle(t.Context(), lambdaEvent)
+			handler := newCWLogsSubscriptionHandler(zap.NewNop(), subscriptionFilterLogUnmarshaler.UnmarshalLogs, test.eventConsumer.ConsumeLogs)
+			err = handler.handle(t.Context(), lambdaEvent)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
@@ -366,7 +387,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 			s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte(mockContent), nil).Times(1)
 
 			// Consumer that returns the test error
-			logsConsumer := func(_ context.Context, _ events.S3EventRecord, _ plog.Logs) error {
+			logsConsumer := func(_ context.Context, _ time.Time, _ plog.Logs) error {
 				return test.consumerErr
 			}
 
@@ -430,6 +451,14 @@ func (mockS3LogUnmarshaler) UnmarshalLogs(data []byte) (plog.Logs, error) {
 		return plog.NewLogs(), nil
 	}
 	return plog.Logs{}, errors.New("logs not in the correct format")
+}
+
+type mockHandlerProvider struct {
+	handler lambdaEventHandler
+}
+
+func (m mockHandlerProvider) getHandler(_ eventType) (lambdaEventHandler, error) {
+	return m.handler, nil
 }
 
 type mockPlogEventHandler struct {
