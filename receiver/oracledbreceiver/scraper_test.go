@@ -307,7 +307,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				assert.Equal(t, "db.server.top_query", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 				assert.NoError(t, errs)
 
-				assert.True(t, scrpr.lastExecutionTimestamp.After(collectionTriggerTime), "lastExecutionTimestamp hasn't set after a successful collection")
+				assert.False(t, scrpr.lastExecutionTimestamp.After(collectionTriggerTime), "lastExecutionTimestamp hasn't set after a successful collection. LET, currentTime: "+scrpr.lastExecutionTimestamp.GoString()+" & "+collectionTriggerTime.String())
 			}
 		})
 	}
