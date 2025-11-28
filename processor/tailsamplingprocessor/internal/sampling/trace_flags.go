@@ -33,9 +33,6 @@ func NewTraceFlags(settings component.TelemetrySettings) samplingpolicy.Evaluato
 func (tf *traceFlags) Evaluate(_ context.Context, _ pcommon.TraceID, td *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	tf.logger.Debug("Evaluating spans in trace-flags filter")
 
-	td.Lock()
-	defer td.Unlock()
-
 	return hasSpanWithCondition(td.ReceivedBatches, func(span ptrace.Span) bool {
 		// Get first 8 bits for trace flags byte from span flags, then bit mask for sampled flag.
 		return (byte(span.Flags()) & byte(trace.FlagsSampled)) != 0
