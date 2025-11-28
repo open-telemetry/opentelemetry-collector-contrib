@@ -615,7 +615,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 
 			if tt.metric {
 				exporter, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
-				assert.NoError(t, exporter.Start(t.Context(), nil))
+				assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(t.Context()))
 				}()
@@ -631,7 +631,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				exporter, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
-				assert.NoError(t, exporter.Start(t.Context(), nil))
+				assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(t.Context()))
 				}()
@@ -699,7 +699,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
 			exporter, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
-			assert.NoError(t, exporter.Start(t.Context(), nil))
+			assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 			assert.NoError(t, err)
 			defer func() {
 				require.NoError(t, exporter.Shutdown(t.Context()))
@@ -815,7 +815,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.Endpoint = endServer.URL
 
 			exporter, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
-			assert.NoError(t, exporter.Start(t.Context(), nil))
+			assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
 				require.NoError(t, exporter.Shutdown(t.Context()))
 			}()

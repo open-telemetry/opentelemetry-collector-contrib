@@ -221,7 +221,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	var err error
 	ddr.server, err = ddr.config.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		ddr.params.TelemetrySettings,
 		ddmux,
 	)

@@ -764,7 +764,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 	healthCheckServerPort := s.config.HealthCheck.Port()
 	server, err := s.config.HealthCheck.ToServer(
 		s.runCtx,
-		nopHost{},
+		nil,
 		s.telemetrySettings.TelemetrySettings,
 		mux,
 	)

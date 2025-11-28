@@ -105,7 +105,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 }
 
 func (exporter *logzioExporter) start(ctx context.Context, host component.Host) error {
-	client, err := exporter.config.ToClient(ctx, host, exporter.settings)
+	client, err := exporter.config.ToClient(ctx, host.GetExtensions(), exporter.settings)
 	if err != nil {
 		return err
 	}

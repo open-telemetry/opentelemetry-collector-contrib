@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
@@ -145,7 +146,7 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 	require.NotNil(t, serializer)
 
 	// Start and stop the extension to test lifecycle
-	err = ext.Start(t.Context(), nil)
+	err = ext.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	err = ext.Shutdown(t.Context())

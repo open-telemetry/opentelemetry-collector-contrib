@@ -383,7 +383,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	spanNameFormatter := otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 		return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 	})
-	r.apiServer, err = r.cfg.APIServer.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, otelhttp.NewHandler(mux, "", spanNameFormatter))
+	r.apiServer, err = r.cfg.APIServer.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, otelhttp.NewHandler(mux, "", spanNameFormatter))
 	if err != nil {
 		return err
 	}

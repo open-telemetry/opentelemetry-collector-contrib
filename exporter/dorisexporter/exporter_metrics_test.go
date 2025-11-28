@@ -31,7 +31,7 @@ func TestPushMetricData(t *testing.T) {
 
 	ctx := t.Context()
 
-	client, err := createDorisHTTPClient(ctx, config, nil, componenttest.NewNopTelemetrySettings())
+	client, err := createDorisHTTPClient(ctx, config, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client)
 

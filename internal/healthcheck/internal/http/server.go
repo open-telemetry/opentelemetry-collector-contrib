@@ -86,7 +86,7 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
 	s.startTimestamp = time.Now()
 
-	s.httpServer, err = s.httpConfig.ToServer(ctx, host, s.telemetry, s.mux)
+	s.httpServer, err = s.httpConfig.ToServer(ctx, host.GetExtensions(), s.telemetry, s.mux)
 	if err != nil {
 		return err
 	}

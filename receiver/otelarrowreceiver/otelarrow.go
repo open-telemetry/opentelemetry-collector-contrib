@@ -123,7 +123,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 	if r.netReporter != nil {
 		serverOpts = append(serverOpts, configgrpc.WithGrpcServerOption(grpc.StatsHandler(r.netReporter.Handler())))
 	}
-	r.serverGRPC, err = r.cfg.GRPC.ToServer(ctx, host, r.settings.TelemetrySettings, serverOpts...)
+	r.serverGRPC, err = r.cfg.GRPC.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, serverOpts...)
 	if err != nil {
 		return err
 	}

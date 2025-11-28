@@ -67,7 +67,7 @@ func newExporter(cfg component.Config, set exporter.Settings, opts ...option) *t
 
 func (e *tinybirdExporter) start(ctx context.Context, host component.Host) error {
 	var err error
-	e.client, err = e.config.ClientConfig.ToClient(ctx, host, e.settings)
+	e.client, err = e.config.ClientConfig.ToClient(ctx, host.GetExtensions(), e.settings)
 	return err
 }
 

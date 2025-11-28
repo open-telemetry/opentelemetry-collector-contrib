@@ -35,7 +35,7 @@ func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) 
 		return fmt.Errorf("failed to bind to address %s: %w", hc.config.Endpoint, err)
 	}
 
-	hc.server, err = hc.config.ToServer(ctx, host, hc.settings, nil)
+	hc.server, err = hc.config.ToServer(ctx, host.GetExtensions(), hc.settings, nil)
 	if err != nil {
 		return err
 	}

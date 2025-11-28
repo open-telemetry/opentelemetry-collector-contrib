@@ -177,7 +177,7 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 
 // start will add HTTP provider to the manager and prefetch schemas
 func (t *schemaProcessor) start(ctx context.Context, host component.Host) error {
-	client, err := t.config.ToClient(ctx, host, t.telemetry)
+	client, err := t.config.ToClient(ctx, host.GetExtensions(), t.telemetry)
 	if err != nil {
 		return err
 	}

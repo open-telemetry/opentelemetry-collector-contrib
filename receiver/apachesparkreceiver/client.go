@@ -41,7 +41,7 @@ type apacheSparkClient struct {
 
 // newApacheSparkClient creates a new client to make requests for the Apache Spark receiver.
 func newApacheSparkClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
-	client, err := cfg.ToClient(ctx, host, settings)
+	client, err := cfg.ToClient(ctx, host.GetExtensions(), settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
