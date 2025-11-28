@@ -50,10 +50,12 @@ jobs:
           max_attempts: 2
           retry_on: error 
           command: |
+            exec > >(tee -a log.out) 2>&1
             cd opentelemetry-collector-contrib
             make update-otel OTEL_STABLE_VERSION=${{ env.LAST_COMMIT }} OTEL_VERSION=${{ env.LAST_COMMIT }}
       - name: Push and create PR
-        run: |  
+        run: |
+          exec > >(tee -a log.out) 2>&1
           cd opentelemetry-collector-contrib
           git push --set-upstream origin ${{ env.BRANCH_NAME }}
           gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector modules to open-telemetry/opentelemetry-collector@${{ env.LAST_COMMIT }}" --draft
