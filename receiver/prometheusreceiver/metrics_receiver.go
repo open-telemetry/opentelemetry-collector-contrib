@@ -227,7 +227,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 func (r *pReceiver) initScrapeOptions() *scrape.Options {
 	opts := &scrape.Options{
 		PassMetadataInContext: true,
-		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
+		ExtraMetrics:          enableReportExtraScrapeMetricsGate.IsEnabled() || r.cfg.ReportExtraScrapeMetrics,
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},

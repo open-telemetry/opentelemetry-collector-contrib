@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
@@ -48,6 +49,8 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
+	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, reportExtraScrapeMetrics)()
+
 	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
@@ -55,10 +58,9 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 
 	cms := new(consumertest.MetricsSink)
 	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-		PrometheusConfig:         cfg,
-		UseStartTimeMetric:       false,
-		StartTimeMetricRegex:     "",
-		ReportExtraScrapeMetrics: reportExtraScrapeMetrics,
+		PrometheusConfig:     cfg,
+		UseStartTimeMetric:   false,
+		StartTimeMetricRegex: "",
 	}, cms)
 	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 
