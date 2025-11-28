@@ -284,7 +284,7 @@ Indicate Redis cluster is enabled
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### redis.cluster.known_nodes
 
@@ -445,7 +445,7 @@ The sum in bytes of all overheads that the server allocated for managing its int
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### redis.memory.used_memory_startup
 
@@ -453,7 +453,21 @@ Initial amount of memory consumed by Redis at startup in bytes
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
+
+### redis.mode
+
+Redis server mode
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {mode} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Recommended |
 
 ### redis.replication.replica_offset
 
@@ -477,13 +491,61 @@ Redis node's role
 | ---- | ----------- | ------ | -------- |
 | role | Redis node's role | Str: ``replica``, ``primary`` | Recommended |
 
+### redis.sentinel.masters
+
+Number of masters monitored by Sentinel.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {master} | Gauge | Int | Development |
+
+### redis.sentinel.running_scripts
+
+Number of running Sentinel scripts.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {script} | Gauge | Int | Development |
+
+### redis.sentinel.scripts_queue_length
+
+Length of Sentinel scripts queue.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {script} | Gauge | Int | Development |
+
+### redis.sentinel.simulate_failure_flags
+
+Simulated failure flags bitmask.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {flag} | Gauge | Int | Development |
+
+### redis.sentinel.tilt_since_seconds
+
+Duration in seconds of current TILT, or -1 if not in TILT mode.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | Development |
+
+### redis.sentinel.total_tilt
+
+Total TILT occurrences since start.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {event} | Sum | Int | Cumulative | true | Development |
+
 ### redis.tracking_total_keys
 
 Number of keys being tracked by the server
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {key} | Sum | Int | Cumulative | false | development |
+| {key} | Sum | Int | Cumulative | false | Development |
 
 ## Resource Attributes
 
