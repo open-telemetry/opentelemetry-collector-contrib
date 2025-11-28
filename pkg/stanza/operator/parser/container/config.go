@@ -37,9 +37,9 @@ func NewConfig() *Config {
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		ParserConfig:            helper.NewParserConfig(operatorID, operatorType),
-		AddMetadataFromFilePath: true,
 		Format:                  "",
-		MaxLogSize:              0, // unlimited
+		AddMetadataFromFilePath: true,
+		MaxLogSize:              0,
 	}
 }
 
@@ -98,9 +98,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 //	combine_field: body
 //	combine_with: ""
 //	is_last_entry: attributes.logtag == 'F'
-//	max_log_size: 0 (unlimited, or from config)
-//	max_batch_size: 0 (unlimited, or from config)
-//	max_unmatched_batch_size: 0 (unlimited, or from config)
+//	max_log_size: 102400
 //	source_identifier: attributes["log.file.path"]
 //	type: recombine
 func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.BatchingLogEmitter) (operator.Operator, error) {
@@ -126,7 +124,5 @@ func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg.CombineWith = ""
 	recombineParserCfg.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
 	recombineParserCfg.MaxLogSize = c.MaxLogSize
-	recombineParserCfg.MaxBatchSize = 0          // unlimited
-	recombineParserCfg.MaxUnmatchedBatchSize = 0 // unlimited
 	return recombineParserCfg
 }
