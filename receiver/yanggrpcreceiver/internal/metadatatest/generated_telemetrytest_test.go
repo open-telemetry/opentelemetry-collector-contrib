@@ -7,9 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal/metadata"
 )
@@ -19,18 +20,22 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.YangReceiverBytesReceived.Record(context.Background(), 1)
-	tb.YangReceiverConnectionsActive.Record(context.Background(), 1)
-	tb.YangReceiverGrpcErrors.Record(context.Background(), 1)
-	tb.YangReceiverMessagesDropped.Record(context.Background(), 1)
-	tb.YangReceiverMessagesProcessed.Record(context.Background(), 1)
-	tb.YangReceiverMessagesReceived.Record(context.Background(), 1)
+	tb.YangReceiverBytesReceived.Add(context.Background(), 1)
+	tb.YangReceiverConnectionsClosed.Add(context.Background(), 1)
+	tb.YangReceiverConnectionsOpened.Add(context.Background(), 1)
+	tb.YangReceiverGrpcErrors.Add(context.Background(), 1)
+	tb.YangReceiverMessagesDropped.Add(context.Background(), 1)
+	tb.YangReceiverMessagesProcessed.Add(context.Background(), 1)
+	tb.YangReceiverMessagesReceived.Add(context.Background(), 1)
 	tb.YangReceiverProcessingDuration.Record(context.Background(), 1)
-	tb.YangReceiverYangModulesDiscovered.Record(context.Background(), 1)
+	tb.YangReceiverYangModulesDiscovered.Add(context.Background(), 1)
 	AssertEqualYangReceiverBytesReceived(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualYangReceiverConnectionsActive(t, testTel,
+	AssertEqualYangReceiverConnectionsClosed(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualYangReceiverConnectionsOpened(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualYangReceiverGrpcErrors(t, testTel,

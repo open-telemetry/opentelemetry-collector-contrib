@@ -4,6 +4,7 @@
 package yanggrpcreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -17,14 +18,15 @@ type SecurityConfig struct {
 	// AllowedClients contains client IP allowlist configuration
 	AllowedClients []string `mapstructure:"allowed_clients"`
 
-	// MaxConnections is the maximum number of concurrent connections
-	MaxConnections int `mapstructure:"max_connections"`
-
 	// ConnectionTimeout is the maximum time to wait for new connections
 	ConnectionTimeout time.Duration `mapstructure:"connection_timeout"`
 
 	// EnableMetrics enables security-related metrics collection
 	EnableMetrics bool `mapstructure:"enable_metrics"`
+}
+
+func (s *SecurityConfig) Validate() error {
+	return s.RateLimiting.Validate()
 }
 
 // RateLimitingConfig contains rate limiting configuration
@@ -40,6 +42,16 @@ type RateLimitingConfig struct {
 
 	// CleanupInterval is how often to clean up rate limiter entries
 	CleanupInterval time.Duration `mapstructure:"cleanup_interval"`
+}
+
+func (r *RateLimitingConfig) Validate() error {
+	if r.BurstSize < 0 {
+		return errors.New("burst_size must be positive")
+	}
+	if r.RequestsPerSecond < 0 {
+		return errors.New("requests_per_second must be positive")
+	}
+	return nil
 }
 
 // YANGConfig contains YANG parser configuration
@@ -67,5 +79,12 @@ type Config struct {
 
 // Validate checks the receiver configuration is valid
 func (c *Config) Validate() error {
-	return c.ServerConfig.Validate()
+	if err := c.ServerConfig.Validate(); err != nil {
+		return err
+	}
+	if err := c.Security.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }

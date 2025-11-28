@@ -18,64 +18,72 @@ The following telemetry is emitted by this component.
 
 ### otelcol_yang_receiver_bytes_received
 
-Total bytes received from telemetry connections
+Total bytes received from telemetry connections [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
 
-### otelcol_yang_receiver_connections_active
+### otelcol_yang_receiver_connections_closed
 
-Number of active gRPC connections
+Number of gRPC connections closed [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {connections} | Sum | Int | false | Development |
+
+### otelcol_yang_receiver_connections_opened
+
+Number of gRPC connections opened [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {connections} | Sum | Int | false | Development |
 
 ### otelcol_yang_receiver_grpc_errors
 
-Number of gRPC errors encountered
+Number of gRPC errors encountered [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {errors} | Sum | Int | true | Development |
 
 ### otelcol_yang_receiver_messages_dropped
 
-Number of telemetry messages dropped due to errors
+Number of telemetry messages dropped due to errors [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {messages} | Sum | Int | true | Development |
 
 ### otelcol_yang_receiver_messages_processed
 
-Number of telemetry messages successfully processed
+Number of telemetry messages successfully processed [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {messages} | Sum | Int | true | Development |
 
 ### otelcol_yang_receiver_messages_received
 
-Number of telemetry messages received
+Number of telemetry messages received [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {messages} | Sum | Int | true | Development |
 
 ### otelcol_yang_receiver_processing_duration
 
-Time spent processing telemetry messages
+Time spent processing telemetry messages [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Double | Development |
 
 ### otelcol_yang_receiver_yang_modules_discovered
 
-Number of unique YANG modules discovered
+Number of unique YANG modules discovered [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {errors} | Sum | Int | false | Development |

@@ -24,10 +24,12 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualYangReceiverBytesReceived(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_yang_receiver_bytes_received",
-		Description: "Total bytes received from telemetry connections",
+		Description: "Total bytes received from telemetry connections [Development]",
 		Unit:        "By",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_yang_receiver_bytes_received")
@@ -35,16 +37,34 @@ func AssertEqualYangReceiverBytesReceived(t *testing.T, tt *componenttest.Teleme
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualYangReceiverConnectionsActive(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualYangReceiverConnectionsClosed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_yang_receiver_connections_active",
-		Description: "Number of active gRPC connections",
-		Unit:        "1",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Name:        "otelcol_yang_receiver_connections_closed",
+		Description: "Number of gRPC connections closed [Development]",
+		Unit:        "{connections}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_yang_receiver_connections_active")
+	got, err := tt.GetMetric("otelcol_yang_receiver_connections_closed")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualYangReceiverConnectionsOpened(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_yang_receiver_connections_opened",
+		Description: "Number of gRPC connections opened [Development]",
+		Unit:        "{connections}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_yang_receiver_connections_opened")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -52,10 +72,12 @@ func AssertEqualYangReceiverConnectionsActive(t *testing.T, tt *componenttest.Te
 func AssertEqualYangReceiverGrpcErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_yang_receiver_grpc_errors",
-		Description: "Number of gRPC errors encountered",
-		Unit:        "1",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Description: "Number of gRPC errors encountered [Development]",
+		Unit:        "{errors}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_yang_receiver_grpc_errors")
@@ -66,10 +88,12 @@ func AssertEqualYangReceiverGrpcErrors(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualYangReceiverMessagesDropped(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_yang_receiver_messages_dropped",
-		Description: "Number of telemetry messages dropped due to errors",
-		Unit:        "1",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Description: "Number of telemetry messages dropped due to errors [Development]",
+		Unit:        "{messages}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_yang_receiver_messages_dropped")
@@ -80,10 +104,12 @@ func AssertEqualYangReceiverMessagesDropped(t *testing.T, tt *componenttest.Tele
 func AssertEqualYangReceiverMessagesProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_yang_receiver_messages_processed",
-		Description: "Number of telemetry messages successfully processed",
-		Unit:        "1",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Description: "Number of telemetry messages successfully processed [Development]",
+		Unit:        "{messages}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_yang_receiver_messages_processed")
@@ -94,10 +120,12 @@ func AssertEqualYangReceiverMessagesProcessed(t *testing.T, tt *componenttest.Te
 func AssertEqualYangReceiverMessagesReceived(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_yang_receiver_messages_received",
-		Description: "Number of telemetry messages received",
-		Unit:        "1",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Description: "Number of telemetry messages received [Development]",
+		Unit:        "{messages}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_yang_receiver_messages_received")
@@ -108,7 +136,7 @@ func AssertEqualYangReceiverMessagesReceived(t *testing.T, tt *componenttest.Tel
 func AssertEqualYangReceiverProcessingDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_yang_receiver_processing_duration",
-		Description: "Time spent processing telemetry messages",
+		Description: "Time spent processing telemetry messages [Development]",
 		Unit:        "ms",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -123,10 +151,12 @@ func AssertEqualYangReceiverProcessingDuration(t *testing.T, tt *componenttest.T
 func AssertEqualYangReceiverYangModulesDiscovered(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_yang_receiver_yang_modules_discovered",
-		Description: "Number of unique YANG modules discovered",
-		Unit:        "1",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Description: "Number of unique YANG modules discovered [Development]",
+		Unit:        "{errors}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_yang_receiver_yang_modules_discovered")

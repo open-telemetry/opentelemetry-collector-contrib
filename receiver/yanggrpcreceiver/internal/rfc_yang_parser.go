@@ -421,19 +421,13 @@ func (p *RFC6020Parser) ParseYANGModule(content, filename string) (*RFC6020Modul
 	// Tokenize and parse according to RFC 6020 Section 6
 	tokens, err := p.TokenizeYANG(content)
 	if err != nil {
-		return nil, fmt.Errorf("tokenization failed: %v", err)
+		return nil, fmt.Errorf("tokenization failed: %w", err)
 	}
 
-	err = p.parseTokens(tokens, module)
-	if err != nil {
-		return nil, fmt.Errorf("parsing failed: %v", err)
-	}
+	p.parseTokens(tokens, module)
 
 	// Perform semantic analysis
-	err = p.performSemanticAnalysis(module)
-	if err != nil {
-		return nil, fmt.Errorf("semantic analysis failed: %v", err)
-	}
+	p.performSemanticAnalysis(module)
 
 	p.modules[module.Name] = module
 	p.logger.Printf("Successfully parsed YANG module '%s' from %s", module.Name, filename)
@@ -442,7 +436,7 @@ func (p *RFC6020Parser) ParseYANGModule(content, filename string) (*RFC6020Modul
 }
 
 // tokenizeYANG performs lexical analysis according to RFC 6020 Section 6.1
-func (p *RFC6020Parser) TokenizeYANG(content string) ([]string, error) {
+func (*RFC6020Parser) TokenizeYANG(content string) ([]string, error) {
 	var tokens []string
 
 	// Remove C-style comments (RFC 6020 Section 6.1.1)
@@ -470,7 +464,7 @@ func (p *RFC6020Parser) TokenizeYANG(content string) ([]string, error) {
 }
 
 // parseTokens parses tokenized YANG content according to RFC grammar
-func (p *RFC6020Parser) parseTokens(tokens []string, module *RFC6020Module) error {
+func (p *RFC6020Parser) parseTokens(tokens []string, module *RFC6020Module) {
 	i := 0
 
 	for i < len(tokens) {
@@ -570,8 +564,6 @@ func (p *RFC6020Parser) parseTokens(tokens []string, module *RFC6020Module) erro
 	sort.Slice(module.Revisions, func(i, j int) bool {
 		return module.Revisions[i].Date > module.Revisions[j].Date
 	})
-
-	return nil
 }
 
 // parseRevision parses a revision statement (RFC 7.1.9)
@@ -908,7 +900,7 @@ func (p *RFC6020Parser) parseDataNode(tokens []string, parentPath string) (*RFC6
 }
 
 // performSemanticAnalysis analyzes the parsed module for semantic information
-func (p *RFC6020Parser) performSemanticAnalysis(module *RFC6020Module) error {
+func (p *RFC6020Parser) performSemanticAnalysis(module *RFC6020Module) {
 	// Analyze data nodes for keys, types, and semantics
 	p.analyzeDataNodes(module, module.DataNodes, "")
 
@@ -920,8 +912,6 @@ func (p *RFC6020Parser) performSemanticAnalysis(module *RFC6020Module) error {
 
 	p.logger.Printf("Semantic analysis complete for module %s: %d keyed paths, %d data types",
 		module.Name, len(module.KeyedPaths), len(module.DataTypes))
-
-	return nil
 }
 
 // analyzeDataNodes recursively analyzes data nodes
@@ -1038,9 +1028,7 @@ func (p *RFC6020Parser) resolveTypeRecursive(yangType *RFC6020Type, module *RFC6
 				}
 			}
 		}
-
 		resolved.FractionDigits = yangType.FractionDigits
-
 	} else if typedef, exists := module.Typedefs[yangType.Name]; exists {
 		// Recursively resolve typedef
 		baseResolved := p.resolveTypeRecursive(typedef.Type, module)
@@ -1072,22 +1060,23 @@ func (p *RFC6020Parser) classifyMetrics(module *RFC6020Module) {
 		isCounter := p.isCounterSemantic(dataType)
 		isGauge := p.isGaugeSemantic(dataType)
 
-		if isCounter {
+		switch {
+		case isCounter:
 			dataType.IsCounter = true
 			dataType.SemanticType = "counter"
 			module.Counters = append(module.Counters, path)
-		} else if isGauge {
+		case isGauge:
 			dataType.IsGauge = true
 			dataType.SemanticType = "gauge"
 			module.Gauges = append(module.Gauges, path)
-		} else {
+		default:
 			dataType.SemanticType = "info"
 		}
 	}
 }
 
 // isCounterSemantic determines if a data type represents a counter metric
-func (p *RFC6020Parser) isCounterSemantic(dataType *RFC6020ResolvedType) bool {
+func (*RFC6020Parser) isCounterSemantic(dataType *RFC6020ResolvedType) bool {
 	// Counters are typically unsigned integers with accumulating units
 	if !strings.HasPrefix(dataType.BaseBuiltinType, "uint") {
 		return false
@@ -1113,7 +1102,7 @@ func (p *RFC6020Parser) isCounterSemantic(dataType *RFC6020ResolvedType) bool {
 }
 
 // isGaugeSemantic determines if a data type represents a gauge metric
-func (p *RFC6020Parser) isGaugeSemantic(dataType *RFC6020ResolvedType) bool {
+func (*RFC6020Parser) isGaugeSemantic(dataType *RFC6020ResolvedType) bool {
 	// Gauge units include rates, percentages, current values
 	gaugeUnits := []string{
 		"percent", "per-second", "pps", "bps", "kbps", "mbps", "gbps",
@@ -1132,7 +1121,7 @@ func (p *RFC6020Parser) isGaugeSemantic(dataType *RFC6020ResolvedType) bool {
 
 // Helper functions
 
-func (p *RFC6020Parser) unquoteString(s string) string {
+func (*RFC6020Parser) unquoteString(s string) string {
 	if len(s) >= 2 {
 		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
 			return s[1 : len(s)-1]
@@ -1196,7 +1185,7 @@ func (p *RFC6020Parser) SaveModules(filename string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filename, data, 0644)
+	return os.WriteFile(filename, data, 0o600)
 }
 
 // AnalyzeTelemetryPath analyzes a telemetry encoding path and provides YANG context
@@ -1343,7 +1332,7 @@ func (p *RFC6020Parser) createDataNodesFromPath(module *RFC6020Module, xpath str
 }
 
 // isLikelyListNode determines if a path segment represents a list
-func (p *RFC6020Parser) isLikelyListNode(segment string, allSegments []string, index int) bool {
+func (*RFC6020Parser) isLikelyListNode(segment string, allSegments []string, index int) bool {
 	// Common list node patterns
 	listPatterns := []string{
 		"interface", "interfaces", "interface-state",
@@ -1375,7 +1364,7 @@ func (p *RFC6020Parser) isLikelyListNode(segment string, allSegments []string, i
 }
 
 // inferListKeys infers likely key fields for list nodes
-func (p *RFC6020Parser) inferListKeys(segment string) []string {
+func (*RFC6020Parser) inferListKeys(segment string) []string {
 	lowerSegment := strings.ToLower(segment)
 
 	// Common key patterns based on list type
@@ -1407,7 +1396,7 @@ func (p *RFC6020Parser) inferListKeys(segment string) []string {
 }
 
 // InferDataTypeFromPath infers YANG data type from path segment
-func (p *RFC6020Parser) InferDataTypeFromPath(segment string) *RFC6020Type {
+func (*RFC6020Parser) InferDataTypeFromPath(segment string) *RFC6020Type {
 	lowerSegment := strings.ToLower(segment)
 
 	// Infer type based on common naming patterns
@@ -1456,13 +1445,13 @@ func (p *RFC6020Parser) InferDataTypeFromPath(segment string) *RFC6020Type {
 		Name: "string",
 	}
 } // findDataNodeByPath finds a data node by its path in the module
-func (p *RFC6020Parser) findDataNodeByPath(module *RFC6020Module, path string) *RFC6020DataNode {
+func (*RFC6020Parser) findDataNodeByPath(module *RFC6020Module, path string) *RFC6020DataNode {
 	cleanPath := strings.Trim(path, "/")
 	return module.DataNodes[cleanPath]
 }
 
 // applySemanticHeuristics applies semantic classification heuristics
-func (p *RFC6020Parser) applySemanticHeuristics(analysis *RFC6020TelemetryAnalysis) {
+func (*RFC6020Parser) applySemanticHeuristics(analysis *RFC6020TelemetryAnalysis) {
 	// Extract the leaf name (last segment)
 	if len(analysis.PathSegments) > 0 {
 		leafName := analysis.PathSegments[len(analysis.PathSegments)-1]

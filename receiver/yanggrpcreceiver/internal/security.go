@@ -1,11 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal"
 
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -110,7 +111,7 @@ func (rl *RateLimiter) Stop() {
 }
 
 // getClientAuthType converts string auth type to tls.ClientAuthType
-func (sm *SecurityManager) getClientAuthType(authType string) (tls.ClientAuthType, error) {
+func (*SecurityManager) getClientAuthType(authType string) (tls.ClientAuthType, error) {
 	authTypeMap := map[string]tls.ClientAuthType{
 		"NoClientCert":               tls.NoClientCert,
 		"RequestClientCert":          tls.RequestClientCert,
@@ -128,7 +129,7 @@ func (sm *SecurityManager) getClientAuthType(authType string) (tls.ClientAuthTyp
 
 // CreateSecurityInterceptor creates a gRPC interceptor for security enforcement
 func (sm *SecurityManager) CreateSecurityInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		// Get client IP
 		clientIP, err := sm.getClientIP(ctx)
 		if err != nil {
@@ -139,13 +140,13 @@ func (sm *SecurityManager) CreateSecurityInterceptor() grpc.UnaryServerIntercept
 		// Check IP allowlist if configured
 		if len(sm.allowedClients) > 0 && !sm.isIPAllowed(clientIP) {
 			sm.logger.Warn("Client IP not in allowlist", zap.String("client_ip", clientIP))
-			return nil, fmt.Errorf("client IP not allowed")
+			return nil, errors.New("client IP not allowed")
 		}
 
 		// Apply rate limiting if enabled
 		if sm.rateLimiter != nil && !sm.rateLimiter.Allow(clientIP) {
 			sm.logger.Warn("Rate limit exceeded", zap.String("client_ip", clientIP))
-			return nil, fmt.Errorf("rate limit exceeded")
+			return nil, errors.New("rate limit exceeded")
 		}
 
 		sm.logger.Debug("Security check passed",
@@ -157,14 +158,14 @@ func (sm *SecurityManager) CreateSecurityInterceptor() grpc.UnaryServerIntercept
 }
 
 // getClientIP extracts the client IP from the gRPC context
-func (sm *SecurityManager) getClientIP(ctx context.Context) (string, error) {
+func (*SecurityManager) getClientIP(ctx context.Context) (string, error) {
 	peer, ok := peer.FromContext(ctx)
 	if !ok {
-		return "", fmt.Errorf("no peer information in context")
+		return "", errors.New("no peer information in context")
 	}
 
 	if peer.Addr == nil {
-		return "", fmt.Errorf("no address in peer information")
+		return "", errors.New("no address in peer information")
 	}
 
 	// Extract IP from address
@@ -190,11 +191,9 @@ func (sm *SecurityManager) isIPAllowed(clientIP string) bool {
 			if ip != nil && cidr.Contains(ip) {
 				return true
 			}
-		} else {
 			// Direct IP match
-			if clientIP == allowedIP {
-				return true
-			}
+		} else if clientIP == allowedIP {
+			return true
 		}
 	}
 	return false

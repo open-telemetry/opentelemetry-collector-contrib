@@ -1,18 +1,21 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package yanggrpcreceiver
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal"
 )
 
 func TestYANGParser(t *testing.T) {
-	parser := NewYANGParser()
+	parser := internal.NewYANGParser()
 	parser.LoadBuiltinModules()
 
 	t.Run("TestBuiltinModulesLoaded", func(t *testing.T) {
@@ -68,7 +71,7 @@ func TestYANGParser(t *testing.T) {
 }
 
 func TestYANGParserIntegration(t *testing.T) {
-	parser := NewYANGParser()
+	parser := internal.NewYANGParser()
 	parser.LoadBuiltinModules()
 
 	// Test real telemetry scenarios
@@ -106,17 +109,17 @@ func TestYANGParserIntegration(t *testing.T) {
 }
 
 func TestYANGParserPersistence(t *testing.T) {
-	parser := NewYANGParser()
+	parser := internal.NewYANGParser()
 	parser.LoadBuiltinModules()
 
 	// Test saving modules to file
 	t.Run("SaveToFile", func(t *testing.T) {
-		filename := "/tmp/yang_modules_test.json"
+		filename := filepath.Join(t.TempDir(), "yang_modules_test.json")
 		err := parser.SaveModulesToFile(filename)
 		assert.NoError(t, err)
 
 		// Test loading from file
-		parser2 := NewYANGParser()
+		parser2 := internal.NewYANGParser()
 		err = parser2.LoadModulesFromFile(filename)
 		assert.NoError(t, err)
 
@@ -150,7 +153,7 @@ func TestFieldNameExtraction(t *testing.T) {
 // TestYANGEnhancedTelemetryProcessing tests the integration with real telemetry data
 func TestYANGEnhancedTelemetryProcessing(t *testing.T) {
 	// This test would simulate the enhanced telemetry processing with YANG awareness
-	parser := NewYANGParser()
+	parser := internal.NewYANGParser()
 	parser.LoadBuiltinModules()
 
 	// Test path analysis for live telemetry

@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -118,9 +119,11 @@ func TestRFC6020ParserModuleParsing(t *testing.T) {
 	}
 
 	// Verify key RFC types exist
-	requiredTypes := []string{"int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
+	requiredTypes := []string{
+		"int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
 		"decimal64", "string", "boolean", "enumeration", "bits", "binary", "leafref", "identityref",
-		"empty", "union", "instance-identifier"}
+		"empty", "union", "instance-identifier",
+	}
 
 	for _, typeName := range requiredTypes {
 		if _, exists := builtinTypes[typeName]; !exists {
@@ -385,17 +388,15 @@ module test-export {
 	}
 
 	// Test save to file
-	tmpFile := "/tmp/test-modules.json"
+	tmpFile := filepath.Join(t.TempDir(), "test-modules.json")
 	err = parser.SaveModules(tmpFile)
 	if err != nil {
 		t.Fatalf("Save modules failed: %v", err)
 	}
 
 	// Clean up
-	defer func() {
-		// Remove temp file - ignore error
-		_ = parser.modules["test-export"] // Just to avoid unused
-	}()
+	// Remove temp file - ignore error
+	_ = parser.modules["test-export"] // Just to avoid unused
 }
 
 func TestRFC6020ComplianceValidation(t *testing.T) {

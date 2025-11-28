@@ -24,7 +24,7 @@ type yangReceiver struct {
 	settings         receiver.Settings
 	consumer         consumer.Metrics
 	server           *grpc.Server
-	wg               *sync.WaitGroup
+	wg               sync.WaitGroup
 	telemetryBuilder *metadata.TelemetryBuilder
 	securityManager  *internal.SecurityManager
 }
@@ -40,11 +40,12 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, cfg co
 		settings:         settings,
 		consumer:         next,
 		telemetryBuilder: tb,
+		wg:               sync.WaitGroup{},
 	}, nil
 }
 
 func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
-	listener, err := y.config.ServerConfig.NetAddr.Listen(ctx)
+	listener, err := y.config.NetAddr.Listen(ctx)
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 		y.config.Security.RateLimiting.BurstSize,
 		y.config.Security.RateLimiting.CleanupInterval,
 	)
-	server, err := y.config.ToServer(ctx, host, y.settings.TelemetrySettings,
+	server, err := y.config.ToServer(ctx, host.GetExtensions(), y.settings.TelemetrySettings,
 		configgrpc.WithGrpcServerOption(grpc.UnaryInterceptor(y.securityManager.CreateSecurityInterceptor())))
 	if err != nil {
 		return err
@@ -87,7 +88,7 @@ func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 		}
 	}()
 
-	return server.Serve(listener)
+	return nil
 }
 
 func (y *yangReceiver) Shutdown(_ context.Context) error {

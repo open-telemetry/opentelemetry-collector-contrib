@@ -130,7 +130,7 @@ func (p *YANGParser) LoadBuiltinModules() {
 	}
 
 	// Cisco-IOS-XE-process-cpu-oper module based on your screenshot
-	processCpuModule := &YANGModule{
+	processCPUModule := &YANGModule{
 		Name:      "Cisco-IOS-XE-process-cpu-oper",
 		Namespace: "http://cisco.com/ns/yang/Cisco-IOS-XE-process-cpu-oper",
 		Prefix:    "process-cpu-ios-xe-oper",
@@ -174,7 +174,7 @@ func (p *YANGParser) LoadBuiltinModules() {
 
 	p.modules[interfacesModule.Name] = interfacesModule
 	p.modules[bgpModule.Name] = bgpModule
-	p.modules[processCpuModule.Name] = processCpuModule
+	p.modules[processCPUModule.Name] = processCPUModule
 	p.modules[ospfModule.Name] = ospfModule
 
 	log.Printf("Loaded %d builtin YANG modules", len(p.modules))
@@ -245,14 +245,14 @@ func (p *YANGParser) matchPath(yangPath, telemetryPath string) bool {
 }
 
 // removePrefixes removes YANG prefixes from paths
-func (p *YANGParser) removePrefixes(path string) string {
+func (*YANGParser) removePrefixes(path string) string {
 	// Remove common prefixes like "interfaces-ios-xe-oper:"
 	re := regexp.MustCompile(`[a-zA-Z0-9-]+:`)
 	return re.ReplaceAllString(path, "")
 }
 
 // isPathPattern checks if a YANG path pattern matches a telemetry path
-func (p *YANGParser) isPathPattern(yangPattern, telemetryPath string) bool {
+func (*YANGParser) isPathPattern(yangPattern, telemetryPath string) bool {
 	// Simple pattern matching - can be enhanced
 	yangParts := strings.Split(strings.Trim(yangPattern, "/"), "/")
 	telemetryParts := strings.Split(strings.Trim(telemetryPath, "/"), "/")
@@ -434,10 +434,10 @@ func (dt *YANGDataType) IsGaugeType() bool {
 func (p *YANGParser) SaveModulesToFile(filename string) error {
 	data, err := json.MarshalIndent(p.modules, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to marshal modules: %v", err)
+		return fmt.Errorf("failed to marshal modules: %w", err)
 	}
 
-	return os.WriteFile(filename, data, 0644)
+	return os.WriteFile(filename, data, 0o600)
 }
 
 // LoadModulesFromFile loads modules from a JSON file
@@ -448,7 +448,7 @@ func (p *YANGParser) LoadModulesFromFile(filename string) error {
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return fmt.Errorf("failed to read file: %v", err)
+		return fmt.Errorf("failed to read file: %w", err)
 	}
 
 	return json.Unmarshal(data, &p.modules)
@@ -465,7 +465,7 @@ func (p *YANGParser) GetAvailableModules() []string {
 
 // ExtractYANGFromFiles attempts to extract YANG module information from .yang files
 func (p *YANGParser) ExtractYANGFromFiles(yangDir string) error {
-	return filepath.Walk(yangDir, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(yangDir, func(path string, _ os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -490,7 +490,7 @@ func (p *YANGParser) ExtractYANGFromFiles(yangDir string) error {
 }
 
 // parseYANGContent performs basic parsing of YANG file content
-func (p *YANGParser) parseYANGContent(content, filename string) *YANGModule {
+func (*YANGParser) parseYANGContent(content, _ string) *YANGModule {
 	lines := strings.Split(content, "\n")
 	module := &YANGModule{
 		KeyedLeafs: make(map[string]string),

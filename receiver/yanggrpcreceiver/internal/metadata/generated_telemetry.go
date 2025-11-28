@@ -6,9 +6,10 @@ import (
 	"errors"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -25,14 +26,15 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
-	YangReceiverBytesReceived         metric.Int64Gauge
-	YangReceiverConnectionsActive     metric.Int64Gauge
-	YangReceiverGrpcErrors            metric.Int64Gauge
-	YangReceiverMessagesDropped       metric.Int64Gauge
-	YangReceiverMessagesProcessed     metric.Int64Gauge
-	YangReceiverMessagesReceived      metric.Int64Gauge
+	YangReceiverBytesReceived         metric.Int64Counter
+	YangReceiverConnectionsClosed     metric.Int64UpDownCounter
+	YangReceiverConnectionsOpened     metric.Int64UpDownCounter
+	YangReceiverGrpcErrors            metric.Int64Counter
+	YangReceiverMessagesDropped       metric.Int64Counter
+	YangReceiverMessagesProcessed     metric.Int64Counter
+	YangReceiverMessagesReceived      metric.Int64Counter
 	YangReceiverProcessingDuration    metric.Float64Histogram
-	YangReceiverYangModulesDiscovered metric.Int64Gauge
+	YangReceiverYangModulesDiscovered metric.Int64UpDownCounter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -64,53 +66,59 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.YangReceiverBytesReceived, err = builder.meter.Int64Gauge(
+	builder.YangReceiverBytesReceived, err = builder.meter.Int64Counter(
 		"otelcol_yang_receiver_bytes_received",
-		metric.WithDescription("Total bytes received from telemetry connections"),
+		metric.WithDescription("Total bytes received from telemetry connections [Development]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	builder.YangReceiverConnectionsActive, err = builder.meter.Int64Gauge(
-		"otelcol_yang_receiver_connections_active",
-		metric.WithDescription("Number of active gRPC connections"),
-		metric.WithUnit("1"),
+	builder.YangReceiverConnectionsClosed, err = builder.meter.Int64UpDownCounter(
+		"otelcol_yang_receiver_connections_closed",
+		metric.WithDescription("Number of gRPC connections closed [Development]"),
+		metric.WithUnit("{connections}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.YangReceiverGrpcErrors, err = builder.meter.Int64Gauge(
+	builder.YangReceiverConnectionsOpened, err = builder.meter.Int64UpDownCounter(
+		"otelcol_yang_receiver_connections_opened",
+		metric.WithDescription("Number of gRPC connections opened [Development]"),
+		metric.WithUnit("{connections}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.YangReceiverGrpcErrors, err = builder.meter.Int64Counter(
 		"otelcol_yang_receiver_grpc_errors",
-		metric.WithDescription("Number of gRPC errors encountered"),
-		metric.WithUnit("1"),
+		metric.WithDescription("Number of gRPC errors encountered [Development]"),
+		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.YangReceiverMessagesDropped, err = builder.meter.Int64Gauge(
+	builder.YangReceiverMessagesDropped, err = builder.meter.Int64Counter(
 		"otelcol_yang_receiver_messages_dropped",
-		metric.WithDescription("Number of telemetry messages dropped due to errors"),
-		metric.WithUnit("1"),
+		metric.WithDescription("Number of telemetry messages dropped due to errors [Development]"),
+		metric.WithUnit("{messages}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.YangReceiverMessagesProcessed, err = builder.meter.Int64Gauge(
+	builder.YangReceiverMessagesProcessed, err = builder.meter.Int64Counter(
 		"otelcol_yang_receiver_messages_processed",
-		metric.WithDescription("Number of telemetry messages successfully processed"),
-		metric.WithUnit("1"),
+		metric.WithDescription("Number of telemetry messages successfully processed [Development]"),
+		metric.WithUnit("{messages}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.YangReceiverMessagesReceived, err = builder.meter.Int64Gauge(
+	builder.YangReceiverMessagesReceived, err = builder.meter.Int64Counter(
 		"otelcol_yang_receiver_messages_received",
-		metric.WithDescription("Number of telemetry messages received"),
-		metric.WithUnit("1"),
+		metric.WithDescription("Number of telemetry messages received [Development]"),
+		metric.WithUnit("{messages}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.YangReceiverProcessingDuration, err = builder.meter.Float64Histogram(
 		"otelcol_yang_receiver_processing_duration",
-		metric.WithDescription("Time spent processing telemetry messages"),
+		metric.WithDescription("Time spent processing telemetry messages [Development]"),
 		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{0.1, 0.5, 1, 5, 10, 50, 100, 500, 1000}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.YangReceiverYangModulesDiscovered, err = builder.meter.Int64Gauge(
+	builder.YangReceiverYangModulesDiscovered, err = builder.meter.Int64UpDownCounter(
 		"otelcol_yang_receiver_yang_modules_discovered",
-		metric.WithDescription("Number of unique YANG modules discovered"),
-		metric.WithUnit("1"),
+		metric.WithDescription("Number of unique YANG modules discovered [Development]"),
+		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

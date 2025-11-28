@@ -4,47 +4,16 @@
 package yanggrpcreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal"
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal/proto/generated/proto"
 )
-
-// mockBidiStream implements the bidirectional streaming interface for testing
-type mockBidiStream struct {
-	grpc.ServerStream
-	recvChan chan *pb.MdtDialoutArgs
-	sendChan chan *pb.MdtDialoutArgs
-	ctx      context.Context
-}
-
-func (m *mockBidiStream) Recv() (*pb.MdtDialoutArgs, error) {
-	select {
-	case msg := <-m.recvChan:
-		return msg, nil
-	case <-m.ctx.Done():
-		return nil, m.ctx.Err()
-	}
-}
-
-func (m *mockBidiStream) Send(msg *pb.MdtDialoutArgs) error {
-	select {
-	case m.sendChan <- msg:
-		return nil
-	case <-m.ctx.Done():
-		return m.ctx.Err()
-	}
-}
-
-func (m *mockBidiStream) Context() context.Context {
-	return m.ctx
-}
 
 func TestMdtDialout_BasicFlow(t *testing.T) {
 	// Create test receiver and gRPC service
@@ -52,14 +21,14 @@ func TestMdtDialout_BasicFlow(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	settings := createTestSettings()
 
-	receiver, err := newCiscoTelemetryReceiver(config, settings, consumer)
+	receiver, err := createMetricsReceiver(t.Context(), settings, config, consumer)
 	require.NoError(t, err)
 
-	yangParser := NewYANGParser()
+	yangParser := internal.NewYANGParser()
 	yangParser.LoadBuiltinModules()
 
 	service := &grpcService{
-		receiver:   receiver,
+		receiver:   receiver.(*yangReceiver),
 		yangParser: yangParser,
 	}
 
@@ -75,14 +44,14 @@ func TestProcessTelemetryData_ErrorHandling(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	settings := createTestSettings()
 
-	receiver, err := newCiscoTelemetryReceiver(config, settings, consumer)
+	receiver, err := createMetricsReceiver(t.Context(), settings, config, consumer)
 	require.NoError(t, err)
 
-	yangParser := NewYANGParser()
+	yangParser := internal.NewYANGParser()
 	yangParser.LoadBuiltinModules()
 
 	service := &grpcService{
-		receiver:   receiver,
+		receiver:   receiver.(*yangReceiver),
 		yangParser: yangParser,
 	}
 
@@ -121,29 +90,20 @@ func TestProcessTelemetryData_ErrorHandling(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func createTestTelemetryMessage() *pb.MdtDialoutArgs {
-	// Create a basic telemetry message for testing
-	return &pb.MdtDialoutArgs{
-		ReqId:  12345,
-		Data:   []byte(`test telemetry data`),
-		Errors: "",
-	}
-}
-
 // Add more coverage for helper methods that show 0% coverage
 func TestGrpcServiceHelpers(t *testing.T) {
 	config := createValidTestConfig()
 	consumer := &consumertest.MetricsSink{}
 	settings := createTestSettings()
 
-	receiver, err := newCiscoTelemetryReceiver(config, settings, consumer)
+	receiver, err := createMetricsReceiver(t.Context(), settings, config, consumer)
 	require.NoError(t, err)
 
-	yangParser := NewYANGParser()
+	yangParser := internal.NewYANGParser()
 	yangParser.LoadBuiltinModules()
 
 	service := &grpcService{
-		receiver:   receiver,
+		receiver:   receiver.(*yangReceiver),
 		yangParser: yangParser,
 	}
 
@@ -173,15 +133,15 @@ func TestConvertToOTELMetrics(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	settings := createTestSettings()
 
-	receiver, err := newCiscoTelemetryReceiver(config, settings, consumer)
+	receiver, err := createMetricsReceiver(t.Context(), settings, config, consumer)
 	require.NoError(t, err)
 
-	yangParser := NewYANGParser()
+	yangParser := internal.NewYANGParser()
 	yangParser.LoadBuiltinModules()
 
 	// Don't initialize RFC parser to avoid nil pointer issues
 	service := &grpcService{
-		receiver:   receiver,
+		receiver:   receiver.(*yangReceiver),
 		yangParser: yangParser,
 		// rfcYangParser is nil, which is handled in the code
 	}

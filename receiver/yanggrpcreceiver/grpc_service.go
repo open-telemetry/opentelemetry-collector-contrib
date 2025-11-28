@@ -5,6 +5,7 @@ package yanggrpcreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -12,6 +13,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -31,22 +34,21 @@ type grpcService struct {
 // MdtDialout handles the bidirectional streaming gRPC call from Cisco devices
 func (s *grpcService) MdtDialout(stream grpc.BidiStreamingServer[pb.MdtDialoutArgs, pb.MdtDialoutArgs]) error {
 	ctx := context.Background()
-	clientAddr := "unknown" // TODO: Extract from stream context
 
-	s.receiver.telemetryBuilder.YangReceiverConnectionOpened(ctx, clientAddr)
-	defer s.receiver.telemetryBuilder.RecordConnectionClosed(ctx, clientAddr)
+	s.receiver.telemetryBuilder.YangReceiverConnectionsOpened.Add(ctx, 1)
+	defer s.receiver.telemetryBuilder.YangReceiverConnectionsClosed.Add(ctx, 1)
 
-	s.receiver.settings.Logger.Info("New MDT dialout connection established")
+	s.receiver.settings.Logger.Debug("New MDT dialout connection established")
 
 	for {
 		// Receive telemetry data from Cisco device
 		req, err := stream.Recv()
-		if err == io.EOF {
-			s.receiver.settings.Logger.Info("MDT dialout connection closed by client")
+		if errors.Is(err, io.EOF) {
+			s.receiver.settings.Logger.Debug("MDT dialout connection closed by client")
 			return nil
 		}
 		if err != nil {
-			s.receiver.telemetryBuilder.RecordGRPCError(ctx, "receive_error", "stream_recv")
+			s.receiver.telemetryBuilder.YangReceiverGrpcErrors.Add(ctx, 1) // "receive_error", "stream_recv"
 			s.receiver.settings.Logger.Error("Error receiving MDT data", zap.Error(err))
 			return err
 		}
@@ -54,7 +56,9 @@ func (s *grpcService) MdtDialout(stream grpc.BidiStreamingServer[pb.MdtDialoutAr
 		// Process the received telemetry data
 		err = s.processTelemetryData(req)
 		if err != nil {
-			s.receiver.telemetryBuilder.RecordGRPCError(ctx, "processing_error", "process_telemetry")
+			s.receiver.telemetryBuilder.YangReceiverGrpcErrors.Add(ctx, 1, metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("error_type", "processing_error"), attribute.String("error", "process_telemetry"),
+			)))
 			s.receiver.settings.Logger.Error("Error processing telemetry data",
 				zap.Error(err), zap.Int64("req_id", req.ReqId))
 
@@ -64,7 +68,9 @@ func (s *grpcService) MdtDialout(stream grpc.BidiStreamingServer[pb.MdtDialoutAr
 				Errors: fmt.Sprintf("Processing error: %v", err),
 			}
 			if sendErr := stream.Send(resp); sendErr != nil {
-				s.receiver.telemetryBuilder.RecordGRPCError(ctx, "send_error", "stream_send")
+				s.receiver.telemetryBuilder.YangReceiverGrpcErrors.Add(ctx, 1, metric.WithAttributeSet(attribute.NewSet(
+					attribute.String("error_type", "send_error"), attribute.String("error", "stream_send"),
+				)))
 				s.receiver.settings.Logger.Error("Failed to send error response", zap.Error(sendErr))
 			}
 			continue
@@ -91,16 +97,27 @@ func (s *grpcService) processTelemetryData(req *pb.MdtDialoutArgs) error {
 	subscriptionID := fmt.Sprintf("%d", req.ReqId)
 
 	if len(req.Data) == 0 {
-		s.receiver.telemetryBuilder.RecordMessageDropped(ctx, nodeID, subscriptionID, "empty_data")
-		return fmt.Errorf("empty telemetry data")
+		s.receiver.telemetryBuilder.YangReceiverMessagesDropped.Add(ctx, 1, metric.WithAttributeSet(attribute.NewSet(
+			attribute.String("node_id", nodeID),
+			attribute.String("subscription_id", subscriptionID),
+			attribute.String("reason", "empty_data"),
+		)))
+		return errors.New("empty telemetry data")
 	}
 
-	s.receiver.telemetryBuilder.RecordMessageReceived(ctx, nodeID, subscriptionID, int64(len(req.Data)))
+	s.receiver.telemetryBuilder.YangReceiverMessagesReceived.Add(ctx, int64(len(req.Data)), metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("node_id", nodeID),
+		attribute.String("subscription_id", subscriptionID),
+	)))
 
 	// Parse the telemetry message from the data field
 	telemetryMsg := &pb.Telemetry{}
 	if err := proto.Unmarshal(req.Data, telemetryMsg); err != nil {
-		s.receiver.telemetryBuilder.RecordMessageDropped(ctx, nodeID, subscriptionID, "unmarshal_error")
+		s.receiver.telemetryBuilder.YangReceiverMessagesDropped.Add(ctx, 1, metric.WithAttributeSet(attribute.NewSet(
+			attribute.String("node_id", nodeID),
+			attribute.String("subscription_id", subscriptionID),
+			attribute.String("reason", "unmarshal_error"),
+		)))
 		return fmt.Errorf("failed to unmarshal telemetry data: %w", err)
 	}
 
@@ -112,7 +129,11 @@ func (s *grpcService) processTelemetryData(req *pb.MdtDialoutArgs) error {
 	// Convert to OTEL metrics
 	metrics := s.convertToOTELMetrics(telemetryMsg)
 	if metrics.MetricCount() == 0 {
-		s.receiver.telemetryBuilder.RecordMessageDropped(ctx, nodeID, subscriptionID, "no_metrics_extracted")
+		s.receiver.telemetryBuilder.YangReceiverMessagesDropped.Add(ctx, 1, metric.WithAttributeSet(attribute.NewSet(
+			attribute.String("node_id", nodeID),
+			attribute.String("subscription_id", subscriptionID),
+			attribute.String("reason", "no_metrics_extracted"),
+		)))
 		s.receiver.settings.Logger.Warn("No metrics extracted from telemetry data",
 			zap.String("encoding_path", telemetryMsg.EncodingPath),
 			zap.String("node_id", telemetryMsg.GetNodeIdStr()))
@@ -122,14 +143,23 @@ func (s *grpcService) processTelemetryData(req *pb.MdtDialoutArgs) error {
 	// Send metrics to the consumer
 	err := s.receiver.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
-		s.receiver.telemetryBuilder.RecordMessageDropped(ctx, nodeID, subscriptionID, "consumer_error")
+		s.receiver.telemetryBuilder.YangReceiverMessagesDropped.Add(ctx, 1, metric.WithAttributeSet(attribute.NewSet(
+			attribute.String("node_id", nodeID),
+			attribute.String("subscription_id", subscriptionID),
+			attribute.String("reason", "consumer_error"),
+		)))
 		return fmt.Errorf("failed to consume metrics: %w", err)
 	}
 
 	// Record successful processing with timing
 	processingDuration := time.Since(startTime)
 	yangModule := s.extractYANGModule(telemetryMsg.EncodingPath)
-	s.receiver.telemetryBuilder.RecordMessageProcessed(ctx, nodeID, subscriptionID, yangModule, processingDuration)
+	s.receiver.telemetryBuilder.YangReceiverMessagesProcessed.Add(ctx, 1, metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("node_id", nodeID),
+		attribute.String("subscription_id", subscriptionID),
+		attribute.String("yang_module", yangModule),
+	)))
+	s.receiver.telemetryBuilder.YangReceiverProcessingDuration.Record(ctx, float64(processingDuration.Nanoseconds())/1000000)
 
 	s.receiver.settings.Logger.Debug("Successfully processed telemetry data",
 		zap.Int64("req_id", req.ReqId),
@@ -141,7 +171,7 @@ func (s *grpcService) processTelemetryData(req *pb.MdtDialoutArgs) error {
 }
 
 // extractYANGModule extracts the YANG module name from encoding path
-func (s *grpcService) extractYANGModule(encodingPath string) string {
+func (*grpcService) extractYANGModule(encodingPath string) string {
 	// Example: "Cisco-IOS-XE-interfaces-oper:interfaces/interface/statistics"
 	if idx := strings.Index(encodingPath, ":"); idx != -1 {
 		return encodingPath[:idx]
@@ -217,33 +247,33 @@ func (s *grpcService) processField(scopeMetrics pmetric.ScopeMetrics, field *pb.
 	// YANG analysis is now done within the metric creation methods
 	// If field has a value, create a metric
 	if field.ValueByType != nil {
-		metric := scopeMetrics.Metrics().AppendEmpty()
+		m := scopeMetrics.Metrics().AppendEmpty()
 
 		// Get YANG data type information for this field
 		yangDataType := s.yangParser.GetDataTypeForEncodingPath(basePath, field.Name)
 
 		switch value := field.ValueByType.(type) {
 		case *pb.TelemetryField_Uint32Value:
-			s.createYANGAwareMetric(metric, currentPath, basePath, float64(value.Uint32Value), timestamp, yangDataType)
+			s.createYANGAwareMetric(m, currentPath, basePath, float64(value.Uint32Value), timestamp, yangDataType)
 		case *pb.TelemetryField_Uint64Value:
-			s.createYANGAwareMetric(metric, currentPath, basePath, float64(value.Uint64Value), timestamp, yangDataType)
+			s.createYANGAwareMetric(m, currentPath, basePath, float64(value.Uint64Value), timestamp, yangDataType)
 		case *pb.TelemetryField_Sint32Value:
-			s.createYANGAwareMetric(metric, currentPath, basePath, float64(value.Sint32Value), timestamp, yangDataType)
+			s.createYANGAwareMetric(m, currentPath, basePath, float64(value.Sint32Value), timestamp, yangDataType)
 		case *pb.TelemetryField_Sint64Value:
-			s.createYANGAwareMetric(metric, currentPath, basePath, float64(value.Sint64Value), timestamp, yangDataType)
+			s.createYANGAwareMetric(m, currentPath, basePath, float64(value.Sint64Value), timestamp, yangDataType)
 		case *pb.TelemetryField_DoubleValue:
-			s.createYANGAwareMetric(metric, currentPath, basePath, value.DoubleValue, timestamp, yangDataType)
+			s.createYANGAwareMetric(m, currentPath, basePath, value.DoubleValue, timestamp, yangDataType)
 		case *pb.TelemetryField_FloatValue:
-			s.createYANGAwareMetric(metric, currentPath, basePath, float64(value.FloatValue), timestamp, yangDataType)
+			s.createYANGAwareMetric(m, currentPath, basePath, float64(value.FloatValue), timestamp, yangDataType)
 		case *pb.TelemetryField_BoolValue:
 			val := 0.0
 			if value.BoolValue {
 				val = 1.0
 			}
-			s.createYANGAwareMetric(metric, currentPath, basePath, val, timestamp, yangDataType)
+			s.createYANGAwareMetric(m, currentPath, basePath, val, timestamp, yangDataType)
 		case *pb.TelemetryField_StringValue:
-			// For string values, create YANG-aware info metric
-			s.createYANGAwareInfoMetric(metric, currentPath, basePath, value.StringValue, timestamp, yangDataType)
+			// For string values, create YANG-aware info m
+			s.createYANGAwareInfoMetric(m, currentPath, basePath, value.StringValue, timestamp, yangDataType)
 		default:
 			// Remove the metric we added if we can't handle the type
 			scopeMetrics.Metrics().RemoveIf(func(m pmetric.Metric) bool {
@@ -258,69 +288,8 @@ func (s *grpcService) processField(scopeMetrics pmetric.ScopeMetrics, field *pb.
 	}
 }
 
-// createGaugeMetric creates a gauge metric with numeric value
-func (s *grpcService) createGaugeMetric(metric pmetric.Metric, name, encodingPath string, value float64, timestamp pcommon.Timestamp) {
-	metric.SetName(fmt.Sprintf("cisco.%s", name))
-	metric.SetDescription(fmt.Sprintf("Cisco telemetry metric from %s", encodingPath))
-	metric.SetUnit("1")
-
-	gauge := metric.SetEmptyGauge()
-	dp := gauge.DataPoints().AppendEmpty()
-	dp.SetDoubleValue(value)
-	dp.SetTimestamp(timestamp)
-
-	// Add encoding path as attribute
-	dp.Attributes().PutStr("encoding_path", encodingPath)
-
-	// Add YANG-derived attributes
-	analysis := s.yangParser.AnalyzeEncodingPath(encodingPath)
-	if analysis != nil && analysis.ModuleName != "" {
-		dp.Attributes().PutStr("yang.module", analysis.ModuleName)
-		dp.Attributes().PutStr("yang.list_path", analysis.ListPath)
-
-		// Mark if this is a key field
-		fieldName := s.extractFieldName(name)
-		if s.isKeyField(fieldName, analysis) {
-			dp.Attributes().PutStr("yang.is_key", "true")
-			dp.Attributes().PutStr("yang.key_type", fieldName)
-		}
-	}
-}
-
-// createInfoMetric creates an info metric for string values
-func (s *grpcService) createInfoMetric(metric pmetric.Metric, name, encodingPath, value string, timestamp pcommon.Timestamp) {
-	metric.SetName(fmt.Sprintf("cisco.%s_info", name))
-	metric.SetDescription(fmt.Sprintf("Cisco telemetry info metric from %s", encodingPath))
-	metric.SetUnit("1")
-
-	gauge := metric.SetEmptyGauge()
-	dp := gauge.DataPoints().AppendEmpty()
-	dp.SetDoubleValue(1.0) // Info metrics always have value 1
-	dp.SetTimestamp(timestamp)
-
-	// Add the string value and encoding path as attributes
-	dp.Attributes().PutStr("value", value)
-	dp.Attributes().PutStr("encoding_path", encodingPath)
-
-	// Add YANG-derived attributes
-	analysis := s.yangParser.AnalyzeEncodingPath(encodingPath)
-	if analysis != nil && analysis.ModuleName != "" {
-		dp.Attributes().PutStr("yang.module", analysis.ModuleName)
-		dp.Attributes().PutStr("yang.list_path", analysis.ListPath)
-
-		// Check if this is a key field (very likely for string values)
-		fieldName := s.extractFieldName(name)
-		if s.isKeyField(fieldName, analysis) {
-			dp.Attributes().PutStr("yang.is_key", "true")
-			dp.Attributes().PutStr("yang.key_type", fieldName)
-			// For key fields, also add the key value as a special attribute
-			dp.Attributes().PutStr("yang.key_value", value)
-		}
-	}
-}
-
 // processGPBTableData processes GPB table formatted telemetry data
-func (s *grpcService) processGPBTableData(scopeMetrics pmetric.ScopeMetrics, telemetry *pb.Telemetry) {
+func (s *grpcService) processGPBTableData(_ pmetric.ScopeMetrics, telemetry *pb.Telemetry) {
 	// For GPB table data, we would need specific protobuf definitions for each encoding path
 	// This is a placeholder implementation
 	s.receiver.settings.Logger.Debug("GPB table data processing not implemented",
@@ -328,7 +297,7 @@ func (s *grpcService) processGPBTableData(scopeMetrics pmetric.ScopeMetrics, tel
 }
 
 // isKeyField checks if a field name is a key field based on YANG analysis
-func (s *grpcService) isKeyField(fieldName string, analysis *PathAnalysis) bool {
+func (*grpcService) isKeyField(fieldName string, analysis *internal.PathAnalysis) bool {
 	if analysis == nil {
 		return false
 	}
@@ -351,25 +320,8 @@ func (s *grpcService) isKeyField(fieldName string, analysis *PathAnalysis) bool 
 	return false
 }
 
-// enhanceMetricWithYANGInfo enhances a metric with YANG-derived information
-func (s *grpcService) enhanceMetricWithYANGInfo(metric pmetric.Metric, fieldName string, analysis *PathAnalysis, encodingPath string) {
-	if analysis == nil {
-		return
-	}
-
-	// Add YANG module information as metric attributes
-	if analysis.ModuleName != "" {
-		// This would need to be added to the metric attributes
-		s.receiver.settings.Logger.Debug("Enhanced metric with YANG info",
-			zap.String("field", fieldName),
-			zap.String("module", analysis.ModuleName),
-			zap.String("list_path", analysis.ListPath),
-			zap.Any("keys", analysis.Keys))
-	}
-}
-
 // extractFieldName extracts the field name from a metric name path
-func (s *grpcService) extractFieldName(metricName string) string {
+func (*grpcService) extractFieldName(metricName string) string {
 	// Remove common prefixes and get the last component
 	parts := strings.Split(metricName, ".")
 	if len(parts) == 0 {
@@ -380,15 +332,13 @@ func (s *grpcService) extractFieldName(metricName string) string {
 	fieldName := parts[len(parts)-1]
 
 	// Remove common suffixes like "_info"
-	if strings.HasSuffix(fieldName, "_info") {
-		fieldName = strings.TrimSuffix(fieldName, "_info")
-	}
+	fieldName = strings.TrimSuffix(fieldName, "_info")
 
 	return fieldName
 }
 
 // createYANGAwareMetric creates a metric with YANG data type awareness
-func (s *grpcService) createYANGAwareMetric(metric pmetric.Metric, name, encodingPath string, value float64, timestamp pcommon.Timestamp, yangDataType *YANGDataType) {
+func (s *grpcService) createYANGAwareMetric(metric pmetric.Metric, name, encodingPath string, value float64, timestamp pcommon.Timestamp, yangDataType *internal.YANGDataType) {
 	// Determine metric name and type based on YANG information
 	metricName := fmt.Sprintf("cisco.%s", name)
 	metricDescription := fmt.Sprintf("Cisco telemetry metric from %s", encodingPath)
@@ -426,7 +376,6 @@ func (s *grpcService) createYANGAwareMetric(metric pmetric.Metric, name, encodin
 
 		// Add attributes
 		s.addYANGAttributes(dp.Attributes(), encodingPath, yangDataType, name)
-
 	} else {
 		// Create a gauge metric for everything else
 		gauge := metric.SetEmptyGauge()
@@ -440,7 +389,7 @@ func (s *grpcService) createYANGAwareMetric(metric pmetric.Metric, name, encodin
 }
 
 // createYANGAwareInfoMetric creates an info metric with YANG data type awareness
-func (s *grpcService) createYANGAwareInfoMetric(metric pmetric.Metric, name, encodingPath, value string, timestamp pcommon.Timestamp, yangDataType *YANGDataType) {
+func (s *grpcService) createYANGAwareInfoMetric(metric pmetric.Metric, name, encodingPath, value string, timestamp pcommon.Timestamp, yangDataType *internal.YANGDataType) {
 	metricName := fmt.Sprintf("cisco.%s_info", name)
 	metricDescription := fmt.Sprintf("Cisco telemetry info metric from %s", encodingPath)
 
@@ -465,7 +414,7 @@ func (s *grpcService) createYANGAwareInfoMetric(metric pmetric.Metric, name, enc
 }
 
 // addYANGAttributes adds YANG-derived attributes to metric data points
-func (s *grpcService) addYANGAttributes(attrs pcommon.Map, encodingPath string, yangDataType *YANGDataType, fieldName string) {
+func (s *grpcService) addYANGAttributes(attrs pcommon.Map, encodingPath string, yangDataType *internal.YANGDataType, fieldName string) {
 	// Always add encoding path
 	attrs.PutStr("encoding_path", encodingPath)
 
