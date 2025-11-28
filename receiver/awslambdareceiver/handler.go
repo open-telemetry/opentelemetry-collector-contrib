@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -23,9 +24,51 @@ import (
 
 type (
 	unmarshalFunc[T any]       func([]byte) (T, error)
-	s3EventConsumerFunc[T any] func(context.Context, events.S3EventRecord, T) error
+	s3EventConsumerFunc[T any] func(context.Context, time.Time, T) error
+	handlerRegistry            map[eventType]func() lambdaEventHandler
 )
 
+type handlerProvider interface {
+	getHandler(eventType eventType) (lambdaEventHandler, error)
+}
+
+// handlerProvider is responsible for providing event handlers based on event types.
+// It operates with a registry of handler factories and caches loadedHandlers for reuse.
+type handlerProviderImpl struct {
+	registry       handlerRegistry
+	loadedHandlers map[eventType]lambdaEventHandler
+	knownTypes     []string
+}
+
+func newHandlerProvider(registry handlerRegistry) handlerProvider {
+	var types []string
+	for t := range registry {
+		types = append(types, string(t))
+	}
+
+	return &handlerProviderImpl{
+		loadedHandlers: map[eventType]lambdaEventHandler{},
+		registry:       registry,
+		knownTypes:     types,
+	}
+}
+
+func (h *handlerProviderImpl) getHandler(eventType eventType) (lambdaEventHandler, error) {
+	if loaded, exists := h.loadedHandlers[eventType]; exists {
+		return loaded, nil
+	}
+
+	factory, exists := h.registry[eventType]
+	if !exists {
+		return nil, fmt.Errorf("no handler registered for event type %s, known types: '%s'", eventType, strings.Join(h.knownTypes, ","))
+	}
+
+	handler := factory()
+	h.loadedHandlers[eventType] = handler
+	return handler, nil
+}
+
+// lambdaEventHandler defines the contract for AWS Lambda event handlers
 type lambdaEventHandler interface {
 	handlerType() eventType
 	handle(ctx context.Context, event json.RawMessage) error
@@ -68,7 +111,7 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 		zap.String("S3Bucket", parsedEvent.S3.Bucket.Arn),
 	)
 
-	// Skip processing zero length objects. This includes events from folder creation and empty object .
+	// Skip processing zero length objects. This includes events from folder creation and empty object.
 	if parsedEvent.S3.Object.Size == 0 {
 		s.logger.Info("Empty object, skipping download", zap.String("File", parsedEvent.S3.Object.Key))
 		return nil
@@ -84,7 +127,7 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 		return fmt.Errorf("failed to unmarshal logs: %w", err)
 	}
 
-	if err := s.consumer(ctx, parsedEvent, data); err != nil {
+	if err := s.consumer(ctx, parsedEvent.EventTime, data); err != nil {
 		// If permanent, return as-is (don't retry)
 		if consumererror.IsPermanent(err) {
 			return err
