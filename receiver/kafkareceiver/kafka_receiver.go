@@ -75,6 +75,12 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 		if err != nil {
 			return nil, err
 		}
+		if config.Logs.Topic != "" {
+			set.Logger.Warn("logs.topic is deprecated, please use logs.topics instead")
+		}
+		if config.Logs.ExcludeTopic != "" {
+			set.Logger.Warn("logs.exclude_topic is deprecated, please use logs.exclude_topics instead")
+		}
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&logsHandler{
@@ -99,6 +105,13 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 		if err != nil {
 			return nil, err
 		}
+		if config.Metrics.Topic != "" {
+			set.Logger.Warn("metrics.topic is deprecated, please use metrics.topics instead")
+		}
+		if config.Metrics.ExcludeTopic != "" {
+			set.Logger.Warn("metrics.exclude_topic is deprecated, please use metrics.exclude_topics instead")
+		}
+
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&metricsHandler{
@@ -123,7 +136,16 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 		if err != nil {
 			return nil, err
 		}
+
+		if config.Traces.Topic != "" {
+			set.Logger.Warn("traces.topic is deprecated, please use traces.topics instead")
+		}
+		if config.Traces.ExcludeTopic != "" {
+			set.Logger.Warn("traces.exclude_topic is deprecated, please use traces.exclude_topics instead")
+		}
+
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
+
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&tracesHandler{
 					unmarshaler: unmarshaler,
@@ -147,6 +169,13 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 		if err != nil {
 			return nil, err
 		}
+		if config.Profiles.Topic != "" {
+			set.Logger.Warn("profiles.topic is deprecated, please use profiles.topics instead")
+		}
+		if config.Profiles.ExcludeTopic != "" {
+			set.Logger.Warn("profiles.exclude_topic is deprecated, please use profiles.exclude_topics instead")
+		}
+
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&profilesHandler{

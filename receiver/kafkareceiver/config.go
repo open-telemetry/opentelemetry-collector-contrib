@@ -64,15 +64,13 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Logs.Topic != "" {
 		if len(zeroConfig.Logs.Topics) == 0 {
 			c.Logs.Topics = []string{zeroConfig.Logs.Topic}
-		} else {
-			return fmt.Errorf("both logs.topic and logs.topics cannot be set")
+			c.Logs.Topic = ""
 		}
 	}
 	if zeroConfig.Logs.ExcludeTopic != "" {
 		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
 			c.Logs.ExcludeTopics = []string{zeroConfig.Logs.ExcludeTopic}
-		} else {
-			return fmt.Errorf("both logs.exclude_topic and logs.exclude_topics cannot be set")
+			c.Logs.ExcludeTopic = ""
 		}
 	}
 
@@ -80,16 +78,14 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Metrics.Topic != "" {
 		if len(zeroConfig.Logs.Topics) == 0 {
 			c.Metrics.Topics = []string{zeroConfig.Metrics.Topic}
-		} else {
-			return fmt.Errorf("both metrics.topic and metrics.topics cannot be set")
+			c.Metrics.Topic = ""
 		}
 	}
 
 	if zeroConfig.Metrics.ExcludeTopic != "" {
 		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
 			c.Metrics.ExcludeTopics = []string{zeroConfig.Metrics.ExcludeTopic}
-		} else {
-			return fmt.Errorf("both metrics.exclude_topic and metrics.exclude_topics cannot be set")
+			c.Metrics.ExcludeTopic = ""
 		}
 	}
 
@@ -97,16 +93,14 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Traces.Topic != "" {
 		if len(zeroConfig.Logs.Topics) == 0 {
 			c.Traces.Topics = []string{zeroConfig.Traces.Topic}
-		} else {
-			return fmt.Errorf("both traces.topic and traces.topics cannot be set")
+			c.Traces.Topic = ""
 		}
 	}
 
 	if zeroConfig.Traces.ExcludeTopic != "" {
 		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
 			c.Traces.ExcludeTopics = []string{zeroConfig.Traces.ExcludeTopic}
-		} else {
-			return fmt.Errorf("both traces.exclude_topic and traces.exclude_topics cannot be set")
+			c.Traces.ExcludeTopic = ""
 		}
 	}
 
@@ -114,15 +108,13 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Profiles.Topic != "" {
 		if len(zeroConfig.Logs.Topics) == 0 {
 			c.Profiles.Topics = []string{zeroConfig.Profiles.Topic}
-		} else {
-			return fmt.Errorf("both profiles.topic and profiles.topics cannot be set")
+			c.Profiles.Topic = ""
 		}
 	}
 	if zeroConfig.Profiles.ExcludeTopic != "" {
 		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
 			c.Profiles.ExcludeTopics = []string{zeroConfig.Profiles.ExcludeTopic}
-		} else {
-			return fmt.Errorf("both profiles.exclude_topic and profiles.exclude_topics cannot be set")
+			c.Profiles.ExcludeTopic = ""
 		}
 	}
 
@@ -145,6 +137,32 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 // Validate checks the receiver configuration is valid.
 func (c *Config) Validate() error {
+	if c.Logs.Topic != "" && len(c.Logs.Topics) != 0 {
+		return fmt.Errorf("both logs.topic and logs.topics cannot be set")
+	}
+	if c.Metrics.Topic != "" && len(c.Metrics.Topics) != 0 {
+		return fmt.Errorf("both metrics.topic and metrics.topics cannot be set")
+	}
+	if c.Traces.Topic != "" && len(c.Traces.Topics) != 0 {
+		return fmt.Errorf("both traces.topic and traces.topics cannot be set")
+	}
+	if c.Profiles.Topic != "" && len(c.Profiles.Topics) != 0 {
+		return fmt.Errorf("both profiles.topic and profiles.topics cannot be set")
+	}
+
+	if c.Logs.ExcludeTopic != "" && len(c.Logs.ExcludeTopics) != 0 {
+		return fmt.Errorf("both logs.exlude_topic and logs.exlude_topics cannot be set")
+	}
+	if c.Metrics.ExcludeTopic != "" && len(c.Metrics.ExcludeTopics) != 0 {
+		return fmt.Errorf("both metrics.exclude_topic and metrics.exclude_topics cannot be set")
+	}
+	if c.Traces.ExcludeTopic != "" && len(c.Traces.ExcludeTopics) != 0 {
+		return fmt.Errorf("both traces.exclude_topic and traces.exclude_topic cannot be set")
+	}
+	if c.Profiles.Topic != "" && len(c.Profiles.Topics) != 0 {
+		return fmt.Errorf("both profiles.exclude_topic and profiles.exclude_topics cannot be set")
+	}
+
 	// Validate that exclude_topic is only used with regex topic patterns
 	if err := validateExcludeTopic("logs", c.Logs.Topics, c.Logs.ExcludeTopics); err != nil {
 		return err

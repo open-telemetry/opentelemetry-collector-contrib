@@ -344,6 +344,28 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: "traces.exclude_topics is configured but none of the configured traces.topics use regex pattern (must start with '^')",
 		},
 		{
+			name: "invalid config when both topic and topics are set",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topic:    "legacy_log",
+					Topics:   []string{"logs"},
+					Encoding: "otlp_proto",
+				},
+			},
+			expectedErr: "both logs.topic and logs.topics cannot be set",
+		},
+		{
+			name: "invalid config when both exclude_topic and exclude_topics are set",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					ExcludeTopic:  "^logs-[invalid(regex",
+					ExcludeTopics: []string{"^logs-[invalid(regex"},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "both logs.exclude_topic and logs.exclude_topics cannot be set",
+		},
+		{
 			name: "invalid config with non-regex topic and exclude_topic for profiles",
 			config: &Config{
 				Profiles: TopicEncodingConfig{
