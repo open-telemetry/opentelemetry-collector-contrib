@@ -176,9 +176,11 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
-	file, err := os.Open(path) // #nosec - operator must read in files defined by user
+	// Normalize the path to handle Windows UNC paths correctly
+	normalizedPath := normalizePath(path)
+	file, err := os.Open(normalizedPath) // #nosec - operator must read in files defined by user
 	if err != nil {
-		m.set.Logger.Error("Failed to open file", zap.Error(err))
+		m.set.Logger.Error("Failed to open file", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
 		return nil, nil
 	}
 
