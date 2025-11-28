@@ -189,7 +189,7 @@ func reloadPromConfig(dst *PromConfig, src any) error {
 	yamlOut, err := yaml.MarshalWithOptions(
 		src,
 		yaml.CustomMarshaler(func(s commonconfig.Secret) ([]byte, error) {
-			return []byte(s), nil
+			return yaml.Marshal(string(s))
 		}),
 	)
 	if err != nil {
