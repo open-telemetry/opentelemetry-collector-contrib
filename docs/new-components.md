@@ -200,8 +200,8 @@ When donating a component to the community, break it down into separate PRs as f
     to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 > [!IMPORTANT]  
-> An 'in development' component that does not make progress towards alpha stability it may be
-> considered [unmaintained](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#unmaintained) and may be removed.
+> An 'in development' component that does not make progress towards alpha stability may be
+> considered [unmaintained](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#unmaintained) and eventually removed.
 
 ## Releasing New Components
 
