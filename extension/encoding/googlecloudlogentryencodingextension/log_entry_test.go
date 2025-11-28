@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -76,7 +77,7 @@ func TestHandleHTTPRequestField(t *testing.T) {
 				refererHeaderField:                        "referer",
 				requestServerDurationField:                float64(10),
 				string(semconv.UserAgentOriginalKey):      "test",
-				string(semconv.ClientAddressKey):          "127.0.0.2",
+				string(semconv.NetworkPeerAddressKey):     "127.0.0.2",
 				string(semconv.ServerAddressKey):          "127.0.0.3",
 			},
 		},
@@ -432,6 +433,11 @@ func TestGetEncodingFormat(t *testing.T) {
 			name:           "vpc flow log compute",
 			logType:        vpcflowlog.ComputeNameSuffix,
 			expectedFormat: constants.GCPFormatVPCFlowLog,
+		},
+		{
+			name:           "proxy nlb log connections",
+			logType:        proxynlb.ConnectionsLogNameSuffix,
+			expectedFormat: constants.GCPFormatProxyNLBLog,
 		},
 		{
 			name:           "unknown log type",

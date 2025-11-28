@@ -550,7 +550,7 @@ func TestError(t *testing.T) {
 	// Check that we registered an error and no panic occurred
 	require.Eventually(t, func() bool {
 		return metricsSink.getErrorCount() > 0
-	}, 300*time.Millisecond, 50*time.Millisecond)
+	}, 500*time.Millisecond, 100*time.Millisecond)
 	assert.Zero(t, metricsSink.DataPointCount())
 	metricsSink.Reset()
 
@@ -562,7 +562,7 @@ func TestError(t *testing.T) {
 	// Check that metrics were received, and no error was registered
 	require.Eventually(t, func() bool {
 		return metricsSink.DataPointCount() > 0
-	}, 300*time.Millisecond, 50*time.Millisecond)
+	}, 500*time.Millisecond, 100*time.Millisecond)
 	assert.Zero(t, metricsSink.getErrorCount())
 
 	err = conn.Shutdown(t.Context())

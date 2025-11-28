@@ -34,6 +34,7 @@ const (
 	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
 	collectorInstanceKey           = "collector.instance.id"              // OpenTelemetry non-standard constant.
+	otelStatusCodeKey              = "otel.status_code"                   // OpenTelemetry non-standard constant.
 	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
 	metricKeySeparator             = string(byte(0))
@@ -535,8 +536,18 @@ func (p *connectorImp) buildAttributes(
 	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	}
-	if !slices.Contains(p.config.ExcludeDimensions, statusCodeKey) {
-		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	if useOtelStatusCodeAttribute.IsEnabled() {
+		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
+			if span.Status().Code() == ptrace.StatusCodeError {
+				attr.PutStr(otelStatusCodeKey, "ERROR")
+			} else if span.Status().Code() == ptrace.StatusCodeOk {
+				attr.PutStr(otelStatusCodeKey, "OK")
+			}
+		}
+	} else {
+		if !slices.Contains(p.config.ExcludeDimensions, statusCodeKey) {
+			attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+		}
 	}
 	if includeCollectorInstanceID.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, collectorInstanceKey) {
@@ -588,8 +599,14 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
 	}
-	if !slices.Contains(p.config.ExcludeDimensions, statusCodeKey) {
-		concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+	if useOtelStatusCodeAttribute.IsEnabled() {
+		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
+			concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+		}
+	} else {
+		if !slices.Contains(p.config.ExcludeDimensions, statusCodeKey) {
+			concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+		}
 	}
 
 	for _, d := range optionalDims {
