@@ -201,6 +201,85 @@ func TestValidate(t *testing.T) {
 			},
 			err: "reporter_period must be 5 minutes or higher",
 		},
+		{
+			name: "empty cluster_name when orchestrator_explorer is enabled",
+			cfg: &Config{
+				API:          APIConfig{Key: "abcdef0"},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
+				OrchestratorExplorer: OrchestratorExplorerConfig{
+					Enabled:     true,
+					ClusterName: "",
+				},
+			},
+			err: "'cluster_name' is required when 'orchestrator_explorer' is enabled",
+		},
+	}
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			err := testInstance.cfg.Validate()
+			if testInstance.err != "" {
+				assert.ErrorContains(t, err, testInstance.err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateConnectorComponentConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *ConnectorComponentConfig
+		err  string
+	}{
+		{
+			name: "valid connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					TracesConfig: TracesConfig{
+						IgnoreResources: []string{},
+						PeerTags:        []string{"tag1", "tag2"},
+					},
+					BucketInterval: 10 * time.Second,
+					TraceBuffer:    1000,
+				},
+			},
+		},
+		{
+			name: "unsupported ignore_missing_datadog_fields in connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					IgnoreMissingDatadogFields: true,
+				},
+			},
+			err: "ignore_missing_datadog_fields is not yet supported in the connector",
+		},
+		{
+			name: "valid ignore_missing_datadog_fields in connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					IgnoreMissingDatadogFields: false,
+				},
+			},
+		},
+		{
+			name: "invalid trace_buffer in connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					TraceBuffer: -1,
+				},
+			},
+			err: "trace buffer must be non-negative",
+		},
+		{
+			name: "invalid bucket_interval in connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					BucketInterval: -1,
+				},
+			},
+			err: "bucket interval must be non-negative",
+		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {

@@ -6,7 +6,7 @@
 | Stability     | [alpha]: metrics   |
 | Distributions | [] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fciscoos%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fciscoos) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fciscoos%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fciscoos) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_ciscoosreceiver)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_ciscoosreceiver&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_ciscoos)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_ciscoos&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -25,7 +25,7 @@ The following settings are available:
 | `timeout` | duration | No | SSH connection and command timeout (default: 30s) |
 | `scrapers` | map | Yes | Scrapers to enable |
 
-**Note:** Each receiver instance monitors a single device. To monitor multiple devices, create multiple receiver instances with unique identifiers (e.g., `ciscoosreceiver/device1`, `ciscoosreceiver/device2`).
+**Note:** Each receiver instance monitors a single device. To monitor multiple devices, create multiple receiver instances with unique identifiers (e.g., `ciscoos/device1`, `ciscoos/device2`).
 
 ### Device Configuration
 
@@ -95,7 +95,7 @@ All metrics include the following resource attributes following OpenTelemetry se
 ```yaml
 receivers:
   # Example 1: Password authentication
-  ciscoosreceiver/switch01:
+  ciscoos/switch01:
     collection_interval: 60s
     timeout: 30s
     device:
@@ -130,7 +130,7 @@ receivers:
             enabled: true
 
   # Example 2: SSH key file authentication
-  ciscoosreceiver/router01:
+  ciscoos/router01:
     collection_interval: 60s
     timeout: 30s
     device:
@@ -153,7 +153,7 @@ receivers:
             enabled: true
 
   # Example 3: Fallback authentication (key file with password backup)
-  ciscoosreceiver/firewall01:
+  ciscoos/firewall01:
     collection_interval: 60s
     timeout: 30s
     device:
@@ -182,6 +182,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ciscoosreceiver/switch01, ciscoosreceiver/router01, ciscoosreceiver/firewall01]
+      receivers: [ciscoos/switch01, ciscoos/router01, ciscoos/firewall01]
       exporters: [debug]
 ```

@@ -75,14 +75,6 @@ Counts the arrival of new traces [Development]
 | ---- | ----------- | ---------- | --------- | --------- |
 | {traces} | Sum | Int | true | Development |
 
-### otelcol_processor_tail_sampling_sampling_decision_latency
-
-Latency (in microseconds) of a given sampling policy [Development]
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| µs | Histogram | Int | Development |
-
 ### otelcol_processor_tail_sampling_sampling_decision_timer_latency
 
 Latency (in milliseconds) of each run of the sampling decision timer [Development]
@@ -106,6 +98,34 @@ Count of sampling policy evaluation errors [Development]
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {errors} | Sum | Int | true | Development |
+
+### otelcol_processor_tail_sampling_sampling_policy_execution_count
+
+Total number of executions of a specific sampling policy [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {executions} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| policy | Name of the policy | Any Str |
+
+### otelcol_processor_tail_sampling_sampling_policy_execution_time_sum
+
+Total time spent (in microseconds) executing a specific sampling policy [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| µs | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| policy | Name of the policy | Any Str |
 
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 

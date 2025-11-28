@@ -122,6 +122,7 @@ The following settings can be optionally configured:
         No compression levels supported yet
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
+  - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
 
 ### Supported encodings
 

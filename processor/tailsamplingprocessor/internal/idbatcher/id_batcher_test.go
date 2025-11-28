@@ -49,18 +49,27 @@ func TestMinBufferedChannels(t *testing.T) {
 func BenchmarkConcurrentEnqueue(b *testing.B) {
 	ids := generateSequentialIDs(1)
 	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
-	defer batcher.Stop()
 	require.NoError(b, err, "Failed to create Batcher")
 
 	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
+	var wg sync.WaitGroup
+	defer func() {
+		batcher.Stop()
+		wg.Wait()
+		ticker.Stop()
+	}()
 	ticked := &atomic.Int64{}
 	received := &atomic.Int64{}
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for range ticker.C {
-			batch, _ := batcher.CloseCurrentAndTakeFirstBatch()
+			batch, more := batcher.CloseCurrentAndTakeFirstBatch()
 			ticked.Add(1)
 			received.Add(int64(len(batch)))
+			if !more {
+				return
+			}
 		}
 	}()
 

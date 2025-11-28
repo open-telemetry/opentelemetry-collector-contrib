@@ -7,95 +7,76 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestConvertToEndpoints(tst *testing.T) {
-	// Create dummy Endpoints objects
-	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-	endpoints1 := &corev1.Endpoints{
+	hostname1 := "pod-1"
+	hostname2 := "pod-2"
+
+	// Create dummy EndpointSlice objects
+	endpoints1 := &discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-endpoints-1",
 			Namespace: "test-namespace",
 		},
-		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-		Subsets: []corev1.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []corev1.EndpointAddress{
-					{
-						Hostname: "pod-1",
-						IP:       "192.168.10.101",
-					},
-				},
+				Addresses: []string{"192.168.10.101"},
+				Hostname:  &hostname1,
 			},
 		},
 	}
-	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-	endpoints2 := &corev1.Endpoints{
+	endpoints2 := &discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-endpoints-2",
 			Namespace: "test-namespace",
 		},
-		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-		Subsets: []corev1.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []corev1.EndpointAddress{
-					{
-						Hostname: "pod-2",
-						IP:       "192.168.10.102",
-					},
-				},
+				Addresses: []string{"192.168.10.102"},
+				Hostname:  &hostname2,
 			},
 		},
 	}
-	//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-	endpoints3 := &corev1.Endpoints{
+	endpoints3 := &discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-endpoints-3",
 			Namespace: "test-namespace",
 		},
-		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-		Subsets: []corev1.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []corev1.EndpointAddress{
-					{
-						IP: "192.168.10.103",
-					},
-				},
+				Addresses: []string{"192.168.10.103"},
 			},
 		},
 	}
 
 	tests := []struct {
-		name        string
-		returnNames bool
-		//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-		includedEndpoints []*corev1.Endpoints
+		name              string
+		returnNames       bool
+		includedEndpoints []*discoveryv1.EndpointSlice
 		expectedEndpoints map[string]bool
 		wantNil           bool
 	}{
 		{
-			name:        "return hostnames",
-			returnNames: true,
-			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-			includedEndpoints: []*corev1.Endpoints{endpoints1, endpoints2},
+			name:              "return hostnames",
+			returnNames:       true,
+			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints2},
 			expectedEndpoints: map[string]bool{"pod-1": true, "pod-2": true},
 			wantNil:           false,
 		},
 		{
-			name:        "return IPs",
-			returnNames: false,
-			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-			includedEndpoints: []*corev1.Endpoints{endpoints1, endpoints2, endpoints3},
+			name:              "return IPs",
+			returnNames:       false,
+			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints2, endpoints3},
 			expectedEndpoints: map[string]bool{"192.168.10.101": true, "192.168.10.102": true, "192.168.10.103": true},
 			wantNil:           false,
 		},
 		{
-			name:        "missing hostname",
-			returnNames: true,
-			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-			includedEndpoints: []*corev1.Endpoints{endpoints1, endpoints3},
+			name:              "missing hostname",
+			returnNames:       true,
+			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints3},
 			expectedEndpoints: nil,
 			wantNil:           true,
 		},

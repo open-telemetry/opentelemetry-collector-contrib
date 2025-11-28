@@ -1,0 +1,25 @@
+resourceLogs:
+  - scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: status
+                value:
+                  stringValue: info
+              - key: timestamp
+                value:
+                  intValue: 1234567890
+              - key: hostname
+                value:
+                  stringValue: host-with-dashes
+              - key: service
+                value:
+                  stringValue: service_with_underscores
+              - key: ddsource
+                value:
+                  stringValue: source/with/slashes
+              - key: ddtags
+                value:
+                  stringValue: "key:value,key2:value2,special:!@#"
+            body:
+              stringValue: "Log with special chars: !@#$%^&*()_+-={}[]|\\:;\"'<>,.?/~`"
+            timeUnixNano: "1736889934967986176"

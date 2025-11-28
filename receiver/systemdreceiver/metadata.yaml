@@ -8,5 +8,39 @@ status:
   codeowners:
     active: [atoulme]
     emeritus: [Hemansh31]
+  unsupported_platforms: [darwin, windows]
+
+resource_attributes:
+  systemd.unit.name:
+    description: Name of the systemd unit
+    type: string
+    enabled: true
+
+attributes:
+  systemd.unit.active_state:
+    description: The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units)
+    type: string
+    enum:
+      - active
+      - reloading
+      - inactive
+      - failed
+      - activating
+      - deactivating
+      - maintenance
+      - refreshing
+
+metrics:
+  systemd.unit.state:
+    description: 1 if the check resulted in active_state matching the current state, otherwise 0.
+    enabled: true
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "1"
+    attributes: [systemd.unit.active_state]
 
 tests:
