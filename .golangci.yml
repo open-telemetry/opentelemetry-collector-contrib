@@ -125,6 +125,7 @@ linters:
             - go.opentelemetry.io/otel/semconv/v1.30.0
             - go.opentelemetry.io/otel/semconv/v1.32.0
             - go.opentelemetry.io/otel/semconv/v1.34.0
+            - go.opentelemetry.io/otel/semconv/v1.36.0
             - go.opentelemetry.io/otel/semconv/v1.37.0
 
         # Add a different guard rule so that we can ignore tests.
