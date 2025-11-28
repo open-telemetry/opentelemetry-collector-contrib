@@ -45,8 +45,6 @@ func TestCreateMetricExporter(t *testing.T) {
 		{
 			name: "valid config (no validating broker)",
 			conf: applyConfigOption(func(conf *Config) {
-				// this disables contacting the broker so
-				// we can successfully create the exporter
 				conf.Metadata.Full = false
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
@@ -103,8 +101,6 @@ func TestCreateLogExporter(t *testing.T) {
 		{
 			name: "valid config (no validating broker)",
 			conf: applyConfigOption(func(conf *Config) {
-				// this disables contacting the broker so
-				// we can successfully create the exporter
 				conf.Metadata.Full = false
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
@@ -217,8 +213,6 @@ func TestCreateProfileExporter(t *testing.T) {
 		{
 			name: "valid config (no validating broker)",
 			conf: applyConfigOption(func(conf *Config) {
-				// this disables contacting the broker so
-				// we can successfully create the exporter
 				conf.Metadata.Full = false
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
