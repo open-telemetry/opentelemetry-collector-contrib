@@ -38,7 +38,7 @@ var franzGoConsumerFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	franzGoConsumerFeatureGateName, featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the Kafka receiver will use the franz-go client to consume messages."),
 	featuregate.WithRegisterFromVersion("v0.129.0"),
-	featuregate.WithRegisterToVersion("v0.141.0"),
+	featuregate.WithRegisterToVersion("v0.143.0"),
 )
 
 type topicPartition struct {
