@@ -30,6 +30,8 @@ func (*Factory) CreateDefaultConfig() internal.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ClientConfig:         clientConfig,
+		ConcurrencyLimit:     50, // Default to 50 concurrent calls
+		MergedPRLookbackDays: 30, // Default to 30 days
 	}
 }
 
@@ -40,6 +42,11 @@ func (*Factory) CreateMetricsScraper(
 ) (scraper.Metrics, error) {
 	conf := cfg.(*Config)
 	s := newGitHubScraper(params, conf)
+
+	// // Set scrape interval for backoff max elapsed time
+	// // Default to 30 seconds if not configured
+	// scrapeInterval := 30 * time.Second
+	// s.scrapeInterval = scrapeInterval
 
 	return scraper.NewMetrics(
 		s.scrape,

@@ -25,6 +25,8 @@ func TestConfig(t *testing.T) {
 	expectedConfig := &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ClientConfig:         clientConfig,
+		ConcurrencyLimit:     50,
+		MergedPRLookbackDays: 30,
 	}
 
 	assert.Equal(t, expectedConfig, defaultConfig)

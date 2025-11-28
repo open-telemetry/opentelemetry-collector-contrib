@@ -361,6 +361,7 @@ func TestGetPullRequests(t *testing.T) {
 				scrape: false,
 				prResponse: prResponse{
 					prs: []getPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						// First call for OPEN PRs
 						{
 							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
 								HasNextPage: false,
@@ -377,6 +378,13 @@ func TestGetPullRequests(t *testing.T) {
 								},
 							},
 						},
+						// Second call for MERGED PRs (empty for this test)
+						{
+							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasNextPage: false,
+							},
+							Nodes: []PullRequestNode{},
+						},
 					},
 					responseCode: http.StatusOK,
 				},
@@ -390,6 +398,7 @@ func TestGetPullRequests(t *testing.T) {
 				scrape: false,
 				prResponse: prResponse{
 					prs: []getPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						// First call for OPEN PRs - page 1
 						{
 							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
 								HasNextPage: true,
@@ -406,6 +415,7 @@ func TestGetPullRequests(t *testing.T) {
 								},
 							},
 						},
+						// First call for OPEN PRs - page 2
 						{
 							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
 								HasNextPage: false,
@@ -421,6 +431,13 @@ func TestGetPullRequests(t *testing.T) {
 									Merged: false,
 								},
 							},
+						},
+						// Second call for MERGED PRs (empty for this test)
+						{
+							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasNextPage: false,
+							},
+							Nodes: []PullRequestNode{},
 						},
 					},
 					responseCode: http.StatusOK,
@@ -445,9 +462,11 @@ func TestGetPullRequests(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
-			defaultConfig := factory.CreateDefaultConfig()
+			defaultConfig := factory.CreateDefaultConfig().(*Config)
+			// Set lookback to 0 to fetch all PRs (backwards compatible behavior for tests)
+			defaultConfig.MergedPRLookbackDays = 0
 			settings := receivertest.NewNopSettings(metadata.Type)
-			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig)
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)

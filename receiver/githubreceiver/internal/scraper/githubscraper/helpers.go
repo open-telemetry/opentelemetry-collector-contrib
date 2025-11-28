@@ -22,7 +22,7 @@ const (
 	defaultReturnItems = 100
 )
 
-func (*githubScraper) getRepos(
+func (ghs *githubScraper) getRepos(
 	ctx context.Context,
 	client graphql.Client,
 	searchQuery string,
@@ -34,7 +34,16 @@ func (*githubScraper) getRepos(
 	var count int
 
 	for next := true; next; {
-		r, err := getRepoDataBySearch(ctx, client, searchQuery, cursor)
+		// Wrap API call with retry logic
+		r, err := graphqlCallWithRetry(
+			ctx,
+			ghs.logger,
+			ghs.settings,
+			ghs.scrapeInterval,
+			func() (*getRepoDataBySearchResponse, error) {
+				return getRepoDataBySearch(ctx, client, searchQuery, cursor)
+			},
+		)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -68,7 +77,15 @@ func (ghs *githubScraper) getBranches(
 		// 50 because GitHub has been known to kill the connection server side
 		// when trying to get items over 80 on the getBranchData query.
 		items := 50
-		r, err := getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, items, defaultBranch, cursor)
+		r, err := graphqlCallWithRetry(
+			ctx,
+			ghs.logger,
+			ghs.settings,
+			ghs.scrapeInterval,
+			func() (*getBranchDataResponse, error) {
+				return getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, items, defaultBranch, cursor)
+			},
+		)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -89,10 +106,16 @@ func (ghs *githubScraper) login(
 ) (string, error) {
 	var loginType string
 
-	// The checkLogin GraphQL query will always return an error. We only return
-	// the error if the login response for User and Organization are both nil.
-	// This is represented by checking to see if each resp.*.Login resolves to equal the owner.
+	// The checkLogin GraphQL query will always return an error because it queries
+	// both user AND organization - one will fail. We still get partial response data.
+	// We cannot use graphqlCallWithRetry here because it returns nil response on error,
+	// but we need the response data to determine if owner is a user or org.
 	resp, err := checkLogin(ctx, client, ghs.cfg.GitHubOrg)
+
+	// Check if resp is nil (indicating a real error, not just the expected partial error)
+	if resp == nil {
+		return "", fmt.Errorf("failed to check login: %w", err)
+	}
 
 	// These types are used later to generate the default string for the search query
 	// and thus must match the convention for user: and org: searches in GitHub
@@ -102,7 +125,10 @@ func (ghs *githubScraper) login(
 	case resp.Organization.Login == owner:
 		loginType = "org"
 	default:
-		return "", err
+		if err != nil {
+			return "", fmt.Errorf("login failed for owner %q: %w", owner, err)
+		}
+		return "", fmt.Errorf("owner %q not found as user or organization", owner)
 	}
 
 	return loginType, nil
@@ -164,24 +190,42 @@ func (ghs *githubScraper) getContributorCount(
 	}
 
 	for {
-		contribs, resp, err := client.Repositories.ListContributors(ctx, ghs.cfg.GitHubOrg, repoName, opt)
+		// Wrap REST API call with retry logic
+		type restResponse struct {
+			contribs []*github.Contributor
+			resp     *github.Response
+		}
+
+		result, err := graphqlCallWithRetry(
+			ctx,
+			ghs.logger,
+			ghs.settings,
+			ghs.scrapeInterval,
+			func() (*restResponse, error) {
+				contribs, resp, err := client.Repositories.ListContributors(ctx, ghs.cfg.GitHubOrg, repoName, opt)
+				if err != nil {
+					return nil, err
+				}
+				return &restResponse{contribs: contribs, resp: resp}, nil
+			},
+		)
 		if err != nil {
 			return 0, err
 		}
 
-		all = append(all, contribs...)
-		if resp.NextPage == 0 {
+		all = append(all, result.contribs...)
+		if result.resp.NextPage == 0 {
 			break
 		}
 
-		opt.Page = resp.NextPage
+		opt.Page = result.resp.NextPage
 	}
 
 	return len(all), nil
 }
 
-// Get the pull request data from the GraphQL API.
-func (ghs *githubScraper) getPullRequests(
+// getOpenPullRequests fetches all open PRs (no time filtering)
+func (ghs *githubScraper) getOpenPullRequests(
 	ctx context.Context,
 	client graphql.Client,
 	repoName string,
@@ -190,14 +234,22 @@ func (ghs *githubScraper) getPullRequests(
 	var pullRequests []PullRequestNode
 
 	for hasNextPage := true; hasNextPage; {
-		prs, err := getPullRequestData(
+		prs, err := graphqlCallWithRetry(
 			ctx,
-			client,
-			repoName,
-			ghs.cfg.GitHubOrg,
-			defaultReturnItems,
-			cursor,
-			[]PullRequestState{"OPEN", "MERGED"},
+			ghs.logger,
+			ghs.settings,
+			ghs.scrapeInterval,
+			func() (*getPullRequestDataResponse, error) {
+				return getPullRequestData(
+					ctx,
+					client,
+					repoName,
+					ghs.cfg.GitHubOrg,
+					defaultReturnItems,
+					cursor,
+					[]PullRequestState{"OPEN"},
+				)
+			},
 		)
 		if err != nil {
 			return nil, err
@@ -209,6 +261,115 @@ func (ghs *githubScraper) getPullRequests(
 	}
 
 	return pullRequests, nil
+}
+
+// getMergedPullRequests fetches merged PRs with optional time filtering
+func (ghs *githubScraper) getMergedPullRequests(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+) ([]PullRequestNode, error) {
+	var cursor *string
+	var pullRequests []PullRequestNode
+
+	// Calculate cutoff date
+	var cutoffDate time.Time
+	if ghs.cfg.MergedPRLookbackDays > 0 {
+		cutoffDate = time.Now().AddDate(0, 0, -ghs.cfg.MergedPRLookbackDays)
+		ghs.logger.Sugar().Debugf("Filtering merged PRs by date for repo %s, cutoff: %s, lookback days: %d",
+			repoName, cutoffDate.Format(time.RFC3339), ghs.cfg.MergedPRLookbackDays)
+	}
+
+	for hasNextPage := true; hasNextPage; {
+		prs, err := graphqlCallWithRetry(
+			ctx,
+			ghs.logger,
+			ghs.settings,
+			ghs.scrapeInterval,
+			func() (*getPullRequestDataResponse, error) {
+				return getPullRequestData(
+					ctx,
+					client,
+					repoName,
+					ghs.cfg.GitHubOrg,
+					defaultReturnItems,
+					cursor,
+					[]PullRequestState{"MERGED"},
+				)
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Filter PRs by creation date if lookback is configured
+		for i := range prs.Repository.PullRequests.Nodes {
+			pr := &prs.Repository.PullRequests.Nodes[i]
+			if ghs.cfg.MergedPRLookbackDays == 0 {
+				// No filtering - include all
+				pullRequests = append(pullRequests, *pr)
+			} else if pr.CreatedAt.After(cutoffDate) {
+				// Within lookback window
+				pullRequests = append(pullRequests, *pr)
+			}
+			// PRs older than cutoff are silently dropped
+		}
+
+		cursor = &prs.Repository.PullRequests.PageInfo.EndCursor
+		hasNextPage = prs.Repository.PullRequests.PageInfo.HasNextPage
+
+		// Optimization: If we're past the cutoff date, we can stop pagination
+		// since PRs are returned in descending order by creation date
+		if ghs.cfg.MergedPRLookbackDays > 0 && len(prs.Repository.PullRequests.Nodes) > 0 {
+			lastPR := prs.Repository.PullRequests.Nodes[len(prs.Repository.PullRequests.Nodes)-1]
+			if lastPR.CreatedAt.Before(cutoffDate) {
+				// All remaining pages will be older, stop paginating
+				ghs.logger.Sugar().Debugf("Stopping merged PR pagination for repo %s, past cutoff date: %s",
+					repoName, lastPR.CreatedAt.Format(time.RFC3339))
+				break
+			}
+		}
+	}
+
+	return pullRequests, nil
+}
+
+// getCombinedPullRequests fetches both open and merged PRs
+func (ghs *githubScraper) getCombinedPullRequests(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+) ([]PullRequestNode, error) {
+	// Fetch open PRs (always fetch all)
+	openPRs, err := ghs.getOpenPullRequests(ctx, client, repoName)
+	if err != nil {
+		ghs.logger.Sugar().Errorf("error getting open pull requests: %v", err)
+		return nil, err
+	}
+
+	// Fetch merged PRs (with optional filtering)
+	mergedPRs, err := ghs.getMergedPullRequests(ctx, client, repoName)
+	if err != nil {
+		ghs.logger.Sugar().Errorf("error getting merged pull requests: %v", err)
+		return nil, err
+	}
+
+	// Combine and return
+	openPRs = append(openPRs, mergedPRs...)
+	ghs.logger.Sugar().Debugf("Fetched pull requests for repo %s: %d open, %d merged, %d total",
+		repoName, len(openPRs)-len(mergedPRs), len(mergedPRs), len(openPRs))
+
+	return openPRs, nil
+}
+
+// Deprecated: Use getCombinedPullRequests instead
+// Get the pull request data from the GraphQL API.
+func (ghs *githubScraper) getPullRequests(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+) ([]PullRequestNode, error) {
+	return ghs.getCombinedPullRequests(ctx, client, repoName)
 }
 
 func (ghs *githubScraper) evalCommits(
@@ -271,7 +432,15 @@ func (ghs *githubScraper) getCommitData(
 	cursor *string,
 	branchName string,
 ) (*BranchHistoryTargetCommitHistoryCommitHistoryConnection, error) {
-	data, err := getCommitData(ctx, client, repoName, ghs.cfg.GitHubOrg, 1, items, cursor, branchName)
+	data, err := graphqlCallWithRetry(
+		ctx,
+		ghs.logger,
+		ghs.settings,
+		ghs.scrapeInterval,
+		func() (*getCommitDataResponse, error) {
+			return getCommitData(ctx, client, repoName, ghs.cfg.GitHubOrg, 1, items, cursor, branchName)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

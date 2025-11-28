@@ -42,21 +42,16 @@ to prevent abuse and maintain API availability. The following secondary limit is
 particularly relevant:
 
 - **Concurrent Requests Limit**: The API allows no more than 100 concurrent
-requests. This limit is shared across the REST and GraphQL APIs. Since the
-scraper creates a goroutine per repository, having more than 100 repositories
-returned by the `search_query` will result in exceeding this limit.
-It is recommended to use the `search_query` config option to limit the number of
-repositories that are scraped. We recommend one instance of the receiver per
-team (note: `team` is not a valid quantifier when searching repositories `topic`
-is). Reminder that each instance of the receiver should have its own
-corresponding token for authentication as this is what rate limits are tied to.
+  requests. This limit is shared across the REST and GraphQL APIs. The receiver
+  includes a configurable `concurrency_limit` (default 50) to stay under this
+  limit.
 
 In summary, we recommend the following:
 
 - One instance of the receiver per team
 - Each instance of the receiver should have its own token
 - Leverage `search_query` config option to limit repositories returned to 100 or
-less per instance
+less per instance (or configure `concurrency_limit` appropriately)
 - `collection_interval` should be long enough to avoid rate limiting (see above
 formula). A sensible default is `300s`.
 

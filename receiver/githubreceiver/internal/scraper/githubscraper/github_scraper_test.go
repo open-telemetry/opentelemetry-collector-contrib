@@ -91,6 +91,7 @@ func TestScrape(t *testing.T) {
 				},
 				prResponse: prResponse{
 					prs: []getPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						// First call for OPEN PRs
 						{
 							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
 								HasNextPage: false,
@@ -99,6 +100,14 @@ func TestScrape(t *testing.T) {
 								{
 									Merged: false,
 								},
+							},
+						},
+						// Second call for MERGED PRs
+						{
+							PageInfo: getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasNextPage: false,
+							},
+							Nodes: []PullRequestNode{
 								{
 									Merged: true,
 								},
@@ -162,7 +171,10 @@ func TestScrape(t *testing.T) {
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 
-			cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+			cfg := &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MergedPRLookbackDays: 0, // Fetch all PRs for test
+			}
 
 			ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"
