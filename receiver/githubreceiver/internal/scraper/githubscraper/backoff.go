@@ -10,8 +10,8 @@ import (
 
 	"github.com/cenkalti/backoff/v5"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.uber.org/zap"
 )
 
 // graphqlCallWithRetry wraps a GraphQL API call with exponential backoff
