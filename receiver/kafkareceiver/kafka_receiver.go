@@ -159,7 +159,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 			)
 		}, nil
 	}
-	return newReceiver(config, set, []string{config.Profiles.Topic}, []string{config.Profiles.ExcludeTopic}, consumeFn)
+	return newReceiver(config, set, config.Profiles.Topics, config.Profiles.ExcludeTopics, consumeFn)
 }
 
 func newReceiver(

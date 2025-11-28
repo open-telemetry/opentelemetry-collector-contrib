@@ -60,8 +60,8 @@ func TestLoadConfig(t *testing.T) {
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
-					Topics:   []string{"otlp_profiles"},
+					Topic:    "legacy_profile",
+					Topics:   []string{"legacy_profile"},
 					Encoding: "otlp_proto",
 				},
 				ErrorBackOff: configretry.BackOffConfig{
@@ -99,22 +99,18 @@ func TestLoadConfig(t *testing.T) {
 					return config
 				}(),
 				Logs: TopicEncodingConfig{
-					Topic:    "legacy_topic_log",
 					Topics:   []string{"logs"}, // topics is given precedence if it is set
 					Encoding: "direct",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
 					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
 					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
 					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
@@ -138,22 +134,18 @@ func TestLoadConfig(t *testing.T) {
 					return config
 				}(),
 				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
 					Topics:   []string{"otlp_logs"},
 					Encoding: "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
 					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
 					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
 					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
@@ -168,22 +160,18 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   configkafka.NewDefaultClientConfig(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
 					Topics:   []string{"otlp_logs"},
 					Encoding: "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
 					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
 					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
 					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
@@ -203,22 +191,18 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   configkafka.NewDefaultClientConfig(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
 					Topics:   []string{"otlp_logs"},
 					Encoding: "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
 					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
 					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
 					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
@@ -238,22 +222,18 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   configkafka.NewDefaultClientConfig(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
 					Topics:   []string{"otlp_logs"},
 					Encoding: "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
 					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
 					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
 					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
@@ -273,28 +253,21 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   configkafka.NewDefaultClientConfig(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
-					Topic:         "^logs-.*",
 					Topics:        []string{"^logs-.*"},
-					ExcludeTopic:  "^logs-(test|dev)$",
 					ExcludeTopics: []string{"^logs-(test|dev)$"},
 					Encoding:      "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:         "^metrics-.*",
 					Topics:        []string{"^metrics-.*"},
-					ExcludeTopic:  "^metrics-internal-.*$",
 					ExcludeTopics: []string{"^metrics-internal-.*$"},
 					Encoding:      "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:         "^traces-.*",
 					Topics:        []string{"^traces-.*"},
-					ExcludeTopic:  "^traces-debug-.*$",
 					ExcludeTopics: []string{"^traces-debug-.*$"},
 					Encoding:      "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
 					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
@@ -385,7 +358,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "valid config without exclude_topic",
 			config: &Config{
 				Logs: TopicEncodingConfig{
-					Topic:    "logs",
+					Topics:   []string{"logs"},
 					Encoding: "otlp_proto",
 				},
 			},

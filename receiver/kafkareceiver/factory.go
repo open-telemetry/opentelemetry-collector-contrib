@@ -47,22 +47,18 @@ func createDefaultConfig() component.Config {
 		ClientConfig:   configkafka.NewDefaultClientConfig(),
 		ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 		Logs: TopicEncodingConfig{
-			Topic:    defaultLogsTopic,
 			Topics:   []string{defaultLogsTopic},
 			Encoding: defaultLogsEncoding,
 		},
 		Metrics: TopicEncodingConfig{
-			Topic:    defaultMetricsTopic,
 			Topics:   []string{defaultMetricsTopic},
 			Encoding: defaultMetricsEncoding,
 		},
 		Traces: TopicEncodingConfig{
-			Topic:    defaultTracesTopic,
 			Topics:   []string{defaultTracesTopic},
 			Encoding: defaultTracesEncoding,
 		},
 		Profiles: TopicEncodingConfig{
-			Topic:    defaultProfilesTopic,
 			Topics:   []string{defaultProfilesTopic},
 			Encoding: defaultProfilesEncoding,
 		},

@@ -61,35 +61,69 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	// handle deprecated topic and exclude_topic for log signal
-	if zeroConfig.Logs.Topic != "" && len(zeroConfig.Logs.Topics) == 0 {
-		c.Logs.Topics = []string{zeroConfig.Logs.Topic}
+	if zeroConfig.Logs.Topic != "" {
+		if len(zeroConfig.Logs.Topics) == 0 {
+			c.Logs.Topics = []string{zeroConfig.Logs.Topic}
+		} else {
+			return fmt.Errorf("both logs.topic and logs.topics cannot be set")
+		}
 	}
-	if zeroConfig.Logs.ExcludeTopic != "" && len(zeroConfig.Logs.ExcludeTopics) == 0 {
-		c.Logs.ExcludeTopics = []string{zeroConfig.Logs.ExcludeTopic}
+	if zeroConfig.Logs.ExcludeTopic != "" {
+		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
+			c.Logs.ExcludeTopics = []string{zeroConfig.Logs.ExcludeTopic}
+		} else {
+			return fmt.Errorf("both logs.exclude_topic and logs.exclude_topics cannot be set")
+		}
 	}
 
 	// handle deprecated topic and exclude_topic for metric signal
-	if zeroConfig.Metrics.Topic != "" && len(zeroConfig.Logs.Topics) == 0 {
-		c.Metrics.Topics = []string{zeroConfig.Metrics.Topic}
+	if zeroConfig.Metrics.Topic != "" {
+		if len(zeroConfig.Logs.Topics) == 0 {
+			c.Metrics.Topics = []string{zeroConfig.Metrics.Topic}
+		} else {
+			return fmt.Errorf("both metrics.topic and metrics.topics cannot be set")
+		}
 	}
-	if zeroConfig.Metrics.ExcludeTopic != "" && len(zeroConfig.Logs.ExcludeTopics) == 0 {
-		c.Metrics.ExcludeTopics = []string{zeroConfig.Metrics.ExcludeTopic}
+
+	if zeroConfig.Metrics.ExcludeTopic != "" {
+		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
+			c.Metrics.ExcludeTopics = []string{zeroConfig.Metrics.ExcludeTopic}
+		} else {
+			return fmt.Errorf("both metrics.exclude_topic and metrics.exclude_topics cannot be set")
+		}
 	}
 
 	// handle deprecated topic and exclude_topic for trace signal
-	if zeroConfig.Traces.Topic != "" && len(zeroConfig.Logs.Topics) == 0 {
-		c.Traces.Topics = []string{zeroConfig.Traces.Topic}
+	if zeroConfig.Traces.Topic != "" {
+		if len(zeroConfig.Logs.Topics) == 0 {
+			c.Traces.Topics = []string{zeroConfig.Traces.Topic}
+		} else {
+			return fmt.Errorf("both traces.topic and traces.topics cannot be set")
+		}
 	}
-	if zeroConfig.Traces.ExcludeTopic != "" && len(zeroConfig.Logs.ExcludeTopics) == 0 {
-		c.Traces.ExcludeTopics = []string{zeroConfig.Traces.ExcludeTopic}
+
+	if zeroConfig.Traces.ExcludeTopic != "" {
+		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
+			c.Traces.ExcludeTopics = []string{zeroConfig.Traces.ExcludeTopic}
+		} else {
+			return fmt.Errorf("both traces.exclude_topic and traces.exclude_topics cannot be set")
+		}
 	}
 
 	// handle deprecated topic and exclude_topic for profile signal
-	if zeroConfig.Profiles.Topic != "" && len(zeroConfig.Logs.Topics) == 0 {
-		c.Profiles.Topics = []string{zeroConfig.Profiles.Topic}
+	if zeroConfig.Profiles.Topic != "" {
+		if len(zeroConfig.Logs.Topics) == 0 {
+			c.Profiles.Topics = []string{zeroConfig.Profiles.Topic}
+		} else {
+			return fmt.Errorf("both profiles.topic and profiles.topics cannot be set")
+		}
 	}
-	if zeroConfig.Profiles.ExcludeTopic != "" && len(zeroConfig.Logs.ExcludeTopics) == 0 {
-		c.Profiles.ExcludeTopics = []string{zeroConfig.Profiles.ExcludeTopic}
+	if zeroConfig.Profiles.ExcludeTopic != "" {
+		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
+			c.Profiles.ExcludeTopics = []string{zeroConfig.Profiles.ExcludeTopic}
+		} else {
+			return fmt.Errorf("both profiles.exclude_topic and profiles.exclude_topics cannot be set")
+		}
 	}
 
 	// Set OnPermanentError default value to inherit from OnError for backward compatibility
@@ -127,7 +161,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// validateExcludeTopic checks that exclude_topic is only configured when topic uses regex pattern
+// validateExcludeTopic checks that exclude_topic is only configured when topics uses regex pattern
 func validateExcludeTopic(signalType string, topics, excludeTopics []string) error {
 	if len(excludeTopics) == 0 {
 		return nil // No exclude_topic configured, nothing to validate
@@ -138,6 +172,7 @@ func validateExcludeTopic(signalType string, topics, excludeTopics []string) err
 	for _, topic := range topics {
 		if strings.HasPrefix(topic, "^") {
 			usesRegex = true
+			break
 		}
 	}
 
