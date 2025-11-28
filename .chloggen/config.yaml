@@ -19,6 +19,7 @@ components:
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
+    - connector/metricsaslogs
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
@@ -38,7 +39,6 @@ components:
     - exporter/azuredataexplorer
     - exporter/azuremonitor
     - exporter/bmchelix
-    - exporter/carbon
     - exporter/cassandra
     - exporter/clickhouse
     - exporter/coralogix
@@ -82,6 +82,7 @@ components:
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awslogs_encoding
     - extension/awsproxy
+    - extension/azure_encoding
     - extension/azureauth
     - extension/basicauth
     - extension/bearertokenauth
@@ -134,6 +135,7 @@ components:
     - internal/grpcutil
     - internal/healthcheck
     - internal/k8sconfig
+    - internal/k8sinventory
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
