@@ -151,7 +151,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.Logs.ExcludeTopic != "" && len(c.Logs.ExcludeTopics) != 0 {
-		return fmt.Errorf("both logs.exlude_topic and logs.exlude_topics cannot be set")
+		return fmt.Errorf("both logs.exclude_topic and logs.exclude_topics cannot be set")
 	}
 	if c.Metrics.ExcludeTopic != "" && len(c.Metrics.ExcludeTopics) != 0 {
 		return fmt.Errorf("both metrics.exclude_topic and metrics.exclude_topics cannot be set")
