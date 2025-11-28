@@ -166,7 +166,7 @@ type TopicEncodingConfig struct {
 	// Deprecated [v0.142.0]: Use Topics
 	Topic string `mapstructure:"topic"`
 
-	// Topics holds the name of the Kafka topic from which messages of the
+	// Topics holds the name of the Kafka topics from which messages of the
 	// signal type should be consumed.
 	//
 	// The default depends on the signal type:
