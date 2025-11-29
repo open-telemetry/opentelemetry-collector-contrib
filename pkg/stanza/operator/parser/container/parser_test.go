@@ -937,3 +937,387 @@ func TestPathCacheIntegration(t *testing.T) {
 		require.NoError(t, parser.Stop())
 	})
 }
+
+func TestParseCRIOFields(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected map[string]any
+		ok       bool
+	}{
+		{
+			name:  "valid_crio_with_log",
+			input: "2024-01-01T00:00:00.000000000-10:00 stdout F log message here",
+			expected: map[string]any{
+				"time":   "2024-01-01T00:00:00.000000000-10:00",
+				"stream": "stdout",
+				"logtag": "F",
+				"log":    "log message here",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_crio_stderr",
+			input: "2024-01-01T00:00:00.000000000+05:30 stderr P partial line",
+			expected: map[string]any{
+				"time":   "2024-01-01T00:00:00.000000000+05:30",
+				"stream": "stderr",
+				"logtag": "P",
+				"log":    "partial line",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_crio_no_log_body",
+			input: "2024-01-01T00:00:00.000000000-10:00 stdout F",
+			expected: map[string]any{
+				"time":   "2024-01-01T00:00:00.000000000-10:00",
+				"stream": "stdout",
+				"logtag": "F",
+				"log":    "",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_crio_with_space_after_logtag",
+			input: "2024-01-01T00:00:00.000000000-10:00 stdout F  log with leading space",
+			expected: map[string]any{
+				"time":   "2024-01-01T00:00:00.000000000-10:00",
+				"stream": "stdout",
+				"logtag": "F",
+				"log":    "log with leading space",
+			},
+			ok: true,
+		},
+		{
+			name:  "invalid_missing_stream",
+			input: "2024-01-01T00:00:00.000000000-10:00",
+			ok:    false,
+		},
+		{
+			name:  "invalid_invalid_stream",
+			input: "2024-01-01T00:00:00.000000000-10:00 invalid F log",
+			ok:    false,
+		},
+		{
+			name:  "invalid_empty",
+			input: "",
+			ok:    false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, ok := parseCRIOFields(tc.input)
+			require.Equal(t, tc.ok, ok)
+			if tc.ok {
+				require.Equal(t, tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestParseContainerdFields(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected map[string]any
+		ok       bool
+	}{
+		{
+			name:  "valid_containerd_with_log",
+			input: "2024-01-01T00:00:00.000000000Z stdout F log message here",
+			expected: map[string]any{
+				"time":   "2024-01-01T00:00:00.000000000Z",
+				"stream": "stdout",
+				"logtag": "F",
+				"log":    "log message here",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_containerd_stderr",
+			input: "2024-01-01T00:00:00.000000000Z stderr P partial line",
+			expected: map[string]any{
+				"time":   "2024-01-01T00:00:00.000000000Z",
+				"stream": "stderr",
+				"logtag": "P",
+				"log":    "partial line",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_containerd_no_log_body",
+			input: "2024-01-01T00:00:00.000000000Z stdout F",
+			expected: map[string]any{
+				"time":   "2024-01-01T00:00:00.000000000Z",
+				"stream": "stdout",
+				"logtag": "F",
+				"log":    "",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_containerd_with_space_after_logtag",
+			input: "2024-01-01T00:00:00.000000000Z stdout F  log with leading space",
+			expected: map[string]any{
+				"time":   "2024-01-01T00:00:00.000000000Z",
+				"stream": "stdout",
+				"logtag": "F",
+				"log":    "log with leading space",
+			},
+			ok: true,
+		},
+		{
+			name:  "invalid_no_Z_suffix",
+			input: "2024-01-01T00:00:00.000000000 stdout F log",
+			ok:    false,
+		},
+		{
+			name:  "invalid_missing_stream",
+			input: "2024-01-01T00:00:00.000000000Z",
+			ok:    false,
+		},
+		{
+			name:  "invalid_invalid_stream",
+			input: "2024-01-01T00:00:00.000000000Z invalid F log",
+			ok:    false,
+		},
+		{
+			name:  "invalid_empty",
+			input: "",
+			ok:    false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, ok := parseContainerdFields(tc.input)
+			require.Equal(t, tc.ok, ok)
+			if tc.ok {
+				require.Equal(t, tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestParseLogPath(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected map[string]any
+		ok       bool
+	}{
+		{
+			name:  "valid_unix_path",
+			input: "/var/log/pods/default_my-pod_12345-67890/container-name/0.log",
+			expected: map[string]any{
+				"namespace":      "default",
+				"pod_name":       "my-pod",
+				"uid":            "12345-67890",
+				"container_name": "container-name",
+				"restart_count":  "0",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_rotated_log",
+			input: "/var/log/pods/default_my-pod_12345-67890/container-name/0.log.20250219-233547",
+			expected: map[string]any{
+				"namespace":      "default",
+				"pod_name":       "my-pod",
+				"uid":            "12345-67890",
+				"container_name": "container-name",
+				"restart_count":  "0",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_with_restart_count",
+			input: "/var/log/pods/kube-system_coredns_abc123/container/5.log",
+			expected: map[string]any{
+				"namespace":      "kube-system",
+				"pod_name":       "coredns",
+				"uid":            "abc123",
+				"container_name": "container",
+				"restart_count":  "5",
+			},
+			ok: true,
+		},
+		{
+			name:  "valid_uuid_format",
+			input: "/var/log/pods/default_pod_a1b2c3d4-e5f6-7890-abcd-ef1234567890/container/0.log",
+			expected: map[string]any{
+				"namespace":      "default",
+				"pod_name":       "pod",
+				"uid":            "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+				"container_name": "container",
+				"restart_count":  "0",
+			},
+			ok: true,
+		},
+		{
+			name:  "invalid_too_short",
+			input: "/var/log/pods/container/0.log",
+			ok:    false,
+		},
+		{
+			name:  "invalid_missing_pod_part",
+			input: "/var/log/pods/default/container/0.log",
+			ok:    false,
+		},
+		{
+			name:  "invalid_not_enough_underscores",
+			input: "/var/log/pods/default_pod/container/0.log",
+			ok:    false,
+		},
+		{
+			name:  "invalid_not_log_extension",
+			input: "/var/log/pods/default_pod_uid/container/0.txt",
+			ok:    false,
+		},
+		{
+			name:  "invalid_non_numeric_restart_count",
+			input: "/var/log/pods/default_pod_uid/container/abc.log",
+			ok:    false,
+		},
+		{
+			name:  "invalid_empty",
+			input: "",
+			ok:    false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, ok := parseLogPath(tc.input)
+			require.Equal(t, tc.ok, ok, "parseLogPath(%q) = %v, want %v", tc.input, ok, tc.ok)
+			if tc.ok {
+				require.Equal(t, tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestSplitOnce(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		sep      byte
+		expected struct {
+			head string
+			tail string
+			ok   bool
+		}
+	}{
+		{
+			name:  "valid_single_separator",
+			input: "head tail",
+			sep:   ' ',
+			expected: struct {
+				head string
+				tail string
+				ok   bool
+			}{
+				head: "head",
+				tail: "tail",
+				ok:   true,
+			},
+		},
+		{
+			name:  "valid_multiple_separators",
+			input: "a b c d",
+			sep:   ' ',
+			expected: struct {
+				head string
+				tail string
+				ok   bool
+			}{
+				head: "a",
+				tail: "b c d",
+				ok:   true,
+			},
+		},
+		{
+			name:  "valid_separator_at_start",
+			input: " head tail",
+			sep:   ' ',
+			expected: struct {
+				head string
+				tail string
+				ok   bool
+			}{
+				head: "",
+				tail: "head tail",
+				ok:   true,
+			},
+		},
+		{
+			name:  "valid_separator_at_end",
+			input: "head tail ",
+			sep:   ' ',
+			expected: struct {
+				head string
+				tail string
+				ok   bool
+			}{
+				head: "head",
+				tail: "tail ",
+				ok:   true,
+			},
+		},
+		{
+			name:  "invalid_no_separator",
+			input: "notail",
+			sep:   ' ',
+			expected: struct {
+				head string
+				tail string
+				ok   bool
+			}{
+				head: "",
+				tail: "",
+				ok:   false,
+			},
+		},
+		{
+			name:  "invalid_empty",
+			input: "",
+			sep:   ' ',
+			expected: struct {
+				head string
+				tail string
+				ok   bool
+			}{
+				head: "",
+				tail: "",
+				ok:   false,
+			},
+		},
+		{
+			name:  "valid_different_separator",
+			input: "key:value",
+			sep:   ':',
+			expected: struct {
+				head string
+				tail string
+				ok   bool
+			}{
+				head: "key",
+				tail: "value",
+				ok:   true,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			head, tail, ok := splitOnce(tc.input, tc.sep)
+			require.Equal(t, tc.expected.ok, ok)
+			if tc.expected.ok {
+				require.Equal(t, tc.expected.head, head)
+				require.Equal(t, tc.expected.tail, tail)
+			}
+		})
+	}
+}

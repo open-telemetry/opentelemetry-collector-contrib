@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -54,6 +55,18 @@ var (
 		"pod_name":       "k8s.pod.name",
 		"restart_count":  "k8s.container.restart_count",
 		"uid":            "k8s.pod.uid",
+	}
+	// mapPool reuses maps to reduce allocations for parsing
+	mapPool = sync.Pool{
+		New: func() any {
+			return make(map[string]any, 4)
+		},
+	}
+	// pathMapPool reuses maps for path parsing
+	pathMapPool = sync.Pool{
+		New: func() any {
+			return make(map[string]any, 5)
+		},
 	}
 )
 
@@ -187,6 +200,15 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
+	// Try fast-path format detection first (no regex, no allocations)
+	if detectContainerdFormat(raw) {
+		return containerdFormat, nil
+	}
+	if detectCRIOFormat(raw) {
+		return crioFormat, nil
+	}
+
+	// Fallback to regex for format detection
 	switch {
 	case dockerMatcher.MatchString(raw):
 		return dockerFormat, nil
@@ -205,6 +227,12 @@ func (*Parser) parseCRIO(value any) (any, error) {
 		return "", fmt.Errorf("type '%T' cannot be parsed as cri-o container logs", value)
 	}
 
+	// Try fast-path parsing first (no regex)
+	if parsed, ok := parseCRIOFields(raw); ok {
+		return parsed, nil
+	}
+
+	// Fallback to regex
 	return helper.MatchValues(raw, crioMatcher)
 }
 
@@ -215,6 +243,12 @@ func (*Parser) parseContainerd(value any) (any, error) {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as containerd logs", value)
 	}
 
+	// Try fast-path parsing first (no regex)
+	if parsed, ok := parseContainerdFields(raw); ok {
+		return parsed, nil
+	}
+
+	// Fallback to regex
 	return helper.MatchValues(raw, containerdMatcher)
 }
 
@@ -297,6 +331,24 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		}
 	}
 
+	// Try fast-path parsing first (no regex)
+	if parsedValues, ok := parseLogPath(rawLogPath); ok {
+		// For cached values, we need a new map (can't reuse pooled map)
+		// Copy to a new map for caching
+		cachedMap := make(map[string]any, len(parsedValues))
+		for k, v := range parsedValues {
+			cachedMap[k] = v
+		}
+		if p.pathCache != nil {
+			p.pathCache.Add(rawLogPath, cachedMap)
+		}
+		err := p.setK8sMetadataFromParsedValues(e, parsedValues)
+		// Return map to pool after use (not cached)
+		pathMapPool.Put(parsedValues)
+		return err
+	}
+
+	// Fallback to regex
 	parsedValues, err := helper.MatchValues(rawLogPath, pathMatcher)
 	if err != nil {
 		return errors.New("failed to detect a valid log path")
@@ -377,4 +429,201 @@ func (p *Parser) setK8sMetadataFromParsedValues(e *entry.Entry, parsedValues map
 		}
 	}
 	return nil
+}
+
+// parseLogPath parses a Kubernetes log path without regex. Returns ok=false on failure.
+// Format: .../namespace_pod-name_uid/container-name/restart-count.log[.rotation-suffix]
+// Supports both Unix (/ ) and Windows (\ ) path separators.
+func parseLogPath(path string) (map[string]any, bool) {
+	// Helper function to find last separator (either / or \)
+	findLastSep := func(s string) int {
+		for i := len(s) - 1; i >= 0; i-- {
+			if s[i] == '/' || s[i] == '\\' {
+				return i
+			}
+		}
+		return -1
+	}
+
+	lastSep := findLastSep(path)
+	if lastSep == -1 {
+		return nil, false
+	}
+
+	// Extract restart count and verify .log extension
+	filename := path[lastSep+1:]
+
+	// Check for rotated log: .log.YYYYMMDD-HHMMSS (or any .log.* suffix like .log.gz)
+	// This handles both timestamped rotations and compressed logs
+	if idx := strings.LastIndex(filename, ".log."); idx != -1 {
+		// Rotated/compressed log, extract just the .log part
+		filename = filename[:idx+4] // Keep up to and including ".log"
+	} else if !strings.HasSuffix(filename, ".log") {
+		return nil, false
+	}
+
+	// Remove .log extension and validate restart count is numeric
+	restartCountStr := strings.TrimSuffix(filename, ".log")
+	if _, err := strconv.Atoi(restartCountStr); err != nil {
+		return nil, false
+	}
+
+	// Find container name (before restart count)
+	pathBeforeFile := path[:lastSep]
+	containerSep := findLastSep(pathBeforeFile)
+	if containerSep == -1 {
+		return nil, false
+	}
+	containerName := pathBeforeFile[containerSep+1:]
+
+	// Find pod part (namespace_pod-name_uid)
+	pathBeforeContainer := pathBeforeFile[:containerSep]
+	podSep := findLastSep(pathBeforeContainer)
+	if podSep == -1 {
+		return nil, false
+	}
+	podPart := pathBeforeContainer[podSep+1:]
+
+	// Parse pod part: namespace_pod-name_uid
+	// Must have at least 2 underscores
+	underscore1 := strings.IndexByte(podPart, '_')
+	if underscore1 == -1 {
+		return nil, false
+	}
+	namespace := podPart[:underscore1]
+
+	underscore2 := strings.IndexByte(podPart[underscore1+1:], '_')
+	if underscore2 == -1 {
+		return nil, false
+	}
+	underscore2 += underscore1 + 1
+	podName := podPart[underscore1+1 : underscore2]
+	uid := podPart[underscore2+1:]
+
+	// Use pool for path maps (but note: cached maps need to be new allocations)
+	m := pathMapPool.Get().(map[string]any)
+	// Clear the map in case it was reused
+	for k := range m {
+		delete(m, k)
+	}
+	m["namespace"] = namespace
+	m["pod_name"] = podName
+	m["uid"] = uid
+	m["container_name"] = containerName
+	m["restart_count"] = restartCountStr
+	return m, true
+}
+
+// detectCRIOFormat detects CRI-O format without allocating. Returns true if format matches.
+func detectCRIOFormat(raw string) bool {
+	_, rest, ok := splitOnce(raw, ' ')
+	if !ok {
+		return false
+	}
+
+	stream, rest, ok := splitOnce(rest, ' ')
+	if !ok || (stream != "stdout" && stream != "stderr") {
+		return false
+	}
+
+	// Just check if we can parse the structure, don't need full parsing
+	_, _, _ = splitOnce(rest, ' ')
+	return true // If we got here, it's valid CRI-O format
+}
+
+// parseCRIOFields parses a CRI-O log line without regex. Returns ok=false on failure.
+func parseCRIOFields(raw string) (map[string]any, bool) {
+	timePart, rest, ok := splitOnce(raw, ' ')
+	if !ok {
+		return nil, false
+	}
+
+	stream, rest, ok := splitOnce(rest, ' ')
+	if !ok || (stream != "stdout" && stream != "stderr") {
+		return nil, false
+	}
+
+	logtag, logPart, ok := splitOnce(rest, ' ')
+	if !ok {
+		// No log body, treat logtag as rest, log empty.
+		logtag = rest
+		logPart = ""
+	}
+
+	if len(logPart) > 0 && logPart[0] == ' ' {
+		logPart = logPart[1:]
+	}
+
+	// Use pool to reduce allocations
+	m := mapPool.Get().(map[string]any)
+	// Clear the map in case it was reused
+	for k := range m {
+		delete(m, k)
+	}
+	m["time"] = timePart
+	m["stream"] = stream
+	m["logtag"] = logtag
+	m["log"] = logPart
+	return m, true
+}
+
+// detectContainerdFormat detects containerd format without allocating. Returns true if format matches.
+func detectContainerdFormat(raw string) bool {
+	timePart, rest, ok := splitOnce(raw, ' ')
+	if !ok || !strings.HasSuffix(timePart, "Z") {
+		return false
+	}
+
+	stream, rest, ok := splitOnce(rest, ' ')
+	if !ok || (stream != "stdout" && stream != "stderr") {
+		return false
+	}
+
+	// Just check if we can parse the structure, don't need full parsing
+	_, _, _ = splitOnce(rest, ' ')
+	return true // If we got here, it's valid containerd format
+}
+
+// parseContainerdFields parses a containerd log line without regex. Returns ok=false on failure.
+func parseContainerdFields(raw string) (map[string]any, bool) {
+	timePart, rest, ok := splitOnce(raw, ' ')
+	if !ok || !strings.HasSuffix(timePart, "Z") {
+		return nil, false
+	}
+
+	stream, rest, ok := splitOnce(rest, ' ')
+	if !ok || (stream != "stdout" && stream != "stderr") {
+		return nil, false
+	}
+
+	logtag, logPart, ok := splitOnce(rest, ' ')
+	if !ok {
+		logtag = rest
+		logPart = ""
+	}
+
+	if len(logPart) > 0 && logPart[0] == ' ' {
+		logPart = logPart[1:]
+	}
+
+	// Use pool to reduce allocations
+	m := mapPool.Get().(map[string]any)
+	// Clear the map in case it was reused
+	for k := range m {
+		delete(m, k)
+	}
+	m["time"] = timePart
+	m["stream"] = stream
+	m["logtag"] = logtag
+	m["log"] = logPart
+	return m, true
+}
+
+// splitOnce splits s on the first occurrence of sep.
+func splitOnce(s string, sep byte) (head string, tail string, ok bool) {
+	idx := strings.IndexByte(s, sep)
+	if idx == -1 {
+		return "", "", false
+	}
+	return s[:idx], s[idx+1:], true
 }
