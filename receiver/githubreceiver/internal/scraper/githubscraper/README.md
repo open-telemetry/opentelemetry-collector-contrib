@@ -62,6 +62,79 @@ formula). A sensible default is `300s`.
 
 [ghext]: https://github.com/liatrio/liatrio-otel-collector/tree/main/extension/githubappauthextension
 
+## Retry Logic and Rate Limit Handling
+
+The GitHub scraper implements intelligent retry logic with both proactive and
+reactive rate limit detection.
+
+### Proactive Rate Limit Detection
+
+The scraper monitors GitHub's rate limit metadata included in every GraphQL
+response:
+
+- **Limit**: Total rate limit quota (e.g., 5,000 or 10,000 points/hour)
+- **Cost**: Points consumed by each query
+- **Remaining**: Points remaining in current window
+- **ResetAt**: When the rate limit window resets
+
+Before each query exhausts the rate limit, the scraper proactively detects when
+`cost >= remaining` and automatically waits until the reset time, preventing
+unnecessary failures.
+
+**Benefits:**
+
+- Prevents hitting rate limits
+- Optimal API usage with exact wait times
+- Better observability with detailed logging
+
+**Cons:**
+
+- On large organizations, the scraper can run for a long time without emitting
+  telemetry. This also increases memory usage.
+
+### Reactive Error Handling
+
+If errors do occur, the scraper uses type-safe error detection:
+
+**HTTP Status Codes (retriable):**
+
+- `403 Forbidden` - Often indicates rate limiting
+- `429 Too Many Requests` - Explicit rate limit
+- `502 Bad Gateway` - Transient server error
+- `503 Service Unavailable` - Transient server error
+- `504 Gateway Timeout` - Transient server error
+
+**GraphQL Response Errors (retriable):**
+
+- Messages containing "API rate limit exceeded"
+- Messages containing "secondary rate limit"
+
+### Retry Configuration
+
+- **Initial retry interval**: 1 second
+- **Maximum retry interval**: 30 seconds
+- **Maximum retry time**: Equals scrape interval duration
+- **Backoff strategy**: Exponential with randomization factor
+
+### Observability
+
+The scraper logs detailed rate limit information:
+
+```
+DEBUG: GitHub API rate limit status
+  limit=5000 remaining=4996 cost=4 reset_at=2025-11-28T15:30:00Z
+
+WARN: Approaching GitHub API rate limit, waiting for reset
+  remaining=5 cost=10 wait_duration=47s reset_at=2025-11-28T15:30:00Z
+```
+
+### Metrics
+
+The following metrics are emitted:
+
+- `http.request.resend_count` - Number of retries due to errors
+- `github.rate_limit.proactive_wait` - Number of proactive rate limit waits
+
 ## Branch Data Limitations
 
 

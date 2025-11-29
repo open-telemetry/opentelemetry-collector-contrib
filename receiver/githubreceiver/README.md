@@ -118,6 +118,13 @@ see the [Scraping README][ghsread].
 
 [ghsread]: internal/scraper/githubscraper/README.md#github-limitations
 
+### Rate Limit Handling
+
+The receiver automatically uses exponential backoff to reduce rate limits. It's
+still important to be cognizant of what types of rate limits exist in order to
+properly configure the scraper at the correct intervals.
+
+See [internal/scraper/githubscraper/README.md](internal/scraper/githubscraper/README.md#retry-logic-and-rate-limit-handling) for details.
 
 ### GitHub Personal Access Token (PAT) Setup
 

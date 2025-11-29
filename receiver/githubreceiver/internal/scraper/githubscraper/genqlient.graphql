@@ -1,8 +1,19 @@
+# Fragment to include rate limit information in all queries
+fragment rateVals on RateLimit {
+    limit
+    cost
+    remaining
+    resetAt
+}
+
 query getRepoDataBySearch(
   $searchQuery: String!
   # @genqlient(pointer: true)
   $repoCursor: String
 ) {
+  rateLimit {
+    ...rateVals
+  }
   search(
     query: $searchQuery
     type: REPOSITORY
@@ -29,6 +40,9 @@ query getRepoDataBySearch(
 }
 
 query checkLogin($login: String!) {
+  rateLimit {
+    ...rateVals
+  }
   user(login: $login) {
     login
   }
@@ -46,6 +60,9 @@ query getCommitData(
   $commitCursor: String
   $branchName: String!
 ) {
+  rateLimit {
+    ...rateVals
+  }
   repository(name: $name, owner: $owner) {
     refs(refPrefix: "refs/heads/", first: $branchFirst, query: $branchName) {
       # @genqlient(typename: "BranchHistory")
@@ -80,6 +97,9 @@ query getBranchData(
   # @genqlient(pointer: true)
   $branchCursor: String
 ) {
+  rateLimit {
+    ...rateVals
+  }
   repository(name: $name, owner: $owner) {
     refs(refPrefix: "refs/heads/", first: $branchFirst, after: $branchCursor) {
       totalCount
@@ -113,6 +133,9 @@ query getPullRequestData(
   $prCursor: String
   $prStates: [PullRequestState!]
 ) {
+  rateLimit {
+    ...rateVals
+  }
   repository(name: $name, owner: $owner) {
     pullRequests(first: $prFirst, after: $prCursor, states: $prStates) {
       # @genqlient(typename: "PullRequestNode")
