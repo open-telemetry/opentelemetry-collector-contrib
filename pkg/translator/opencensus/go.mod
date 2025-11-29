@@ -1,3 +1,4 @@
+// Deprecated: this functionality is no longer maintained and will be removed.
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
 
 go 1.24.0

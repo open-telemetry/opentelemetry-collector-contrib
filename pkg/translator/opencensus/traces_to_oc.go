@@ -24,6 +24,8 @@ import (
 //
 // Deprecated: Use ptrace.Traces.
 // TODO: move this function to OpenCensus package.
+//
+// Deprecated: this functionality is no longer maintained and will be removed.
 func ResourceSpansToOC(rs ptrace.ResourceSpans) (*occommon.Node, *ocresource.Resource, []*octrace.Span) {
 	node, resource := internalResourceToOC(rs.Resource())
 	ilss := rs.ScopeSpans()
