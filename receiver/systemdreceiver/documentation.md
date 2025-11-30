@@ -18,7 +18,7 @@ metrics:
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | Development |
+| 1 | Sum | Int | Cumulative | false | Alpha |
 
 #### Attributes
 
