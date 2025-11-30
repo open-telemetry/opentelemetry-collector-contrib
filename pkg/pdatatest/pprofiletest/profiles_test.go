@@ -41,7 +41,7 @@ func basicProfiles() Profiles {
 
 func TestCompareProfiles(t *testing.T) {
 	timestamp1 := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-	timestamp2 := timestamp1.Add(5 * time.Second)
+	duration := (5 * time.Second).Nanoseconds()
 	tcs := []struct {
 		name           string
 		expected       pprofile.Profiles
@@ -320,7 +320,7 @@ func TestCompareProfiles(t *testing.T) {
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
@@ -334,8 +334,8 @@ func TestCompareProfiles(t *testing.T) {
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
-						TimeNanos:     pcommon.NewTimestampFromTime(timestamp2),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2),
+						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1.Add(5 * time.Second)),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
@@ -357,7 +357,7 @@ func TestCompareProfiles(t *testing.T) {
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp1.Add(5 * time.Second)),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
@@ -372,8 +372,8 @@ func TestCompareProfiles(t *testing.T) {
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:    []Attribute{{Key: "container-attr1", Value: "value2"}},
-						TimeNanos:     pcommon.NewTimestampFromTime(timestamp2),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2.Add(5 * time.Second)),
+						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
