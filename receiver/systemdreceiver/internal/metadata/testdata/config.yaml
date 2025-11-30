@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    systemd.unit.cpu.time:
+      enabled: true
     systemd.unit.state:
       enabled: true
   resource_attributes:
@@ -8,6 +10,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    systemd.unit.cpu.time:
+      enabled: false
     systemd.unit.state:
       enabled: false
   resource_attributes:

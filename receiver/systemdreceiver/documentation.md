@@ -12,6 +12,20 @@ metrics:
     enabled: false
 ```
 
+### systemd.unit.cpu.time
+
+Total CPU time spent by this unit.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| us | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| cpu.mode | Breakdown of CPU usage by type. | Str: ``system``, ``user`` | Recommended |
+
 ### systemd.unit.state
 
 1 if the check resulted in active_state matching the current state, otherwise 0.

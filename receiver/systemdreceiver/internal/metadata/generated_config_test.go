@@ -27,7 +27,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdUnitState: MetricConfig{Enabled: true},
+					SystemdUnitCPUTime: MetricConfig{Enabled: true},
+					SystemdUnitState:   MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SystemdUnitName: ResourceAttributeConfig{Enabled: true},
@@ -38,7 +39,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdUnitState: MetricConfig{Enabled: false},
+					SystemdUnitCPUTime: MetricConfig{Enabled: false},
+					SystemdUnitState:   MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SystemdUnitName: ResourceAttributeConfig{Enabled: false},
