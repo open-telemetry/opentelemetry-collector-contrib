@@ -464,6 +464,7 @@ Available Converters:
 - [Day](#day)
 - [Double](#double)
 - [Duration](#duration)
+- [Encode](#encode)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
@@ -765,6 +766,22 @@ Examples:
 - `Duration("3s")`
 - `Duration("333ms")`
 - `Duration("1000000h")`
+
+### Encode
+
+`Encode(value, encoding)`
+
+The `Encode` Converter takes a string or byte array and returns it encoded with the specified encoding.
+
+`value` is a string or byte array.
+
+`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml) or one of `base64`, `base64-raw`, `base64-url` or `base64-raw-url`.
+
+Examples:
+
+- `Encode("hello world", "base64")` returns `"aGVsbG8gd29ybGQ="`
+
+- `Encode(attributes["data"], "base64-url")`
 
 ### ExtractPatterns
 
