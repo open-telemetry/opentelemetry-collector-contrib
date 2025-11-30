@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -30,11 +29,12 @@ import (
 )
 
 func setFranzGo(tb testing.TB, value bool) {
-	currentFranzState := franzGoConsumerFeatureGate.IsEnabled()
-	require.NoError(tb, featuregate.GlobalRegistry().Set(franzGoConsumerFeatureGate.ID(), value))
-	tb.Cleanup(func() {
-		require.NoError(tb, featuregate.GlobalRegistry().Set(franzGoConsumerFeatureGate.ID(), currentFranzState))
-	})
+	// Feature gate is now stable and always enabled.
+	// This function is kept for backward compatibility with existing tests
+	// but no longer modifies the feature gate state.
+	if !value {
+		tb.Skip("Sarama client tests are skipped as the franz-go feature gate is now stable and always enabled")
+	}
 }
 
 func TestConsumerShutdownConsuming(t *testing.T) {
