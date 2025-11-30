@@ -199,8 +199,6 @@ For production use, always configure proper host key validation using `known_hos
 
 ### Security
 
-- **Host Key Validation**: By default, the receiver validates SSH host keys to prevent man-in-the-middle attacks. The `ignore_host_key` option disables this validation and should **never be used in production environments**.
-
 - **Authentication**: Passwords in configuration files should be stored securely. Consider using environment variables or secret management systems. Key file authentication is recommended for production use.
 
 ### Performance
@@ -208,16 +206,6 @@ For production use, always configure proper host key validation using `known_hos
 - **Connection Overhead**: Each check creates a new SSH connection. The `collection_interval` should be configured based on your monitoring needs and the impact on the SSH server. More frequent checks (e.g., every 10 seconds) will create more connections.
 
 - **Timeout Behavior**: If a connection times out, it will be retried on the next collection interval. Ensure your `timeout` value is appropriate for your network conditions.
-
-### Known Limitations
-
-- **SFTP Dependency**: SFTP checks require a successful SSH connection first. If the SSH connection fails, SFTP metrics will not be generated. This is by design - see `scraper.go` line 115 for implementation details.
-
-- **Context Cancellation**: The receiver respects context cancellation and will clean up connections when the collector shuts down. However, in-flight connections may take up to the configured `timeout` duration to complete.
-
-- **Host Key Validation**: If `ignore_host_key` is false and no known_hosts file is found at the specified or default locations, the connection will fail. Ensure your known_hosts file is properly configured.
-
-- **Error Handling**: Connection errors are recorded in the `sshcheck.error` metric with the `error.message` attribute. Monitor this metric to track connection issues.
 
 ## Feature Gates
 
