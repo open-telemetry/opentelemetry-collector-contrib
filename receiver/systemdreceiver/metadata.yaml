@@ -3,8 +3,8 @@ type: systemd
 status:
   class: receiver
   stability:
-    development: [metrics]
-  distributions: []
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [atoulme]
     emeritus: [Hemansh31]
@@ -35,7 +35,7 @@ metrics:
     description: 1 if the check resulted in active_state matching the current state, otherwise 0.
     enabled: true
     stability:
-      level: development
+      level: alpha
     sum:
       value_type: int
       aggregation_temporality: cumulative
