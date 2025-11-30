@@ -31,7 +31,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	fakemetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 const (
@@ -2227,7 +2226,7 @@ func newObs(t *testing.T) *receiverhelper.ObsReport {
 func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *testing.T) {
 	tr := newTxn(t, true, true)
 	// metadata says "gauge" → should not be considered native histogram staleness
-	tr.mc = fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
+	tr.mc = newFakeMetadataStore(map[string]scrape.MetricMetadata{
 		"foo": {MetricFamily: "foo", Type: model.MetricTypeGauge},
 	})
 
@@ -2241,7 +2240,7 @@ func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *test
 func TestGetOrCreateMetricFamily_DistinctFamiliesForNativeVsClassic(t *testing.T) {
 	tr := newTxn(t, true, true)
 	// Provide metadata so normalization doesn't kick in; name is the same family
-	tr.mc = fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
+	tr.mc = newFakeMetadataStore(map[string]scrape.MetricMetadata{
 		"same_family": {MetricFamily: "same_family", Type: model.MetricTypeHistogram},
 	})
 
@@ -2329,7 +2328,7 @@ func newTxn(t *testing.T, useMetadata, enableNative bool) *transaction {
 	)
 	ctx = scrape.ContextWithTarget(ctx, target)
 	if useMetadata {
-		ctx = scrape.ContextWithMetricMetadataStore(ctx, fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{}))
+		ctx = scrape.ContextWithMetricMetadataStore(ctx, newFakeMetadataStore(map[string]scrape.MetricMetadata{}))
 	}
 	sink := &consumertest.MetricsSink{}
 	settings := receivertest.NewNopSettings(receivertest.NopType)
