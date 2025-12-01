@@ -50,6 +50,7 @@ func createDefaultConfig() component.Config {
 		TopQueryCollection: TopQueryCollection{
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
+			CollectionInterval:  time.Minute,
 		},
 	}
 }
