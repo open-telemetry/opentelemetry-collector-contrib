@@ -42,7 +42,7 @@ The following settings can be optionally configured:
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `logs`
-  - `topic` (Deprecated [v0.142.0]: use `topics`) 
+  - `topic` (Deprecated [v0.141.0]: use `topics`) 
      (default = otlp\logs): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_logs): List of kafka topics from which to consume logs 
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
