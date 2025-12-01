@@ -145,7 +145,6 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 		}
 
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
-
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&tracesHandler{
 					unmarshaler: unmarshaler,

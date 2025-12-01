@@ -4,6 +4,7 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -138,29 +139,29 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 // Validate checks the receiver configuration is valid.
 func (c *Config) Validate() error {
 	if c.Logs.Topic != "" && len(c.Logs.Topics) != 0 {
-		return fmt.Errorf("both logs.topic and logs.topics cannot be set")
+		return errors.New("both logs.topic and logs.topics cannot be set")
 	}
 	if c.Metrics.Topic != "" && len(c.Metrics.Topics) != 0 {
-		return fmt.Errorf("both metrics.topic and metrics.topics cannot be set")
+		return errors.New("both metrics.topic and metrics.topics cannot be set")
 	}
 	if c.Traces.Topic != "" && len(c.Traces.Topics) != 0 {
-		return fmt.Errorf("both traces.topic and traces.topics cannot be set")
+		return errors.New("both traces.topic and traces.topics cannot be set")
 	}
 	if c.Profiles.Topic != "" && len(c.Profiles.Topics) != 0 {
-		return fmt.Errorf("both profiles.topic and profiles.topics cannot be set")
+		return errors.New("both profiles.topic and profiles.topics cannot be set")
 	}
 
 	if c.Logs.ExcludeTopic != "" && len(c.Logs.ExcludeTopics) != 0 {
-		return fmt.Errorf("both logs.exclude_topic and logs.exclude_topics cannot be set")
+		return errors.New("both logs.exclude_topic and logs.exclude_topics cannot be set")
 	}
 	if c.Metrics.ExcludeTopic != "" && len(c.Metrics.ExcludeTopics) != 0 {
-		return fmt.Errorf("both metrics.exclude_topic and metrics.exclude_topics cannot be set")
+		return errors.New("both metrics.exclude_topic and metrics.exclude_topics cannot be set")
 	}
 	if c.Traces.ExcludeTopic != "" && len(c.Traces.ExcludeTopics) != 0 {
-		return fmt.Errorf("both traces.exclude_topic and traces.exclude_topic cannot be set")
+		return errors.New("both traces.exclude_topic and traces.exclude_topic cannot be set")
 	}
 	if c.Profiles.Topic != "" && len(c.Profiles.Topics) != 0 {
-		return fmt.Errorf("both profiles.exclude_topic and profiles.exclude_topics cannot be set")
+		return errors.New("both profiles.exclude_topic and profiles.exclude_topics cannot be set")
 	}
 
 	// Validate that exclude_topic is only used with regex topic patterns
