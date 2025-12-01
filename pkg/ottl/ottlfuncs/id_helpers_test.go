@@ -15,7 +15,7 @@ func Test_newIDExprFunc_rawBytes(t *testing.T) {
 	target := &literalByteGetter[[8]byte]{value: []byte{1, 2, 3, 4, 5, 6, 7, 8}}
 	expr := newIDExprFunc[any, [8]byte](target)
 
-	result, err := expr(context.Background(), nil)
+	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
 	assert.Equal(t, [8]byte{1, 2, 3, 4, 5, 6, 7, 8}, result)
 }
@@ -24,7 +24,7 @@ func Test_newIDExprFunc_hexBytes(t *testing.T) {
 	target := &literalByteGetter[[16]byte]{value: []byte("0102030405060708090a0b0c0d0e0f10")}
 	expr := newIDExprFunc[any, [16]byte](target)
 
-	result, err := expr(context.Background(), nil)
+	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
 	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, result)
 }
@@ -52,7 +52,7 @@ func Test_newIDExprFunc_errors(t *testing.T) {
 			target := &literalByteGetter[[8]byte]{value: tt.value}
 			expr := newIDExprFunc[any, [8]byte](target)
 
-			result, err := expr(context.Background(), nil)
+			result, err := expr(t.Context(), nil)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Nil(t, result)
 		})
@@ -71,7 +71,7 @@ func Test_newIDExprFunc_stringInput(t *testing.T) {
 	target := &literalStringGetter[[16]byte]{value: "0102030405060708090a0b0c0d0e0f10"}
 	expr := newIDExprFunc[any, [16]byte](target)
 
-	result, err := expr(context.Background(), nil)
+	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
 	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, result)
 }
@@ -96,10 +96,10 @@ func Test_newIDExprFunc_stringErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := &literalStringGetter[[8]byte]{value: tt.value}
-			expr := newIDExprFunc[any, [8]byte](target)
+			target := &literalStringGetter[[16]byte]{value: tt.value}
+			expr := newIDExprFunc[any, [16]byte](target)
 
-			result, err := expr(context.Background(), nil)
+			result, err := expr(t.Context(), nil)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Nil(t, result)
 		})
