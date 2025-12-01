@@ -67,6 +67,7 @@ OUTER:
 }
 
 // normalizePath cleans the path on non-Windows systems.
-func normalizePath(path string) string {
-	return filepath.Clean(path)
+// Returns the cleaned path and false (no corruption detection on non-Windows).
+func normalizePath(path string) (string, bool) {
+	return filepath.Clean(path), false
 }
