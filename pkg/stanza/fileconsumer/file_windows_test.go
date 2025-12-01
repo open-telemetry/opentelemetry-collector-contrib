@@ -8,7 +8,7 @@ package fileconsumer
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizePath(t *testing.T) {
@@ -33,6 +33,11 @@ func TestNormalizePath(t *testing.T) {
 			expected: `\\?\UNC\server\share\file.txt`,
 		},
 		{
+			name:     "Corrupted UNC path (single backslash)",
+			input:    `\networkShare2\BLAM\Logs\stdout_46_2025.log`,
+			expected: `\\?\UNC\networkShare2\BLAM\Logs\stdout_46_2025.log`,
+		},
+		{
 			name:     "Regular local path",
 			input:    `C:\Users\test\file.txt`,
 			expected: `C:\Users\test\file.txt`,
@@ -47,7 +52,7 @@ func TestNormalizePath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := normalizePath(tt.input)
-			assert.Equal(t, tt.expected, result)
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
