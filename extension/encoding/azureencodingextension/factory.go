@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/logs"
 )
 
@@ -31,14 +30,11 @@ func createExtension(_ context.Context, settings extension.Settings, cfg compone
 		logUnmarshaler: logs.NewAzureResourceLogsUnmarshaler(
 			settings.BuildInfo,
 			settings.Logger,
-			config.Format,
 			config.Logs,
 		),
 	}, nil
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		Format: unmarshaler.FormatEventHub,
-	}
+	return &Config{}
 }

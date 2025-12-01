@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/traces"
@@ -33,26 +32,12 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, ""),
-			expected: &Config{
-				Format: unmarshaler.FormatEventHub,
-			},
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "incorrect_format"),
-			expected:    nil,
-			expectedErr: "unsupported format: \"json\"",
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "blobstorage_format"),
-			expected: &Config{
-				Format: unmarshaler.FormatBlobStorage,
-			},
+			id:       component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "metrics_time_formats"),
 			expected: &Config{
-				Format: unmarshaler.FormatEventHub,
 				Metrics: metrics.MetricsConfig{
 					TimeFormats: []string{"01/02/2006 15:04:05", "2006-01-02T15:04:05Z"},
 				},
@@ -61,7 +46,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "metrics_aggregations"),
 			expected: &Config{
-				Format: unmarshaler.FormatEventHub,
 				Metrics: metrics.MetricsConfig{
 					Aggregations: []metrics.MetricAggregation{
 						metrics.AggregationCount,
@@ -79,7 +63,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "traces_time_formats"),
 			expected: &Config{
-				Format: unmarshaler.FormatEventHub,
 				Traces: traces.TracesConfig{
 					TimeFormats: []string{"01/02/2006 15:04:05", "2006-01-02T15:04:05Z"},
 				},
@@ -88,7 +71,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "logs_time_formats"),
 			expected: &Config{
-				Format: unmarshaler.FormatEventHub,
 				Logs: logs.LogsConfig{
 					TimeFormats: []string{"01/02/2006 15:04:05", "2006-01-02T15:04:05Z"},
 				},
@@ -97,7 +79,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "logs_include_categories"),
 			expected: &Config{
-				Format: unmarshaler.FormatEventHub,
 				Logs: logs.LogsConfig{
 					IncludeCategories: []string{"AzureCdnAccessLog", "FrontDoorAccessLog"},
 				},
@@ -106,7 +87,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "logs_exclude_categories"),
 			expected: &Config{
-				Format: unmarshaler.FormatEventHub,
 				Logs: logs.LogsConfig{
 					ExcludeCategories: []string{"AppServiceAppLogs", "AppServiceAuditLogs"},
 				},

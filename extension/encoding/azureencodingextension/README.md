@@ -16,37 +16,20 @@ This extension is designed for unmarshaling logs/traces/metrics encoded in speci
 produced by [Azure Diagnostic Settings Export](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings) or
 [Azure Data Collection Rules (DCRs)](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview)
 
-## Configuration
+### Configuration
 
-Encoding extension has both top-level configuration, that applied to all telemetry signals
-and own set of configuration options for each type of telemetry signals
+This Encoding extension has set of configuration options for each type of telemetry signals,
+for list of specific configuration options and example - see below.
 
-### General configuration options
+### Supported formats
 
-***format (Optional)***
+Azure can expose log records in multiple different wrapper formats, depending on export destination and log Category.
 
-Identifies format of incoming JSON records for all supported telemetry signals:
+This extension supports auto-detection and parsing of the following formats:
 
-* `eventhub` (default) - extension will be expecting JSON records as they are exposed to Azure EventHub,
-i.e. `{ "records": [ {... record ...}, {... record ...} ] }`
-* `blobstorage` - extension will be expecting JSON records as they are exposed to Azure Blob Storage,
-i.e. `[ {... record ...}, {... record ...} ]`
-
-#### Example configuration for incoming format
-
-```yaml
-extensions:
-  azure_encoding:
-    format: eventhub
-    metrics:
-      time_formats: ["01/02/2006 15:04:05", "2006-01-02T15:04:05Z"]
-      aggregations: ["total", "count", "average"]
-...
-receivers:
-  kafka:
-    metrics:
-      encoding: azure_encoding
-```
+* `{ "records": [ {... record ...}, {... record ...} ] }` - mostly used in Azure EventHub export, but sometimes could be used for Azure BlobStorage export
+* `[ {... record ...}, {... record ...} ]` - detected for some cases in Azure BlobStorage export
+* `{... record ...}\n{... record ...}` (Newline-delimited JSON) - detected for some cases in Azure BlobStorage export
 
 ### Metrics
 

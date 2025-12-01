@@ -4,6 +4,8 @@
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/logs"
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"time"
 
@@ -49,137 +51,60 @@ type categoryHolder struct {
 type ResourceLogsUnmarshaler struct {
 	buildInfo         component.BuildInfo
 	logger            *zap.Logger
-	batchFormat       unmarshaler.RecordsBatchFormat
 	timeFormat        []string
 	includeCategories map[string]bool
 	excludeCategories map[string]bool
+	hasIncludes       bool
 }
 
 func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	jsonPath := unmarshaler.JSONPathEventHubLogRecords
-	if r.batchFormat == unmarshaler.FormatBlobStorage {
-		jsonPath = unmarshaler.JSONPathBlobStorageLogRecords
-	}
-
-	// This will allow us to parse Azure Log Records in both formats:
-	// 1) As exported to Azure Event Hub, e.g. `{"records": [ {...}, {...} ]}`
-	// 2) As exported to Azure Blob Storage, e.g. `[ {...}, {...} ]`
-	rootPath, err := gojson.CreatePath(jsonPath)
-	if err != nil {
-		// This should never happen, but still...
-		return plog.NewLogs(), fmt.Errorf("failed to create JSON Path %q: %w", jsonPath, err)
-	}
-
-	records, err := rootPath.Extract(buf)
-	if err != nil {
-		// This should never happen, but still...
-		return plog.NewLogs(), fmt.Errorf("failed to extract Azure Log Records: %w", err)
-	}
-
-	hasIncludes := len(r.includeCategories) > 0
 	allResourceScopeLogs := map[logsResourceAttributes]plog.ScopeLogs{}
 
-	for _, record := range records {
-		// Despite of the fact that official Azure documentation states that exists common Logs schema
-		// (see https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema),
-		// in reality - it's not true, some Resources exposing Logs in totally different formats.
-		// For example, Azure Service Bus logs doesn't conform schema above
-		// (see examples here - https://github.com/noakup/AzMonLogsAgent/blob/main/NGSchema/AzureServiceBus/SampleInputRecords/ServiceBusOperationLogSample.json)
-		// The only 2 fields that SHOULD be present in most Log schemas - `category` and `resourceId`
-		// So, proper way to correctly decode incoming Log Record - first get value from `category` field
-		// and Unmarshal record into category-specific struct.
-		// That's actually double-unmarshaling, but there is no other way to parse variety of Azure Logs schemas
+	batchFormat, err := unmarshaler.DetectWrapperFormat(buf)
+	if err != nil {
+		return plog.NewLogs(), err
+	}
 
-		var ch categoryHolder
-		if err := gojson.Unmarshal(record, &ch); err != nil {
-			r.logger.Error("JSON unmarshal failed for Azure Log Record", zap.Error(err))
-			continue
+	switch batchFormat {
+	// ND JSON is a specific case...
+	// We will use bufio.Scanner trick to read it line by line
+	// as unmarshal each line as a Log Record
+	case unmarshaler.FormatNDJSON:
+		scanner := bufio.NewScanner(bytes.NewReader(buf))
+		for scanner.Scan() {
+			r.unmarshalRecord(allResourceScopeLogs, scanner.Bytes())
 		}
-		logCategory := ch.Category
-		if logCategory == "" {
-			logCategory = ch.Type
-		}
-
-		if logCategory == "" {
-			// We couldn't do any SemConv conversion as it's an unknown Log Schema for us,
-			// because it doesn't have a "category" field which we rely on
-			// So we will save incoming Log Record as a JSON string into Body just
-			// not to loose data
-			r.logger.Warn(
-				"No Category field are set on Log Record, couldn't parse SemConv way, will save it as-is",
-			)
-			r.storeRawLog(allResourceScopeLogs, record)
-			continue
+	// Both formats are valid JSON and can be parsed directly
+	// `gojson.Path.Extract` is a bit faster and use ~25% less bytes per operation
+	// comparing to unmarshaling to intermediate structure (e.g. using `var recordsHolder []json.RawMessage`)
+	case unmarshaler.FormatObjectRecords, unmarshaler.FormatJSONArray:
+		jsonPath := unmarshaler.JSONPathEventHubLogRecords
+		if batchFormat == unmarshaler.FormatJSONArray {
+			jsonPath = unmarshaler.JSONPathBlobStorageLogRecords
 		}
 
-		// Filter out categories based on provided configuration
-		if _, exclude := r.excludeCategories[logCategory]; exclude {
-			continue
-		}
-		if hasIncludes {
-			if _, include := r.includeCategories[logCategory]; !include {
-				continue
-			}
-		}
-
-		// Let's parse it
-		log, err := processLogRecord(logCategory, record)
+		// This will allow us to parse Azure Log Records in both formats:
+		// 1) As exported to Azure Event Hub, e.g. `{"records": [ {...}, {...} ]}`
+		// 2) As exported to Azure Blob Storage, e.g. `[ {...}, {...} ]`
+		rootPath, err := gojson.CreatePath(jsonPath)
 		if err != nil {
-			r.storeRawLog(allResourceScopeLogs, record)
-			r.logger.Warn(
-				"Unable to parse Log Record",
-				zap.String("category", logCategory),
-				zap.Error(err),
-			)
-			continue
+			// This should never happen, but still...
+			return plog.NewLogs(), fmt.Errorf("failed to create JSON Path %q: %w", jsonPath, err)
 		}
 
-		// Get timestamp for any of the possible fields
-		nanos, err := log.GetTimestamp(r.timeFormat...)
+		records, err := rootPath.Extract(buf)
 		if err != nil {
-			r.storeRawLog(allResourceScopeLogs, record)
-			r.logger.Warn(
-				"Unable to convert timestamp from log",
-				zap.String("category", logCategory),
-				zap.Error(err),
-			)
-			continue
+			// This should never happen, but still...
+			return plog.NewLogs(), fmt.Errorf("failed to extract Azure Log Records: %w", err)
 		}
 
-		rs := log.GetResource()
-		if rs.ResourceID == "" {
-			r.logger.Warn(
-				"No ResourceID set on Log record",
-				zap.String("category", logCategory),
-			)
+		for _, record := range records {
+			r.unmarshalRecord(allResourceScopeLogs, record)
 		}
-		scopeLogs := r.getScopeLog(allResourceScopeLogs, rs)
-
-		lr := scopeLogs.LogRecords().AppendEmpty()
-		lr.SetTimestamp(nanos)
-
-		severity, severityName, isSet := log.GetLevel()
-		// Do not set Log Severity if it's not provided in the Log Record
-		// to avoid confusion with actual SeverityNumberUnspecified value
-		if isSet {
-			lr.SetSeverityNumber(severity)
-			lr.SetSeverityText(severityName)
-		}
-
-		attrs := lr.Attributes()
-		// Put Log Category anyway
-		unmarshaler.AttrPutStrIf(attrs, unmarshaler.AttributeAzureCategory, logCategory)
-		// Parse Common Attributes + Properties (if applicable)
-		body := lr.Body()
-		log.PutCommonAttributes(attrs, body)
-		if err := log.PutProperties(attrs, body); err != nil {
-			r.logger.Warn(
-				"Unable to parse Azure Log Properties into OpenTelemetry Attributes",
-				zap.String("category", logCategory),
-				zap.String("resourceId", rs.ResourceID),
-				zap.Error(err),
-			)
-		}
+	// This is happened on empty input
+	case unmarshaler.FormatUnknown:
+		return plog.NewLogs(), nil
+	default:
 	}
 
 	l := plog.NewLogs()
@@ -205,6 +130,108 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	}
 
 	return l, nil
+}
+
+func (r ResourceLogsUnmarshaler) unmarshalRecord(allResourceScopeLogs map[logsResourceAttributes]plog.ScopeLogs, record []byte) {
+	// Despite of the fact that official Azure documentation states that exists common Logs schema
+	// (see https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema),
+	// in reality - it's not true, some Resources exposing Logs in totally different formats.
+	// For example, Azure Service Bus logs doesn't conform schema above
+	// (see examples here - https://github.com/noakup/AzMonLogsAgent/blob/main/NGSchema/AzureServiceBus/SampleInputRecords/ServiceBusOperationLogSample.json)
+	// The only 2 fields that SHOULD be present in most Log schemas - `category` and `resourceId`
+	// So, proper way to correctly decode incoming Log Record - first get value from `category` field
+	// and Unmarshal record into category-specific struct.
+	// That's actually double-unmarshaling, but there is no other way to parse variety of Azure Logs schemas
+	var ch categoryHolder
+	if err := gojson.Unmarshal(record, &ch); err != nil {
+		r.logger.Error("JSON unmarshal failed for Azure Log Record", zap.Error(err))
+		return
+	}
+	logCategory := ch.Category
+	if logCategory == "" {
+		logCategory = ch.Type
+	}
+
+	if logCategory == "" {
+		// We couldn't do any SemConv conversion as it's an unknown Log Schema for us,
+		// because it doesn't have a "category" field which we rely on
+		// So we will save incoming Log Record as a JSON string into Body just
+		// not to loose data
+		r.logger.Warn(
+			"No Category field are set on Log Record, couldn't parse SemConv way, will save it as-is",
+		)
+		r.storeRawLog(allResourceScopeLogs, record)
+		return
+	}
+
+	// Filter out categories based on provided configuration
+	if _, exclude := r.excludeCategories[logCategory]; exclude {
+		return
+	}
+	if r.hasIncludes {
+		if _, include := r.includeCategories[logCategory]; !include {
+			return
+		}
+	}
+
+	// Let's parse it
+	log, err := processLogRecord(logCategory, record)
+	if err != nil {
+		r.storeRawLog(allResourceScopeLogs, record)
+		r.logger.Warn(
+			"Unable to parse Log Record",
+			zap.String("category", logCategory),
+			zap.Error(err),
+		)
+		return
+	}
+
+	// Get timestamp for any of the possible fields
+	nanos, err := log.GetTimestamp(r.timeFormat...)
+	if err != nil {
+		r.storeRawLog(allResourceScopeLogs, record)
+		r.logger.Warn(
+			"Unable to convert timestamp from log",
+			zap.String("category", logCategory),
+			zap.Error(err),
+		)
+		return
+	}
+
+	rs := log.GetResource()
+	if rs.ResourceID == "" {
+		r.logger.Warn(
+			"No ResourceID set on Log record",
+			zap.String("category", logCategory),
+		)
+	}
+	scopeLogs := r.getScopeLog(allResourceScopeLogs, rs)
+
+	lr := scopeLogs.LogRecords().AppendEmpty()
+	lr.SetTimestamp(nanos)
+
+	severity, severityName, isSet := log.GetLevel()
+	// Do not set Log Severity if it's not provided in the Log Record
+	// to avoid confusion with actual SeverityNumberUnspecified value
+	if isSet {
+		lr.SetSeverityNumber(severity)
+		lr.SetSeverityText(severityName)
+	}
+
+	attrs := lr.Attributes()
+	// Put Log Category anyway
+	unmarshaler.AttrPutStrIf(attrs, unmarshaler.AttributeAzureCategory, logCategory)
+	// Parse Common Attributes + Properties (if applicable)
+	body := lr.Body()
+	log.PutCommonAttributes(attrs, body)
+	if err := log.PutProperties(attrs, body); err != nil {
+		r.logger.Warn(
+			"Unable to parse Azure Log Properties into OpenTelemetry Attributes",
+			zap.String("category", logCategory),
+			zap.String("resourceId", rs.ResourceID),
+			zap.Error(err),
+		)
+	}
 }
 
 // getScopeLog gets current ScopeLog based on provided set of ResourceAttributes
@@ -243,7 +270,7 @@ func (r ResourceLogsUnmarshaler) storeRawLog(allResourceScopeLogs map[logsResour
 	lr.Body().SetStr(string(record))
 }
 
-func NewAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, format unmarshaler.RecordsBatchFormat, cfg LogsConfig) ResourceLogsUnmarshaler {
+func NewAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, cfg LogsConfig) ResourceLogsUnmarshaler {
 	includeCategories := make(map[string]bool, len(cfg.IncludeCategories))
 	for _, icat := range cfg.IncludeCategories {
 		includeCategories[icat] = true
@@ -256,9 +283,9 @@ func NewAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 	return ResourceLogsUnmarshaler{
 		buildInfo:         buildInfo,
 		logger:            logger,
-		batchFormat:       format,
 		timeFormat:        cfg.TimeFormats,
 		includeCategories: includeCategories,
 		excludeCategories: excludeCategories,
+		hasIncludes:       len(includeCategories) > 0,
 	}
 }

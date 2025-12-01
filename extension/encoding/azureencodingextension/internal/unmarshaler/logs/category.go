@@ -70,21 +70,21 @@ type azureLogRecord interface {
 // This schema are applicable to most Resource Logs and
 // can be extended with additional fields for specific Log Categories
 type azureLogRecordBase struct {
-	Time              string       `json:"time"`      // most Categories use this field for timestamp
-	TimeStamp         string       `json:"timestamp"` // some Categories use this field for timestamp
-	ResourceID        string       `json:"resourceId"`
-	TenantID          string       `json:"tenantId"`
-	OperationName     string       `json:"operationName"`
-	OperationVersion  *string      `json:"operationVersion"`
-	ResultType        *string      `json:"resultType"`
-	ResultSignature   *string      `json:"resultSignature"`
-	ResultDescription *string      `json:"resultDescription"`
-	DurationMs        *json.Number `json:"durationMs"` // int
-	CallerIPAddress   *string      `json:"callerIpAddress"`
-	CorrelationID     *string      `json:"correlationId"`
-	Identity          *any         `json:"identity"`
-	Level             *string      `json:"level"`
-	Location          string       `json:"location"`
+	Time              string          `json:"time"`      // most Categories use this field for timestamp
+	TimeStamp         string          `json:"timestamp"` // some Categories use this field for timestamp
+	ResourceID        string          `json:"resourceId"`
+	TenantID          string          `json:"tenantId"`
+	OperationName     string          `json:"operationName"`
+	OperationVersion  *string         `json:"operationVersion"`
+	ResultType        *string         `json:"resultType"`
+	ResultSignature   *string         `json:"resultSignature"`
+	ResultDescription *string         `json:"resultDescription"`
+	DurationMs        *json.Number    `json:"durationMs"` // int
+	CallerIPAddress   *string         `json:"callerIpAddress"`
+	CorrelationID     *string         `json:"correlationId"`
+	Identity          *map[string]any `json:"identity"`
+	Level             *string         `json:"level"`
+	Location          string          `json:"location"`
 }
 
 // GetResource returns resource attributes for the parsed Log Record
@@ -168,27 +168,19 @@ type azureLogRecordGeneric struct {
 
 func (r *azureLogRecordGeneric) PutProperties(attrs pcommon.Map, body pcommon.Value) error {
 	var properties map[string]any
-	var errs []error
 
 	if len(r.Properties) == 0 {
 		// Nothing to parse
 		return nil
 	}
 
-	// Trying to parse "properties" as correct JSON object...
+	// We expect "properties" to be a correct JSON object in most cases,
+	// so we'll try to parse it as JSON here
+	// If parsing will fail - we will put value of "properties" field
+	// into `azure.properties` Attribute and return parse error to caller
 	if err := gojson.Unmarshal(r.Properties, &properties); err != nil {
-		errs = append(errs, err)
-		// If failed - trying to parse using a primitive value
-		var val any
-		if err = gojson.Unmarshal(r.Properties, &val); err == nil {
-			// Parsed, put primitive value as "properties" attribute
-			if err = attrs.PutEmpty(attributesAzureProperties).FromRaw(val); err != nil {
-				errs = append(errs, err)
-				// All attempts above - failed, put unparsable properties to log.Body
-				body.SetStr(string(r.Properties))
-			}
-		}
-		return fmt.Errorf("failed to parse Azure Logs 'properties' field as JSON: %w", errors.Join(errs...))
+		attrs.PutStr(attributesAzureProperties, string(r.Properties))
+		return fmt.Errorf("failed to parse Azure Logs 'properties' field as JSON: %w", err)
 	}
 
 	// Put everything into attributes
