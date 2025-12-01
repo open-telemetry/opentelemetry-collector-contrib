@@ -50,7 +50,7 @@ func NewServer(
 // Start implements the component.Component interface.
 func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
-	s.grpcServer, err = s.config.ToServer(ctx, host, s.telemetry)
+	s.grpcServer, err = s.config.ToServer(ctx, host.GetExtensions(), s.telemetry)
 	if err != nil {
 		return err
 	}
