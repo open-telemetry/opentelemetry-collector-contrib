@@ -237,27 +237,27 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
 
-	// Partial success is acceptable - return merged resources from successful detectors.
-	// Only propagate an error if ALL detectors failed, ensuring graceful degradation.
-	if successes == 0 {
-		if allowErrorPropagationFeatureGate.IsEnabled() {
-			if joinedErr == nil {
-				joinedErr = errors.New("resource detection failed: no detectors succeeded")
-			}
-			return pcommon.NewResource(), "", joinedErr
-		}
-
-		// If the feature gate is disabled, do NOT propagate the error.
-		// Return an empty resource and nil error so the processor can still start.
-		p.logger.Warn("resource detection failed but error propagation is disabled")
-		return pcommon.NewResource(), "", nil
-	}
-
-	// Return merged resources. If feature gate is enabled, also return joined errors from failed detectors.
+	// Determine the error to return based on feature gate setting.
+	var returnErr error
 	if allowErrorPropagationFeatureGate.IsEnabled() {
-		return res, mergedSchemaURL, joinedErr
+		// Feature gate enabled: return joined errors (if any)
+		if successes == 0 && joinedErr == nil {
+			returnErr = errors.New("resource detection failed: no detectors succeeded")
+		} else {
+			returnErr = joinedErr
+		}
 	}
-	return res, mergedSchemaURL, nil
+
+	// If all detectors failed, return empty resource.
+	if successes == 0 {
+		if !allowErrorPropagationFeatureGate.IsEnabled() {
+			p.logger.Warn("resource detection failed but error propagation is disabled")
+		}
+		return pcommon.NewResource(), "", returnErr
+	}
+
+	// Partial or full success: return merged resources.
+	return res, mergedSchemaURL, returnErr
 }
 
 func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {
