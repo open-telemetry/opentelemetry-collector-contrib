@@ -2257,7 +2257,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		<-startSignal
-		for i := 0; i < 1000; i++ {
+		for i := range 1000 {
 			if i%2 == 0 {
 				s.remoteConfig.Store(config1)
 			} else {
@@ -2270,7 +2270,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		<-startSignal
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			cfg := s.remoteConfig.Load()
 			if cfg != nil {
 				_ = cfg.GetConfigHash()

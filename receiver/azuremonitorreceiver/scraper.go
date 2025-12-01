@@ -366,7 +366,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, subscr
 
 		for _, v := range nextResult.Value {
 			metricName := *v.Name.Value
-			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
+			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
 			if len(metricAggregations) == 0 {
 				continue
 			}
@@ -515,30 +515,39 @@ func (s *azureScraper) processTimeseriesData(
 	}
 }
 
-func getMetricAggregations(metricNamespace, metricName string, filters NestedListAlias) []string {
+// getMetricAggregations returns a list of aggregations for a given namespace/metric.
+// Two parameters are considered to know the aggregation to choose
+// - a filter (given in configuration)
+// - a list of supported aggregations (given by the API)
+// If one namespace/metrics combination matches a provided filter,
+// > Then it returns the aggregations in the filter
+// > Otherwise it returns all supported aggregations.
+// Note that a special filter * is supported to return all supported aggregations explicitly.
+// /!\ It does not control the aggregations in the filters. If it's not in the supported list, it still lets it pass.
+func getMetricAggregations(metricNamespace, metricName string, filters NestedListAlias, supportedAggregations []string) []string {
 	// default behavior when no metric filters specified: pass all metrics with all aggregations
 	if len(filters) == 0 {
-		return aggregations
+		return supportedAggregations
 	}
 
 	metricsFilters, ok := mapFindInsensitive(filters, metricNamespace)
-	// metric namespace not found or it's empty: pass all metrics from the namespace
+	// metric namespace isn't found, or it's empty: pass all metrics from the namespace
 	if !ok || len(metricsFilters) == 0 {
-		return aggregations
+		return supportedAggregations
 	}
 
 	aggregationsFilters, ok := mapFindInsensitive(metricsFilters, metricName)
-	// if target metric is absent in metrics map: filter out metric
+	// if the target metric is absent in the metrics map: filter out metric
 	if !ok {
 		return []string{}
 	}
 	// allow all aggregations if others are not specified
 	if len(aggregationsFilters) == 0 || slices.Contains(aggregationsFilters, filterAllAggregations) {
-		return aggregations
+		return supportedAggregations
 	}
 
-	// collect known supported aggregations
-	out := []string{}
+	// collect known aggregations without filtering on supported
+	var out []string
 	for _, filter := range aggregationsFilters {
 		for _, aggregation := range aggregations {
 			if strings.EqualFold(aggregation, filter) {
@@ -548,6 +557,14 @@ func getMetricAggregations(metricNamespace, metricName string, filters NestedLis
 	}
 
 	return out
+}
+
+func convertAggregationsToStr(aggregations []*armmonitor.AggregationType) []string {
+	var result []string
+	for _, aggr := range aggregations {
+		result = append(result, string(*aggr))
+	}
+	return result
 }
 
 func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {

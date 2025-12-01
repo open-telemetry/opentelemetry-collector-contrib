@@ -71,7 +71,7 @@ func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) er
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", pe.handler)
-	srv, err := pe.config.ToServer(ctx, host, pe.settings, mux)
+	srv, err := pe.config.ToServer(ctx, host.GetExtensions(), pe.settings, mux)
 	if err != nil {
 		lnerr := ln.Close()
 		return errors.Join(err, lnerr)

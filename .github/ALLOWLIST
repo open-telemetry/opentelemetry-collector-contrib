@@ -29,8 +29,8 @@ internal/common
 
 # Start unmaintained components list
 
-exporter/carbonexporter
 receiver/bigipreceiver
 receiver/carbonreceiver
+receiver/k8slogreceiver
 
 # End unmaintained components list

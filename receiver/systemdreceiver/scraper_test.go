@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build linux
+
 package systemdreceiver
 
 import (
@@ -10,6 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -94,17 +97,28 @@ func (s *testDbusConnection) Close() error {
 }
 
 func (s *testDbusConnection) Object(dest string, path dbus.ObjectPath) dbus.BusObject {
-	if dest == "org.freedesktop.systemd1" && path == "/org/freedesktop/systemd1" {
-		return &testDbusObject{
-			destination: dest,
-			path:        path,
-			methods: map[string][]any{
-				"org.freedesktop.systemd1.Manager.ListUnitsByPatterns": {s.units},
-			},
+	if dest == "org.freedesktop.systemd1" {
+		switch path {
+		case "/org/freedesktop/systemd1":
+			return &testDbusObject{
+				destination: dest,
+				path:        path,
+				methods: map[string][]any{
+					"org.freedesktop.systemd1.Manager.ListUnitsByPatterns": {s.units},
+				},
+			}
+		case "/org/freedesktop/systemd1/unit/nginx_2eservice":
+			return &testDbusObject{
+				destination: dest,
+				path:        path,
+				properties: map[string]dbus.Variant{
+					"org.freedesktop.systemd1.Service.ControlGroup": dbus.MakeVariant("/system.slice/nginx.service"),
+				},
+			}
 		}
 	}
 
-	panic("unsupported object")
+	panic(fmt.Sprintf("unsupported object %s %s", dest, path))
 }
 
 func newTestScraper(conf *Config, units []unitTuple) *systemdScraper {
@@ -116,12 +130,18 @@ func newTestScraper(conf *Config, units []unitTuple) *systemdScraper {
 func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc        string
+		config      func() *Config
 		units       []unitTuple
 		goldenName  string
 		expectedErr error
 	}{
 		{
 			desc: "Basic scrape",
+			config: func() *Config {
+				cfg := createDefaultDisabledConfig()
+				cfg.Metrics.SystemdUnitState.Enabled = true
+				return cfg
+			},
 			units: []unitTuple{
 				{
 					Name:        "nginx.service",
@@ -151,11 +171,36 @@ func TestScraperScrape(t *testing.T) {
 			goldenName:  "basic-scrape",
 			expectedErr: nil,
 		},
+		{
+			desc: "With cgroups",
+			config: func() *Config {
+				cfg := createDefaultDisabledConfig()
+				cfg.Metrics.SystemdUnitCPUTime.Enabled = true
+				return cfg
+			},
+			units: []unitTuple{
+				{
+					Name:        "nginx.service",
+					Description: "A high performance web server and a reverse proxy server",
+					LoadState:   "loaded",
+					ActiveState: "active",
+					SubState:    "plugged",
+					Following:   "",
+					Path:        "/org/freedesktop/systemd1/unit/nginx_2eservice",
+					JobID:       uint32(0),
+					JobType:     "",
+					JobPath:     "/",
+				},
+			},
+			goldenName:  "cgroups",
+			expectedErr: nil,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newTestScraper(createDefaultConfig().(*Config), tc.units)
+			scraper := newTestScraper(tc.config(), tc.units)
+			scraper.cgroupOpts = []cgroup2.InitOpts{cgroup2.WithMountpoint(filepath.Join("testdata", "cgroup"))}
 
 			actualMetrics, err := scraper.scrape(t.Context())
 			if tc.expectedErr == nil {
@@ -177,4 +222,12 @@ func TestScraperScrape(t *testing.T) {
 			))
 		})
 	}
+}
+
+// Create a config where all metrics are disabled
+func createDefaultDisabledConfig() *Config {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.SystemdUnitState.Enabled = false
+	cfg.Metrics.SystemdUnitCPUTime.Enabled = false
+	return cfg
 }

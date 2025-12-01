@@ -59,10 +59,11 @@ func init() {
 }
 
 func runTestForClients(t *testing.T, fn func(t *testing.T)) {
-	clients := []string{"Sarama", "Franz"}
+	// Only run tests with Franz client since the feature gate is now stable.
+	// Sarama tests will be removed in a future version.
+	clients := []string{"Franz"}
 	for _, client := range clients {
 		t.Run(client, func(t *testing.T) {
-			setFranzGo(t, client == "Franz")
 			fn(t)
 		})
 	}

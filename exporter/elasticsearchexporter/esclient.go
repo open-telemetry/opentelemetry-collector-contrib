@@ -107,7 +107,7 @@ func newElasticsearchClient(
 	telemetry component.TelemetrySettings,
 	userAgent string,
 ) (esapi.Transport, error) {
-	httpClient, err := config.ToClient(ctx, host, telemetry)
+	httpClient, err := config.ToClient(ctx, host.GetExtensions(), telemetry)
 	if err != nil {
 		return nil, err
 	}

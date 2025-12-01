@@ -371,7 +371,6 @@ func TestPodCreate(t *testing.T) {
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
 	c.Associations = append(c.Associations, Association{
-		Name: "name",
 		Sources: []AssociationSource{
 			{
 				From: ResourceSource,

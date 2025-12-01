@@ -12,6 +12,32 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+// AttributeCPUMode specifies the value cpu.mode attribute.
+type AttributeCPUMode int
+
+const (
+	_ AttributeCPUMode = iota
+	AttributeCPUModeSystem
+	AttributeCPUModeUser
+)
+
+// String returns the string representation of the AttributeCPUMode.
+func (av AttributeCPUMode) String() string {
+	switch av {
+	case AttributeCPUModeSystem:
+		return "system"
+	case AttributeCPUModeUser:
+		return "user"
+	}
+	return ""
+}
+
+// MapAttributeCPUMode is a helper map of string to AttributeCPUMode attribute value.
+var MapAttributeCPUMode = map[string]AttributeCPUMode{
+	"system": AttributeCPUModeSystem,
+	"user":   AttributeCPUModeUser,
+}
+
 // AttributeSystemdUnitActiveState specifies the value systemd.unit.active_state attribute.
 type AttributeSystemdUnitActiveState int
 
@@ -63,17 +89,74 @@ var MapAttributeSystemdUnitActiveState = map[string]AttributeSystemdUnitActiveSt
 }
 
 var MetricsInfo = metricsInfo{
+	SystemdUnitCPUTime: metricInfo{
+		Name: "systemd.unit.cpu.time",
+	},
 	SystemdUnitState: metricInfo{
 		Name: "systemd.unit.state",
 	},
 }
 
 type metricsInfo struct {
-	SystemdUnitState metricInfo
+	SystemdUnitCPUTime metricInfo
+	SystemdUnitState   metricInfo
 }
 
 type metricInfo struct {
 	Name string
+}
+
+type metricSystemdUnitCPUTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills systemd.unit.cpu.time metric with initial data.
+func (m *metricSystemdUnitCPUTime) init() {
+	m.data.SetName("systemd.unit.cpu.time")
+	m.data.SetDescription("Total CPU time spent by this unit.")
+	m.data.SetUnit("us")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemdUnitCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuModeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("cpu.mode", cpuModeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemdUnitCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemdUnitCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemdUnitCPUTime(cfg MetricConfig) metricSystemdUnitCPUTime {
+	m := metricSystemdUnitCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricSystemdUnitState struct {
@@ -139,6 +222,7 @@ type MetricsBuilder struct {
 	buildInfo                      component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricSystemdUnitCPUTime       metricSystemdUnitCPUTime
 	metricSystemdUnitState         metricSystemdUnitState
 }
 
@@ -165,6 +249,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
+		metricSystemdUnitCPUTime:       newMetricSystemdUnitCPUTime(mbc.Metrics.SystemdUnitCPUTime),
 		metricSystemdUnitState:         newMetricSystemdUnitState(mbc.Metrics.SystemdUnitState),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
@@ -244,6 +329,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSystemdUnitCPUTime.emit(ils.Metrics())
 	mb.metricSystemdUnitState.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -274,6 +360,11 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordSystemdUnitCPUTimeDataPoint adds a data point to systemd.unit.cpu.time metric.
+func (mb *MetricsBuilder) RecordSystemdUnitCPUTimeDataPoint(ts pcommon.Timestamp, val int64, cpuModeAttributeValue AttributeCPUMode) {
+	mb.metricSystemdUnitCPUTime.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String())
 }
 
 // RecordSystemdUnitStateDataPoint adds a data point to systemd.unit.state metric.

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -159,7 +160,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(t.Context(), nil)
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// we wait until the watcher starts
@@ -238,7 +239,7 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(t.Context(), nil)
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// we wait until the watcher starts

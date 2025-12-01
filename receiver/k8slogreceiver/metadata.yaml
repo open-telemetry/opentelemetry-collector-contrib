@@ -3,6 +3,7 @@ type: k8slog
 status:
   class: receiver
   stability:
-    development: [logs]
+    unmaintained: [logs]
   codeowners:
-    active: [h0cheung, TylerHelmuth]
+    emeritus: [h0cheung, TylerHelmuth]
+    seeking_new: true

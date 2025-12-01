@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -66,7 +67,7 @@ func TestS3ManagerUpload(t *testing.T) {
 			uploadOpts:  nil,
 		},
 		{
-			name: "successful compression upload",
+			name: "successful compression upload gzip",
 			handler: func(t *testing.T) http.Handler {
 				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					assert.Equal(
@@ -90,6 +91,35 @@ func TestS3ManagerUpload(t *testing.T) {
 				})
 			},
 			compression: configcompression.TypeGzip,
+			data:        []byte("hello world"),
+			errVal:      "",
+			uploadOpts:  nil,
+		},
+		{
+			name: "successful compression upload zstd",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					assert.Equal(
+						t,
+						"/my-bucket/telemetry/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics.zst",
+						r.URL.Path,
+						"Must match the expected path",
+					)
+
+					reader, err := zstd.NewReader(r.Body)
+					if !assert.NoError(t, err, "Must not error creating zstd reader") {
+						return
+					}
+
+					data, err := io.ReadAll(reader)
+					assert.Equal(t, []byte("hello world"), data, "Must match the expected data")
+					assert.NoError(t, err, "Must not error reading data from reader")
+
+					reader.Close()
+					_ = r.Body.Close()
+				})
+			},
+			compression: configcompression.TypeZstd,
 			data:        []byte("hello world"),
 			errVal:      "",
 			uploadOpts:  nil,

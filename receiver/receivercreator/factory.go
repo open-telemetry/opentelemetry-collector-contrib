@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -46,9 +46,12 @@ func createDefaultConfig() component.Config {
 				string(conventions.K8SNamespaceNameKey): "`namespace`",
 			},
 			observer.PortType: map[string]string{
-				string(conventions.K8SPodNameKey):       "`pod.name`",
-				string(conventions.K8SPodUIDKey):        "`pod.uid`",
-				string(conventions.K8SNamespaceNameKey): "`pod.namespace`",
+				string(conventions.K8SPodNameKey):         "`pod.name`",
+				string(conventions.K8SPodUIDKey):          "`pod.uid`",
+				string(conventions.K8SNamespaceNameKey):   "`pod.namespace`",
+				string(conventions.K8SContainerNameKey):   "`container_name`",
+				string(conventions.ContainerIDKey):        "`container_id`",
+				string(conventions.ContainerImageNameKey): "`container_image`",
 			},
 			observer.PodContainerType: map[string]string{
 				string(conventions.K8SPodNameKey):         "`pod.name`",

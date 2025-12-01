@@ -48,7 +48,7 @@ func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter
 }
 
 func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) error {
-	httpClient, err := s.httpSettings.ToClient(ctx, host, s.telemetry)
+	httpClient, err := s.httpSettings.ToClient(ctx, host.GetExtensions(), s.telemetry)
 	if err != nil {
 		return err
 	}

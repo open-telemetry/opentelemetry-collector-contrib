@@ -117,6 +117,10 @@ func TestUnmarshallCloudwatchLog_SubscriptionFilter(t *testing.T) {
 			reader:               readAndCompressLogFile(t, filesDirectory, "valid_cloudwatch_log.json"),
 			logsExpectedFilename: "valid_cloudwatch_log_expected.yaml",
 		},
+		"valid_cloudwatch_log_control": {
+			reader:               readAndCompressLogFile(t, filesDirectory, "valid_cloudwatch_log_control.json"),
+			logsExpectedFilename: "valid_cloudwatch_log_control_expected.yaml",
+		},
 		"invalid_cloudwatch_log": {
 			reader:      readAndCompressLogFile(t, filesDirectory, "invalid_cloudwatch_log.json"),
 			expectedErr: "invalid cloudwatch log",

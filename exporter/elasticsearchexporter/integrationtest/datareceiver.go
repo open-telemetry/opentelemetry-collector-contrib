@@ -368,7 +368,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		}
 	})
 
-	es.server, err = es.config.ToServer(ctx, host, es.params.TelemetrySettings, r)
+	es.server, err = es.config.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, r)
 	if err != nil {
 		return fmt.Errorf("failed to create mock ES server: %w", err)
 	}

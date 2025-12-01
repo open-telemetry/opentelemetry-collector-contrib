@@ -218,7 +218,7 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 
 		// Process each endpoint in the unified list
 		for _, endpoint := range allEndpoints {
-			client, clientErr := target.ToClient(ctx, host, h.settings)
+			client, clientErr := target.ToClient(ctx, host.GetExtensions(), h.settings)
 			if clientErr != nil {
 				h.settings.Logger.Error("failed to initialize HTTP client", zap.String("endpoint", endpoint), zap.Error(clientErr))
 				err = multierr.Append(err, clientErr)

@@ -26,7 +26,6 @@ components:
         - azuredataexplorer
         - azuremonitor
         - bmchelix
-        - carbon
         - cassandra
         - clickhouse
         - coralogix
@@ -222,6 +221,7 @@ components:
         - statsd
         - stef
         - syslog
+        - systemd
         - tcpcheck
         - tcplog
         - tlscheck
