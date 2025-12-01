@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"maps"
 	"time"
 
 	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
@@ -115,9 +116,7 @@ func (ex *pubsubExporter) initTraces(host component.Host) error {
 		ex.tracesAttributes["content-type"] = "application/protobuf"
 	}
 	if len(signalConfig.Attributes) > 0 {
-		for k, v := range signalConfig.Attributes {
-			ex.tracesAttributes[k] = v
-		}
+		maps.Copy(ex.tracesAttributes, signalConfig.Attributes)
 	}
 	return nil
 }
@@ -136,9 +135,7 @@ func (ex *pubsubExporter) initMetrics(host component.Host) error {
 		ex.metricsAttributes["content-type"] = "application/protobuf"
 	}
 	if len(signalConfig.Attributes) > 0 {
-		for k, v := range signalConfig.Attributes {
-			ex.metricsAttributes[k] = v
-		}
+		maps.Copy(ex.metricsAttributes, signalConfig.Attributes)
 	}
 	return nil
 }
@@ -157,9 +154,7 @@ func (ex *pubsubExporter) initLogs(host component.Host) error {
 		ex.logsAttributes["content-type"] = "application/protobuf"
 	}
 	if len(signalConfig.Attributes) > 0 {
-		for k, v := range signalConfig.Attributes {
-			ex.logsAttributes[k] = v
-		}
+		maps.Copy(ex.logsAttributes, signalConfig.Attributes)
 	}
 	return nil
 }
@@ -214,9 +209,7 @@ func (ex *pubsubExporter) getMessageAttributes(signal signal, watermark time.Tim
 	case signalLog:
 		source = ex.logsAttributes
 	}
-	for k, v := range source {
-		attributes[k] = v
-	}
+	maps.Copy(attributes, source)
 	if attributes["ce-type"] != "" {
 		id, err := ex.makeUUID()
 		if err != nil {
