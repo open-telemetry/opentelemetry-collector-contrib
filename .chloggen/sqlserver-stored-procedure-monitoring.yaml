@@ -10,7 +10,7 @@ component: receiver/sqlserver
 note: adding sqlserver.procedure_id and sqlserver.procedure_name attributes to TopQuery and Sample Events
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [1]
+issues: [44656]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
