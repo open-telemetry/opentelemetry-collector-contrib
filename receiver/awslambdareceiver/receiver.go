@@ -54,10 +54,6 @@ type awsLambdaReceiver struct {
 }
 
 func newLogsReceiver(cfg *Config, set receiver.Settings, next consumer.Logs) (receiver.Logs, error) {
-	if cfg.EncodingExtension == "" {
-		return nil, errors.New("encoding_extension is required for logs")
-	}
-
 	return &awsLambdaReceiver{
 		cfg:       cfg,
 		logger:    set.Logger,
@@ -74,9 +70,6 @@ func newLogsReceiver(cfg *Config, set receiver.Settings, next consumer.Logs) (re
 }
 
 func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metrics) (receiver.Metrics, error) {
-	if cfg.EncodingExtension == "" {
-		return nil, errors.New("encoding_extension is required for metrics")
-	}
 	return &awsLambdaReceiver{
 		cfg:       cfg,
 		logger:    set.Logger,
@@ -160,10 +153,16 @@ func newLogsHandler(
 	next consumer.Logs,
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
-	encodingExtension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.EncodingExtension, "logs")
-	if err != nil {
-		return nil, err
+	var unmarshalFunc unmarshalFunc[plog.Logs]
+	if cfg.EncodingExtension != "" {
+		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.EncodingExtension, "logs")
+		if err != nil {
+			return nil, err
+		}
+
+		unmarshalFunc = extension.UnmarshalLogs
 	}
+
 	s3Service, err := s3Provider.GetService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
@@ -178,11 +177,11 @@ func newLogsHandler(
 			return next.ConsumeLogs(ctx, logs)
 		}
 
-		return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalLogs, logsConsumer)
+		return newS3Handler(s3Service, set.Logger, unmarshalFunc, logsConsumer, plog.Logs{})
 	}
 
 	registry[cwEvent] = func() lambdaEventHandler {
-		return newCWLogsSubscriptionHandler(set.Logger, encodingExtension.UnmarshalLogs, next.ConsumeLogs)
+		return newCWLogsSubscriptionHandler(set.Logger, unmarshalFunc, next.ConsumeLogs)
 	}
 
 	return newHandlerProvider(registry), nil
@@ -196,10 +195,16 @@ func newMetricsHandler(
 	next consumer.Metrics,
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
-	encodingExtension, err := loadEncodingExtension[pmetric.Unmarshaler](host, cfg.EncodingExtension, "metrics")
-	if err != nil {
-		return nil, err
+	var unmarshalFunc unmarshalFunc[pmetric.Metrics]
+	if cfg.EncodingExtension != "" {
+		encodingExtension, err := loadEncodingExtension[pmetric.Unmarshaler](host, cfg.EncodingExtension, "metrics")
+		if err != nil {
+			return nil, err
+		}
+
+		unmarshalFunc = encodingExtension.UnmarshalMetrics
 	}
+
 	s3Service, err := s3Provider.GetService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
@@ -212,7 +217,7 @@ func newMetricsHandler(
 			return next.ConsumeMetrics(ctx, metrics)
 		}
 
-		return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricConsumer)
+		return newS3Handler(s3Service, set.Logger, unmarshalFunc, metricConsumer, pmetric.Metrics{})
 	}
 
 	return newHandlerProvider(registry), nil

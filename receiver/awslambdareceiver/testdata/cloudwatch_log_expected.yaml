@@ -25,8 +25,4 @@ resourceLogs:
               stringValue: '{"eventName":"PutObject","userIdentity":{"type":"AssumedRole"},"awsRegion":"us-east-1","requestParameters":{"bucket":"app-logs"}}'
             timeUnixNano: "1732638478000000000"
         scope:
-          attributes:
-            - key: encoding.format
-              value:
-                stringValue: aws.cloudwatch
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver
