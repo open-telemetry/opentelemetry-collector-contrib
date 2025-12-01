@@ -13,6 +13,68 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+func TestDetectWrapperFormat(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   []byte
+		want    RecordsBatchFormat
+		wantErr bool
+	}{
+		{
+			name:    "empty input",
+			input:   []byte{},
+			want:    FormatUnknown,
+			wantErr: false,
+		},
+		{
+			name:    "JSON array format",
+			input:   []byte(`[{"foo":"bar"},{"baz":"qux"}]`),
+			want:    FormatJSONArray,
+			wantErr: false,
+		},
+		{
+			name:    "JSON object with records field",
+			input:   []byte(`{"records":[{"foo":"bar"}]}`),
+			want:    FormatObjectRecords,
+			wantErr: false,
+		},
+		{
+			name:    "newline delimiter JSON format",
+			input:   []byte("{\"foo\":\"bar\"}\n{\"baz\":\"qux\"}"),
+			want:    FormatNDJSON,
+			wantErr: false,
+		},
+		{
+			name:    "extra whitespaces",
+			input:   []byte("{\n  \"records\" :\r\n [ ] }"),
+			want:    FormatObjectRecords,
+			wantErr: false,
+		},
+		{
+			name:    "Unsupported JSON format",
+			input:   []byte(`{"data":[{"foo":"bar"}]}`),
+			want:    FormatUnknown,
+			wantErr: true,
+		},
+		{
+			name:    "not a JSON",
+			input:   []byte(`foo`),
+			want:    FormatUnknown,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DetectWrapperFormat(tt.input)
+			if tt.wantErr {
+				require.Error(t, err)
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestAsTimestamp(t *testing.T) {
 	type args struct {
 		s       string
@@ -281,14 +343,9 @@ func TestAttrPutIntNumberPtrIf(t *testing.T) {
 func TestAttrPutMapIf(t *testing.T) {
 	t.Parallel()
 
-	type testStruct struct {
-		name  string
-		value string
-	}
-
 	type args struct {
 		attrKey   string
-		attrValue any
+		attrValue map[string]any
 	}
 	tests := []struct {
 		name    string
@@ -296,42 +353,20 @@ func TestAttrPutMapIf(t *testing.T) {
 		wantRaw map[string]any
 	}{
 		{
-			name: "string value",
+			name: "no key",
 			args: args{
-				attrKey:   "foo",
-				attrValue: "bar",
-			},
-			wantRaw: map[string]any{
-				"foo": "bar",
-			},
-		},
-		{
-			name: "int value",
-			args: args{
-				attrKey:   "num",
-				attrValue: 42,
-			},
-			wantRaw: map[string]any{
-				"num": 42,
-			},
-		},
-		{
-			name: "nil value",
-			args: args{
-				attrKey:   "nil",
-				attrValue: nil,
+				attrKey:   "",
+				attrValue: map[string]any{"foo": "bar"},
 			},
 			wantRaw: map[string]any{},
 		},
 		{
-			name: "slice value",
+			name: "no map",
 			args: args{
-				attrKey:   "slice",
-				attrValue: []any{1, "a"},
+				attrKey:   "foo",
+				attrValue: nil,
 			},
-			wantRaw: map[string]any{
-				"slice": []any{1, "a"},
-			},
+			wantRaw: map[string]any{},
 		},
 		{
 			name: "map value",
@@ -344,13 +379,17 @@ func TestAttrPutMapIf(t *testing.T) {
 			},
 		},
 		{
-			name: "struct value",
+			name: "unsupported map value",
 			args: args{
-				attrKey:   "map",
-				attrValue: testStruct{name: "test", value: "value"},
+				attrKey: "map",
+				attrValue: map[string]any{
+					"struct": struct{ name string }{
+						name: "test",
+					},
+				},
 			},
 			wantRaw: map[string]any{
-				"map.original": "{test value}",
+				"map.original": "map[struct:{test}]",
 			},
 		},
 	}

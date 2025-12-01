@@ -11,8 +11,7 @@ but doesn't have mapping for specific Category in this extension following rules
 
 * Common known fields are parsed according to [common map below](#common-fields-available-in-all-categories)
 * If `properties` field is parsable JSON - all parsed attributes are put as is into Log Attributes (except for `message` - goes to Body, `correlationId` and `duration` - goes to Log Attributes according to map below)
-* If `properties` field is primitive value (string, number, bool, etc.) - it will be stored into `azure.properties` Log Attribute
-* If non of above is possible - `properties` will be stored as-is to Log Body
+* If `properties` field couldn't be parsed as JSON - it will be stored into `azure.properties` Log Attribute as string and parsing error will be logged
 
 ### Unparsable Azure Resource Log record
 
@@ -24,21 +23,21 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 
 ## Common fields, available in all Categories
 
-| Azure                 | Open Telemetry |
-|-----------------------|----------------|
-| `time`, `timestamp`   | `log.timestamp` |
-| `resourceId`          | `cloud.resource_id` (resource attribute) |
-| `tenantId`            | `azure.tenant.id` (resource attribute) |
-| `location`            | `cloud.region` (resource attribute) |
-| `operationName`       | `azure.operation.name` (log attribute) |
-| `operationVersion`    | `azure.operation.version` (log attribute) |
-| `category`, `type`    | `azure.category` (log attribute) |
-| `resultType`          | `azure.result.type` (log attribute) |
-| `resultSignature`     | `azure.result.signature` (log attribute) |
-| `resultDescription`   | `azure.result.description` (log attribute) |
-| `durationMs`          | `azure.duration` (log attribute) |
-| `callerIpAddress`     | `network.peer.address` (log attribute) |
-| `correlationId`       | `azure.correlation_id` (log attribute) |
-| `identity`            | `azure.identity` (log attribute) |
-| `Level`               | `log.SeverityNumber` |
-| `properties`          | see mapping for each Category below |
+| Azure                 | OpenTelemetry             | OpenTelemetry Scope |
+|-----------------------|---------------------------|---------------------|
+| `time`, `timestamp`   | `log.timestamp`           | Log |
+| `resourceId`          | `cloud.resource_id`       | Resource Attribute |
+| `tenantId`            | `azure.tenant.id`         | Resource Attribute |
+| `location`            | `cloud.region`            | Resource Attribute |
+| `operationName`       | `azure.operation.name`    | Log Attribute |
+| `operationVersion`    | `azure.operation.version` | Log Attribute |
+| `category`, `type`    | `azure.category`          | Log Attribute |
+| `resultType`          | `azure.result.type`       | Log Attribute |
+| `resultSignature`     | `azure.result.signature`  | Log Attribute |
+| `resultDescription`   | `azure.result.description` | Log Attribute |
+| `durationMs`          | `azure.duration`          | Log Attribute |
+| `callerIpAddress`     | `network.peer.address`    | Log Attribute |
+| `correlationId`       | `azure.correlation_id`    | Log Attribute |
+| `identity`            | `azure.identity`          | Log Attribute |
+| `Level`               | `log.SeverityNumber`      | Log |
+| `properties`          | see mapping for each Category below | mixed |

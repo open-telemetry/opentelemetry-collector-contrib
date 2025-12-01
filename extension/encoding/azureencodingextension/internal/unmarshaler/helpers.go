@@ -4,7 +4,9 @@
 package unmarshaler // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,12 +14,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type RecordsBatchFormat string
+type RecordsBatchFormat int
 
 // Supported wrapper formats of Azure Logs Records batch
 const (
-	FormatEventHub    RecordsBatchFormat = "eventhub"
-	FormatBlobStorage RecordsBatchFormat = "blobstorage"
+	FormatUnknown RecordsBatchFormat = iota
+	FormatObjectRecords
+	FormatJSONArray
+	FormatNDJSON
 )
 
 // JSON Path expressions that matches specific wrapper format
@@ -35,6 +39,43 @@ const (
 )
 
 const originalSuffix = ".original"
+
+// DetectWrapperFormat tries to detect format based on provided bytes input
+// At the moment we support only JSON Array, "records" and ND JSON formats,
+// anything else is detected as unsupported format
+func DetectWrapperFormat(input []byte) (RecordsBatchFormat, error) {
+	iLen := len(input)
+	// Not an error, just empty input
+	if iLen == 0 {
+		return FormatUnknown, nil
+	}
+
+	if input[0] == '[' {
+		// That's seems to be JSON Array format, e.g. `[ {...}, {...} ]`
+		return FormatJSONArray, nil
+	}
+
+	if input[0] != '{' {
+		return FormatUnknown, errors.New("not a valid JSON or valid ND JSON")
+	}
+
+	maxBytes := min(iLen, 100)
+	// We'll scan only first 100 bytes to avoid performance bottleneck here
+	if bytes.Contains(input[:maxBytes], []byte("\"records\"")) {
+		// That's seems to be JSON object format with "records" field, e.g. `{"records": [ {...}, {...} ]}`
+		return FormatObjectRecords, nil
+	}
+
+	// Detect ND JSON
+	idx := bytes.IndexByte(input, '\n')
+	if idx > 1 && input[idx-1] == '}' {
+		return FormatNDJSON, nil
+	}
+
+	// Everything else - is unsupported
+	// Will include first bytes of input in error to simplify further debug
+	return FormatUnknown, fmt.Errorf("unable to detect JSON format from input: %s", input[:maxBytes])
+}
 
 // AsTimestamp tries to parse a string with timestamp into OpenTelemetry
 // using provided list of formats layouts.
@@ -95,7 +136,7 @@ func AttrPutIntNumberPtrIf(attrs pcommon.Map, attrKey string, attrValue *json.Nu
 // attrPutMap is a helper function to set a map attribute with defined key,
 // trying to parse it from raw value
 // If parsing failed - no attribute will be set
-func AttrPutMapIf(attrs pcommon.Map, attrKey string, attrValue any) {
+func AttrPutMapIf(attrs pcommon.Map, attrKey string, attrValue map[string]any) {
 	if attrKey == "" || attrValue == nil {
 		return
 	}

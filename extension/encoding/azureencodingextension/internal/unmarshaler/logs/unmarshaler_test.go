@@ -15,7 +15,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -54,7 +53,6 @@ func TestResourceLogsUnmarshaler_UnmarshalLogs_Golden(t *testing.T) {
 					unmarshaler := NewAzureResourceLogsUnmarshaler(
 						testBuildInfo,
 						zap.New(observedZapCore),
-						unmarshaler.FormatEventHub,
 						LogsConfig{
 							TimeFormats: []string{
 								"01/02/2006 15:04:05",
@@ -105,17 +103,65 @@ func TestResourceLogsUnmarshaler_UnmarshalLogs(t *testing.T) {
 			expectedLogRecords: 0,
 		},
 		{
-			name:               "Incorrect Root Element",
+			name:               "Unsupported JSON Format",
 			cfg:                LogsConfig{},
 			data:               []byte(`{"other-root": []}`),
 			expectedLogRecords: 0,
+			expectedError:      "unable to detect JSON format from input",
 		},
 		{
 			name:               "Invalid JSON",
 			cfg:                LogsConfig{},
 			data:               []byte(`{invalid-json}`),
 			expectedLogRecords: 0,
-			expectedError:      "failed to extract Azure Log Records",
+			expectedError:      "unable to detect JSON format from input",
+		},
+		{
+			name: "Records Format",
+			cfg:  LogsConfig{},
+			data: []byte(`{
+				"records": [
+					{
+						"time": "2022-11-11T04:48:27.6767145Z",
+						"resourceId": "/RESOURCE_ID",
+						"operationName": "SecretGet",
+						"category": "AuditEvent"
+					},
+					{
+						"time": "2022-11-12T04:48:27.6767145Z",
+						"resourceId": "/RESOURCE_ID2",
+						"operationName": "SecretGet",
+						"category": "AuditEvent"
+					}
+				]
+			}`),
+			expectedLogRecords: 2,
+		},
+		{
+			name: "JSON Array Format",
+			cfg:  LogsConfig{},
+			data: []byte(`[
+					{
+						"time": "2022-11-11T04:48:27.6767145Z",
+						"resourceId": "/RESOURCE_ID",
+						"operationName": "SecretGet",
+						"category": "AuditEvent"
+					},
+					{
+						"time": "2022-11-12T04:48:27.6767145Z",
+						"resourceId": "/RESOURCE_ID2",
+						"operationName": "SecretGet",
+						"category": "AuditEvent"
+					}
+				]`),
+			expectedLogRecords: 2,
+		},
+		{
+			name: "ND JSON Format",
+			cfg:  LogsConfig{},
+			data: []byte(`{"time":"2022-11-11T04:48:27.6767145Z","resourceId":"/RESOURCE_ID","operationName":"SecretGet","category":"AuditEvent"}
+{"time":"2022-11-12T04:48:27.6767145Z","resourceId":"/RESOURCE_ID2","operationName":"SecretGet","category":"AuditEvent"}`),
+			expectedLogRecords: 2,
 		},
 		{
 			name: "Empty Category",
@@ -269,7 +315,6 @@ func TestResourceLogsUnmarshaler_UnmarshalLogs(t *testing.T) {
 			unmarshaler := NewAzureResourceLogsUnmarshaler(
 				testBuildInfo,
 				zap.New(observedZapCore),
-				unmarshaler.FormatEventHub,
 				tt.cfg,
 			)
 			logs, err := unmarshaler.UnmarshalLogs(tt.data)
