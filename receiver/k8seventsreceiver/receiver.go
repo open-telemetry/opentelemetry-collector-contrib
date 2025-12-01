@@ -82,6 +82,8 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 
 		kr.settings.Logger.Info("registering the receiver in leader election")
 
+		// Register callbacks with the leader elector extension. These callbacks remain active
+		// for the lifetime of the receiver, allowing it to restart when leadership is regained.
 		elector.SetCallBackFuncs(
 			func(ctx context.Context) {
 				cctx, cancel := context.WithCancel(ctx)
@@ -97,6 +99,8 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 				}
 			},
 			func() {
+				// Shutdown on leader loss. The receiver will restart if leadership is regained
+				// since the callbacks remain registered with the leader elector extension.
 				kr.settings.Logger.Info("no longer leader, stopping")
 				err := kr.Shutdown(context.Background())
 				if err != nil {
