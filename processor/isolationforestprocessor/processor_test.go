@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -1052,7 +1053,7 @@ func Test_Start_Shutdown_Lifecycle(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test Start
-	err = p.Start(t.Context(), nil)
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	// Give some time for background goroutine to start
@@ -1071,7 +1072,7 @@ func Test_modelUpdateLoop_Coverage(t *testing.T) {
 	p, err := newIsolationForestProcessor(cfg, logger)
 	require.NoError(t, err)
 
-	err = p.Start(t.Context(), nil)
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// Wait for at least one update cycle
