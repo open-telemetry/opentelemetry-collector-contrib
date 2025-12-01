@@ -7,15 +7,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.0
-	go.opentelemetry.io/collector/component/componentstatus v0.140.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/config/configgrpc v0.140.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/config/confighttp v0.140.1-0.20251128160438-7012862e3615
+	go.opentelemetry.io/collector/component/componentstatus v0.141.0
+	go.opentelemetry.io/collector/component/componenttest v0.141.0
+	go.opentelemetry.io/collector/config/configgrpc v0.141.0
+	go.opentelemetry.io/collector/config/confighttp v0.141.0
 	go.opentelemetry.io/collector/config/confignet v1.47.0
 	go.opentelemetry.io/collector/confmap v1.47.0
 	go.opentelemetry.io/collector/extension v1.47.0
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.140.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/extension/extensiontest v0.140.1-0.20251128160438-7012862e3615
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.141.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.141.0
 	go.opentelemetry.io/collector/pipeline v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -57,9 +57,9 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.47.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.47.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.47.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251128160438-7012862e3615 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.141.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.47.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.140.1-0.20251128160438-7012862e3615 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.141.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.47.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
