@@ -38,9 +38,10 @@ const franzGoClientFeatureGateName = "exporter.kafkaexporter.UseFranzGo"
 // will use the franz-go client, which is more performant and has better support for
 // modern Kafka features.
 var franzGoClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	franzGoClientFeatureGateName, featuregate.StageBeta,
+	franzGoClientFeatureGateName, featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the Kafka exporter will use the franz-go client to produce messages to Kafka."),
 	featuregate.WithRegisterFromVersion("v0.128.0"),
+	featuregate.WithRegisterToVersion("v0.143.0"),
 )
 
 // producer is an interface that abstracts the Kafka producer operations
