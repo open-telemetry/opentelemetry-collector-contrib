@@ -45,10 +45,9 @@ func runIDSuccessTests(t *testing.T, builder idExprBuilder, cases []idSuccessTes
 	t.Helper()
 
 	for _, tt := range cases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			expr := builder(makeIDGetter(tt.value))
-			result, err := expr(context.Background(), nil)
+			result, err := expr(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -59,10 +58,9 @@ func runIDErrorTests(t *testing.T, builder idExprBuilder, cases []idErrorTestCas
 	t.Helper()
 
 	for _, tt := range cases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			expr := builder(makeIDGetter(tt.value))
-			result, err := expr(context.Background(), nil)
+			result, err := expr(t.Context(), nil)
 			assert.Error(t, err)
 			assert.Nil(t, result)
 			assert.ErrorIs(t, err, tt.err)
