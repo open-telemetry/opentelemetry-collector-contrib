@@ -8,14 +8,13 @@ import (
 	"testing"
 	"time"
 
-	promHTTP "github.com/prometheus/prometheus/discovery/http"
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtls"
-
 	promConfig "github.com/prometheus/common/config"
+	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
