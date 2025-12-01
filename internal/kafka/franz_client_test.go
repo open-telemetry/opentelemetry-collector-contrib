@@ -484,7 +484,7 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	minAge := 10 * time.Millisecond
 	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
 	client, err := NewFranzConsumerGroup(t.Context(), clientConfig, consumerConfig,
-		topics, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
+		topics, nil, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
 	)
 	require.NoError(t, err)
 	t.Cleanup(client.Close)

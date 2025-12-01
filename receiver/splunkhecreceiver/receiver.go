@@ -166,7 +166,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
 
-	r.server, err = r.config.ToServer(ctx, host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}
