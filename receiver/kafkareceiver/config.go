@@ -67,7 +67,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		c.MessageMarking.OnPermanentError = c.MessageMarking.OnError
 	}
 
-	return conf.Unmarshal(c)
+	return nil
 }
 
 // Validate checks the receiver configuration is valid.
