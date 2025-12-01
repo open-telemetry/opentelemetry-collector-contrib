@@ -10,12 +10,11 @@ import (
 )
 
 type Config struct {
-	// EncodingExtension defines the encoding extension the receiver must use to decode receiving data
+	// EncodingExtension defines the encoding extension to decode incoming Lambda invocation data.
+	// This extension further process content of the events that are extracted from Lambda invocations.
 	//
-	// If receiving data is in different formats(ex:- VPC flow logs, CloudTrail logs), receiver must be deployed in
+	// If receiving data is in different formats(ex:- VPC flow logs, CloudTrail logs), receiver is recommended to have
 	// separate Lambda functions with specific extension configurations.
-	//
-	// This property is mandatory and must refer to a valid encoding extension configured in the collector configurations.
 	EncodingExtension string `mapstructure:"encoding_extension"`
 
 	_ struct{} // Prevent unkeyed literal initialization

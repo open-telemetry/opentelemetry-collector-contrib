@@ -158,17 +158,6 @@ func TestCreateMetrics(t *testing.T) {
 	require.NotZero(t, sink.DataPointCount(), "Expected metrics to be sent to sink")
 }
 
-func TestCreateMetricsRequiresEncodingExtension(t *testing.T) {
-	factory := NewFactory()
-	_, err := factory.CreateMetrics(
-		t.Context(),
-		receivertest.NewNopSettings(metadata.Type),
-		factory.CreateDefaultConfig(),
-		consumertest.NewNop(),
-	)
-	require.EqualError(t, err, "encoding_extension is required for metrics")
-}
-
 func TestStartRequiresLambdaEnvironment(t *testing.T) {
 	// Ensure Lambda environment variables are not set
 	t.Setenv("AWS_EXECUTION_ENV", "")

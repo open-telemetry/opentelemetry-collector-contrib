@@ -4,6 +4,8 @@
 package awslambdareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -17,15 +19,22 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal/metadata"
 )
 
+type emits interface {
+	plog.Logs | pmetric.Metrics
+}
+
 type (
-	unmarshalFunc[T any]       func([]byte) (T, error)
-	s3EventConsumerFunc[T any] func(context.Context, time.Time, T) error
-	handlerRegistry            map[eventType]func() lambdaEventHandler
+	unmarshalFunc[T emits]       func([]byte) (T, error)
+	s3EventConsumerFunc[T emits] func(context.Context, time.Time, T) error
+	handlerRegistry              map[eventType]func() lambdaEventHandler
 )
 
 type handlerProvider interface {
@@ -75,24 +84,27 @@ type lambdaEventHandler interface {
 }
 
 // s3Handler is specialized in S3 object event handling
-type s3Handler[T any] struct {
+type s3Handler[T emits] struct {
 	s3Service     internal.S3Service
 	logger        *zap.Logger
 	s3Unmarshaler unmarshalFunc[T]
 	consumer      s3EventConsumerFunc[T]
+	emitType      T
 }
 
-func newS3Handler[T any](
+func newS3Handler[T emits](
 	service internal.S3Service,
 	baseLogger *zap.Logger,
 	unmarshal unmarshalFunc[T],
 	consumer s3EventConsumerFunc[T],
+	emitType T,
 ) *s3Handler[T] {
 	return &s3Handler[T]{
 		s3Service:     service,
 		logger:        baseLogger.Named("s3"),
 		s3Unmarshaler: unmarshal,
 		consumer:      consumer,
+		emitType:      emitType,
 	}
 }
 
@@ -122,9 +134,19 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 		return err
 	}
 
-	data, err := s.s3Unmarshaler(body)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal logs: %w", err)
+	var data T
+	if s.s3Unmarshaler == nil {
+		switch any(s.emitType).(type) {
+		case plog.Logs:
+			data = bytesToPlogs(body, parsedEvent).(T)
+		case pmetric.Metrics:
+			data = bytesToPMetrics(body, parsedEvent).(T)
+		}
+	} else {
+		data, err = s.s3Unmarshaler(body)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal logs: %w", err)
+		}
 	}
 
 	if err := s.consumer(ctx, parsedEvent.EventTime, data); err != nil {
@@ -194,9 +216,27 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 		return fmt.Errorf("failed to decode data from cloudwatch logs event: %w", err)
 	}
 
-	data, err := c.unmarshal(decoded)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal logs: %w", err)
+	var data plog.Logs
+	if c.unmarshal == nil {
+		var reader *gzip.Reader
+		reader, err = gzip.NewReader(bytes.NewReader(decoded))
+		if err != nil {
+			return fmt.Errorf("failed to decompress data from cloudwatch subscription event: %w", err)
+		}
+
+		var cwLog events.CloudwatchLogsData
+		decoder := gojson.NewDecoder(reader)
+		err = decoder.Decode(&cwLog)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal data from cloudwatch logs event: %w", err)
+		}
+
+		data = cwLogsToPlogs(cwLog)
+	} else {
+		data, err = c.unmarshal(decoded)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal logs: %w", err)
+		}
 	}
 
 	if err := c.consumer(ctx, data); err != nil {
@@ -205,6 +245,73 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 	}
 
 	return nil
+}
+
+func cwLogsToPlogs(cwLog events.CloudwatchLogsData) plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	resourceAttrs := rl.Resource().Attributes()
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
+	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
+	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName(metadata.ScopeName)
+
+	for _, event := range cwLog.LogEvents {
+		logRecord := sl.LogRecords().AppendEmpty()
+		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
+		// but timestamp in cloudwatch logs are in milliseconds.
+		logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
+		logRecord.Body().SetStr(event.Message)
+	}
+
+	return logs
+}
+
+func bytesToPlogs(data []byte, event events.S3EventRecord) any {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+
+	resourceAttrs := rl.Resource().Attributes()
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceAttrs.PutStr(string(conventions.CloudRegionKey), event.AWSRegion)
+	resourceAttrs.PutStr(string(conventions.AWSS3BucketKey), event.S3.Bucket.Arn)
+	resourceAttrs.PutStr(string(conventions.AWSS3KeyKey), event.S3.Object.Key)
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName(metadata.ScopeName)
+
+	rec := sl.LogRecords().AppendEmpty()
+	rec.SetTimestamp(pcommon.NewTimestampFromTime(event.EventTime))
+	rec.Attributes().PutInt("content.length", int64(len(data)))
+	rec.Attributes().PutStr("encoding", "base64")
+	rec.Body().SetStr(base64.StdEncoding.EncodeToString(data))
+	return logs
+}
+
+func bytesToPMetrics(data []byte, event events.S3EventRecord) any {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+
+	resourceAttrs := rm.Resource().Attributes()
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceAttrs.PutStr(string(conventions.CloudRegionKey), event.AWSRegion)
+	resourceAttrs.PutStr(string(conventions.AWSS3BucketKey), event.S3.Bucket.Arn)
+	resourceAttrs.PutStr(string(conventions.AWSS3KeyKey), event.S3.Object.Key)
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("s3.object.data")
+	metric.SetEmptyGauge()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(event.EventTime))
+	dp.Attributes().PutInt("content.length", int64(len(data)))
+	dp.Attributes().PutEmptyBytes("raw_payload").FromRaw(data)
+	return metrics
 }
 
 // setObservedTimestampForAllLogs adds observedTimestamp to all logs
