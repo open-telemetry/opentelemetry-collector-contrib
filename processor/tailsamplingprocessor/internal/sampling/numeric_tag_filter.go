@@ -44,8 +44,6 @@ func NewNumericAttributeFilter(settings component.TelemetrySettings, key string,
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
-	trace.Lock()
-	defer trace.Unlock()
 	batches := trace.ReceivedBatches
 
 	// Get the effective min/max values

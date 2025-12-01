@@ -28,7 +28,7 @@ resourceLogs:
               - key: log.record.uid
                 value:
                   stringValue: abriadf35gp7q
-              - key: network.protocol.name
+              - key: network.transport
                 value:
                   stringValue: tcp
               - key: source.address

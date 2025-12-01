@@ -756,6 +756,9 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	// waitForTick here to ensure the consumption is done and the metric is recorded
+	controller.waitForTick()
+
 	// verify
 	var md metricdata.ResourceMetrics
 	require.NoError(t, s.reader.Collect(t.Context(), &md))
