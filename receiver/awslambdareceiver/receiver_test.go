@@ -273,7 +273,7 @@ func TestLoadLogsHandler(t *testing.T) {
 				}
 			},
 			isErr:               false,
-			expectedHandlerType: reflect.TypeOf(&s3Handler[plog.Logs]{}),
+			expectedHandlerType: reflect.TypeFor[*s3Handler[plog.Logs]](),
 		},
 		{
 			name:       "Error if handler loading fails",
