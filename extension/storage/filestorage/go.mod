@@ -7,12 +7,12 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.etcd.io/bbolt v1.4.3
 	go.opentelemetry.io/collector/component v1.46.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251127085441-73f090cd0d59
+	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251128160438-7012862e3615
 	go.opentelemetry.io/collector/confmap v1.46.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251127085441-73f090cd0d59
+	go.opentelemetry.io/collector/confmap/xconfmap v0.140.1-0.20251128160438-7012862e3615
 	go.opentelemetry.io/collector/extension v1.46.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/extension/extensiontest v0.140.1-0.20251127085441-73f090cd0d59
-	go.opentelemetry.io/collector/extension/xextension v0.140.1-0.20251127085441-73f090cd0d59
+	go.opentelemetry.io/collector/extension/extensiontest v0.140.1-0.20251128160438-7012862e3615
+	go.opentelemetry.io/collector/extension/xextension v0.140.1-0.20251128160438-7012862e3615
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )

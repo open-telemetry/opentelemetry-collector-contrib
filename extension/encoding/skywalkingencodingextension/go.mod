@@ -6,9 +6,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.140.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.46.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251127085441-73f090cd0d59
+	go.opentelemetry.io/collector/component/componenttest v0.140.1-0.20251128160438-7012862e3615
 	go.opentelemetry.io/collector/extension v1.46.1-0.20251128160438-7012862e3615
-	go.opentelemetry.io/collector/extension/extensiontest v0.140.1-0.20251127085441-73f090cd0d59
+	go.opentelemetry.io/collector/extension/extensiontest v0.140.1-0.20251128160438-7012862e3615
 	go.opentelemetry.io/collector/pdata v1.46.1-0.20251128160438-7012862e3615
 	google.golang.org/protobuf v1.36.10
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
