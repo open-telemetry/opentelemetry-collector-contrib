@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/prometheus/common/model"
@@ -135,9 +136,7 @@ type fakeMetadataStore struct {
 func newFakeMetadataStore(init map[string]scrape.MetricMetadata) *fakeMetadataStore {
 	// copy defensively to avoid external mutation
 	cp := make(map[string]scrape.MetricMetadata, len(init))
-	for k, v := range init {
-		cp[k] = v
-	}
+	maps.Copy(cp, init)
 	return &fakeMetadataStore{data: cp}
 }
 
