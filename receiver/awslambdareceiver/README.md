@@ -54,9 +54,9 @@ The `awslambdareceiver` operates as follows:
 
 The following receiver configuration parameters are supported.
 
-| Name                 | Description                                                                                                        |
-|:---------------------|:-------------------------------------------------------------------------------------------------------------------|
-| `encoding_extension` | Required: The name of the encoding extension to load which will decode the data received through supported sources | 
+| Name                 | Description                                                                                     |
+|:---------------------|:------------------------------------------------------------------------------------------------|
+| `encoding_extension` | Optional encoding extension to use to further decode processing triggers from supported sources | 
 
 ### Example Configuration
 
@@ -117,34 +117,47 @@ service:
       exporters: [otlphttp]
 ```
 
-### Example 3: CloudWatch Logs mode
+### Example 3: CloudWatch Logs using CloudWatch Subscription Filters
 
 ```yaml
 receivers:
   awslambda:
-    encoding_extension: awslogs_encoding
-
-extensions:
-  awslogs_encoding:
-    format: cloudwatch
 
 exporters:
   otlphttp:
     endpoint: "https://my-backend:443"
 
 service:
-  extensions:
-    - awslogs_encoding
   pipelines:
     logs:
       receivers: [awslambda]
       exporters: [otlphttp]
 ```
 
-In this example, `awslambdareceiver` is expected to be triggered by a CloudWatch Logs subscription filter.
-The receiver retrieves the logs from the event payload and decodes them using the `awslogs_encoding` extension with the cloudwatch format.
+For this deployment configuration, if the `awslambdareceiver` is triggered by a CloudWatch Logs subscription filter, the logs
+are extracted from trigger event, converted to an OpenTelemetry log record, and forwarded to an OTLP listener via the `otlphttp` exporter.
 
-## Supported Data Types
+### Example 4: Arbitrary S3 content
+
+```yaml
+receivers:
+  awslambda:
+
+exporters:
+  otlphttp:
+    endpoint: "https://my-backend:443"
+
+service:
+  pipelines:
+    logs:
+      receivers: [awslambda]
+      exporters: [otlphttp]
+```
+
+For this deployment configuration, if the `awslambdareceiver` is triggered by an S3 event, 
+raw content of the S3 object will be added  to an OpenTelemetry log record, and forwarded to an OTLP listener via the `otlphttp` exporter.
+
+## Supported Trigger Types
 
 - **Logs**: Supported through S3 and CloudWatch Logs event sources
 - **Metrics**: Supported through S3
