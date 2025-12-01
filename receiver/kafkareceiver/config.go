@@ -217,7 +217,7 @@ func validateExcludeTopic(signalType string, topics, excludeTopics []string) err
 
 // TopicEncodingConfig holds signal-specific topic and encoding configuration.
 type TopicEncodingConfig struct {
-	// Deprecated [v0.142.0]: Use Topics
+	// Deprecated [v0.141.0]: Use Topics
 	Topic string `mapstructure:"topic"`
 
 	// Topics holds the name of the Kafka topics from which messages of the
@@ -235,7 +235,7 @@ type TopicEncodingConfig struct {
 	// Defaults to "otlp_proto".
 	Encoding string `mapstructure:"encoding"`
 
-	// Deprecated [v0.142.0]: Use ExcludeTopics
+	// Deprecated [v0.141.0]: Use ExcludeTopics
 	ExcludeTopic string `mapstructure:"exclude_topic"`
 
 	// Optional exclude topics option, used only in regex mode.
