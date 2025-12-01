@@ -49,7 +49,7 @@ func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host,
 		Headers:         c.Headers,
 		Compression:     c.Compression,
 	}
-	return httpClientConfig.ToClient(ctx, host, settings)
+	return httpClientConfig.ToClient(ctx, host.GetExtensions(), settings)
 }
 
 // Config defines configuration for Coralogix exporter.
