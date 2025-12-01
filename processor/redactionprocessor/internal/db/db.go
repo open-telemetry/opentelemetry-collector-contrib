@@ -4,12 +4,19 @@
 package db // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 
 import (
+	"strings"
+
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	semconv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	"go.uber.org/zap"
 )
 
 type Obfuscator struct {
-	obfuscators              []databaseObfuscator
-	processAttributesEnabled bool
+	obfuscators                []databaseObfuscator
+	processAttributesEnabled   bool
+	logger                     *zap.Logger
+	allowFallbackWithoutSystem bool
+	DBSystem                   string
 }
 
 func createAttributes(attributes []string) map[string]bool {
@@ -20,7 +27,10 @@ func createAttributes(attributes []string) map[string]bool {
 	return attributesMap
 }
 
-func NewObfuscator(cfg DBSanitizerConfig) *Obfuscator {
+func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
 	o := obfuscate.NewObfuscator(obfuscate.Config{
 		SQL: obfuscate.SQLConfig{
 			ReplaceDigits:    true,
@@ -49,83 +59,92 @@ func NewObfuscator(cfg DBSanitizerConfig) *Obfuscator {
 	processAttributesEnabled := false
 
 	if cfg.SQLConfig.Enabled {
-		attributes := createAttributes(cfg.SQLConfig.Attributes)
-		processAttributesEnabled = processAttributesEnabled || len(attributes) > 0
+		dbAttrs := newDBAttributes(cfg.SQLConfig.Attributes, []string{
+			semconv128.DBSystemOtherSQL.Value.AsString(),
+			semconv128.DBSystemMySQL.Value.AsString(),
+			semconv128.DBSystemPostgreSQL.Value.AsString(),
+			semconv128.DBSystemMariaDB.Value.AsString(),
+			semconv128.DBSystemSqlite.Value.AsString(),
+		})
+		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &sqlObfuscator{
-			dbAttributes: dbAttributes{
-				attributes: attributes,
-			},
-			obfuscator: o,
+			dbAttributes: dbAttrs,
+			obfuscator:   o,
 		})
 	}
 
 	if cfg.RedisConfig.Enabled {
-		attributes := createAttributes(cfg.RedisConfig.Attributes)
-		processAttributesEnabled = processAttributesEnabled || len(attributes) > 0
+		dbAttrs := newDBAttributes(cfg.RedisConfig.Attributes, []string{
+			semconv128.DBSystemRedis.Value.AsString(),
+		})
+		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &redisObfuscator{
-			dbAttributes: dbAttributes{
-				attributes: attributes,
-			},
-			obfuscator: o,
+			dbAttributes: dbAttrs,
+			obfuscator:   o,
 		})
 	}
 
 	if cfg.ValkeyConfig.Enabled {
-		attributes := createAttributes(cfg.ValkeyConfig.Attributes)
-		processAttributesEnabled = processAttributesEnabled || len(attributes) > 0
-		obfuscators = append(obfuscators, &valkeyObfuscator{
-			dbAttributes: dbAttributes{
-				attributes: attributes,
-			},
-			obfuscator: o,
+		dbAttrs := newDBAttributes(cfg.ValkeyConfig.Attributes, []string{
+			"valkey", // Not part of semantic conventions
+		})
+		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
+		obfuscators = append(obfuscators, &redisObfuscator{
+			dbAttributes: dbAttrs,
+			obfuscator:   o,
 		})
 	}
 
 	if cfg.MemcachedConfig.Enabled {
-		attributes := createAttributes(cfg.MemcachedConfig.Attributes)
-		processAttributesEnabled = processAttributesEnabled || len(attributes) > 0
+		dbAttrs := newDBAttributes(cfg.MemcachedConfig.Attributes, []string{
+			semconv128.DBSystemMemcached.Value.AsString(),
+		})
+		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &memcachedObfuscator{
-			dbAttributes: dbAttributes{
-				attributes: attributes,
-			},
-			obfuscator: o,
+			dbAttributes: dbAttrs,
+			obfuscator:   o,
 		})
 	}
 
 	if cfg.MongoConfig.Enabled {
-		attributes := createAttributes(cfg.MongoConfig.Attributes)
-		processAttributesEnabled = processAttributesEnabled || len(attributes) > 0
+		dbAttrs := newDBAttributes(cfg.MongoConfig.Attributes, []string{
+			semconv128.DBSystemMongoDB.Value.AsString(),
+		})
+		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &mongoObfuscator{
-			dbAttributes: dbAttributes{
-				attributes: attributes,
-			},
-			obfuscator: o,
+			dbAttributes: dbAttrs,
+			obfuscator:   o,
+			logger:       logger,
 		})
 	}
 
 	if cfg.OpenSearchConfig.Enabled {
-		attributes := createAttributes([]string{})
+		dbAttrs := newDBAttributes([]string{}, []string{
+			"opensearch", // Not part of semantic conventions
+		})
 		obfuscators = append(obfuscators, &opensearchObfuscator{
-			dbAttributes: dbAttributes{
-				attributes: attributes,
-			},
-			obfuscator: o,
+			dbAttributes: dbAttrs,
+			obfuscator:   o,
+			logger:       logger,
 		})
 	}
 
 	if cfg.ESConfig.Enabled {
-		attributes := createAttributes([]string{})
+		dbAttrs := newDBAttributes([]string{}, []string{
+			semconv128.DBSystemElasticsearch.Value.AsString(),
+		})
 		obfuscators = append(obfuscators, &esObfuscator{
-			dbAttributes: dbAttributes{
-				attributes: attributes,
-			},
-			obfuscator: o,
+			dbAttributes: dbAttrs,
+			obfuscator:   o,
+			logger:       logger,
 		})
 	}
 
 	return &Obfuscator{
-		obfuscators:              obfuscators,
-		processAttributesEnabled: processAttributesEnabled,
+		obfuscators:                obfuscators,
+		processAttributesEnabled:   processAttributesEnabled,
+		logger:                     logger,
+		allowFallbackWithoutSystem: cfg.AllowFallbackWithoutSystem,
 	}
 }
 
@@ -144,14 +163,40 @@ func (o *Obfuscator) ObfuscateAttribute(attributeValue, attributeKey string) (st
 	if !o.HasSpecificAttributes() {
 		return attributeValue, nil
 	}
+
+	if o.DBSystem == "" {
+		if o.allowFallbackWithoutSystem {
+			return o.obfuscateSequentially(attributeValue, attributeKey)
+		}
+		return attributeValue, nil
+	}
+
 	for _, obfuscator := range o.obfuscators {
-		obfuscatedValue, err := obfuscator.ObfuscateAttribute(attributeValue, attributeKey)
+		if !obfuscator.SupportsSystem(o.DBSystem) {
+			continue
+		}
+		if !obfuscator.ShouldProcessAttribute(attributeKey) {
+			continue
+		}
+		return obfuscator.ObfuscateAttribute(attributeValue, attributeKey)
+	}
+
+	return attributeValue, nil
+}
+
+func (o *Obfuscator) obfuscateSequentially(attributeValue, attributeKey string) (string, error) {
+	result := attributeValue
+	for _, obfuscator := range o.obfuscators {
+		if !obfuscator.ShouldProcessAttribute(attributeKey) {
+			continue
+		}
+		obfuscatedValue, err := obfuscator.ObfuscateAttribute(result, attributeKey)
 		if err != nil {
 			return attributeValue, err
 		}
-		attributeValue = obfuscatedValue
+		result = obfuscatedValue
 	}
-	return attributeValue, nil
+	return result, nil
 }
 
 func (o *Obfuscator) HasSpecificAttributes() bool {
@@ -160,4 +205,39 @@ func (o *Obfuscator) HasSpecificAttributes() bool {
 
 func (o *Obfuscator) HasObfuscators() bool {
 	return len(o.obfuscators) > 0
+}
+
+func (o *Obfuscator) ObfuscateWithSystem(val, dbSystem string) (string, error) {
+	if !o.HasObfuscators() {
+		return val, nil
+	}
+	if dbSystem == "" {
+		return val, nil
+	}
+	lower := strings.ToLower(dbSystem)
+	for _, obfuscator := range o.obfuscators {
+		if !obfuscator.SupportsSystem(lower) {
+			continue
+		}
+		return obfuscator.ObfuscateWithSystem(val, lower)
+	}
+	return val, nil
+}
+
+func createSystems(systems []string) map[string]bool {
+	if len(systems) == 0 {
+		return nil
+	}
+	systemsMap := make(map[string]bool, len(systems))
+	for _, system := range systems {
+		systemsMap[strings.ToLower(system)] = true
+	}
+	return systemsMap
+}
+
+func newDBAttributes(attributes, systems []string) dbAttributes {
+	return dbAttributes{
+		attributes: createAttributes(attributes),
+		dbSystems:  createSystems(systems),
+	}
 }
