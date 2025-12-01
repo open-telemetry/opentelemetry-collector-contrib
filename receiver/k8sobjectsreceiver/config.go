@@ -17,22 +17,18 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 )
-
-type mode string
 
 const (
-	PullMode  mode = "pull"
-	WatchMode mode = "watch"
-
-	defaultPullInterval    time.Duration = time.Hour
-	defaultMode            mode          = PullMode
-	defaultResourceVersion               = "1"
+	defaultPullInterval    time.Duration     = time.Hour
+	defaultMode            k8sinventory.Mode = k8sinventory.PullMode
+	defaultResourceVersion                   = "1"
 )
 
-var modeMap = map[mode]bool{
-	PullMode:  true,
-	WatchMode: true,
+var modeMap = map[k8sinventory.Mode]bool{
+	k8sinventory.PullMode:  true,
+	k8sinventory.WatchMode: true,
 }
 
 type ErrorMode string
@@ -47,7 +43,7 @@ type K8sObjectsConfig struct {
 	Name             string               `mapstructure:"name"`
 	Group            string               `mapstructure:"group"`
 	Namespaces       []string             `mapstructure:"namespaces"`
-	Mode             mode                 `mapstructure:"mode"`
+	Mode             k8sinventory.Mode    `mapstructure:"mode"`
 	LabelSelector    string               `mapstructure:"label_selector"`
 	FieldSelector    string               `mapstructure:"field_selector"`
 	Interval         time.Duration        `mapstructure:"interval"`
@@ -85,15 +81,15 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("invalid mode: %v", object.Mode)
 		}
 
-		if object.Mode == PullMode && object.Interval == 0 {
+		if object.Mode == k8sinventory.PullMode && object.Interval == 0 {
 			object.Interval = defaultPullInterval
 		}
 
-		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
+		if object.Mode == k8sinventory.PullMode && len(object.ExcludeWatchType) != 0 {
 			return errors.New("the Exclude config can only be used with watch mode")
 		}
 
-		if object.Mode == PullMode && c.IncludeInitialState {
+		if object.Mode == k8sinventory.PullMode && c.IncludeInitialState {
 			return errors.New("include_initial_state can only be used with watch mode")
 		}
 	}
