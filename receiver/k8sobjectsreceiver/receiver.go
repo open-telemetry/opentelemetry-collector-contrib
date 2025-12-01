@@ -132,6 +132,8 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
 		}
 
+		// Register callbacks with the leader elector extension. These callbacks remain active
+		// for the lifetime of the receiver, allowing it to restart when leadership is regained.
 		elector.SetCallBackFuncs(
 			func(ctx context.Context) {
 				cctx, cancel := context.WithCancel(ctx)
@@ -142,6 +144,8 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
 			func() {
+				// Shutdown on leader loss. The receiver will restart if leadership is regained
+				// since the callbacks remain registered with the leader elector extension.
 				kr.setting.Logger.Info("no longer leader, stopping")
 				err = kr.Shutdown(context.Background())
 				if err != nil {
