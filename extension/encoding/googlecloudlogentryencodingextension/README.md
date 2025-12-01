@@ -24,6 +24,7 @@ Currently, this extension [can parse the following logs](#supported-log-types) i
   - [Regional External Application Load Balancer](https://docs.cloud.google.com/load-balancing/docs/https/https-reg-logging-monitoring)
   - [Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging) (embedded within load balancer logs) (extension [mapping](#cloud-armor-logs))
 - [Proxy Network Load Balancer logs](https://docs.cloud.google.com/load-balancing/docs/tcp/tcp-ssl-proxy-logging-monitoring#log-records) (extension [mapping](#proxy-network-load-balancer-logs))
+- [Cloud DNS logs](https://docs.cloud.google.com/dns/docs/monitoring#dns-log-record-format) (extension [mapping](#cloud-dns-logs))
 
 For all others logs, the payload will be placed in the log record attribute. In this case, the following configuration options are supported:
 
@@ -129,7 +130,10 @@ Examples:
 
 - Audit Logs: `encoding.format: "gcp.auditlog"`
 - VPC Flow Logs: `encoding.format: "gcp.vpcflow"`
+- Application Load Balancer Logs: `encoding.format: "gcp.load_balancing"`
 - Proxy Network Load Balancer Logs: `encoding.format: "gcp.proxy-nlb"`
+- Cloud DNS Logs: `encoding.format: "gcp.dns"`
+
 
 ### How encoding.format is determined
 
@@ -142,6 +146,10 @@ For example, `projects/my-project/logs/cloudaudit.googleapis.com%2Fsystem_event`
 2. **Map log type to format**: The extension maps specific log types to their corresponding encoding formats (`encoding.format`):
    - Audit logs (activity, data access, system event, policy): `gcp.auditlog`
    - VPC flow logs (network management-sourced and compute-sourced VPC flow logs): `gcp.vpcflow`
+   - Application Load Balancer logs (Global External and Regional External): `gcp.load_balancing`
+   - Cloud Armor logs (embedded within load balancer logs): `gcp.armorlog`
+   - Proxy Network Load Balancer logs: `gcp.proxy-nlb`
+   - Cloud DNS logs: `gcp.dns`
 
 3. **Set the attribute**: For recognized log types, the `encoding.format` attribute is set as an attribute of the `scope` field in the OTEL output log, allowing for flexible filtering and routing.
 
@@ -155,8 +163,10 @@ The following format values are supported in the `googlecloudlogentryencodingext
 |------------------|------------------|-----------------|
 | Audit Logs | `auditlog` | Google Cloud audit logs (activity, data access, system event, policy) |
 | VPC Flow Logs | `vpcflow` | Virtual Private Cloud flow log records |
+| Application Load Balancer Logs | `load_balancing` | Global and Regional External Application Load Balancer logs |
 | Armor Logs | `armorlog` | Google Cloud armor logs (security policies applied) |
 | Proxy Network Load Balancer Logs | `proxy-nlb` | Proxy Network Load Balancer connection logs |
+| Cloud DNS Logs | `dns` | Cloud DNS query and response logs |
 
 ### Cloud Audit Logs
 
@@ -432,7 +442,39 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 | `serverBytesReceived` | `gcp.load_balancing.proxy_nlb.server.bytes_received` |
 | `serverBytesSent` | `gcp.load_balancing.proxy_nlb.server.bytes_sent` |
 
+### Cloud DNS logs
+
+[Cloud DNS logs](https://docs.cloud.google.com/dns/docs/monitoring#dns-log-record-format) are mapped into OpenTelemetry attributes as follows:
+
+| Original field | Log record attribute |
+|---|---|
+| `queryName` | `gcp.dns.query.name` |
+| `queryType` | `gcp.dns.query.type` |
+| `responseCode` | `gcp.dns.response.code` |
+| `alias_query_response_code` | `gcp.dns.alias_query.response.code` |
+| `authAnswer` | `gcp.dns.auth_answer` |
+| `rdata` | `gcp.dns.rdata` |
+| `destinationIP` | `gcp.dns.destination_ip` |
+| `sourceNetwork` | `gcp.dns.source.network` |
+| `source_type` | `gcp.dns.source.type` |
+| `sourceIP` | `client.address` |
+| `protocol` | `network.transport` |
+| `location` | `cloud.region` |
+| `target_name` | `gcp.dns.target.name` |
+| `target_type` | `gcp.dns.target.type` |
+| `serverLatency` | `gcp.dns.server_latency` |
+| `egressError` | `gcp.dns.egress_error` |
+| `healthyIps` | `gcp.dns.healthy_ips` |
+| `unhealthyIps` | `gcp.dns.unhealthy_ips` |
+| `dns64Translated` | `gcp.dns.dns64_translated` |
+| `vmInstanceId` | `gcp.dns.vm.instance.id` |
+| `vmInstanceIdString` | `gcp.dns.vm.instance.id_string` |
+| `vmInstanceName` | `gcp.dns.vm.instance.name` |
+| `vmProjectId` | `gcp.dns.vm.project_id` |
+| `vmZoneName` | `gcp.dns.vm.zone` |
+
 **Protocol translation**: The numeric protocol field from GCP is automatically translated to human-readable protocol names using the [IANA Protocol Numbers](https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml) standard. Common values include:
+
 - `6` → `tcp`
 - `17` → `udp`
 - `1` → `icmp`

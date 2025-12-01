@@ -221,6 +221,16 @@ func TestPayloads(t *testing.T) {
 			logFilename:      "testdata/proxynlb/proxynlb-basic.json",
 			expectedFilename: "testdata/proxynlb/proxynlb-basic_expected.yaml",
 		},
+		{
+			name:             "dns query log - no error",
+			logFilename:      "testdata/dnslog/dns_query_no_error.json",
+			expectedFilename: "testdata/dnslog/dns_query_no_error_expected.yaml",
+		},
+		{
+			name:             "dns query log - nxdomain error",
+			logFilename:      "testdata/dnslog/dns_query_no_domain_error.json",
+			expectedFilename: "testdata/dnslog/dns_query_no_domain_error_expected.yaml",
+		},
 	}
 
 	extension := newTestExtension(t, Config{})

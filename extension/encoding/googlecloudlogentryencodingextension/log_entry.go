@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/apploadbalancerlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/dnslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
@@ -81,6 +82,8 @@ func getEncodingFormat(logType string) string {
 		return constants.GCPFormatLoadBalancerLog
 	case proxynlb.ConnectionsLogNameSuffix:
 		return constants.GCPFormatProxyNLBLog
+	case dnslog.CloudDNSQueryLogSuffix:
+		return constants.GCPFormatDNSQueryLog
 	default:
 		return ""
 	}
@@ -511,6 +514,14 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 			return fmt.Errorf("failed to parse Proxy NLB log JSON payload: %w", err)
 		}
 		return nil
+	case constants.GCPFormatDNSQueryLog:
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
+		if err := dnslog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse DNS Query log JSON payload: %w", err)
+		}
+		return nil
+		// Fall through to default payload handling for non-armor load balancer logs
+		// TODO Add support for more log types
 	}
 
 	// if the log type was not recognized, add the payload to the log record body
