@@ -231,6 +231,12 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 		ServiceName:      hostMetadata[string(semconv.ServiceNameKey)],
 	}
 
+	// Fallback to use k8s.container.name in k8s environments if container.name
+	// is not populated.
+	if event.K8sNamespaceName != "" && event.ContainerName == "" {
+		event.ContainerName = hostMetadata[string(semconv.K8SContainerNameKey)]
+	}
+
 	// Store event-specific attributes.
 	for _, idx := range sample.AttributeIndices().All() {
 		if dic.AttributeTable().Len() < int(idx) {
