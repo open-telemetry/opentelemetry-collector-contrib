@@ -176,7 +176,7 @@ func (s *protoGRPCSender) start(ctx context.Context, host component.Host) error 
 	if s.clientSettings == nil {
 		return errors.New("client settings not found")
 	}
-	conn, err := s.clientSettings.ToClientConn(ctx, host, s.settings)
+	conn, err := s.clientSettings.ToClientConn(ctx, host.GetExtensions(), s.settings)
 	if err != nil {
 		return err
 	}

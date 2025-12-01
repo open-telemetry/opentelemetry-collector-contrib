@@ -8,7 +8,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fresourcedetection%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fresourcedetection) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fresourcedetection%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fresourcedetection) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_resourcedetection)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_resourcedetection&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) \| Seeking more code owners! |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -501,6 +501,8 @@ The list of the populated resource attributes can be found at [kubeadm Detector 
 ---
 
 ### Oracle Cloud Infrastructure (OCI) metadata
+
+The OCI detector implements a *fast probe* to the instance metadata service (IMDS) endpoint to quickly verify if the collector is running on OCI. If this probe fails, the detector returns an empty resource and no error. If the probe succeeds, it then fetches instance metadata; if this fetch fails, the detector logs and returns an error so that partial detection is not silently ignored. This behavior makes it possible to differentiate between the case where the collector is not running on OCI, vs it is running on OCI but the IMDS request failed.
 
 Queries the [Oracle Cloud Infrastructure (OCI) metadata service](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/gettingmetadata.htm)
 to retrieve resource attributes related to the OCI instance environment.

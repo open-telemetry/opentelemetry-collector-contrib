@@ -583,21 +583,24 @@ func TestGetMetricAggregations(t *testing.T) {
 	testNamespaceName := "Microsoft.AAD/DomainServices"
 	testMetricName := "MetricName"
 	tests := []struct {
-		name    string
-		filters NestedListAlias
-		want    []string
+		name                  string
+		filters               NestedListAlias
+		supportedAggregations []string
+		want                  []string
 	}{
 		{
-			name:    "should return all aggregations when metrics filter empty",
-			filters: NestedListAlias{},
-			want:    aggregations,
+			name:                  "should return supported aggregations when metrics filter empty",
+			filters:               NestedListAlias{},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return all aggregations when namespace not in filters",
 			filters: NestedListAlias{
 				"another.namespace": nil,
 			},
-			want: aggregations,
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return all aggregations when metric in filters",
@@ -606,7 +609,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {},
 				},
 			},
-			want: aggregations,
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return all aggregations ignoring metric name case",
@@ -615,7 +619,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					strings.ToLower(testMetricName): {},
 				},
 			},
-			want: aggregations,
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return all aggregations when asterisk in filters",
@@ -624,7 +629,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {filterAllAggregations},
 				},
 			},
-			want: aggregations,
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should be empty when metric not in filters",
@@ -633,7 +639,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					"not_this_metric": {},
 				},
 			},
-			want: []string{},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{},
 		},
 		{
 			name: "should return one aggregations",
@@ -642,7 +649,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {aggregations[0]},
 				},
 			},
-			want: []string{aggregations[0]},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return one aggregations ignoring aggregation case",
@@ -651,7 +659,18 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {strings.ToLower(aggregations[0])},
 				},
 			},
-			want: []string{aggregations[0]},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
+		},
+		{
+			name: "should return one aggregations even if not supported",
+			filters: NestedListAlias{
+				testNamespaceName: {
+					testMetricName: {aggregations[0]},
+				},
+			},
+			supportedAggregations: []string{aggregations[2]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return many aggregations",
@@ -660,13 +679,14 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {aggregations[0], aggregations[2]},
 				},
 			},
-			want: []string{aggregations[0], aggregations[2]},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0], aggregations[2]},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getMetricAggregations(testNamespaceName, testMetricName, tt.filters)
+			got := getMetricAggregations(testNamespaceName, testMetricName, tt.filters, tt.supportedAggregations)
 			require.Equal(t, tt.want, got)
 		})
 	}
