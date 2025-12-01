@@ -5,6 +5,7 @@ package healthcheckextension // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -18,13 +19,19 @@ import (
 
 const defaultPort = 13133
 
+var errV2ConfigWithoutFeatureGate = errors.New(
+	"v2 healthcheck configuration (http/grpc fields) detected but feature gate is disabled. " +
+		"Either remove the v2 config fields or enable the feature gate with: " +
+		"--feature-gates=+extension.healthcheck.disableCompatibilityWrapper",
+)
+
 // Feature gate that switches the extension to the shared healthcheck implementation
 var disableCompatibilityWrapperGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.healthcheck.disableCompatibilityWrapper",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Switch to the shared healthcheck implementation powered by component status events"),
-	featuregate.WithRegisterFromVersion("v0.138.0"),
-	featuregate.WithRegisterToVersion("v0.143.0"),
+	featuregate.WithRegisterFromVersion("v0.142.0"),
+	featuregate.WithRegisterToVersion("v0.147.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42256"),
 )
 
@@ -64,6 +71,11 @@ func createExtension(ctx context.Context, set extension.Settings, cfg component.
 
 		// If no v2 config is set, create HTTP config from legacy settings for backward compatibility
 		if config.HTTPConfig == nil && config.GRPCConfig == nil {
+			set.Logger.Warn(
+				"Feature gate enabled but using legacy config format. " +
+					"Please migrate to v2 config format (http/grpc fields). " +
+					"See: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/healthcheckextension#backward-compatibility",
+			)
 			config.HTTPConfig = &healthcheck.HTTPConfig{
 				ServerConfig: config.ServerConfig,
 				Status: healthcheck.PathConfig{
@@ -81,7 +93,10 @@ func createExtension(ctx context.Context, set extension.Settings, cfg component.
 	}
 
 	// Feature gate disabled: use legacy implementation.
-	// V2 config fields (HTTPConfig/GRPCConfig) are ignored even if present in the config.
-	// This allows users to have both configs present for easier migration.
+	// Fail if v2 config fields are present to make the invalid configuration immediately obvious.
+	if config.HTTPConfig != nil || config.GRPCConfig != nil {
+		return nil, errV2ConfigWithoutFeatureGate
+	}
+
 	return newServer(*config, set.TelemetrySettings), nil
 }
