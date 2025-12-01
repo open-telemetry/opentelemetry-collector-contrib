@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/cmd/builder v0.141.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.141.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/tools v0.38.0
+	golang.org/x/tools v0.39.0
 	golang.org/x/tools/gopls v0.20.0
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.13.0
@@ -276,7 +276,7 @@ require (
 	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/telemetry v0.0.0-20251008203120-078029d740a8 // indirect
+	golang.org/x/telemetry v0.0.0-20251111182119-bc8e575c7b54 // indirect
 	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
@@ -298,4 +298,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen
 replace github.com/tdakkota/asciicheck v0.4.1 => github.com/golangci/asciicheck v0.5.0
 
 // Forcing a downgrade of this module to compile modernize. TODO remove this replace when moving to go 1.25.
-replace golang.org/x/tools => golang.org/x/tools v0.36.0
+replace golang.org/x/tools => golang.org/x/tools v0.39.0
