@@ -4,6 +4,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -2945,7 +2946,13 @@ func TestStatus(t *testing.T) {
 			)
 
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
+			defer func() {
+				// Use Background context for shutdown in defer to avoid cancellation issues
+				//nolint:usetesting // defer functions may run after test context is cancelled
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				require.NoError(t, server.Shutdown(ctx))
+			}()
 
 			var url string
 			if tc.legacyConfig.UseV2 {
@@ -2955,6 +2962,7 @@ func TestStatus(t *testing.T) {
 			}
 
 			client := &http.Client{}
+			defer client.CloseIdleConnections()
 
 			for _, ts := range tc.teststeps {
 				if ts.step != nil {
@@ -2968,21 +2976,29 @@ func TestStatus(t *testing.T) {
 
 				var err error
 				var resp *http.Response
+				var body []byte
 
 				if ts.eventually {
 					assert.EventuallyWithT(t, func(tt *assert.CollectT) {
-						resp, err = client.Get(stepURL)
-						require.NoError(tt, err)
-						assert.Equal(tt, ts.expectedStatusCode, resp.StatusCode)
+						localResp, localErr := client.Get(stepURL)
+						require.NoError(tt, localErr)
+						defer localResp.Body.Close()
+						assert.Equal(tt, ts.expectedStatusCode, localResp.StatusCode)
 					}, time.Second, 10*time.Millisecond)
+					// Make a final request to get the body for assertions
+					resp, err = client.Get(stepURL)
+					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 				} else {
 					resp, err = client.Get(stepURL)
 					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 					assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
 				}
-
-				body, err := io.ReadAll(resp.Body)
-				require.NoError(t, err)
 
 				assert.Contains(t, string(body), ts.expectedBody)
 
@@ -3123,9 +3139,16 @@ func TestConfig(t *testing.T) {
 			)
 
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
+			defer func() {
+				// Use Background context for shutdown in defer to avoid cancellation issues
+				//nolint:usetesting // defer functions may run after test context is cancelled
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				require.NoError(t, server.Shutdown(ctx))
+			}()
 
 			client := &http.Client{}
+			defer client.CloseIdleConnections()
 			url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)
 
 			if tc.setup != nil {
@@ -3138,6 +3161,7 @@ func TestConfig(t *testing.T) {
 
 			body, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
 			assert.Equal(t, tc.expectedBody, body)
 		})
 	}
