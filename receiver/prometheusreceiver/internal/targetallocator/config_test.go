@@ -235,28 +235,22 @@ func TestCheckTLSConfig(t *testing.T) {
 
 func TestPromHTTPSDConfigUnmarshal(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       map[string]any
-		expectError bool
-		validate    func(*testing.T, *PromHTTPSDConfig)
+		name          string
+		input         map[string]any
+		errorContains string
+		validate      func(*testing.T, *PromHTTPSDConfig)
 	}{
 		{
-			name:        "empty config",
-			input:       map[string]any{},
-			expectError: false,
-			validate: func(t *testing.T, cfg *PromHTTPSDConfig) {
-				assert.NotNil(t, cfg)
-			},
+			name:     "empty config",
+			input:    map[string]any{},
+			validate: func(t *testing.T, cfg *PromHTTPSDConfig) { assert.NotNil(t, cfg) },
 		},
 		{
 			name: "valid config with refresh interval",
 			input: map[string]any{
 				"refresh_interval": "30s",
 			},
-			expectError: false,
-			validate: func(t *testing.T, cfg *PromHTTPSDConfig) {
-				assert.NotNil(t, cfg)
-			},
+			validate: func(t *testing.T, cfg *PromHTTPSDConfig) { assert.NotNil(t, cfg) },
 		},
 		{
 			name: "valid config with multiple fields",
@@ -264,18 +258,14 @@ func TestPromHTTPSDConfigUnmarshal(t *testing.T) {
 				"refresh_interval": "1m",
 				"proxy_url":        "http://proxy.example.com:8080",
 			},
-			expectError: false,
-			validate: func(t *testing.T, cfg *PromHTTPSDConfig) {
-				assert.NotNil(t, cfg)
-			},
+			validate: func(t *testing.T, cfg *PromHTTPSDConfig) { assert.NotNil(t, cfg) },
 		},
 		{
 			name: "invalid config with bad refresh interval",
 			input: map[string]any{
 				"refresh_interval": "invalid",
 			},
-			expectError: true,
-			validate:    nil,
+			errorContains: "not a valid duration string",
 		},
 	}
 
@@ -284,10 +274,10 @@ func TestPromHTTPSDConfigUnmarshal(t *testing.T) {
 			cfg := &PromHTTPSDConfig{}
 			conf := confmap.NewFromStringMap(tt.input)
 			err := cfg.Unmarshal(conf)
-			if tt.expectError {
-				assert.Error(t, err)
+			if tt.errorContains != "" {
+				assert.ErrorContains(t, err, tt.errorContains)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.validate != nil {
 					tt.validate(t, cfg)
 				}
@@ -298,25 +288,21 @@ func TestPromHTTPSDConfigUnmarshal(t *testing.T) {
 
 func TestPromHTTPClientConfigUnmarshal(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       map[string]any
-		expectError bool
-		validate    func(*testing.T, *PromHTTPClientConfig)
+		name          string
+		input         map[string]any
+		errorContains string
+		validate      func(*testing.T, *PromHTTPClientConfig)
 	}{
 		{
-			name:        "empty config",
-			input:       map[string]any{},
-			expectError: false,
-			validate: func(t *testing.T, cfg *PromHTTPClientConfig) {
-				assert.NotNil(t, cfg)
-			},
+			name:     "empty config",
+			input:    map[string]any{},
+			validate: func(t *testing.T, cfg *PromHTTPClientConfig) { assert.NotNil(t, cfg) },
 		},
 		{
 			name: "valid config with bearer token",
 			input: map[string]any{
 				"bearer_token": "test-token",
 			},
-			expectError: false,
 			validate: func(t *testing.T, cfg *PromHTTPClientConfig) {
 				assert.NotNil(t, cfg)
 				// Note: bearer_token gets unmarshaled correctly but Secret type
@@ -330,7 +316,6 @@ func TestPromHTTPClientConfigUnmarshal(t *testing.T) {
 					"insecure_skip_verify": true,
 				},
 			},
-			expectError: false,
 			validate: func(t *testing.T, cfg *PromHTTPClientConfig) {
 				assert.NotNil(t, cfg)
 				assert.True(t, cfg.TLSConfig.InsecureSkipVerify)
@@ -343,7 +328,6 @@ func TestPromHTTPClientConfigUnmarshal(t *testing.T) {
 					"type": "Bearer",
 				},
 			},
-			expectError: false,
 			validate: func(t *testing.T, cfg *PromHTTPClientConfig) {
 				assert.NotNil(t, cfg)
 				assert.NotNil(t, cfg.Authorization)
@@ -354,17 +338,13 @@ func TestPromHTTPClientConfigUnmarshal(t *testing.T) {
 			input: map[string]any{
 				"proxy_url": "http://proxy.example.com:8080",
 			},
-			expectError: false,
-			validate: func(t *testing.T, cfg *PromHTTPClientConfig) {
-				assert.NotNil(t, cfg)
-			},
+			validate: func(t *testing.T, cfg *PromHTTPClientConfig) { assert.NotNil(t, cfg) },
 		},
 		{
 			name: "valid config with follow redirects",
 			input: map[string]any{
 				"follow_redirects": true,
 			},
-			expectError: false,
 			validate: func(t *testing.T, cfg *PromHTTPClientConfig) {
 				assert.NotNil(t, cfg)
 				assert.True(t, cfg.FollowRedirects)
@@ -375,9 +355,21 @@ func TestPromHTTPClientConfigUnmarshal(t *testing.T) {
 			input: map[string]any{
 				"enable_http2": false,
 			},
-			expectError: false,
+			validate: func(t *testing.T, cfg *PromHTTPClientConfig) { assert.NotNil(t, cfg) },
+		},
+		{
+			name: "basic auth password starting with percent sign",
+			input: map[string]any{
+				"basic_auth": map[string]any{
+					"username": "user",
+					"password": "%password-with-percent",
+				},
+			},
 			validate: func(t *testing.T, cfg *PromHTTPClientConfig) {
 				assert.NotNil(t, cfg)
+				assert.NotNil(t, cfg.BasicAuth)
+				assert.Equal(t, "user", cfg.BasicAuth.Username)
+				assert.Equal(t, "%password-with-percent", string(cfg.BasicAuth.Password))
 			},
 		},
 		{
@@ -387,8 +379,7 @@ func TestPromHTTPClientConfigUnmarshal(t *testing.T) {
 					"min_version": "TLS99",
 				},
 			},
-			expectError: true,
-			validate:    nil,
+			errorContains: "unknown TLS version",
 		},
 	}
 
@@ -397,10 +388,10 @@ func TestPromHTTPClientConfigUnmarshal(t *testing.T) {
 			cfg := &PromHTTPClientConfig{}
 			conf := confmap.NewFromStringMap(tt.input)
 			err := cfg.Unmarshal(conf)
-			if tt.expectError {
-				assert.Error(t, err)
+			if tt.errorContains != "" {
+				assert.ErrorContains(t, err, tt.errorContains)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.validate != nil {
 					tt.validate(t, cfg)
 				}
@@ -409,12 +400,11 @@ func TestPromHTTPClientConfigUnmarshal(t *testing.T) {
 	}
 }
 
-func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
+func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 	tests := []struct {
-		name        string
-		setupConfig func() *Config
-		expectError bool
-		errorMsg    string
+		name          string
+		setupConfig   func() *Config
+		errorContains string
 	}{
 		{
 			name: "invalid base64 in CAPem",
@@ -423,8 +413,7 @@ func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
 				cfg.TLS.CAPem = configopaque.String("not-valid-base64!@#$%")
 				return cfg
 			},
-			expectError: true,
-			errorMsg:    "failed to decode CA",
+			errorContains: "failed to decode CA",
 		},
 		{
 			name: "invalid base64 in CertPem",
@@ -433,8 +422,7 @@ func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
 				cfg.TLS.CertPem = configopaque.String("not-valid-base64!@#$%")
 				return cfg
 			},
-			expectError: true,
-			errorMsg:    "failed to decode Cert",
+			errorContains: "failed to decode Cert",
 		},
 		{
 			name: "invalid base64 in KeyPem",
@@ -443,8 +431,7 @@ func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
 				cfg.TLS.KeyPem = configopaque.String("not-valid-base64!@#$%")
 				return cfg
 			},
-			expectError: true,
-			errorMsg:    "failed to decode Key",
+			errorContains: "failed to decode Key",
 		},
 		{
 			name: "invalid TLS MinVersion",
@@ -453,8 +440,7 @@ func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
 				cfg.TLS.MinVersion = "99.9"
 				return cfg
 			},
-			expectError: true,
-			errorMsg:    "unsupported TLS version",
+			errorContains: "unsupported TLS version",
 		},
 		{
 			name: "invalid TLS MaxVersion",
@@ -463,8 +449,7 @@ func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
 				cfg.TLS.MaxVersion = "invalid-version"
 				return cfg
 			},
-			expectError: true,
-			errorMsg:    "unsupported TLS version",
+			errorContains: "unsupported TLS version",
 		},
 		{
 			name: "invalid ProxyURL",
@@ -473,8 +458,7 @@ func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
 				cfg.ProxyURL = "://invalid-url-scheme"
 				return cfg
 			},
-			expectError: true,
-			errorMsg:    "", // url.Parse returns generic error
+			errorContains: "missing protocol scheme",
 		},
 		{
 			name: "valid config - no errors",
@@ -486,7 +470,6 @@ func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
 				}
 				return cfg
 			},
-			expectError: false,
 		},
 	}
 
@@ -497,11 +480,8 @@ func TestConfigureSDHTTPClientConfigFromTAErrors(t *testing.T) {
 
 			err := configureSDHTTPClientConfigFromTA(httpSD, allocConf)
 
-			if tt.expectError {
-				require.Error(t, err)
-				if tt.errorMsg != "" {
-					assert.Contains(t, err.Error(), tt.errorMsg)
-				}
+			if tt.errorContains != "" {
+				assert.ErrorContains(t, err, tt.errorContains)
 			} else {
 				require.NoError(t, err)
 			}
