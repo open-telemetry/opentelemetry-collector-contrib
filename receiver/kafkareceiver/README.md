@@ -50,7 +50,7 @@ The following settings can be optionally configured:
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
 - `metrics`
-  - `topic` (Deprecated [v0.141.0]: use `topics`) 
+  - `topic` (Deprecated [v0.142.0]: use `topics`) 
      (default = otlp\_metrics): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_metrics): List of Kafka topic from which to consume metrics.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
