@@ -109,11 +109,12 @@ func (*factory) Type() component.Type {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Detectors:      []string{env.TypeStr},
-		ClientConfig:   defaultClientConfig(),
-		Override:       true,
-		Attributes:     nil,
-		DetectorConfig: detectorCreateDefaultConfig(),
+		Detectors:       []string{env.TypeStr},
+		ClientConfig:    defaultClientConfig(),
+		Override:        true,
+		Attributes:      nil,
+		DetectorConfig:  detectorCreateDefaultConfig(),
+		RefreshInterval: 0,
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		//		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
@@ -143,7 +144,9 @@ func (f *factory) createTracesProcessor(
 		nextConsumer,
 		rdp.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities),
-		processorhelper.WithStart(rdp.Start))
+		processorhelper.WithStart(rdp.Start),
+		processorhelper.WithShutdown(rdp.Shutdown),
+	)
 }
 
 func (f *factory) createMetricsProcessor(
@@ -164,7 +167,9 @@ func (f *factory) createMetricsProcessor(
 		nextConsumer,
 		rdp.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities),
-		processorhelper.WithStart(rdp.Start))
+		processorhelper.WithStart(rdp.Start),
+		processorhelper.WithShutdown(rdp.Shutdown),
+	)
 }
 
 func (f *factory) createLogsProcessor(
@@ -185,7 +190,9 @@ func (f *factory) createLogsProcessor(
 		nextConsumer,
 		rdp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
-		processorhelper.WithStart(rdp.Start))
+		processorhelper.WithStart(rdp.Start),
+		processorhelper.WithShutdown(rdp.Shutdown),
+	)
 }
 
 func (f *factory) createProfilesProcessor(
@@ -206,7 +213,9 @@ func (f *factory) createProfilesProcessor(
 		nextConsumer,
 		rdp.processProfiles,
 		xprocessorhelper.WithCapabilities(consumerCapabilities),
-		xprocessorhelper.WithStart(rdp.Start))
+		xprocessorhelper.WithStart(rdp.Start),
+		xprocessorhelper.WithShutdown(rdp.Shutdown),
+	)
 }
 
 func (f *factory) getResourceDetectionProcessor(
@@ -226,6 +235,7 @@ func (f *factory) getResourceDetectionProcessor(
 		provider:           provider,
 		override:           oCfg.Override,
 		httpClientSettings: oCfg.ClientConfig,
+		refreshInterval:    oCfg.RefreshInterval,
 		telemetrySettings:  params.TelemetrySettings,
 	}, nil
 }
