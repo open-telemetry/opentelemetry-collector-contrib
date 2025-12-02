@@ -11,12 +11,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const spanIDFuncName = "SpanID"
+
 type SpanIDArguments[K any] struct {
 	Target ottl.ByteSliceLikeGetter[K]
 }
 
 func NewSpanIDFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("SpanID", &SpanIDArguments[K]{}, createSpanIDFunction[K])
+	return ottl.NewFactory(spanIDFuncName, &SpanIDArguments[K]{}, createSpanIDFunction[K])
 }
 
 func createSpanIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
@@ -30,5 +32,5 @@ func createSpanIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 }
 
 func spanID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
-	return newIDExprFunc[K, pcommon.SpanID](target)
+	return newIDExprFunc[K, pcommon.SpanID](spanIDFuncName, target)
 }

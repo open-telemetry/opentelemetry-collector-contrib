@@ -11,12 +11,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const traceIDFuncName = "TraceID"
+
 type TraceIDArguments[K any] struct {
 	Target ottl.ByteSliceLikeGetter[K]
 }
 
 func NewTraceIDFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("TraceID", &TraceIDArguments[K]{}, createTraceIDFunction[K])
+	return ottl.NewFactory(traceIDFuncName, &TraceIDArguments[K]{}, createTraceIDFunction[K])
 }
 
 func createTraceIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
@@ -30,5 +32,5 @@ func createTraceIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 }
 
 func traceID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
-	return newIDExprFunc[K, pcommon.TraceID](target)
+	return newIDExprFunc[K, pcommon.TraceID](traceIDFuncName, target)
 }
