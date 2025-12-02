@@ -19,11 +19,8 @@ resourceLogs:
               - key: content.length
                 value:
                   intValue: "21"
-              - key: encoding
-                value:
-                  stringValue: base64
             body:
-              stringValue: U29tZSBsb2cgaW4gUzMgb2JqZWN0 # Base64 for "Some log in S3 object"
+              stringValue: Some log in S3 object
             observedTimeUnixNano: "1764625361000000000"
             timeUnixNano: "1764625361000000000"
         scope:
