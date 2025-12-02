@@ -119,6 +119,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.info.build.Version, // This is the same version from buildInfo; it is possible we could want to set a different version here in the future
 		e.configs.extension.API.Site,
 		fullConfig,
+		e.configs.extension.DeploymentType,
 		buildInfo,
 	)
 
