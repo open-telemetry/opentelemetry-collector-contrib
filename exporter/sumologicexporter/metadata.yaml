@@ -7,7 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [rnishtala-sumo, pankaj101A, jagan2221]
-    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, chan-tim-sumo, echlebek, amdprophet]
 
 # TODO: Update the exporter to pass the tests
 tests:
