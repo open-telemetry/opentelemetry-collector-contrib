@@ -63,6 +63,7 @@ func runIDErrorTests(t *testing.T, builder idExprBuilder, funcName string, cases
 	}
 }
 
+// assertErrorIsForFunction asserts that the error prints the function name along with the underlying error.
 func assertErrorIsForFunction(t *testing.T, err error, funcName string) {
 	t.Helper()
 	var errAs *funcErrorType
