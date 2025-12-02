@@ -48,16 +48,25 @@ func runIDSuccessTests(t *testing.T, builder idExprBuilder, cases []idSuccessTes
 	}
 }
 
-func runIDErrorTests(t *testing.T, builder idExprBuilder, cases []idErrorTestCase) {
+func runIDErrorTests(t *testing.T, builder idExprBuilder, funcName string, cases []idErrorTestCase) {
 	t.Helper()
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			expr := builder(makeIDGetter(tt.value))
 			result, err := expr(t.Context(), nil)
-			assert.Error(t, err)
+
 			assert.Nil(t, result)
+			assertErrorIsForFunction(t, err, funcName)
 			assert.ErrorIs(t, err, tt.err)
 		})
 	}
+}
+
+func assertErrorIsForFunction(t *testing.T, err error, funcName string) {
+	t.Helper()
+	var errAs *funcErrorType
+	assert.ErrorAs(t, err, &errAs)
+	assert.Equal(t, funcName, errAs.funcName)
+	assert.ErrorContains(t, err, funcName)
 }

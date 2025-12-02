@@ -25,7 +25,7 @@ func Test_traceID(t *testing.T) {
 }
 
 func Test_traceID_validation(t *testing.T) {
-	runIDErrorTests(t, traceID[any], []idErrorTestCase{
+	runIDErrorTests(t, traceID[any], traceIDFuncName, []idErrorTestCase{
 		{
 			name:  "byte slice less than 16 (15)",
 			value: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},

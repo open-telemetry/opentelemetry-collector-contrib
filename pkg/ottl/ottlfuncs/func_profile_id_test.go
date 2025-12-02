@@ -25,7 +25,7 @@ func Test_profileID(t *testing.T) {
 }
 
 func Test_profileID_validation(t *testing.T) {
-	runIDErrorTests(t, profileID[any], []idErrorTestCase{
+	runIDErrorTests(t, profileID[any], profileIDFuncName, []idErrorTestCase{
 		{
 			name:  "nil profile id",
 			value: nil,

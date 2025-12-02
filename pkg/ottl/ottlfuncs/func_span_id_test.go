@@ -25,7 +25,7 @@ func Test_spanID(t *testing.T) {
 }
 
 func Test_spanID_validation(t *testing.T) {
-	runIDErrorTests(t, spanID[any], []idErrorTestCase{
+	runIDErrorTests(t, spanID[any], spanIDFuncName, []idErrorTestCase{
 		{
 			name:  "byte slice less than 8 (7)",
 			value: []byte{1, 2, 3, 4, 5, 6, 7},

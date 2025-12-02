@@ -121,10 +121,3 @@ type literalStringGetter[R idByteArray] struct {
 func (g *literalStringGetter[R]) Get(context.Context, any) ([]byte, error) {
 	return []byte(g.value), nil
 }
-
-func assertErrorIsForFunction(t *testing.T, err error, funcName string) {
-	var errAs *funcErrorType
-	assert.ErrorAs(t, err, &errAs)
-	assert.Equal(t, funcName, errAs.funcName)
-	assert.ErrorContains(t, err, funcName)
-}
