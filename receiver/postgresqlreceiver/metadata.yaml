@@ -94,12 +94,6 @@ attributes:
   postgresql.pid:
     description: Process ID of this backend.
     type: int
-  postgresql.procedure_id:
-    description: Identifier of the stored procedure.
-    type: string
-  postgresql.procedure_name:
-    description: Name of the stored procedure.
-    type: string
   postgresql.query_id:
     description: Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed.
     type: string
@@ -202,8 +196,6 @@ events:
       - postgresql.wait_event_type
       - postgresql.query_id
       - postgresql.total_exec_time
-      - postgresql.procedure_id
-      - postgresql.procedure_name
   db.server.top_query:
     enabled: true
     description: top query
