@@ -1756,7 +1756,7 @@ func TestLifecycleWithValidConfiguration(t *testing.T) {
 	}{
 		{
 			name: "default configuration",
-			configModifier: func(cfg *Config) {
+			configModifier: func(_ *Config) {
 				// Use default config
 			},
 		},
