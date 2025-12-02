@@ -1,7 +1,7 @@
 // Deprecated: this functionality is no longer maintained and will be removed.
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
 
-go 1.24.0
+go 1.24.11
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1

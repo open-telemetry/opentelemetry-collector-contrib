@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof
 
-go 1.24.0
+go 1.24.11
 
 require (
 	github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d
