@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/aws/aws-lambda-go/events"
 	gojson "github.com/goccy/go-json"
@@ -288,8 +289,14 @@ func bytesToPlogs(data []byte, event events.S3EventRecord) any {
 	rec := sl.LogRecords().AppendEmpty()
 	rec.SetTimestamp(pcommon.NewTimestampFromTime(event.EventTime))
 	rec.Attributes().PutInt("content.length", int64(len(data)))
-	rec.Attributes().PutStr("encoding", "base64")
-	rec.Body().SetStr(base64.StdEncoding.EncodeToString(data))
+
+	if utf8.Valid(data) {
+		rec.Body().SetStr(string(data))
+	} else {
+		rec.Attributes().PutStr("encoding", "base64")
+		rec.Body().SetStr(base64.StdEncoding.EncodeToString(data))
+	}
+
 	return logs
 }
 
