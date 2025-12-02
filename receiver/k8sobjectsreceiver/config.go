@@ -44,10 +44,6 @@ const (
 	SilentError    ErrorMode = "silent"
 )
 
-type ExcludeNamespace struct {
-	filter.Config `mapstructure:",squash"`
-}
-
 type K8sObjectsConfig struct {
 	Name              string               `mapstructure:"name"`
 	Group             string               `mapstructure:"group"`
