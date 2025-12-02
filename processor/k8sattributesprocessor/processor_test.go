@@ -1831,7 +1831,7 @@ func TestLifecycleWithValidConfiguration(t *testing.T) {
 				require.NotNil(t, tp, "traces processor should not be nil")
 
 				// Start the processor
-				ctx := context.Background()
+				ctx := t.Context()
 				err = tp.Start(ctx, componenttest.NewNopHost())
 				require.NoError(t, err, "failed to start traces processor")
 
@@ -1870,7 +1870,7 @@ func TestLifecycleWithValidConfiguration(t *testing.T) {
 				require.NotNil(t, mp, "metrics processor should not be nil")
 
 				// Start the processor
-				ctx := context.Background()
+				ctx := t.Context()
 				err = mp.Start(ctx, componenttest.NewNopHost())
 				require.NoError(t, err, "failed to start metrics processor")
 
@@ -1906,7 +1906,7 @@ func TestLifecycleWithValidConfiguration(t *testing.T) {
 				require.NotNil(t, lp, "logs processor should not be nil")
 
 				// Start the processor
-				ctx := context.Background()
+				ctx := t.Context()
 				err = lp.Start(ctx, componenttest.NewNopHost())
 				require.NoError(t, err, "failed to start logs processor")
 
@@ -1942,7 +1942,7 @@ func TestLifecycleWithValidConfiguration(t *testing.T) {
 				require.NotNil(t, pp, "profiles processor should not be nil")
 
 				// Start the processor
-				ctx := context.Background()
+				ctx := t.Context()
 				err = pp.Start(ctx, componenttest.NewNopHost())
 				require.NoError(t, err, "failed to start profiles processor")
 

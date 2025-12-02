@@ -129,12 +129,12 @@ func BenchmarkProcessLogs(b *testing.B) {
 	)
 	require.NoError(b, err)
 
-	require.NoError(b, p.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, p.Start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(b, p.Shutdown(context.Background()))
+		require.NoError(b, p.Shutdown(b.Context()))
 	}()
 
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(b.Context(), client.Info{
 		Addr: &net.IPAddr{
 			IP: net.IPv4(1, 1, 1, 1),
 		},
@@ -173,12 +173,12 @@ func BenchmarkProcessProfiles(b *testing.B) {
 	)
 	require.NoError(b, err)
 
-	require.NoError(b, p.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, p.Start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(b, p.Shutdown(context.Background()))
+		require.NoError(b, p.Shutdown(b.Context()))
 	}()
 
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(b.Context(), client.Info{
 		Addr: &net.IPAddr{
 			IP: net.IPv4(1, 1, 1, 1),
 		},
@@ -215,12 +215,12 @@ func BenchmarkProcessTracesMultipleResources(b *testing.B) {
 	)
 	require.NoError(b, err)
 
-	require.NoError(b, p.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, p.Start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(b, p.Shutdown(context.Background()))
+		require.NoError(b, p.Shutdown(b.Context()))
 	}()
 
-	ctx := client.NewContext(context.Background(), client.Info{
+	ctx := client.NewContext(b.Context(), client.Info{
 		Addr: &net.IPAddr{
 			IP: net.IPv4(1, 1, 1, 1),
 		},
