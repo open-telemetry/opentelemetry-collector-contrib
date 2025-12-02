@@ -6,6 +6,7 @@ package shared // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -79,4 +80,19 @@ func PutStrIfNotPresent(field, value string, attributes pcommon.Map) (bool, erro
 		return false, fmt.Errorf("attribute %q already present with different value: existing=%q, new=%q", field, val.Str(), value)
 	}
 	return false, nil
+}
+
+// PutDurationAsSeconds parses a duration string (e.g., "0.063s") and stores it as seconds (float64).
+// If the input string is empty, the function does nothing and returns nil.
+// Returns an error if the string cannot be parsed as a duration.
+func PutDurationAsSeconds(field, value string, attributes pcommon.Map) error {
+	if value == "" {
+		return nil
+	}
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		return fmt.Errorf("failed to parse duration %q: %w", value, err)
+	}
+	attributes.PutDouble(field, d.Seconds())
+	return nil
 }
