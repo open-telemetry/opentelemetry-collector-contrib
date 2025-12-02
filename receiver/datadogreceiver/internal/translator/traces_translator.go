@@ -55,6 +55,10 @@ var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 	// Database
 	"postgresql.query": processDBSpan,
 	"redis.query":      processDBSpan,
+
+	// GRPC
+	"grpc.server": processGRPCSpan,
+	"grpc.client": processGRPCSpan,
 }
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
@@ -135,13 +139,53 @@ func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
-func processRPCServerSpan(span *pb.Span, newSpan *ptrace.Span) {
-	if val, ok := span.Meta["grpc.status.code"]; ok {
-		newSpan.Attributes().PutStr(string(semconv.RPCGRPCStatusCodeKey), val)
-	}
-	// https://github.com/DataDog/dd-trace-java/blob/master/dd-java-agent/instrumentation/grpc-1.5/src/main/java/datadog/trace/instrumentation/grpc/client/GrpcClientDecorator.java#L105
+func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// ddSpan.Attributes["grpc.status.code"] contains the gRPC status code name (eg "OK")
+	// not the numeric value (eg "0")
+	// it's ddSpan.error that indicates whether the status code value
+	newSpan.Attributes().PutInt(string(semconv.RPCGRPCStatusCodeKey), int64(span.GetError()))
 
+	method := ""
+	service := ""
+	if rpcMethod, ok := span.Meta[("rpc.method")]; ok {
+		method = rpcMethod
+		if rpcService, ok := span.Meta[("rpc.service")]; ok {
+			service = rpcService
+		}
+
+	} else if grpcFullMethod, ok := span.Meta[("rpc.grpc.full_method")]; ok {
+		// format: /$package.$service/$method
+		grpcFullMethodElements := strings.SplitN(strings.TrimPrefix(grpcFullMethod, "/"), "/", 2)
+		if len(grpcFullMethodElements) == 2 {
+			method = grpcFullMethodElements[1]
+			service = grpcFullMethodElements[0]
+		}
+	} else if grpcMethod, ok := span.Meta[("grpc.method.name")]; ok {
+		// format: /$package.$service/$method
+		grpcMethodElements := strings.SplitN(strings.TrimPrefix(grpcMethod, "/"), "/", 2)
+		if len(grpcMethodElements) == 2 {
+			method = grpcMethodElements[1]
+			service = grpcMethodElements[0]
+		} else if len(grpcMethodElements) == 1 {
+			// unexpected format
+			method = ""
+			service = grpcMethodElements[0]
+		}
+	}
+	spanName := ""
+	if method != "" {
+		newSpan.Attributes().PutStr(string(semconv.RPCMethodKey), method)
+		newSpan.Attributes().PutStr(string(semconv.RPCServiceKey), service)
+		spanName = service + "/" + method
+	} else if service != "" {
+		newSpan.Attributes().PutStr(string(semconv.RPCServiceKey), service)
+		spanName = service
+	}
+	if spanName != "" {
+		newSpan.SetName(spanName)
+	}
 }
+
 func processSpanByName(span *pb.Span, newSpan *ptrace.Span) {
 	if processor, ok := spanProcessor[span.Name]; ok {
 		processor(span, newSpan)

@@ -348,9 +348,10 @@ func TestToTracesServiceName(t *testing.T) {
 
 func TestProcessSpanByName(t *testing.T) {
 	cases := []struct {
-		name             string
-		expectedSpanName string
-		span             pb.Span
+		name                   string
+		expectedSpanName       string
+		span                   pb.Span
+		expectedSpanAttributes map[string]string
 	}{
 		{
 			"db-query-summary",
@@ -366,6 +367,7 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname":    "localhost",
 				},
 			},
+			map[string]string{},
 		},
 		{
 			"db-operation-instance",
@@ -380,6 +382,7 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname": "localhost",
 				},
 			},
+			map[string]string{},
 		},
 		{
 			"db-operation-namespace",
@@ -393,6 +396,7 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname": "localhost",
 				},
 			},
+			map[string]string{},
 		},
 		{
 			"db-operation-hostname",
@@ -405,6 +409,7 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname": "localhost",
 				},
 			},
+			map[string]string{},
 		},
 		{
 			"db-operation",
@@ -416,6 +421,7 @@ func TestProcessSpanByName(t *testing.T) {
 					"db.type":      "postgresql",
 				},
 			},
+			map[string]string{},
 		},
 		{
 			"db-type",
@@ -429,6 +435,7 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname": "localhost",
 				},
 			},
+			map[string]string{},
 		},
 		{
 			"db-redis",
@@ -439,6 +446,7 @@ func TestProcessSpanByName(t *testing.T) {
 					"db.type": "redis",
 				},
 			},
+			map[string]string{},
 		},
 		{
 			"internal-spring-handler",
@@ -447,6 +455,7 @@ func TestProcessSpanByName(t *testing.T) {
 				Name:     "spring.handler",
 				Resource: "ShippingController.shipOrder",
 			},
+			map[string]string{},
 		},
 		{
 			"http-servlet-request-no-route",
@@ -457,6 +466,7 @@ func TestProcessSpanByName(t *testing.T) {
 					"http.method": "POST",
 				},
 			},
+			map[string]string{},
 		},
 		{
 			"http-servlet-request-with-route",
@@ -468,6 +478,96 @@ func TestProcessSpanByName(t *testing.T) {
 					"http.route":  "/route",
 				},
 			},
+			map[string]string{},
+		},
+		{
+			"rpc.client-ok-with-method-and-service",
+			"mydomain.MyDomainService/MyMethod",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			map[string]string{
+				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
+				string(semconv.RPCMethodKey):         "MyMethod",
+				string(semconv.RPCGRPCStatusCodeKey): "0",
+			},
+		},
+		{
+			"rpc.client-error-with-method-and-service",
+			"mydomain.MyDomainService/MyMethod",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "UNKNOWN",
+					"rpc.system":           "grpc",
+				},
+				Error: 2,
+			},
+			map[string]string{
+				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
+				string(semconv.RPCMethodKey):         "MyMethod",
+				string(semconv.RPCGRPCStatusCodeKey): "2",
+			},
+		},
+		{
+			"rpc.client-ok-with-unexpected-full-method-format-missing-method",
+			"mydomain.MyDomainService",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			map[string]string{
+				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
+				string(semconv.RPCGRPCStatusCodeKey): "0",
+			},
+		},
+		{
+			"rpc.client-ok-with-unexpected-full-method-format-missing-slash",
+			"mydomain.MyDomainService/MyMethod",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			map[string]string{
+				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
+				string(semconv.RPCMethodKey):         "MyMethod",
+				string(semconv.RPCGRPCStatusCodeKey): "0",
+			},
+		},
+		{
+			"rpc.server-ok-with-method-and-service",
+			"mydomain.MyDomainService/MyMethod",
+			pb.Span{
+				Name: "grpc.server",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			map[string]string{
+				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
+				string(semconv.RPCMethodKey):         "MyMethod",
+				string(semconv.RPCGRPCStatusCodeKey): "0",
+			},
 		},
 	}
 
@@ -477,6 +577,11 @@ func TestProcessSpanByName(t *testing.T) {
 			span := ptrace.NewSpan()
 			processSpanByName(&tt.span, &span)
 			assert.Equal(t, tt.expectedSpanName, span.Name())
+			for k, want := range tt.expectedSpanAttributes {
+				val, ok := span.Attributes().Get(k)
+				assert.True(t, ok, "attribute %s missing", k)
+				assert.Equal(t, want, val.AsString(), "attribute %s value mismatch", k)
+			}
 		})
 	}
 }
