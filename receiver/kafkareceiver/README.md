@@ -58,7 +58,7 @@ The following settings can be optionally configured:
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`  
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
 - `traces`
-  - `topic` (Deprecated [v0.141.0]: use `topics`)  
+  - `topic` (Deprecated [v0.142.0]: use `topics`)  
      (default = otlp\_spans): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_spans): List of Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
