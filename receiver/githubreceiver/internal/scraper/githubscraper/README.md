@@ -56,9 +56,33 @@ In summary, we recommend the following:
 - One instance of the receiver per team
 - Each instance of the receiver should have its own token
 - Leverage `search_query` config option to limit repositories returned to 100 or
-less per instance
+less per instance, or use `concurrency_limit` to control concurrent requests
 - `collection_interval` should be long enough to avoid rate limiting (see above
 formula). A sensible default is `300s`.
+
+### Configuration
+
+#### Concurrency Limiting
+
+The scraper supports limiting the number of concurrent repository processing
+goroutines to prevent hitting GitHub's 100 concurrent secondary request limit:
+
+```yaml
+scrapers:
+  scraper:
+    github_org: myorg
+    concurrency_limit: 50  # Default: 50, Set to 0 for unlimited (not recommended)
+```
+
+* **Default**: 50 concurrent goroutines
+* **Recommendation**: Keep at default (50) to reduce the likelihood of hitting
+  GitHub's secondary limit of 100 concurrent requests
+* **For large organizations (>100 repos)**: Consider increasing
+  `collection_interval` in addition to using concurrency limiting
+
+When the limit is reached, additional repository processing will wait until a
+slot becomes available. This prevents overwhelming GitHub's API with too many
+concurrent requests.
 
 **Additional Resources:**
 

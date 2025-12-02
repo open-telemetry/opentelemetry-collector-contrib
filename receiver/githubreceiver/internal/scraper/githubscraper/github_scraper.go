@@ -95,6 +95,15 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	ghs.mb.RecordVcsRepositoryCountDataPoint(now, int64(count))
 
+	// Create semaphore for concurrency limiting
+	var sem chan struct{}
+	if ghs.cfg.ConcurrencyLimit > 0 {
+		sem = make(chan struct{}, ghs.cfg.ConcurrencyLimit)
+		ghs.logger.Debug("Using concurrency limit for repository processing",
+			zap.Int("limit", ghs.cfg.ConcurrencyLimit),
+			zap.Int("total_repos", len(repos)))
+	}
+
 	// Get the ref (branch) count (future branch data) for each repo and record
 	// the given metrics
 	var wg sync.WaitGroup
@@ -107,8 +116,24 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		trunk := repo.DefaultBranchRef.Name
 		now := now
 
+		// Acquire semaphore slot before launching goroutine
+		if sem != nil {
+			select {
+			case sem <- struct{}{}:
+				// Acquired slot, continue
+			case <-ctx.Done():
+				// Context cancelled, skip remaining repos
+				wg.Done()
+				continue
+			}
+		}
+
 		go func() {
 			defer wg.Done()
+			// Release semaphore slot when done
+			if sem != nil {
+				defer func() { <-sem }()
+			}
 
 			branches, count, err := ghs.getBranches(ctx, genClient, name, trunk)
 			if err != nil {
