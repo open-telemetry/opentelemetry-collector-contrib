@@ -31,11 +31,7 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // parameter C is expected to be one of: consumer.Traces, consumer.Metrics, or
 // consumer.Logs.
 type router[C any] struct {
-	resourceParser   ottl.Parser[ottlresource.TransformContext]
-	spanParser       ottl.Parser[ottlspan.TransformContext]
-	metricParser     ottl.Parser[ottlmetric.TransformContext]
-	dataPointParser  ottl.Parser[ottldatapoint.TransformContext]
-	logParser        ottl.Parser[ottllog.TransformContext]
+	parserCollection *ottl.ParserCollection[any]
 	defaultConsumer  C
 	logger           *zap.Logger
 	routes           map[string]routingItem[C]
@@ -82,79 +78,99 @@ type routingItem[C any] struct {
 }
 
 func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.TelemetrySettings) error {
-	var buildResource, buildSpan, buildMetric, buildDataPoint, buildLog bool
-	for _, item := range table {
-		switch item.Context {
-		case "", "resource":
-			buildResource = true
-		case "span":
-			buildSpan = true
-		case "metric":
-			buildMetric = true
-		case "datapoint":
-			buildDataPoint = true
-		case "log":
-			buildLog = true
-		}
+	// We need to build parsers for all contexts to support inference, regardless of what is explicitly used in the config.
+	// Prioritize resource context to maintain backward compatibility for ambiguous paths (e.g. 'attributes').
+	priorities := []string{
+		"resource",
+		"span",
+		"spanevent",
+		"metric",
+		"datapoint",
+		"log",
+		"scope",
+		"instrumentation_scope",
 	}
 
-	var errs error
-	if buildResource {
-		parser, err := ottlresource.NewParser(
-			standardFunctions[ottlresource.TransformContext](),
-			settings,
-		)
-		if err == nil {
-			r.resourceParser = parser
-		} else {
-			errs = errors.Join(errs, err)
-		}
+	resourceParser, err := ottlresource.NewParser(
+		standardFunctions[ottlresource.TransformContext](),
+		settings,
+		ottlresource.EnablePathContextNames(),
+	)
+	if err != nil {
+		return err
 	}
-	if buildSpan {
-		parser, err := ottlspan.NewParser(
-			spanFunctions(),
-			settings,
-		)
-		if err == nil {
-			r.spanParser = parser
-		} else {
-			errs = errors.Join(errs, err)
-		}
+	spanParser, err := ottlspan.NewParser(
+		spanFunctions(),
+		settings,
+		ottlspan.EnablePathContextNames(),
+	)
+	if err != nil {
+		return err
 	}
-	if buildMetric {
-		parser, err := ottlmetric.NewParser(
-			standardFunctions[ottlmetric.TransformContext](),
-			settings,
-		)
-		if err == nil {
-			r.metricParser = parser
-		} else {
-			errs = errors.Join(errs, err)
-		}
+	metricParser, err := ottlmetric.NewParser(
+		standardFunctions[ottlmetric.TransformContext](),
+		settings,
+		ottlmetric.EnablePathContextNames(),
+	)
+	if err != nil {
+		return err
 	}
-	if buildDataPoint {
-		parser, err := ottldatapoint.NewParser(
-			standardFunctions[ottldatapoint.TransformContext](),
-			settings,
-		)
-		if err == nil {
-			r.dataPointParser = parser
-		} else {
-			errs = errors.Join(errs, err)
-		}
+	dataPointParser, err := ottldatapoint.NewParser(
+		standardFunctions[ottldatapoint.TransformContext](),
+		settings,
+		ottldatapoint.EnablePathContextNames(),
+	)
+	if err != nil {
+		return err
 	}
-	if buildLog {
-		parser, err := ottllog.NewParser(
-			standardFunctions[ottllog.TransformContext](),
-			settings,
-		)
-		if err == nil {
-			r.logParser = parser
-		} else {
-			errs = errors.Join(errs, err)
-		}
+	logParser, err := ottllog.NewParser(
+		standardFunctions[ottllog.TransformContext](),
+		settings,
+		ottllog.EnablePathContextNames(),
+	)
+	if err != nil {
+		return err
 	}
-	return errs
+
+	r.parserCollection, err = ottl.NewParserCollection[any](
+		settings,
+		ottl.WithContextInferrerPriorities[any](priorities),
+		ottl.WithParserCollectionContext(
+			ottlresource.ContextName,
+			&resourceParser,
+			ottl.WithStatementConverter(createStatementConverter[ottlresource.TransformContext]()),
+		),
+		ottl.WithParserCollectionContext(
+			ottlspan.ContextName,
+			&spanParser,
+			ottl.WithStatementConverter(createStatementConverter[ottlspan.TransformContext]()),
+		),
+		ottl.WithParserCollectionContext(
+			ottlmetric.ContextName,
+			&metricParser,
+			ottl.WithStatementConverter(createStatementConverter[ottlmetric.TransformContext]()),
+		),
+		ottl.WithParserCollectionContext(
+			ottldatapoint.ContextName,
+			&dataPointParser,
+			ottl.WithStatementConverter(createStatementConverter[ottldatapoint.TransformContext]()),
+		),
+		ottl.WithParserCollectionContext(
+			ottllog.ContextName,
+			&logParser,
+			ottl.WithStatementConverter(createStatementConverter[ottllog.TransformContext]()),
+		),
+	)
+	return err
+}
+
+func createStatementConverter[K any]() ottl.ParsedStatementsConverter[K, any] {
+	return func(pc *ottl.ParserCollection[any], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[K]) (any, error) {
+		if len(parsedStatements) != 1 {
+			return nil, fmt.Errorf("expected exactly one statement, got %d", len(parsedStatements))
+		}
+		return parsedStatements[0], nil
+	}
 }
 
 func (r *router[C]) registerConsumers(defaultPipelineIDs []pipeline.ID) error {
@@ -207,42 +223,47 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 		route, ok := r.routes[key(item)]
 		if !ok {
 			route.statementContext = item.Context
-			switch item.Context {
-			case "request":
+			if item.Context == "request" {
 				route.requestCondition, err = parseRequestCondition(item.Condition)
 				if err != nil {
 					return err
 				}
-			case "", "resource":
-				statement, err := r.resourceParser.ParseStatement(item.Statement)
+			} else {
+				statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
+				var result any
+				if item.Context == "" {
+					// Context is empty, try to infer it
+					// Default to resource context if inference fails or ambiguous (though priorities handle ambiguity)
+					result, err = r.parserCollection.ParseStatements(statementsGetter, ottl.WithDefaultContext(ottlresource.ContextName))
+				} else {
+					// Context is explicit
+					result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter, true)
+				}
+
 				if err != nil {
 					return err
 				}
-				route.resourceStatement = statement
-			case "span":
-				statement, err := r.spanParser.ParseStatement(item.Statement)
-				if err != nil {
-					return err
+
+				// Type switch to assign the correct statement
+				switch s := result.(type) {
+				case *ottl.Statement[ottlresource.TransformContext]:
+					route.resourceStatement = s
+					route.statementContext = "resource"
+				case *ottl.Statement[ottlspan.TransformContext]:
+					route.spanStatement = s
+					route.statementContext = "span"
+				case *ottl.Statement[ottlmetric.TransformContext]:
+					route.metricStatement = s
+					route.statementContext = "metric"
+				case *ottl.Statement[ottldatapoint.TransformContext]:
+					route.dataPointStatement = s
+					route.statementContext = "datapoint"
+				case *ottl.Statement[ottllog.TransformContext]:
+					route.logStatement = s
+					route.statementContext = "log"
+				default:
+					return fmt.Errorf("unexpected statement type: %T", result)
 				}
-				route.spanStatement = statement
-			case "metric":
-				statement, err := r.metricParser.ParseStatement(item.Statement)
-				if err != nil {
-					return err
-				}
-				route.metricStatement = statement
-			case "datapoint":
-				statement, err := r.dataPointParser.ParseStatement(item.Statement)
-				if err != nil {
-					return err
-				}
-				route.dataPointStatement = statement
-			case "log":
-				statement, err := r.logParser.ParseStatement(item.Statement)
-				if err != nil {
-					return err
-				}
-				route.logStatement = statement
 			}
 		} else {
 			var pipelineNames []string

@@ -408,7 +408,8 @@ func EnableParserCollectionModifiedPathsLogging[R any](enabled bool) ParserColle
 }
 
 type parseCollectionContextInferenceOptions struct {
-	conditions []string
+	conditions     []string
+	defaultContext string
 }
 
 // ParserCollectionContextInferenceOption allows configuring the context inference and use
@@ -425,6 +426,29 @@ type ParserCollectionContextInferenceOption func(p *parseCollectionContextInfere
 func WithContextInferenceConditions(conditions []string) ParserCollectionContextInferenceOption {
 	return func(p *parseCollectionContextInferenceOptions) {
 		p.conditions = conditions
+	}
+}
+
+// WithDefaultContext sets the default context to be used if inference fails to determine a context.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+func WithDefaultContext(context string) ParserCollectionContextInferenceOption {
+	return func(p *parseCollectionContextInferenceOptions) {
+		p.defaultContext = context
+	}
+}
+
+// WithContextInferrerPriorities sets the context inference priorities.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+func WithContextInferrerPriorities[R any](priorities []string) ParserCollectionOption[R] {
+	return func(pc *ParserCollection[R]) error {
+		pc.contextInferrer = newPriorityContextInferrer(
+			pc.Settings,
+			pc.contextInferrerCandidates,
+			withContextInferrerPriorities(priorities),
+		)
+		return nil
 	}
 }
 
@@ -464,7 +488,11 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 	}
 
 	if inferredContext == "" {
-		return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
+		if parseStatementsOpts.defaultContext != "" {
+			inferredContext = parseStatementsOpts.defaultContext
+		} else {
+			return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
+		}
 	}
 
 	_, ok := pc.contextParsers[inferredContext]
@@ -472,7 +500,7 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 		return *new(R), fmt.Errorf(`context "%s" inferred from the statements %+q and conditions %+q is not a supported context: %+q`, inferredContext, statementsValues, conditionsValues, pc.supportedContextNames())
 	}
 
-	return pc.ParseStatementsWithContext(inferredContext, statements, false)
+	return pc.ParseStatementsWithContext(inferredContext, statements, true)
 }
 
 // ParseStatementsWithContext parses the given statements into [R] using the configured
@@ -527,7 +555,7 @@ func (pc *ParserCollection[R]) ParseConditions(conditions ConditionsGetter) (R, 
 		return *new(R), fmt.Errorf(`context "%s" inferred from the conditions %+q is not a supported context: %+q`, inferredContext, conditionsValues, pc.supportedContextNames())
 	}
 
-	return pc.ParseConditionsWithContext(inferredContext, conditions, false)
+	return pc.ParseConditionsWithContext(inferredContext, conditions, true)
 }
 
 // ParseConditionsWithContext parses the given conditions into [R] using the configured
@@ -599,7 +627,7 @@ func (pc *ParserCollection[R]) ParseValueExpressions(expressions ValueExpression
 		)
 	}
 
-	return pc.ParseValueExpressionsWithContext(inferredContext, expressions, false)
+	return pc.ParseValueExpressionsWithContext(inferredContext, expressions, true)
 }
 
 // ParseValueExpressionsWithContext parses the given expressions into [R] using the configured
