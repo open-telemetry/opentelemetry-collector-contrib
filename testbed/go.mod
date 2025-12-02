@@ -32,7 +32,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.141.0
 	github.com/prometheus/common v0.67.4
 	github.com/prometheus/prometheus v0.307.3
-	github.com/shirou/gopsutil/v4 v4.25.10
+	github.com/shirou/gopsutil/v4 v4.25.11
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.0
 	go.opentelemetry.io/collector/component/componenttest v0.141.0
@@ -151,7 +151,7 @@ require (
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/ebitengine/purego v0.9.0 // indirect
+	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/edsrzf/mmap-go v1.2.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/lunes v0.2.0 // indirect
@@ -315,8 +315,8 @@ require (
 	github.com/splunk/stef/go/pkg v0.0.8 // indirect
 	github.com/stackitcloud/stackit-sdk-go/core v0.17.3 // indirect
 	github.com/tinylib/msgp v1.5.0 // indirect
-	github.com/tklauser/go-sysconf v0.3.15 // indirect
-	github.com/tklauser/numcpus v0.10.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
