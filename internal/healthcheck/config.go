@@ -127,8 +127,9 @@ func NewDefaultConfig() component.Config {
 				Endpoint: testutil.EndpointForPort(DefaultHTTPPort),
 			},
 			Status: http.PathConfig{
-				Enabled: true,
-				Path:    "/status",
+				Enabled:           true,
+				Path:              "/status",
+				IncludeAttributes: true,
 			},
 			Config: http.PathConfig{
 				Enabled: false,
