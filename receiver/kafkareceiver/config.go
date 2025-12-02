@@ -65,12 +65,16 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Logs.Topic != "" {
 		if len(zeroConfig.Logs.Topics) == 0 {
 			c.Logs.Topics = []string{zeroConfig.Logs.Topic}
+			// copy original logs.topic to its alias
+			// required for validation further down in this code
+			c.Logs.topic_alias = c.Logs.Topic
 			c.Logs.Topic = ""
 		}
 	}
 	if zeroConfig.Logs.ExcludeTopic != "" {
 		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
 			c.Logs.ExcludeTopics = []string{zeroConfig.Logs.ExcludeTopic}
+			c.Logs.excludeTopic_alias = c.Logs.ExcludeTopic
 			c.Logs.ExcludeTopic = ""
 		}
 	}
@@ -79,6 +83,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Metrics.Topic != "" {
 		if len(zeroConfig.Logs.Topics) == 0 {
 			c.Metrics.Topics = []string{zeroConfig.Metrics.Topic}
+			c.Metrics.topic_alias = c.Metrics.Topic
 			c.Metrics.Topic = ""
 		}
 	}
@@ -86,6 +91,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Metrics.ExcludeTopic != "" {
 		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
 			c.Metrics.ExcludeTopics = []string{zeroConfig.Metrics.ExcludeTopic}
+			c.Metrics.excludeTopic_alias = c.Metrics.ExcludeTopic
 			c.Metrics.ExcludeTopic = ""
 		}
 	}
@@ -94,6 +100,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Traces.Topic != "" {
 		if len(zeroConfig.Logs.Topics) == 0 {
 			c.Traces.Topics = []string{zeroConfig.Traces.Topic}
+			c.Traces.topic_alias = c.Traces.Topic
 			c.Traces.Topic = ""
 		}
 	}
@@ -101,6 +108,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Traces.ExcludeTopic != "" {
 		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
 			c.Traces.ExcludeTopics = []string{zeroConfig.Traces.ExcludeTopic}
+			c.Traces.excludeTopic_alias = c.Traces.ExcludeTopic
 			c.Traces.ExcludeTopic = ""
 		}
 	}
@@ -109,12 +117,14 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if zeroConfig.Profiles.Topic != "" {
 		if len(zeroConfig.Logs.Topics) == 0 {
 			c.Profiles.Topics = []string{zeroConfig.Profiles.Topic}
+			c.Profiles.topic_alias = c.Profiles.Topic
 			c.Profiles.Topic = ""
 		}
 	}
 	if zeroConfig.Profiles.ExcludeTopic != "" {
 		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
 			c.Profiles.ExcludeTopics = []string{zeroConfig.Profiles.ExcludeTopic}
+			c.Profiles.excludeTopic_alias = c.Profiles.ExcludeTopic
 			c.Profiles.ExcludeTopic = ""
 		}
 	}
@@ -217,8 +227,11 @@ func validateExcludeTopic(signalType string, topics, excludeTopics []string) err
 
 // TopicEncodingConfig holds signal-specific topic and encoding configuration.
 type TopicEncodingConfig struct {
-	// Deprecated [v0.141.0]: Use Topics
+	// Deprecated [v0.142.0]: Use Topics
 	Topic string `mapstructure:"topic"`
+
+	// alias for Topic
+	topic_alias string
 
 	// Topics holds the name of the Kafka topics from which messages of the
 	// signal type should be consumed.
@@ -235,8 +248,11 @@ type TopicEncodingConfig struct {
 	// Defaults to "otlp_proto".
 	Encoding string `mapstructure:"encoding"`
 
-	// Deprecated [v0.141.0]: Use ExcludeTopics
+	// Deprecated [v0.142.0]: Use ExcludeTopics
 	ExcludeTopic string `mapstructure:"exclude_topic"`
+
+	// alias for exclude_topic
+	excludeTopic_alias string
 
 	// Optional exclude topics option, used only in regex mode.
 	ExcludeTopics []string `mapstructure:"exclude_topics"`

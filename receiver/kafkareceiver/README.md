@@ -247,11 +247,15 @@ exclusion to work. This feature is only available with the franz-go client.
 receivers:
   kafka:
     logs:
-      topic: "^logs-.*"                   # Consume from all topics matching logs-*
-      exclude_topic: "^logs-(test|dev)$"  # Exclude logs-test and logs-dev
+      topics:
+      - "^logs-.*"                   # Consume from all topics matching logs-*
+      exclude_topics:
+      - "^logs-(test|dev)$"  # Exclude logs-test and logs-dev
     metrics:
-      topic: "^metrics-.*"
-      exclude_topic: "^metrics-internal-.*$"
+      topics: 
+      - "^metrics-.*"
+      exclude_topics:
+      - "^metrics-internal-.*$"
 ```
 
 In the example above:
