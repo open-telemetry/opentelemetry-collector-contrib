@@ -135,6 +135,13 @@ func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
+func processRPCServerSpan(span *pb.Span, newSpan *ptrace.Span) {
+	if val, ok := span.Meta["grpc.status.code"]; ok {
+		newSpan.Attributes().PutStr(string(semconv.RPCGRPCStatusCodeKey), val)
+	}
+	// https://github.com/DataDog/dd-trace-java/blob/master/dd-java-agent/instrumentation/grpc-1.5/src/main/java/datadog/trace/instrumentation/grpc/client/GrpcClientDecorator.java#L105
+
+}
 func processSpanByName(span *pb.Span, newSpan *ptrace.Span) {
 	if processor, ok := spanProcessor[span.Name]; ok {
 		processor(span, newSpan)
