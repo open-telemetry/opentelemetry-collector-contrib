@@ -1922,3 +1922,119 @@ func TestProcessorDoesNotSetPodIPWhenNotRequested(t *testing.T) {
 		assertResourceHasStringAttribute(t, res, "k8s.pod.name", "jw-pod")
 	})
 }
+
+func TestGetAttributesForPodsDeployment(t *testing.T) {
+	kc := &fakeClient{
+		Deployments: map[string]*kube.Deployment{
+			"deployment-123": {
+				Name: "test-deployment",
+				UID:  "deployment-123",
+				Attributes: map[string]string{
+					"k8s.deployment.name": "test-deployment",
+					"k8s.deployment.uid":  "deployment-123",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing deployment
+	attrs := p.getAttributesForPodsDeployment("deployment-123")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-deployment", attrs["k8s.deployment.name"])
+	assert.Equal(t, "deployment-123", attrs["k8s.deployment.uid"])
+
+	// Test getting attributes for non-existent deployment
+	attrs = p.getAttributesForPodsDeployment("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForPodsStatefulSet(t *testing.T) {
+	kc := &fakeClient{
+		StatefulSets: map[string]*kube.StatefulSet{
+			"statefulset-456": {
+				Name: "test-statefulset",
+				UID:  "statefulset-456",
+				Attributes: map[string]string{
+					"k8s.statefulset.name": "test-statefulset",
+					"k8s.statefulset.uid":  "statefulset-456",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing statefulset
+	attrs := p.getAttributesForPodsStatefulSet("statefulset-456")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-statefulset", attrs["k8s.statefulset.name"])
+	assert.Equal(t, "statefulset-456", attrs["k8s.statefulset.uid"])
+
+	// Test getting attributes for non-existent statefulset
+	attrs = p.getAttributesForPodsStatefulSet("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForPodsDaemonSet(t *testing.T) {
+	kc := &fakeClient{
+		DaemonSets: map[string]*kube.DaemonSet{
+			"daemonset-789": {
+				Name: "test-daemonset",
+				UID:  "daemonset-789",
+				Attributes: map[string]string{
+					"k8s.daemonset.name": "test-daemonset",
+					"k8s.daemonset.uid":  "daemonset-789",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing daemonset
+	attrs := p.getAttributesForPodsDaemonSet("daemonset-789")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-daemonset", attrs["k8s.daemonset.name"])
+	assert.Equal(t, "daemonset-789", attrs["k8s.daemonset.uid"])
+
+	// Test getting attributes for non-existent daemonset
+	attrs = p.getAttributesForPodsDaemonSet("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForPodsJob(t *testing.T) {
+	kc := &fakeClient{
+		Jobs: map[string]*kube.Job{
+			"job-abc": {
+				Name: "test-job",
+				UID:  "job-abc",
+				Attributes: map[string]string{
+					"k8s.job.name": "test-job",
+					"k8s.job.uid":  "job-abc",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing job
+	attrs := p.getAttributesForPodsJob("job-abc")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-job", attrs["k8s.job.name"])
+	assert.Equal(t, "job-abc", attrs["k8s.job.uid"])
+
+	// Test getting attributes for non-existent job
+	attrs = p.getAttributesForPodsJob("non-existent")
+	assert.Nil(t, attrs)
+}
