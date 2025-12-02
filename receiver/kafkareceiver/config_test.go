@@ -45,20 +45,24 @@ func TestLoadConfig(t *testing.T) {
 				Logs: TopicEncodingConfig{
 					// if deprecated topic is set and topics is not set
 					// give precedence to topic
-					Topics:   []string{"legacy_logs"},
-					Encoding: "otlp_proto",
+					topicAlias: "legacy_logs",
+					Topics:     []string{"legacy_logs"},
+					Encoding:   "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topics:   []string{"legacy_metric"},
-					Encoding: "otlp_proto",
+					topicAlias: "legacy_metric",
+					Topics:     []string{"legacy_metric"},
+					Encoding:   "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topics:   []string{"legacy_spans"},
-					Encoding: "otlp_proto",
+					topicAlias: "legacy_spans",
+					Topics:     []string{"legacy_spans"},
+					Encoding:   "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topics:   []string{"legacy_profile"},
-					Encoding: "otlp_proto",
+					topicAlias: "legacy_profile",
+					Topics:     []string{"legacy_profile"},
+					Encoding:   "otlp_proto",
 				},
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
