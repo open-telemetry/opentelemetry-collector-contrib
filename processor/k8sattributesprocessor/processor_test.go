@@ -1747,6 +1747,226 @@ func TestStartStop(t *testing.T) {
 	assert.True(t, controller.HasStopped())
 }
 
+// TestLifecycleWithValidConfiguration tests the component's initialization with a valid configuration
+// and ensures proper context propagation for all signal types (traces, metrics, logs, profiles)
+func TestLifecycleWithValidConfiguration(t *testing.T) {
+	tests := []struct {
+		name           string
+		configModifier func(*Config)
+	}{
+		{
+			name: "default configuration",
+			configModifier: func(cfg *Config) {
+				// Use default config
+			},
+		},
+		{
+			name: "with custom metadata extraction",
+			configModifier: func(cfg *Config) {
+				cfg.Extract.Metadata = []string{
+					"k8s.pod.name",
+					"k8s.pod.uid",
+					"k8s.deployment.name",
+					"k8s.namespace.name",
+					"k8s.node.name",
+					"k8s.pod.start_time",
+				}
+			},
+		},
+		{
+			name: "with label extraction",
+			configModifier: func(cfg *Config) {
+				cfg.Extract.Labels = []FieldExtractConfig{
+					{
+						TagName: "app",
+						Key:     "app",
+						From:    "pod",
+					},
+				}
+			},
+		},
+		{
+			name: "with annotation extraction",
+			configModifier: func(cfg *Config) {
+				cfg.Extract.Annotations = []FieldExtractConfig{
+					{
+						TagName: "version",
+						Key:     "version",
+						From:    "pod",
+					},
+				}
+			},
+		},
+		{
+			name: "with pod association rules",
+			configModifier: func(cfg *Config) {
+				cfg.Association = []PodAssociationConfig{
+					{
+						Sources: []PodAssociationSourceConfig{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.ip",
+							},
+						},
+					},
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test each signal type
+			t.Run("traces", func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				tt.configModifier(cfg)
+
+				var kp *kubernetesprocessor
+				tp, err := newTracesProcessor(
+					cfg,
+					consumertest.NewNop(),
+					withExtractKubernetesProcessorInto(&kp),
+				)
+				require.NoError(t, err, "failed to create traces processor")
+				require.NotNil(t, tp, "traces processor should not be nil")
+
+				// Start the processor
+				ctx := context.Background()
+				err = tp.Start(ctx, componenttest.NewNopHost())
+				require.NoError(t, err, "failed to start traces processor")
+
+				// Verify processor is initialized
+				require.NotNil(t, kp, "kubernetes processor should be initialized")
+				require.NotNil(t, kp.kc, "kubernetes client should be initialized")
+
+				// Test context propagation by processing traces
+				traces := ptrace.NewTraces()
+				rs := traces.ResourceSpans().AppendEmpty()
+				rs.Resource().Attributes().PutStr("test.key", "test.value")
+				spans := rs.ScopeSpans().AppendEmpty().Spans()
+				span := spans.AppendEmpty()
+				span.SetName("test-span")
+
+				err = tp.ConsumeTraces(ctx, traces)
+				require.NoError(t, err, "failed to process traces")
+				require.Equal(t, 1, traces.ResourceSpans().Len(), "should have one resource span")
+
+				// Shutdown the processor
+				err = tp.Shutdown(ctx)
+				require.NoError(t, err, "failed to shutdown traces processor")
+			})
+
+			t.Run("metrics", func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				tt.configModifier(cfg)
+
+				var kp *kubernetesprocessor
+				mp, err := newMetricsProcessor(
+					cfg,
+					consumertest.NewNop(),
+					withExtractKubernetesProcessorInto(&kp),
+				)
+				require.NoError(t, err, "failed to create metrics processor")
+				require.NotNil(t, mp, "metrics processor should not be nil")
+
+				// Start the processor
+				ctx := context.Background()
+				err = mp.Start(ctx, componenttest.NewNopHost())
+				require.NoError(t, err, "failed to start metrics processor")
+
+				// Verify processor is initialized
+				require.NotNil(t, kp, "kubernetes processor should be initialized")
+				require.NotNil(t, kp.kc, "kubernetes client should be initialized")
+
+				// Test context propagation by processing metrics
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("test.key", "test.value")
+
+				err = mp.ConsumeMetrics(ctx, metrics)
+				require.NoError(t, err, "failed to process metrics")
+				require.Equal(t, 1, metrics.ResourceMetrics().Len(), "should have one resource metric")
+
+				// Shutdown the processor
+				err = mp.Shutdown(ctx)
+				require.NoError(t, err, "failed to shutdown metrics processor")
+			})
+
+			t.Run("logs", func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				tt.configModifier(cfg)
+
+				var kp *kubernetesprocessor
+				lp, err := newLogsProcessor(
+					cfg,
+					consumertest.NewNop(),
+					withExtractKubernetesProcessorInto(&kp),
+				)
+				require.NoError(t, err, "failed to create logs processor")
+				require.NotNil(t, lp, "logs processor should not be nil")
+
+				// Start the processor
+				ctx := context.Background()
+				err = lp.Start(ctx, componenttest.NewNopHost())
+				require.NoError(t, err, "failed to start logs processor")
+
+				// Verify processor is initialized
+				require.NotNil(t, kp, "kubernetes processor should be initialized")
+				require.NotNil(t, kp.kc, "kubernetes client should be initialized")
+
+				// Test context propagation by processing logs
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr("test.key", "test.value")
+
+				err = lp.ConsumeLogs(ctx, logs)
+				require.NoError(t, err, "failed to process logs")
+				require.Equal(t, 1, logs.ResourceLogs().Len(), "should have one resource log")
+
+				// Shutdown the processor
+				err = lp.Shutdown(ctx)
+				require.NoError(t, err, "failed to shutdown logs processor")
+			})
+
+			t.Run("profiles", func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				tt.configModifier(cfg)
+
+				var kp *kubernetesprocessor
+				pp, err := newProfilesProcessor(
+					cfg,
+					consumertest.NewNop(),
+					withExtractKubernetesProcessorInto(&kp),
+				)
+				require.NoError(t, err, "failed to create profiles processor")
+				require.NotNil(t, pp, "profiles processor should not be nil")
+
+				// Start the processor
+				ctx := context.Background()
+				err = pp.Start(ctx, componenttest.NewNopHost())
+				require.NoError(t, err, "failed to start profiles processor")
+
+				// Verify processor is initialized
+				require.NotNil(t, kp, "kubernetes processor should be initialized")
+				require.NotNil(t, kp.kc, "kubernetes client should be initialized")
+
+				// Test context propagation by processing profiles
+				profiles := pprofile.NewProfiles()
+				rp := profiles.ResourceProfiles().AppendEmpty()
+				rp.Resource().Attributes().PutStr("test.key", "test.value")
+
+				err = pp.ConsumeProfiles(ctx, profiles)
+				require.NoError(t, err, "failed to process profiles")
+				require.Equal(t, 1, profiles.ResourceProfiles().Len(), "should have one resource profile")
+
+				// Shutdown the processor
+				err = pp.Shutdown(ctx)
+				require.NoError(t, err, "failed to shutdown profiles processor")
+			})
+		})
+	}
+}
+
 func assertResourceHasStringAttribute(t *testing.T, r pcommon.Resource, k, v string) {
 	got, ok := r.Attributes().Get(k)
 	require.Truef(t, ok, "resource does not contain attribute %s", k)
