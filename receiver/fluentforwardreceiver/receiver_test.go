@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -43,7 +44,7 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 
 	receiver, err := newFluentReceiver(set, conf, next)
 	require.NoError(t, err)
-	require.NoError(t, receiver.Start(ctx, nil))
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 
 	connect := func() net.Conn {
 		conn, err := net.Dial("tcp", receiver.(*fluentReceiver).listener.Addr().String())
@@ -339,7 +340,7 @@ func TestUnixEndpoint(t *testing.T) {
 
 	receiver, err := newFluentReceiver(receivertest.NewNopSettings(metadata.Type), conf, next)
 	require.NoError(t, err)
-	require.NoError(t, receiver.Start(ctx, nil))
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	defer func() { require.NoError(t, receiver.Shutdown(ctx)) }()
 
 	conn, err := net.Dial("unix", receiver.(*fluentReceiver).listener.Addr().String())

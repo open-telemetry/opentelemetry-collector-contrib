@@ -37,7 +37,7 @@ func createExporter(c *Config) *ddExporter {
 
 // start creates the http client
 func (dd *ddExporter) start(ctx context.Context, host component.Host) (err error) {
-	dd.client, err = dd.clientSettings.ToClient(ctx, host, componenttest.NewNopTelemetrySettings())
+	dd.client, err = dd.clientSettings.ToClient(ctx, host.GetExtensions(), componenttest.NewNopTelemetrySettings())
 	return err
 }
 

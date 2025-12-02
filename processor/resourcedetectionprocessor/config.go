@@ -4,6 +4,8 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -50,6 +52,9 @@ type Config struct {
 	//
 	// Deprecated: Please use detector's resource_attributes config instead
 	Attributes []string `mapstructure:"attributes"`
+	// If > 0, periodically re-run detection for all configured detectors.
+	// When 0 (default), no periodic refresh occurs.
+	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors

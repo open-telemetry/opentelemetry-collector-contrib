@@ -219,11 +219,11 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 func generateLabelSets(seriesCount, cardinality int) []labels.Labels {
 	result := make([]labels.Labels, seriesCount)
 
-	for i := 0; i < seriesCount; i++ {
+	for i := range seriesCount {
 		lbls := labels.NewBuilder(labels.EmptyLabels())
 		lbls.Set(model.MetricNameLabel, fmt.Sprintf("metric_%d", i))
 
-		for j := 0; j < cardinality; j++ {
+		for j := range cardinality {
 			lbls.Set(fmt.Sprintf("label_%d", j), fmt.Sprintf("value_%d_%d", i, j))
 		}
 
@@ -238,7 +238,7 @@ func generateLabelSets(seriesCount, cardinality int) []labels.Labels {
 func generateNativeHistograms(count int) []*histogram.Histogram {
 	result := make([]*histogram.Histogram, count)
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// Use tsdbutil.GenerateTestHistogram to create realistic native histograms
 		// The parameter controls the histogram ID, which varies the bucket counts slightly
 		result[i] = tsdbutil.GenerateTestHistogram(int64(i))

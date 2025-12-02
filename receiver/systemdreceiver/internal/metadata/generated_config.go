@@ -28,11 +28,15 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for systemd metrics.
 type MetricsConfig struct {
-	SystemdUnitState MetricConfig `mapstructure:"systemd.unit.state"`
+	SystemdUnitCPUTime MetricConfig `mapstructure:"systemd.unit.cpu.time"`
+	SystemdUnitState   MetricConfig `mapstructure:"systemd.unit.state"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SystemdUnitCPUTime: MetricConfig{
+			Enabled: true,
+		},
 		SystemdUnitState: MetricConfig{
 			Enabled: true,
 		},
