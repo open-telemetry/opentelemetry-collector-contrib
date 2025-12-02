@@ -33,6 +33,8 @@ The following is example configuration
         label_selector: environment in (production),tier in (frontend)
         field_selector: status.phase=Running
         interval: 15m
+        exclude_namespaces:
+          - regexp: ignore
       - name: events
         mode: watch
         group: events.k8s.io
@@ -59,7 +61,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
 - `resource_version` allows watch resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
-- `exclude_namespaces`: allows excluding namespaces from being watched/pulled (NOTE: if a new namespace that matches the regex is added, the collector will need to be restarted)
+- `exclude_namespaces`: allows excluding namespaces from being watched/pulled, (NOTE: if a new namespace that matches the regex is added, the collector will need to be restarted)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
 use this config to specify the group to select. By default, it will select the first group.
 For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup. In
@@ -168,6 +170,7 @@ rules:
   resources:
   - events
   - pods
+  - namespaces
   verbs:
   - get
   - list
