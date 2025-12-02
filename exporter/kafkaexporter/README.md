@@ -23,9 +23,9 @@ processors for higher throughput and resiliency. Message payload encoding is con
 ## Configuration settings
 
 > [!NOTE]
-> You can opt out of using the [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
-> `exporter.kafkaexporter.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
-> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+> The Kafka exporter uses the [`franz-go`](https://github.com/twmb/franz-go) client library, which provides
+> better performance and support for modern Kafka features. The `exporter.kafkaexporter.UseFranzGo` feature
+> gate is now stable and always enabled (as of v0.141.0). The legacy Sarama client will be removed after v0.143.0.
 
 There are no required settings.
 
