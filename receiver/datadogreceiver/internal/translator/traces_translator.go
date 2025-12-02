@@ -152,7 +152,6 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 		if rpcService, ok := span.Meta[("rpc.service")]; ok {
 			service = rpcService
 		}
-
 	} else if grpcFullMethod, ok := span.Meta[("rpc.grpc.full_method")]; ok {
 		// format: /$package.$service/$method
 		grpcFullMethodElements := strings.SplitN(strings.TrimPrefix(grpcFullMethod, "/"), "/", 2)
