@@ -533,6 +533,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"id": "1920212223242526",
 		"name": "client span",
 		"action": "receive",
+		"kind": "CLIENT",
 		"db": {
 		  "instance": "users",
 		  "statement": "SELECT * FROM users WHERE user_id=?",

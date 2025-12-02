@@ -289,8 +289,29 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("event.outcome", "failure")
 	}
 	document.AddLinks("span.links", span.Links())
+	if spanKind := spanKindToECSStr(span.Kind()); spanKind != "" {
+		document.AddString("span.kind", spanKind)
+	}
 
 	return document.Serialize(buf, true)
+}
+
+// spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
+// https://github.com/elastic/apm-data/blob/main/input/elasticapm/internal/modeldecoder/v2/decoder.go#L1665-L1669
+func spanKindToECSStr(sk ptrace.SpanKind) string {
+	switch sk {
+	case ptrace.SpanKindInternal:
+		return "INTERNAL"
+	case ptrace.SpanKindServer:
+		return "SERVER"
+	case ptrace.SpanKindClient:
+		return "CLIENT"
+	case ptrace.SpanKindProducer:
+		return "PRODUCER"
+	case ptrace.SpanKindConsumer:
+		return "CONSUMER"
+	}
+	return ""
 }
 
 func (e otelModeEncoder) encodeLog(
