@@ -1,6 +1,6 @@
 ;WITH qstats AS
           (
-              SELECT TOP 1000
+              SELECT TOP (@maxSampleCount)
                   REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
                   HOST_NAME() AS [computer_name],
                   max(qs.plan_handle)                  AS plan_handle,
@@ -17,7 +17,7 @@
                   SUM(qs.total_grant_kb)               AS total_grant_kb
               FROM sys.dm_exec_query_stats AS qs
                        CROSS APPLY sys.dm_exec_sql_text(qs.plan_handle) AS st1
-              WHERE qs.last_execution_time BETWEEN DATEADD(SECOND, -1200, GETDATE()) AND GETDATE()
+              WHERE qs.last_execution_time BETWEEN DATEADD(SECOND, @lookbackTime, GETDATE()) AND GETDATE()
               GROUP BY st1.objectid, qs.query_hash, qs.query_plan_hash
           )
  SELECT
