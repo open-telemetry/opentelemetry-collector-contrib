@@ -14,6 +14,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.73.0-rc.9
+	github.com/DataDog/datadog-agent/pkg/metrics v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.9
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.9
@@ -79,7 +80,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/fips v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/types v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/metrics v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.73.0-rc.9 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.73.0-rc.9 // indirect
