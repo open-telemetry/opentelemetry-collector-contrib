@@ -57,10 +57,7 @@ func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
 	if thresholdIndex < 0 {
 		return 0
 	}
-	trimmed := int(thresholdIndex) + 1
-	if trimmed > len(buckets.BucketCounts) {
-		trimmed = len(buckets.BucketCounts)
-	}
+	trimmed := min(int(thresholdIndex)+1, len(buckets.BucketCounts))
 	var zeroCount uint64
 	for _, bucketCount := range buckets.BucketCounts[:trimmed] {
 		zeroCount += bucketCount
