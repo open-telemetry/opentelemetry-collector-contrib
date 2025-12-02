@@ -18,7 +18,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/apploadbalancerlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
@@ -76,7 +76,8 @@ func getEncodingFormat(logType string) string {
 	case vpcflowlog.NetworkManagementNameSuffix,
 		vpcflowlog.ComputeNameSuffix:
 		return constants.GCPFormatVPCFlowLog
-	case armorlog.LoadBalancerLogSuffix:
+	case apploadbalancerlog.GlobalAppLoadBalancerLogSuffix,
+		apploadbalancerlog.RegionalAppLoadBalancerLogSuffix:
 		return constants.GCPFormatLoadBalancerLog
 	case proxynlb.ConnectionsLogNameSuffix:
 		return constants.GCPFormatProxyNLBLog
@@ -499,14 +500,10 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 	case constants.GCPFormatLoadBalancerLog:
 		// Add encoding.format to scope attributes for Load balancer logs
 		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
-		// Quick check to avoid unmarshaling non-armor load balancer logs
-		if armorlog.ContainsSecurityPolicyFields(log.JSONPayload) {
-			if err := armorlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
-				return fmt.Errorf("failed to parse Armor log JSON payload: %w", err)
-			}
-			return nil
+		if err := apploadbalancerlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse Load Balancer log JSON payload: %w", err)
 		}
-		// Fall through to default payload handling for non-armor load balancer logs
+		return nil
 		// TODO Add support for more log types
 	case constants.GCPFormatProxyNLBLog:
 		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)

@@ -37,6 +37,12 @@ resourceLogs:
               - key: gcp.load_balancing.status.details
                 value:
                   stringValue: denied_by_security_policy
+              - key: gcp.load_balancing.cache.decision
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: RESPONSE_HAS_CONTENT_TYPE
+                      - stringValue: CACHE_MODE_USE_ORIGIN_HEADERS
               - key: gcp.load_balancing.backend_target_project_number
                 value:
                   stringValue: projects/8560181848
@@ -49,24 +55,25 @@ resourceLogs:
               - key: gcp.armor.request_data.remote_ip.asn
                 value:
                   intValue: "57269"
-              - key: gcp.armor.security_policy.type
-                value:
-                  stringValue: enforcedSecurityPolicy
-              - key: gcp.armor.security_policy.name
-                value:
-                  stringValue: test-armor-policy
-              - key: gcp.armor.security_policy.priority
-                value:
-                  intValue: "1"
-              - key: gcp.armor.security_policy.configured_action
-                value:
-                  stringValue: DENY
-              - key: gcp.armor.security_policy.outcome
-                value:
-                  stringValue: DENY
               - key: gcp.armor.request_data.recaptcha_action_token.score
                 value:
                   doubleValue: 0.9
+              - key: gcp.armor.security_policy.enforced
+                value:
+                  kvlistValue:
+                    values:
+                      - key: name
+                        value:
+                          stringValue: test-armor-policy
+                      - key: priority
+                        value:
+                          intValue: "1"
+                      - key: configured_action
+                        value:
+                          stringValue: DENY
+                      - key: outcome
+                        value:
+                          stringValue: DENY
               - key: http.request.method
                 value:
                   stringValue: GET

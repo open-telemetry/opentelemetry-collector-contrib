@@ -1,105 +1,15 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package armorlog
+package apploadbalancerlog
 
 import (
 	"testing"
 
-	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
-
-func int64ptr(i int64) *int64 { return &i }
-
-func TestContainsSecurityPolicyFields(t *testing.T) {
-	tests := []struct {
-		name     string
-		payload  string
-		expected bool
-	}{
-		{
-			name:     "contains enforcedSecurityPolicy",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","enforcedSecurityPolicy":{"name":"test"}}`,
-			expected: true,
-		},
-		{
-			name:     "contains previewSecurityPolicy",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","previewSecurityPolicy":{"name":"test"}}`,
-			expected: true,
-		},
-		{
-			name:     "contains enforcedEdgeSecurityPolicy",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","enforcedEdgeSecurityPolicy":{"name":"test"}}`,
-			expected: true,
-		},
-		{
-			name:     "contains previewEdgeSecurityPolicy",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","previewEdgeSecurityPolicy":{"name":"test"}}`,
-			expected: true,
-		},
-		{
-			name:     "no security policy fields",
-			payload:  `{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","someOtherField":"value"}`,
-			expected: false,
-		},
-		{
-			name:     "empty JSON",
-			payload:  `{}`,
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := ContainsSecurityPolicyFields(gojson.RawMessage(tt.payload))
-			require.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestIsValid(t *testing.T) {
-	tests := []struct {
-		name       string
-		log        armorlog
-		expectsErr string
-	}{
-		{
-			name: "invalid type",
-			log: armorlog{
-				Type:                   "invalid-type",
-				EnforcedSecurityPolicy: &enforcedSecurityPolicy{},
-			},
-			expectsErr: "expected @type to be type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry, got invalid-type",
-		},
-		{
-			name: "all security policies nil",
-			log: armorlog{
-				Type: armorLogType,
-			},
-			expectsErr: "at least one of the security policy fields must be non-nil",
-		},
-		{
-			name: "valid log with enforced security policy",
-			log: armorlog{
-				Type:                   armorLogType,
-				EnforcedSecurityPolicy: &enforcedSecurityPolicy{},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := isValid(tt.log)
-			if tt.expectsErr != "" {
-				require.ErrorContains(t, err, tt.expectsErr)
-				return
-			}
-			require.NoError(t, err)
-		})
-	}
-}
 
 func TestHandleSecurityPolicyRequestData(t *testing.T) {
 	tests := []struct {
@@ -613,195 +523,316 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 	}
 }
 
-func TestParsePayloadIntoAttributes(t *testing.T) {
+func TestHandleArmorLogAttributes(t *testing.T) {
 	tests := []struct {
-		name       string
-		payload    string
-		expected   map[string]any
-		expectsErr string
+		name     string
+		log      *armorlog
+		expected map[string]any
+		wantErr  bool
 	}{
 		{
-			name:       "invalid json",
-			payload:    `{invalid json}`,
-			expectsErr: "failed to unmarshal Armor log",
-		},
-		{
-			name: "invalid armor log type",
-			payload: `{
-				"@type": "invalid-type",
-				"statusDetails": "denied_by_security_policy"
-			}`,
-			expectsErr: "invalid Armor log",
-		},
-		{
-			name: "different remote ips",
-			payload: `{
-				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
-				"statusDetails": "denied_by_security_policy",
-				"remoteIp": "192.168.1.1",
-				"enforcedSecurityPolicy": {},
-				"securityPolicyRequestData": {
-					"remoteIpInfo": {
-						"ipAddress": "10.0.0.1"
-					}
-				}
-			}`,
-			expectsErr: "already present with different value",
-		},
-		{
-			name: "preview edge security policy",
-			payload: `{
-				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
-				"statusDetails": "denied_by_security_policy",
-				"previewEdgeSecurityPolicy": {
-					"name": "edge-policy",
-					"priority": 5,
-					"configuredAction": "allow",
-					"outcome": "accepted"
-				}
-			}`,
-			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:          "denied_by_security_policy",
-				gcpArmorSecurityPolicyType:             securityPolicyTypePreviewEdge,
-				gcpArmorSecurityPolicyName:             "edge-policy",
-				gcpArmorSecurityPolicyPriority:         int64(5),
-				gcpArmorSecurityPolicyConfiguredAction: "allow",
-				gcpArmorSecurityPolicyOutcome:          "accepted",
-			},
-		},
-		{
-			name: "enforced edge security policy",
-			payload: `{
-				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
-				"statusDetails": "denied_by_security_policy",
-				"enforcedEdgeSecurityPolicy": {
-					"name": "edge-policy-enforced",
-					"priority": 10,
-					"configuredAction": "DENY",
-					"outcome": "DENY"
-				}
-			}`,
-			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:          "denied_by_security_policy",
-				gcpArmorSecurityPolicyType:             securityPolicyTypeEnforcedEdge,
-				gcpArmorSecurityPolicyName:             "edge-policy-enforced",
-				gcpArmorSecurityPolicyPriority:         int64(10),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-			},
-		},
-		{
-			name: "preview security policy",
-			payload: `{
-				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
-				"statusDetails": "denied_by_security_policy",
-				"previewSecurityPolicy": {
-					"name": "preview-policy",
-					"priority": 20,
-					"configuredAction": "DENY",
-					"outcome": "DENY",
-					"preconfiguredExprIds": ["expr1", "expr2"]
-				}
-			}`,
-			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:          "denied_by_security_policy",
-				gcpArmorSecurityPolicyType:             securityPolicyTypePreview,
-				gcpArmorSecurityPolicyName:             "preview-policy",
-				gcpArmorSecurityPolicyPriority:         int64(20),
-				gcpArmorSecurityPolicyConfiguredAction: "DENY",
-				gcpArmorSecurityPolicyOutcome:          "DENY",
-				gcpArmorWAFRuleExpressionIDs:           []any{"expr1", "expr2"},
-			},
-		},
-		{
-			name: "enforced security policy with all fields",
-			payload: `{
-				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
-				"statusDetails": "denied_by_security_policy",
-				"enforcedSecurityPolicy": {
-					"name": "enforced-policy",
-					"priority": 30,
-					"configuredAction": "DENY",
-					"outcome": "DENY",
-					"rateLimitAction": {
-						"key": "rate-key",
-						"outcome": "rate_limited"
-					},
-					"preconfiguredExprIds": ["expr1"],
-					"threatIntelligence": {
-						"categories": ["malware", "phishing"]
-					},
-					"addressGroup": {
-						"names": ["group1", "group2"]
-					},
-					"adaptiveProtection": {
-						"autoDeployAlertId": "alert-123"
-					}
-				}
-			}`,
-			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:               "denied_by_security_policy",
-				gcpArmorSecurityPolicyType:                  securityPolicyTypeEnforced,
-				gcpArmorSecurityPolicyName:                  "enforced-policy",
-				gcpArmorSecurityPolicyPriority:              int64(30),
-				gcpArmorSecurityPolicyConfiguredAction:      "DENY",
-				gcpArmorSecurityPolicyOutcome:               "DENY",
-				gcpArmorRateLimitActionKey:                  "rate-key",
-				gcpArmorRateLimitActionOutcome:              "rate_limited",
-				gcpArmorWAFRuleExpressionIDs:                []any{"expr1"},
-				gcpArmorThreatIntelligenceCategories:        []any{"malware", "phishing"},
-				gcpArmorAddressGroupNames:                   []any{"group1", "group2"},
-				gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-123",
-			},
-		},
-		{
-			name: "with security policy request data",
-			payload: `{
-				"@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
-				"statusDetails": "denied_by_security_policy",
-				"remoteIp": "1.2.3.4",
-				"backendTargetProjectNumber": "123456789",
-				"securityPolicyRequestData": {
-					"recaptchaActionToken": { "score": 0.9 },
-					"userIpInfo": { "source": "X-Forwarded-For", "ipAddress": "5.6.7.8" },
-					"tlsJa3Fingerprint": "ja3-fingerprint"
+			name: "no security policy fields - only SecurityPolicyRequestData",
+			log: &armorlog{
+				SecurityPolicyRequestData: &securityPolicyRequestData{
+					RecaptchaActionToken: &recaptchaToken{Score: 0.9},
 				},
-				"enforcedSecurityPolicy": {
-					"name": "enforced-policy",
-					"priority": 30,
-					"configuredAction": "DENY",
-					"outcome": "DENY"
-				}
-			}`,
-			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:              "denied_by_security_policy",
-				string(semconv.NetworkPeerAddressKey):      "1.2.3.4",
-				gcpLoadBalancingBackendTargetProjectNumber: "123456789",
-				gcpArmorRecaptchaActionTokenScore:          float64(0.9),
-				gcpArmorUserIPInfoSource:                   "X-Forwarded-For",
-				string(semconv.ClientAddressKey):           "5.6.7.8",
-				string(semconv.TLSClientJa3Key):            "ja3-fingerprint",
-				gcpArmorSecurityPolicyType:                 securityPolicyTypeEnforced,
-				gcpArmorSecurityPolicyName:                 "enforced-policy",
-				gcpArmorSecurityPolicyPriority:             int64(30),
-				gcpArmorSecurityPolicyConfiguredAction:     "DENY",
-				gcpArmorSecurityPolicyOutcome:              "DENY",
 			},
+			expected: map[string]any{
+				gcpArmorRecaptchaActionTokenScore: float64(0.9),
+			},
+			wantErr: false,
+		},
+		{
+			name: "enforced security policy only",
+			log: &armorlog{
+				EnforcedSecurityPolicy: &enforcedSecurityPolicy{
+					securityPolicyExtended: securityPolicyExtended{
+						securityPolicyBase: securityPolicyBase{
+							Name:             "test-policy",
+							Priority:         int64ptr(100),
+							ConfiguredAction: "DENY",
+							Outcome:          "DENY",
+						},
+					},
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
+					gcpArmorSecurityPolicyName:             "test-policy",
+					gcpArmorSecurityPolicyPriority:         int64(100),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "preview security policy only",
+			log: &armorlog{
+				PreviewSecurityPolicy: &securityPolicyExtended{
+					securityPolicyBase: securityPolicyBase{
+						Name:             "preview-policy",
+						Priority:         int64ptr(50),
+						ConfiguredAction: "ALLOW",
+						Outcome:          "ACCEPT",
+					},
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyPreview: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-policy",
+					gcpArmorSecurityPolicyPriority:         int64(50),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "enforced edge security policy only",
+			log: &armorlog{
+				EnforcedEdgeSecurityPolicy: &securityPolicyBase{
+					Name:             "edge-policy",
+					Priority:         int64ptr(75),
+					ConfiguredAction: "DENY",
+					Outcome:          "DENY",
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyEnforcedEdge: map[string]any{
+					gcpArmorSecurityPolicyName:             "edge-policy",
+					gcpArmorSecurityPolicyPriority:         int64(75),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "preview edge security policy only",
+			log: &armorlog{
+				PreviewEdgeSecurityPolicy: &securityPolicyBase{
+					Name:             "preview-edge-policy",
+					Priority:         int64ptr(25),
+					ConfiguredAction: "ALLOW",
+					Outcome:          "ACCEPT",
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyPreviewEdge: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-edge-policy",
+					gcpArmorSecurityPolicyPriority:         int64(25),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "enforced policy with user ip data",
+			log: &armorlog{
+				EnforcedSecurityPolicy: &enforcedSecurityPolicy{
+					securityPolicyExtended: securityPolicyExtended{
+						securityPolicyBase: securityPolicyBase{
+							Name:             "test-policy",
+							Priority:         int64ptr(100),
+							ConfiguredAction: "DENY",
+							Outcome:          "DENY",
+						},
+					},
+					AdaptiveProtection: &adaptiveProtection{
+						AutoDeployAlertID: "alert-456",
+					},
+				},
+				SecurityPolicyRequestData: &securityPolicyRequestData{
+					RecaptchaActionToken: &recaptchaToken{Score: 0.8},
+					UserIPInfo: &userIPInfo{
+						Source:    "X-Forwarded-For",
+						IPAddress: "1.2.3.4",
+					},
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
+					gcpArmorSecurityPolicyName:                  "test-policy",
+					gcpArmorSecurityPolicyPriority:              int64(100),
+					gcpArmorSecurityPolicyConfiguredAction:      "DENY",
+					gcpArmorSecurityPolicyOutcome:               "DENY",
+					gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-456",
+				},
+				gcpArmorRecaptchaActionTokenScore: float64(0.8),
+				gcpArmorUserIPInfoSource:          "X-Forwarded-For",
+				string(semconv.ClientAddressKey):  "1.2.3.4",
+			},
+			wantErr: false,
+		},
+		{
+			name: "preview policy with all extended fields",
+			log: &armorlog{
+				PreviewSecurityPolicy: &securityPolicyExtended{
+					securityPolicyBase: securityPolicyBase{
+						Name:             "full-preview",
+						Priority:         int64ptr(10),
+						ConfiguredAction: "DENY",
+						Outcome:          "DENY",
+					},
+					RateLimitAction: &rateLimitAction{
+						Key:     "rl-key",
+						Outcome: "RATE_LIMITED",
+					},
+					PreconfiguredExprIDs: []string{"expr1", "expr2"},
+					ThreatIntelligence: &threatIntelligence{
+						Categories: []string{"botnet"},
+					},
+					AddressGroup: &addressGroup{
+						Names: []string{"addr-group-1"},
+					},
+				},
+				SecurityPolicyRequestData: &securityPolicyRequestData{
+					TLSJa3Fingerprint: "ja3-hash",
+					TLSJa4Fingerprint: "ja4-hash",
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyPreview: map[string]any{
+					gcpArmorSecurityPolicyName:             "full-preview",
+					gcpArmorSecurityPolicyPriority:         int64(10),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+					gcpArmorRateLimitActionKey:             "rl-key",
+					gcpArmorRateLimitActionOutcome:         "RATE_LIMITED",
+					gcpArmorWAFRuleExpressionIDs:           []any{"expr1", "expr2"},
+					gcpArmorThreatIntelligenceCategories:   []any{"botnet"},
+					gcpArmorAddressGroupNames:              []any{"addr-group-1"},
+				},
+				string(semconv.TLSClientJa3Key): "ja3-hash",
+				gcpArmorTLSJa4Fingerprint:       "ja4-hash",
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple policies - enforced and preview",
+			log: &armorlog{
+				EnforcedSecurityPolicy: &enforcedSecurityPolicy{
+					securityPolicyExtended: securityPolicyExtended{
+						securityPolicyBase: securityPolicyBase{
+							Name:             "enforced-policy",
+							Priority:         int64ptr(100),
+							ConfiguredAction: "DENY",
+							Outcome:          "DENY",
+						},
+					},
+				},
+				PreviewSecurityPolicy: &securityPolicyExtended{
+					securityPolicyBase: securityPolicyBase{
+						Name:             "preview-policy",
+						Priority:         int64ptr(50),
+						ConfiguredAction: "ALLOW",
+						Outcome:          "ACCEPT",
+					},
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
+					gcpArmorSecurityPolicyName:             "enforced-policy",
+					gcpArmorSecurityPolicyPriority:         int64(100),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+				},
+				gcpArmorSecurityPolicyPreview: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-policy",
+					gcpArmorSecurityPolicyPriority:         int64(50),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "all four policy types with request data",
+			log: &armorlog{
+				EnforcedSecurityPolicy: &enforcedSecurityPolicy{
+					securityPolicyExtended: securityPolicyExtended{
+						securityPolicyBase: securityPolicyBase{
+							Name:             "enforced-policy",
+							Priority:         int64ptr(100),
+							ConfiguredAction: "DENY",
+							Outcome:          "DENY",
+						},
+					},
+					AdaptiveProtection: &adaptiveProtection{
+						AutoDeployAlertID: "alert-123",
+					},
+				},
+				PreviewSecurityPolicy: &securityPolicyExtended{
+					securityPolicyBase: securityPolicyBase{
+						Name:             "preview-policy",
+						Priority:         int64ptr(50),
+						ConfiguredAction: "ALLOW",
+						Outcome:          "ACCEPT",
+					},
+				},
+				EnforcedEdgeSecurityPolicy: &securityPolicyBase{
+					Name:             "enforced-edge-policy",
+					Priority:         int64ptr(75),
+					ConfiguredAction: "DENY",
+					Outcome:          "DENY",
+				},
+				PreviewEdgeSecurityPolicy: &securityPolicyBase{
+					Name:             "preview-edge-policy",
+					Priority:         int64ptr(25),
+					ConfiguredAction: "ALLOW",
+					Outcome:          "ACCEPT",
+				},
+				SecurityPolicyRequestData: &securityPolicyRequestData{
+					RecaptchaActionToken: &recaptchaToken{Score: 0.95},
+					TLSJa3Fingerprint:    "ja3-fingerprint",
+				},
+			},
+			expected: map[string]any{
+				gcpArmorSecurityPolicyEnforced: map[string]any{
+					gcpArmorSecurityPolicyName:                  "enforced-policy",
+					gcpArmorSecurityPolicyPriority:              int64(100),
+					gcpArmorSecurityPolicyConfiguredAction:      "DENY",
+					gcpArmorSecurityPolicyOutcome:               "DENY",
+					gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-123",
+				},
+				gcpArmorSecurityPolicyPreview: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-policy",
+					gcpArmorSecurityPolicyPriority:         int64(50),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
+				gcpArmorSecurityPolicyEnforcedEdge: map[string]any{
+					gcpArmorSecurityPolicyName:             "enforced-edge-policy",
+					gcpArmorSecurityPolicyPriority:         int64(75),
+					gcpArmorSecurityPolicyConfiguredAction: "DENY",
+					gcpArmorSecurityPolicyOutcome:          "DENY",
+				},
+				gcpArmorSecurityPolicyPreviewEdge: map[string]any{
+					gcpArmorSecurityPolicyName:             "preview-edge-policy",
+					gcpArmorSecurityPolicyPriority:         int64(25),
+					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
+					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
+				},
+				gcpArmorRecaptchaActionTokenScore: float64(0.95),
+				string(semconv.TLSClientJa3Key):   "ja3-fingerprint",
+			},
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			attr := pcommon.NewMap()
-			err := ParsePayloadIntoAttributes([]byte(tt.payload), attr)
+			err := handleArmorLogAttributes(tt.log, attr)
 
-			if tt.expectsErr != "" {
-				require.ErrorContains(t, err, tt.expectsErr)
-				return
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expected, attr.AsRaw())
 			}
-
-			require.NoError(t, err)
-			require.Equal(t, tt.expected, attr.AsRaw())
 		})
 	}
 }

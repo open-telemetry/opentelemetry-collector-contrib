@@ -1,0 +1,58 @@
+{
+  "insertId": "96b8mog16i6va6",
+  "jsonPayload": {
+    "securityPolicyRequestData": {
+      "remoteIpInfo": {
+        "regionCode": "US",
+        "asn": 6939
+      }
+    },
+    "enforcedSecurityPolicy": {
+      "priority": 2147483647,
+      "name": "test-armor-policy",
+      "configuredAction": "ALLOW",
+      "outcome": "ACCEPT"
+    },
+    "backendTargetProjectNumber": "projects/8560181848",
+    "enforcedEdgeSecurityPolicy": {
+      "name": "test-edge-policy",
+      "outcome": "ACCEPT",
+      "configuredAction": "ALLOW",
+      "priority": 2147483647
+    },
+    "@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+    "cacheDecision": [
+      "RESPONSE_HAS_CONTENT_TYPE",
+      "CACHE_MODE_USE_ORIGIN_HEADERS"
+    ],
+    "statusDetails": "failed_to_pick_backend",
+    "remoteIp": "64.62.156.212"
+  },
+  "httpRequest": {
+    "requestMethod": "GET",
+    "requestUrl": "http://136.110.215.198/geoserver/web/",
+    "requestSize": "211",
+    "status": 503,
+    "responseSize": "155",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
+    "remoteIp": "64.62.156.212",
+    "latency": "0.011213s"
+  },
+  "resource": {
+    "type": "http_load_balancer",
+    "labels": {
+      "backend_service_name": "bakcend-test-2",
+      "target_proxy_name": "cloud-armor-test-lb-target-proxy",
+      "url_map_name": "cloud-armor-test-lb",
+      "forwarding_rule_name": "cloud-armor-test-lb-forwarding-rule",
+      "project_id": "elastic-observability",
+      "zone": "global"
+    }
+  },
+  "timestamp": "2025-11-20T11:55:28.882791Z",
+  "severity": "WARNING",
+  "logName": "projects/elastic-observability/logs/requests",
+  "trace": "projects/elastic-observability/traces/5e9d5546ce04737d7f2bb8a01ebe42de",
+  "receiveTimestamp": "2025-11-20T11:55:30.099810516Z",
+  "spanId": "5c3a7dccbe97b56f"
+}

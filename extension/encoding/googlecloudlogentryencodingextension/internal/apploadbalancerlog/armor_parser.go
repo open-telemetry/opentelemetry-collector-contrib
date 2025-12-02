@@ -4,14 +4,11 @@
 // Find more information about Armor Logs:
 // https://docs.cloud.google.com/armor/docs/request-logging
 
-package armorlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
+package apploadbalancerlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/apploadbalancerlog"
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 
-	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
@@ -19,46 +16,39 @@ import (
 )
 
 const (
-	LoadBalancerLogSuffix = "requests"
-
-	armorLogType = "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry"
-
-	// gcpLoadBalancingStatusDetails holds a textual description of the response code
-	gcpLoadBalancingStatusDetails = "gcp.load_balancing.status.details"
-
-	// gcpLoadBalancingBackendTargetProjectNumber holds the project number of the backend target
-	gcpLoadBalancingBackendTargetProjectNumber = "gcp.load_balancing.backend_target_project_number"
-
-	// gcpArmorSecurityPolicyType holds security policy type
-	gcpArmorSecurityPolicyType = "gcp.armor.security_policy.type"
+	// Security policy types
+	gcpArmorSecurityPolicyEnforced     = "gcp.armor.security_policy.enforced"
+	gcpArmorSecurityPolicyPreview      = "gcp.armor.security_policy.preview"
+	gcpArmorSecurityPolicyEnforcedEdge = "gcp.armor.security_policy.enforced_edge"
+	gcpArmorSecurityPolicyPreviewEdge  = "gcp.armor.security_policy.preview_edge"
 
 	// Security policy base attributes
 	// gcpArmorSecurityPolicyName holds the security policy rule that was enforced
-	gcpArmorSecurityPolicyName = "gcp.armor.security_policy.name"
+	gcpArmorSecurityPolicyName = "name"
 	// gcpArmorSecurityPolicyPriority holds a numerical priority of the matching rule in the security policy
-	gcpArmorSecurityPolicyPriority = "gcp.armor.security_policy.priority"
+	gcpArmorSecurityPolicyPriority = "priority"
 	// gcpArmorSecurityPolicyConfiguredAction holds  the name of the configured action in the matching rule
-	gcpArmorSecurityPolicyConfiguredAction = "gcp.armor.security_policy.configured_action"
+	gcpArmorSecurityPolicyConfiguredAction = "configured_action"
 	// gcpArmorSecurityPolicyOutcome holds the outcome of executing the configured action
-	gcpArmorSecurityPolicyOutcome = "gcp.armor.security_policy.outcome"
+	gcpArmorSecurityPolicyOutcome = "outcome"
 
 	// Rate limit action attributes
 	// gcpArmorRateLimitActionKey holds the rate limit key value (up to 36 bytes)
-	gcpArmorRateLimitActionKey = "gcp.armor.security_policy.rate_limit.action.key"
+	gcpArmorRateLimitActionKey = "rate_limit.action.key"
 	// gcpArmorRateLimitActionOutcome holds the outcome of the rate limit action
-	gcpArmorRateLimitActionOutcome = "gcp.armor.security_policy.rate_limit.action.outcome"
+	gcpArmorRateLimitActionOutcome = "rate_limit.action.outcome"
 
 	// Extended attributes
 	// gcpArmorWAFRuleExpressionIDs holds the IDs of all preconfigured WAF rule expressions that triggered the rule
-	gcpArmorWAFRuleExpressionIDs = "gcp.armor.security_policy.preconfigured.expr_ids"
+	gcpArmorWAFRuleExpressionIDs = "preconfigured.expr_ids"
 	// gcpArmorThreatIntelligenceCategories holds information about the matched IP address lists from Google Threat Intelligence
-	gcpArmorThreatIntelligenceCategories = "gcp.armor.security_policy.threat_intelligence.categories"
+	gcpArmorThreatIntelligenceCategories = "threat_intelligence.categories"
 	// gcpArmorAddressGroupNames holds the names of the matched address groups
-	gcpArmorAddressGroupNames = "gcp.armor.security_policy.address_group.names"
+	gcpArmorAddressGroupNames = "address_group.names"
 
 	// Enforced policy attributes
 	// gcpArmorAdaptiveProtectionAutoDeployAlertID holds the alert ID of the events that Adaptive Protection detected
-	gcpArmorAdaptiveProtectionAutoDeployAlertID = "gcp.armor.security_policy.adaptive_protection.auto_deploy.alert_id"
+	gcpArmorAdaptiveProtectionAutoDeployAlertID = "adaptive_protection.auto_deploy.alert_id"
 
 	// Security policy request data attributes
 	// gcpArmorRecaptchaActionTokenScore holds the legitimacy score embedded in a of the reCAPTCHA action-token
@@ -73,30 +63,8 @@ const (
 	gcpArmorTLSJa4Fingerprint = "tls.client.ja4"
 )
 
-const (
-	// Security policy type string values
-	securityPolicyTypePreviewEdge  = "previewEdgeSecurityPolicy"
-	securityPolicyTypeEnforcedEdge = "enforcedEdgeSecurityPolicy"
-	securityPolicyTypePreview      = "previewSecurityPolicy"
-	securityPolicyTypeEnforced     = "enforcedSecurityPolicy"
-)
-
-var (
-	securityPolicyTypeEnforcedBytes     = []byte(securityPolicyTypeEnforced)
-	securityPolicyTypePreviewBytes      = []byte(securityPolicyTypePreview)
-	securityPolicyTypeEnforcedEdgeBytes = []byte(securityPolicyTypeEnforcedEdge)
-	securityPolicyTypePreviewEdgeBytes  = []byte(securityPolicyTypePreviewEdge)
-)
-
 type armorlog struct {
-	Type          string `json:"@type"`
-	StatusDetails string `json:"statusDetails"`
-
-	// Request metadata fields
-	BackendTargetProjectNumber string                     `json:"backendTargetProjectNumber"`
-	RemoteIP                   string                     `json:"remoteIp"`
-	CacheDecision              []string                   `json:"cacheDecision"`
-	SecurityPolicyRequestData  *securityPolicyRequestData `json:"securityPolicyRequestData"`
+	SecurityPolicyRequestData *securityPolicyRequestData `json:"securityPolicyRequestData"`
 
 	// Security policy fields: exactly one must be non-nil.
 	EnforcedSecurityPolicy     *enforcedSecurityPolicy `json:"enforcedSecurityPolicy"`
@@ -164,21 +132,6 @@ type threatIntelligence struct {
 
 type addressGroup struct {
 	Names []string `json:"names"`
-}
-
-func isValid(log armorlog) error {
-	if log.Type != armorLogType {
-		return fmt.Errorf("expected @type to be %s, got %s", armorLogType, log.Type)
-	}
-
-	if log.EnforcedSecurityPolicy == nil &&
-		log.PreviewSecurityPolicy == nil &&
-		log.EnforcedEdgeSecurityPolicy == nil &&
-		log.PreviewEdgeSecurityPolicy == nil {
-		return errors.New("at least one of the security policy fields must be non-nil")
-	}
-
-	return nil
 }
 
 func handleRecaptchaTokens(data *securityPolicyRequestData, attr pcommon.Map) {
@@ -288,51 +241,30 @@ func handleEnforcedSecurityPolicy(sp *enforcedSecurityPolicy, attr pcommon.Map) 
 	}
 }
 
-func ContainsSecurityPolicyFields(jsonPayload gojson.RawMessage) bool {
-	// Check for the presence of key armor log field names in the raw JSON without unmarshaling
-	// to avoid unnecessary overhead for non-armor load balancer logs.
-	return bytes.Contains(jsonPayload, securityPolicyTypeEnforcedBytes) ||
-		bytes.Contains(jsonPayload, securityPolicyTypePreviewBytes) ||
-		bytes.Contains(jsonPayload, securityPolicyTypeEnforcedEdgeBytes) ||
-		bytes.Contains(jsonPayload, securityPolicyTypePreviewEdgeBytes)
+func handleSecurityPolicies(armorlog *armorlog, attr pcommon.Map) {
+	if armorlog.PreviewEdgeSecurityPolicy != nil {
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyPreviewEdge)
+		handleSecurityPolicyBase(armorlog.PreviewEdgeSecurityPolicy, policyMap)
+	}
+	if armorlog.EnforcedEdgeSecurityPolicy != nil {
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyEnforcedEdge)
+		handleSecurityPolicyBase(armorlog.EnforcedEdgeSecurityPolicy, policyMap)
+	}
+	if armorlog.PreviewSecurityPolicy != nil {
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyPreview)
+		handleSecurityPolicyExtended(armorlog.PreviewSecurityPolicy, policyMap)
+	}
+	if armorlog.EnforcedSecurityPolicy != nil {
+		policyMap := attr.PutEmptyMap(gcpArmorSecurityPolicyEnforced)
+		handleEnforcedSecurityPolicy(armorlog.EnforcedSecurityPolicy, policyMap)
+	}
 }
 
-func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
-	var log armorlog
-	if err := gojson.Unmarshal(payload, &log); err != nil {
-		return fmt.Errorf("failed to unmarshal Armor log: %w", err)
-	}
+func handleArmorLogAttributes(armorlog *armorlog, attr pcommon.Map) error {
+	handleSecurityPolicies(armorlog, attr)
 
-	if err := isValid(log); err != nil {
-		return fmt.Errorf("invalid Armor log: %w", err)
-	}
-
-	shared.PutStr(gcpLoadBalancingStatusDetails, log.StatusDetails, attr)
-
-	// Handle request metadata fields
-	shared.PutStr(gcpLoadBalancingBackendTargetProjectNumber, log.BackendTargetProjectNumber, attr)
-	if _, err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), log.RemoteIP, attr); err != nil {
-		return fmt.Errorf("error setting security policy attribute: %w", err)
-	}
-
-	// Handle security policy request data (all nested fields)
-	if err := handleSecurityPolicyRequestData(log.SecurityPolicyRequestData, attr); err != nil {
+	if err := handleSecurityPolicyRequestData(armorlog.SecurityPolicyRequestData, attr); err != nil {
 		return fmt.Errorf("error handling Security Policy Request Data: %w", err)
-	}
-
-	switch {
-	case log.PreviewEdgeSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreviewEdge)
-		handleSecurityPolicyBase(log.PreviewEdgeSecurityPolicy, attr)
-	case log.EnforcedEdgeSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypeEnforcedEdge)
-		handleSecurityPolicyBase(log.EnforcedEdgeSecurityPolicy, attr)
-	case log.PreviewSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypePreview)
-		handleSecurityPolicyExtended(log.PreviewSecurityPolicy, attr)
-	case log.EnforcedSecurityPolicy != nil:
-		attr.PutStr(gcpArmorSecurityPolicyType, securityPolicyTypeEnforced)
-		handleEnforcedSecurityPolicy(log.EnforcedSecurityPolicy, attr)
 	}
 
 	return nil
