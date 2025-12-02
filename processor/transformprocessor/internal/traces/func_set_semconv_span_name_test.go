@@ -60,7 +60,6 @@ func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, setSemconvNameFunction)
-				require.NotNil(t, setSemconvNameFunction)
 			}
 		})
 	}
@@ -421,7 +420,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("messaging.operation", "publish")
 				attrs.PutStr("server.address", "rabbitmq_ecommerce")
-				attrs.PutStr("server.port", "5672")
+				attrs.PutInt("server.port", 5672)
 				attrs.PutStr("messaging.system", "rabbitmq")
 			},
 			want: "publish rabbitmq_ecommerce:5672",
