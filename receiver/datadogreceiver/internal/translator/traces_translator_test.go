@@ -599,7 +599,7 @@ func TestToTraces(t *testing.T) {
 			}
 			logger, _ := zap.NewDevelopment()
 			traceIDCache, _ := lru.New[uint64, pcommon.TraceID](100)
-			req, _ := http.NewRequest("POST", "/v0.5/traces", nil)
+			req, _ := http.NewRequest("POST", "/v0.5/traces", http.NoBody)
 
 			got, err := ToTraces(logger, payload, req, traceIDCache)
 			assert.NoError(t, err)
