@@ -43,7 +43,7 @@ func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 	r.stopping.Store(false)
 
 	var err error
-	if r.serverGRPC, err = r.cfg.ToServer(ctx, host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = r.cfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 

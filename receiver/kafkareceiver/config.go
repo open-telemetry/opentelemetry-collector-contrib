@@ -34,24 +34,6 @@ type Config struct {
 	// Profiles holds configuration about how profiles should be consumed.
 	Profiles TopicEncodingConfig `mapstructure:"profiles"`
 
-	// Topic holds the name of the Kafka topic from which to consume data.
-	//
-	// Topic has no default. If explicitly specified, it will take precedence
-	// over the default values of Logs.Topic, Traces.Topic, and Metrics.Topic.
-	//
-	// Deprecated [v0.124.0]: Use Logs.Topic, Traces.Topic, and Metrics.Topic.
-	Topic string `mapstructure:"topic"`
-
-	// Encoding holds the expected encoding of messages (default "otlp_proto")
-	//
-	// Encoding has no default. If explicitly specified, it will take precedence
-	// over the default values of Logs.Encoding, Traces.Encoding, and
-	// Metrics.Encoding.
-	//
-	// Deprecated [v0.124.0]: Use Logs.Encoding, Traces.Encoding, and
-	// Metrics.Encoding.
-	Encoding string `mapstructure:"encoding"`
-
 	// MessageMarking controls the way the messages are marked as consumed.
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
 
@@ -70,41 +52,6 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(c); err != nil {
 		return err
 	}
-	// Check if deprecated fields have been explicitly set,
-	// in which case they should be used instead of signal-
-	// specific defaults.
-	var zeroConfig Config
-	if err := conf.Unmarshal(&zeroConfig); err != nil {
-		return err
-	}
-	if c.Topic != "" {
-		if zeroConfig.Logs.Topic == "" {
-			c.Logs.Topic = c.Topic
-		}
-		if zeroConfig.Metrics.Topic == "" {
-			c.Metrics.Topic = c.Topic
-		}
-		if zeroConfig.Traces.Topic == "" {
-			c.Traces.Topic = c.Topic
-		}
-		if zeroConfig.Profiles.Topic == "" {
-			c.Profiles.Topic = c.Topic
-		}
-	}
-	if c.Encoding != "" {
-		if zeroConfig.Logs.Encoding == "" {
-			c.Logs.Encoding = c.Encoding
-		}
-		if zeroConfig.Metrics.Encoding == "" {
-			c.Metrics.Encoding = c.Encoding
-		}
-		if zeroConfig.Traces.Encoding == "" {
-			c.Traces.Encoding = c.Encoding
-		}
-		if zeroConfig.Profiles.Encoding == "" {
-			c.Profiles.Encoding = c.Encoding
-		}
-	}
 
 	// Set OnPermanentError default value to inherit from OnError for backward compatibility
 	// Only if OnPermanentError was not explicitly set in the config
@@ -120,7 +67,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		c.MessageMarking.OnPermanentError = c.MessageMarking.OnError
 	}
 
-	return conf.Unmarshal(c)
+	return nil
 }
 
 // Validate checks the receiver configuration is valid.
