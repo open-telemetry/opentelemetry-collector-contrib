@@ -26,7 +26,7 @@ The following settings can be optionally configured:
 
 - `include`: List of metrics names (case-insensitive), patterns or metric types to convert to delta. Valid values for metric types are: `sum`, `histogram`, `exponentialhistogram`.
 - `exclude`: List of metrics names (case-insensitive), patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.** Valid values for metric types are: `sum`, `histogram`, `exponentialhistogram`.
-- `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
+- `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 1 hour
 - `initial_value`: Handling of the first observed point for a given metric identity.
   When the collector (re)starts, there's no record of how much of a given cumulative counter has already been converted to delta values.
   - `auto` (default): Send if and only if the startime is set AND the starttime happens after the component started AND the starttime is different from the timestamp.
@@ -136,30 +136,6 @@ processors:
 ## Warnings
 
 - [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The cumulativetodelta processor's calculates delta by remembering the previous value of a metric.  For this reason, the calculation is only accurate if the metric is continuously sent to the same instance of the collector.  As a result, the cumulativetodelta processor may not work as expected if used in a deployment of multiple collectors.  When using this processor it is best for the data source to being sending data to a single collector.
-
-## Feature Gates
-
-### `processor.cumulativetodelta.defaultmaxstaleness`
-
-**Stage**: Alpha (disabled by default)
-
-**Description**: When enabled, the `max_staleness` configuration parameter defaults to 1 hour instead of 0 (infinite retention).
-
-**Behavioral Changes**:
-
-- **When disabled (default)**: The processor retains metric state indefinitely (`max_staleness: 0`). This matches the current behavior but can lead to unbounded memory growth in long-running collector instances, especially when tracking metrics with high cardinality or frequently changing attribute values.
-
-- **When enabled**: The processor automatically sets `max_staleness` to 1 hour if not explicitly configured. State entries are removed 1 hour after they were last observed, preventing unbounded memory growth. This is recommended for production deployments with dynamic workloads.
-
-**Note**: If you explicitly configure `max_staleness` in your configuration, that value will be used regardless of the feature gate setting.
-
-**Usage**:
-
-To enable the feature gate, start the collector with:
-
-```shell
-otelcol --config=config.yaml --feature-gates=processor.cumulativetodelta.defaultmaxstaleness
-```
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
