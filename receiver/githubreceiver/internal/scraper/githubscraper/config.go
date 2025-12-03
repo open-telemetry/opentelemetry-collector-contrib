@@ -14,7 +14,7 @@ import (
 
 // Config relating to GitHub Metric Scraper.
 type Config struct {
-	confighttp.ClientConfig       `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
 	internal.ScraperConfig
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// ConcurrencyLimit limits the number of goroutines spawned by repository
