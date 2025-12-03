@@ -185,7 +185,7 @@ func TestResourceProcessor(t *testing.T) {
 			err = rtp.Start(t.Context(), componenttest.NewNopHost())
 
 			if tt.detectedError != nil {
-				require.NoError(t, err)
+				require.Error(t, err)
 				return
 			}
 
@@ -216,7 +216,7 @@ func TestResourceProcessor(t *testing.T) {
 			err = rmp.Start(t.Context(), componenttest.NewNopHost())
 
 			if tt.detectedError != nil {
-				require.NoError(t, err)
+				require.Error(t, err)
 				return
 			}
 
@@ -247,7 +247,7 @@ func TestResourceProcessor(t *testing.T) {
 			err = rlp.Start(t.Context(), componenttest.NewNopHost())
 
 			if tt.detectedError != nil {
-				require.NoError(t, err)
+				require.Error(t, err)
 				return
 			}
 
@@ -278,7 +278,7 @@ func TestResourceProcessor(t *testing.T) {
 			err = rpp.Start(t.Context(), componenttest.NewNopHost())
 
 			if tt.detectedError != nil {
-				require.NoError(t, err)
+				require.Error(t, err)
 				return
 			}
 
