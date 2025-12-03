@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -599,7 +599,7 @@ func TestToTraces(t *testing.T) {
 			}
 			logger, _ := zap.NewDevelopment()
 			traceIDCache, _ := lru.New[uint64, pcommon.TraceID](100)
-			req, _ := http.NewRequest("POST", "/v0.5/traces", http.NoBody)
+			req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", http.NoBody)
 
 			got, err := ToTraces(logger, payload, req, traceIDCache)
 			assert.NoError(t, err)

@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // See:
@@ -24,7 +24,7 @@ var datadogKnownResourceAttributes = map[string]string{
 	"container_name": string(semconv.ContainerNameKey),
 	"image_name":     string(semconv.ContainerImageNameKey),
 	"image_tag":      string(semconv.ContainerImageTagsKey),
-	"runtime":        string(semconv.ContainerRuntimeKey),
+	"runtime":        string(semconv.ContainerRuntimeNameKey),
 
 	// Cloud-related attributes
 	"cloud_provider": string(semconv.CloudProviderKey),
