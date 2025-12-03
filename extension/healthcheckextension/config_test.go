@@ -109,12 +109,13 @@ func TestLoadConfigV2WithoutGate(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 	assert.NotNil(t, cfg.(*Config).HTTPConfig)
 
-	// Without the feature gate, v2 config is ignored and legacy extension is created.
-	// This allows users to have both legacy and v2 configs for easier migration.
+	// Without the feature gate, v2 config should cause an error.
+	// This makes it immediately obvious to users that the configuration is invalid.
 	f := NewFactory()
 	ext, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
-	require.NoError(t, err)
-	assert.IsType(t, &healthCheckExtension{}, ext, "should create legacy extension when gate is disabled")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, errV2ConfigWithoutFeatureGate)
+	assert.Nil(t, ext, "should not create extension when v2 config is present without feature gate")
 }
 
 func TestLoadConfigV2WithGate(t *testing.T) {

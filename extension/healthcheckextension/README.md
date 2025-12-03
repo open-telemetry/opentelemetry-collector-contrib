@@ -81,7 +81,7 @@ To use the new event-driven behavior:
 
 ```bash
 # Set the feature gate to true
---feature-gates=extension.healthcheck.disableCompatibilityWrapper=true
+--feature-gates=+extension.healthcheck.disableCompatibilityWrapper
 ```
 
 #### Migration Timeline
