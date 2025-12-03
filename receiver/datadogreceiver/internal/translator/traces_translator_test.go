@@ -510,6 +510,24 @@ func TestToTraces(t *testing.T) {
 			},
 		},
 		{
+			"rpc.client-ok-dd-trace-java-style",
+			pb.Span{
+				Name:     "grpc.client",
+				Resource: "/mydomain.MyDomainService/MyMethod",
+				Meta: map[string]string{
+					"grpc.code": "OK",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
+				string(semconv.RPCMethodKey):         "MyMethod",
+				string(semconv.RPCGRPCStatusCodeKey): "0",
+				string(semconv.RPCSystemKey):         semconv.RPCSystemGRPC.Value.AsString(),
+			},
+		},
+		{
 			"rpc.client-error-with-method-and-service",
 			pb.Span{
 				Name: "grpc.client",

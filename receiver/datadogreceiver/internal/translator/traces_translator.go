@@ -123,6 +123,8 @@ func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) {
 }
 
 func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// references:
+	// https://github.com/DataDog/documentation/blob/master/content/en/tracing/guide/ignoring_apm_resources.md#database
 	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/#name
 	if val, ok := span.Meta["db.query.summary"]; ok {
 		newSpan.SetName(val)
@@ -140,19 +142,26 @@ func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
 }
 
 func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// references:
+	// https://github.com/DataDog/documentation/blob/master/content/en/tracing/guide/ignoring_apm_resources.md#remote-procedure-calls
+	// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
+
 	// ddSpan.Attributes["grpc.status.code"] contains the gRPC status code name (eg "OK")
 	// not the numeric value (eg "0")
 	// it's ddSpan.error that indicates holds the gRPC status code numeric value
+	newSpan.Attributes().PutStr(string(semconv.RPCSystemKey), semconv.RPCSystemGRPC.Value.AsString())
 	newSpan.Attributes().PutInt(string(semconv.RPCGRPCStatusCodeKey), int64(span.GetError()))
 
 	method := ""
 	service := ""
 	if rpcMethod, ok := span.Meta[("rpc.method")]; ok {
+		// "rpc.method" is used by dd-trace-rb, check dd-trace-php
 		method = rpcMethod
 		if rpcService, ok := span.Meta[("rpc.service")]; ok {
 			service = rpcService
 		}
 	} else if grpcFullMethod, ok := span.Meta[("rpc.grpc.full_method")]; ok {
+		// "rpc.grpc.full_method" is used by dd-trace-go & dd-trace-rb, they also set span.Resource to the full method name
 		// format: /$package.$service/$method
 		grpcFullMethodElements := strings.SplitN(strings.TrimPrefix(grpcFullMethod, "/"), "/", 2)
 		if len(grpcFullMethodElements) == 2 {
@@ -161,6 +170,7 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 		}
 	} else if grpcMethod, ok := span.Meta[("grpc.method.name")]; ok {
 		// format: /$package.$service/$method
+		// "grpc.method.name" is used by dd-trace-dotnet dd-trace-python & dd-trace-go
 		grpcMethodElements := strings.SplitN(strings.TrimPrefix(grpcMethod, "/"), "/", 2)
 		if len(grpcMethodElements) == 2 {
 			method = grpcMethodElements[1]
@@ -170,7 +180,15 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 			method = ""
 			service = grpcMethodElements[0]
 		}
+	} else {
+		// resource is used by dd-trace-java
+		ddResource := strings.SplitN(strings.TrimPrefix(span.Resource, "/"), "/", 2)
+		if len(ddResource) == 2 {
+			method = ddResource[1]
+			service = ddResource[0]
+		}
 	}
+
 	spanName := ""
 	if method != "" {
 		newSpan.Attributes().PutStr(string(semconv.RPCMethodKey), method)
@@ -314,7 +332,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 				}
 			}
 
-			// Some spans need specific processing (http, db, ...)
+			// Some spans need specific processing (http, db, grpc...)
 			processSpanByName(span, &newSpan)
 		}
 	}
