@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	errIDInvalidLength = errors.New("invalid id length")
-	errIDHexDecode     = errors.New("invalid id hex")
+	errIDInvalidLength = errors.New("invalid ID length")
+	errIDHexDecode     = errors.New("invalid ID hex")
 )
 
 // funcErrorType is an error type that includes the function name that caused the error.
