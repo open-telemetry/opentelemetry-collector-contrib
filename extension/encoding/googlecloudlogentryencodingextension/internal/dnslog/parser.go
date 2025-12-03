@@ -52,7 +52,7 @@ const (
 	// gcpDNSEgressError holds Egress proxy error, the actual error as received from the on-premises DNS server
 	gcpDNSEgressError = "gcp.dns.egress.error"
 	// gcpDNSHealthyIPs holds addresses in the ResourceRecordSet that are known to be HEALTHY.
-	gcpDNSHealthyIPs = "gcp.dns.healthy_ips"
+	gcpDNSHealthyIPs = "gcp.dns.healthy.ips"
 	// gcpDNSUnhealthyIPs holds addresses in the ResourceRecordSet that are known to be UNHEALTHY.
 	gcpDNSUnhealthyIPs = "gcp.dns.unhealthy.ips"
 

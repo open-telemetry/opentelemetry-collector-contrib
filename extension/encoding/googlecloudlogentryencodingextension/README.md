@@ -464,7 +464,7 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 | `target_type` | `gcp.dns.server.type` |
 | `serverLatency` | `gcp.dns.server.latency` |
 | `egressError` | `gcp.dns.egress.error` |
-| `healthyIps` | `gcp.dns.healthy_ips` |
+| `healthyIps` | `gcp.dns.healthy.ips` |
 | `unhealthyIps` | `gcp.dns.unhealthy.ips` |
 | `dns64Translated` | `gcp.dns.dns64.translated` |
 | `vmInstanceId` | `host.id` |
