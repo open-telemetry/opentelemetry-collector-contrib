@@ -10,10 +10,11 @@ import (
 	"time"
 
 	gojson "github.com/goccy/go-json"
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
@@ -143,7 +144,7 @@ func (r ResourceLogsUnmarshaler) unmarshalRecord(allResourceScopeLogs map[logsRe
 	// and Unmarshal record into category-specific struct.
 	// That's actually double-unmarshaling, but there is no other way to parse variety of Azure Logs schemas
 	var ch categoryHolder
-	if err := gojson.Unmarshal(record, &ch); err != nil {
+	if err := jsoniter.ConfigFastest.Unmarshal(record, &ch); err != nil {
 		r.logger.Error("JSON unmarshal failed for Azure Log Record", zap.Error(err))
 		return
 	}

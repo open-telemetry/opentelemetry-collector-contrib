@@ -2,7 +2,10 @@
 
 ## General transformation rules
 
-Transformation of Azure Resource Log records happened based on Category defined in incoming log record (`category` or `type` field) using mappings described in this document. Mapping are defined to be OpenTelemetry SemConv compatible as much as possible.
+Transformation of Azure Resource Log records happened based on Category defined in incoming log record (`category` or `type` field) using mappings described in this document.
+Mapping are defined to be OpenTelemetry SemConv compatible as much as possible.
+
+If any of the expected field is not present in incoming JSON record or has an empty string value (i.e. "") - it will be ignored.
 
 ### Unknown/Unsupported Azure Resource Log record Category
 

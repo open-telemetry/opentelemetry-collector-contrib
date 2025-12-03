@@ -36,5 +36,9 @@ func createExtension(_ context.Context, settings extension.Settings, cfg compone
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Logs: logs.LogsConfig{
+			TimeFormats: logs.DefaultTimeFormats,
+		},
+	}
 }
