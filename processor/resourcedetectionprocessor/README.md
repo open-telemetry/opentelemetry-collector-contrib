@@ -868,6 +868,24 @@ The `refresh_interval` option allows resource attributes to be periodically refr
 
 **Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
 
+## Performance
+
+### Benchmark Tests
+
+This component includes comprehensive benchmark tests for all stable signals. The benchmarks measure the performance of the processor under different configurations:
+
+- **Traces**: `BenchmarkConsumeTracesDefault` and `BenchmarkConsumeTracesAll`
+- **Metrics**: `BenchmarkConsumeMetricsDefault` and `BenchmarkConsumeMetricsAll`
+- **Logs**: `BenchmarkConsumeLogsDefault` and `BenchmarkConsumeLogsAll`
+
+To run the benchmarks locally:
+
+```bash
+go test -bench=. -benchmem
+```
+
+For the latest benchmark results, see the [GitHub Actions workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
+
 ## Ordering
 
 Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.

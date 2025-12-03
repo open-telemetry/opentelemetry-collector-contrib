@@ -255,3 +255,4 @@ Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.128.0`
 - Move to `Beta` (enabled by default) in `v0.133.0`
+- Move to `Stable` (cannot be disabled) in `v0.142.0` 
