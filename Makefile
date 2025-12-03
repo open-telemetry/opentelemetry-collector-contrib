@@ -182,6 +182,11 @@ endif
 	@echo "Updating GitHub Actions workflows..."
 	@find .github/workflows -name "*.yml" -o -name "*.yaml" | xargs sed -i '' -E '/go-version: oldstable/s/go-version: oldstable/go-version-file: '\''go.mod'\''/g'
 	
+	# 3a. Fix workflows that checkout to a subdirectory
+	@echo "Fixing workflows with subdirectory checkouts..."
+	@sed -i '' -E "s|go-version-file: 'go.mod'|go-version-file: 'opentelemetry-collector-contrib/go.mod'|g" .github/workflows/prometheus-compliance-tests.yml
+	@sed -i '' -E "s|go-version-file: 'go.mod'|go-version-file: 'opentelemetry-collector-contrib/go.mod'|g" .github/workflows/prepare-release.yml
+	
 	@echo ""
 	@echo "✓ Successfully bumped Go version to $(VERSION)"
 	@echo ""
