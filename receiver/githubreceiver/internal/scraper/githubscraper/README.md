@@ -64,6 +64,11 @@ formula). A sensible default is `300s`.
 
 #### Concurrency Limiting
 
+**Important**: This does not guarantee that the secondary rate limit will not be
+hit. It simply reduces the likelihood. In large repositories with lots of
+history to iterate through, the chance of hitting the secondary rate limit
+increases. If this value is too high, 504/502/403 errors will show up.
+
 The scraper supports limiting the number of concurrent repository processing
 goroutines to reduce the likelihood of hitting GitHub's 100 concurrent secondary
 request limit:
@@ -80,11 +85,6 @@ scrapers:
   GitHub's secondary limit of 100 concurrent requests
 * **For large organizations (>100 repos)**: Consider increasing
   `collection_interval` in addition to reducing the concurrency limit.
-
-**Important**: This does not guarantee that the secondary rate limit will not be
-hit. It simply reduces the likelihood. In large repositories with lots of
-history to iterate through, the chance of hitting the secondary rate limit
-increases.
 
 **Additional Resources:**
 
