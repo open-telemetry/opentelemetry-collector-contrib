@@ -141,7 +141,8 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 		case plog.Logs:
 			data = bytesToPlogs(body, parsedEvent).(T)
 		case pmetric.Metrics:
-			data = bytesToPMetrics(body, parsedEvent).(T)
+			// this should not happen as Metrics unmarshaler is always provided
+			return errors.New("incorrect wiring: missing s3 unmarshaler for metrics")
 		}
 	} else {
 		data, err = s.s3Unmarshaler(body)
@@ -217,14 +218,16 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 		return fmt.Errorf("failed to decode data from cloudwatch logs event: %w", err)
 	}
 
+	var reader *gzip.Reader
+	reader, err = gzip.NewReader(bytes.NewReader(decoded))
+	if err != nil {
+		return fmt.Errorf("failed to decompress data from cloudwatch subscription event: %w", err)
+	}
+
+	defer reader.Close()
+
 	var data plog.Logs
 	if c.unmarshal == nil {
-		var reader *gzip.Reader
-		reader, err = gzip.NewReader(bytes.NewReader(decoded))
-		if err != nil {
-			return fmt.Errorf("failed to decompress data from cloudwatch subscription event: %w", err)
-		}
-
 		var cwLog events.CloudwatchLogsData
 		decoder := gojson.NewDecoder(reader)
 		err = decoder.Decode(&cwLog)
@@ -234,7 +237,12 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 
 		data = cwLogsToPlogs(cwLog)
 	} else {
-		data, err = c.unmarshal(decoded)
+		var decodedData bytes.Buffer
+		_, err = decodedData.ReadFrom(reader)
+		if err != nil {
+			return fmt.Errorf("failed to read decompressed data from cloudwatch subscription event: %w", err)
+		}
+		data, err = c.unmarshal(decodedData.Bytes())
 		if err != nil {
 			return fmt.Errorf("failed to unmarshal logs: %w", err)
 		}
@@ -286,39 +294,17 @@ func bytesToPlogs(data []byte, event events.S3EventRecord) any {
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName(metadata.ScopeName)
 
-	rec := sl.LogRecords().AppendEmpty()
-	rec.SetTimestamp(pcommon.NewTimestampFromTime(event.EventTime))
-	rec.Attributes().PutInt("content.length", int64(len(data)))
+	lr := sl.LogRecords().AppendEmpty()
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(event.EventTime))
+	lr.Attributes().PutInt("content.length", int64(len(data)))
 
 	if utf8.Valid(data) {
-		rec.Body().SetStr(string(data))
+		lr.Body().SetStr(string(data))
 	} else {
-		rec.Attributes().PutStr("encoding", "base64")
-		rec.Body().SetStr(base64.StdEncoding.EncodeToString(data))
+		lr.Body().SetEmptyBytes().FromRaw(data)
 	}
 
 	return logs
-}
-
-func bytesToPMetrics(data []byte, event events.S3EventRecord) any {
-	metrics := pmetric.NewMetrics()
-	rm := metrics.ResourceMetrics().AppendEmpty()
-
-	resourceAttrs := rm.Resource().Attributes()
-	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-	resourceAttrs.PutStr(string(conventions.CloudRegionKey), event.AWSRegion)
-	resourceAttrs.PutStr(string(conventions.AWSS3BucketKey), event.S3.Bucket.Arn)
-	resourceAttrs.PutStr(string(conventions.AWSS3KeyKey), event.S3.Object.Key)
-
-	sm := rm.ScopeMetrics().AppendEmpty()
-	metric := sm.Metrics().AppendEmpty()
-	metric.SetName("s3.object.data")
-	metric.SetEmptyGauge()
-	dp := metric.Gauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(event.EventTime))
-	dp.Attributes().PutInt("content.length", int64(len(data)))
-	dp.Attributes().PutEmptyBytes("raw_payload").FromRaw(data)
-	return metrics
 }
 
 // setObservedTimestampForAllLogs adds observedTimestamp to all logs

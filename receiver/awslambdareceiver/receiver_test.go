@@ -29,7 +29,7 @@ func TestCreateLogs(t *testing.T) {
 	// Note: The S3Encoding value must match the component ID used when registering the extension.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.EncodingExtension = "awslogs_encoding"
+	cfg.Encoding = "awslogs_encoding"
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	sink := consumertest.LogsSink{}
@@ -95,10 +95,13 @@ func TestCreateMetrics(t *testing.T) {
 	// Set Lambda environment variables required by Start()
 	t.Setenv("AWS_EXECUTION_ENV", "AWS_Lambda_python3.12")
 
+	// Custom encoder name for the test
+	encoderName := "dummy_metric_encoding"
+
 	// Create receiver using factory with a dummy encoding extension.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.EncodingExtension = "dummy_metric_encoding"
+	cfg.Encoding = encoderName
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	sink := consumertest.MetricsSink{}
@@ -121,7 +124,7 @@ func TestCreateMetrics(t *testing.T) {
 
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID("dummy_metric_encoding"): &mockExtensionWithPMetricUnmarshaler{
+			component.MustNewID(encoderName): &mockExtensionWithPMetricUnmarshaler{
 				Unmarshaler: unmarshalMetricsFunc(func(data []byte) (pmetric.Metrics, error) {
 					require.Equal(t, "dummy data", string(data))
 					metrics := pmetric.NewMetrics()
@@ -164,7 +167,7 @@ func TestStartRequiresLambdaEnvironment(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.EncodingExtension = "test_encoding"
+	cfg.Encoding = "test_encoding"
 
 	receiver, err := factory.CreateLogs(
 		t.Context(),
@@ -187,7 +190,7 @@ func TestStartRequiresLambdaEnvironment(t *testing.T) {
 
 func TestProcessLambdaEvent(t *testing.T) {
 	commonCfg := Config{
-		EncodingExtension: "alb",
+		Encoding: "alb",
 	}
 
 	commonLogger := zap.NewNop()

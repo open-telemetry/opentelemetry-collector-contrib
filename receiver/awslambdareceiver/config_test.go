@@ -23,28 +23,26 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id          component.ID
-		expected    component.Config
-		expectError string
+		id       component.ID
+		expected component.Config
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, "awslogs_encoding"),
 			expected: &Config{
-				EncodingExtension: "awslogs_encoding",
+				Encoding: "awslogs_encoding",
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "json_log_encoding"),
 			expected: &Config{
-				EncodingExtension: "json_log_encoding",
+				Encoding: "json_log_encoding",
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "empty_encoding"),
 			expected: &Config{
-				EncodingExtension: "",
+				Encoding: "",
 			},
-			expectError: "encoding_extension is mandatory",
 		},
 	}
 
@@ -59,11 +57,6 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			err = xconfmap.Validate(cfg)
-			if tt.expectError != "" {
-				require.ErrorContains(t, err, tt.expectError)
-				return
-			}
-
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, cfg)
 		})

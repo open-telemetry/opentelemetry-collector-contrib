@@ -31,6 +31,9 @@ const (
 	s3Event eventType = "S3Event"
 	cwEvent eventType = "CloudWatchEvent"
 
+	// defaultMetricsEncodingExtension defines the default encoding extension ID for metrics when none is specified
+	defaultMetricsEncodingExtension = "awscloudwatchmetricstreams_encoding"
+
 	// logInvokedTrigger define the string key to convey the invoked trigger(derived by event content) type in logs
 	logInvokedTrigger = "invokedTrigger"
 )
@@ -154,8 +157,8 @@ func newLogsHandler(
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
 	var unmarshalFunc unmarshalFunc[plog.Logs]
-	if cfg.EncodingExtension != "" {
-		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.EncodingExtension, "logs")
+	if cfg.Encoding != "" {
+		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.Encoding, "logs")
 		if err != nil {
 			return nil, err
 		}
@@ -195,14 +198,15 @@ func newMetricsHandler(
 	next consumer.Metrics,
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
-	var unmarshalFunc unmarshalFunc[pmetric.Metrics]
-	if cfg.EncodingExtension != "" {
-		encodingExtension, err := loadEncodingExtension[pmetric.Unmarshaler](host, cfg.EncodingExtension, "metrics")
-		if err != nil {
-			return nil, err
-		}
+	extensionID := defaultMetricsEncodingExtension
+	if cfg.Encoding != "" {
+		// Use the user-specified encoding extension if provided
+		extensionID = cfg.Encoding
+	}
 
-		unmarshalFunc = encodingExtension.UnmarshalMetrics
+	encodingExtension, err := loadEncodingExtension[pmetric.Unmarshaler](host, extensionID, "metrics")
+	if err != nil {
+		return nil, err
 	}
 
 	s3Service, err := s3Provider.GetService(ctx)
@@ -217,7 +221,7 @@ func newMetricsHandler(
 			return next.ConsumeMetrics(ctx, metrics)
 		}
 
-		return newS3Handler(s3Service, set.Logger, unmarshalFunc, metricConsumer, pmetric.Metrics{})
+		return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricConsumer, pmetric.Metrics{})
 	}
 
 	return newHandlerProvider(registry), nil
