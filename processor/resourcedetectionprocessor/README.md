@@ -833,6 +833,8 @@ processors:
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
+# how often resource detection should be refreshed; if unset, detection runs only once at startup
+refresh_interval: <duration>
 # [DEPRECATED] When included, only attributes in the list will be appended.  Applies to all detectors.
 attributes: [ <string> ]
 ```
@@ -881,6 +883,18 @@ resourcedetection:
       os.type:
         enabled: false
 ```
+
+### Using the `refresh_interval` parameter
+
+The `refresh_interval` option allows resource attributes to be periodically refreshed without restarting the Collector.
+
+**Important considerations:**
+
+- **Latency**: Newly detected resource attributes will be applied after the next refresh cycle completes (up to `refresh_interval` duration).
+- **Metric cardinality**: Changes to resource attributes create new metric time series, which can significantly increase storage costs and query complexity.
+- **Performance impact**: Each refresh re-runs all configured detectors. Values below 5 minutes can increase CPU and memory usage. There is no enforced minimum, but intervals below 1 minute are strongly discouraged.
+
+**Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
 
 ## Ordering
 
