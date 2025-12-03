@@ -8,7 +8,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fresourcedetection%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fresourcedetection) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fresourcedetection%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fresourcedetection) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_resourcedetection)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_resourcedetection&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) \| Seeking more code owners! |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -22,13 +22,13 @@ override the resource value in telemetry data with this information.
 
 > **Note**
 >
-> If a configured resource detector fails in some way, the error it returns to the processor will be logged, and the collector will continue to run. This behavior is configurable using a feature gate, however the error behavior of each independent resource detector may vary.
+> If a configured resource detector fails in some way, the error it returns to the processor will propagate and stop the collector from starting. This behavior is configurable using a feature gate, however the error behavior of each independent resource detector may vary.
 >
-> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `processor.resourcedetection.propagateerrors`. It is currently disabled by default (alpha stage).
+> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `processor.resourcedetection.propagateerrors`. It is currently enabled by default (beta stage).
 >
->  Example of how to enable it:
+>  Example of how to disable it:
 > ```shell-session
-> $ otelcol --config=config.yaml --feature-gates=processor.resourcedetection.propagateerrors
+> $ otelcol --config=config.yaml --feature-gates=-processor.resourcedetection.propagateerrors
 > ```
 
 ## Supported detectors
@@ -833,6 +833,8 @@ processors:
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
+# how often resource detection should be refreshed; if unset, detection runs only once at startup
+refresh_interval: <duration>
 # [DEPRECATED] When included, only attributes in the list will be appended.  Applies to all detectors.
 attributes: [ <string> ]
 ```
@@ -881,6 +883,18 @@ resourcedetection:
       os.type:
         enabled: false
 ```
+
+### Using the `refresh_interval` parameter
+
+The `refresh_interval` option allows resource attributes to be periodically refreshed without restarting the Collector.
+
+**Important considerations:**
+
+- **Latency**: Newly detected resource attributes will be applied after the next refresh cycle completes (up to `refresh_interval` duration).
+- **Metric cardinality**: Changes to resource attributes create new metric time series, which can significantly increase storage costs and query complexity.
+- **Performance impact**: Each refresh re-runs all configured detectors. Values below 5 minutes can increase CPU and memory usage. There is no enforced minimum, but intervals below 1 minute are strongly discouraged.
+
+**Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
 
 ## Ordering
 
