@@ -103,7 +103,6 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: systemConfig,
 				ClientConfig:   cfg,
 				Override:       false,
-				Attributes:     []string{"a", "b"},
 			},
 		},
 		{

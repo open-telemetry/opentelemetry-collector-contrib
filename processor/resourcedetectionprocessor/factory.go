@@ -112,7 +112,6 @@ func createDefaultConfig() component.Config {
 		Detectors:       []string{env.TypeStr},
 		ClientConfig:    defaultClientConfig(),
 		Override:        true,
-		Attributes:      nil,
 		DetectorConfig:  detectorCreateDefaultConfig(),
 		RefreshInterval: 0,
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
@@ -223,10 +222,7 @@ func (f *factory) getResourceDetectionProcessor(
 	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
-	if oCfg.Attributes != nil {
-		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
-	}
-	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
+	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +241,6 @@ func (f *factory) getResourceProvider(
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
-	attributes []string,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -259,7 +254,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, attributes, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}
