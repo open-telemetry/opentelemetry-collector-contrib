@@ -61,6 +61,10 @@ var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 	// GRPC
 	"grpc.server": processGRPCSpan,
 	"grpc.client": processGRPCSpan,
+
+	// AWS
+	"aws.request": processAWSSdkSpan,
+	"aws.command": processAWSSdkSpan,
 }
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
@@ -202,6 +206,18 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	}
 	if spanName != "" {
 		newSpan.SetName(spanName)
+	}
+}
+
+func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
+	newSpan.Attributes().PutStr(string(semconv.RPCSystemKey), "aws-api")
+	if service, ok := span.Meta[("aws.service")]; ok {
+		if operation, ok := span.Meta[("aws.operation")]; ok {
+			newSpan.SetName(service + "/" + operation)
+		} else {
+			newSpan.SetName(service)
+		}
 	}
 }
 

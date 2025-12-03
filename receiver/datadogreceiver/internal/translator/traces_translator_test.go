@@ -626,6 +626,26 @@ func TestToTraces(t *testing.T) {
 				string(semconv.RPCGRPCStatusCodeKey): "0",
 			},
 		},
+		{
+			"aws-s3-headObject",
+			pb.Span{
+				Name: "aws.request",
+				Meta: map[string]string{
+					"aws.service":             "S3",
+					"aws.operation":           "headObject",
+					"aws.s3.bucket_name":      "my-bucket",
+					"aws.response.request_id": "1234567890",
+				},
+			},
+			"S3/headObject",
+			map[string]string{
+				string(semconv.RPCSystemKey):    "aws-api",
+				string(semconv.RPCServiceKey):   "S3",
+				string(semconv.RPCMethodKey):    "headObject",
+				string(semconv.AWSS3BucketKey):  "my-bucket",
+				string(semconv.AWSRequestIDKey): "1234567890",
+			},
+		},
 	}
 
 	//nolint:govet

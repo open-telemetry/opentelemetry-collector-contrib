@@ -63,6 +63,12 @@ var datadogKnownResourceAttributes = map[string]string{
 	"http.url":                     string(semconv.URLFullKey),
 	"http.useragent":               string(semconv.UserAgentOriginalKey),
 
+	// AWS S3
+	"aws.s3.bucket_name":      string(semconv.AWSS3BucketKey),
+	"aws.response.request_id": string(semconv.AWSRequestIDKey),
+	"aws.service":             string(semconv.RPCServiceKey),
+	"aws.operation":           string(semconv.RPCMethodKey),
+
 	// DB
 	"db.type":      string(semconv.DBSystemNameKey),
 	"db.operation": string(semconv.DBOperationNameKey),
