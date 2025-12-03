@@ -334,3 +334,148 @@ func TestResourceProvider_RefreshInterval(t *testing.T) {
 	// Exactly two detections total: one initial + one refresh
 	md.AssertNumberOfCalls(t, "Detect", 2)
 }
+
+func TestMergeSchemaURL(t *testing.T) {
+	tests := []struct {
+		name              string
+		currentSchemaURL  string
+		newSchemaURL      string
+		expectedSchemaURL string
+	}{
+		{
+			name:              "both empty",
+			currentSchemaURL:  "",
+			newSchemaURL:      "",
+			expectedSchemaURL: "",
+		},
+		{
+			name:              "current empty, new has value",
+			currentSchemaURL:  "",
+			newSchemaURL:      "https://opentelemetry.io/schemas/1.9.0",
+			expectedSchemaURL: "https://opentelemetry.io/schemas/1.9.0",
+		},
+		{
+			name:              "current has value, new empty",
+			currentSchemaURL:  "https://opentelemetry.io/schemas/1.8.0",
+			newSchemaURL:      "",
+			expectedSchemaURL: "https://opentelemetry.io/schemas/1.8.0",
+		},
+		{
+			name:              "same schema URLs",
+			currentSchemaURL:  "https://opentelemetry.io/schemas/1.9.0",
+			newSchemaURL:      "https://opentelemetry.io/schemas/1.9.0",
+			expectedSchemaURL: "https://opentelemetry.io/schemas/1.9.0",
+		},
+		{
+			name:              "different schema URLs - keeps current",
+			currentSchemaURL:  "https://opentelemetry.io/schemas/1.8.0",
+			newSchemaURL:      "https://opentelemetry.io/schemas/1.9.0",
+			expectedSchemaURL: "https://opentelemetry.io/schemas/1.8.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeSchemaURL(tt.currentSchemaURL, tt.newSchemaURL)
+			assert.Equal(t, tt.expectedSchemaURL, result)
+		})
+	}
+}
+
+func TestIsEmptyResource(t *testing.T) {
+	t.Run("empty resource", func(t *testing.T) {
+		res := pcommon.NewResource()
+		assert.True(t, IsEmptyResource(res))
+	})
+
+	t.Run("non-empty resource", func(t *testing.T) {
+		res := pcommon.NewResource()
+		res.Attributes().PutStr("key", "value")
+		assert.False(t, IsEmptyResource(res))
+	})
+}
+
+func TestStartStopRefreshing(t *testing.T) {
+	t.Run("with refresh interval", func(t *testing.T) {
+		md := &mockDetector{}
+		res1 := pcommon.NewResource()
+		require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1"}))
+		res2 := pcommon.NewResource()
+		require.NoError(t, res2.Attributes().FromRaw(map[string]any{"a": "2"}))
+
+		// First call returns res1, subsequent calls return res2
+		md.On("Detect").Return(res1, "", nil).Once()
+		md.On("Detect").Return(res2, "", nil)
+
+		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+
+		// Initial detection
+		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+		require.NoError(t, err)
+
+		got, _, err := p.Get(t.Context(), &http.Client{Timeout: time.Second})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"a": "1"}, got.Attributes().AsRaw())
+
+		// Start refreshing with a short interval
+		p.StartRefreshing(100*time.Millisecond, &http.Client{Timeout: time.Second})
+
+		// Wait for at least one refresh cycle
+		time.Sleep(250 * time.Millisecond)
+
+		// Stop refreshing
+		p.StopRefreshing()
+
+		// Get should now return updated resource
+		got, _, err = p.Get(t.Context(), &http.Client{Timeout: time.Second})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"a": "2"}, got.Attributes().AsRaw())
+
+		// Verify Detect was called at least twice (initial + at least one refresh)
+		assert.GreaterOrEqual(t, len(md.Calls), 2, "Expected at least 2 calls to Detect")
+	})
+
+	t.Run("with zero refresh interval", func(t *testing.T) {
+		md := &mockDetector{}
+		res := pcommon.NewResource()
+		require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1"}))
+		md.On("Detect").Return(res, "", nil).Once()
+
+		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+
+		// Initial detection
+		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+		require.NoError(t, err)
+
+		// Start refreshing with zero interval - should not start goroutine
+		p.StartRefreshing(0, &http.Client{Timeout: time.Second})
+
+		// Wait a bit
+		time.Sleep(100 * time.Millisecond)
+
+		// Stop refreshing (should be safe even though nothing started)
+		p.StopRefreshing()
+
+		// Verify Detect was only called once (no periodic refreshes)
+		md.AssertNumberOfCalls(t, "Detect", 1)
+	})
+
+	t.Run("stop without start", func(t *testing.T) {
+		md := &mockDetector{}
+		res := pcommon.NewResource()
+		require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1"}))
+		md.On("Detect").Return(res, "", nil).Once()
+
+		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+
+		// Initial detection
+		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+		require.NoError(t, err)
+
+		// Stop refreshing without ever starting - should be safe
+		p.StopRefreshing()
+
+		// Verify Detect was only called once
+		md.AssertNumberOfCalls(t, "Detect", 1)
+	})
+}

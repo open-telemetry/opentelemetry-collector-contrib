@@ -575,3 +575,225 @@ func BenchmarkConsumeProfilesAll(b *testing.B) {
 	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gcp.TypeStr}}
 	benchmarkConsumeProfiles(b, cfg)
 }
+
+// TestProcessorShutdownWithoutStart tests that Shutdown can be called even if Start was not called
+func TestProcessorShutdownWithoutStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Detectors = []string{"system"}
+
+	ctx := t.Context()
+	tp, err := factory.CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, tp)
+
+	// Shutdown without calling Start should not panic or error
+	err = tp.Shutdown(ctx)
+	assert.NoError(t, err)
+}
+
+// TestProcessorMultipleStartShutdown tests multiple Start/Shutdown cycles
+func TestProcessorMultipleStartShutdown(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Detectors = []string{"env"}
+
+	ctx := t.Context()
+	host := componenttest.NewNopHost()
+
+	mp, err := factory.CreateMetrics(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// First cycle
+	err = mp.Start(ctx, host)
+	require.NoError(t, err)
+	err = mp.Shutdown(ctx)
+	require.NoError(t, err)
+
+	// Second cycle
+	err = mp.Start(ctx, host)
+	require.NoError(t, err)
+	err = mp.Shutdown(ctx)
+	require.NoError(t, err)
+
+	// Third cycle
+	err = mp.Start(ctx, host)
+	require.NoError(t, err)
+	err = mp.Shutdown(ctx)
+	require.NoError(t, err)
+}
+
+// TestProcessorWithEmptyData tests processing empty telemetry data
+func TestProcessorWithEmptyData(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Detectors = []string{"env"}
+
+	ctx := t.Context()
+	host := componenttest.NewNopHost()
+
+	t.Run("empty traces", func(t *testing.T) {
+		sink := new(consumertest.TracesSink)
+		tp, err := factory.CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, sink)
+		require.NoError(t, err)
+
+		err = tp.Start(ctx, host)
+		require.NoError(t, err)
+		defer func() { _ = tp.Shutdown(ctx) }()
+
+		// Process completely empty traces
+		td := ptrace.NewTraces()
+		err = tp.ConsumeTraces(ctx, td)
+		require.NoError(t, err)
+		assert.Len(t, sink.AllTraces(), 1)
+	})
+
+	t.Run("empty metrics", func(t *testing.T) {
+		sink := new(consumertest.MetricsSink)
+		mp, err := factory.CreateMetrics(ctx, processortest.NewNopSettings(metadata.Type), cfg, sink)
+		require.NoError(t, err)
+
+		err = mp.Start(ctx, host)
+		require.NoError(t, err)
+		defer func() { _ = mp.Shutdown(ctx) }()
+
+		md := pmetric.NewMetrics()
+		err = mp.ConsumeMetrics(ctx, md)
+		require.NoError(t, err)
+		assert.Len(t, sink.AllMetrics(), 1)
+	})
+
+	t.Run("empty logs", func(t *testing.T) {
+		sink := new(consumertest.LogsSink)
+		lp, err := factory.CreateLogs(ctx, processortest.NewNopSettings(metadata.Type), cfg, sink)
+		require.NoError(t, err)
+
+		err = lp.Start(ctx, host)
+		require.NoError(t, err)
+		defer func() { _ = lp.Shutdown(ctx) }()
+
+		ld := plog.NewLogs()
+		err = lp.ConsumeLogs(ctx, ld)
+		require.NoError(t, err)
+		assert.Len(t, sink.AllLogs(), 1)
+	})
+
+	t.Run("empty profiles", func(t *testing.T) {
+		sink := new(consumertest.ProfilesSink)
+		pp, err := factory.(xprocessor.Factory).CreateProfiles(ctx, processortest.NewNopSettings(metadata.Type), cfg, sink)
+		require.NoError(t, err)
+
+		err = pp.Start(ctx, host)
+		require.NoError(t, err)
+		defer func() { _ = pp.Shutdown(ctx) }()
+
+		pd := pprofile.NewProfiles()
+		err = pp.ConsumeProfiles(ctx, pd)
+		require.NoError(t, err)
+		assert.Len(t, sink.AllProfiles(), 1)
+	})
+}
+
+// TestProcessorWithMultipleResources tests processing data with multiple resource spans/metrics/logs
+func TestProcessorWithMultipleResources(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Detectors = []string{"env"}
+	oCfg.Override = false
+
+	ctx := t.Context()
+	host := componenttest.NewNopHost()
+
+	t.Run("multiple resource spans", func(t *testing.T) {
+		sink := new(consumertest.TracesSink)
+		tp, err := factory.CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, sink)
+		require.NoError(t, err)
+
+		err = tp.Start(ctx, host)
+		require.NoError(t, err)
+		defer func() { _ = tp.Shutdown(ctx) }()
+
+		td := ptrace.NewTraces()
+		// Add 3 resource spans
+		for i := 0; i < 3; i++ {
+			rs := td.ResourceSpans().AppendEmpty()
+			rs.Resource().Attributes().PutStr("original", "value")
+		}
+
+		err = tp.ConsumeTraces(ctx, td)
+		require.NoError(t, err)
+
+		result := sink.AllTraces()[0]
+		assert.Equal(t, 3, result.ResourceSpans().Len())
+	})
+
+	t.Run("multiple resource metrics", func(t *testing.T) {
+		sink := new(consumertest.MetricsSink)
+		mp, err := factory.CreateMetrics(ctx, processortest.NewNopSettings(metadata.Type), cfg, sink)
+		require.NoError(t, err)
+
+		err = mp.Start(ctx, host)
+		require.NoError(t, err)
+		defer func() { _ = mp.Shutdown(ctx) }()
+
+		md := pmetric.NewMetrics()
+		for i := 0; i < 3; i++ {
+			rm := md.ResourceMetrics().AppendEmpty()
+			rm.Resource().Attributes().PutStr("original", "value")
+		}
+
+		err = mp.ConsumeMetrics(ctx, md)
+		require.NoError(t, err)
+
+		result := sink.AllMetrics()[0]
+		assert.Equal(t, 3, result.ResourceMetrics().Len())
+	})
+}
+
+// TestProcessorCapabilities tests that processor capabilities are correctly set
+func TestProcessorCapabilities(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	ctx := t.Context()
+
+	t.Run("traces", func(t *testing.T) {
+		tp, err := factory.CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+		require.NotNil(t, tp)
+
+		caps := tp.Capabilities()
+		assert.True(t, caps.MutatesData, "processor should mutate data")
+	})
+
+	t.Run("metrics", func(t *testing.T) {
+		mp, err := factory.CreateMetrics(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+		require.NotNil(t, mp)
+
+		caps := mp.Capabilities()
+		assert.True(t, caps.MutatesData, "processor should mutate data")
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		lp, err := factory.CreateLogs(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+		require.NotNil(t, lp)
+
+		caps := lp.Capabilities()
+		assert.True(t, caps.MutatesData, "processor should mutate data")
+	})
+
+	t.Run("profiles", func(t *testing.T) {
+		pp, err := factory.(xprocessor.Factory).CreateProfiles(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+		require.NotNil(t, pp)
+
+		caps := pp.Capabilities()
+		assert.True(t, caps.MutatesData, "processor should mutate data")
+	})
+}
