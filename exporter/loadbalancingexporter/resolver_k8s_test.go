@@ -363,6 +363,26 @@ func Test_newK8sResolver(t *testing.T) {
 			wantService:   "lb",
 			wantNamespace: "kube-public",
 		},
+		{
+			name: "reject service FQDN with unexpected labels",
+			args: args{
+				logger:  zap.NewNop(),
+				service: "lb.kube-public.foo.bar",
+				ports:   []int32{8080},
+			},
+			wantNil: true,
+			wantErr: errInvalidSvcFQDN,
+		},
+		{
+			name: "reject service FQDN without cluster domain",
+			args: args{
+				logger:  zap.NewNop(),
+				service: "lb.kube-public.svc",
+				ports:   []int32{8080},
+			},
+			wantNil: true,
+			wantErr: errInvalidSvcFQDN,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
