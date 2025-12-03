@@ -14,7 +14,7 @@ import (
 
 func TestContextWithClient(t *testing.T) {
 	client := &http.Client{}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctxWithClient := ContextWithClient(ctx, client)
 
@@ -30,7 +30,7 @@ func TestContextWithClient(t *testing.T) {
 func TestClientFromContext(t *testing.T) {
 	t.Run("valid client in context", func(t *testing.T) {
 		client := &http.Client{}
-		ctx := ContextWithClient(context.Background(), client)
+		ctx := ContextWithClient(t.Context(), client)
 
 		retrievedClient, err := ClientFromContext(ctx)
 		require.NoError(t, err)
@@ -38,7 +38,7 @@ func TestClientFromContext(t *testing.T) {
 	})
 
 	t.Run("no client in context", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		retrievedClient, err := ClientFromContext(ctx)
 		assert.Error(t, err)
@@ -48,7 +48,7 @@ func TestClientFromContext(t *testing.T) {
 
 	t.Run("invalid value in context", func(t *testing.T) {
 		// Create a context with wrong type
-		ctx := context.WithValue(context.Background(), clientContextKey, "not a client")
+		ctx := context.WithValue(t.Context(), clientContextKey, "not a client")
 
 		retrievedClient, err := ClientFromContext(ctx)
 		assert.Error(t, err)
@@ -58,7 +58,7 @@ func TestClientFromContext(t *testing.T) {
 
 	t.Run("nil client", func(t *testing.T) {
 		// This tests the edge case behavior
-		ctx := context.Background()
+		ctx := t.Context()
 		ctxWithNilClient := ContextWithClient(ctx, nil)
 
 		retrievedClient, err := ClientFromContext(ctxWithNilClient)
@@ -74,7 +74,7 @@ func TestContextKeyIsolation(t *testing.T) {
 	type otherKey int
 	const someOtherKey otherKey = 999
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = context.WithValue(ctx, someOtherKey, "some other value")
 	ctx = ContextWithClient(ctx, client)
 

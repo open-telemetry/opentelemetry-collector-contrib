@@ -115,9 +115,7 @@ func TestLifecycle(t *testing.T) {
 			name:       "traces_processor",
 			signalType: "traces",
 			createAndTest: func(t *testing.T, factory processor.Factory, cfg component.Config) {
-				ctx := context.Background()
-
-				// Create processor
+				ctx := t.Context() // Create processor
 				tp, err := factory.CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 				require.NoError(t, err, "processor creation should succeed with valid config")
 				require.NotNil(t, tp, "processor should not be nil")
@@ -156,8 +154,7 @@ func TestLifecycle(t *testing.T) {
 			name:       "metrics_processor",
 			signalType: "metrics",
 			createAndTest: func(t *testing.T, factory processor.Factory, cfg component.Config) {
-				ctx := context.Background()
-
+				ctx := t.Context()
 				mp, err := factory.CreateMetrics(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 				require.NoError(t, err, "processor creation should succeed with valid config")
 				require.NotNil(t, mp, "processor should not be nil")
@@ -185,8 +182,7 @@ func TestLifecycle(t *testing.T) {
 			name:       "logs_processor",
 			signalType: "logs",
 			createAndTest: func(t *testing.T, factory processor.Factory, cfg component.Config) {
-				ctx := context.Background()
-
+				ctx := t.Context()
 				lp, err := factory.CreateLogs(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 				require.NoError(t, err, "processor creation should succeed with valid config")
 				require.NotNil(t, lp, "processor should not be nil")
@@ -214,8 +210,7 @@ func TestLifecycle(t *testing.T) {
 			name:       "profiles_processor",
 			signalType: "profiles",
 			createAndTest: func(t *testing.T, factory processor.Factory, cfg component.Config) {
-				ctx := context.Background()
-
+				ctx := t.Context()
 				pp, err := factory.(xprocessor.Factory).CreateProfiles(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 				require.NoError(t, err, "processor creation should succeed with valid config")
 				require.NotNil(t, pp, "processor should not be nil")
@@ -269,7 +264,7 @@ func TestLifecycleWithAllDetectors(t *testing.T) {
 	oCfg.Detectors = []string{"env", "system"}
 	oCfg.Override = true
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 
 	// Test all signal types with multiple detectors

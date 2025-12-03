@@ -583,7 +583,7 @@ func TestProcessorShutdownWithoutStart(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Detectors = []string{"system"}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tp, err := factory.CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
@@ -600,7 +600,7 @@ func TestProcessorMultipleStartShutdown(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Detectors = []string{"env"}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 
 	mp, err := factory.CreateMetrics(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
@@ -632,7 +632,7 @@ func TestProcessorWithEmptyData(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Detectors = []string{"env"}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 
 	t.Run("empty traces", func(t *testing.T) {
@@ -642,7 +642,7 @@ func TestProcessorWithEmptyData(t *testing.T) {
 
 		err = tp.Start(ctx, host)
 		require.NoError(t, err)
-		defer tp.Shutdown(ctx)
+		defer func() { _ = tp.Shutdown(ctx) }()
 
 		// Process completely empty traces
 		td := ptrace.NewTraces()
@@ -658,7 +658,7 @@ func TestProcessorWithEmptyData(t *testing.T) {
 
 		err = mp.Start(ctx, host)
 		require.NoError(t, err)
-		defer mp.Shutdown(ctx)
+		defer func() { _ = mp.Shutdown(ctx) }()
 
 		md := pmetric.NewMetrics()
 		err = mp.ConsumeMetrics(ctx, md)
@@ -673,7 +673,7 @@ func TestProcessorWithEmptyData(t *testing.T) {
 
 		err = lp.Start(ctx, host)
 		require.NoError(t, err)
-		defer lp.Shutdown(ctx)
+		defer func() { _ = lp.Shutdown(ctx) }()
 
 		ld := plog.NewLogs()
 		err = lp.ConsumeLogs(ctx, ld)
@@ -688,7 +688,7 @@ func TestProcessorWithEmptyData(t *testing.T) {
 
 		err = pp.Start(ctx, host)
 		require.NoError(t, err)
-		defer pp.Shutdown(ctx)
+		defer func() { _ = pp.Shutdown(ctx) }()
 
 		pd := pprofile.NewProfiles()
 		err = pp.ConsumeProfiles(ctx, pd)
@@ -705,7 +705,7 @@ func TestProcessorWithMultipleResources(t *testing.T) {
 	oCfg.Detectors = []string{"env"}
 	oCfg.Override = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 
 	t.Run("multiple resource spans", func(t *testing.T) {
@@ -715,7 +715,7 @@ func TestProcessorWithMultipleResources(t *testing.T) {
 
 		err = tp.Start(ctx, host)
 		require.NoError(t, err)
-		defer tp.Shutdown(ctx)
+		defer func() { _ = tp.Shutdown(ctx) }()
 
 		td := ptrace.NewTraces()
 		// Add 3 resource spans
@@ -738,7 +738,7 @@ func TestProcessorWithMultipleResources(t *testing.T) {
 
 		err = mp.Start(ctx, host)
 		require.NoError(t, err)
-		defer mp.Shutdown(ctx)
+		defer func() { _ = mp.Shutdown(ctx) }()
 
 		md := pmetric.NewMetrics()
 		for i := 0; i < 3; i++ {
@@ -759,7 +759,7 @@ func TestProcessorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("traces", func(t *testing.T) {
 		tp, err := factory.CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
