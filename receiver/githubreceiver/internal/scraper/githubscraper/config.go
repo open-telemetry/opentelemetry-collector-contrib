@@ -21,9 +21,9 @@ type Config struct {
 	GitHubOrg string `mapstructure:"github_org"`
 	// SearchQuery is the query to use when defining a custom search for repository data
 	SearchQuery string `mapstructure:"search_query"`
-	// ConcurrencyLimit limits the number of concurrent repository processing goroutines
-	// Default is 50 to stay well under GitHub's 100 concurrent request limit
-	// Set to 0 for unlimited concurrency (not recommended for >100 repos)
+	// ConcurrencyLimit limits the number of goroutines spawned by repository
+	// Default is 50
+	// Set to 0 for unlimited concurrency (not recommended)
 	ConcurrencyLimit int `mapstructure:"concurrency_limit"`
 }
 

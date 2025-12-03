@@ -65,7 +65,8 @@ formula). A sensible default is `300s`.
 #### Concurrency Limiting
 
 The scraper supports limiting the number of concurrent repository processing
-goroutines to prevent hitting GitHub's 100 concurrent secondary request limit:
+goroutines to reduce the likelihood of hitting GitHub's 100 concurrent secondary
+request limit:
 
 ```yaml
 scrapers:
@@ -78,11 +79,12 @@ scrapers:
 * **Recommendation**: Keep at default (50) to reduce the likelihood of hitting
   GitHub's secondary limit of 100 concurrent requests
 * **For large organizations (>100 repos)**: Consider increasing
-  `collection_interval` in addition to using concurrency limiting
+  `collection_interval` in addition to reducing the concurrency limit.
 
-When the limit is reached, additional repository processing will wait until a
-slot becomes available. This prevents overwhelming GitHub's API with too many
-concurrent requests.
+**Important**: This does not guarantee that the secondary rate limit will not be
+hit. It simply reduces the likelihood. In large repositories with lots of
+history to iterate through, the chance of hitting the secondary rate limit
+increases.
 
 **Additional Resources:**
 
