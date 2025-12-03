@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/require"
@@ -59,11 +60,11 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				},
 			},
 			bucketData:    []byte("Some log in S3 object"),
-			unmarshaler:   mockS3LogUnmarshaler{}.UnmarshalLogs,
+			unmarshaler:   customLogUnmarshaler{}.UnmarshalLogs,
 			eventConsumer: &noOpLogsConsumer{},
 		},
 		{
-			name: "Valid S3 Notification Log Event built-in unmarshaler and golden validation consumer",
+			name: "Valid S3 Notification Log Event built-in unmarshaler and golden validation consumer: String logs",
 			s3Event: events.S3Event{
 				Records: []events.S3EventRecord{
 					{
@@ -82,7 +83,29 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 			},
 			bucketData:    []byte("Some log in S3 object"),
 			unmarshaler:   nil,
-			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected.yaml")},
+			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_string.yaml")},
+		},
+		{
+			name: "Valid S3 Notification Log Event built-in unmarshaler and golden validation consumer: Gzipped content",
+			s3Event: events.S3Event{
+				Records: []events.S3EventRecord{
+					{
+						EventSource: "aws:s3",
+						AWSRegion:   "us-east-1",
+						EventTime:   time.Unix(1764625361, 0),
+						S3: events.S3Entity{
+							Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+							Object: events.S3Object{
+								Key:  "test-file.txt",
+								Size: 10,
+							},
+						},
+					},
+				},
+			},
+			bucketData:    []byte("H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA="),
+			unmarshaler:   nil,
+			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_gzip.yaml")},
 		},
 		{
 			name: "Invalid S3 Notification Log Event",
@@ -108,7 +131,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			unmarshaler:   mockS3LogUnmarshaler{error: errors.New("failed to unmarshal logs")}.UnmarshalLogs,
+			unmarshaler:   customLogUnmarshaler{error: errors.New("failed to unmarshal logs")}.UnmarshalLogs,
 			eventConsumer: &noOpLogsConsumer{},
 			expectedErr:   "failed to unmarshal logs",
 		},
@@ -238,7 +261,7 @@ func TestS3HandlerParseEvent(t *testing.T) {
 		setObservedTimestampForAllLogs(logs, time)
 		return consumer.ConsumeLogs(ctx, logs)
 	}
-	handler := newS3Handler(s3Service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, logsConsumer, plog.Logs{})
+	handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer, plog.Logs{})
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -260,29 +283,43 @@ func TestS3HandlerParseEvent(t *testing.T) {
 func TestHandleCloudwatchLogEvent(t *testing.T) {
 	t.Parallel()
 
-	tests := map[string]struct {
-		eventData     string
-		expectedErr   string
-		eventConsumer consumer.Logs
+	tests := []struct {
+		name            string
+		eventData       string
+		unmarshalerFunc func(buf []byte) (plog.Logs, error)
+		eventConsumer   consumer.Logs
+		expectedErr     string
 	}{
-		"valid_cloudwatch_log_event": {
-			eventData:     loadCompressedData(t, filepath.Join(testDataDirectory, "cloudwatch_log.json")),
-			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "cloudwatch_log_expected.yaml")},
+		{
+			name:            "Valid CloudWatch log event with built-in unmarshaler and golden validation consumer",
+			eventData:       loadCompressedData(t, filepath.Join(testDataDirectory, "cloudwatch_log.json")),
+			unmarshalerFunc: nil,
+			eventConsumer:   &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "cloudwatch_log_expected_default.yaml")},
 		},
-		"invalid_base64_data": {
-			eventData:     "#",
-			expectedErr:   "failed to decode data from cloudwatch logs event",
-			eventConsumer: &noOpLogsConsumer{},
+		{
+			name:            "Valid CloudWatch log event with custom unmarshaler and golden validation consumer",
+			eventData:       loadCompressedData(t, filepath.Join(testDataDirectory, "cloudwatch_log.json")),
+			unmarshalerFunc: customLogUnmarshaler{}.UnmarshalLogs,
+			eventConsumer:   &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "cloudwatch_log_expected_custom.yaml")},
 		},
-		"invalid_cloudwatch_log_data": {
-			eventData:     "test",
-			expectedErr:   "failed to decompress data from cloudwatch subscription event",
-			eventConsumer: &noOpLogsConsumer{},
+		{
+			name:            "Invalid CloudWatch log event - invalid base64 data",
+			eventData:       "#",
+			unmarshalerFunc: nil,
+			expectedErr:     "failed to decode data from cloudwatch logs event",
+			eventConsumer:   &noOpLogsConsumer{},
+		},
+		{
+			name:            "Invalid CloudWatch log event - invalid json data",
+			eventData:       "test",
+			unmarshalerFunc: nil,
+			expectedErr:     "failed to decompress data from cloudwatch subscription event",
+			eventConsumer:   &noOpLogsConsumer{},
 		},
 	}
 
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			cwEvent := events.CloudwatchLogsEvent{
 				AWSLogs: events.CloudwatchLogsRawData{
 					Data: test.eventData,
@@ -292,8 +329,7 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 			lambdaEvent, err := json.Marshal(cwEvent)
 			require.NoError(t, err)
 
-			// CW Logs subscription handler with default unmarshaler
-			handler := newCWLogsSubscriptionHandler(zap.NewNop(), nil, test.eventConsumer.ConsumeLogs)
+			handler := newCWLogsSubscriptionHandler(zap.NewNop(), test.unmarshalerFunc, test.eventConsumer.ConsumeLogs)
 			err = handler.handle(t.Context(), lambdaEvent)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
@@ -394,7 +430,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 				return test.consumerErr
 			}
 
-			handler := newS3Handler(s3Service, zap.NewNop(), mockS3LogUnmarshaler{}.UnmarshalLogs, logsConsumer, plog.Logs{})
+			handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer, plog.Logs{})
 
 			event, err := json.Marshal(mockEvent)
 			require.NoError(t, err)
@@ -421,6 +457,8 @@ func (logConsumerWithGoldenValidation) Capabilities() consumer.Capabilities {
 }
 
 func (l logConsumerWithGoldenValidation) ConsumeLogs(_ context.Context, logs plog.Logs) error {
+	// Uncomment below to update the source files
+	// golden.WriteLogsToFile(l.logsExpectedPath, logs)
 	expectedLogs, err := golden.ReadLogs(l.logsExpectedPath)
 	if err != nil {
 		return err
@@ -443,20 +481,34 @@ func (n *noOpLogsConsumer) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 	return n.err
 }
 
-type mockS3LogUnmarshaler struct {
+type customLogUnmarshaler struct {
 	error error
 }
 
-func (mockS3LogUnmarshaler) Capabilities() consumer.Capabilities {
+func (customLogUnmarshaler) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (m mockS3LogUnmarshaler) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+func (m customLogUnmarshaler) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	if m.error != nil {
 		return plog.Logs{}, m.error
 	}
 
-	return plog.NewLogs(), nil
+	// perform minimal unmarshaling for validations
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("customLogUnmarshaler")
+
+	lr := sl.LogRecords().AppendEmpty()
+
+	if utf8.Valid(data) {
+		lr.Body().SetStr(string(data))
+	} else {
+		lr.Body().SetEmptyBytes().FromRaw(data)
+	}
+	return logs, nil
 }
 
 type mockHandlerProvider struct {

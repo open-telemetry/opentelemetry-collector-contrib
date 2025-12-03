@@ -1,7 +1,7 @@
 awslambda/awslogs_encoding:
-  encoding_extension: awslogs_encoding
+  encoding: awslogs_encoding
 
 awslambda/json_log_encoding:
-  encoding_extension: json_log_encoding
+  encoding: json_log_encoding
 
 awslambda/empty_encoding:

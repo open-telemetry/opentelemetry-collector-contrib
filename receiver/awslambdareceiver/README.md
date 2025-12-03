@@ -54,19 +54,27 @@ The `awslambdareceiver` operates as follows:
 
 The following receiver configuration parameters are supported.
 
-| Name                 | Description                                                                                     |
-|:---------------------|:------------------------------------------------------------------------------------------------|
-| `encoding_extension` | Optional encoding extension to use to further decode processing triggers from supported sources | 
+| Name       | Description                                                                                      |
+|:-----------|:-------------------------------------------------------------------------------------------------|
+| `encoding` | Optional encoder to use for further processing of the payloads retrieved from the Lambda trigger | 
+
+## Supported Trigger Types
+
+- **Logs**: Supported through S3 and CloudWatch Logs event sources
+- **Metrics**: Supported through S3
+
+> [!IMPORTANT]  
+> Metrics will always be decoded using `awscloudwatchmetricstreams_encoding` extension regardless of the `encoding` parameter set in the receiver configuration.
+> Please make sure ingesting metrics can be decoded using this extension.
 
 ### Example Configuration
-
 
 ### Example 1: VPC Flow Logs from S3
 
 ```yaml
 receivers:
   awslambda:
-    encoding_extension: awslogs_encoding
+    encoding: awslogs_encoding
 
 extensions:
   awslogs_encoding:
@@ -91,12 +99,16 @@ In this example, the `awslambdareceiver` is expected to be triggered when a VPC 
 The receiver retrieves the log file from S3 and decodes it using the `awslogs_encoding` extension with the vpcflow format.
 Parsed logs are forwarded to an OTLP listener via the `otlphttp` exporter.
 
+> [!NOTE]  
+> Support is planned for CloudWatch VPC Flow Logs subscription filter.
+> Please refer to this [GitHub issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44710)
+
 ### Example 2: ELB Access Logs from S3
 
 ```yaml
 receivers:
   awslambda:
-    encoding_extension: awslogs_encoding
+    encoding: awslogs_encoding
 
 extensions:
   awslogs_encoding:
@@ -134,10 +146,10 @@ service:
       exporters: [otlphttp]
 ```
 
-For this deployment configuration, if the `awslambdareceiver` is triggered by a CloudWatch Logs subscription filter, the logs
-are extracted from trigger event, converted to an OpenTelemetry log record, and forwarded to an OTLP listener via the `otlphttp` exporter.
+For this deployment configuration, when receiver is triggered by a CloudWatch Logs subscription filter, the CloudWatch
+messages will be extracted and converted to an OpenTelemetry log record. These logs then get forwarded to an OTLP listener via the `otlphttp` exporter.
 
-### Example 4: Arbitrary S3 content
+### Example 4: Arbitrary S3 content (logs or metrics)
 
 ```yaml
 receivers:
@@ -154,13 +166,10 @@ service:
       exporters: [otlphttp]
 ```
 
-For this deployment configuration, if the `awslambdareceiver` is triggered by an S3 event, 
-raw content of the S3 object will be added  to an OpenTelemetry log record, and forwarded to an OTLP listener via the `otlphttp` exporter.
+For this deployment configuration, when receiver is triggered by an S3 event, 
 
-## Supported Trigger Types
-
-- **Logs**: Supported through S3 and CloudWatch Logs event sources
-- **Metrics**: Supported through S3
+- Logs: Content of the S3 object will be added to an OpenTelemetry log record. If logs are string, then they will be added as-is.
+- Metrics: Metrics are always decoded using `awscloudwatchmetricstreams_encoding` extension.
 
 ## AWS Permissions
 
