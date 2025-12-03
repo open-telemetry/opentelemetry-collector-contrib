@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
 // Config defines configuration for Prometheus receiver.
@@ -39,6 +39,8 @@ type Config struct {
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
 	// ReportExtraScrapeMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes
+	//
+	// Deprecated: use the feature gate "receiver.prometheusreceiver.EnableReportExtraScrapeMetrics" instead.
 	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
 
 	TargetAllocator configoptional.Optional[targetallocator.Config] `mapstructure:"target_allocator"`

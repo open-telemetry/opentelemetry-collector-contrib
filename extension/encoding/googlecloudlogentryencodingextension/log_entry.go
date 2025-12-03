@@ -18,8 +18,10 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/apploadbalancerlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 )
@@ -74,6 +76,11 @@ func getEncodingFormat(logType string) string {
 	case vpcflowlog.NetworkManagementNameSuffix,
 		vpcflowlog.ComputeNameSuffix:
 		return constants.GCPFormatVPCFlowLog
+	case apploadbalancerlog.GlobalAppLoadBalancerLogSuffix,
+		apploadbalancerlog.RegionalAppLoadBalancerLogSuffix:
+		return constants.GCPFormatLoadBalancerLog
+	case proxynlb.ConnectionsLogNameSuffix:
+		return constants.GCPFormatProxyNLBLog
 	default:
 		return ""
 	}
@@ -239,7 +246,7 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	shared.PutInt(string(semconv.HTTPResponseStatusCodeKey), req.Status, attributes)
 	shared.PutStr(string(semconv.HTTPRequestMethodKey), req.RequestMethod, attributes)
 	shared.PutStr(string(semconv.UserAgentOriginalKey), req.UserAgent, attributes)
-	shared.PutStr(string(semconv.ClientAddressKey), req.RemoteIP, attributes)
+	shared.PutStr(string(semconv.NetworkPeerAddressKey), req.RemoteIP, attributes)
 	shared.PutStr(string(semconv.ServerAddressKey), req.ServerIP, attributes)
 	shared.PutStr(refererHeaderField, req.Referer, attributes)
 	shared.PutBool(gcpCacheLookupField, req.CacheLookup, attributes)
@@ -490,7 +497,20 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 			return fmt.Errorf("failed to parse VPC flow log JSON payload: %w", err)
 		}
 		return nil
+	case constants.GCPFormatLoadBalancerLog:
+		// Add encoding.format to scope attributes for Load balancer logs
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
+		if err := apploadbalancerlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse Load Balancer log JSON payload: %w", err)
+		}
+		return nil
 		// TODO Add support for more log types
+	case constants.GCPFormatProxyNLBLog:
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
+		if err := proxynlb.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse Proxy NLB log JSON payload: %w", err)
+		}
+		return nil
 	}
 
 	// if the log type was not recognized, add the payload to the log record body

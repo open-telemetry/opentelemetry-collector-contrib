@@ -110,6 +110,8 @@ type Config struct {
 	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 
+	OrchestratorExplorer OrchestratorExplorerConfig `mapstructure:"orchestrator_explorer"`
+
 	// Non-fatal warnings found during configuration loading.
 	warnings []error
 }
@@ -180,6 +182,7 @@ func (c *Config) Validate() error {
 
 // StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
 // It does not validate online; this is handled on startup.
+//
 // Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
 func StaticAPIKeyCheck(key string) error {
 	if key == "" {
@@ -319,6 +322,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("logs::endpoint") {
 		c.Logs.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
+	if !configMap.IsSet("orchestrator_explorer::endpoint") {
+		c.OrchestratorExplorer.Endpoint = fmt.Sprintf("https://orchestrator.%s/api/v2/orchmanif", c.API.Site)
+	}
 
 	// Return an error if an endpoint is explicitly set to ""
 	if c.Metrics.Endpoint == "" || c.Traces.Endpoint == "" || c.Logs.Endpoint == "" {
@@ -401,6 +407,13 @@ func CreateDefaultConfig() component.Config {
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
+		},
+
+		OrchestratorExplorer: OrchestratorExplorerConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
+			},
+			Enabled: false,
 		},
 
 		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373

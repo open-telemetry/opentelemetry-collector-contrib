@@ -533,6 +533,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"id": "1920212223242526",
 		"name": "client span",
 		"action": "receive",
+		"kind": "CLIENT",
 		"db": {
 		  "instance": "users",
 		  "statement": "SELECT * FROM users WHERE user_id=?",
@@ -543,12 +544,12 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		},
 		"links": [
 		  {
-			"span_id": "1112131415161718",
-			"trace_id": "01020304050607080807060504030201"
+			"span"  : { "id": "1112131415161718" },
+			"trace" : { "id": "01020304050607080807060504030201" }
 		  },
 		  {
-			"span_id": "3132333435363738",
-			"trace_id": "21222324252627282827262524232221"
+			"span"  : { "id": "3132333435363738" },
+			"trace" : { "id": "21222324252627282827262524232221" }
 		  }
 		]
 	  },

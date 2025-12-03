@@ -1,5 +1,5 @@
 with qstats as (
-	SELECT TOP(@topNValue)
+	SELECT TOP(@maxSampleCount)
 		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
 		HOST_NAME() AS [computer_name],
 		MAX(qs.plan_handle) AS query_plan_handle,

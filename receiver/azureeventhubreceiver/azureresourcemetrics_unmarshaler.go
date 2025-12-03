@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/goccy/go-json"
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -54,7 +54,7 @@ func (r *azureGenericMetricRecord) UnmarshalJSON(data []byte) error {
 	var recordWithType struct {
 		Type string `json:"Type"`
 	}
-	typeDecoder := jsoniter.NewDecoder(bytes.NewReader(data))
+	typeDecoder := json.NewDecoder(bytes.NewReader(data))
 	err := typeDecoder.Decode(&recordWithType)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (r *azureGenericMetricRecord) UnmarshalJSON(data []byte) error {
 		r.Record = &azureResourceMetricRecord{}
 	}
 
-	recordDecoder := jsoniter.NewDecoder(bytes.NewReader(data))
+	recordDecoder := json.NewDecoder(bytes.NewReader(data))
 	err = recordDecoder.Decode(r.Record)
 	if err != nil {
 		return err
@@ -297,7 +297,7 @@ func (r *azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azureEvent) (p
 	md := pmetric.NewMetrics()
 
 	var azureMetrics azureMetricRecords
-	decoder := jsoniter.NewDecoder(bytes.NewReader(event.Data()))
+	decoder := json.NewDecoder(bytes.NewReader(event.Data()))
 	err := decoder.Decode(&azureMetrics)
 	if err != nil {
 		return md, err
