@@ -835,11 +835,9 @@ detectors: [ <string> ]
 override: <bool>
 # how often resource detection should be refreshed; if unset, detection runs only once at startup
 refresh_interval: <duration>
-# [DEPRECATED] When included, only attributes in the list will be appended.  Applies to all detectors.
-attributes: [ <string> ]
 ```
 
-Moreover, you have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
+You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
 
 ```yaml
 resourcedetection:
@@ -856,32 +854,6 @@ resourcedetection:
         enabled: false
       host.id:
         enabled: true
-```
-
-### Migration from attributes to resource_attributes
-
-The `attributes` option is deprecated and will be removed soon, from now on you should enable/disable attributes through `resource_attributes`.
-For example, this config:
-
-```yaml
-resourcedetection:
-  detectors: [system]
-  attributes: ['host.name', 'host.id']
-```
-
-can be replaced with:
-
-```yaml
-resourcedetection:
-  detectors: [system]
-  system:
-    resource_attributes:
-      host.name:
-        enabled: true
-      host.id:
-        enabled: true
-      os.type:
-        enabled: false
 ```
 
 ### Using the `refresh_interval` parameter
