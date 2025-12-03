@@ -142,7 +142,7 @@ func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
 func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// ddSpan.Attributes["grpc.status.code"] contains the gRPC status code name (eg "OK")
 	// not the numeric value (eg "0")
-	// it's ddSpan.error that indicates whether the status code value
+	// it's ddSpan.error that indicates holds the gRPC status code numeric value
 	newSpan.Attributes().PutInt(string(semconv.RPCGRPCStatusCodeKey), int64(span.GetError()))
 
 	method := ""

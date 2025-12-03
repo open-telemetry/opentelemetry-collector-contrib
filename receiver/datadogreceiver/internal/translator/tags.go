@@ -66,8 +66,10 @@ var datadogKnownResourceAttributes = map[string]string{
 	// DB
 	"db.type":      string(semconv.DBSystemNameKey),
 	"db.operation": string(semconv.DBOperationNameKey),
-	"db.instance":  string(semconv.DBCollectionNameKey),
+	"db.instance":  string(semconv.DBNamespaceKey),
+	"db.sql.table": string(semconv.DBCollectionNameKey),
 	"db.pool.name": string(semconv.DBClientConnectionPoolNameKey),
+	"db.statement": string(semconv.DBQueryTextKey),
 
 	// Other
 	"process_id":       string(semconv.ProcessPIDKey),
