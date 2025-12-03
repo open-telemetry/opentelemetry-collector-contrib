@@ -217,7 +217,7 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
 	se.config.TLS = se.config.IngestTLSs
 
-	return se.config.ToClient(ctx, host, se.telemetrySettings)
+	return se.config.ToClient(ctx, host.GetExtensions(), se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {

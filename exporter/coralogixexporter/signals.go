@@ -36,7 +36,7 @@ type signalConfigWrapper struct {
 }
 
 func (w *signalConfigWrapper) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, opts ...configgrpc.ToClientConnOption) (*grpc.ClientConn, error) {
-	return w.config.ToClientConn(ctx, host, settings, opts...)
+	return w.config.ToClientConn(ctx, host.GetExtensions(), settings, opts...)
 }
 
 func (w *signalConfigWrapper) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
@@ -146,7 +146,7 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 			return err
 		}
 	} else {
-		if e.clientConn, err = transportConfig.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
+		if e.clientConn, err = transportConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 		e.callOptions = []grpc.CallOption{

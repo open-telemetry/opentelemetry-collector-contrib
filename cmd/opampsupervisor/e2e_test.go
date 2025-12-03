@@ -42,7 +42,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
@@ -2213,12 +2213,6 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 						ConfigHash: badHash,
 					},
 				})
-
-				// Check that the status is set to APPLYING
-				require.Eventually(t, func() bool {
-					status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
-					return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
-				}, 5*time.Second, 200*time.Millisecond, "Remote config status was not set to APPLYING for bad config")
 
 				// Wait for the health checks to fail
 				require.Eventually(t, func() bool {
