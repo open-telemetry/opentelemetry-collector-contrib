@@ -48,6 +48,8 @@ const (
 var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 	// HTTP
 	"servlet.request": processHTTPSpan,
+	"http.request":    processHTTPSpan,
+	"web.request":     processHTTPSpan,
 
 	// Internal
 	"spring.handler": processInternalSpan,

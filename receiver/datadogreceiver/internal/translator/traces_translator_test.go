@@ -464,6 +464,34 @@ func TestToTraces(t *testing.T) {
 			map[string]string{},
 		},
 		{
+			"http-request-request-with-route",
+			pb.Span{
+				Name: "http.request",
+				Meta: map[string]string{
+					"http.method": "POST",
+					"http.route":  "/api/order",
+				},
+			},
+			"POST /api/order",
+			map[string]string{
+				string(semconv.HTTPRequestMethodKey): "POST",
+				string(semconv.HTTPRouteKey):         "/api/order",
+			},
+		},
+		{
+			"web-request-request-withut-route",
+			pb.Span{
+				Name: "web.request",
+				Meta: map[string]string{
+					"http.method": "POST",
+				},
+			},
+			"POST",
+			map[string]string{
+				string(semconv.HTTPRequestMethodKey): "POST",
+			},
+		},
+		{
 			"http-servlet-request-no-route",
 			pb.Span{
 				Name: "servlet.request",
