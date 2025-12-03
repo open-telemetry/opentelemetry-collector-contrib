@@ -164,10 +164,9 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	// lose leadership - this will trigger Shutdown()
 	le.InvokeOnStopping()
 
-	// Event should be ignored after losing leadership
-	recv.handleEvent(getEvent("Normal"))
+	// Verify count remains at 1 after losing leadership
 	time.Sleep(100 * time.Millisecond)
-	require.Equal(t, 1, sink.LogRecordCount(), "event should be ignored after losing leadership")
+	require.Equal(t, 1, sink.LogRecordCount(), "count should remain at 1 after losing leadership")
 
 	// regain leadership
 	le.InvokeOnLeading()

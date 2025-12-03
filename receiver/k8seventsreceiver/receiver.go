@@ -159,11 +159,6 @@ func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 }
 
 func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
-	// Check if context is cancelled (receiver has been shut down)
-	if kr.ctx != nil && kr.ctx.Err() != nil {
-		return
-	}
-
 	if kr.allowEvent(ev) {
 		ld := k8sEventToLogData(kr.settings.Logger, ev, kr.settings.BuildInfo.Version)
 
