@@ -54,7 +54,6 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params processor.Settings,
 	timeout time.Duration,
-	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
@@ -63,14 +62,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		return nil, err
 	}
 
-	attributesToKeep := make(map[string]struct{})
-	if len(attributes) > 0 {
-		for _, attribute := range attributes {
-			attributesToKeep[attribute] = struct{}{}
-		}
-	}
-
-	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, detectors...)
 	return provider, nil
 }
 
@@ -99,7 +91,6 @@ type ResourceProvider struct {
 	detectors        []Detector
 	detectedResource *resourceResult
 	mu               sync.RWMutex
-	attributesToKeep map[string]struct{}
 
 	// Refresh loop control
 	refreshInterval time.Duration
@@ -113,13 +104,12 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
-		logger:           logger,
-		timeout:          timeout,
-		detectors:        detectors,
-		attributesToKeep: attributesToKeep,
-		refreshInterval:  0, // No periodic refresh by default
+		logger:          logger,
+		timeout:         timeout,
+		detectors:       detectors,
+		refreshInterval: 0, // No periodic refresh by default
 	}
 }
 
@@ -230,12 +220,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 		MergeResource(res, result.resource, false)
 	}
 
-	droppedAttributes := filterAttributes(res.Attributes(), p.attributesToKeep)
-
 	p.logger.Info("detected resource information", zap.Any("resource", res.Attributes().AsRaw()))
-	if len(droppedAttributes) > 0 {
-		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
-	}
 
 	// Determine the error to return based on feature gate setting.
 	var returnErr error
@@ -273,21 +258,6 @@ func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {
 	// TODO: handle the case when the schema URLs are different by performing
 	// schema conversion. For now we simply ignore the new schema URL.
 	return currentSchemaURL
-}
-
-func filterAttributes(am pcommon.Map, attributesToKeep map[string]struct{}) []string {
-	if len(attributesToKeep) > 0 {
-		var droppedAttributes []string
-		am.RemoveIf(func(k string, _ pcommon.Value) bool {
-			_, keep := attributesToKeep[k]
-			if !keep {
-				droppedAttributes = append(droppedAttributes, k)
-			}
-			return !keep
-		})
-		return droppedAttributes
-	}
-	return nil
 }
 
 func MergeResource(to, from pcommon.Resource, overrideTo bool) {
