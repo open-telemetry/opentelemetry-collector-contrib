@@ -10,9 +10,6 @@ resourceLogs:
         - key: gcp.resource_type
           value:
             stringValue: dns_query
-        - key: gcp.label.target_name
-          value:
-            stringValue: ""
         - key: gcp.label.location
           value:
             stringValue: europe-west1
@@ -31,13 +28,13 @@ resourceLogs:
               - key: log.record.uid
                 value:
                   stringValue: 1l6ygnyf16t0em
-              - key: gcp.dns.query.name
+              - key: dns.question.name
                 value:
                   stringValue: non-existent-domain-123456789.com.
-              - key: gcp.dns.query.type
+              - key: dns.question.type
                 value:
                   stringValue: A
-              - key: gcp.dns.response.code
+              - key: dns.response_code
                 value:
                   stringValue: NXDOMAIN
               - key: gcp.dns.auth_answer
@@ -46,31 +43,28 @@ resourceLogs:
               - key: client.address
                 value:
                   stringValue: 10.132.0.43
-              - key: gcp.dns.source.network
+              - key: gcp.dns.client.vpc.name
                 value:
                   stringValue: default
               - key: network.transport
                 value:
-                  stringValue: UDP
-              - key: gcp.dns.server_latency
+                  stringValue: udp
+              - key: gcp.dns.server.latency
                 value:
                   doubleValue: 12
-              - key: gcp.dns.dns64_translated
+              - key: gcp.dns.dns64.translated
                 value:
                   boolValue: false
-              - key: gcp.dns.vm.instance.id
+              - key: host.id
                 value:
                   intValue: "2838092002611613700"
-              - key: gcp.dns.vm.instance.id_string
-                value:
-                  stringValue: "2838092002611613780"
-              - key: gcp.dns.vm.instance.name
+              - key: host.name
                 value:
                   stringValue: 228025391384.instance-20251126-211431
-              - key: gcp.dns.vm.project_id
+              - key: gcp.project.id
                 value:
                   stringValue: elastic-logstash
-              - key: gcp.dns.vm.zone
+              - key: cloud.availability_zone
                 value:
                   stringValue: europe-west1-c
             body: {}

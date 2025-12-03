@@ -582,7 +582,7 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 	if log.Resource != nil {
 		resourceAttributes.PutStr(gcpResourceTypeField, log.Resource.Type)
 		for k, v := range log.Resource.Labels {
-			resourceAttributes.PutStr(strcase.ToSnakeWithIgnore(fmt.Sprintf("gcp.label.%v", k), "."), v)
+			shared.PutStr(strcase.ToSnakeWithIgnore(fmt.Sprintf("gcp.label.%s", k), "."), v, resourceAttributes)
 		}
 	}
 

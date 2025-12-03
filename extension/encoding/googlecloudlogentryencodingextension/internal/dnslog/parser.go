@@ -6,11 +6,13 @@
 package dnslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/dnslog"
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -19,60 +21,48 @@ const (
 	CloudDNSQueryLogSuffix = "dns.googleapis.com%2Fdns_queries"
 
 	// Query related attributes. Ref: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
-	// gcpDNSQueryName holds the DNS query name
-	gcpDNSQueryName = "gcp.dns.query.name"
 	// gcpDNSQueryType holds the DNS query type
-	gcpDNSQueryType = "gcp.dns.query.type"
+	gcpDNSQueryType = "dns.question.type" // TBD in SemConv
 
 	// Response related attributes
 	// gcpDNSResponseCode holds the DNS response code
-	gcpDNSResponseCode = "gcp.dns.response.code"
+	gcpDNSResponseCode = "dns.response_code" // TBD in SemConv
 	// gcpDNSAliasQueryResponseCode holds the response code for alias queries
 	gcpDNSAliasQueryResponseCode = "gcp.dns.alias_query.response.code"
 	// gcpDNSAuthAnswer indicates whether the response is authoritative
 	gcpDNSAuthAnswer = "gcp.dns.auth_answer" // Ref: https://datatracker.ietf.org/doc/html/rfc1035
-	// gcpDNSRdata holds DNS answer in presentation format
-	gcpDNSRdata = "gcp.dns.rdata"
+	// gcpDNSAnswerData holds DNS answer in presentation format
+	gcpDNSAnswerData = "dns.answer.data" // TBD in SemConv
 
 	// Network related attributes
-	// gcpDNSDestinationIP holds target IP address
-	gcpDNSDestinationIP = "gcp.dns.destination_ip"
-	// gcpDNSSourceNetwork holds the source network name
-	gcpDNSSourceNetwork = "gcp.dns.source.network"
-	// gcpDNSSourceType holds the source type of the DNS query
-	gcpDNSSourceType = "gcp.dns.source.type"
+	// gcpDNSClientVPCNetwork holds the client network name where the DNS query originated
+	gcpDNSClientVPCNetwork = "gcp.dns.client.vpc.name"
+	// gcpDNSClientType holds the client type of the DNS query
+	gcpDNSClientType = "gcp.dns.client.type"
 
-	// Target related attributes
-	// gcpDNSTargetName holds the target name
-	gcpDNSTargetName = "gcp.dns.target.name"
-	// gcpDNSTargetType holds the type of target resolving the DNS query
-	gcpDNSTargetType = "gcp.dns.target.type"
+	// Server related attributes
+	// gcpDNSServerName holds the name name of Google Cloud instance that is responsible of resolving the query
+	gcpDNSServerName = "gcp.dns.server.name"
+	// gcpDNServerType holds the type of target resolving the DNS query
+	gcpDNServerType = "gcp.dns.server.type"
 
 	// Performance and error related attributes
 	// gcpDNSServerLatency holds the server-side latency in seconds
-	gcpDNSServerLatency = "gcp.dns.server_latency"
+	gcpDNSServerLatency = "gcp.dns.server.latency"
 	// gcpDNSEgressError holds Egress proxy error, the actual error as received from the on-premises DNS server
-	gcpDNSEgressError = "gcp.dns.egress_error"
+	gcpDNSEgressError = "gcp.dns.egress.error"
 	// gcpDNSHealthyIPs holds addresses in the ResourceRecordSet that are known to be HEALTHY.
 	gcpDNSHealthyIPs = "gcp.dns.healthy_ips"
 	// gcpDNSUnhealthyIPs holds addresses in the ResourceRecordSet that are known to be UNHEALTHY.
-	gcpDNSUnhealthyIPs = "gcp.dns.unhealthy_ips"
+	gcpDNSUnhealthyIPs = "gcp.dns.unhealthy.ips"
 
 	// DNS feature related attributes
 	// gcpDNSDNS64Translated indicates whether DNS64 translation was applied
-	gcpDNSDNS64Translated = "gcp.dns.dns64_translated"
+	gcpDNSDNS64Translated = "gcp.dns.dns64.translated"
 
 	// VM instance related attributes
-	// gcpDNSVMInstanceID holds the Compute Engine VM instance ID as an integer
-	gcpDNSVMInstanceID = "gcp.dns.vm.instance.id"
-	// gcpDNSVMInstanceIDString holds the Compute Engine VM instance ID as a string
-	gcpDNSVMInstanceIDString = "gcp.dns.vm.instance.id_string"
-	// gcpDNSVMInstanceName holds the VM instance name
-	gcpDNSVMInstanceName = "gcp.dns.vm.instance.name"
-	// gcpDNSVMProjectID holds the Google Cloud project ID of the network from which the query was sent
-	gcpDNSVMProjectID = "gcp.dns.vm.project_id"
-	// gcpDNSVMZoneName holds the name of the VM zone from which the query was sent
-	gcpDNSVMZoneName = "gcp.dns.vm.zone"
+	// gcpProjectID holds the Google Cloud project ID of the network from which the query was sent
+	gcpProjectID = "gcp.project.id"
 )
 
 type dnslog struct {
@@ -97,36 +87,35 @@ type dnslog struct {
 	TargetType             string   `json:"target_type"`
 	UnhealthyIps           string   `json:"unhealthyIps"`
 	VMInstanceID           *int64   `json:"vmInstanceId"`
-	VMInstanceIDStr        string   `json:"vmInstanceIdString"`
 	VMInstanceName         string   `json:"vmInstanceName"`
 	VMProjectID            string   `json:"vmProjectId"`
 	VMZoneName             string   `json:"vmZoneName"`
 }
 
 func handleQueryAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutStr(gcpDNSQueryName, log.QueryName, attr)
-	shared.PutStr(gcpDNSQueryType, log.QueryType, attr)
+	shared.PutStr(string(semconv.DNSQuestionNameKey), log.QueryName, attr)
+	shared.PutStr(gcpDNSQueryType, log.QueryType, attr) // TBD in SemConv
 }
 
 func handleResponseAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutStr(gcpDNSResponseCode, log.ResponseCode, attr)
+	shared.PutStr(gcpDNSResponseCode, log.ResponseCode, attr) // TBD in SemConv
 	shared.PutStr(gcpDNSAliasQueryResponseCode, log.AliasQueryResponseCode, attr)
 	shared.PutBool(gcpDNSAuthAnswer, log.AuthAnswer, attr)
-	shared.PutStr(gcpDNSRdata, log.Rdata, attr)
+	shared.PutStr(gcpDNSAnswerData, log.Rdata, attr) // TBD in SemConv
 }
 
 func handleNetworkAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutStr(gcpDNSDestinationIP, log.DestinationIP, attr)
-	shared.PutStr(gcpDNSSourceNetwork, log.SourceNetwork, attr)
-	shared.PutStr(gcpDNSSourceType, log.SourceType, attr)
+	shared.PutStr(string(semconv.ServerAddressKey), log.DestinationIP, attr)
+	shared.PutStr(gcpDNSClientVPCNetwork, log.SourceNetwork, attr)
+	shared.PutStr(gcpDNSClientType, log.SourceType, attr)
 	shared.PutStr(string(semconv.ClientAddressKey), log.SourceIP, attr)
-	shared.PutStr(string(semconv.NetworkTransportKey), log.Protocol, attr)
+	shared.PutStr(string(semconv.NetworkTransportKey), strings.ToLower(log.Protocol), attr)
 	shared.PutStr(string(semconv.CloudRegionKey), log.Location, attr)
 }
 
 func handleTargetAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutStr(gcpDNSTargetName, log.TargetName, attr)
-	shared.PutStr(gcpDNSTargetType, log.TargetType, attr)
+	shared.PutStr(gcpDNSServerName, log.TargetName, attr)
+	shared.PutStr(gcpDNServerType, log.TargetType, attr)
 }
 
 func handlePerformanceAndErrorAttributes(log *dnslog, attr pcommon.Map) {
@@ -141,26 +130,29 @@ func handleDNSFeatureAttributes(log *dnslog, attr pcommon.Map) {
 }
 
 func handleVMInstanceAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutInt(gcpDNSVMInstanceID, log.VMInstanceID, attr)
-	shared.PutStr(gcpDNSVMInstanceIDString, log.VMInstanceIDStr, attr)
-	shared.PutStr(gcpDNSVMInstanceName, log.VMInstanceName, attr)
-	shared.PutStr(gcpDNSVMProjectID, log.VMProjectID, attr)
-	shared.PutStr(gcpDNSVMZoneName, log.VMZoneName, attr)
+	shared.PutInt(string(semconv.HostIDKey), log.VMInstanceID, attr)
+	shared.PutStr(string(semconv.HostNameKey), log.VMInstanceName, attr)
+	shared.PutStr(gcpProjectID, log.VMProjectID, attr)
+	shared.PutStr(string(semconv.CloudAvailabilityZoneKey), log.VMZoneName, attr)
 }
 
 func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
-	var log dnslog
+	var log *dnslog
 	if err := gojson.Unmarshal(payload, &log); err != nil {
 		return fmt.Errorf("failed to unmarshal DNS log: %w", err)
 	}
 
-	handleQueryAttributes(&log, attr)
-	handleResponseAttributes(&log, attr)
-	handleNetworkAttributes(&log, attr)
-	handleTargetAttributes(&log, attr)
-	handlePerformanceAndErrorAttributes(&log, attr)
-	handleDNSFeatureAttributes(&log, attr)
-	handleVMInstanceAttributes(&log, attr)
+	if log == nil {
+		return errors.New("DNS cannot be nil after detecting payload as DNS log")
+	}
+
+	handleQueryAttributes(log, attr)
+	handleResponseAttributes(log, attr)
+	handleNetworkAttributes(log, attr)
+	handleTargetAttributes(log, attr)
+	handlePerformanceAndErrorAttributes(log, attr)
+	handleDNSFeatureAttributes(log, attr)
+	handleVMInstanceAttributes(log, attr)
 
 	return nil
 }

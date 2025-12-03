@@ -130,7 +130,7 @@ Examples:
 
 - Audit Logs: `encoding.format: "gcp.auditlog"`
 - VPC Flow Logs: `encoding.format: "gcp.vpcflow"`
-- Application Load Balancer Logs: `encoding.format: "gcp.load_balancing"`
+- Application Load Balancer Logs: `encoding.format: "gcp.load-balacer"`
 - Proxy Network Load Balancer Logs: `encoding.format: "gcp.proxy-nlb"`
 - Cloud DNS Logs: `encoding.format: "gcp.dns"`
 
@@ -146,7 +146,7 @@ For example, `projects/my-project/logs/cloudaudit.googleapis.com%2Fsystem_event`
 2. **Map log type to format**: The extension maps specific log types to their corresponding encoding formats (`encoding.format`):
    - Audit logs (activity, data access, system event, policy): `gcp.auditlog`
    - VPC flow logs (network management-sourced and compute-sourced VPC flow logs): `gcp.vpcflow`
-   - Application Load Balancer logs (Global External and Regional External): `gcp.load_balancing`
+   - Application Load Balancer logs (Global External and Regional External): `gcp.load-balancer`
    - Cloud Armor logs (embedded within load balancer logs): `gcp.armorlog`
    - Proxy Network Load Balancer logs: `gcp.proxy-nlb`
    - Cloud DNS logs: `gcp.dns`
@@ -163,7 +163,7 @@ The following format values are supported in the `googlecloudlogentryencodingext
 |------------------|------------------|-----------------|
 | Audit Logs | `auditlog` | Google Cloud audit logs (activity, data access, system event, policy) |
 | VPC Flow Logs | `vpcflow` | Virtual Private Cloud flow log records |
-| Application Load Balancer Logs | `load_balancing` | Global and Regional External Application Load Balancer logs |
+| Application Load Balancer Logs | `load-balancer` | Global and Regional External Application Load Balancer logs |
 | Armor Logs | `armorlog` | Google Cloud armor logs (security policies applied) |
 | Proxy Network Load Balancer Logs | `proxy-nlb` | Proxy Network Load Balancer connection logs |
 | Cloud DNS Logs | `dns` | Cloud DNS query and response logs |
@@ -448,30 +448,29 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 
 | Original field | Log record attribute |
 |---|---|
-| `queryName` | `gcp.dns.query.name` |
-| `queryType` | `gcp.dns.query.type` |
-| `responseCode` | `gcp.dns.response.code` |
+| `queryName` | `dns.question.name` |
+| `queryType` | `dns.question.type` |
+| `responseCode` | `dns.response_code` |
 | `alias_query_response_code` | `gcp.dns.alias_query.response.code` |
 | `authAnswer` | `gcp.dns.auth_answer` |
-| `rdata` | `gcp.dns.rdata` |
-| `destinationIP` | `gcp.dns.destination_ip` |
-| `sourceNetwork` | `gcp.dns.source.network` |
-| `source_type` | `gcp.dns.source.type` |
+| `rdata` | `dns.answer.data` |
+| `destinationIP` | `server.address` |
+| `sourceNetwork` | `gcp.dns.client.vpc.name` |
+| `source_type` | `gcp.dns.client.type` |
 | `sourceIP` | `client.address` |
 | `protocol` | `network.transport` |
 | `location` | `cloud.region` |
-| `target_name` | `gcp.dns.target.name` |
-| `target_type` | `gcp.dns.target.type` |
-| `serverLatency` | `gcp.dns.server_latency` |
-| `egressError` | `gcp.dns.egress_error` |
+| `target_name` | `gcp.dns.server.name` |
+| `target_type` | `gcp.dns.server.type` |
+| `serverLatency` | `gcp.dns.server.latency` |
+| `egressError` | `gcp.dns.egress.error` |
 | `healthyIps` | `gcp.dns.healthy_ips` |
-| `unhealthyIps` | `gcp.dns.unhealthy_ips` |
-| `dns64Translated` | `gcp.dns.dns64_translated` |
-| `vmInstanceId` | `gcp.dns.vm.instance.id` |
-| `vmInstanceIdString` | `gcp.dns.vm.instance.id_string` |
-| `vmInstanceName` | `gcp.dns.vm.instance.name` |
-| `vmProjectId` | `gcp.dns.vm.project_id` |
-| `vmZoneName` | `gcp.dns.vm.zone` |
+| `unhealthyIps` | `gcp.dns.unhealthy.ips` |
+| `dns64Translated` | `gcp.dns.dns64.translated` |
+| `vmInstanceId` | `host.id` |
+| `vmInstanceName` | `host.name` |
+| `vmProjectId` | `gcp.project.id` |
+| `vmZoneName` | `cloud.availability_zone` |
 
 **Protocol translation**: The numeric protocol field from GCP is automatically translated to human-readable protocol names using the [IANA Protocol Numbers](https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml) standard. Common values include:
 
