@@ -30,19 +30,19 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "awslogs_encoding"),
 			expected: &Config{
-				EncodingExtension: "awslogs_encoding",
+				Encoding: "awslogs_encoding",
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "json_log_encoding"),
 			expected: &Config{
-				EncodingExtension: "json_log_encoding",
+				Encoding: "json_log_encoding",
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "empty_encoding"),
 			expected: &Config{
-				EncodingExtension: "",
+				Encoding: "",
 			},
 			expectError: "encoding_extension is mandatory",
 		},
