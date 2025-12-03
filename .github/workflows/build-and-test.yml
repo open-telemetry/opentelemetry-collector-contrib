@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -137,7 +137,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -157,7 +157,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -219,7 +219,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [stable, oldstable]
+        go-version: [stable, '1.24.11']
         runner: [ubuntu-24.04]
         group:
           - receiver-0
@@ -246,7 +246,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version: ${{ matrix.go-version }}
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -268,7 +268,7 @@ jobs:
       # - On main, with the go version that we didn't run the JUnit tests with.
       - name: Run Unit Tests
         id: tests
-        if: github.ref != 'refs/heads/main' || !startsWith( matrix.go-version, 'oldstable' )
+        if: github.ref != 'refs/heads/main' || !startsWith( matrix.go-version, '1.24' )
         run: make gotest GROUP=${{ matrix.group }}
 
       # JUnit tests are super long, so we only run them for one go version.
@@ -276,16 +276,16 @@ jobs:
       # merged to main, so we don't run them on every PR.
       - name: Run Unit Tests With JUnit and Coverage
         id: tests-with-junit
-        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, '1.24' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
-        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, '1.24' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
-        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith( matrix.go-version, '1.24' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: internal/tools/testresults/
@@ -358,7 +358,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -388,7 +388,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -428,7 +428,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -448,7 +448,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -518,7 +518,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -567,7 +567,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'
@@ -694,7 +694,7 @@ jobs:
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: oldstable
+          go-version-file: 'go.mod'
           cache-dependency-path: "**/*.sum"
       - name: Install dependencies
         if: steps.go-setup.outputs.cache-hit != 'true'

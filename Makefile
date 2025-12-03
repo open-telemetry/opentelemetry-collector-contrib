@@ -178,10 +178,16 @@ endif
 	@echo "Updating all module go.mod files..."
 	@find . -name "go.mod" -type f -not -path "./go.mod" -exec sed -i '' -E 's/^go [0-9]+\.[0-9]+\.[0-9]+/go $(VERSION)/g' {} \;
 	
+	# 3. Update GitHub Actions workflows to use go-version-file instead of oldstable
+	@echo "Updating GitHub Actions workflows..."
+	@find .github/workflows -name "*.yml" -o -name "*.yaml" | xargs sed -i '' -E '/go-version: oldstable/s/go-version: oldstable/go-version-file: '\''go.mod'\''/g'
+	
 	@echo ""
 	@echo "✓ Successfully bumped Go version to $(VERSION)"
 	@echo ""
-	@echo "Next, optionally run: make gotidy (takes ~5-10 minutes)"
+	@echo "Next steps:"
+	@echo "  1. Review the changed workflow files: git diff .github/workflows/"
+	@echo "  2. Optionally run: make gotidy (takes ~5-10 minutes)"
 
 .PHONY: remove-toolchain
 remove-toolchain:
