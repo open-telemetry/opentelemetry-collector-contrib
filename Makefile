@@ -178,21 +178,17 @@ endif
 	@echo "Updating all module go.mod files..."
 	@find . -name "go.mod" -type f -not -path "./go.mod" -exec sed -i '' -E 's/^go [0-9]+\.[0-9]+\.[0-9]+/go $(VERSION)/g' {} \;
 	
-	# 3. Update GitHub Actions workflows to use go-version-file instead of oldstable
-	@echo "Updating GitHub Actions workflows..."
-	@find .github/workflows -name "*.yml" -o -name "*.yaml" | xargs sed -i '' -E '/go-version: oldstable/s/go-version: oldstable/go-version-file: '\''go.mod'\''/g'
-	
-	# 3a. Fix workflows that checkout to a subdirectory
-	@echo "Fixing workflows with subdirectory checkouts..."
-	@sed -i '' -E "s|go-version-file: 'go.mod'|go-version-file: 'opentelemetry-collector-contrib/go.mod'|g" .github/workflows/prometheus-compliance-tests.yml
-	@sed -i '' -E "s|go-version-file: 'go.mod'|go-version-file: 'opentelemetry-collector-contrib/go.mod'|g" .github/workflows/prepare-release.yml
+	# 3. Update the matrix version in build-and-test.yml
+	@echo "Updating matrix test version..."
+	@sed -i '' -E "s/go-version: \[stable, '[0-9]+\.[0-9]+\.[0-9]+'\]/go-version: [stable, '$(VERSION)']/" .github/workflows/build-and-test.yml
 	
 	@echo ""
 	@echo "✓ Successfully bumped Go version to $(VERSION)"
 	@echo ""
-	@echo "Next steps:"
-	@echo "  1. Review the changed workflow files: git diff .github/workflows/"
-	@echo "  2. Optionally run: make gotidy (takes ~5-10 minutes)"
+	@echo "Note: GitHub Actions workflows automatically read the version from go.mod"
+	@echo "      Each workflow has 'go-version-file: go.mod' configured in its"
+	@echo "      actions/setup-go step, which tells the action to read from go.mod"
+	@echo "Next: Optionally run 'make gotidy' (takes ~5-10 minutes)"
 
 .PHONY: remove-toolchain
 remove-toolchain:
