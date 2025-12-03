@@ -5,6 +5,6 @@ status:
   stability:
     alpha: [logs]
   codeowners:
-    active: [Caleb-Hurshman]
+    active: [Caleb-Hurshman, atoulme]
   distributions: [contrib]
   unsupported_platforms: [linux, windows]
