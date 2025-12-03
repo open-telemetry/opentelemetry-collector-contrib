@@ -691,8 +691,8 @@ Sanitization examples:
             url.path: /api/v1/users/123
          ```
     * Span name after applying `set_semconv_span_name("1.37.0")`: `GET`
-    * Loss of information on `span.name` occurs because the recommended attribute `http.route` is missing 
-    and is mitigated by other span attributes like `url.path` or `url.full`.
+    * Loss of information on `span.name` occurs because the recommended attribute `http.route` is missing.
+    Note that this loss of information is mitigated if the instrumentation produced attributes that contain the URL path like `url.path` or `url.full`.
 * Compliant span name is unchanged
     * Incoming span:
          ```
