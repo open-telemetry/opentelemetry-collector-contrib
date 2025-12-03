@@ -103,7 +103,6 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: systemConfig,
 				ClientConfig:   cfg,
 				Override:       false,
-				Attributes:     []string{"a", "b"},
 			},
 		},
 		{
@@ -131,6 +130,16 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: resourceAttributesConfig,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "refresh"),
+			expected: &Config{
+				Detectors:       []string{"system"},
+				ClientConfig:    cfg,
+				Override:        false,
+				DetectorConfig:  detectorCreateDefaultConfig(),
+				RefreshInterval: 5 * time.Second,
 			},
 		},
 		{
