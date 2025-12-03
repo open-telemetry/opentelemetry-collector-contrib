@@ -30,7 +30,7 @@ type mockDetector struct {
 
 func (p *mockDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	args := p.Called()
-	return args.Get(0).(pcommon.Resource), "", args.Error(1)
+	return args.Get(0).(pcommon.Resource), args.String(1), args.Error(2)
 }
 
 type mockDetectorConfig struct{}
@@ -81,7 +81,7 @@ func TestDetect(t *testing.T) {
 				md := &mockDetector{}
 				res := pcommon.NewResource()
 				require.NoError(t, res.Attributes().FromRaw(resAttrs))
-				md.On("Detect").Return(res, nil)
+				md.On("Detect").Return(res, "", nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockDetector%v", i))
 				mockDetectors[mockDetectorType] = func(processor.Settings, DetectorConfig) (Detector, error) {
@@ -94,6 +94,11 @@ func TestDetect(t *testing.T) {
 			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
+			// Perform initial detection
+			err = p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+			require.NoError(t, err)
+
+			// Get the detected resource
 			got, _, err := p.Get(t.Context(), &http.Client{Timeout: 10 * time.Second})
 			require.NoError(t, err)
 
@@ -128,10 +133,10 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	}()
 
 	md1 := &mockDetector{}
-	md1.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
+	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1"))
 
 	md2 := &mockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))
+	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
 
@@ -139,7 +144,7 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
-	_, _, err = p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
+	err = p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "err1")
 	require.Contains(t, err.Error(), "err2")
@@ -147,10 +152,10 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 
 func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T) {
 	md1 := &mockDetector{}
-	md1.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
+	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1"))
 
 	md2 := &mockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))
+	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
 
@@ -158,7 +163,7 @@ func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
-	_, _, err := p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
+	err := p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.NoError(t, err)
 }
 
@@ -201,35 +206,54 @@ type mockParallelDetector struct {
 }
 
 func newMockParallelDetector() *mockParallelDetector {
-	return &mockParallelDetector{ch: make(chan struct{})}
+	return &mockParallelDetector{ch: make(chan struct{}, 1)}
 }
 
 func (p *mockParallelDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
-	return args.Get(0).(pcommon.Resource), "", args.Error(1)
+	return args.Get(0).(pcommon.Resource), args.String(1), args.Error(2)
 }
 
-// TestDetectResource_Parallel validates that Detect is only called once, even if there
-// are multiple calls to ResourceProvider.Get
+// TestDetectResource_Parallel validates that multiple concurrent calls to Get
+// return the cached result after initial Refresh
 func TestDetectResource_Parallel(t *testing.T) {
 	const iterations = 5
 
 	md1 := newMockParallelDetector()
 	res1 := pcommon.NewResource()
 	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(res1, nil)
+	md1.On("Detect").Return(res1, "", nil)
 
 	md2 := newMockParallelDetector()
 	res2 := pcommon.NewResource()
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"a": "11", "c": "3"}))
-	md2.On("Detect").Return(res2, nil)
+	md2.On("Detect").Return(res2, "", nil)
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
 
-	// call p.Get multiple times
+	// Perform initial detection
+	go func() {
+		time.Sleep(5 * time.Millisecond)
+		md1.ch <- struct{}{}
+		md2.ch <- struct{}{}
+	}()
+
+	err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+	require.NoError(t, err)
+
+	// Get the detected resource
+	detected, _, err := p.Get(t.Context(), &http.Client{Timeout: 10 * time.Second})
+	require.NoError(t, err)
+	require.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
+
+	// Verify Detect was called once during Refresh
+	md1.AssertNumberOfCalls(t, "Detect", 1)
+	md2.AssertNumberOfCalls(t, "Detect", 1)
+
+	// Now call Get multiple times concurrently - should return cached value
 	wg := &sync.WaitGroup{}
 	wg.Add(iterations)
 	for range iterations {
@@ -241,15 +265,9 @@ func TestDetectResource_Parallel(t *testing.T) {
 		}()
 	}
 
-	// wait until all goroutines are blocked
-	time.Sleep(5 * time.Millisecond)
-
-	// detector.Detect should only be called once, so we only need to notify each channel once
-	md1.ch <- struct{}{}
-	md2.ch <- struct{}{}
-
-	// then wait until all goroutines are finished, and ensure p.Detect was only called once
 	wg.Wait()
+
+	// Verify Detect still only called once (not called again by Get)
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
 }
@@ -258,23 +276,61 @@ func TestDetectResource_Reconnect(t *testing.T) {
 	md1 := &mockDetector{}
 	res1 := pcommon.NewResource()
 	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(pcommon.NewResource(), errors.New("connection error1")).Twice()
-	md1.On("Detect").Return(res1, nil)
+	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("connection error1")).Twice()
+	md1.On("Detect").Return(res1, "", nil)
 
 	md2 := &mockDetector{}
 	res2 := pcommon.NewResource()
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"c": "3"}))
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("connection error2")).Once()
-	md2.On("Detect").Return(res2, nil)
+	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("connection error2")).Once()
+	md2.On("Detect").Return(res2, "", nil)
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
 
+	err := p.Refresh(t.Context(), &http.Client{Timeout: 15 * time.Second})
+	assert.NoError(t, err)
+
+	// Get the detected resource
 	detected, _, err := p.Get(t.Context(), &http.Client{Timeout: 15 * time.Second})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 
 	md1.AssertNumberOfCalls(t, "Detect", 3) // 2 errors + 1 success
 	md2.AssertNumberOfCalls(t, "Detect", 2) // 1 error + 1 success
+}
+
+func TestResourceProvider_RefreshInterval(t *testing.T) {
+	md := &mockDetector{}
+	res1 := pcommon.NewResource()
+	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1"}))
+	res2 := pcommon.NewResource()
+	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"a": "2"}))
+
+	// First call -> res1, second call -> res2
+	md.On("Detect").Return(res1, "", nil).Once()
+	md.On("Detect").Return(res2, "", nil).Once()
+
+	p := NewResourceProvider(zap.NewNop(), 1*time.Second, md)
+
+	// Initial detection
+	err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+	require.NoError(t, err)
+
+	got, _, err := p.Get(t.Context(), &http.Client{Timeout: time.Second})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"a": "1"}, got.Attributes().AsRaw())
+
+	// Simulate a single periodic refresh
+	err = p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+	require.NoError(t, err)
+
+	// The cached resource should now be updated
+	got, _, err = p.Get(t.Context(), &http.Client{Timeout: time.Second})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"a": "2"}, got.Attributes().AsRaw())
+
+	// Exactly two detections total: one initial + one refresh
+	md.AssertNumberOfCalls(t, "Detect", 2)
 }
