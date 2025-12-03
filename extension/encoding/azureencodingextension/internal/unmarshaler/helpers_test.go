@@ -57,6 +57,12 @@ func TestDetectWrapperFormat(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "JSON object with non-array records field",
+			input:   []byte(`{"records":"foo"}`),
+			want:    FormatUnknown,
+			wantErr: true,
+		},
+		{
 			name:    "not a JSON",
 			input:   []byte(`foo`),
 			want:    FormatUnknown,
@@ -95,6 +101,14 @@ func TestAsTimestamp(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "ISO8601 format without fractional seconds",
+			args: args{
+				s: "2025-01-02T12:34:56Z",
+			},
+			want:    pcommon.NewTimestampFromTime(time.Date(2025, time.January, 2, 12, 34, 56, 0, time.UTC)),
+			wantErr: false,
+		},
+		{
 			name: "Custom format",
 			args: args{
 				s:       "02/03/2025 12:34:56",
@@ -106,14 +120,14 @@ func TestAsTimestamp(t *testing.T) {
 		{
 			name: "Multiple formats",
 			args: args{
-				s:       "2025-03-04T12:34:56Z",
-				formats: []string{"01/02/2006 15:04:05", "2006-01-02T15:04:05Z"},
+				s:       "02/03/2025 12:34:56.123 PM -01:00",
+				formats: []string{"01/02/2006 15:04:05", "1/2/2006 3:04:05.000 PM -07:00"},
 			},
-			want:    pcommon.NewTimestampFromTime(time.Date(2025, time.March, 4, 12, 34, 56, 0, time.UTC)),
+			want:    pcommon.NewTimestampFromTime(time.Date(2025, time.February, 3, 13, 34, 56, 123000000, time.UTC)),
 			wantErr: false,
 		},
 		{
-			name: "Fallback format",
+			name: "Default ISO8601 format",
 			args: args{
 				s:       "2025-04-05T12:34:56.000000Z",
 				formats: []string{"01/02/2006 15:04:05"},
@@ -136,7 +150,7 @@ func TestAsTimestamp(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 			}
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want.String(), got.String())
 		})
 	}
 }

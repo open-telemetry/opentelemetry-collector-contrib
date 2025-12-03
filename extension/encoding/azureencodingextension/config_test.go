@@ -32,14 +32,21 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			id:       component.NewIDWithName(metadata.Type, ""),
-			expected: &Config{},
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Logs: logs.LogsConfig{
+					TimeFormats: logs.DefaultTimeFormats,
+				},
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "metrics_time_formats"),
 			expected: &Config{
 				Metrics: metrics.MetricsConfig{
 					TimeFormats: []string{"01/02/2006 15:04:05", "2006-01-02T15:04:05Z"},
+				},
+				Logs: logs.LogsConfig{
+					TimeFormats: logs.DefaultTimeFormats,
 				},
 			},
 		},
@@ -53,6 +60,9 @@ func TestLoadConfig(t *testing.T) {
 						metrics.AggregationAverage,
 					},
 				},
+				Logs: logs.LogsConfig{
+					TimeFormats: logs.DefaultTimeFormats,
+				},
 			},
 		},
 		{
@@ -65,6 +75,9 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Traces: traces.TracesConfig{
 					TimeFormats: []string{"01/02/2006 15:04:05", "2006-01-02T15:04:05Z"},
+				},
+				Logs: logs.LogsConfig{
+					TimeFormats: logs.DefaultTimeFormats,
 				},
 			},
 		},
@@ -81,6 +94,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Logs: logs.LogsConfig{
 					IncludeCategories: []string{"AzureCdnAccessLog", "FrontDoorAccessLog"},
+					TimeFormats:       logs.DefaultTimeFormats,
 				},
 			},
 		},
@@ -89,6 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Logs: logs.LogsConfig{
 					ExcludeCategories: []string{"AppServiceAppLogs", "AppServiceAuditLogs"},
+					TimeFormats:       logs.DefaultTimeFormats,
 				},
 			},
 		},

@@ -44,7 +44,7 @@ List of time formats that should be applied during Timestamp parsing of incoming
 
 Time formats are based on standard [Go time parsing layouts](https://pkg.go.dev/time#Layout).
 
-Formats are applied in order specified in configuration, if all failed - will be used ISO8601 parser.
+Formats are applied in order specified in configuration, ISO8601 parser will be checked first no matter of provided list of formats.
 
 Default: (unset), parse provided timestamp using default ISO8601
 
@@ -98,7 +98,7 @@ List of time formats that should be applied during Timestamp parsing of incoming
 
 Time formats are based on standard [Go time parsing layouts](https://pkg.go.dev/time#Layout).
 
-Formats are applied in order specified in configuration, if all failed - will be used ISO8601 parser.
+Formats are applied in order specified in configuration, ISO8601 parser will be checked first no matter of provided list of formats.
 
 Default: (unset), parse provided timestamp using default ISO8601
 
@@ -131,13 +131,19 @@ Unsupported Categories simply copies attributes from "properties" field of incom
 
 ***time_formats (Optional)***
 
-List of time formats that should be applied during Timestamp parsing of incoming logs records.
+This option will override the list of time formats that should be applied during Timestamp parsing of incoming logs records.
+
+If not set - following list of time formats will be used:
+
+* `01/02/2006 15:04:05`
+* `1/2/2006 3:04:05.000 PM -07:00`
+* `1/2/2006 3:04:05 PM -07:00`
 
 Time formats are based on standard [Go time parsing layouts](https://pkg.go.dev/time#Layout).
 
-Formats are applied in order specified in configuration, if all failed - will be used ISO8601 parser.
+Formats are applied in order specified in configuration, ISO8601 parser will be checked first no matter of provided list of formats.
 
-Default: (unset), parse provided timestamp using default ISO8601
+Default: (unset), parse provided timestamp using default formats set
 
 ***include_categories (Optional)***
 
@@ -160,7 +166,7 @@ the `exclude_categories` takes precedences and Categories will be ignored even i
 extensions:
   azure_encoding:
     logs:
-      time_formats: ["01/02/2006 15:04:05", "2006-01-02T15:04:05Z"]
+      time_formats: ["01/02/2006 15:04:05", "1/2/2006 3:04:05.000 PM -07:00"]
       exclude_categories: ["AzureCdnAccessLog"]
       include_categories: ["AzureCdnAccessLog", "FrontDoorAccessLog"] # only FrontDoorAccessLog will be processed
 ...

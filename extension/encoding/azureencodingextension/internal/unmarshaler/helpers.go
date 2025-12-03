@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"unicode"
 
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -61,9 +62,25 @@ func DetectWrapperFormat(input []byte) (RecordsBatchFormat, error) {
 
 	maxBytes := min(iLen, 100)
 	// We'll scan only first 100 bytes to avoid performance bottleneck here
-	if bytes.Contains(input[:maxBytes], []byte("\"records\"")) {
-		// That's seems to be JSON object format with "records" field, e.g. `{"records": [ {...}, {...} ]}`
-		return FormatObjectRecords, nil
+	recordsIdx := bytes.Index(input[:maxBytes], []byte("\"records\""))
+	if recordsIdx != -1 {
+		// Make sure that it's a top-level field, i.e. before it we have only '{' not-whitespace character
+		topSlice := bytes.TrimSpace(input[:recordsIdx])
+		if len(topSlice) == 1 && topSlice[0] == '{' {
+			// Make sure that "records" field is an array, i.e. next non-whitespace characters are ':' and '['
+			nextChar := byte(':')
+			for i := recordsIdx; i < maxBytes; i++ {
+				if !unicode.IsSpace(rune(input[i])) && input[i] == nextChar {
+					if nextChar == byte(':') {
+						// Next character should be '['
+						nextChar = byte('[')
+					} else if nextChar == byte('[') {
+						// That's seems to be JSON object format with "records" field, e.g. `{"records": [ {...}, {...} ]}`
+						return FormatObjectRecords, nil
+					}
+				}
+			}
+		}
 	}
 
 	// Detect ND JSON
@@ -79,22 +96,24 @@ func DetectWrapperFormat(input []byte) (RecordsBatchFormat, error) {
 
 // AsTimestamp tries to parse a string with timestamp into OpenTelemetry
 // using provided list of formats layouts.
-// If not formats provided or parsing using them failed - will use an ISO8601 parser.
+// First is used ISO8601 parser - as it's the most common format for Azure telemetry data
+// After that will be tested provided formats if any
 // If the string cannot be parsed, it will return zero and the error.
 func AsTimestamp(s string, formats ...string) (pcommon.Timestamp, error) {
 	var err error
 	var t time.Time
+
+	// In most cases - Azure telemetry data has ISO8601 formatted timestamp
+	// So, to optimize performance we'll check it first here
+	if t, err = iso8601.ParseString(s); err == nil {
+		return pcommon.Timestamp(t.UnixNano()), nil
+	}
 
 	// Try parsing with provided formats first
 	for _, format := range formats {
 		if t, err = time.Parse(format, s); err == nil {
 			return pcommon.Timestamp(t.UnixNano()), nil
 		}
-	}
-
-	// Fallback to ISO 8601 parsing if no format matches
-	if t, err = iso8601.ParseString(s); err == nil {
-		return pcommon.Timestamp(t.UnixNano()), nil
 	}
 
 	return 0, err
