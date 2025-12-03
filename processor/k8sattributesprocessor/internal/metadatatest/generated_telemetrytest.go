@@ -434,3 +434,51 @@ func AssertEqualOtelsvcK8sStatefulsetUpdated(t *testing.T, tt *componenttest.Tel
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
+
+func AssertEqualProcessorK8sattributesPodAssociationError(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_k8sattributes_pod_association_error",
+		Description: "Number of failed pod associations [Development]",
+		Unit:        "{resources}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_k8sattributes_pod_association_error")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorK8sattributesPodAssociationSuccess(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_k8sattributes_pod_association_success",
+		Description: "Number of successful pod associations [Development]",
+		Unit:        "{resources}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_k8sattributes_pod_association_success")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorK8sattributesResourceAttributesAdded(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_k8sattributes_resource_attributes_added",
+		Description: "Number of times resource attributes were successfully added to resources [Development]",
+		Unit:        "{resources}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_k8sattributes_resource_attributes_added")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}

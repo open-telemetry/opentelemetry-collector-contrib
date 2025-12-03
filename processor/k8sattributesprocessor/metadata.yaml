@@ -140,6 +140,16 @@ tests:
   goleak:
     skip: true
 
+attributes:
+  k8s_telemetry_type:
+    description: The type of telemetry data being processed (traces, metrics, logs, profiles)
+    type: string
+    enum:
+      - traces
+      - metrics
+      - logs
+      - profiles
+
 telemetry:
   metrics:
     otelsvc_k8s_daemonset_added:
@@ -375,3 +385,34 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    processor_k8sattributes_pod_association_error:
+      enabled: true
+      description: Number of failed pod associations
+      stability:
+        level: development
+      unit: "{resources}"
+      attributes: [k8s_telemetry_type]
+      sum:
+        value_type: int
+        monotonic: true
+    processor_k8sattributes_pod_association_success:
+      enabled: true
+      description: Number of successful pod associations
+      stability:
+        level: development
+      unit: "{resources}"
+      attributes: [k8s_telemetry_type]
+      sum:
+        value_type: int
+        monotonic: true
+    processor_k8sattributes_resource_attributes_added:
+      enabled: true
+      description: Number of times resource attributes were successfully added to resources
+      stability:
+        level: development
+      unit: "{resources}"
+      attributes: [k8s_telemetry_type]
+      sum:
+        value_type: int
+        monotonic: true
+

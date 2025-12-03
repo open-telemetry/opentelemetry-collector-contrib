@@ -152,3 +152,45 @@ Number of ReplicaSet update events received [Development]
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
+
+### otelcol_processor_k8sattributes_pod_association_error
+
+Number of failed pod associations [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {resources} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| k8s_telemetry_type | The type of telemetry data being processed (traces, metrics, logs, profiles) | Str: ``traces``, ``metrics``, ``logs``, ``profiles`` |
+
+### otelcol_processor_k8sattributes_pod_association_success
+
+Number of successful pod associations [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {resources} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| k8s_telemetry_type | The type of telemetry data being processed (traces, metrics, logs, profiles) | Str: ``traces``, ``metrics``, ``logs``, ``profiles`` |
+
+### otelcol_processor_k8sattributes_resource_attributes_added
+
+Number of times resource attributes were successfully added to resources [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {resources} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| k8s_telemetry_type | The type of telemetry data being processed (traces, metrics, logs, profiles) | Str: ``traces``, ``metrics``, ``logs``, ``profiles`` |

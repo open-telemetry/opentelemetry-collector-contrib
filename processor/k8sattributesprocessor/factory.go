@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -171,11 +172,17 @@ func createKubernetesProcessor(
 	cfg component.Config,
 	options ...option,
 ) *kubernetesprocessor {
+	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		params.Logger.Error("failed to create telemetry builder", zap.Error(err))
+	}
+
 	kp := &kubernetesprocessor{
 		logger:            params.Logger,
 		cfg:               cfg,
 		options:           options,
 		telemetrySettings: params.TelemetrySettings,
+		telemetry:         telemetry,
 	}
 
 	return kp

@@ -23,35 +23,38 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                        metric.Meter
-	mu                           sync.Mutex
-	registrations                []metric.Registration
-	OtelsvcK8sDaemonsetAdded     metric.Int64Counter
-	OtelsvcK8sDaemonsetDeleted   metric.Int64Counter
-	OtelsvcK8sDaemonsetUpdated   metric.Int64Counter
-	OtelsvcK8sDeploymentAdded    metric.Int64Counter
-	OtelsvcK8sDeploymentDeleted  metric.Int64Counter
-	OtelsvcK8sDeploymentUpdated  metric.Int64Counter
-	OtelsvcK8sIPLookupMiss       metric.Int64Counter
-	OtelsvcK8sJobAdded           metric.Int64Counter
-	OtelsvcK8sJobDeleted         metric.Int64Counter
-	OtelsvcK8sJobUpdated         metric.Int64Counter
-	OtelsvcK8sNamespaceAdded     metric.Int64Counter
-	OtelsvcK8sNamespaceDeleted   metric.Int64Counter
-	OtelsvcK8sNamespaceUpdated   metric.Int64Counter
-	OtelsvcK8sNodeAdded          metric.Int64Counter
-	OtelsvcK8sNodeDeleted        metric.Int64Counter
-	OtelsvcK8sNodeUpdated        metric.Int64Counter
-	OtelsvcK8sPodAdded           metric.Int64Counter
-	OtelsvcK8sPodDeleted         metric.Int64Counter
-	OtelsvcK8sPodTableSize       metric.Int64Gauge
-	OtelsvcK8sPodUpdated         metric.Int64Counter
-	OtelsvcK8sReplicasetAdded    metric.Int64Counter
-	OtelsvcK8sReplicasetDeleted  metric.Int64Counter
-	OtelsvcK8sReplicasetUpdated  metric.Int64Counter
-	OtelsvcK8sStatefulsetAdded   metric.Int64Counter
-	OtelsvcK8sStatefulsetDeleted metric.Int64Counter
-	OtelsvcK8sStatefulsetUpdated metric.Int64Counter
+	meter                                         metric.Meter
+	mu                                            sync.Mutex
+	registrations                                 []metric.Registration
+	OtelsvcK8sDaemonsetAdded                      metric.Int64Counter
+	OtelsvcK8sDaemonsetDeleted                    metric.Int64Counter
+	OtelsvcK8sDaemonsetUpdated                    metric.Int64Counter
+	OtelsvcK8sDeploymentAdded                     metric.Int64Counter
+	OtelsvcK8sDeploymentDeleted                   metric.Int64Counter
+	OtelsvcK8sDeploymentUpdated                   metric.Int64Counter
+	OtelsvcK8sIPLookupMiss                        metric.Int64Counter
+	OtelsvcK8sJobAdded                            metric.Int64Counter
+	OtelsvcK8sJobDeleted                          metric.Int64Counter
+	OtelsvcK8sJobUpdated                          metric.Int64Counter
+	OtelsvcK8sNamespaceAdded                      metric.Int64Counter
+	OtelsvcK8sNamespaceDeleted                    metric.Int64Counter
+	OtelsvcK8sNamespaceUpdated                    metric.Int64Counter
+	OtelsvcK8sNodeAdded                           metric.Int64Counter
+	OtelsvcK8sNodeDeleted                         metric.Int64Counter
+	OtelsvcK8sNodeUpdated                         metric.Int64Counter
+	OtelsvcK8sPodAdded                            metric.Int64Counter
+	OtelsvcK8sPodDeleted                          metric.Int64Counter
+	OtelsvcK8sPodTableSize                        metric.Int64Gauge
+	OtelsvcK8sPodUpdated                          metric.Int64Counter
+	OtelsvcK8sReplicasetAdded                     metric.Int64Counter
+	OtelsvcK8sReplicasetDeleted                   metric.Int64Counter
+	OtelsvcK8sReplicasetUpdated                   metric.Int64Counter
+	OtelsvcK8sStatefulsetAdded                    metric.Int64Counter
+	OtelsvcK8sStatefulsetDeleted                  metric.Int64Counter
+	OtelsvcK8sStatefulsetUpdated                  metric.Int64Counter
+	ProcessorK8sattributesPodAssociationError     metric.Int64Counter
+	ProcessorK8sattributesPodAssociationSuccess   metric.Int64Counter
+	ProcessorK8sattributesResourceAttributesAdded metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -237,6 +240,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_otelsvc_k8s_statefulset_updated",
 		metric.WithDescription("Number of statefulset update events received [Development]"),
 		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorK8sattributesPodAssociationError, err = builder.meter.Int64Counter(
+		"otelcol_processor_k8sattributes_pod_association_error",
+		metric.WithDescription("Number of failed pod associations [Development]"),
+		metric.WithUnit("{resources}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorK8sattributesPodAssociationSuccess, err = builder.meter.Int64Counter(
+		"otelcol_processor_k8sattributes_pod_association_success",
+		metric.WithDescription("Number of successful pod associations [Development]"),
+		metric.WithUnit("{resources}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorK8sattributesResourceAttributesAdded, err = builder.meter.Int64Counter(
+		"otelcol_processor_k8sattributes_resource_attributes_added",
+		metric.WithDescription("Number of times resource attributes were successfully added to resources [Development]"),
+		metric.WithUnit("{resources}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
