@@ -179,7 +179,7 @@ endif
 	@find . -name "go.mod" -type f -not -path "./go.mod" -exec sed -i '' -E 's/^go [0-9]+\.[0-9]+\.[0-9]+/go $(VERSION)/g' {} \;
 	
 	@echo ""
-	@echo "✓ Successfully bumped Go version to $(VERSION)"
+	@echo "✓ Successfully bumped golang version to $(VERSION)"
 	@echo ""
 	@echo "Note: GitHub Actions workflows use 'oldstable' regardless of the Go version in go.mod"
 	@echo "Next: Optionally run 'make gotidy' (takes ~5-10 minutes)"
