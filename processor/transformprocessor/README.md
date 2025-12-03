@@ -664,7 +664,7 @@ The primary use case of the `set_semconv_span_name()` function is to address hig
 
 Parameters:
 
-* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. `1.37.0` is the supported version.
+* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. `1.37.0` is currently the only supported version.
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Sanitization examples:
@@ -706,10 +706,9 @@ Sanitization examples:
     * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
 
 
-Backward compatibility: `set_semconv_span_name()` supports the version 1.37.0 of the semantic conventions and backward compatibility
-for the following attributes:
+Backward compatibility: `set_semconv_span_name` will map the following attributes to their equivalents per the v1.37.0 semantic conventions:
 
-| Attribute             | Backward compatibility |
+| v1.37.0 Attribute     | Older attribute        |
 |-----------------------|------------------------|
 | `http.request.method` | `http.method`          |
 | `rpc.method`          | `rpc.grpc.method`      |
