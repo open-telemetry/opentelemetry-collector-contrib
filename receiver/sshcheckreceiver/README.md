@@ -52,3 +52,4 @@ The full list of settings exposed for this receiver are documented in [config.go
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
+
