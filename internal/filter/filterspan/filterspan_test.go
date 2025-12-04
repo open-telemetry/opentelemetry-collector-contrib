@@ -178,7 +178,10 @@ func TestSpan_Matching_False(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, expr)
 
-			val, err := expr.Eval(t.Context(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+			tCtx := ottlspan.NewTransformContextPtr(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+			defer tCtx.Close()
+
+			val, err := expr.Eval(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -196,7 +199,9 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.NotNil(t, mp)
 
 	emptySpan := ptrace.NewSpan()
-	val, err := mp.Eval(t.Context(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+	tCtx := ottlspan.NewTransformContextPtr(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+	defer tCtx.Close()
+	val, err := mp.Eval(t.Context(), tCtx)
 	require.NoError(t, err)
 	assert.False(t, val)
 }
@@ -287,7 +292,9 @@ func TestSpan_Matching_True(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			val, err := mp.Eval(t.Context(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+			tCtx := ottlspan.NewTransformContextPtr(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+			defer tCtx.Close()
+			val, err := mp.Eval(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
@@ -1209,7 +1216,8 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			scope.SetName("scope")
 			scope.SetVersion("0.1.0")
 
-			tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+			tCtx := ottlspan.NewTransformContextPtr(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+			defer tCtx.Close()
 
 			boolExpr, err := NewSkipExpr(tt.condition)
 			require.NoError(t, err)
@@ -1277,7 +1285,8 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 
 		scope := pcommon.NewInstrumentationScope()
 
-		tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+		tCtx := ottlspan.NewTransformContextPtr(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+		defer tCtx.Close()
 
 		b.Run(tt.name, func(b *testing.B) {
 			for b.Loop() {
