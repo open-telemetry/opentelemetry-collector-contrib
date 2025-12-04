@@ -584,7 +584,7 @@ func Test_extractFieldRules(t *testing.T) {
 			}},
 			want: []kube.FieldExtractionRule{
 				{
-					Name: "k8s.pod.labels.key",
+					Name: "k8s.pod.label.key",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},

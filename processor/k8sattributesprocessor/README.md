@@ -571,7 +571,9 @@ can be converted with the usage of `ExtractPatterns` function:
 
 ### `k8sattr.labelsAnnotationsSingular.allow`
 
-The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
+The `k8sattr.labelsAnnotationsSingular.allow` feature gate is currently at beta stage and **enabled by default**. This changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
+
+To revert to the previous plural format, you can disable the feature gate by setting `--feature-gates=-k8sattr.labelsAnnotationsSingular.allow`.
 
 This affects both:
 - Runtime attribute extraction from Kubernetes metadata
