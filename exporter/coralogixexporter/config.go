@@ -125,7 +125,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if isEmpty(c.Metrics.Endpoint) {
-		c.Metrics.Endpoint = ensureHTTPScheme(c.DomainSettings.ClientConfig.Endpoint)
+		c.Metrics.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Traces.Endpoint) {
@@ -136,7 +136,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if isEmpty(c.Traces.Endpoint) {
-		c.Traces.Endpoint = ensureHTTPScheme(c.DomainSettings.ClientConfig.Endpoint)
+		c.Traces.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Logs.Endpoint) {
@@ -147,7 +147,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if isEmpty(c.Logs.Endpoint) {
-		c.Logs.Endpoint = ensureHTTPScheme(c.DomainSettings.ClientConfig.Endpoint)
+		c.Logs.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Profiles.Endpoint) {
@@ -291,7 +291,7 @@ func setMergedTransportConfigWithConf(conf *confmap.Conf, c *Config, signalConfi
 //
 // NOTE: This function modifies *Config and *TransportConfig passed as arguments.
 // DO NOT ADD FURTHER USES OUTSIDE OF Unmarshal, see github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
-func setMergedTransportConfig(c *Config, merged *TransportConfig, signalConfig *TransportConfig) *TransportConfig {
+func setMergedTransportConfig(c *Config, merged, signalConfig *TransportConfig) *TransportConfig {
 	if signalConfig.ProxyURL != "" {
 		merged.ProxyURL = signalConfig.ProxyURL
 	}
