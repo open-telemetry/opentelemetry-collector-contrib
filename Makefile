@@ -8,6 +8,7 @@ OTEL_STABLE_VERSION=main
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
 CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
+GO_COMPAT_VERSION=$(shell grep '^go ' go.mod | awk '{print $$2}')
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -159,8 +160,29 @@ tidylist: $(CROSSLINK)
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
 		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.24.0 && $(GOCMD) get toolchain@none) || exit $?; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION) && $(GOCMD) get toolchain@none) || exit $?; \
 	done
+
+.PHONY: bump-go-version
+bump-go-version:
+ifndef VERSION
+	$(error VERSION is required. Usage: make bump-go-version VERSION=1.24.11)
+endif
+	@echo "Bumping Go version to $(VERSION)..."
+	
+	# Update main go.mod
+	@echo "Updating main go.mod..."
+	@sed -i '' -E 's/^go [0-9]+\.[0-9]+.*/go $(VERSION)/' go.mod
+	
+	# Update all module go.mod files
+	@echo "Updating all module go.mod files..."
+	@find . -name "go.mod" -type f -not -path "./go.mod" -exec sed -i '' -E 's/^go [0-9]+\.[0-9]+\.[0-9]+/go $(VERSION)/g' {} \;
+	
+	@echo ""
+	@echo "✓ Successfully bumped golang version to $(VERSION)"
+	@echo ""
+	@echo "Note: GitHub Actions workflows use 'oldstable' regardless of the Go version in go.mod"
+	@echo "Next: Optionally run 'make gotidy' (takes ~5-10 minutes)"
 
 .PHONY: remove-toolchain
 remove-toolchain:
