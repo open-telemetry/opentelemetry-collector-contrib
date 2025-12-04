@@ -685,7 +685,7 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	isController := true
-	replicaset := &meta_v1.PartialObjectMetadata{
+	replicaset := &apps_v1.ReplicaSet{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "auth-service-66f5996c7c",
 			Namespace: "ns1",
