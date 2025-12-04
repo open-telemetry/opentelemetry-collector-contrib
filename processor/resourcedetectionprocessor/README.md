@@ -1403,3 +1403,64 @@ Note that if multiple detectors are inserting the same attribute name, the first
 
 The full list of settings exposed for this extension are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+## Configuration Changes and Migration
+
+This section documents configuration changes and provides migration paths for users upgrading from older versions.
+
+### Removed in v0.116.0: `attributes` Configuration Option
+
+**What changed**: The deprecated `attributes` configuration option was removed in favor of `resource_attributes`.
+
+**Migration path**: 
+
+If you were using the old `attributes` configuration:
+
+```yaml
+# ❌ OLD (removed in v0.116.0)
+processors:
+  resourcedetection:
+    detectors: [ec2]
+    ec2:
+      attributes:
+        - host.name
+        - host.id
+```
+
+Migrate to the new `resource_attributes` configuration:
+
+```yaml
+# ✅ NEW (current)
+processors:
+  resourcedetection:
+    detectors: [ec2]
+    ec2:
+      resource_attributes:
+        host.name:
+          enabled: true
+        host.id:
+          enabled: true
+```
+
+**Benefits of the new format**:
+- Explicit enable/disable control per attribute
+- Aligns with OpenTelemetry declarative configuration style
+- Consistent with other collector components
+- Better support for future attribute configuration options
+
+**Timeline**:
+- Deprecated: v0.110.0 (November 2024)
+- Removal: v0.116.0 (December 2024)
+
+For more details, see:
+- [Issue #44610](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44610)
+- [PR #44616](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44616)
+
+### Configuration Stability Guarantee
+
+As a beta component progressing toward stable:
+
+- **Backward compatibility**: Configuration schema changes follow collector stability guidelines
+- **Deprecation policy**: Deprecated options are kept for at least one minor version with warning logs
+- **Migration time**: Users have at least 6 months or N+2 versions (whichever is later) to migrate
+- **Documentation**: All breaking changes are documented in this section with clear migration paths
