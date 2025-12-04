@@ -9,20 +9,10 @@ import (
 	"regexp"
 	"time"
 
-	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
-)
-
-//nolint:unused
-var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
-	"k8sattr.fieldExtractConfigRegex.disallow",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, usage of the FieldExtractConfig.Regex field is disallowed"),
-	featuregate.WithRegisterFromVersion("v0.106.0"),
-	featuregate.WithRegisterToVersion("v0.122.0"),
 )
 
 // Config defines configuration for k8s attributes processor.
