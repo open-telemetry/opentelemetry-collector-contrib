@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	batch_v1 "k8s.io/api/batch/v1"
@@ -913,12 +913,12 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.Node {
-		tags[tagNodeName] = pod.Spec.NodeName
+		tags[string(conventions.K8SNodeNameKey)] = pod.Spec.NodeName
 	}
 
 	if c.Rules.ClusterUID {
 		if val, ok := c.Namespaces["kube-system"]; ok {
-			tags[tagClusterUID] = val.NamespaceUID
+			tags[string(conventions.K8SClusterUIDKey)] = val.NamespaceUID
 		} else {
 			c.logger.Debug("unable to find kube-system namespace, cluster uid will not be available")
 		}
