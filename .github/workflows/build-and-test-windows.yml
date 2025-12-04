@@ -32,7 +32,7 @@ jobs:
         os: [ windows-latest, windows-11-arm ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
@@ -55,7 +55,7 @@ jobs:
         os: [ windows-latest, windows-11-arm ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
@@ -107,7 +107,7 @@ jobs:
       # The gcc installed on the Windows arm64 runner doesn't ship native ARM libraries so we need to disable CGO.
       CGO_ENABLED: ${{ matrix.os == 'windows-11-arm' && '0' || '' }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
@@ -182,7 +182,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
