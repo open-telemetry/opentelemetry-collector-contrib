@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
@@ -274,7 +275,12 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 
 		if name == "" && a.Key != "" {
 			// name for KeyRegex case is set at extraction time/runtime, skipped here
-			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldType, a.Key)
+			// Use singular form when feature gate is enabled
+			fieldTypeName := fieldType
+			if kube.AllowLabelsAnnotationsSingular.IsEnabled() {
+				fieldTypeName = strings.TrimSuffix(fieldType, "s")
+			}
+			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldTypeName, a.Key)
 		}
 
 		var keyRegex *regexp.Regexp
