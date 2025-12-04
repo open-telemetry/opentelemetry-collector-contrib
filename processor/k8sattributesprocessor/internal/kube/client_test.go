@@ -1067,9 +1067,9 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
@@ -1366,9 +1366,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
@@ -1624,9 +1624,9 @@ func TestNodeExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
