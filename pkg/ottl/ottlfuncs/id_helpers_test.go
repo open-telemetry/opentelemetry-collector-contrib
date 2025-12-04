@@ -58,7 +58,7 @@ func Test_newIDExprFunc_errors(t *testing.T) {
 
 			result, err := expr(t.Context(), nil)
 
-			assertErrorIsForFunction(t, err, fakeFuncName)
+			assertErrorIsFuncDecode(t, err, fakeFuncName)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Nil(t, result)
 		})
@@ -107,7 +107,7 @@ func Test_newIDExprFunc_stringErrors(t *testing.T) {
 
 			result, err := expr(t.Context(), nil)
 
-			assertErrorIsForFunction(t, err, fakeFuncName)
+			assertErrorIsFuncDecode(t, err, fakeFuncName)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Nil(t, result)
 		})

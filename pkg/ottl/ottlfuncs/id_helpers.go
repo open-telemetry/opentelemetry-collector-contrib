@@ -16,30 +16,10 @@ import (
 )
 
 var (
-	errIDInvalidLength = errors.New("invalid id length")
-	errIDHexDecode     = errors.New("invalid id hex")
+	errDecodeID        = errors.New("could not decode ID")
+	errIDInvalidLength = fmt.Errorf("%w: %w", errDecodeID, errors.New("invalid length"))
+	errIDHexDecode     = fmt.Errorf("%w: %w", errDecodeID, errors.New("invalid hex"))
 )
-
-// funcErrorType is an error type that includes the function name that caused the error.
-type funcErrorType struct {
-	funcName   string
-	innerError error
-}
-
-func (e *funcErrorType) Error() string {
-	return fmt.Sprintf("%s could not decode ID: %v", e.funcName, e.innerError)
-}
-
-func (e *funcErrorType) Unwrap() error {
-	return e.innerError
-}
-
-func funcError(funcName string, err error) error {
-	return &funcErrorType{
-		funcName:   funcName,
-		innerError: err,
-	}
-}
 
 type idByteArray interface {
 	pcommon.SpanID | pcommon.TraceID | pprofile.ProfileID
@@ -66,12 +46,12 @@ func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceL
 		case idHexLen:
 			decoded := make([]byte, idLen)
 			if _, err := hex.Decode(decoded, b); err != nil {
-				return nil, funcError(funcName, fmt.Errorf("%w: %w", errIDHexDecode, err))
+				return nil, fmt.Errorf("%s: %w: %w", funcName, errIDHexDecode, err)
 			}
 			copyToFixedLenID(&id, decoded)
 			return id, nil
 		default:
-			return nil, funcError(funcName, fmt.Errorf("%w: expected %d or %d bytes, got %d", errIDInvalidLength, idLen, idHexLen, len(b)))
+			return nil, fmt.Errorf("%s: %w: expected %d or %d bytes, got %d", funcName, errIDInvalidLength, idLen, idHexLen, len(b))
 		}
 	}
 }

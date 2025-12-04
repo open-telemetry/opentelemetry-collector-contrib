@@ -57,17 +57,15 @@ func runIDErrorTests(t *testing.T, builder idExprBuilder, funcName string, cases
 			result, err := expr(t.Context(), nil)
 
 			assert.Nil(t, result)
-			assertErrorIsForFunction(t, err, funcName)
+			assertErrorIsFuncDecode(t, err, funcName)
 			assert.ErrorIs(t, err, tt.err)
 		})
 	}
 }
 
-// assertErrorIsForFunction asserts that the error prints the function name along with the underlying error.
-func assertErrorIsForFunction(t *testing.T, err error, funcName string) {
+// assertErrorIsFuncDecode asserts that the error message contains the function name.
+func assertErrorIsFuncDecode(t *testing.T, err error, funcName string) {
 	t.Helper()
-	var errAs *funcErrorType
-	assert.ErrorAs(t, err, &errAs)
-	assert.Equal(t, funcName, errAs.funcName)
+	assert.ErrorIs(t, err, errDecodeID)
 	assert.ErrorContains(t, err, funcName)
 }
