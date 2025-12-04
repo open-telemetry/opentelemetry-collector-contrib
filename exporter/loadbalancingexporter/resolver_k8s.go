@@ -94,11 +94,12 @@ func newK8sResolver(clt kubernetes.Interface,
 	}
 
 	name, namespace := parts[0], "default"
-	if len(parts) > 1 && parts[1] != "" {
+	switch {
+	case len(parts) > 1 && parts[1] != "":
 		namespace = parts[1]
-	} else if len(parts) > 2 {
+	case len(parts) > 2:
 		return nil, fmt.Errorf("%w: namespace segment missing in %q", errInvalidSvcFQDN, service)
-	} else {
+	default:
 		logger.Info("the namespace for the Kubernetes service wasn't provided, trying to determine the current namespace", zap.String("name", name))
 		if ns, err := getInClusterNamespace(); err == nil {
 			namespace = ns
