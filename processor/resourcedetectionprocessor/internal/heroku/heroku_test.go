@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -84,6 +84,6 @@ func TestDetectFalse(t *testing.T) {
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1", schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }
