@@ -46,6 +46,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
+	tb.ProcessorK8sattributesPodAssociationError.Add(context.Background(), 1)
+	tb.ProcessorK8sattributesPodAssociationSuccess.Add(context.Background(), 1)
+	tb.ProcessorK8sattributesResourceAttributesAdded.Add(context.Background(), 1)
 	AssertEqualOtelsvcK8sDaemonsetAdded(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -122,6 +125,15 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sStatefulsetUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorK8sattributesPodAssociationError(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorK8sattributesPodAssociationSuccess(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorK8sattributesResourceAttributesAdded(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
