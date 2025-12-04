@@ -334,16 +334,20 @@ func TestSymlinkedFiles(t *testing.T) {
 
 	t.Parallel()
 
+	// tokenBatch is a slice of file lines in []byte.
+	type tokenBatch [][]byte
+
 	// Create 30 files with a predictable naming scheme, each containing
 	// 100 log lines.
 	const numFiles = 30
 	const logLinesPerFile = 100
 	const pollInterval = 10 * time.Millisecond
+	const testTickInterval = pollInterval + 1*time.Millisecond
 	tempDir := t.TempDir()
-	expectedTokens := [][]byte{}
+	expectedTokenMap := map[string]tokenBatch{}
 	for i := 1; i <= numFiles; i++ {
-		expectedTokensBatch := symlinkTestCreateLogFile(t, tempDir, i, logLinesPerFile)
-		expectedTokens = append(expectedTokens, expectedTokensBatch...)
+		filePath, expectedTokensBatch := symlinkTestCreateLogFile(t, tempDir, i, logLinesPerFile)
+		expectedTokenMap[filePath] = expectedTokensBatch
 	}
 
 	targetTempDir := t.TempDir()
@@ -362,14 +366,16 @@ func TestSymlinkedFiles(t *testing.T) {
 	sink.ExpectNoCalls(t)
 
 	// Create and update symlink to each of the files over time.
-	for i := 1; i <= numFiles; i++ {
-		targetLogFilePath := filepath.Join(tempDir, fmt.Sprintf("%d.log", i))
+	for targetLogFilePath, expectedTokens := range expectedTokenMap {
 		require.NoError(t, os.Symlink(targetLogFilePath, symlinkFilePath))
-		// The sleep time here must be larger than the poll_interval value
-		time.Sleep(pollInterval + 1*time.Millisecond)
+
+		require.Eventually(t, func() bool {
+			sink.ExpectTokens(t, expectedTokens...)
+			return true
+		}, 3*testTickInterval, testTickInterval)
+
 		require.NoError(t, os.Remove(symlinkFilePath))
 	}
-	sink.ExpectTokens(t, expectedTokens...)
 }
 
 // StartAtEndNewFile tests that when `start_at` is configured to `end`,
@@ -1530,7 +1536,7 @@ func TestNoTracking(t *testing.T) {
 	}
 }
 
-func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) (tokens [][]byte) {
+func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) (path string, tokens [][]byte) {
 	logFilePath := fmt.Sprintf("%s/%d.log", tempDir, fileIdx)
 	temp1 := filetest.OpenFile(t, logFilePath)
 	for i := range numLogLines {
@@ -1539,7 +1545,7 @@ func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines
 		tokens = append(tokens, []byte(msg))
 	}
 	temp1.Close()
-	return tokens
+	return logFilePath, tokens
 }
 
 // TestReadGzipCompressedLogsFromBeginning tests that, when starting from beginning of a gzip compressed file, we
