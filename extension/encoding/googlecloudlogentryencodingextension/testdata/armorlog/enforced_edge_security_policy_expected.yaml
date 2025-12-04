@@ -49,24 +49,25 @@ resourceLogs:
               - key: gcp.armor.request_data.remote_ip.asn
                 value:
                   intValue: "57269"
-              - key: gcp.armor.security_policy.type
-                value:
-                  stringValue: enforcedEdgeSecurityPolicy
-              - key: gcp.armor.security_policy.name
-                value:
-                  stringValue: test-edge-policy
-              - key: gcp.armor.security_policy.priority
-                value:
-                  intValue: "1"
-              - key: gcp.armor.security_policy.configured_action
-                value:
-                  stringValue: DENY
-              - key: gcp.armor.security_policy.outcome
-                value:
-                  stringValue: DENY
               - key: gcp.armor.request_data.recaptcha_session_token.score
                 value:
                   doubleValue: 0.0
+              - key: gcp.armor.security_policy.enforced_edge
+                value:
+                  kvlistValue:
+                    values:
+                      - key: name
+                        value:
+                          stringValue: test-edge-policy
+                      - key: priority
+                        value:
+                          intValue: "1"
+                      - key: configured_action
+                        value:
+                          stringValue: DENY
+                      - key: outcome
+                        value:
+                          stringValue: DENY
               - key: http.request.method
                 value:
                   stringValue: GET

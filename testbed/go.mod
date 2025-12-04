@@ -32,7 +32,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.141.0
 	github.com/prometheus/common v0.67.4
 	github.com/prometheus/prometheus v0.307.3
-	github.com/shirou/gopsutil/v4 v4.25.10
+	github.com/shirou/gopsutil/v4 v4.25.11
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.0
 	go.opentelemetry.io/collector/component/componenttest v0.141.0
@@ -85,20 +85,20 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.176 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.9 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.177 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.10 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.9 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.10 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.50.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.1 // indirect
 	github.com/DataDog/go-sqllexer v0.1.9 // indirect
@@ -151,7 +151,7 @@ require (
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/ebitengine/purego v0.9.0 // indirect
+	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/edsrzf/mmap-go v1.2.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/lunes v0.2.0 // indirect
@@ -184,7 +184,7 @@ require (
 	github.com/go-zookeeper/zk v1.0.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
-	github.com/goccy/go-yaml v1.18.0 // indirect
+	github.com/goccy/go-yaml v1.19.0 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
@@ -229,7 +229,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/kamstrup/intmap v0.5.1 // indirect
-	github.com/klauspost/compress v1.18.1 // indirect
+	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
@@ -315,8 +315,8 @@ require (
 	github.com/splunk/stef/go/pkg v0.0.8 // indirect
 	github.com/stackitcloud/stackit-sdk-go/core v0.17.3 // indirect
 	github.com/tinylib/msgp v1.5.0 // indirect
-	github.com/tklauser/go-sysconf v0.3.15 // indirect
-	github.com/tklauser/numcpus v0.10.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect

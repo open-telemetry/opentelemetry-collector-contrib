@@ -357,6 +357,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 		version,
 		site,
 		fullConfig,
+		"unknown",
 		buildInfo,
 	)
 
@@ -563,6 +564,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 		"0.127.0",
 		"datadoghq.com",
 		fullConfig,
+		"unknown",
 		buildInfo,
 	)
 	if activeComponents != nil {
@@ -721,6 +723,7 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 		"1.0.0",
 		"datadoghq.com",
 		"{}",
+		"unknown",
 		buildInfo,
 	)
 
@@ -809,6 +812,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 		"1.0.0",
 		"datadoghq.com",
 		"{}",
+		"unknown",
 		buildInfo,
 	)
 
