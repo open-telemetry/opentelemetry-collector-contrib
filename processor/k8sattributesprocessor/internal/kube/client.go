@@ -1795,14 +1795,34 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
-	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
+	switch v := obj.(type) {
+	case *apps_v1.ReplicaSet:
+		uid := string(v.GetUID())
+		if uid == "" {
+			c.logger.Warn("delete ReplicaSet missing UID", zap.Any("obj", obj))
+			return
+		}
 		c.m.Lock()
-		key := string(replicaset.UID)
-		delete(c.ReplicaSets, key)
+		delete(c.ReplicaSets, uid)
 		c.m.Unlock()
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	case *meta_v1.PartialObjectMetadata:
+		uid := string(v.GetUID())
+		if uid == "" {
+			c.logger.Warn("delete PartialObjectMetadata missing UID", zap.Any("obj", obj))
+			return
+		}
+		c.m.Lock()
+		delete(c.ReplicaSets, uid)
+		c.m.Unlock()
+	case cache.DeletedFinalStateUnknown:
+		if v.Obj == nil {
+			c.logger.Warn("DeletedFinalStateUnknown with nil Obj")
+			return
+		}
+		// Recurse or delegate to reuse the same logic
+		c.handleReplicaSetDelete(v.Obj)
+	default:
+		c.logger.Warn("delete received non-ReplicaSet object", zap.Any("obj", obj))
 	}
 }
 

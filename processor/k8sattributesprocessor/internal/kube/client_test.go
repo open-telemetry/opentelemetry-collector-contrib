@@ -232,12 +232,12 @@ func TestReplicaSetHandler(t *testing.T) {
 	c, _ := newTestClient(t)
 	assert.Empty(t, c.ReplicaSets)
 
-	replicaset := &meta_v1.PartialObjectMetadata{}
+	replicaset := &apps_v1.ReplicaSet{}
 	c.handleReplicaSetAdd(replicaset)
 	assert.Empty(t, c.ReplicaSets)
 
 	// test add replicaset
-	replicaset = &meta_v1.PartialObjectMetadata{}
+	replicaset = &apps_v1.ReplicaSet{}
 	replicaset.Name = "deployment-aaa"
 	replicaset.Namespace = "namespaceA"
 	replicaset.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
