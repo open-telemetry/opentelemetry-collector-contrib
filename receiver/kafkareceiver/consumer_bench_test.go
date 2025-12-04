@@ -73,9 +73,9 @@ func newBenchConfigClient(b *testing.B, topic string, partitions int32,
 	messageMarking MessageMarking,
 ) (*Config, *kgo.Client) {
 	client, cfg := mustNewFakeCluster(b, kfake.SeedTopics(partitions, topic))
-	cfg.Logs.Topic = topic
-	cfg.Traces.Topic = topic
-	cfg.Metrics.Topic = topic
+	cfg.Logs.Topics = []string{topic}
+	cfg.Traces.Topics = []string{topic}
+	cfg.Metrics.Topics = []string{topic}
 	cfg.GroupID = b.Name()
 	cfg.InitialOffset = "earliest"
 	cfg.AutoCommit = autoCommit
