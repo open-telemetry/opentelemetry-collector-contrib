@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
@@ -634,6 +635,118 @@ func Test_extractFieldRules(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_extractFieldRules_FeatureGate(t *testing.T) {
+	tests := []struct {
+		name             string
+		fieldType        string
+		fields           []FieldExtractConfig
+		featureGateValue bool
+		wantNamePattern  string
+	}{
+		{
+			name:      "labels plural when feature gate disabled",
+			fieldType: "labels",
+			fields: []FieldExtractConfig{
+				{
+					Key:  "app",
+					From: kube.MetadataFromPod,
+				},
+			},
+			featureGateValue: false,
+			wantNamePattern:  "k8s.pod.labels.app",
+		},
+		{
+			name:      "labels singular when feature gate enabled",
+			fieldType: "labels",
+			fields: []FieldExtractConfig{
+				{
+					Key:  "app",
+					From: kube.MetadataFromPod,
+				},
+			},
+			featureGateValue: true,
+			wantNamePattern:  "k8s.pod.label.app",
+		},
+		{
+			name:      "annotations plural when feature gate disabled",
+			fieldType: "annotations",
+			fields: []FieldExtractConfig{
+				{
+					Key:  "workload",
+					From: kube.MetadataFromPod,
+				},
+			},
+			featureGateValue: false,
+			wantNamePattern:  "k8s.pod.annotations.workload",
+		},
+		{
+			name:      "annotations singular when feature gate enabled",
+			fieldType: "annotations",
+			fields: []FieldExtractConfig{
+				{
+					Key:  "workload",
+					From: kube.MetadataFromPod,
+				},
+			},
+			featureGateValue: true,
+			wantNamePattern:  "k8s.pod.annotation.workload",
+		},
+		{
+			name:      "namespace labels singular when feature gate enabled",
+			fieldType: "labels",
+			fields: []FieldExtractConfig{
+				{
+					Key:  "env",
+					From: kube.MetadataFromNamespace,
+				},
+			},
+			featureGateValue: true,
+			wantNamePattern:  "k8s.namespace.label.env",
+		},
+		{
+			name:      "node annotations singular when feature gate enabled",
+			fieldType: "annotations",
+			fields: []FieldExtractConfig{
+				{
+					Key:  "zone",
+					From: kube.MetadataFromNode,
+				},
+			},
+			featureGateValue: true,
+			wantNamePattern:  "k8s.node.annotation.zone",
+		},
+		{
+			name:      "explicit tag name not affected by feature gate",
+			fieldType: "labels",
+			fields: []FieldExtractConfig{
+				{
+					TagName: "custom.tag.name",
+					Key:     "app",
+					From:    kube.MetadataFromPod,
+				},
+			},
+			featureGateValue: true,
+			wantNamePattern:  "custom.tag.name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set feature gate state
+			require.NoError(t, featuregate.GlobalRegistry().Set(kube.AllowLabelsAnnotationsSingular.ID(), tt.featureGateValue))
+			defer func() {
+				// Reset to default
+				require.NoError(t, featuregate.GlobalRegistry().Set(kube.AllowLabelsAnnotationsSingular.ID(), false))
+			}()
+
+			got, err := extractFieldRules(tt.fieldType, tt.fields...)
+			require.NoError(t, err)
+			require.Len(t, got, 1)
+			assert.Equal(t, tt.wantNamePattern, got[0].Name)
 		})
 	}
 }
