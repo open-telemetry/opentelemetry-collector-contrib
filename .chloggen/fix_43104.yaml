@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "`max_fetch_size` consumer option is now correctly used in franz-go client instead of `default_fetch_size`"
+note: "Use `max_fetch_size` instead of `default_fetch_size` in franz-go client"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43104]
