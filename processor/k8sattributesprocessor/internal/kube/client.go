@@ -1726,10 +1726,14 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	case *meta_v1.PartialObjectMetadata:
 		c.addOrUpdateReplicaSetMeta(rs)
 	case cache.DeletedFinalStateUnknown:
-		if inner, ok := rs.Obj.(*apps_v1.ReplicaSet); ok {
+		switch inner := rs.Obj.(type) {
+		case *apps_v1.ReplicaSet:
 			c.addOrUpdateReplicaSetTyped(inner)
-		} else if inner, ok := rs.Obj.(*meta_v1.PartialObjectMetadata); ok {
+		case *meta_v1.PartialObjectMetadata:
 			c.addOrUpdateReplicaSetMeta(inner)
+		default:
+			c.logger.Warn("DeletedFinalStateUnknown with unexpected inner type",
+				zap.Any("inner", rs.Obj))
 		}
 	default:
 		c.logger.Warn("object received was not ReplicaSet", zap.Any("obj", obj))
