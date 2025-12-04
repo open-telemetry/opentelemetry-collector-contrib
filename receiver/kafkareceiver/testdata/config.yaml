@@ -1,26 +1,21 @@
-kafka:
-  topic: spans
-  brokers:
-    - "foo:123"
-    - "bar:456"
-  resolve_canonical_bootstrap_servers_only: true
-  client_id: the_client_id
-  group_id: the_group_id
-  telemetry:
-    metrics:
-      kafka_receiver_records_delay:
-        enabled: true
 kafka/legacy_topic:
-  topic: legacy_topic
   metrics:
-    topic: metrics_topic
-kafka/legacy_encoding:
-  encoding: legacy_encoding
-  metrics:
-    encoding: metrics_encoding
+    topic: legacy_metric
+    encoding: otlp_proto
+  traces:
+    topic: legacy_spans
+    encoding: otlp_proto
+  logs:
+    topic: legacy_logs
+    encoding: otlp_proto
+  profiles:
+    topic: legacy_profile
+    encoding: otlp_proto
+    
 kafka/logs:
   logs:
-    topic: logs
+    topics: 
+    - logs
     encoding: direct
   session_timeout: 45s
   heartbeat_interval: 15s
@@ -49,65 +44,40 @@ kafka/logs:
     max_interval: 10s
     max_elapsed_time: 1m
     multiplier: 1.5
+
 kafka/rebalance_strategy:
-  metrics:
-    topic: otlp_metrics
-    encoding: otlp_proto
-  traces:
-    topic: otlp_spans
-    encoding: otlp_proto
-  logs:
-    topic: otlp_logs
-    encoding: otlp_proto
   group_rebalance_strategy: sticky
   group_instance_id: test-instance
+
 kafka/message_marking:
-  metrics:
-    topic: otlp_metrics
-    encoding: otlp_proto
-  traces:
-    topic: otlp_spans
-    encoding: otlp_proto
-  logs:
-    topic: otlp_logs
-    encoding: otlp_proto
   message_marking:
     after: true
     on_error: true
     on_permanent_error: false
+
 kafka/message_marking_not_specified:
-  metrics:
-    topic: otlp_metrics
-    encoding: otlp_proto
-  traces:
-    topic: otlp_spans
-    encoding: otlp_proto
-  logs:
-    topic: otlp_logs
-    encoding: otlp_proto
+
 kafka/message_marking_on_permanent_error_inherited:
-  metrics:
-    topic: otlp_metrics
-    encoding: otlp_proto
-  traces:
-    topic: otlp_spans
-    encoding: otlp_proto
-  logs:
-    topic: otlp_logs
-    encoding: otlp_proto
   message_marking:
     after: true
     on_error: true
+
 kafka/regex_topic_with_exclusion:
   logs:
-    topic: "^logs-.*"
-    exclude_topic: "^logs-(test|dev)$"
+    topics:
+    - "^logs-.*"
+    exclude_topics:
+    - "^logs-(test|dev)$"
     encoding: otlp_proto
   metrics:
-    topic: "^metrics-.*"
-    exclude_topic: "^metrics-internal-.*$"
+    topics:
+    - "^metrics-.*"
+    exclude_topics:
+    - "^metrics-internal-.*$"
     encoding: otlp_proto
   traces:
-    topic: "^traces-.*"
-    exclude_topic: "^traces-debug-.*$"
+    topics:
+    - "^traces-.*"
+    exclude_topics:
+    - "^traces-debug-.*$"
     encoding: otlp_proto

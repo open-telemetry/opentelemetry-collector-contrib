@@ -273,7 +273,6 @@ receiver/jmxreceiver receiver/jmx
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
 receiver/k8seventsreceiver receiver/k8sevents
-receiver/k8slogreceiver receiver/k8slog
 receiver/k8sobjectsreceiver receiver/k8sobjects
 receiver/kafkametricsreceiver receiver/kafkametrics
 receiver/kafkareceiver receiver/kafka
@@ -343,6 +342,6 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/carbonexporter exporter/carbon
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon
+receiver/k8slogreceiver receiver/k8slog

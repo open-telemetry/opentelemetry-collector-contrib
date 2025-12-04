@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/klauspost/compress/zstd"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -109,6 +110,22 @@ func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
 			return nil, err
 		}
 		if err := zipper.Close(); err != nil {
+			return nil, err
+		}
+
+		return content, nil
+	case configcompression.TypeZstd:
+		content := bytes.NewBuffer(nil)
+		zipper, err := zstd.NewWriter(content)
+		if err != nil {
+			return nil, err
+		}
+		_, err = zipper.Write(raw)
+		if err != nil {
+			return nil, err
+		}
+		err = zipper.Close()
+		if err != nil {
 			return nil, err
 		}
 

@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.140.1
+    version: v0.141.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -39,7 +39,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter

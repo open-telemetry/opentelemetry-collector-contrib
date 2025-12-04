@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/stretchr/testify/assert"
@@ -291,6 +292,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 			}()
 			require.NoError(t, err)
 			expectedQueryPlanFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
+			assert.True(t, scrpr.lastExecutionTimestamp.IsZero(), "No value exists on lastExecutionTimestamp before any collection.")
 
 			logs, err := scrpr.scrapeLogs(t.Context())
 
@@ -304,6 +306,8 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				assert.NoError(t, errs)
 				assert.Equal(t, "db.server.top_query", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 				assert.NoError(t, errs)
+
+				assert.False(t, scrpr.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp hasn't set after a successful collection.")
 			}
 		})
 	}
@@ -424,6 +428,102 @@ func TestGetInstanceId(t *testing.T) {
 	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
 	assert.NotNil(t, localInstanceID)
 	assert.Equal(t, "unknown:1521", localInstanceID)
+}
+
+func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
+	var metricRowData []metricRow
+	var logRowData []metricRow
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid collection",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if strings.Contains(s, "V$SQL_PLAN") {
+					metricRowFile := readFile("oracleQueryPlanData.txt")
+					unmarshalErr := json.Unmarshal(metricRowFile, &logRowData)
+					if unmarshalErr == nil {
+						return &fakeDbClient{
+							Responses: [][]metricRow{
+								logRowData,
+							},
+						}
+					}
+				} else {
+					metricRowFile := readFile("oracleQueryMetricsData.txt")
+					unmarshalErr := json.Unmarshal(metricRowFile, &metricRowData)
+					if unmarshalErr == nil {
+						return &fakeDbClient{
+							Responses: [][]metricRow{
+								metricRowData,
+							},
+						}
+					}
+				}
+				return nil
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logsCfg := metadata.DefaultLogsBuilderConfig()
+			logsCfg.Events.DbServerTopQuery.Enabled = true
+			metricsCfg := metadata.DefaultMetricsBuilderConfig()
+			lruCache, _ := lru.New[string, map[string]int64](500)
+			lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
+				lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
+				metricCache:          lruCache,
+				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+				obfuscator:           newObfuscator(),
+			}
+
+			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+			scrpr.topQueryCollectCfg.CollectionInterval = 1 * time.Minute
+
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+
+			assert.True(t, scrpr.lastExecutionTimestamp.IsZero(), "No value should be set for lastExecutionTimestamp before a successful collection")
+			logsCol1, _ := scrpr.scrapeLogs(t.Context())
+			assert.Equal(t, 1, logsCol1.ResourceLogs().At(0).ScopeLogs().Len(), "Collection should run when lastExecutionTimestamp is not available")
+			assert.False(t, scrpr.lastExecutionTimestamp.IsZero(), "A value should be set for lastExecutionTimestamp after a successful collection")
+
+			scrpr.lastExecutionTimestamp = scrpr.lastExecutionTimestamp.Add(-10 * time.Second)
+			logsCol2, err := scrpr.scrapeLogs(t.Context())
+			assert.Equal(t, 0, logsCol2.ResourceLogs().Len(), "top_query should not be collected until %s elapsed.", scrpr.topQueryCollectCfg.CollectionInterval.String())
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestCalculateLookbackSeconds(t *testing.T) {
+	collectionInterval := 20 * time.Second
+	vsqlRefreshLagSec := 10 * time.Second
+	expectedMinimumLookbackTime := int((collectionInterval + vsqlRefreshLagSec).Seconds())
+	currentCollectionTime := time.Now()
+
+	scrpr := oracleScraper{
+		lastExecutionTimestamp: currentCollectionTime.Add(-collectionInterval),
+	}
+	lookbackTime := scrpr.calculateLookbackSeconds()
+
+	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
 }
 
 func readFile(fname string) []byte {
