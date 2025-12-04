@@ -514,6 +514,28 @@ scrape_configs:
 				assert.Equal(t, "mySuperSecretCertificateKey", key, "client_certificate_key should preserve original value")
 			},
 		},
+		{
+			name: "basic auth password starting with %",
+			configYAML: `
+scrape_configs:
+  - job_name: "foo"
+    basic_auth:
+      username: "user"
+      password: "%password"
+    static_configs:
+      - targets: ["target:8000"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "foo", scrapeConfig.JobName)
+
+				// Ensure basic_auth is present
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.BasicAuth, "basic auth should be configured")
+				password := string(scrapeConfig.HTTPClientConfig.BasicAuth.Password)
+				assert.Equal(t, "%password", password, "password should preserve original value with leading %")
+			},
+		},
 	}
 
 	for _, tt := range tests {
