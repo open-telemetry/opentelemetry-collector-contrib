@@ -137,8 +137,9 @@ func TestHandleInstance(t *testing.T) {
 				VMName:    "test-vm-1",
 				Zone:      "us-central1-a",
 				ManagedInstanceGroup: &managedInstanceGroup{
-					Name: "test-mig-1",
-					Zone: "us-central1-a",
+					Name:   "test-mig-1",
+					Region: "us-central1",
+					Zone:   "us-central1-a",
 				},
 			},
 			side: src,
@@ -148,6 +149,7 @@ func TestHandleInstance(t *testing.T) {
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "test-vm-1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):    "us-central1-a",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "test-mig-1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGRegionTemplate, src): "us-central1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):   "us-central1-a",
 			},
 		},
@@ -198,6 +200,66 @@ func TestHandleInstance(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.expectedAttr, attr.AsRaw())
 			}
+		})
+	}
+}
+
+func TestHandleGoogleService(t *testing.T) {
+	tests := map[string]struct {
+		service      *googleService
+		side         flowSide
+		expectedAttr map[string]any
+		expectError  bool
+	}{
+		"source google service": {
+			service: &googleService{
+				Type:         "GOOGLE_API",
+				ServiceName:  "logging.googleapis.com",
+				Connectivity: "PUBLIC_IP",
+			},
+			side: src,
+			expectedAttr: map[string]any{
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, src): "GOOGLE_API",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceNameTemplate, src): "logging.googleapis.com",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceConnTemplate, src): "PUBLIC_IP",
+			},
+		},
+		"destination google service missing fields": {
+			service: &googleService{
+				Type: "GOOGLE_API",
+			},
+			side: dest,
+			expectedAttr: map[string]any{
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, dest): "GOOGLE_API",
+			},
+		},
+		"nil google service": {
+			service:      nil,
+			side:         src,
+			expectedAttr: map[string]any{},
+		},
+		"invalid side": {
+			service: &googleService{
+				Type: "GOOGLE_API",
+			},
+			side:        flowSide("invalid"),
+			expectError: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			attr := pcommon.NewMap()
+			err := handleGoogleService(tt.service, tt.side, attr)
+			if tt.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "handleGoogleService")
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedAttr, attr.AsRaw())
 		})
 	}
 }
@@ -468,6 +530,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 					"zone": "us-central1-a",
 					"managed_instance_group": {
 						"name": "test-mig-1",
+						"region": "us-central1",
 						"zone": "us-central1-a"
 					}
 				},
@@ -476,6 +539,16 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 					"subnetwork_name": "default",
 					"subnetwork_region": "us-central1",
 					"vpc_name": "default"
+				},
+				"src_google_service": {
+					"type": "GOOGLE_API",
+					"service_name": "logging.googleapis.com",
+					"connectivity": "PUBLIC_IP"
+				},
+				"dest_google_service": {
+					"type": "GOOGLE_API",
+					"service_name": "monitoring.googleapis.com",
+					"connectivity": "PRIVATE_SERVICE_CONNECT"
 				}
 			}`),
 			expectedAttr: map[string]any{
@@ -490,16 +563,23 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				gcpVPCFlowStartTime:                   "2025-09-27T21:12:02.937646004Z",
 				gcpVPCFlowEndTime:                     "2025-09-27T21:15:03.837646004Z",
 				gcpVPCFlowNetworkServiceDSCP:          int64(32),
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src): "test-project-id-src",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, src):  "us-central1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "test-vm-1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):    "us-central1-a",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "test-mig-1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):   "us-central1-a",
-				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):         "test-project-id",
-				fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, src):        "default",
-				fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, src):      "us-central1",
-				fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, src):           "default",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src):  "test-project-id-src",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, src):   "us-central1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):     "test-vm-1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):     "us-central1-a",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGRegionTemplate, src):  "us-central1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):    "test-mig-1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):    "us-central1-a",
+				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):          "test-project-id",
+				fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, src):         "default",
+				fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, src):       "us-central1",
+				fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, src):            "default",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, src):  "GOOGLE_API",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceNameTemplate, src):  "logging.googleapis.com",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceConnTemplate, src):  "PUBLIC_IP",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, dest): "GOOGLE_API",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceNameTemplate, dest): "monitoring.googleapis.com",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceConnTemplate, dest): "PRIVATE_SERVICE_CONNECT",
 			},
 		},
 	}
