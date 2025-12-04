@@ -1781,15 +1781,6 @@ func (c *WatchClient) addOrUpdateReplicaSetMeta(rs *meta_v1.PartialObjectMetadat
 	c.m.Unlock()
 }
 
-func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
-	c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
-	if replicaset, ok := newRS.(*meta_v1.PartialObjectMetadata); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
-	}
-}
-
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	switch v := obj.(type) {
 	case *apps_v1.ReplicaSet:
@@ -1898,4 +1889,53 @@ func extractDeploymentNameFromReplicaSet(replicasetName string) string {
 	}
 
 	return ""
+}
+
+func (c *WatchClient) handleReplicaSetUpdate(oldObj, newObj any) {
+	switch v := newObj.(type) {
+	case *apps_v1.ReplicaSet:
+		if v == nil {
+			return
+		}
+		uid := string(v.GetUID())
+		if uid == "" {
+			c.logger.Warn("update RS missing UID")
+			return
+		}
+		c.m.Lock()
+		existing := c.ReplicaSets[uid]
+		c.m.Unlock()
+		if existing == nil {
+			// Fallback: treat as add
+			c.handleReplicaSetAdd(newObj)
+			return
+		}
+		// Update existing safely, or reuse add path to replace the entry:
+		c.addOrUpdateReplicaSetTyped(v)
+	case *meta_v1.PartialObjectMetadata:
+		if v == nil {
+			return
+		}
+		uid := string(v.GetUID())
+		if uid == "" {
+			c.logger.Warn("update POM RS missing UID")
+			return
+		}
+		c.m.Lock()
+		existing := c.ReplicaSets[uid]
+		c.m.Unlock()
+		if existing == nil {
+			c.handleReplicaSetAdd(newObj)
+			return
+		}
+		c.addOrUpdateReplicaSetMeta(v)
+	case cache.DeletedFinalStateUnknown:
+		if v.Obj == nil {
+			c.logger.Warn("update DFSU with nil Obj")
+			return
+		}
+		c.handleReplicaSetUpdate(oldObj, v.Obj)
+	default:
+		c.logger.Warn("update received non-ReplicaSet object", zap.Any("obj", newObj))
+	}
 }
