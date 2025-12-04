@@ -17,7 +17,7 @@ var MultiTagParsingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, parses `key:value` tags with duplicate keys into a slice attribute."),
 	featuregate.WithRegisterFromVersion("v0.142.0"),
-	featuregate.WithRegisterReferenceURL("TODO (PR link)"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44747"),
 )
 
 // See:
