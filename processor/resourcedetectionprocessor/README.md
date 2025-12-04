@@ -1342,52 +1342,181 @@ For the latest benchmark results, see the [GitHub Actions workflow runs](https:/
 
 ## Self-Observability
 
+This processor emits internal telemetry to help users detect errors, data loss, and performance issues. The telemetry follows the OpenTelemetry Collector's internal observability standards.
+
+### Metrics
+
+The resourcedetection processor uses the standard `processorhelper` framework which automatically emits the following metrics for all signal types (traces, metrics, logs, profiles):
+
+#### Data Flow Metrics
+
+**Incoming Data** - Measures data received by the processor:
+- `otelcol_processor_incoming_spans` (Counter, unit: `{span}`)
+- `otelcol_processor_incoming_metric_points` (Counter, unit: `{datapoint}`)
+- `otelcol_processor_incoming_log_records` (Counter, unit: `{record}`)
+
+**Outgoing Data** - Measures data successfully processed and forwarded:
+- `otelcol_processor_outgoing_spans` (Counter, unit: `{span}`)
+- `otelcol_processor_outgoing_metric_points` (Counter, unit: `{datapoint}`)
+- `otelcol_processor_outgoing_log_records` (Counter, unit: `{record}`)
+
+**Attributes**: All metrics include:
+- `processor`: Set to `"resourcedetection"`
+- `service_name`: Collector service name
+- `service_version`: Collector version
+
+#### Error Detection
+
+**Data Loss Indicators**:
+- Difference between `incoming` and `outgoing` metrics indicates processing failures
+- The processor does **not** drop data under normal operation; all incoming data is enriched and forwarded
+- If detector errors occur during startup (when `processor.resourcedetection.propagateerrors` is enabled), the collector will not start, preventing silent data loss
+
+**Error Conditions**:
+- Detector failures during startup: Logged at ERROR level and prevent collector startup (by default)
+- Detector timeouts: Logged at WARN level
+- API failures: Logged at ERROR level with detailed error messages
+
+#### Performance Monitoring
+
+The processor has minimal performance impact:
+- **Latency**: Resource detection occurs once at startup (or on refresh intervals)
+- **Processing overhead**: Simple resource attribute enrichment per data item
+- **No queueing**: Data flows through without buffering
+
+To monitor performance:
+1. **Startup latency**: Check collector startup time; long startups indicate slow detectors
+2. **Processing throughput**: Compare `incoming` vs `outgoing` rates; should be equal under normal operation
+3. **Detection duration**: Enable collector tracing to see spans for detector execution
+
 ### Logging
 
 The resource detection processor emits structured logs for important events:
 
-**Log Levels**:
-- **INFO**: Successful detection operations
-  - Example: `"Detected resource attributes"` with attribute details
-- **WARN**: Non-fatal issues during detection
-  - Example: Detector timeout, missing metadata service
-- **ERROR**: Fatal detection failures (when error propagation is enabled)
-  - Example: Required IAM permissions missing, API call failures
+#### Log Levels and Messages
 
-**Key Log Messages**:
-| Message Pattern | Level | Meaning |
-|----------------|-------|---------|
-| `"Detected resource attributes"` | INFO | Detection completed successfully |
-| `"detector timed out"` | WARN | Detector exceeded configured timeout |
-| `"failed to detect resource"` | ERROR | Detector encountered fatal error |
-| `"refreshing resource attributes"` | INFO | Periodic refresh initiated (if configured) |
+**INFO Level** - Normal operation events:
+| Message Pattern | When Emitted | Context |
+|----------------|--------------|---------|
+| `"Detected resource attributes"` | Initial detection success | Includes detected attributes |
+| `"refreshing resource attributes"` | Periodic refresh initiated | Only when `refresh_interval` > 0 |
+| `"Starting periodic resource detection refresh"` | Refresh goroutine started | Includes refresh interval |
 
-### Metrics
+**WARN Level** - Non-fatal issues:
+| Message Pattern | When Emitted | Action Required |
+|----------------|--------------|-----------------|
+| `"detector timed out"` | Detector exceeds timeout | Increase `timeout` configuration |
+| `"detector returned empty resource"` | Detector found no attributes | Verify detector is applicable to environment |
+| `"metadata endpoint unavailable"` | Cloud metadata service unreachable | Check network connectivity; may be expected if not in cloud |
 
-The processor itself does not emit custom metrics. However, standard OpenTelemetry Collector metrics can be used to monitor processor behavior:
+**ERROR Level** - Fatal issues (when error propagation enabled):
+| Message Pattern | When Emitted | Action Required |
+|----------------|--------------|-----------------|
+| `"failed to detect resource"` | Detector encountered error | Check detector configuration and permissions |
+| `"detector initialization failed"` | Detector cannot start | Verify detector-specific requirements (RBAC, IAM, etc.) |
+| `"periodic refresh failed"` | Refresh cycle error | Check API rate limits and permissions |
 
-**Relevant Collector Metrics** (when internal telemetry is enabled):
-- `otelcol_processor_accepted_spans`: Spans successfully processed
-- `otelcol_processor_refused_spans`: Spans rejected due to errors
-- `otelcol_processor_dropped_spans`: Spans dropped during processing
+#### Error Details
 
-These metrics have a `processor="resourcedetection"` label when the processor is involved.
+All ERROR and WARN logs include:
+- **Detector name**: Which detector failed
+- **Error message**: Detailed error from the detector or cloud API
+- **Context**: Relevant configuration or environment details
+
+**Privacy**: Signal data (traces, metrics, logs) is never included in logs for security and privacy reasons.
 
 ### Tracing
 
-When the collector's own tracing is enabled, the processor emits spans for:
-- Detector execution
-- Resource attribute application
-- Refresh cycles (if configured)
+When the collector's internal tracing is enabled (`traces` telemetry level), the processor emits spans for:
 
-These internal traces help diagnose performance issues with resource detection.
+**Startup Phase**:
+- Span: `"resourcedetection.Start"` - Overall startup operation
+  - Child spans for each detector's execution
+  - Attributes: detector names, detection duration, success/failure
 
-### Monitoring Recommendations
+**Processing Phase**:
+- Spans for data processing operations are part of the collector's standard tracing
+- Resource attribute enrichment time is negligible and not separately traced
 
-1. **Alert on ERROR logs** with message `"failed to detect resource"` - indicates misconfiguration or permission issues
-2. **Monitor startup time** - slow startups may indicate detector timeouts or slow metadata services
-3. **Track refresh cycle logs** (if using `refresh_interval`) - unexpected refresh failures may indicate API quota issues
-4. **Watch for WARN logs about timeouts** - may require timeout configuration adjustments
+**Refresh Phase** (if configured):
+- Span: `"resourcedetection.Refresh"` - Periodic refresh operation
+  - Child spans for each detector re-run
+  - Attributes: refresh interval, detector results
+
+**Trace Correlation**:
+- All detector spans belong to the same trace context
+- Failed detector spans have `error=true` attribute
+- Span duration indicates detector performance
+
+### Data Characteristics
+
+**Normal Operation**:
+- **No data loss**: All incoming data is enriched and forwarded
+- **No data creation**: Processor only adds resource attributes, does not create new telemetry
+- **No data filtering**: Processor does not drop or filter data
+- **Deterministic**: Same input + same detected attributes = same output
+
+**Discrepancies Between Input and Output**:
+- None under normal operation; `incoming` = `outgoing` always
+- If metrics show discrepancy, indicates a bug or collector pipeline issue (not expected)
+
+**Data Held by Component**:
+- **Zero buffering**: Processor does not queue or buffer data
+- **Stateless**: No data is held between processing calls
+- **Resource attributes cached**: Detected resource attributes are cached in memory (small, constant size)
+
+### Monitoring Dashboard Recommendations
+
+For production monitoring, track these key metrics:
+
+#### Health Indicators
+```promql
+# Processing rate (should be non-zero when receiving traffic)
+rate(otelcol_processor_outgoing_spans{processor="resourcedetection"}[5m])
+
+# Data flow balance (should always be 0, indicating no data loss)
+rate(otelcol_processor_incoming_spans{processor="resourcedetection"}[5m]) - 
+rate(otelcol_processor_outgoing_spans{processor="resourcedetection"}[5m])
+```
+
+#### Error Detection
+- **Alert condition**: ERROR logs matching pattern `"failed to detect resource"`
+  - Indicates: Misconfiguration, permission issues, or API failures
+  - Response: Check detector configuration and cloud provider permissions
+
+- **Alert condition**: Startup time > 30 seconds
+  - Indicates: Slow detector or network issues
+  - Response: Increase timeouts or optimize detector selection
+
+#### Performance
+- **Metric**: Collector CPU usage during startup
+  - Expected: Brief spike during detection, then low baseline
+  - Issue if: Sustained high CPU usage
+  
+- **Metric**: Refresh cycle duration (if using `refresh_interval`)
+  - Expected: < timeout value per detector
+  - Issue if: Frequently exceeding timeout
+
+### Telemetry Configuration
+
+The processor respects the collector's telemetry level configuration:
+
+**Basic** (default):
+- Standard metrics: incoming/outgoing counters
+- ERROR level logs only
+- No tracing
+
+**Normal**:
+- All metrics
+- INFO, WARN, ERROR logs
+- Basic tracing
+
+**Detailed**:
+- All metrics with detailed attributes
+- All log levels with verbose context
+- Detailed tracing with all detector spans
+
+Configure via collector's `service.telemetry.logs.level` and `service.telemetry.metrics.level` settings.
 
 ## Ordering
 
