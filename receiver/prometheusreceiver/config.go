@@ -35,6 +35,8 @@ type Config struct {
 	// the process started. It should not be used in "exporters" which export counters that may have
 	// started before the process itself. Use only if you know what you are doing, as this may result
 	// in incorrect rate calculations.
+	//
+	// Deprecated: use the metricstarttime processor instead.
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
