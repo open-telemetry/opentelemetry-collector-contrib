@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -90,10 +90,10 @@ func (cfg *Config) Validate() error {
 			string(conventions.K8SCronJobNameKey), string(conventions.K8SCronJobUIDKey),
 			string(conventions.K8SNodeNameKey), string(conventions.K8SNodeUIDKey),
 			string(conventions.K8SContainerNameKey), string(conventions.ContainerIDKey),
-			string(conventions.ContainerImageNameKey), string(conventions.ContainerImageTagKey),
+			string(conventions.ContainerImageNameKey), containerImageTag,
 			string(conventions.ServiceNamespaceKey), string(conventions.ServiceNameKey),
 			string(conventions.ServiceVersionKey), string(conventions.ServiceInstanceIDKey),
-			containerImageRepoDigests, clusterUID:
+			string(conventions.ContainerImageRepoDigestsKey), string(conventions.K8SClusterUIDKey):
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 		}
