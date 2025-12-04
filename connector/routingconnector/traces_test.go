@@ -27,6 +27,9 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
 	traces1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
 
+	// The unqualified `attributes["X-Tenant"]` syntax is the legacy form that
+	// defaults to resource context for backward compatibility. The modern form
+	// is `resource.attributes["X-Tenant"]` which explicitly specifies the context.
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{tracesDefault},
 		Table: []RoutingTableItem{
@@ -75,6 +78,91 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, conn.Shutdown(t.Context()))
+}
+
+func TestTracesRoutingWithQualifiedContextPaths(t *testing.T) {
+	// This test demonstrates the modern, explicit context-qualified syntax.
+	// Using resource.attributes["..."] or span.attributes["..."] makes it clear
+	// which context is being accessed.
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	tracesProd := pipeline.NewIDWithName(pipeline.SignalTraces, "prod")
+	tracesHTTP := pipeline.NewIDWithName(pipeline.SignalTraces, "http")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				// Explicit resource context - routes based on resource attributes
+				Condition: `resource.attributes["env"] == "prod"`,
+				Pipelines: []pipeline.ID{tracesProd},
+			},
+			{
+				// Explicit span context - routes based on span attributes
+				Condition: `span.attributes["http.method"] == "GET"`,
+				Pipelines: []pipeline.ID{tracesHTTP},
+			},
+		},
+	}
+
+	var defaultSink, prodSink, httpSink consumertest.TracesSink
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		tracesProd:    &prodSink,
+		tracesHTTP:    &httpSink,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateTracesToTraces(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Traces),
+	)
+	require.NoError(t, err)
+
+	// Test resource context routing: env=prod should route to prod sink
+	prodTraces := ptrace.NewTraces()
+	rs := prodTraces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("env", "prod")
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", "POST")
+
+	require.NoError(t, conn.ConsumeTraces(t.Context(), prodTraces))
+	assert.Equal(t, 1, prodSink.SpanCount())
+	assert.Equal(t, 0, httpSink.SpanCount())
+	assert.Equal(t, 0, defaultSink.SpanCount())
+
+	// Reset sinks
+	prodSink.Reset()
+	httpSink.Reset()
+	defaultSink.Reset()
+
+	// Test span context routing: GET method should route to http sink
+	httpTraces := ptrace.NewTraces()
+	rs = httpTraces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("env", "dev") // not prod
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", "GET")
+
+	require.NoError(t, conn.ConsumeTraces(t.Context(), httpTraces))
+	assert.Equal(t, 0, prodSink.SpanCount())
+	assert.Equal(t, 1, httpSink.SpanCount())
+	assert.Equal(t, 0, defaultSink.SpanCount())
+
+	// Reset sinks
+	prodSink.Reset()
+	httpSink.Reset()
+	defaultSink.Reset()
+
+	// Test default routing: non-matching traces go to default
+	otherTraces := ptrace.NewTraces()
+	rs = otherTraces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("env", "dev")
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", "POST")
+
+	require.NoError(t, conn.ConsumeTraces(t.Context(), otherTraces))
+	assert.Equal(t, 0, prodSink.SpanCount())
+	assert.Equal(t, 0, httpSink.SpanCount())
+	assert.Equal(t, 1, defaultSink.SpanCount())
 }
 
 func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {

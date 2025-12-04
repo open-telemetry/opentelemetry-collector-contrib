@@ -175,7 +175,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 // Unlike the transform processor which works with statement sequences, the routing connector
 // evaluates one statement per route to determine where data should be routed.
 func singleStatementConverter[K any]() ottl.ParsedStatementsConverter[K, any] {
-	return func(pc *ottl.ParserCollection[any], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[K]) (any, error) {
+	return func(_ *ottl.ParserCollection[any], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[K]) (any, error) {
 		if len(parsedStatements) != 1 {
 			return nil, fmt.Errorf("%w: got %d", errStatementCountMismatch, len(parsedStatements))
 		}

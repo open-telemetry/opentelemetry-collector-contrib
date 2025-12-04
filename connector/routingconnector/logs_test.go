@@ -28,6 +28,9 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
 	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 
+	// The unqualified `attributes["X-Tenant"]` syntax is the legacy form that
+	// defaults to resource context for backward compatibility. The modern form
+	// is `resource.attributes["X-Tenant"]` which explicitly specifies the context.
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
@@ -77,6 +80,87 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 
 	assert.NoError(t, conn.Shutdown(t.Context()))
+}
+
+func TestLogsRoutingWithQualifiedContextPaths(t *testing.T) {
+	// This test demonstrates the modern, explicit context-qualified syntax.
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logsProd := pipeline.NewIDWithName(pipeline.SignalLogs, "prod")
+	logsErrors := pipeline.NewIDWithName(pipeline.SignalLogs, "errors")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{logsDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `resource.attributes["env"] == "prod"`,
+				Pipelines: []pipeline.ID{logsProd},
+			},
+			{
+				Condition: `log.severity_text == "ERROR"`,
+				Pipelines: []pipeline.ID{logsErrors},
+			},
+		},
+	}
+
+	var defaultSink, prodSink, errorsSink consumertest.LogsSink
+
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		logsDefault: &defaultSink,
+		logsProd:    &prodSink,
+		logsErrors:  &errorsSink,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateLogsToLogs(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Logs),
+	)
+	require.NoError(t, err)
+
+	// Test resource context routing: env=prod should route to prod sink
+	prodLogs := plog.NewLogs()
+	rl := prodLogs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("env", "prod")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("INFO")
+
+	require.NoError(t, conn.ConsumeLogs(t.Context(), prodLogs))
+	assert.Equal(t, 1, prodSink.LogRecordCount())
+	assert.Equal(t, 0, errorsSink.LogRecordCount())
+	assert.Equal(t, 0, defaultSink.LogRecordCount())
+
+	// Reset sinks
+	prodSink.Reset()
+	errorsSink.Reset()
+	defaultSink.Reset()
+
+	// Test log context routing: ERROR severity should route to errors sink
+	errorLogs := plog.NewLogs()
+	rl = errorLogs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("env", "dev") // not prod
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("ERROR")
+
+	require.NoError(t, conn.ConsumeLogs(t.Context(), errorLogs))
+	assert.Equal(t, 0, prodSink.LogRecordCount())
+	assert.Equal(t, 1, errorsSink.LogRecordCount())
+	assert.Equal(t, 0, defaultSink.LogRecordCount())
+
+	// Reset sinks
+	prodSink.Reset()
+	errorsSink.Reset()
+	defaultSink.Reset()
+
+	// Test default routing: non-matching logs go to default
+	otherLogs := plog.NewLogs()
+	rl = otherLogs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("env", "dev")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("INFO")
+
+	require.NoError(t, conn.ConsumeLogs(t.Context(), otherLogs))
+	assert.Equal(t, 0, prodSink.LogRecordCount())
+	assert.Equal(t, 0, errorsSink.LogRecordCount())
+	assert.Equal(t, 1, defaultSink.LogRecordCount())
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {

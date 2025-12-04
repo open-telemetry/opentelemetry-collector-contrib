@@ -28,6 +28,9 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
 	metrics1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
 
+	// The unqualified `attributes["X-Tenant"]` syntax is the legacy form that
+	// defaults to resource context for backward compatibility. The modern form
+	// is `resource.attributes["X-Tenant"]` which explicitly specifies the context.
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{metricsDefault},
 		Table: []RoutingTableItem{
@@ -76,6 +79,97 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, conn.Shutdown(t.Context()))
+}
+
+func TestMetricsRoutingWithQualifiedContextPaths(t *testing.T) {
+	// This test demonstrates the modern, explicit context-qualified syntax.
+	// Using resource.attributes["..."] or metric.name makes it clear
+	// which context is being accessed.
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metricsProd := pipeline.NewIDWithName(pipeline.SignalMetrics, "prod")
+	metricsHTTP := pipeline.NewIDWithName(pipeline.SignalMetrics, "http")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				// Explicit resource context - routes based on resource attributes
+				Condition: `resource.attributes["env"] == "prod"`,
+				Pipelines: []pipeline.ID{metricsProd},
+			},
+			{
+				// Explicit metric context - routes based on metric name
+				Condition: `metric.name == "http_requests_total"`,
+				Pipelines: []pipeline.ID{metricsHTTP},
+			},
+		},
+	}
+
+	var defaultSink, prodSink, httpSink consumertest.MetricsSink
+
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+		metricsDefault: &defaultSink,
+		metricsProd:    &prodSink,
+		metricsHTTP:    &httpSink,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateMetricsToMetrics(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Metrics),
+	)
+	require.NoError(t, err)
+
+	// Test resource context routing: env=prod should route to prod sink
+	prodMetrics := pmetric.NewMetrics()
+	rm := prodMetrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("env", "prod")
+	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("other_metric")
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
+
+	require.NoError(t, conn.ConsumeMetrics(t.Context(), prodMetrics))
+	assert.Len(t, prodSink.AllMetrics(), 1)
+	assert.Empty(t, httpSink.AllMetrics())
+	assert.Empty(t, defaultSink.AllMetrics())
+
+	// Reset sinks
+	prodSink.Reset()
+	httpSink.Reset()
+	defaultSink.Reset()
+
+	// Test metric context routing: http_requests_total should route to http sink
+	httpMetrics := pmetric.NewMetrics()
+	rm = httpMetrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("env", "dev") // not prod
+	m = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("http_requests_total")
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
+
+	require.NoError(t, conn.ConsumeMetrics(t.Context(), httpMetrics))
+	assert.Empty(t, prodSink.AllMetrics())
+	assert.Len(t, httpSink.AllMetrics(), 1)
+	assert.Empty(t, defaultSink.AllMetrics())
+
+	// Reset sinks
+	prodSink.Reset()
+	httpSink.Reset()
+	defaultSink.Reset()
+
+	// Test default routing: non-matching metrics go to default
+	otherMetrics := pmetric.NewMetrics()
+	rm = otherMetrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("env", "dev")
+	m = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("other_metric")
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
+
+	require.NoError(t, conn.ConsumeMetrics(t.Context(), otherMetrics))
+	assert.Empty(t, prodSink.AllMetrics())
+	assert.Empty(t, httpSink.AllMetrics())
+	assert.Len(t, defaultSink.AllMetrics(), 1)
 }
 
 func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
