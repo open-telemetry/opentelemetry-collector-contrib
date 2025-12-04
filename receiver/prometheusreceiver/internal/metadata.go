@@ -54,7 +54,7 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 	// try with suffixes trimmed, in-case it is a "merged" metric type.
 	normalizedName := normalizeMetricName(metricName)
 	if metadata, ok := mc.GetMetadata(normalizedName); ok {
-		if metadata.Type == model.MetricTypeCounter {
+		if metadata.Type == model.MetricTypeCounter || metadata.Type == model.MetricTypeInfo {
 			return &metadata, metricName
 		}
 		return &metadata, normalizedName
