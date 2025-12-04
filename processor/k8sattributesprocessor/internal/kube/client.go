@@ -1726,14 +1726,10 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	case *meta_v1.PartialObjectMetadata:
 		c.addOrUpdateReplicaSetMeta(rs)
 	case cache.DeletedFinalStateUnknown:
-		switch inner := rs.Obj.(type) {
-		case *apps_v1.ReplicaSet:
-			c.addOrUpdateReplicaSetTyped(inner)
-		case *meta_v1.PartialObjectMetadata:
-			c.addOrUpdateReplicaSetMeta(inner)
-		default:
-			c.logger.Warn("DeletedFinalStateUnknown with unexpected inner type",
-				zap.Any("inner", rs.Obj))
+		if rs.Obj != nil {
+			c.handleReplicaSetAdd(rs.Obj)
+		} else {
+			c.logger.Warn("DeletedFinalStateUnknown with nil Obj")
 		}
 	default:
 		c.logger.Warn("object received was not ReplicaSet", zap.Any("obj", obj))
@@ -1819,7 +1815,7 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 			c.logger.Warn("DeletedFinalStateUnknown with nil Obj")
 			return
 		}
-		// Recurse or delegate to reuse the same logic
+		// Recurse for inner object
 		c.handleReplicaSetDelete(v.Obj)
 	default:
 		c.logger.Warn("delete received non-ReplicaSet object", zap.Any("obj", obj))
