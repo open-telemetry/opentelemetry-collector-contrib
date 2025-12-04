@@ -16,16 +16,20 @@
 This extension can be used to unmarshall a [Cloud Logging LogEntry](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) message type. The extension expects each log to take up 1 line, and it will decode as many logs as log lines received.
 
 Currently, this extension [can parse the following logs](#supported-log-types) into log record attributes:
+
 - [Cloud audit logs](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog) (extension [mapping](#cloud-audit-logs))
 - [VPC flow logs](https://cloud.google.com/vpc/docs/about-flow-logs-records) (extension [mapping](#vpc-flow-logs))
-- [Cloud armor logs](https://docs.cloud.google.com/armor/docs/request-logging) (extension [mapping](#cloud-armor-logs))
+- Application Load Balancer logs(extension [mapping](#application-load-balancer-logs))
+  - [Global External Application Load Balancer](https://docs.cloud.google.com/load-balancing/docs/https/https-logging-monitoring)
+  - [Regional External Application Load Balancer](https://docs.cloud.google.com/load-balancing/docs/https/https-reg-logging-monitoring)
+  - [Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging) (embedded within load balancer logs) (extension [mapping](#cloud-armor-logs))
 - [Proxy Network Load Balancer logs](https://docs.cloud.google.com/load-balancing/docs/tcp/tcp-ssl-proxy-logging-monitoring#log-records) (extension [mapping](#proxy-network-load-balancer-logs))
 
 For all others logs, the payload will be placed in the log record attribute. In this case, the following configuration options are supported:
 
-* `handle_json_payload_as` (Optional): This controls how the json payload of the log entry  is parsed into the body.
+- `handle_json_payload_as` (Optional): This controls how the json payload of the log entry  is parsed into the body.
   The default `json` parses it as standard JSON, while `text` will the put the payload as a single string.
-* `handle_proto_payload_as` (Optional): This controls how the json payload of the log entry  is parsed into the body. 
+- `handle_proto_payload_as` (Optional): This controls how the json payload of the log entry  is parsed into the body.
   The default `json` parses it as standard JSON, while `proto` will use the well known protobuf types used in a
   log entry providing a better type handling, but sacrificing stability. Using `text` will the put the payload as a
   single string.
@@ -33,7 +37,6 @@ For all others logs, the payload will be placed in the log record attribute. In 
 ## Log entry fields mapping
 
 The [log entry](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) fields are mapped this way in the encoding:
-
 
 | Original JSON Field Name                     | OpenTelemetry log field                                                                                                                                                            |
 |----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -123,6 +126,7 @@ A subset of logs processed by this extension are automatically tagged with an `e
 The pattern used is `gcp.<format_name>`.
 
 Examples:
+
 - Audit Logs: `encoding.format: "gcp.auditlog"`
 - VPC Flow Logs: `encoding.format: "gcp.vpcflow"`
 - Proxy Network Load Balancer Logs: `encoding.format: "gcp.proxy-nlb"`
@@ -157,7 +161,6 @@ The following format values are supported in the `googlecloudlogentryencodingext
 ### Cloud Audit Logs
 
 See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog). The fields are mapped this way in the extension:
-
 
 | Original field                                                             | Log record attribute                                                |
 |----------------------------------------------------------------------------|---------------------------------------------------------------------|
@@ -271,27 +274,26 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.flow.destination.gke.pod.workload.type` | not yet supported |
 | `dest_gke_details.service.service_name` | `gcp.vpc.flow.destination.gke.service.name` | not yet supported |
 | `dest_gke_details.service.service_namespace` | `gcp.vpc.flow.destination.gke.service.namespace` | not yet supported |
-| `src_google_service.type` | `gcp.vpc.flow.source.google_service.type` | not yet supported |
-| `src_google_service.service_name` | `gcp.vpc.flow.source.google_service.name` | not yet supported |
-| `src_google_service.connectivity` | `gcp.vpc.flow.source.google_service.connectivity` | not yet supported |
+| `src_google_service.type` | `gcp.vpc.flow.source.google_service.type` | supported |
+| `src_google_service.service_name` | `gcp.vpc.flow.source.google_service.name` | supported |
+| `src_google_service.connectivity` | `gcp.vpc.flow.source.google_service.connectivity` | supported |
 | `src_google_service.private_domain` | `gcp.vpc.flow.source.google_service.domain.private` | not yet supported |
-| `dest_google_service.type` | `gcp.vpc.flow.destination.google_service.type` | not yet supported |
-| `dest_google_service.service_name` | `gcp.vpc.flow.destination.google_service.name` | not yet supported |
-| `dest_google_service.connectivity` | `gcp.vpc.flow.destination.google_service.connectivity` | not yet supported |
-| `dest_google_service.private_domain` | `gcp.vpc.flow.destination.google_service.domain.private` | not yet supported |
+| `dest_google_service.type` | `gcp.vpc.flow.destination.google_service.type` | supported |
+| `dest_google_service.service_name` | `gcp.vpc.flow.destination.google_service.name` | supported |
+| `dest_google_service.connectivity` | `gcp.vpc.flow.destination.google_service.connectivity` | supported |
 | `src_instance.project_id` | `gcp.vpc.flow.source.instance.project.id` | supported |
 | `src_instance.region` | `gcp.vpc.flow.source.instance.vm.region` | supported |
 | `src_instance.vm_name` | `gcp.vpc.flow.source.instance.vm.name` | supported |
 | `src_instance.zone` | `gcp.vpc.flow.source.instance.vm.zone` | supported |
 | `src_instance.managed_instance_group.name` | `gcp.vpc.flow.source.instance.managed_instance_group.name` | supported |
-| `src_instance.managed_instance_group.region` | `gcp.vpc.flow.source.instance.managed_instance_group.region` | not yet supported |
+| `src_instance.managed_instance_group.region` | `gcp.vpc.flow.source.instance.managed_instance_group.region` | supported |
 | `src_instance.managed_instance_group.zone` | `gcp.vpc.flow.source.instance.managed_instance_group.zone` | supported |
 | `dest_instance.project_id` | `gcp.vpc.flow.destination.instance.project.id` | supported |
 | `dest_instance.region` | `gcp.vpc.flow.destination.instance.vm.region` | supported |
 | `dest_instance.vm_name` | `gcp.vpc.flow.destination.instance.vm.name` | supported |
 | `dest_instance.zone` | `gcp.vpc.flow.destination.instance.vm.zone` | supported |
 | `dest_instance.managed_instance_group.name` | `gcp.vpc.flow.destination.instance.managed_instance_group.name` | supported |
-| `dest_instance.managed_instance_group.region` | `gcp.vpc.flow.destination.instance.managed_instance_group.region` | not yet supported |
+| `dest_instance.managed_instance_group.region` | `gcp.vpc.flow.destination.instance.managed_instance_group.region` | supported |
 | `dest_instance.managed_instance_group.zone` | `gcp.vpc.flow.destination.instance.managed_instance_group.zone` | supported |
 | `src_location.asn` | `gcp.vpc.flow.source.asn` | supported |
 | `src_location.city` | `gcp.vpc.flow.source.geo.city` | supported |
@@ -344,16 +346,53 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `psc.psc_attachment.vpc.vpc_name` | `gcp.vpc.flow.private_service_connect.attachment.vpc.name` | not yet supported |
 | `rdma_traffic_type` | `gcp.vpc.flow.remote_direct_memory_access.traffic_type` | not yet supported |
 
+### Application Load Balancer logs
+
+Application Load Balancer logs (both [Global External](https://docs.cloud.google.com/load-balancing/docs/https/https-logging-monitoring#log-fields) and [Regional External](https://docs.cloud.google.com/load-balancing/docs/https/https-reg-logging-monitoring#log-fields)) are identified by the presence of load balancer-specific fields in the `jsonPayload`. are mapped this way in the resulting OpenTelemetry log:
+
+| Original field | Log record attribute |
+|---|---|
+| `statusDetails` | `gcp.load_balancing.status_details` |
+| `loadBalancingScheme` | `gcp.load_balancing.scheme` |
+| `backendTargetProjectNumber` | `gcp.load_balancing.backend_target_project_number` |
+| `remoteIp` | `network.peer.address` |
+| `proxyStatus` | `gcp.load_balancing.proxy_status` |
+| `overrideResponseCode` | `gcp.load_balancing.override_response_code` |
+| `errorService` | `gcp.load_balancing.error_service` |
+| `cacheId` | `gcp.load_balancing.cache.id` |
+| `cacheDecision` | `gcp.load_balancing.cache.decision` |
+| `backendNetworkName` | `gcp.load_balancing.backend_network_name` |
+| `authPolicyInfo.result` | `gcp.load_balancing.auth_policy_info.result` |
+| `authPolicyInfo.policies` | `gcp.load_balancing.auth_policy_info.policies` |
+| `authPolicyInfo.policies.name` | `gcp.load_balancing.auth_policy_info.policies.name` |
+| `authPolicyInfo.policies.result` | `gcp.load_balancing.auth_policy_info.policies.result` |
+| `authPolicyInfo.policies.details` | `gcp.load_balancing.auth_policy_info.policies.details` |
+| `tls.earlyDataRequest` | `tls.early_data_request` |
+| `tls.protocol` | `tls.protocol.name` |
+| `tls.cipher` | `tls.cipher` |
+| `mtls.clientCertSha256Fingerprint` | `tls.client.hash.sha256` |
+| `mtls.clientCertValidStartTime` | `tls.client.not_before` |
+| `mtls.clientCertValidEndTime` | `tls.client.not_after` |
+| `mtls.clientCertIssuerDn` | `tls.client.issuer` |
+| `mtls.clientCertSubjectDn` | `tls.client.subject` |
+| `mtls.clientCertChain` | `tls.client.certificate_chain` |
+| `mtls.clientCertPresent` | `mtls.client_cert.present` |
+| `mtls.clientCertChainVerified` | `mtls.client_cert.chain_verified` |
+| `mtls.clientCertError` | `mtls.client_cert.error` |
+| `mtls.clientCertSerialNumber` | `mtls.client_cert.serial_number` |
+| `mtls.clientCertSpiffeId` | `mtls.client_cert.spiffe_id` |
+| `mtls.clientCertURISans` | `mtls.client_cert.uri_sans` |
+| `mtls.clientCertDnsnameSans` | `mtls.client_cert.dnsname_sans` |
+| `mtls.clientCertLeaf` | `mtls.client_cert.leaf` |
+
+**Note:** Application Load Balancer logs may contain embedded Cloud Armor security policy information. When present, these policies are parsed according to the Cloud Armor logs mapping (see below).
 
 ### Cloud Armor logs
 
-[Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging#security_policy_log_entries) are mapped this way in the resulting OpenTelemetry log.
+[Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging#security_policy_log_entries) are embedded within Application Load Balancer logs and are mapped this way in the resulting OpenTelemetry log.
 
 | Original field | Log record attribute |
 |---|--- |
-| `statusDetails` | `gcp.load_balancing.status.details`|
-| `backendTargetProjectNumber` | `gcp.load_balancing.backend_target_project_number` |
-| `remoteIp` | `network.peer.address` |
 | `securityPolicyRequestData.recaptchaActionToken.score` | `gcp.armor.request_data.recaptcha_action_token.score` |
 | `securityPolicyRequestData.recaptchaSessionToken.score` | `gcp.armor.request_data.recaptcha_session_token.score` |
 | `securityPolicyRequestData.userIpInfo.source` | `gcp.armor.request_data.user_ip.source` |
@@ -374,7 +413,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `threatIntelligence.categories` | `gcp.armor.security_policy.threat_intelligence.categories` |
 | `addressGroup.names` | `gcp.armor.security_policy.address_group.names` |
 
-**Note:** There are 4 different policy types (`enforcedSecurityPolicy`, `previewSecurityPolicy` , `enforcedEdgeSecurityPolicy`, `previewEdgeSecurityPolicy`) and the log fields are repeated between them. OpenTelemetry will introduce a **type** field (`gcp.armor.security_policy.type`) to differentiate between different policies. All fields explanations are available at [Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging#security_policy_log_entries).
+**Note:** There are 4 different policy types (`enforcedSecurityPolicy`, `previewSecurityPolicy`, `enforcedEdgeSecurityPolicy`, `previewEdgeSecurityPolicy`). Each policy type creates a separate nested attribute structure (e.g., `gcp.armor.security_policy.type.enforced`, `gcp.armor.security_policy.type.preview`, `gcp.armor.security_policy.type.enforced_edge`, `gcp.armor.security_policy.type.preview_edge`) containing the security policy fields listed above. Multiple policy types can be present simultaneously in a single log entry, each represented by its own nested map. All fields explanations are available at [Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging#security_policy_log_entries).
 
 ### Proxy Network Load Balancer logs
 
