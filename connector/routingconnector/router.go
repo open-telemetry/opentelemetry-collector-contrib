@@ -174,8 +174,12 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 // singleStatementConverter extracts a single parsed statement from the parser output.
 // Unlike the transform processor which works with statement sequences, the routing connector
 // evaluates one statement per route to determine where data should be routed.
+//
+// The length check is technically redundant since registerRouteConsumers always passes exactly
+// one statement to the parser, and the OTTL parser produces one parsed statement per input.
+// However, it serves as defense-in-depth against future bugs in either this code or the OTTL library.
 func singleStatementConverter[K any]() ottl.ParsedStatementsConverter[K, any] {
-	return func(_ *ottl.ParserCollection[any], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[K]) (any, error) {
+	return func(_ *ottl.ParserCollection[any], _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[K]) (any, error) {
 		if len(parsedStatements) != 1 {
 			return nil, fmt.Errorf("%w: got %d", errStatementCountMismatch, len(parsedStatements))
 		}
@@ -254,7 +258,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 					return err
 				}
 
-				// Type switch to assign the correct statement
+				// singleStatementConverter returns the single parsed *ottl.Statement[K]
 				switch s := result.(type) {
 				case *ottl.Statement[ottlresource.TransformContext]:
 					route.resourceStatement = s
