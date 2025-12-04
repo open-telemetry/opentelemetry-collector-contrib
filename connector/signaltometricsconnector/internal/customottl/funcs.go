@@ -12,8 +12,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func SpanFuncs() map[string]ottl.Factory[ottlspan.TransformContext] {
-	common := commonFuncs[ottlspan.TransformContext]()
+func SpanFuncs() map[string]ottl.Factory[*ottlspan.TransformContext] {
+	common := commonFuncs[*ottlspan.TransformContext]()
 	adjustedCountFactory := NewAdjustedCountFactory()
 	common[adjustedCountFactory.Name()] = adjustedCountFactory
 	return common

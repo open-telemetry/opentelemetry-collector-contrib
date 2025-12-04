@@ -43,7 +43,7 @@ func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	for _, f := range DefaultMetricFunctions() {
 		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
 	}
-	for _, f := range DefaultSpanFunctions() {
+	for _, f := range DefaultSpanFunctionsNew() {
 		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
 	}
 	for _, f := range DefaultSpanEventFunctions() {
@@ -919,8 +919,8 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithSpanFunctions(DefaultSpanFunctions()),
-				WithSpanFunctions([]ottl.Factory[ottlspan.TransformContext]{createTestFuncFactory[ottlspan.TransformContext]("TestSpanFunc")}),
+				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
+				WithSpanFunctionsNew([]ottl.Factory[*ottlspan.TransformContext]{createTestFuncFactory[*ottlspan.TransformContext]("TestSpanFunc")}),
 				WithSpanEventFunctions(DefaultSpanEventFunctions()),
 			},
 		},
@@ -934,7 +934,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "TestSpanFunc"`,
 			factoryOptions: []FactoryOption{
-				WithSpanFunctions(DefaultSpanFunctions()),
+				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
 				WithSpanEventFunctions(DefaultSpanEventFunctions()),
 			},
 		},
@@ -947,7 +947,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithSpanFunctions([]ottl.Factory[ottlspan.TransformContext]{createTestFuncFactory[ottlspan.TransformContext]("testSpanFunc")}),
+				WithSpanFunctionsNew([]ottl.Factory[*ottlspan.TransformContext]{createTestFuncFactory[*ottlspan.TransformContext]("testSpanFunc")}),
 			},
 		},
 		{
@@ -960,7 +960,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "set"`,
 			factoryOptions: []FactoryOption{
-				WithSpanFunctions([]ottl.Factory[ottlspan.TransformContext]{createTestFuncFactory[ottlspan.TransformContext]("TestSpanFunc")}),
+				WithSpanFunctionsNew([]ottl.Factory[*ottlspan.TransformContext]{createTestFuncFactory[*ottlspan.TransformContext]("TestSpanFunc")}),
 			},
 		},
 		{
@@ -972,7 +972,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithSpanFunctions(DefaultSpanFunctions()),
+				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
 				WithSpanEventFunctions(DefaultSpanEventFunctions()),
 				WithSpanEventFunctions([]ottl.Factory[ottlspanevent.TransformContext]{createTestFuncFactory[ottlspanevent.TransformContext]("TestSpanEventFunc")}),
 			},
@@ -987,7 +987,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "TestSpanEventFunc"`,
 			factoryOptions: []FactoryOption{
-				WithSpanFunctions(DefaultSpanFunctions()),
+				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
 				WithSpanEventFunctions(DefaultSpanEventFunctions()),
 			},
 		},

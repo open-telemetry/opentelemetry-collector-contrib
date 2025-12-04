@@ -17,15 +17,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
-// NewBoolExprForSpan creates a BoolExpr[ottlspan.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
+// NewBoolExprForSpan creates a BoolExpr[*ottlspan.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottlspan.TransformContext.
 // If a function named `match` is not present in the function map it will be added automatically so that parsing works as expected
-func NewBoolExprForSpan(conditions []string, functions map[string]ottl.Factory[ottlspan.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (*ottl.ConditionSequence[ottlspan.TransformContext], error) {
+func NewBoolExprForSpan(conditions []string, functions map[string]ottl.Factory[*ottlspan.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (*ottl.ConditionSequence[*ottlspan.TransformContext], error) {
 	return NewBoolExprForSpanWithOptions(conditions, functions, errorMode, set, nil)
 }
 
 // NewBoolExprForSpanWithOptions is like NewBoolExprForSpan, but with additional options.
-func NewBoolExprForSpanWithOptions(conditions []string, functions map[string]ottl.Factory[ottlspan.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[ottlspan.TransformContext]) (*ottl.ConditionSequence[ottlspan.TransformContext], error) {
+func NewBoolExprForSpanWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlspan.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlspan.TransformContext]) (*ottl.ConditionSequence[*ottlspan.TransformContext], error) {
 	parser, err := ottlspan.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err

@@ -21,9 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func StandardSpanFuncs() map[string]ottl.Factory[ottlspan.TransformContext] {
-	m := ottlfuncs.StandardConverters[ottlspan.TransformContext]()
-	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
+func StandardSpanFuncs() map[string]ottl.Factory[*ottlspan.TransformContext] {
+	m := ottlfuncs.StandardConverters[*ottlspan.TransformContext]()
+	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactoryNew()
 	m[isRootSpanFactory.Name()] = isRootSpanFactory
 	return m
 }

@@ -19,7 +19,7 @@ import (
 )
 
 type ottlConditionFilter struct {
-	sampleSpanExpr      *ottl.ConditionSequence[ottlspan.TransformContext]
+	sampleSpanExpr      *ottl.ConditionSequence[*ottlspan.TransformContext]
 	sampleSpanEventExpr *ottl.ConditionSequence[ottlspanevent.TransformContext]
 	errorMode           ottl.ErrorMode
 	logger              *zap.Logger
@@ -88,7 +88,9 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 
 				// Span evaluation
 				if ocf.sampleSpanExpr != nil {
-					ok, err = ocf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ss, rs))
+					tCtx := ottlspan.NewTransformContextPtr(span, scope, resource, ss, rs)
+					ok, err = ocf.sampleSpanExpr.Eval(ctx, tCtx)
+					tCtx.Close()
 					if err != nil {
 						return samplingpolicy.Error, err
 					}

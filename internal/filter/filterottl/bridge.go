@@ -115,7 +115,7 @@ func NewResourceSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottl
 	return NewBoolExprForResource(statements, StandardResourceFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 }
 
-func NewSpanSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottlspan.TransformContext], error) {
+func NewSpanSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[*ottlspan.TransformContext], error) {
 	statements := make([]string, 0, 2)
 	if mc.Include != nil {
 		statement, err := createStatement(*mc.Include)

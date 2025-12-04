@@ -50,9 +50,9 @@ func createTracesToMetrics(
 ) (connector.Traces, error) {
 	c := cfg.(*Config)
 
-	spanMetricDefs := make(map[string]metricDef[ottlspan.TransformContext], len(c.Spans))
+	spanMetricDefs := make(map[string]metricDef[*ottlspan.TransformContext], len(c.Spans))
 	for name, info := range c.Spans {
-		md := metricDef[ottlspan.TransformContext]{
+		md := metricDef[*ottlspan.TransformContext]{
 			desc:  info.Description,
 			attrs: info.Attributes,
 		}

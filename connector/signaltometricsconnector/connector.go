@@ -29,7 +29,7 @@ type signalToMetrics struct {
 	collectorInstanceInfo model.CollectorInstanceInfo
 	logger                *zap.Logger
 
-	spanMetricDefs    []model.MetricDef[ottlspan.TransformContext]
+	spanMetricDefs    []model.MetricDef[*ottlspan.TransformContext]
 	dpMetricDefs      []model.MetricDef[ottldatapoint.TransformContext]
 	logMetricDefs     []model.MetricDef[ottllog.TransformContext]
 	profileMetricDefs []model.MetricDef[ottlprofile.TransformContext]
@@ -49,7 +49,7 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(td.ResourceSpans().Len())
-	aggregator := aggregator.NewAggregator[ottlspan.TransformContext](processedMetrics)
+	aggregator := aggregator.NewAggregator[*ottlspan.TransformContext](processedMetrics)
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
@@ -67,20 +67,24 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
-					tCtx := ottlspan.NewTransformContext(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+					tCtx := ottlspan.NewTransformContextPtr(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
+							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
 						}
 						if !match {
+							tCtx.Close()
 							sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
 							continue
 						}
 					}
 
 					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
-					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1); err != nil {
+					err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1)
+					tCtx.Close()
+					if err != nil {
 						return err
 					}
 				}

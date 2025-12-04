@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/profiles"
@@ -32,7 +33,21 @@ func DefaultDataPointFunctions() []ottl.Factory[ottldatapoint.TransformContext] 
 	return slices.Collect(maps.Values(defaultDataPointFunctionsMap()))
 }
 
+// Deprecated: [v0.142.0] use DefaultSpanFunctionsNew.
 func DefaultSpanFunctions() []ottl.Factory[ottlspan.TransformContext] {
+	functions := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+
+	spanFunctions := ottl.CreateFactoryMap(
+		ottlfuncs.NewIsRootSpanFactory(),
+		traces.NewSetSemconvSpanNameFactoryLegacy(),
+	)
+
+	maps.Copy(functions, spanFunctions)
+
+	return slices.Collect(maps.Values(functions))
+}
+
+func DefaultSpanFunctionsNew() []ottl.Factory[*ottlspan.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanFunctionsMap()))
 }
 
@@ -56,7 +71,7 @@ func defaultDataPointFunctionsMap() map[string]ottl.Factory[ottldatapoint.Transf
 	return metrics.DataPointFunctions()
 }
 
-func defaultSpanFunctionsMap() map[string]ottl.Factory[ottlspan.TransformContext] {
+func defaultSpanFunctionsMap() map[string]ottl.Factory[*ottlspan.TransformContext] {
 	return traces.SpanFunctions()
 }
 

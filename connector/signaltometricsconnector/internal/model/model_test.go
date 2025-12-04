@@ -80,7 +80,7 @@ func TestFilterResourceAttributes(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			md := MetricDef[ottlspan.TransformContext]{
+			md := MetricDef[*ottlspan.TransformContext]{
 				IncludeResourceAttributes: tc.includeResourceAttributes,
 			}
 			inputResourceAttrsM := pcommon.NewMap()
@@ -149,7 +149,7 @@ func TestFilterAttributes(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			md := MetricDef[ottlspan.TransformContext]{
+			md := MetricDef[*ottlspan.TransformContext]{
 				Attributes: tc.attributes,
 			}
 			inputAttrM := pcommon.NewMap()

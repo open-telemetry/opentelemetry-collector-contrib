@@ -21,7 +21,7 @@ import (
 type spanProcessor struct {
 	config           Config
 	toAttributeRules []toAttributeRule
-	skipExpr         expr.BoolExpr[ottlspan.TransformContext]
+	skipExpr         expr.BoolExpr[*ottlspan.TransformContext]
 }
 
 // toAttributeRule is the compiled equivalent of config.ToAttributes field.
@@ -79,7 +79,9 @@ func (sp *spanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if sp.skipExpr != nil {
-					skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ils, rs))
+					tCtx := ottlspan.NewTransformContextPtr(span, scope, resource, ils, rs)
+					skip, err := sp.skipExpr.Eval(ctx, tCtx)
+					tCtx.Close()
 					if err != nil {
 						return td, err
 					}

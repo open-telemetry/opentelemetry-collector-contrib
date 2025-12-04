@@ -1928,11 +1928,11 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 func Test_ProcessTraces_TraceContext(t *testing.T) {
 	tests := []struct {
 		statement string
-		want      func(_ ottlspan.TransformContext)
+		want      func(*ottlspan.TransformContext)
 	}{
 		{
 			statement: `set(attributes["entrypoint-root"], name) where IsRootSpan()`,
-			want: func(tCtx ottlspan.TransformContext) {
+			want: func(tCtx *ottlspan.TransformContext) {
 				tCtx.GetSpan().Attributes().PutStr("entrypoint-root", "operationB")
 			},
 		},
@@ -1941,8 +1941,8 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
-			funcs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
-			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
+			funcs := ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()
+			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactoryNew()
 			funcs[isRootSpanFactory.Name()] = isRootSpanFactory
 			spanParser, err := ottlspan.NewParser(funcs, settings)
 			require.NoError(t, err)
@@ -1950,9 +1950,11 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			require.NoError(t, err)
 
 			tCtx := constructSpanTransformContext()
+			defer tCtx.Close()
 			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
 
 			exTCtx := constructSpanTransformContext()
+			defer exTCtx.Close()
 			tt.want(exTCtx)
 
 			require.NoError(t, ptracetest.CompareResourceSpans(newResourceSpans(exTCtx), newResourceSpans(tCtx)))
@@ -2196,7 +2198,7 @@ func constructLogTransformContextValueExpressions() ottllog.TransformContext {
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
 
-func constructSpanTransformContext() ottlspan.TransformContext {
+func constructSpanTransformContext() *ottlspan.TransformContext {
 	resource := pcommon.NewResource()
 
 	scope := pcommon.NewInstrumentationScope()
@@ -2205,7 +2207,7 @@ func constructSpanTransformContext() ottlspan.TransformContext {
 	td := ptrace.NewSpan()
 	fillSpanOne(td)
 
-	return ottlspan.NewTransformContext(td, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+	return ottlspan.NewTransformContextPtr(td, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 }
 
 func constructSpanEventTransformContext() ottlspanevent.TransformContext {
@@ -2233,7 +2235,7 @@ func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
 	return rl
 }
 
-func newResourceSpans(tCtx ottlspan.TransformContext) ptrace.ResourceSpans {
+func newResourceSpans(tCtx *ottlspan.TransformContext) ptrace.ResourceSpans {
 	rl := ptrace.NewResourceSpans()
 	tCtx.GetResource().CopyTo(rl.Resource())
 	sl := rl.ScopeSpans().AppendEmpty()
