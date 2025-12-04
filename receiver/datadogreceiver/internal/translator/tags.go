@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // See:
@@ -24,7 +24,7 @@ var datadogKnownResourceAttributes = map[string]string{
 	"container_name": string(semconv.ContainerNameKey),
 	"image_name":     string(semconv.ContainerImageNameKey),
 	"image_tag":      string(semconv.ContainerImageTagsKey),
-	"runtime":        string(semconv.ContainerRuntimeKey),
+	"runtime":        string(semconv.ContainerRuntimeNameKey),
 
 	// Cloud-related attributes
 	"cloud_provider": string(semconv.CloudProviderKey),
@@ -63,11 +63,19 @@ var datadogKnownResourceAttributes = map[string]string{
 	"http.url":                     string(semconv.URLFullKey),
 	"http.useragent":               string(semconv.UserAgentOriginalKey),
 
+	// AWS S3
+	"aws.s3.bucket_name":      string(semconv.AWSS3BucketKey),
+	"aws.response.request_id": string(semconv.AWSRequestIDKey),
+	"aws.service":             string(semconv.RPCServiceKey),
+	"aws.operation":           string(semconv.RPCMethodKey),
+
 	// DB
 	"db.type":      string(semconv.DBSystemNameKey),
 	"db.operation": string(semconv.DBOperationNameKey),
-	"db.instance":  string(semconv.DBCollectionNameKey),
+	"db.instance":  string(semconv.DBNamespaceKey),
+	"db.sql.table": string(semconv.DBCollectionNameKey),
 	"db.pool.name": string(semconv.DBClientConnectionPoolNameKey),
+	"db.statement": string(semconv.DBQueryTextKey),
 
 	// Other
 	"process_id":       string(semconv.ProcessPIDKey),
