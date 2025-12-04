@@ -233,6 +233,7 @@ func (r *router[C]) normalizeConditions() {
 
 // registerRouteConsumers registers a consumer for the pipelines configured for each route
 func (r *router[C]) registerRouteConsumers() (err error) {
+routeLoop: // labeled to make it easier to understand the flow of control
 	for _, item := range r.table {
 		route, ok := r.routes[key(item)]
 		if !ok {
@@ -286,6 +287,9 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			}
 			exporters := strings.Join(pipelineNames, ", ")
 			r.logger.Warn(fmt.Sprintf(`Statement %q already exists in the routing table, the route with target pipeline(s) %q will be ignored.`, item.Statement, exporters))
+			// Without this continue, the duplicate's pipelines would overwrite the original
+			// route's consumer, contradicting the warning message above.
+			continue routeLoop
 		}
 
 		consumer, err := r.consumerProvider(item.Pipelines...)
