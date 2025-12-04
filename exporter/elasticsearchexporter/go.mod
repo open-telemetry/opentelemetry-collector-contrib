@@ -8,7 +8,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.19.0
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
-	github.com/klauspost/compress v1.18.1
+	github.com/klauspost/compress v1.18.2
 	github.com/lestrrat-go/strftime v1.1.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0

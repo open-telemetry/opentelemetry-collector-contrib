@@ -85,20 +85,20 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.176 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.9 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.177 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.10 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.9 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.10 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.50.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.1 // indirect
 	github.com/DataDog/go-sqllexer v0.1.9 // indirect
@@ -229,7 +229,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/kamstrup/intmap v0.5.1 // indirect
-	github.com/klauspost/compress v1.18.1 // indirect
+	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect

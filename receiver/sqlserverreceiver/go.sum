@@ -16,8 +16,8 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOEl
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 h1:oygO0locgZJe7PpYPXT5A29ZkwJaPqcva7BVeemZOZs=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2/go.mod h1:wP83P5OoQ5p6ip3ScPr0BAq0BvuPAvacpEuSzyouqAI=
-github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.9 h1:GV2We9GAIYlzopzOXem+zILohFKw+pHTUrKNlhGdR+M=
-github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.9/go.mod h1:d6Jykhk4uM3rDjZln647gRnwK9Z2qYthQbshrfG77Og=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.10 h1:muQxXp+7U4YoYHxVW5NO2xx2V3G9xlK9P1sGBEijn6g=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.10/go.mod h1:09fwpmPZ058CfhFUmSwMd/7OADA/dCP/L0RH3tXsNFY=
 github.com/DataDog/datadog-go/v5 v5.8.1 h1:+GOES5W9zpKlhwHptZVW2C0NLVf7ilr7pHkDcbNvpIc=
 github.com/DataDog/datadog-go/v5 v5.8.1/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.1.9 h1:0R8FnSHGXRtZo70UxgCneL7Yu4PurswUAMb5N3kOIrI=
