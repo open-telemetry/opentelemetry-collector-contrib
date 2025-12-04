@@ -835,11 +835,9 @@ detectors: [ <string> ]
 override: <bool>
 # how often resource detection should be refreshed; if unset, detection runs only once at startup
 refresh_interval: <duration>
-# [DEPRECATED] When included, only attributes in the list will be appended.  Applies to all detectors.
-attributes: [ <string> ]
 ```
 
-Moreover, you have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
+You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
 
 ```yaml
 resourcedetection:
@@ -858,32 +856,6 @@ resourcedetection:
         enabled: true
 ```
 
-### Migration from attributes to resource_attributes
-
-The `attributes` option is deprecated and will be removed soon, from now on you should enable/disable attributes through `resource_attributes`.
-For example, this config:
-
-```yaml
-resourcedetection:
-  detectors: [system]
-  attributes: ['host.name', 'host.id']
-```
-
-can be replaced with:
-
-```yaml
-resourcedetection:
-  detectors: [system]
-  system:
-    resource_attributes:
-      host.name:
-        enabled: true
-      host.id:
-        enabled: true
-      os.type:
-        enabled: false
-```
-
 ### Using the `refresh_interval` parameter
 
 The `refresh_interval` option allows resource attributes to be periodically refreshed without restarting the Collector.
@@ -895,6 +867,24 @@ The `refresh_interval` option allows resource attributes to be periodically refr
 - **Performance impact**: Each refresh re-runs all configured detectors. Values below 5 minutes can increase CPU and memory usage. There is no enforced minimum, but intervals below 1 minute are strongly discouraged.
 
 **Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
+
+## Performance
+
+### Benchmark Tests
+
+This component includes comprehensive benchmark tests for all stable signals. The benchmarks measure the performance of the processor under different configurations:
+
+- **Traces**: `BenchmarkConsumeTracesDefault` and `BenchmarkConsumeTracesAll`
+- **Metrics**: `BenchmarkConsumeMetricsDefault` and `BenchmarkConsumeMetricsAll`
+- **Logs**: `BenchmarkConsumeLogsDefault` and `BenchmarkConsumeLogsAll`
+
+To run the benchmarks locally:
+
+```bash
+go test -bench=. -benchmem
+```
+
+For the latest benchmark results, see the [GitHub Actions workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
 
 ## Ordering
 
