@@ -145,7 +145,7 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Interval: time.Second,
 		},
 		MinFetchSize:          1,
-		MaxFetchSize:          0,
+		MaxFetchSize:          1048576,
 		MaxFetchWait:          250 * time.Millisecond,
 		DefaultFetchSize:      1048576,
 		MaxPartitionFetchSize: 1048576,
@@ -174,6 +174,16 @@ func (c ConsumerConfig) Validate() error {
 			)
 		}
 	}
+
+	// Validate fetch size constraints
+	if c.MaxFetchSize > 0 && c.MinFetchSize > 0 && c.MaxFetchSize < c.MinFetchSize {
+		return fmt.Errorf(
+			"max_fetch_size (%d) cannot be less than min_fetch_size (%d)",
+			c.MaxFetchSize,
+			c.MinFetchSize,
+		)
+	}
+
 	return nil
 }
 

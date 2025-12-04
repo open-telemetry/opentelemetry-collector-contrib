@@ -172,6 +172,9 @@ func TestConsumerConfig(t *testing.T) {
 		"invalid_initial_offset": {
 			expectedErr: "initial_offset should be one of 'latest' or 'earliest'. configured value middle",
 		},
+		"invalid_fetch_size": {
+			expectedErr: "max_fetch_size (100) cannot be less than min_fetch_size (1000)",
+		},
 	})
 }
 
