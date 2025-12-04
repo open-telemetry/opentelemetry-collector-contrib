@@ -183,7 +183,7 @@ func convertSpanEventStatements(pc *ottl.ParserCollection[TracesConsumer], state
 func (tpc *TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (TracesConsumer, error) {
 	pc := ottl.ParserCollection[TracesConsumer](*tpc)
 	if contextStatements.Context != "" {
-		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)
+		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements)
 	}
 	return pc.ParseStatements(contextStatements, ottl.WithContextInferenceConditions(contextStatements.Conditions))
 }
