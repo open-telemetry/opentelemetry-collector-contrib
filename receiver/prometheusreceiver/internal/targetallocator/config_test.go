@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
@@ -227,4 +228,51 @@ func TestCheckTLSConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnmarshalConf(t *testing.T) {
+	t.Run("empty config", func(t *testing.T) {
+		var cfg promConfig.HTTPClientConfig
+		err := unmarshalConf(confmap.NewFromStringMap(map[string]any{}), nil, &cfg)
+		require.NoError(t, err)
+		assert.Zero(t, cfg)
+	})
+
+	t.Run("special YAML characters preserved", func(t *testing.T) {
+		var cfg promConfig.HTTPClientConfig
+		input := map[string]any{
+			"basic_auth": map[string]any{
+				"username": "user",
+				"password": "%password-with-percent",
+			},
+		}
+		err := unmarshalConf(confmap.NewFromStringMap(input), nil, &cfg)
+		require.NoError(t, err)
+		require.NotNil(t, cfg.BasicAuth)
+		assert.Equal(t, "%password-with-percent", string(cfg.BasicAuth.Password))
+	})
+
+	t.Run("callback mutates config", func(t *testing.T) {
+		var cfg promConfig.HTTPClientConfig
+		input := map[string]any{
+			"basic_auth": map[string]any{
+				"username": "original",
+			},
+		}
+		cb := func(m map[string]any) {
+			m["basic_auth"].(map[string]any)["username"] = "mutated"
+		}
+		require.NoError(t, unmarshalConf(confmap.NewFromStringMap(input), cb, &cfg))
+		require.NotNil(t, cfg.BasicAuth)
+		assert.Equal(t, "mutated", cfg.BasicAuth.Username)
+	})
+
+	t.Run("marshal error", func(t *testing.T) {
+		var cfg promConfig.HTTPClientConfig
+		input := map[string]any{
+			"invalid": make(chan int), // channels can't be marshaled to YAML
+		}
+		err := unmarshalConf(confmap.NewFromStringMap(input), nil, &cfg)
+		require.ErrorContains(t, err, "failed to marshal")
+	})
 }
