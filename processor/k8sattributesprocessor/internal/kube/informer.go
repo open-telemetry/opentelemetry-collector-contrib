@@ -133,18 +133,6 @@ func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFuncWith
 	}
 }
 
-func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListWithContextFunc {
-	return func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-		return client.AppsV1().ReplicaSets(namespace).List(ctx, opts)
-	}
-}
-
-func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFuncWithContext {
-	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-		return client.AppsV1().ReplicaSets(namespace).Watch(ctx, opts)
-	}
-}
-
 func newDeploymentSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
