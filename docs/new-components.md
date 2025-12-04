@@ -58,7 +58,7 @@ the [OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/adding/
 
 If you think your component fits the requisites to be in the opentelemetry-collector-contrib
 repository, you may choose to donate it following the steps on the next section. Your activity,
-community and popularity within your own repository will help you make the case for the component to
+community, and popularity within your own repository will help you make the case for the component to
 be accepted.
 
 ## Adding your component to the opentelemetry-collector-contrib repository
