@@ -55,7 +55,7 @@ func TestGenerateLogFile(t *testing.T) {
 	fileInfo, err := os.Stat(logFilePath)
 	require.NoError(t, err)
 	assert.False(t, fileInfo.IsDir())
-	assert.Greater(t, fileInfo.Size(), int64(0))
+	assert.Positive(t, fileInfo.Size())
 
 	// Read file and verify content
 	content, err := os.ReadFile(logFilePath)
@@ -91,7 +91,7 @@ func TestGenerateLogFileWithDifferentSizes(t *testing.T) {
 
 			fileInfo, err := os.Stat(logFilePath)
 			require.NoError(t, err)
-			assert.Greater(t, fileInfo.Size(), int64(0))
+			assert.Positive(t, fileInfo.Size())
 
 			content, err := os.ReadFile(logFilePath)
 			require.NoError(t, err)

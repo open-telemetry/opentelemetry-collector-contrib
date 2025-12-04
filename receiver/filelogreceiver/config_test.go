@@ -38,17 +38,15 @@ func TestCreateDefaultConfigValues(t *testing.T) {
 	assert.IsType(t, &FileLogConfig{}, cfg)
 
 	// Verify BaseConfig defaults
-	assert.NotNil(t, cfg.BaseConfig.Operators)
-	assert.Empty(t, cfg.BaseConfig.Operators)
+	assert.NotNil(t, cfg.Operators)
+	assert.Empty(t, cfg.Operators)
 
 	// Verify RetryOnFailure defaults
 	expectedRetry := consumerretry.NewDefaultConfig()
-	assert.Equal(t, expectedRetry.Enabled, cfg.BaseConfig.RetryOnFailure.Enabled)
-	assert.Equal(t, expectedRetry.InitialInterval, cfg.BaseConfig.RetryOnFailure.InitialInterval)
-	assert.Equal(t, expectedRetry.MaxInterval, cfg.BaseConfig.RetryOnFailure.MaxInterval)
-	assert.Equal(t, expectedRetry.MaxElapsedTime, cfg.BaseConfig.RetryOnFailure.MaxElapsedTime)
-
-	// Verify InputConfig defaults
+	assert.Equal(t, expectedRetry.Enabled, cfg.RetryOnFailure.Enabled)
+	assert.Equal(t, expectedRetry.InitialInterval, cfg.RetryOnFailure.InitialInterval)
+	assert.Equal(t, expectedRetry.MaxInterval, cfg.RetryOnFailure.MaxInterval)
+	assert.Equal(t, expectedRetry.MaxElapsedTime, cfg.RetryOnFailure.MaxElapsedTime) // Verify InputConfig defaults
 	expectedInput := file.NewConfig()
 	assert.Equal(t, expectedInput.Include, cfg.InputConfig.Include)
 	assert.Equal(t, expectedInput.Exclude, cfg.InputConfig.Exclude)
