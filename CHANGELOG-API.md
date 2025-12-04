@@ -7,6 +7,54 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.141.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: fix pprofile DurationNano to be a TypeUint64 (#44397)
+- `processor/tail_sampling`: Remove only internally relevant fields from samplingpolicy.TraceData. (#44435)
+- `processor/tail_sampling`: Simplify the locking used by the tail sampling (#41656, #43671)
+  There are two small breaking changes as part of this work:
+  1. Pending traces are now passed through the decision logic during shutdown by default. If this is not desired it can be turned off using `drop_pending_traces_on_shutdown`.
+  2. The mutex in `samplingpolicy.TraceData` has been removed and `samplingpolicy.SpanCount` is now an `int64` instead of `*atomic.Int64`. Custom extensions using these fields will need to be updated.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/translator/opencensus`: Deprecate the package (#44641)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Return errors when OTTL context setters receive values of the wrong type (#40198)
+  Introduces `ctxutil.ExpectType` and updates log, metric, and scope setters to surface type assertion failures.
+  
+
+<!-- previous-version -->
+
+## v0.140.1
+
+<!-- previous-version -->
+
+## v0.140.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/carbon`: unexport structs ParsedPath, PlaintextPathParser, function NewParser (#43966)
+- `receiver/carbon`: Unexport PathParserHelper (#43997)
+- `receiver/googlecloudpubsub`: Delete and inline functions used for tests (#43964)
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: add orchestrator explorer support in pkg/datadog/config (#44105)
+- `pkg/datadog`: Expose NewConnectorFactory method to instantiate the Datadog connector with injected dependencies. (#43980)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/translator/zipkin`: Restore Zipkin->OTLP translation API (#44004)
+- `receiver/vcenter`: Skip vSAN collection and logging when all vSAN metrics are disabled (#38489)
+
+<!-- previous-version -->
+
 ## v0.139.0
 
 ### 🛑 Breaking changes 🛑

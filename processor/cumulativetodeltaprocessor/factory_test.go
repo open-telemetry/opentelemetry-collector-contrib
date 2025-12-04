@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +28,12 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &Config{}, cfg)
+
+	cumulativeToDeltaCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+
+	// Default MaxStaleness should be 1 hour
+	assert.Equal(t, 1*time.Hour, cumulativeToDeltaCfg.MaxStaleness)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -72,4 +78,34 @@ func TestCreateProcessors(t *testing.T) {
 			assert.NoError(t, mp.Shutdown(t.Context()))
 		})
 	}
+}
+
+func TestExplicitConfigOverridesDefault(t *testing.T) {
+	factory := NewFactory()
+
+	// Load config with explicit max_staleness value (10s in testdata)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	// Use the "cumulativetodelta" config that has max_staleness: 10s
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub("cumulativetodelta")
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	cumulativeToDeltaCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+
+	// The explicitly configured value (10s) should be used, not the default (1h)
+	assert.Equal(t, 10*time.Second, cumulativeToDeltaCfg.MaxStaleness)
+}
+
+func TestExplicitZeroConfig(t *testing.T) {
+	// Create config with explicitly set zero value
+	cfg := &Config{
+		MaxStaleness: 0,
+	}
+
+	// Verify that explicitly set zero is preserved (user wants infinite retention)
+	assert.Equal(t, time.Duration(0), cfg.MaxStaleness)
 }

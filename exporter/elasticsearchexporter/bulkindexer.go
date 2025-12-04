@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -57,6 +58,17 @@ type bulkIndexerSession interface {
 }
 
 const defaultMaxRetries = 2
+
+const (
+	// errorHintKnownIssues is the hint message for errors that are documented in the Known issues section.
+	errorHintKnownIssues = "check the \"Known issues\" section of Elasticsearch Exporter docs"
+	// errorHintOTelMappingMode is the hint message for illegal_argument_exception when using OTel mapping mode with incompatible Elasticsearch versions.
+	errorHintOTelMappingMode = "OTel mapping mode requires Elasticsearch 8.12+ (see Known issues in README)"
+)
+
+// otelDatasetSuffixRegex matches the .otel-{namespace} suffix pattern in OTel mapping mode indices.
+// Pattern: {signal}-{dataset}.otel-{namespace}
+var otelDatasetSuffixRegex = regexp.MustCompile(`^[^-]+?-[^-]+?\.otel-`)
 
 func newBulkIndexer(
 	client esapi.Transport,
@@ -449,7 +461,12 @@ func getAttributesFromMetadataKeys(ctx context.Context, keys []string) []attribu
 
 func getErrorHint(index, errorType string) string {
 	if strings.HasPrefix(index, ".ds-metrics-") && errorType == "version_conflict_engine_exception" {
-		return "check the \"Known issues\" section of Elasticsearch Exporter docs"
+		return errorHintKnownIssues
+	}
+	// Detect illegal_argument_exception related to require_data_stream when using OTel mapping mode
+	// with Elasticsearch < 8.12. OTel mapping mode indices contain ".otel-" as a dataset suffix.
+	if errorType == "illegal_argument_exception" && otelDatasetSuffixRegex.MatchString(index) {
+		return errorHintOTelMappingMode
 	}
 	return ""
 }

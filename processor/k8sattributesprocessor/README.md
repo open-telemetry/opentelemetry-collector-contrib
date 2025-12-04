@@ -125,7 +125,7 @@ correctly associate the matching container to the resource:
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
 
-Please note, however, that only `container.id` attribute can be used for source rules in the pod_association.
+Please note, however, that only `container.id` attribute can be used for source rules in the pod_association. To use `container.id` in pod association, at least one container attribute must be included in the `metadata` extraction configuration (e.g., `container.id`, `container.image.name`, etc.).
 
 Example for extracting container level attributes:
 
@@ -572,6 +572,10 @@ can be converted with the usage of `ExtractPatterns` function:
 ### `k8sattr.labelsAnnotationsSingular.allow`
 
 The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
+
+This affects both:
+- Runtime attribute extraction from Kubernetes metadata
+- Default tag names in configuration when `tag_name` is not specified
 
 The reason behind this change is to align the Kubernetes related resource attribute keys with the latest semantic conventions.
 

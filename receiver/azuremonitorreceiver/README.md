@@ -7,7 +7,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fazuremonitor%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fazuremonitor) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fazuremonitor%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fazuremonitor) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azuremonitor)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azuremonitor&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@nslaughter](https://www.github.com/nslaughter), [@celian-garcia](https://www.github.com/celian-garcia), [@ishleenk17](https://www.github.com/ishleenk17) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@celian-garcia](https://www.github.com/celian-garcia), [@ishleenk17](https://www.github.com/ishleenk17) |
+| Emeritus      | [@nslaughter](https://www.github.com/nslaughter) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -59,7 +60,21 @@ Authenticating using managed identities has the following optional settings:
 
 ### Filtering metrics
 
-The `metrics` configuration setting is designed to limit scraping to specific metrics and their particular aggregations. It accepts a nested map where the key of the top-level is the Azure Metric Namespace, the key of the nested map is an Azure Metric Name, and the map values are a list of aggregation methods (e.g., Average, Minimum, Maximum, Total, Count). Additionally, the metric map value can be an empty array or an array with one element `*` (asterisk). In this case, the scraper will fetch all supported aggregations for a metric. The letter case of the Namespaces, Metric names, and Aggregations does not affect the functionality.
+The `metrics` configuration setting is designed to **limit** scraping to specific metrics and their particular aggregations.
+It accepts a nested map where 
+- the key of the top-level is the Azure Metric Namespace,
+- the key of the nested map is an Azure Metric Name,
+- and the map values are a list of aggregation methods (e.g., Average, Minimum, Maximum, Total, Count).
+
+> [!NOTE]  
+> - **"All aggregations" shortcut**: The metric map value can be an empty array ``[]`` or an array with one "wildcard" element `[*]`.
+    In this case, the scraper will fetch **all supported aggregations** for that metric, which is also the case if no
+    `metrics` configuration is provided.
+> - **Case Insensitive**: The letter case of the Namespaces, Metric names, and Aggregations does not affect the functionality.
+
+> [!WARNING]  
+> If you started providing a `metrics` configuration for a namespace, you have to specify all the metrics and their 
+> aggregations for that namespace. Otherwise, these metrics will be ignored.
 
 Scraping limited metrics and aggregations:
 
@@ -75,6 +90,7 @@ receivers:
       "microsoft.eventhub/namespaces": # scraper will fetch only the metrics listed below:
         IncomingMessages: [total]     # metric IncomingMessages with aggregation "Total"
         NamespaceCpuUsage: [*]        # metric NamespaceCpuUsage with all known aggregations
+        ActiveConnections: []         # metric ActiveConnections with all known aggregations (same effect than [*])
 ```
 
 ### Use Batch API (experimental)

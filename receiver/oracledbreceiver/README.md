@@ -94,3 +94,26 @@ receivers:
         enabled: true
 ```
 
+## Enabling events.
+
+
+The following is a generic configuration that can be used for the default logs and metrics scraped
+by the oracledb receiver.
+
+```yaml
+receivers:
+  oracledb:
+    collection_interval: 10s                     # interval for overall collection
+    datasource: "oracle://otel:password@localhost:51521/XE"
+    events:
+      db.server.query_sample:
+        enabled: true
+      db.server.top_query:
+        enabled: true
+    top_query_collection:                        # this collection exports the most expensive queries as logs
+      max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N
+      top_query_count: 200                       # The maximum number of queries (N) for which the metrics would be reported
+      collection_interval: 60s                   # collection interval for top query collection specifically
+    query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
+      max_rows_per_query: 100                     # the maximum number of samples to bre reported.
+```

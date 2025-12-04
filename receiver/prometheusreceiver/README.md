@@ -21,10 +21,10 @@ Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 ## ⚠️ Warning
 
 Note: This component is currently work in progress. It has several limitations
-and please don't use it if the following limitations is a concern:
+and please don't use it if the following limitations are a concern:
 
 * Collector cannot auto-scale the scraping yet when multiple replicas of the
-  collector is run. 
+  collector are run. 
 * When running multiple replicas of the collector with the same config, it will
   scrape the targets multiple times.
 * Users need to configure each replica with different scraping configuration
@@ -88,7 +88,7 @@ The prometheus receiver also supports additional top-level options:
 - **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
 - **use_start_time_metric**: When set to true, this enables retrieving the start time of all counter metrics from the process_start_time_seconds metric. This is only correct if all counters on that endpoint started after the process start time, and the process is the only actor exporting the metric after the process started. It should not be used in "exporters" which export counters that may have started before the process itself. Use only if you know what you are doing, as this may result in incorrect rate calculations. Defaults to false.
 - **start_time_metric_regex**: The regular expression for the start time metric, and is only applied when use_start_time_metric is enabled.  Defaults to process_start_time_seconds.
-- **report_extra_scrape_metrics**: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
+- **report_extra_scrape_metrics**: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`. Deprecated; use the feature gate `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics` instead.
 
 Example configuration:
 
@@ -97,7 +97,6 @@ receivers:
     prometheus:
       trim_metric_suffixes: true
       use_start_time_metric: true
-      report_extra_scrape_metrics: true
       start_time_metric_regex: foo_bar_.*
       config:
         scrape_configs:
@@ -181,6 +180,14 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 
 
 ## Feature gates
+
+- `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics`: Extra Prometheus scrape metrics 
+  can be reported by setting this feature gate option. This replaces the deprecated
+  `report_extra_scrape_metrics` configuration flag:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.EnableReportExtraScrapeMetrics"
+```
 
 - `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
   and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
