@@ -25,7 +25,7 @@ import (
 func TestReceiverLifecycle(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
@@ -81,12 +81,12 @@ func TestReceiverLifecycleWithContextCancellation(t *testing.T) {
 	cfg.InputConfig.StartAt = "beginning"
 
 	// Create test file
-	require.NoError(t, os.WriteFile(logFile, []byte("test log\n"), 0600))
+	require.NoError(t, os.WriteFile(logFile, []byte("test log\n"), 0o600))
 
 	sink := new(consumertest.LogsSink)
 
 	// Create context that we'll cancel
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	receiver, err := factory.CreateLogs(ctx, receivertest.NewNopSettings(metadata.Type), cfg, sink)
@@ -99,7 +99,7 @@ func TestReceiverLifecycleWithContextCancellation(t *testing.T) {
 	cancel()
 
 	// Shutdown should still work
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -107,7 +107,7 @@ func TestReceiverLifecycleWithContextCancellation(t *testing.T) {
 func TestReceiverMultipleStartStop(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
@@ -128,9 +128,9 @@ func TestReceiverMultipleStartStop(t *testing.T) {
 			require.NoError(t, err)
 
 			// Write a log
-			f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+			f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 			require.NoError(t, err)
-			_, err = f.WriteString(fmt.Sprintf("log cycle %d\n", i))
+			_, err = fmt.Fprintf(f, "log cycle %d\n", i)
 			require.NoError(t, err)
 			require.NoError(t, f.Close())
 
@@ -143,14 +143,14 @@ func TestReceiverMultipleStartStop(t *testing.T) {
 	}
 
 	// Verify we got logs from all cycles
-	assert.Greater(t, sink.LogRecordCount(), 0)
+	assert.Positive(t, sink.LogRecordCount())
 }
 
 // TestReceiverShutdownWithoutStart tests that shutdown works even if start wasn't called
 func TestReceiverShutdownWithoutStart(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
@@ -171,7 +171,7 @@ func TestReceiverShutdownWithoutStart(t *testing.T) {
 func TestReceiverWithEmptyIncludeList(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
@@ -232,7 +232,7 @@ func TestReceiverInitializationWithValidConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			factory := NewFactory()
 			cfg := createDefaultConfig()
 			tempDir := t.TempDir()
@@ -267,14 +267,14 @@ func TestContextPropagation(t *testing.T) {
 	cfg.InputConfig.StartAt = "beginning"
 
 	// Create a test file
-	require.NoError(t, os.WriteFile(logFile, []byte("test log\n"), 0600))
+	require.NoError(t, os.WriteFile(logFile, []byte("test log\n"), 0o600))
 
 	sink := new(consumertest.LogsSink)
 
 	// Use a context with a value to verify propagation
 	type contextKey string
 	const testKey contextKey = "testKey"
-	ctx := context.WithValue(context.Background(), testKey, "testValue")
+	ctx := context.WithValue(t.Context(), testKey, "testValue")
 
 	receiver, err := factory.CreateLogs(ctx, receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
@@ -292,7 +292,7 @@ func TestContextPropagation(t *testing.T) {
 func TestReceiverStartWithDifferentHosts(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
