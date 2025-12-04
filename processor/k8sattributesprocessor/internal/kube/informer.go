@@ -6,7 +6,6 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	apps_v1 "k8s.io/api/apps/v1"
 	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
@@ -19,6 +18,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const kubeSystemNamespace = "kube-system"
