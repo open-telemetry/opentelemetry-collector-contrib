@@ -195,11 +195,11 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
 				assert.Len(t, sink.AllLogs(), 1)
-				assert.Equal(t, sink.LogRecordCount(), 3)
+				assert.Equal(t, 3, sink.LogRecordCount())
 			},
 			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
 				assert.Len(t, sink.AllMetrics(), 1)
-				assert.Equal(t, sink.DataPointCount(), 2)
+				assert.Equal(t, 2, sink.DataPointCount())
 			},
 		},
 		{
@@ -240,7 +240,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
 				assert.Len(t, sink.AllLogs(), 1)
-				assert.Equal(t, sink.LogRecordCount(), 1)
+				assert.Equal(t, 1, sink.LogRecordCount())
 			},
 		},
 		{
@@ -270,11 +270,11 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
 				assert.Len(t, sink.AllLogs(), 1)
-				assert.Equal(t, sink.LogRecordCount(), 3)
+				assert.Equal(t, 3, sink.LogRecordCount())
 			},
 			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
 				assert.Len(t, sink.AllMetrics(), 1)
-				assert.Equal(t, sink.DataPointCount(), 2)
+				assert.Equal(t, 2, sink.DataPointCount())
 			},
 		},
 		{
@@ -292,7 +292,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				msgBytes2, err := json.Marshal(messages2)
 				require.NoError(t, err)
 
-				combined := strings.Join([]string{string(msgBytes), string(msgBytes2)}, "")
+				combined := string(msgBytes) + string(msgBytes2)
 
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
 				req.Header.Set("Content-Type", "application/not-json")
@@ -318,7 +318,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				msgBytes2, err := json.Marshal(splunkMsg3)
 				require.NoError(t, err)
 
-				combined := strings.Join([]string{string(msgBytes), string(msgBytes2)}, "")
+				combined := string(msgBytes) + string(msgBytes2)
 
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
 				req.Header.Set("Content-Type", "application/not-json")
@@ -344,7 +344,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				msgBytes2, err := json.Marshal(splunkMsg3)
 				require.NoError(t, err)
 
-				combined := strings.Join([]string{string(msgBytes2), string(msgBytes)}, "")
+				combined := string(msgBytes2) + string(msgBytes)
 
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
 				req.Header.Set("Content-Type", "application/not-json")
