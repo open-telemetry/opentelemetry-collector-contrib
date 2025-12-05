@@ -462,11 +462,11 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 	}
 
 	if inferredContext == "" {
-		if parseStatementsOpts.defaultContext != "" {
-			inferredContext = parseStatementsOpts.defaultContext
-		} else {
+		if parseStatementsOpts.defaultContext == "" {
 			return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
 		}
+
+		inferredContext = parseStatementsOpts.defaultContext
 	}
 
 	_, ok := pc.contextParsers[inferredContext]
