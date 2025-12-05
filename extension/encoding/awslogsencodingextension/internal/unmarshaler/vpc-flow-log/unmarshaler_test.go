@@ -43,6 +43,12 @@ func readAndCompressLogFile(t *testing.T, dir, file string) io.Reader {
 	return compressToGZIPReader(t, data)
 }
 
+func readLogFile(t *testing.T, dir, file string) io.Reader {
+	data, err := os.ReadFile(filepath.Join(dir, file))
+	require.NoError(t, err)
+	return bytes.NewReader(data)
+}
+
 func TestUnmarshalLogs_PlainText(t *testing.T) {
 	t.Parallel()
 
@@ -53,6 +59,11 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 		expectedErr          string
 		featureGateEnabled   bool
 	}{
+		"test": {
+			reader:               readLogFile(t, dir, "valid_vpc_flow_from_cw.json"),
+			logsExpectedFilename: "valid_vpc_flow_from_cw_expected.yaml",
+			featureGateEnabled:   false,
+		},
 		"valid_vpc_flow_log": {
 			reader:               readAndCompressLogFile(t, dir, "valid_vpc_flow_log.log"),
 			logsExpectedFilename: "valid_vpc_flow_log_expected.yaml",

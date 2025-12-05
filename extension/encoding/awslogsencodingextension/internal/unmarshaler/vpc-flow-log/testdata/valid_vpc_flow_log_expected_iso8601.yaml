@@ -6,7 +6,7 @@ resourceLogs:
             stringValue: aws
         - key: cloud.account.id
           value:
-            stringValue: "12345678910"
+            stringValue: "123456789010"
     scopeLogs:
       - logRecords:
           - attributes:
@@ -15,15 +15,78 @@ resourceLogs:
                   intValue: "2"
               - key: network.interface.name
                 value:
-                  stringValue: eni-0eb1e4178af74336c
+                  stringValue: eni-1235b8ca123456789
+              - key: source.port
+                value:
+                  intValue: "20641"
+              - key: destination.port
+                value:
+                  intValue: "22"
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: aws.vpc.flow.packets
+                value:
+                  intValue: "20"
+              - key: aws.vpc.flow.bytes
+                value:
+                  intValue: "4249"
               - key: aws.vpc.flow.start
                 value:
-                  stringValue: "2025-03-21T15:14:49Z"
+                  stringValue: "2014-12-14T04:06:50Z"
+              - key: aws.vpc.flow.action
+                value:
+                  stringValue: ACCEPT
               - key: aws.vpc.flow.status
                 value:
-                  stringValue: NODATA
+                  stringValue: OK
+              - key: source.address
+                value:
+                  stringValue: 172.31.16.139
+              - key: destination.address
+                value:
+                  stringValue: 172.31.16.21
             body: {}
-            timeUnixNano: "1742570142000000000"
+            timeUnixNano: "1418530070000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "2"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-1235b8ca123456789
+              - key: source.port
+                value:
+                  intValue: "49761"
+              - key: destination.port
+                value:
+                  intValue: "3389"
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: aws.vpc.flow.packets
+                value:
+                  intValue: "20"
+              - key: aws.vpc.flow.bytes
+                value:
+                  intValue: "4249"
+              - key: aws.vpc.flow.start
+                value:
+                  stringValue: "2014-12-14T04:06:50Z"
+              - key: aws.vpc.flow.action
+                value:
+                  stringValue: REJECT
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: OK
+              - key: source.address
+                value:
+                  stringValue: 172.31.9.69
+              - key: destination.address
+                value:
+                  stringValue: 172.31.9.12
+            body: {}
+            timeUnixNano: "1418530070000000000"
         scope:
           attributes:
             - key: encoding.format
