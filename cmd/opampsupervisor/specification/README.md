@@ -143,8 +143,8 @@ agent:
   # Optional user name to drop the privileges to when running the
   # Collector process.
   run_as: myuser
-  # List of configuration files to be merged to built the Collector's effective
-  # configuratio. It includes a few "special" files. Read the "Config Files" section
+  # List of configuration files to be merged to build the Collector's effective
+  # configuration. It includes a few "special" files. Read the "Config Files" section
   # below for more details.
   config_files:
     - $OPAMP_EXTENSION_CONFIG
