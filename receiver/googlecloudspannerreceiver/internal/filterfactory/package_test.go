@@ -14,6 +14,7 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
 		// Ignore ttlcache goroutines - cache.Start() may not return immediately after Stop()
-		goleak.IgnoreAnyFunction("github.com/jellydator/ttlcache/v3.(*Cache"),
+		// Using IgnoreTopFunction with the full signature including generics placeholder
+		goleak.IgnoreTopFunction("github.com/jellydator/ttlcache/v3.(*Cache[...]).Start"),
 	)
 }
