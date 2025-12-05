@@ -194,12 +194,23 @@ type (
 	}
 )
 
-// createConditionsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
+// createConditionsParserWithConverter creates a parser wrapper that:
+// - Normalizes condition paths by prepending the context name to any path missing one
+// - Parses the normalized conditions via parser.ParseConditions
+// - Converts the parsed result to the collection's return type R
+//
+// The context prepending only affects paths without an explicit context prefix.
+// For example, with context="resource":
+//   - `attributes["env"]` becomes `resource.attributes["env"]`
+//   - `resource.attributes["env"]` stays unchanged (already has context)
+//   - `span.attributes["method"]` stays unchanged (has different context)
 func createConditionsParserWithConverter[K, R any](converter ParsedConditionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ConditionsGetter] {
 	return func(pc *ParserCollection[R], context string, conditions ConditionsGetter) (R, error) {
 		originalConditions := conditions.GetConditions()
 		parsingConditions := make([]string, 0, len(originalConditions))
 		for _, cond := range originalConditions {
+			// prependContextToConditionPaths only modifies paths that lack a recognized context prefix.
+			// Paths that already have a context (e.g., "resource.", "span.") are left unchanged.
 			prependedCondition, err := parser.prependContextToConditionPaths(context, cond)
 			if err != nil {
 				return *new(R), err
