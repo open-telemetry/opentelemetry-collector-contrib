@@ -73,7 +73,7 @@ type routingItem[C any] struct {
 	consumer           C
 	requestCondition   *requestCondition
 	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
-	spanStatement      *ottl.Statement[ottlspan.TransformContext]
+	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
 	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
 	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
 	logStatement       *ottl.Statement[ottllog.TransformContext]
@@ -150,7 +150,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		ottl.WithParserCollectionContext(
 			ottlspan.ContextName,
 			&spanParser,
-			ottl.WithStatementConverter(singleStatementConverter[ottlspan.TransformContext]()),
+			ottl.WithStatementConverter(singleStatementConverter[*ottlspan.TransformContext]()),
 		),
 		ottl.WithParserCollectionContext(
 			ottlmetric.ContextName,
@@ -233,54 +233,9 @@ func (r *router[C]) normalizeConditions() {
 
 // registerRouteConsumers registers a consumer for the pipelines configured for each route
 func (r *router[C]) registerRouteConsumers() (err error) {
-routeLoop: // labeled to make it easier to understand the flow of control
 	for _, item := range r.table {
-		route, ok := r.routes[key(item)]
-		if !ok {
-			route.statementContext = item.Context
-			if item.Context == "request" {
-				route.requestCondition, err = parseRequestCondition(item.Condition)
-				if err != nil {
-					return err
-				}
-			} else {
-				statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
-				var result any
-				if item.Context == "" {
-					// Context is empty, try to infer it
-					// Default to resource context if inference fails or ambiguous (though priorities handle ambiguity)
-					result, err = r.parserCollection.ParseStatements(statementsGetter, ottl.WithDefaultContext(ottlresource.ContextName))
-				} else {
-					// Context is explicit
-					result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter)
-				}
-
-				if err != nil {
-					return err
-				}
-
-				// singleStatementConverter returns the single parsed *ottl.Statement[K]
-				switch s := result.(type) {
-				case *ottl.Statement[ottlresource.TransformContext]:
-					route.resourceStatement = s
-					route.statementContext = "resource"
-				case *ottl.Statement[ottlspan.TransformContext]:
-					route.spanStatement = s
-					route.statementContext = "span"
-				case *ottl.Statement[ottlmetric.TransformContext]:
-					route.metricStatement = s
-					route.statementContext = "metric"
-				case *ottl.Statement[ottldatapoint.TransformContext]:
-					route.dataPointStatement = s
-					route.statementContext = "datapoint"
-				case *ottl.Statement[ottllog.TransformContext]:
-					route.logStatement = s
-					route.statementContext = "log"
-				default:
-					return fmt.Errorf("unexpected statement type: %T", result)
-				}
-			}
-		} else {
+		route, dupeFound := r.routes[key(item)]
+		if dupeFound {
 			var pipelineNames []string
 			for _, pipeline := range item.Pipelines {
 				pipelineNames = append(pipelineNames, pipeline.String())
@@ -289,7 +244,51 @@ routeLoop: // labeled to make it easier to understand the flow of control
 			r.logger.Warn(fmt.Sprintf(`Statement %q already exists in the routing table, the route with target pipeline(s) %q will be ignored.`, item.Statement, exporters))
 			// Without this continue, the duplicate's pipelines would overwrite the original
 			// route's consumer, contradicting the warning message above.
-			continue routeLoop
+			continue
+		}
+
+		route.statementContext = item.Context
+		if item.Context == "request" {
+			route.requestCondition, err = parseRequestCondition(item.Condition)
+			if err != nil {
+				return err
+			}
+		} else {
+			statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
+			var result any
+			if item.Context == "" {
+				// Context is empty, try to infer it
+				// Default to resource context if inference fails or ambiguous (though priorities handle ambiguity)
+				result, err = r.parserCollection.ParseStatements(statementsGetter, ottl.WithDefaultContext(ottlresource.ContextName))
+			} else {
+				// Context is explicit
+				result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter)
+			}
+
+			if err != nil {
+				return err
+			}
+
+			// singleStatementConverter returns the single parsed *ottl.Statement[K]
+			switch s := result.(type) {
+			case *ottl.Statement[ottlresource.TransformContext]:
+				route.resourceStatement = s
+				route.statementContext = "resource"
+			case *ottl.Statement[*ottlspan.TransformContext]:
+				route.spanStatement = s
+				route.statementContext = "span"
+			case *ottl.Statement[ottlmetric.TransformContext]:
+				route.metricStatement = s
+				route.statementContext = "metric"
+			case *ottl.Statement[ottldatapoint.TransformContext]:
+				route.dataPointStatement = s
+				route.statementContext = "datapoint"
+			case *ottl.Statement[ottllog.TransformContext]:
+				route.logStatement = s
+				route.statementContext = "log"
+			default:
+				return fmt.Errorf("unexpected statement type: %T", result)
+			}
 		}
 
 		consumer, err := r.consumerProvider(item.Pipelines...)
@@ -297,7 +296,7 @@ routeLoop: // labeled to make it easier to understand the flow of control
 			return fmt.Errorf("%w: %s", errPipelineNotFound, err.Error())
 		}
 		route.consumer = consumer
-		if !ok {
+		if !dupeFound {
 			r.routeSlice = append(r.routeSlice, route)
 		}
 

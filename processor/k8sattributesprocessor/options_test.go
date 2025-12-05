@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -66,7 +66,7 @@ func TestEnabledAttributes(t *testing.T) {
 		string(conventions.K8SDeploymentNameKey),
 		string(conventions.K8SNodeNameKey),
 		string(conventions.ContainerImageNameKey),
-		string(conventions.ContainerImageTagKey),
+		containerImageTag,
 	}
 	assert.ElementsMatch(t, expected, enabledAttributes())
 }

@@ -32,7 +32,7 @@ func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	for _, f := range DefaultMetricFunctions() {
 		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
 	}
-	for _, f := range DefaultSpanFunctions() {
+	for _, f := range DefaultSpanFunctionsNew() {
 		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
 	}
 	for _, f := range DefaultSpanEventFunctions() {
