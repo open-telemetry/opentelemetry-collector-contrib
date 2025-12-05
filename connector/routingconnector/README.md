@@ -36,7 +36,7 @@ The following settings are available:
 
 - `table (required)`: the routing table for this connector.
 - `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` are supported. If not specified, the context can be inferred from context-qualified paths in the statement/condition (see [Context Inference](#context-inference)).
-- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context.
+- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context. 
 - `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
@@ -44,11 +44,12 @@ The following settings are available:
 
 ### Context Inference
 
-The routing connector supports OTTL context inference, allowing you to write clearer routing conditions using context-qualified paths. Instead of relying on implicit context resolution, you can explicitly specify which context's attributes you want to access.
+The routing connector supports OTTL context inference, allowing you to write clearer routing conditions using context-qualified paths. You can explicitly specify which context's attributes you want to access.
 
 For example, instead of writing:
 
 ```yaml
+# Relies on the default context of 'resource'
 condition: attributes["env"] == "prod"
 ```
 
@@ -71,8 +72,6 @@ This makes it immediately clear that you're accessing the resource's attributes,
 | Datapoint | `datapoint.` | `datapoint.attributes["host"]` |
 
 **Backward compatibility:** Unqualified paths like `attributes["env"]` continue to work and default to the `resource` context for backward compatibility.
-
-**Cross-component compatibility:** Context-qualified statements can be safely copied between the `transformprocessor`, `filterprocessor`, and `routingconnector`.
 
 ### Limitations
 
