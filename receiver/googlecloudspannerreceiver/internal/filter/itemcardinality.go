@@ -4,7 +4,6 @@
 package filter // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -148,10 +147,10 @@ func (f *itemCardinalityFilter) canIncludeNewItem(currentLimitByTimestamp int) b
 }
 
 func (f *itemCardinalityFilter) Shutdown() error {
-	var err error
 	f.stopOnce.Do(func() {
 		f.cache.Stop()
 
+		// Wait for goroutines to finish with timeout
 		done := make(chan struct{})
 		go func() {
 			f.wg.Wait()
@@ -162,11 +161,13 @@ func (f *itemCardinalityFilter) Shutdown() error {
 		case <-done:
 			// Shutdown completed successfully
 		case <-time.After(5 * time.Second):
-			f.logger.Warn("Timeout waiting for ttlcache shutdown", zap.String("metric", f.metricName))
-			err = errors.New("timeout waiting for ttlcache shutdown")
+			// Timeout occurred, but we don't treat this as a fatal error
+			// The goroutine will eventually finish after cache.Start() returns
+			f.logger.Debug("Timeout waiting for ttlcache shutdown, continuing anyway", zap.String("metric", f.metricName))
 		}
 	})
-	return err
+
+	return nil
 }
 
 func groupByTimestamp(items []*Item) map[time.Time][]*Item {
