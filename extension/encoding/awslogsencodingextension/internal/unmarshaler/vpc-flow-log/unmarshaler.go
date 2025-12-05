@@ -26,18 +26,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
-const s3BoundDelimiter = '\n'
-
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 	defaultFormat                 = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
 )
 
-type vpcFlowLogUnmarshaler struct {
-	// fileFormat - VPC flow logs can be sent in plain text
-	// or parquet files to S3.
+type Config struct {
+	// fileFormat - VPC flow logs can be sent in plain text or parquet files to S3.
 	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3-path.html.
-	fileFormat string
+	FileFormat string `mapstructure:"file_format"`
+
+	// Format defines the custom field format of the VPC flow logs.
+	// When defined, this is used for parsing CloudWatch bound VPC flow logs.
+	Format string `mapstructure:"format"`
+
+	// parsedFormat holds the parsed fields from Format.
+	parsedFormat []string
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+type vpcFlowLogUnmarshaler struct {
+	cfg Config
 
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
@@ -47,12 +58,18 @@ type vpcFlowLogUnmarshaler struct {
 }
 
 func NewVPCFlowLogUnmarshaler(
-	format string,
+	cfg Config,
 	buildInfo component.BuildInfo,
 	logger *zap.Logger,
 	vpcFlowStartISO8601FormatEnabled bool,
 ) (unmarshaler.AWSUnmarshaler, error) {
-	switch format {
+	cfg.parsedFormat = defaultFormat
+	if cfg.Format != "" {
+		cfg.parsedFormat = strings.Split(cfg.Format, " ")
+		logger.Debug("Using custom format for VPC flow log unmarshaling", zap.Strings("fields", cfg.parsedFormat))
+	}
+
+	switch cfg.FileFormat {
 	case constants.FileFormatParquet:
 		// TODO
 		return nil, errors.New("still needs to be implemented")
@@ -60,12 +77,13 @@ func NewVPCFlowLogUnmarshaler(
 	default:
 		return nil, fmt.Errorf(
 			"unsupported file fileFormat %q for VPC flow log, expected one of %q",
-			format,
+			cfg.FileFormat,
 			supportedVPCFlowLogFileFormat,
 		)
 	}
+
 	return &vpcFlowLogUnmarshaler{
-		fileFormat:                       format,
+		cfg:                              cfg,
 		buildInfo:                        buildInfo,
 		logger:                           logger,
 		vpcFlowStartISO8601FormatEnabled: vpcFlowStartISO8601FormatEnabled,
@@ -73,7 +91,7 @@ func NewVPCFlowLogUnmarshaler(
 }
 
 func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	switch v.fileFormat {
+	switch v.cfg.FileFormat {
 	case constants.FileFormatPlainText:
 		return v.unmarshalPlainTextLogs(reader)
 	case constants.FileFormatParquet:
@@ -89,41 +107,36 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 	// use buffered reader for efficiency and to avoid any size restrictions
 	bufReader := bufio.NewReader(reader)
 
-	line, err := bufReader.ReadString(s3BoundDelimiter)
+	line, _, err := bufReader.ReadLine()
 	if err != nil {
-		if err == io.EOF && strings.HasPrefix(line, "{") {
-			// Dealing with a JSON logs, so check for CW bound trigger
-			return v.fromCWTrigger(defaultFormat, line)
-		}
-
 		// Nothing that can be handled
 		return plog.Logs{}, fmt.Errorf("error reading first line of VPC logs: %w", err)
 	}
 
+	if line[0] == '{' {
+		// Dealing with a JSON logs, so check for CW bound trigger
+		return v.fromCWTrigger(v.cfg.parsedFormat, line)
+	}
+
 	// This is S3 bound data hence expect first line to have the fields
 	// Since we already read the first line, we can split and pass it
-	fields := strings.Split(trimSuffixHelper(line, s3BoundDelimiter), " ")
+	fields := strings.Split(string(line), " ")
 	return v.fromS3(fields, *bufReader)
 }
 
 func (v *vpcFlowLogUnmarshaler) fromS3(fields []string, reader bufio.Reader) (plog.Logs, error) {
 	logs, resourceLogs, scopeLogs := v.createLogs()
 	for {
-		line, err := reader.ReadString(s3BoundDelimiter)
+		line, _, err := reader.ReadLine()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				// pass the last line and exit
-				parseErr := v.addToLogs(resourceLogs, scopeLogs, fields, trimSuffixHelper(line, s3BoundDelimiter))
-				if parseErr != nil {
-					return plog.Logs{}, parseErr
-				}
-
+				// Reached the end of the file
 				break
 			}
 			return plog.Logs{}, fmt.Errorf("error reading VPC logs: %w", err)
 		}
 
-		if err := v.addToLogs(resourceLogs, scopeLogs, fields, trimSuffixHelper(line, s3BoundDelimiter)); err != nil {
+		if err := v.addToLogs(resourceLogs, scopeLogs, fields, string(line)); err != nil {
 			return plog.Logs{}, err
 		}
 	}
@@ -131,9 +144,9 @@ func (v *vpcFlowLogUnmarshaler) fromS3(fields []string, reader bufio.Reader) (pl
 	return logs, nil
 }
 
-func (v *vpcFlowLogUnmarshaler) fromCWTrigger(fields []string, cwContent string) (plog.Logs, error) {
+func (v *vpcFlowLogUnmarshaler) fromCWTrigger(fields []string, cwContent []byte) (plog.Logs, error) {
 	var cwLog events.CloudwatchLogsData
-	err := gojson.NewDecoder(bytes.NewReader([]byte(cwContent))).Decode(&cwLog)
+	err := gojson.NewDecoder(bytes.NewReader(cwContent)).Decode(&cwLog)
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal data as cloudwatch logs event: %w", err)
 	}
@@ -418,12 +431,6 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 	}
 
 	return true, nil
-}
-
-// trimSuffixHelper trims the given suffix byte from the line
-// Helps to utilize bufio.Reader's ReadString method which includes the delimiter
-func trimSuffixHelper(line string, suffix byte) string {
-	return strings.TrimSuffix(line, string(suffix))
 }
 
 // address stores the four fields related to the address
