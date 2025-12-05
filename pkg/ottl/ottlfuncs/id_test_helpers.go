@@ -35,6 +35,12 @@ func makeIDGetter(bytes []byte) ottl.ByteSliceLikeGetter[any] {
 	}}
 }
 
+// makeLiteralIDGetter creates a literal ByteSliceLikeGetter for benchmarking purposes.
+// This ensures the literal optimization path is taken in newIDExprFunc.
+func makeLiteralIDGetter(bytes []byte) ottl.ByteSliceLikeGetter[any] {
+	return ottl.NewTestingLiteralByteSliceLikeGetter[any](bytes)
+}
+
 func runIDSuccessTests(t *testing.T, builder idExprBuilder, cases []idSuccessTestCase) {
 	t.Helper()
 

@@ -802,3 +802,9 @@ func NewTestingLiteralGetter[K, V any](literal bool, getter typedGetter[K, V]) (
 	}
 	return mockLiteralGetter[K, V]{valueGetter: getter.Get}, nil
 }
+
+// NewTestingLiteralByteSliceLikeGetter creates a literal ByteSliceLikeGetter for testing OTTL functions.
+// The returned getter implements literalGetter, so GetLiteralValue will return the bytes.
+func NewTestingLiteralByteSliceLikeGetter[K any](bytes []byte) ByteSliceLikeGetter[K] {
+	return newLiteral[K, []byte](bytes)
+}
