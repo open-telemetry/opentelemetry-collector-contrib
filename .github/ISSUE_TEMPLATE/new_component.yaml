@@ -16,8 +16,8 @@ body:
     attributes:
       label: Existing component implementation
       description: Provide a URL for the existing repository where the component code is located.
-      validations:
-        required: true
+    validations:
+      required: true
   - type: textarea
     attributes:
       label: Components covering similar use cases
@@ -47,7 +47,7 @@ body:
       description: Code owners are responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
         Please list three or more OpenTelemetry members who will serve as code owners.
         One of them must be an approver or maintainer in this repository (it can be the same person as the sponsor).
-        Having at least two code owners before opening the issue is strongly recommended. However, you may use the issue to try to find code owners for your component.
+        Having at least two code owners before opening the issue is strongly recommended. However, you may use the issue to try to find enough code owners for your component to meet the minimum required number of three.
     validations:
       required: true
   - type: input

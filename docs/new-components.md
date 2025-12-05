@@ -1,7 +1,9 @@
 # Donating new components
 
 This page explains how to add your own components to an OpenTelemetry Collector and how to donate
-them to the opentelemetry-collector-contrib repository.
+them to the
+[opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+repository.
 
 The OpenTelemetry Collector has a pluggable architecture that allows you to build your own
 [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom
@@ -11,19 +13,30 @@ your component in this repository to be able to use or distribute your component
 it in your own repository as a Go module and add it to the [OpenTelemetry
 registry](https://opentelemetry.io/ecosystem/registry/).
 
-To donate your component you need to start by hosting your component outside of this
-repository as a first step. This gives you time to develop your component and gather community feedback.
+To donate your component you need to start by hosting your component outside of this repository as a
+first step. This gives you time to develop your component and gather community feedback.
 
-## Hosting your component outside of opentelemetry-collector-contrib
+## Hosting your component outside of the [opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib) repository
+
+This section explains how to go from a component idea to publishing and distributing your component.
+
+### Exploring available options
+
+Before building a new component, check if existing components on the [OpenTelemetry
+registry](https://opentelemetry.io/ecosystem/registry/?s=&component=all&language=collector&flag=all)
+can be a good fit for your use case. You can ask on the CNCF Slack #otel-collector channel to
+understand how you may leverage existing components for your use case.
+
+### Building your component
 
 Components refer to connectors, exporters, extensions, processors, and receivers. As a first step,
-we require that you **build** your component outside of the opentelemetry-collector-contrib
-repository. This is also the fastest way to start using your component and to publish it for others to
-consume if you want to. 
+we require that you build your component outside of the [opentelemetry-collector-contrib
+repository](https://github.com/open-telemetry/opentelemetry-collector-contrib). This is also the
+fastest way to start using your component and to publish it for others to consume if you want to. 
 
-A component is a Go module (library) built using the
-`go.opentelemetry.io/collector` set of libraries. These libraries contain examples (e.g. see the
-example on the [`go.opentelemetry.io/collector/exporter` module
+A component is a Go module (library) built using the `go.opentelemetry.io/collector` set of
+libraries. These libraries contain examples (e.g. see the example on the
+[`go.opentelemetry.io/collector/exporter` module
 documentation](https://pkg.go.dev/go.opentelemetry.io/collector/exporter)). The official
  documentation also has a section on how to [build various kinds of
 components](https://opentelemetry.io/docs/collector/building/). You can also use existing
@@ -35,14 +48,18 @@ implementations on this repository as a reference. The key criteria to implement
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
 
-To **use** your component you can use the [OpenTelemetry Collector
+### Using your component
+
+To use your component you can use the [OpenTelemetry Collector
 Builder](https://opentelemetry.io/docs/collector/custom-collector/). Even if you don't publish your
 component, you may [specify a local folder using the `replaces` option of the
 builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder#configuration)
 to include it in your build.
 
-If you want to **publish** your component for other people to try it out, you can do so for free
-using Github or other git forges. To do so, you need to [publish your component as a Go
+### Publishing your component
+
+If you want to publish your component for other people to try it out, you can do so for free using
+Github or other git forges. To do so, you need to [publish your component as a Go
 module](https://go.dev/doc/modules/publishing). You can publish multiple components from a single
 repository by including the path to the component in the tag: for example, the [`filelog`
 receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver#file-log-receiver)
@@ -53,24 +70,34 @@ because we pushed the
 git tag to this repository. We recommend you make a release at least every time there is a breaking
 change on any of the Go modules you depend on.
 
-Finally, to **distribute** your component and make sure others can easily discover it, add it to
-the [OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/adding/).
+### Distributing your component
 
-If you think your component fits the requisites to be in the opentelemetry-collector-contrib
-repository, you may choose to donate it following the steps on the next section. Your activity,
-community, and popularity within your own repository will help you make the case for the component to
-be accepted.
+Finally, to distribute your component and make sure others can easily discover it, add it to the
+[OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/adding/).
 
-## Adding your component to the opentelemetry-collector-contrib repository
+If you think your component fits the requisites to be in this repository, you may choose to donate
+it following the steps on the next section. Your activity, community, and popularity within your own
+repository will help you make the case for the component to be accepted.
 
-After you have gotten some real usage of your component outside of contrib, you can contribute it to this repository.
-When you are ready to propose adding your component to this repository, [open an
+## Adding your component to the [opentelemetry-collector-contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+
+After you have gotten some usage of your component outside of the [opentelemetry-collector-contrib
+repository](https://github.com/open-telemetry/opentelemetry-collector-contrib), you can contribute
+it to this repository. When you are ready to propose adding your component to this repository, [open
+an
 issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=Component+donation%3A+)
 providing the following information:
 
-* The GitHub handle of the **sponsor** for your component. A sponsor is an [approver or maintainer](https://github.com/open-telemetry/opentelemetry-collector-contrib?tab=readme-ov-file#contributing) who will be the
-  official reviewer of the code and may also be a code owner. You will need to get consent from this individual to volunteer as a sponsor for your component. The sponsor must be from a different company than
-  you. You can use the #otel-collector-dev CNCF Slack channel and the Collector SIG meetings to announce your intention to donate a component and see if any maintainers or approvers would be interested in sponsoring it. Please note that it is not guaranteed you will find a sponsor, as it depends on the availability of approvers and maintainers to assume responsibility for reviewing the component and maintaining it. If you are unable to find a sponsor, you can still continue to use your component as published in your own repository.
+* The GitHub handle of the **sponsor** for your component. A sponsor is an [approver or
+  maintainer](https://github.com/open-telemetry/opentelemetry-collector-contrib?tab=readme-ov-file#contributing)
+  who will be the official reviewer of the code and may also be a code owner. You will need to get
+  consent from this individual to volunteer as a sponsor for your component. The sponsor must be
+  from a different company than you. You can use the #otel-collector-dev CNCF Slack channel and the
+  Collector SIG meetings to announce your intention to donate a component and see if any maintainers
+  or approvers would be interested in sponsoring it. Please note that it is not guaranteed you will
+  find a sponsor, as it depends on the availability of approvers and maintainers to assume
+  responsibility for reviewing the component and maintaining it. If you are unable to find a
+  sponsor, you can still continue to use your component as published in your own repository.
 * The GitHub handles of the **codeowners** for your component. Codeowners are responsible for the component and
   will be pinged for any issues or reviews needed. You need at least three codeowners for your
   component to be accepted, one of which must be an approver or maintainer (which can be the
