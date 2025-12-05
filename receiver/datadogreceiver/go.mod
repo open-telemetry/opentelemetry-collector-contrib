@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.24.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.176
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.9
-	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.9
-	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.9
+	github.com/DataDog/agent-payload/v5 v5.0.177
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.10
+	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.10
+	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.10
 	github.com/DataDog/datadog-api-client-go/v2 v2.50.0
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
@@ -41,15 +41,15 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.9 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.10 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.1 // indirect
 	github.com/DataDog/go-sqllexer v0.1.9 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/ebitengine/purego v0.9.0 // indirect
+	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -98,9 +98,9 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.10 // indirect
-	github.com/tklauser/go-sysconf v0.3.15 // indirect
-	github.com/tklauser/numcpus v0.10.0 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.11 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect

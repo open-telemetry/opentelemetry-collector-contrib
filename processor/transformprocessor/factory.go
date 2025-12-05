@@ -38,7 +38,7 @@ type transformProcessorFactory struct {
 	logFunctions                        map[string]ottl.Factory[ottllog.TransformContext]
 	metricFunctions                     map[string]ottl.Factory[ottlmetric.TransformContext]
 	spanEventFunctions                  map[string]ottl.Factory[ottlspanevent.TransformContext]
-	spanFunctions                       map[string]ottl.Factory[ottlspan.TransformContext]
+	spanFunctions                       map[string]ottl.Factory[*ottlspan.TransformContext]
 	profileFunctions                    map[string]ottl.Factory[ottlprofile.TransformContext]
 	defaultDataPointFunctionsOverridden bool
 	defaultLogFunctionsOverridden       bool
@@ -99,12 +99,21 @@ func WithSpanEventFunctions(spanEventFunctions []ottl.Factory[ottlspanevent.Tran
 	}
 }
 
-// WithSpanFunctions will override the default OTTL span context functions with the provided spanFunctions in the resulting processor.
-// Subsequent uses of WithSpanFunctions will merge the provided spanFunctions with the previously registered functions.
+// Deprecated: [v0.142.0] use WithSpanFunctionsNew.
 func WithSpanFunctions(spanFunctions []ottl.Factory[ottlspan.TransformContext]) FactoryOption {
+	newSpanFunctions := make([]ottl.Factory[*ottlspan.TransformContext], 0, len(spanFunctions))
+	for _, spanFunction := range spanFunctions {
+		newSpanFunctions = append(newSpanFunctions, ottl.NewFactory[*ottlspan.TransformContext](spanFunction.Name(), spanFunction.CreateDefaultArguments(), fromNonPointerFunction(spanFunction.CreateFunction)))
+	}
+	return WithSpanFunctionsNew(newSpanFunctions)
+}
+
+// WithSpanFunctionsNew will override the default OTTL span context functions with the provided spanFunctions in the resulting processor.
+// Subsequent uses of WithSpanFunctions will merge the provided spanFunctions with the previously registered functions.
+func WithSpanFunctionsNew(spanFunctions []ottl.Factory[*ottlspan.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		if !factory.defaultSpanFunctionsOverridden {
-			factory.spanFunctions = map[string]ottl.Factory[ottlspan.TransformContext]{}
+			factory.spanFunctions = map[string]ottl.Factory[*ottlspan.TransformContext]{}
 			factory.defaultSpanFunctionsOverridden = true
 		}
 		factory.spanFunctions = mergeFunctionsToMap(factory.spanFunctions, spanFunctions)
@@ -266,4 +275,16 @@ func (f *transformProcessorFactory) createProfilesProcessor(
 		nextConsumer,
 		proc.ProcessProfiles,
 		xprocessorhelper.WithCapabilities(processorCapabilities))
+}
+
+func fromNonPointerFunction[K any](legacy func(fCtx ottl.FunctionContext, args ottl.Arguments) (ottl.ExprFunc[K], error)) func(fCtx ottl.FunctionContext, args ottl.Arguments) (ottl.ExprFunc[*K], error) {
+	return func(fCtx ottl.FunctionContext, args ottl.Arguments) (ottl.ExprFunc[*K], error) {
+		legacyExpr, err := legacy(fCtx, args)
+		if err != nil {
+			return nil, err
+		}
+		return func(ctx context.Context, tCtx *K) (any, error) {
+			return legacyExpr(ctx, *tCtx)
+		}, nil
+	}
 }
