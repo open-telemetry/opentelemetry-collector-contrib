@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/splunkhecreceiver
+component: receiver/splunk_hec
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Support parsing JSON array payloads in Splunk HEC receiver
