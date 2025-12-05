@@ -26,15 +26,13 @@ func TestPushTraceData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
-
-	err = config.Validate()
-	require.NoError(t, err)
+	require.NoError(t, config.Validate())
 
 	exporter := newTracesExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
 
 	ctx := t.Context()
 
-	client, err := createDorisHTTPClient(ctx, config, nil, componenttest.NewNopTelemetrySettings())
+	client, err := createDorisHTTPClient(ctx, config, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client)
 
@@ -44,13 +42,15 @@ func TestPushTraceData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
+	srvMux := http.NewServeMux()
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
+		Handler:     srvMux,
 	}
 
 	go func() {
-		http.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
+		srvMux.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"Status":"Success"}`))
 		})
@@ -81,7 +81,7 @@ func simpleTraces(count int) ptrace.Traces {
 	ss.Scope().SetDroppedAttributesCount(20)
 	ss.Scope().Attributes().PutStr("lib", "doris")
 	timestamp := time.Now()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := ss.Spans().AppendEmpty()
 		s.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		s.SetSpanID([8]byte{1, 2, 3, byte(i)})

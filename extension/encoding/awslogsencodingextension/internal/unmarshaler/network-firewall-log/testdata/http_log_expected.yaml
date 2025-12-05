@@ -1,0 +1,60 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: aws.networkfirewall.name
+          value:
+            stringValue: test-firewall
+        - key: cloud.availability_zone
+          value:
+            stringValue: us-east-1a
+    scopeLogs:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: ""
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.networkfirewall
+        logRecords:
+          - observedTimeUnixNano: "0"
+            timeUnixNano: "1760956245123000000"
+            attributes:
+              - key: aws.networkfirewall.event.type
+                value:
+                  stringValue: http
+              - key: aws.networkfirewall.flow_id
+                value:
+                  intValue: "1234567893"
+              - key: source.address
+                value:
+                  stringValue: 192.168.1.100
+              - key: source.port
+                value:
+                  intValue: "54324"
+              - key: destination.address
+                value:
+                  stringValue: 10.0.1.53
+              - key: destination.port
+                value:
+                  intValue: "80"
+              - key: network.transport
+                value:
+                  stringValue: TCP
+              - key: url.domain
+                value:
+                  stringValue: example.com
+              - key: url.path
+                value:
+                  stringValue: /api/v1/users
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+              - key: http.request.header.content-type
+                value:
+                  stringValue: application/json
+              - key: http.request.header.cookie
+                value:
+                  stringValue: session_id=abc123; user_pref=dark_mode

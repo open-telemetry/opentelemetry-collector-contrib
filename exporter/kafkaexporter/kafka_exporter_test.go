@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -30,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -120,9 +120,6 @@ func TestTracesPusher_ctx(t *testing.T) {
 }
 
 func TestTracesPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_traces"
 	expectedTopicFromAttribute := "topic_from_traces_attr_kgo"
@@ -153,8 +150,6 @@ func TestTracesPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestTracesPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"
@@ -572,8 +567,6 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 }
 
 func TestMetricsDataPusher_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	config := createDefaultConfig().(*Config)
 
 	exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
@@ -602,9 +595,6 @@ func TestMetricsDataPusher_Kgo(t *testing.T) {
 }
 
 func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_metrics"
 	expectedTopicFromAttribute := "topic_from_metrics_attr_kgo"
@@ -781,8 +771,6 @@ func TestLogsDataPusher_ctx(t *testing.T) {
 }
 
 func TestLogsDataPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_logs"
 	expectedTopicFromAttribute := "topic_from_logs_attr_kgo"
@@ -813,8 +801,6 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_logs_topic_from_ctx"
@@ -982,6 +968,90 @@ func TestLogsPusher_partitioning(t *testing.T) {
 		assert.Equal(t, keys[0], keys[1])
 		assert.NotEqual(t, keys[0], keys[2])
 	})
+	t.Run("trace_id_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionLogsByTraceID = true
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+
+		// Build input with three ResourceLogs: two share the same TraceID, one has a different TraceID.
+		in := plog.NewLogs()
+		var rls []plog.ResourceLogs
+		tid1 := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+		tid2 := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2})
+
+		makeResourceLogs := func(tid pcommon.TraceID) plog.ResourceLogs {
+			rl := in.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("service.name", "svc")
+			sl := rl.ScopeLogs().AppendEmpty()
+			lr := sl.LogRecords().AppendEmpty()
+			lr.SetTraceID(tid)
+			return rl
+		}
+		rl1 := makeResourceLogs(tid1)
+		rl2 := makeResourceLogs(tid1)
+		rl3 := makeResourceLogs(tid2)
+		rls = append(rls, rl1, rl2, rl3)
+
+		var keys [][]byte
+		for i := 0; i < len(rls); i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					value, err := msg.Value.Encode()
+					require.NoError(t, err)
+					output, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs(value)
+					require.NoError(t, err)
+
+					require.Equal(t, 1, output.ResourceLogs().Len())
+					assert.NoError(t, plogtest.CompareResourceLogs(
+						rls[i],
+						output.ResourceLogs().At(0),
+					))
+
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(t.Context(), in)
+		require.NoError(t, err)
+
+		require.Len(t, keys, 3)
+		// Keys should be the hex TraceID only, identical for same TraceID, different otherwise.
+		expected1 := []byte(traceutil.TraceIDToHexOrEmptyString(tid1))
+		expected2 := []byte(traceutil.TraceIDToHexOrEmptyString(tid2))
+		assert.Equal(t, expected1, keys[0])
+		assert.Equal(t, expected1, keys[1])
+		assert.Equal(t, expected2, keys[2])
+		assert.NotEqual(t, keys[0], keys[2])
+	})
+
+	// ensure that when TraceID partitioning is enabled but a log record has no TraceID,
+	// the exporter falls back to default partitioning (nil key).
+	t.Run("trace_id_partitioning_missing_traceid_defaults_to_nil_key", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionLogsByTraceID = true
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "svc")
+		sl := rl.ScopeLogs().AppendEmpty()
+		_ = sl.LogRecords().AppendEmpty()
+
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+			func(msg *sarama.ProducerMessage) error {
+				if msg.Key != nil {
+					return fmt.Errorf("expected nil key for missing TraceID, got %v", msg.Key)
+				}
+				return nil
+			},
+		)
+
+		require.NoError(t, exp.exportData(t.Context(), in))
+	})
 }
 
 func TestProfilesPusher(t *testing.T) {
@@ -1067,9 +1137,6 @@ func TestProfilesPusher_ctx(t *testing.T) {
 }
 
 func TestProfilesPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_profile"
 	expectedTopicFromAttribute := "topic_from_profiles_attr_kgo"
@@ -1100,8 +1167,6 @@ func TestProfilesPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestProfilesPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"
@@ -1379,11 +1444,11 @@ func Test_GetTopic(t *testing.T) {
 			topic := ""
 			switch r := tests[i].resource.(type) {
 			case pmetric.ResourceMetricsSlice:
-				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
+				topic = getTopic[pmetric.ResourceMetrics](tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			case ptrace.ResourceSpansSlice:
-				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
+				topic = getTopic[ptrace.ResourceSpans](tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			case plog.ResourceLogsSlice:
-				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
+				topic = getTopic[plog.ResourceLogs](tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			}
 			assert.Equal(t, tests[i].wantTopic, topic)
 		})

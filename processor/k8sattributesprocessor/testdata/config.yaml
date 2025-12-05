@@ -153,6 +153,9 @@ k8sattributes/bad_filter_label_op:
         value: v1
         op: "unknown"
 
+k8sattributes/deployment_name_from_replicaset:
+  extract:
+    deployment_name_from_replicaset: true
 k8sattributes/bad_filter_field_op:
   filter:
     fields:

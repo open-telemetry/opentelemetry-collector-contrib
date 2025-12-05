@@ -13,6 +13,7 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -21,6 +22,7 @@ import (
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
+	networkfirewall "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
@@ -32,6 +34,17 @@ const (
 	bytesEncoding   = "bytes"
 	parquetEncoding = "parquet"
 )
+
+var vpcFlowStartISO8601FormatFeatureGate *featuregate.Gate
+
+func init() {
+	vpcFlowStartISO8601FormatFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		constants.VPCFlowStartISO8601FormatID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, aws.vpc.flow.start field will be formatted as ISO-8601 string instead of seconds since epoch integer."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43390"),
+	)
+}
 
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
 
@@ -72,6 +85,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			fileFormat,
 			settings.BuildInfo,
 			settings.Logger,
+			vpcFlowStartISO8601FormatFeatureGate.IsEnabled(),
 		)
 		return &encodingExtension{
 			unmarshaler: unmarshaler,
@@ -125,6 +139,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			),
 			format: constants.FormatELBAccessLog,
 		}, nil
+	case constants.FormatNetworkFirewallLog:
+		return &encodingExtension{
+			unmarshaler: networkfirewall.NewNetworkFirewallLogUnmarshaler(settings.BuildInfo),
+			format:      constants.FormatNetworkFirewallLog,
+		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
 		// so we'll only get here if we haven't handled a valid
@@ -176,7 +195,7 @@ func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, err
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case constants.FormatWAFLog, constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudTrailLog, constants.FormatELBAccessLog:
+	case constants.FormatWAFLog, constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudTrailLog, constants.FormatELBAccessLog, constants.FormatNetworkFirewallLog:
 		return e.getReaderForData(buf)
 
 	case constants.FormatS3AccessLog:

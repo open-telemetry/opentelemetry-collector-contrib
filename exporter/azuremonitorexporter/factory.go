@@ -128,9 +128,10 @@ func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings
 	conf := cfg.(*Config)
 	ame := exporters.GetOrAdd(set.ID, func() component.Component {
 		return &azureMonitorExporter{
-			config: conf,
-			logger: set.Logger,
-			packer: newMetricPacker(set.Logger),
+			config:   conf,
+			logger:   set.Logger,
+			packer:   newMetricPacker(set.Logger),
+			settings: set.TelemetrySettings,
 		}
 	})
 

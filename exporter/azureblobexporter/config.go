@@ -26,9 +26,11 @@ type BlobNameFormat struct {
 	MetricsFormat            string            `mapstructure:"metrics_format"`
 	LogsFormat               string            `mapstructure:"logs_format"`
 	TracesFormat             string            `mapstructure:"traces_format"`
+	SerialNumEnabled         bool              `mapstructure:"serial_num_enabled"`
 	SerialNumRange           int64             `mapstructure:"serial_num_range"`
 	SerialNumBeforeExtension bool              `mapstructure:"serial_num_before_extension"`
 	TemplateEnabled          bool              `mapstructure:"template_enabled"`
+	TimeParserEnabled        bool              `mapstructure:"time_parser_enabled"`
 	Params                   map[string]string `mapstructure:"params"`
 }
 

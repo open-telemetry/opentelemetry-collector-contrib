@@ -8,9 +8,6 @@ pkg/ottl
 connector/routingconnector
 internal/pdatautil
 connector/spanmetricsconnector
-internal/common
-pkg/resourcetotelemetry
-exporter/carbonexporter
 internal/grpcutil
 internal/sharedcomponent
 receiver/otelarrowreceiver
@@ -20,6 +17,8 @@ receiver/otelarrowreceiver
 internal/otelarrow
 exporter/otelarrowexporter
 receiver/otelarrowreceiver
+internal/common
+pkg/resourcetotelemetry
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
@@ -67,18 +66,19 @@ confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider
 internal/filter
 connector/countconnector
-pkg/sampling
-processor/probabilisticsamplerprocessor
 exporter/datadogexporter
 processor/tailsamplingprocessor
 connector/datadogconnector
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
+connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
+pkg/sampling
 connector/signaltometricsconnector
+connector/slowsqlconnector
 connector/sumconnector
 exporter/alertmanagerexporter
 exporter/alibabacloudlogserviceexporter
@@ -148,6 +148,7 @@ extension/datadogextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
+extension/encoding/azureencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -157,9 +158,9 @@ extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
 extension/headerssetterextension
-extension/healthcheckextension
 pkg/status
 internal/healthcheck
+extension/healthcheckextension
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
@@ -170,7 +171,6 @@ extension/observer/cfgardenobserver
 internal/docker
 extension/observer/dockerobserver
 extension/observer/ecsobserver
-extension/observer/ecstaskobserver
 extension/observer/hostobserver
 pkg/xk8stest
 extension/observer/k8sobserver
@@ -191,11 +191,13 @@ internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
 processor/k8sattributesprocessor
+processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
 processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
-internal/e2e
+internal/datadog/e2e
+internal/k8sinventory
 internal/kubelet
 internal/sqlquery
 internal/tools
@@ -203,6 +205,7 @@ pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
 pkg/translator/opencensus
+pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
@@ -235,6 +238,7 @@ receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver
 receiver/awsfirehosereceiver
+receiver/awslambdareceiver
 receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver
@@ -257,11 +261,13 @@ receiver/fluentforwardreceiver
 receiver/githubreceiver
 receiver/gitlabreceiver
 receiver/googlecloudmonitoringreceiver
+receiver/googlecloudpubsubpushreceiver
 receiver/googlecloudpubsubreceiver
 receiver/googlecloudspannerreceiver
 receiver/haproxyreceiver
 receiver/httpcheckreceiver
 receiver/huaweicloudcesreceiver
+receiver/icmpcheckreceiver
 receiver/iisreceiver
 receiver/influxdbreceiver
 receiver/jmxreceiver
@@ -275,6 +281,7 @@ receiver/kafkareceiver
 receiver/kubeletstatsreceiver
 receiver/libhoneyreceiver
 receiver/lokireceiver
+receiver/macosunifiedloggingreceiver
 receiver/memcachedreceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
@@ -296,6 +303,7 @@ receiver/purefareceiver
 receiver/purefbreceiver
 receiver/rabbitmqreceiver
 receiver/receivercreator
+receiver/redfishreceiver
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
@@ -321,5 +329,6 @@ receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
 receiver/windowsservicereceiver
+receiver/yanggrpcreceiver
 scraper/zookeeperscraper
 receiver/zookeeperreceiver

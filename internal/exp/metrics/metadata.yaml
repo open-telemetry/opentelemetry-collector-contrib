@@ -1,4 +1,5 @@
 status:
   disable_codecov_badge: true
   codeowners:
-    active: [RichieSams, tombrk]
+    active: [RichieSams]
+    emeritus: [tombrk]

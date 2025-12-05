@@ -39,3 +39,6 @@ awslogs_encoding/cloudtrail:
 
 awslogs_encoding/elbaccess:
   format: elbaccess
+
+awslogs_encoding/networkfirewall:
+  format: networkfirewall

@@ -11,6 +11,13 @@ status:
   unsupported_platforms: [darwin, linux]
 
 attributes:
+  bind_type:
+    name_override: type
+    description: The type of bind to the domain server.
+    type: string
+    enum:
+      - server
+      - client
   direction:
     description: The direction of data flow.
     type: string
@@ -24,13 +31,6 @@ attributes:
     enum:
       - compressed
       - uncompressed
-  value_type:
-    name_override: type
-    description: The type of value sent.
-    type: string
-    enum:
-      - distinguished_names
-      - other
   operation_type:
     name_override: type
     description: The type of operation.
@@ -54,14 +54,92 @@ attributes:
       - success
       - schema_mismatch
       - other
-  bind_type:
+  value_type:
     name_override: type
-    description: The type of bind to the domain server.
+    description: The type of value sent.
     type: string
     enum:
-      - server
-      - client
+      - distinguished_names
+      - other
 metrics:
+  active_directory.ds.bind.rate:
+    description: "The number of binds per second serviced by this domain controller."
+    unit: "{binds}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    attributes: [bind_type]
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.ldap.bind.last_successful.time:
+    description: "The amount of time taken for the last successful LDAP bind."
+    unit: "ms"
+    gauge:
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.ldap.bind.rate:
+    description: "The number of successful LDAP binds per second."
+    unit: "{binds}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.ldap.client.session.count:
+    description: "The number of connected LDAP client sessions."
+    unit: "{sessions}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.ldap.search.rate:
+    description: "The number of LDAP searches per second."
+    unit: "{searches}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.name_cache.hit_rate:
+    description: "The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache."
+    unit: "%"
+    gauge:
+      value_type: double
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.notification.queued:
+    description: "The number of pending update notifications that have been queued to push to clients."
+    unit: "{notifications}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.operation.rate:
+    description: "The number of operations performed per second."
+    unit: "{operations}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    attributes: [operation_type]
+    enabled: true
+    stability:
+      level: development
   active_directory.ds.replication.network.io:
     description: "The amount of network data transmitted by the Directory Replication Agent."
     unit: By
@@ -70,6 +148,38 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [direction, network_data_type]
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.replication.object.rate:
+    description: "The number of objects transmitted by the Directory Replication Agent per second."
+    unit: "{objects}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    attributes: [direction]
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.replication.operation.pending:
+    description: "The number of pending replication operations for the Directory Replication Agent."
+    unit: "{operations}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+  active_directory.ds.replication.property.rate:
+    description: "The number of properties transmitted by the Directory Replication Agent per second."
+    unit: "{properties}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    attributes: [direction]
     enabled: true
     stability:
       level: development
@@ -94,28 +204,6 @@ metrics:
     enabled: true
     stability:
       level: development
-  active_directory.ds.replication.object.rate:
-    description: "The number of objects transmitted by the Directory Replication Agent per second."
-    unit: "{objects}/s"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: double
-    attributes: [direction]
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.replication.property.rate:
-    description: "The number of properties transmitted by the Directory Replication Agent per second."
-    unit: "{properties}/s"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: double
-    attributes: [direction]
-    enabled: true
-    stability:
-      level: development
   active_directory.ds.replication.value.rate:
     description: "The number of values transmitted by the Directory Replication Agent per second."
     unit: "{values}/s"
@@ -124,45 +212,6 @@ metrics:
       aggregation_temporality: cumulative
       value_type: double
     attributes: [direction, value_type]
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.replication.operation.pending:
-    description: "The number of pending replication operations for the Directory Replication Agent."
-    unit: "{operations}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.operation.rate:
-    description: "The number of operations performed per second."
-    unit: "{operations}/s"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: double
-    attributes: [operation_type]
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.name_cache.hit_rate:
-    description: "The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache."
-    unit: "%"
-    gauge:
-      value_type: double
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.notification.queued:
-    description: "The number of pending update notifications that have been queued to push to clients."
-    unit: "{notifications}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
     enabled: true
     stability:
       level: development
@@ -187,17 +236,6 @@ metrics:
     enabled: true
     stability:
       level: development
-  active_directory.ds.bind.rate:
-    description: "The number of binds per second serviced by this domain controller."
-    unit: "{binds}/s"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: double
-    attributes: [bind_type]
-    enabled: true
-    stability:
-      level: development
   active_directory.ds.thread.count:
     description: "The number of threads in use by the directory service."
     unit: "{threads}"
@@ -205,44 +243,6 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.ldap.client.session.count:
-    description: "The number of connected LDAP client sessions."
-    unit: "{sessions}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.ldap.bind.last_successful.time:
-    description: "The amount of time taken for the last successful LDAP bind."
-    unit: "ms"
-    gauge:
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.ldap.bind.rate:
-    description: "The number of successful LDAP binds per second."
-    unit: "{binds}/s"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: double
-    enabled: true
-    stability:
-      level: development
-  active_directory.ds.ldap.search.rate:
-    description: "The number of LDAP searches per second."
-    unit: "{searches}/s"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: double
     enabled: true
     stability:
       level: development

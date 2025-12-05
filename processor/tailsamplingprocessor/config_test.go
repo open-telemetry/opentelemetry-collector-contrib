@@ -87,28 +87,35 @@ func TestLoadConfig(t *testing.T) {
 				},
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
-						Name:         "test-policy-8",
+						Name:             "test-policy-8",
+						Type:             BytesLimiting,
+						BytesLimitingCfg: BytesLimitingCfg{BytesPerSecond: 1024000, BurstCapacity: 2048000},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:         "test-policy-9",
 						Type:         SpanCount,
 						SpanCountCfg: SpanCountCfg{MinSpans: 2},
 					},
 				},
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
-						Name:          "test-policy-9",
+						Name:          "test-policy-10",
 						Type:          TraceState,
 						TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
 					},
 				},
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
-						Name:                "test-policy-10",
+						Name:                "test-policy-11",
 						Type:                BooleanAttribute,
 						BooleanAttributeCfg: BooleanAttributeCfg{Key: "key4", Value: true},
 					},
 				},
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
-						Name: "test-policy-11",
+						Name: "test-policy-12",
 						Type: OTTLCondition,
 						OTTLConditionCfg: OTTLConditionCfg{
 							ErrorMode:           ottl.IgnoreError,

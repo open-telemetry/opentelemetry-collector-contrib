@@ -345,7 +345,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			caps := fmp.Capabilities()
 			assert.True(t, caps.MutatesData)
 			ctx := t.Context()
-			assert.NoError(t, fmp.Start(ctx, nil))
+			assert.NoError(t, fmp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := fmp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
@@ -556,6 +556,16 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		want             func(md pmetric.Metrics)
 		errorMode        ottl.ErrorMode
 	}{
+		{
+			name: "drop resource",
+			conditions: MetricFilters{
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
 		{
 			name: "drop metrics",
 			conditions: MetricFilters{
@@ -784,7 +794,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()
-	rm0.Resource().Attributes().PutStr("host.name", "myhost")
+	rm0.Resource().Attributes().PutStr("host.name", "localhost")
 	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
 	rm0ils0.Scope().SetName("scope")
 	fillMetricOne(rm0ils0.Metrics().AppendEmpty())

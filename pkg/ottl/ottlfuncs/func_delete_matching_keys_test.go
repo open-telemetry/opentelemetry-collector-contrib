@@ -23,26 +23,26 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		pattern string
+		pattern ottl.StringGetter[pcommon.Map]
 		want    func(pcommon.Map)
 	}{
 		{
 			name:    "delete everything",
-			pattern: "test.*",
+			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "test.*", nil }},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.EnsureCapacity(3)
 			},
 		},
 		{
 			name:    "delete attributes that end in a number",
-			pattern: "\\d$",
+			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "\\d$", nil }},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
 			name:    "delete nothing",
-			pattern: "not a matching pattern",
+			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "not a matching pattern", nil }},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -71,10 +71,10 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			}
 
 			exprFunc, err := deleteMatchingKeys(target, tt.pattern)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
@@ -96,9 +96,14 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := deleteMatchingKeys[any](target, "anything")
-	assert.NoError(t, err)
+	pattern := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "anything", nil
+		},
+	}
 
+	exprFunc, err := deleteMatchingKeys(target, pattern)
+	require.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
 }
@@ -113,8 +118,14 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := deleteMatchingKeys[any](target, "anything")
-	assert.NoError(t, err)
+	pattern := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "anything", nil
+		},
+	}
+
+	exprFunc, err := deleteMatchingKeys(target, pattern)
+	require.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
 }
@@ -127,8 +138,13 @@ func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 		},
 	}
 
-	invalidRegexPattern := "*"
-	_, err := deleteMatchingKeys[any](target, invalidRegexPattern)
-	require.Error(t, err)
+	invalidRegexPattern := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "*", nil
+		},
+	}
+	exprFunc, err := deleteMatchingKeys(target, invalidRegexPattern)
+	require.NoError(t, err)
+	_, err = exprFunc(nil, nil)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }

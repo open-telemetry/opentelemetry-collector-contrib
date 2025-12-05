@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/klauspost/compress/zstd"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -64,7 +65,10 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 	}
 
 	encoding := ""
-	if sw.builder.Compression.IsCompressed() {
+	// Only use ContentEncoding for non-archive formats
+	// Archive formats store files compressed permanently (like .tar.gz)
+	// while ContentEncoding is for HTTP transfer compression
+	if sw.builder.Compression.IsCompressed() && !sw.builder.IsCompressed {
 		encoding = string(sw.builder.Compression)
 	}
 
@@ -79,15 +83,20 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		}
 	}
 
-	_, err = sw.uploader.Upload(ctx, &s3.PutObjectInput{
-		Bucket:          aws.String(overrideBucket),
-		Key:             aws.String(sw.builder.Build(now, overridePrefix)),
-		Body:            content,
-		ContentEncoding: aws.String(encoding),
-		StorageClass:    sw.storageClass,
-		ACL:             sw.acl,
-	})
+	uploadInput := &s3.PutObjectInput{
+		Bucket:       aws.String(overrideBucket),
+		Key:          aws.String(sw.builder.Build(now, overridePrefix)),
+		Body:         content,
+		StorageClass: sw.storageClass,
+		ACL:          sw.acl,
+	}
 
+	// Only set ContentEncoding if we have a non-empty encoding value
+	if encoding != "" {
+		uploadInput.ContentEncoding = aws.String(encoding)
+	}
+
+	_, err = sw.uploader.Upload(ctx, uploadInput)
 	return err
 }
 
@@ -101,6 +110,22 @@ func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
 			return nil, err
 		}
 		if err := zipper.Close(); err != nil {
+			return nil, err
+		}
+
+		return content, nil
+	case configcompression.TypeZstd:
+		content := bytes.NewBuffer(nil)
+		zipper, err := zstd.NewWriter(content)
+		if err != nil {
+			return nil, err
+		}
+		_, err = zipper.Write(raw)
+		if err != nil {
+			return nil, err
+		}
+		err = zipper.Close()
+		if err != nil {
 			return nil, err
 		}
 

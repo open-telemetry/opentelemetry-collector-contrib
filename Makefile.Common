@@ -2,7 +2,7 @@
 # the value `-o pipefail` (or `set -o pipefail`) is added to each shell command that make runs
 # otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause
 # test to pass in CI when they should not.
-SHELL = /bin/bash
+SHELL = /usr/bin/env bash
 .SHELLFLAGS = -o pipefail -c
 
 # SRC_ROOT is the top of the source tree.
@@ -90,6 +90,11 @@ GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
 MODERNIZE           := $(TOOLS_BIN_DIR)/modernize
 
+# Tools used by go generate commands
+MDATAGEN := $(TOOLS_BIN_DIR)/mdatagen
+# The githubreceiver uses a "go generate" tool that is not used by other components.
+GENQLIENT := $(TOOLS_BIN_DIR)/genqlient
+
 GOTESTSUM_OPT?= --rerun-fails=1
 
 # BUILD_TYPE should be one of (dev, release).
@@ -158,7 +163,7 @@ ifneq (,$(wildcard ./builtunitetest.test))
 endif
 
 INTEGRATION_TEST_FILES := $(shell find . -name *integration_test.go)
-INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES), $(shell cat $(INTEGRATION_TEST_FILES) | sed -n "s/func \(Test[A-Za-z0-9_]*\).*/\1/p" | xargs | sed "s/ /|/g"))
+INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES),$(shell cat $(INTEGRATION_TEST_FILES) | sed -n "s/func \(Test[A-Za-z0-9_]*\).*/\1/p" | xargs | sed "s/ /|/g"))
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) in `pwd`"
@@ -244,13 +249,31 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 	$(GOFUMPT) -l -w -extra .
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
+.PHONY: generate-tools
+generate-tools: $(MDATAGEN) $(GENQLIENT)
+ifeq ($(GOOS),windows)
+	@echo Adding "exe" extensions to generate tools
+	@for f in $^; do \
+		cp -u "$$f" "$$f.exe"; \
+	done
+endif
+
+# On Windows changing path with absolute path includes ':' even escaping it is not enough to get it to correctly
+# update PATH, so use a relative path when pre-pending to PATH on Windows. Unfortunately, realpath is not portable
+# between mac and GNU based bash so keeping the full path on non-Windows OSes.
+ifeq ($(GOOS),windows)
+    TOOLS_BIN_DIR_PORTABLE?=$(shell realpath --relative-to="$(CURDIR)" "$(TOOLS_BIN_DIR)")
+else
+    TOOLS_BIN_DIR_PORTABLE?=$(TOOLS_BIN_DIR)
+endif
+
 .PHONY: generate
-generate: install-tools
+generate: generate-tools
 ifeq ($(CURDIR),$(SRC_ROOT))
-	PATH="$(TOOLS_BIN_DIR):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 else
-	PATH="$(TOOLS_BIN_DIR):$$PATH" $(GOCMD) generate ./...
+	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(GOCMD) generate ./...
 	$(MAKE) fmt
 endif
 
@@ -269,7 +292,7 @@ modernize: $(MODERNIZE)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.24.0
+	$(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION)
 
 .PHONY: toolchain
 toolchain:

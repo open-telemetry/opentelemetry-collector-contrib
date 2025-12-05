@@ -111,8 +111,11 @@ where `data_stream.type` is `logs` for log records, `metrics` for data points, a
 In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
 The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute > scope attribute > resource attribute)
-   2. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1
-   3. Otherwise, `data_stream.dataset` falls back to `generic` and `data_stream.namespace` falls back to `default`. 
+   2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
+
+      Note that while enabled by default, this behaviour is considered experimental. Some encoding extensions set this field (e.g. [awslogsencodingextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/awslogsencodingextension)), but it is not yet part of Semantic Conventions. There is the potential that the name of this routing field evolves as the [discussion progresses in SemConv](https://github.com/open-telemetry/semantic-conventions/issues/2854). 
+   3. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1
+   4. Otherwise, `data_stream.dataset` falls back to `generic` and `data_stream.namespace` falls back to `default`. 
 
 [^3]: See additional handling in [Document routing exceptions for OTel data mode](#document-routing-exceptions-for-otel-data-mode)
 
@@ -303,7 +306,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
   - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
-- `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [exporterheler docs][exporterhelper].
+- `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.
   - `wait_for_result` (default=false): If `true`, blocks incoming requests until processed.
@@ -312,7 +315,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `queue_size` (default=10): Maximum size the queue can accept.
   - `batch`:
     - `flush_timeout` (default=10s): Time after which batch is exported irrespective of other settings.
-    - `sizer` (default=bytes): Size batches by bytes. Note that bytes here are based on the pdata model and not on the NDJSON docs that will constitute the bulk indexer requests. To address this discrepency the bulk indexers could also flush when their size exceeds the configured max_size due to size of pdata model being smaller than their corresponding NDJSON encoding.
+    - `sizer` (default=bytes): Size batches by bytes. Note that bytes here are based on the pdata model and not on the NDJSON docs that will constitute the bulk indexer requests. To address this discrepancy, the bulk indexers could also flush when their size exceeds the configured max_size due to size of pdata model being smaller than their corresponding NDJSON encoding.
     - `min_size` (default=1MB): Min size of the batch.
     - `max_size` (default=5MB): Max size of the batch. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
 
@@ -360,10 +363,10 @@ when `sending_queue` is enabled with batching support and enrich internal teleme
 ⚠️ This is experimental and may change at any time.
 
 - `metadata_keys` (optional): List of metadata keys that will be used to partition the data
-into batches if [sending_queue][exporterhelper] is enabled with batching support OR
-`batcher::enabled` is set. The keys will also be used to enrich the exporter's internal
-telemetry if defined. The keys are extracted from the client metadata available via the context
-and added to the internal telemetry as attributes.
+into batches if [sending_queue][exporterhelper] is enabled with batching support. With
+batching enabled only these metadata keys are guaranteed to be propagated. The keys will also
+be used to enrich the exporter's internal telemetry if defined. The keys are extracted from
+the client metadata available via the context and added to the internal telemetry as attributes.
 
 NOTE: The metadata keys are converted to lower case as key lookups for client metadata is case insensitive. This means that the metric produced by internal telemetry will also have the attribute in lower case.
 
@@ -415,44 +418,80 @@ exporters:
 
 `elasticsearchexporter` follows ECS mapping defined here: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#elastic-common-schema
 
-When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
+When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level and record-level (log or trace) attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
 
-If the target ECS field name is specified as an empty string (""), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
+If the target ECS field name is specified as an empty string (`""`), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
 
 When "Preserved" is true, the attribute will be preserved in the payload and duplicated as mapped to its ECS equivalent.
 
-| Semantic Convention Name | ECS Name                    | Preserve |
-|--------------------------|-----------------------------|----------|
-| cloud.platform           | cloud.service.name          | false    |
-| container.image.tags     | container.image.tag         | false    |
-| deployment.environment   | service.environment         | false    |
-| host.arch                | host.architecture           | false    |
-| host.name                | host.hostname               | true     |
-| k8s.cluster.name         | orchestrator.cluster.name   | false    |
-| k8s.container.name       | kubernetes.container.name   | false    |
-| k8s.cronjob.name         | kubernetes.cronjob.name     | false    |
-| k8s.daemonset.name       | kubernetes.daemonset.name   | false    |
-| k8s.deployment.name      | kubernetes.deployment.name  | false    |
-| k8s.job.name             | kubernetes.job.name         | false    |
-| k8s.namespace.name       | kubernetes.namespace        | false    |
-| k8s.node.name            | kubernetes.node.name        | false    |
-| k8s.pod.name             | kubernetes.pod.name         | false    |
-| k8s.pod.uid              | kubernetes.pod.uid          | false    |
-| k8s.replicaset.name      | kubernetes.replicaset.name  | false    |
-| k8s.statefulset.name     | kubernetes.statefulset.name | false    |
-| os.description           | host.os.full                | false    |
-| os.name                  | host.os.name                | false    |
-| os.type                  | host.os.platform            | false    |
-| os.version               | host.os.version             | false    |
-| process.executable.path  | process.executable          | false    |
-| process.runtime.name     | service.runtime.name        | false    |
-| process.runtime.version  | service.runtime.version     | false    |
-| service.instance.id      | service.node.name           | false    |
-| telemetry.distro.name    | ""                          | false    |
-| telemetry.distro.version | ""                          | false    |
-| telemetry.sdk.language   | ""                          | false    |
-| telemetry.sdk.name       | ""                          | false    |
-| telemetry.sdk.version    | ""                          | false    |
+When more than one SemConv attribute maps to the same ECS attribute, the converter will map all attributes to the same ECS name.
+This is mean to support backwards compatibility for SemConv attributes that have been renamed/deprecated. 
+The value of the last-mapped attribute will take precedence.
+
+### Resource attribute mapping
+
+| Semantic Convention Name    | ECS Name                    | Preserve |
+|-----------------------------|-----------------------------|----------|
+| client.address              | client.ip                   | false    |
+| cloud.platform              | cloud.service.name          | false    |
+| container.image.tags        | container.image.tag         | false    |
+| deployment.environment      | service.environment         | false    |
+| deployment.environment.name | service.environment         | false    |
+| faas.instance               | faas.id                     | false    |
+| faas.trigger                | faas.trigger.type           | false    |
+| host.arch                   | host.architecture           | false    |
+| host.name                   | host.hostname               | true     |
+| k8s.cluster.name            | orchestrator.cluster.name   | false    |
+| k8s.container.name          | kubernetes.container.name   | false    |
+| k8s.cronjob.name            | kubernetes.cronjob.name     | false    |
+| k8s.daemonset.name          | kubernetes.daemonset.name   | false    |
+| k8s.deployment.name         | kubernetes.deployment.name  | false    |
+| k8s.job.name                | kubernetes.job.name         | false    |
+| k8s.namespace.name          | kubernetes.namespace        | false    |
+| k8s.node.name               | kubernetes.node.name        | false    |
+| k8s.pod.name                | kubernetes.pod.name         | false    |
+| k8s.pod.uid                 | kubernetes.pod.uid          | false    |
+| k8s.replicaset.name         | kubernetes.replicaset.name  | false    |
+| k8s.statefulset.name        | kubernetes.statefulset.name | false    |
+| os.description              | host.os.full                | false    |
+| os.name                     | host.os.name                | false    |
+| os.type                     | host.os.platform            | false    |
+| os.version                  | host.os.version             | false    |
+| process.command_line        | process.args                 | false    |
+| process.executable.name     | process.title                | false    |
+| process.executable.path     | process.executable          | false    |
+| process.parent.pid          | process.parent.pid          | false    |
+| process.runtime.name        | service.runtime.name        | false    |
+| process.runtime.version     | service.runtime.version     | false    |
+| service.instance.id         | service.node.name           | false    |
+| source.address              | source.ip                   | false    |
+| telemetry.distro.name       | ""                          | false    |
+| telemetry.distro.version    | ""                          | false    |
+| telemetry.sdk.language      | ""                          | false    |
+| telemetry.sdk.name          | ""                          | false    |
+| telemetry.sdk.version       | ""                          | false    |
+
+### Log record attribute mapping
+
+| Semantic Convention Name | ECS Name                        | Preserve |
+|--------------------------|---------------------------------|----------|
+| event.name               | event.action                    | false    |
+| exception.message        | error.message                   | false    |
+| exception.stacktrace     | error.stacktrace                | false    |
+| exception.type           | error.type                      | false    |
+| exception.escaped        | event.error.exception.handled   | false    |
+| http.response.body.size  | http.response.encoded_body_size | false    |
+
+### Span attribute mapping
+
+| Semantic Convention Name   | ECS Name                                                  | Preserve |
+|----------------------------|-----------------------------------------------------------|----------|
+| messaging.operation.name   | span.action                                               | false    |
+| db.system                  | span.db.type                                              | false    |
+| db.namespace               | span.db.instance                                          | false    |
+| db.query.text              | span.db.statement                                         | false    |
+| http.response.body.size    | http.response.encoded_body_size                           | false    |
+
 
 ### Compound Mapping
 
@@ -504,6 +543,11 @@ Otherwise, it is mapped to an empty string ("").
 #### `@timestamp`
 
 In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
+
+### `messaging.destination.name`
+
+Maps to `span.message.queue.name` for regular spans, but to `transaction.message.queue.name` when the `processor.event` attribute equals "transaction".
+This attribute is only applicable at the trace level. 
 
 ## Setting a document id dynamically
 
@@ -581,10 +625,41 @@ This gives the exporter the opportunity to group all related metrics into the sa
 Symptom: bulk indexer logs an error that indicates "bulk indexer flush error" with bulk request returning HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
 
 ```
-error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error        {"otelcol.component.id": "elasticsearch", "otelcol.component.kind": "Exporter", "otelcol.signal": "logs", "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"}
+error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error
+{
+  "otelcol.component.id": "elasticsearch",
+  "otelcol.component.kind": "Exporter",
+  "otelcol.signal": "logs",
+  "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"
+}
 ```
 
 This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) sending to Elasticsearch version < 8.12.
 
 To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
 Alternatively, try other mapping modes, but the document structure will be different.
+
+### "dropping cumulative temporality histogram" and "dropping cumulative temporality exponential histogram"
+
+Symptom: `elasticsearchexporter` logs a warning `dropping cumulative temporarily histogram` similar to:
+
+```
+warn    elasticsearchexporter@v0.132.0/exporter.go:340  validation errors
+{
+  "resource": {
+    "service.instance.id": "33ffe7e8-e944-4f92-8fce-9094f4b61d1d",
+    "service.name": "./elastic-agent",
+    "service.version": "9.1.5"
+  },
+  "otelcol.component.id": "elasticsearch/otel",
+  "otelcol.component.kind": "exporter",
+  "otelcol.signal": "metrics",
+  "error": "dropping cumulative temporality histogram \"http.client.request.duration\""
+}
+```
+
+This issue occurs because Elasticsearch does not support **cumulative temporality** for histograms.
+As a workaround, you can either:
+- Export histogram metrics using **delta temporality**, or
+- Apply a `cumulativetodelta` processor.
+For more details, see [Metrics data ingestion](https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#metrics-data-ingestion).

@@ -397,7 +397,7 @@ func countMemoryLimitErrors(msgs []string) (cnt int) {
 			cnt++
 		}
 	}
-	return
+	return cnt
 }
 
 func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
@@ -423,7 +423,7 @@ func countAdmissionLimitErrors(msgs []string) (cnt int) {
 			cnt++
 		}
 	}
-	return
+	return cnt
 }
 
 func failureAdmissionLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
@@ -528,7 +528,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 						cnt++
 					}
 				}
-				return
+				return cnt
 			}
 			rcnt := cf(test.recvSpans.GetSpans())
 			ecnt := cf(test.expSpans.GetSpans())

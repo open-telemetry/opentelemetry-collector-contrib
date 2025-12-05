@@ -52,10 +52,17 @@ var apiDict = map[string]string{
 }
 
 type searchResponse struct {
-	search string
-	Jobid  *string `xml:"sid"`
-	Return int
-	Fields []*field `xml:"result>field"`
+	search     string
+	Jobid      *string `xml:"sid"`
+	Return     int
+	count      int
+	offset     int
+	TotalCount metaField `xml:"meta>fieldOrder>field"`
+	Fields     []*field  `xml:"result>field"`
+}
+
+type metaField struct {
+	Count int `xml:"summary.count,attr"`
 }
 
 type field struct {
@@ -146,7 +153,7 @@ type kvEntry struct {
 
 type kvStatus struct {
 	Current   kvStoreCurrent `json:"current"`
-	KVService kvService      `json:"externalKVStore,omitempty"`
+	KVService kvService      `json:"externalKVStore,omitzero"`
 }
 
 type kvService struct {

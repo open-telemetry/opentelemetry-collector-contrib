@@ -26,7 +26,6 @@ components:
         - azuredataexplorer
         - azuremonitor
         - bmchelix
-        - carbon
         - cassandra
         - clickhouse
         - coralogix
@@ -38,6 +37,7 @@ components:
         - file
         - googlecloud
         - googlecloudpubsub
+        - googlecloudstorage
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
@@ -76,7 +76,6 @@ components:
         - db_storage
         - docker_observer
         - ecs_observer
-        - ecs_task_observer
         - file_storage
         - googleclientauth
         - googlecloudlogentry_encoding
@@ -164,6 +163,7 @@ components:
         - flinkmetrics
         - fluentforward
         - github
+        - gitlab
         - googlecloudmonitoring
         - googlecloudpubsub
         - googlecloudspanner
@@ -221,6 +221,7 @@ components:
         - statsd
         - stef
         - syslog
+        - systemd
         - tcpcheck
         - tcplog
         - tlscheck

@@ -77,6 +77,8 @@ type BasicOperator struct {
 	OperatorID   string
 	OperatorType string
 	set          component.TelemetrySettings
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ID will return the operator id.

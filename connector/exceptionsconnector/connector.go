@@ -36,29 +36,3 @@ func newDimensions(cfgDims []Dimension) []pdatautil.Dimension {
 	}
 	return dims
 }
-
-// getDimensionValue gets the dimension value for the given configured dimension.
-// It searches through the span's attributes first, being the more specific;
-// falling back to searching in resource attributes if it can't be found in the span.
-// Finally, falls back to the configured default value if provided.
-//
-// The ok flag indicates if a dimension value was fetched in order to differentiate
-// an empty string value from a state where no value was found.
-func getDimensionValue(d pdatautil.Dimension, spanAttrs, eventAttrs, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
-	// The more specific span attribute should take precedence.
-	if attr, exists := spanAttrs.Get(d.Name); exists {
-		return attr, true
-	}
-	if attr, exists := eventAttrs.Get(d.Name); exists {
-		return attr, true
-	}
-	// falling back to searching in resource attributes
-	if attr, exists := resourceAttr.Get(d.Name); exists {
-		return attr, true
-	}
-	// Set the default if configured, otherwise this metric will have no value set for the dimension.
-	if d.Value != nil {
-		return *d.Value, true
-	}
-	return v, ok
-}

@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -144,7 +144,9 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
-			setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifierValue[i].Value)
+			if kp.passthroughMode || kp.rules.PodIP {
+				setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifierValue[i].Value)
+			}
 			break
 		}
 	}
@@ -173,7 +175,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 
 		if kp.rules.ServiceNamespace {
-			resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), namespace)
+			setResourceAttribute(resource.Attributes(), string(conventions.ServiceNamespaceKey), namespace)
 		}
 	}
 
@@ -309,7 +311,7 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		setResourceAttribute(attrs, string(conventions.ContainerImageNameKey), containerSpec.ImageName)
 	}
 	if containerSpec.ImageTag != "" {
-		setResourceAttribute(attrs, string(conventions.ContainerImageTagKey), containerSpec.ImageTag)
+		setResourceAttribute(attrs, containerImageTag, containerSpec.ImageTag)
 	}
 	if containerSpec.ServiceInstanceID != "" {
 		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)
@@ -340,8 +342,8 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 			if _, found := attrs.Get(string(conventions.ContainerIDKey)); !found && containerStatus.ContainerID != "" {
 				attrs.PutStr(string(conventions.ContainerIDKey), containerStatus.ContainerID)
 			}
-			if _, found := attrs.Get(containerImageRepoDigests); !found && containerStatus.ImageRepoDigest != "" {
-				attrs.PutEmptySlice(containerImageRepoDigests).AppendEmpty().SetStr(containerStatus.ImageRepoDigest)
+			if _, found := attrs.Get(string(conventions.ContainerImageRepoDigestsKey)); !found && containerStatus.ImageRepoDigest != "" {
+				attrs.PutEmptySlice(string(conventions.ContainerImageRepoDigestsKey)).AppendEmpty().SetStr(containerStatus.ImageRepoDigest)
 			}
 		}
 	}

@@ -306,13 +306,13 @@ func (r *Reader) close() {
 func (r *Reader) Read(dst []byte) (n int, err error) {
 	n, err = r.reader.Read(dst)
 	if n == 0 || err != nil {
-		return
+		return n, err
 	}
 
 	if !r.needsUpdateFingerprint && r.Fingerprint.Len() < r.fingerprintSize {
 		r.needsUpdateFingerprint = true
 	}
-	return
+	return n, err
 }
 
 func (r *Reader) NameEquals(other *Reader) bool {

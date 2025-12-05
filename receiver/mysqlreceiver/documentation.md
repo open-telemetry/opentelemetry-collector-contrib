@@ -18,13 +18,13 @@ The number of data pages in the InnoDB buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of buffer pool data. | Str: ``dirty``, ``clean`` | false |
+| status | The status of buffer pool data. | Str: ``dirty``, ``clean`` | Recommended |
 
 ### mysql.buffer_pool.limit
 
@@ -32,7 +32,7 @@ The configured size of the InnoDB buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### mysql.buffer_pool.operations
 
@@ -40,13 +40,13 @@ The number of operations on the InnoDB buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The buffer pool operations types. | Str: ``read_ahead_rnd``, ``read_ahead``, ``read_ahead_evicted``, ``read_requests``, ``reads``, ``wait_free``, ``write_requests`` | false |
+| operation | The buffer pool operations types. | Str: ``read_ahead_rnd``, ``read_ahead``, ``read_ahead_evicted``, ``read_requests``, ``reads``, ``wait_free``, ``write_requests`` | Recommended |
 
 ### mysql.buffer_pool.page_flushes
 
@@ -54,7 +54,7 @@ The number of requests to flush pages from the InnoDB buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### mysql.buffer_pool.pages
 
@@ -62,13 +62,13 @@ The number of pages in the InnoDB buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The buffer pool pages types. | Str: ``data``, ``free``, ``misc``, ``total`` | false |
+| kind | The buffer pool pages types. | Str: ``data``, ``free``, ``misc``, ``total`` | Recommended |
 
 ### mysql.buffer_pool.usage
 
@@ -76,13 +76,13 @@ The number of bytes in the InnoDB buffer pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of buffer pool data. | Str: ``dirty``, ``clean`` | false |
+| status | The status of buffer pool data. | Str: ``dirty``, ``clean`` | Recommended |
 
 ### mysql.double_writes
 
@@ -90,13 +90,13 @@ The number of writes to the InnoDB doublewrite buffer.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The doublewrite types. | Str: ``pages_written``, ``writes`` | false |
+| kind | The doublewrite types. | Str: ``pages_written``, ``writes`` | Recommended |
 
 ### mysql.handlers
 
@@ -104,13 +104,13 @@ The number of requests to various MySQL handlers.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The handler types. | Str: ``commit``, ``delete``, ``discover``, ``external_lock``, ``mrr_init``, ``prepare``, ``read_first``, ``read_key``, ``read_last``, ``read_next``, ``read_prev``, ``read_rnd``, ``read_rnd_next``, ``rollback``, ``savepoint``, ``savepoint_rollback``, ``update``, ``write`` | false |
+| kind | The handler types. | Str: ``commit``, ``delete``, ``discover``, ``external_lock``, ``mrr_init``, ``prepare``, ``read_first``, ``read_key``, ``read_last``, ``read_next``, ``read_prev``, ``read_rnd``, ``read_rnd_next``, ``rollback``, ``savepoint``, ``savepoint_rollback``, ``update``, ``write`` | Recommended |
 
 ### mysql.index.io.wait.count
 
@@ -118,16 +118,16 @@ The total count of I/O wait events for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | false |
-| table | Table name for event or process. | Any Str | false |
-| schema | The schema of the object. | Any Str | false |
-| index | The name of the index. | Any Str | false |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Recommended |
+| table | Table name for event or process. | Any Str | Recommended |
+| schema | The schema of the object. | Any Str | Recommended |
+| index | The name of the index. | Any Str | Recommended |
 
 ### mysql.index.io.wait.time
 
@@ -135,16 +135,16 @@ The total time of I/O wait events for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | false |
-| table | Table name for event or process. | Any Str | false |
-| schema | The schema of the object. | Any Str | false |
-| index | The name of the index. | Any Str | false |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Recommended |
+| table | Table name for event or process. | Any Str | Recommended |
+| schema | The schema of the object. | Any Str | Recommended |
+| index | The name of the index. | Any Str | Recommended |
 
 ### mysql.locks
 
@@ -152,13 +152,13 @@ The number of MySQL locks.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The table locks type. | Str: ``immediate``, ``waited`` | false |
+| kind | The table locks type. | Str: ``immediate``, ``waited`` | Recommended |
 
 ### mysql.log_operations
 
@@ -166,13 +166,13 @@ The number of InnoDB log operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | false |
+| operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | Recommended |
 
 ### mysql.mysqlx_connections
 
@@ -182,13 +182,13 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The connection status. | Str: ``accepted``, ``closed``, ``rejected`` | false |
+| status | The connection status. | Str: ``accepted``, ``closed``, ``rejected`` | Recommended |
 
 ### mysql.opened_resources
 
@@ -196,13 +196,13 @@ The number of opened resources.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The kind of the resource. | Str: ``file``, ``table_definition``, ``table`` | false |
+| kind | The kind of the resource. | Str: ``file``, ``table_definition``, ``table`` | Recommended |
 
 ### mysql.operations
 
@@ -210,13 +210,13 @@ The number of InnoDB operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | false |
+| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended |
 
 ### mysql.page_operations
 
@@ -224,13 +224,13 @@ The number of InnoDB page operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The page operation types. | Str: ``created``, ``read``, ``written`` | false |
+| operation | The page operation types. | Str: ``created``, ``read``, ``written`` | Recommended |
 
 ### mysql.prepared_statements
 
@@ -238,13 +238,13 @@ The number of times each type of prepared statement command has been issued.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| command | The prepare statement command types. | Str: ``execute``, ``close``, ``fetch``, ``prepare``, ``reset``, ``send_long_data`` | false |
+| command | The prepare statement command types. | Str: ``execute``, ``close``, ``fetch``, ``prepare``, ``reset``, ``send_long_data`` | Recommended |
 
 ### mysql.row_locks
 
@@ -252,13 +252,13 @@ The number of InnoDB row locks.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The row lock type. | Str: ``waits``, ``time`` | false |
+| kind | The row lock type. | Str: ``waits``, ``time`` | Recommended |
 
 ### mysql.row_operations
 
@@ -266,13 +266,13 @@ The number of InnoDB row operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The row operation type. | Str: ``deleted``, ``inserted``, ``read``, ``updated`` | false |
+| operation | The row operation type. | Str: ``deleted``, ``inserted``, ``read``, ``updated`` | Recommended |
 
 ### mysql.sorts
 
@@ -280,13 +280,13 @@ The number of MySQL sorts.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The sort count type. | Str: ``merge_passes``, ``range``, ``rows``, ``scan`` | false |
+| kind | The sort count type. | Str: ``merge_passes``, ``range``, ``rows``, ``scan`` | Recommended |
 
 ### mysql.table.io.wait.count
 
@@ -294,15 +294,15 @@ The total count of I/O wait events for a table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | false |
-| table | Table name for event or process. | Any Str | false |
-| schema | The schema of the object. | Any Str | false |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Recommended |
+| table | Table name for event or process. | Any Str | Recommended |
+| schema | The schema of the object. | Any Str | Recommended |
 
 ### mysql.table.io.wait.time
 
@@ -310,15 +310,15 @@ The total time of I/O wait events for a table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | development |
+| ns | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | false |
-| table | Table name for event or process. | Any Str | false |
-| schema | The schema of the object. | Any Str | false |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Recommended |
+| table | Table name for event or process. | Any Str | Recommended |
+| schema | The schema of the object. | Any Str | Recommended |
 
 ### mysql.threads
 
@@ -326,13 +326,13 @@ The state of MySQL threads.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The thread count type. | Str: ``cached``, ``connected``, ``created``, ``running`` | false |
+| kind | The thread count type. | Str: ``cached``, ``connected``, ``created``, ``running`` | Recommended |
 
 ### mysql.tmp_resources
 
@@ -340,13 +340,13 @@ The number of created temporary resources.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| resource | The kind of temporary resources. | Str: ``disk_tables``, ``files``, ``tables`` | false |
+| resource | The kind of temporary resources. | Str: ``disk_tables``, ``files``, ``tables`` | Recommended |
 
 ### mysql.uptime
 
@@ -354,7 +354,7 @@ The number of seconds that the server has been up.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 ## Optional Metrics
 
@@ -372,13 +372,13 @@ The number of transmitted bytes between server and clients.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The name of the transmission direction. | Str: ``received``, ``sent`` | false |
+| kind | The name of the transmission direction. | Str: ``received``, ``sent`` | Recommended |
 
 ### mysql.commands
 
@@ -386,13 +386,13 @@ The number of times each type of command has been executed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| command | The command types. | Str: ``delete``, ``delete_multi``, ``insert``, ``select``, ``update``, ``update_multi`` | false |
+| command | The command types. | Str: ``delete``, ``delete_multi``, ``insert``, ``select``, ``update``, ``update_multi`` | Recommended |
 
 ### mysql.connection.count
 
@@ -400,7 +400,7 @@ The number of connection attempts (successful or not) to the MySQL server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### mysql.connection.errors
 
@@ -408,13 +408,13 @@ Errors that occur during the client connection process.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | false |
+| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended |
 
 ### mysql.joins
 
@@ -422,13 +422,13 @@ The number of joins that perform table scans.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` | false |
+| kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` | Recommended |
 
 ### mysql.max_used_connections
 
@@ -436,7 +436,7 @@ Maximum number of connections used simultaneously since the server started.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 ### mysql.mysqlx_worker_threads
 
@@ -446,13 +446,13 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The worker thread count kind. | Str: ``available``, ``active`` | false |
+| kind | The worker thread count kind. | Str: ``available``, ``active`` | Recommended |
 
 ### mysql.page_size
 
@@ -460,7 +460,7 @@ InnoDB page size.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### mysql.query.client.count
 
@@ -468,7 +468,7 @@ The number of statements executed by the server. This includes only statements s
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### mysql.query.count
 
@@ -476,7 +476,7 @@ The number of statements executed by the server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### mysql.query.slow.count
 
@@ -484,7 +484,7 @@ The number of slow queries.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ### mysql.replica.sql_delay
 
@@ -492,7 +492,7 @@ The number of seconds that the replica must lag the source.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | false | development |
+| s | Sum | Int | Cumulative | false | Development |
 
 ### mysql.replica.time_behind_source
 
@@ -500,7 +500,7 @@ This field is an indication of how “late” the replica is.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | false | development |
+| s | Sum | Int | Cumulative | false | Development |
 
 ### mysql.statement_event.count
 
@@ -508,16 +508,16 @@ Summary of current and recent statement events.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | false |
-| digest | Digest. | Any Str | false |
-| digest_text | Text before digestion. | Any Str | false |
-| kind | Possible event states. | Str: ``errors``, ``warnings``, ``rows_affected``, ``rows_sent``, ``rows_examined``, ``created_tmp_disk_tables``, ``created_tmp_tables``, ``sort_merge_passes``, ``sort_rows``, ``no_index_used`` | false |
+| schema | The schema of the object. | Any Str | Recommended |
+| digest | Digest. | Any Str | Recommended |
+| digest_text | Text before digestion. | Any Str | Recommended |
+| kind | Possible event states. | Str: ``errors``, ``warnings``, ``rows_affected``, ``rows_sent``, ``rows_examined``, ``created_tmp_disk_tables``, ``created_tmp_tables``, ``sort_merge_passes``, ``sort_rows``, ``no_index_used`` | Recommended |
 
 ### mysql.statement_event.wait.time
 
@@ -525,15 +525,15 @@ The total wait time of the summarized timed events.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | false | development |
+| ns | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | false |
-| digest | Digest. | Any Str | false |
-| digest_text | Text before digestion. | Any Str | false |
+| schema | The schema of the object. | Any Str | Recommended |
+| digest | Digest. | Any Str | Recommended |
+| digest_text | Text before digestion. | Any Str | Recommended |
 
 ### mysql.table.average_row_length
 
@@ -541,14 +541,14 @@ The average row length in bytes for a given table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| table | Table name for event or process. | Any Str | false |
-| schema | The schema of the object. | Any Str | false |
+| table | Table name for event or process. | Any Str | Recommended |
+| schema | The schema of the object. | Any Str | Recommended |
 
 ### mysql.table.lock_wait.read.count
 
@@ -556,15 +556,15 @@ The total table lock wait read events.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | false |
-| table | Table name for event or process. | Any Str | false |
-| kind | Read operation types. | Str: ``normal``, ``with_shared_locks``, ``high_priority``, ``no_insert``, ``external`` | false |
+| schema | The schema of the object. | Any Str | Recommended |
+| table | Table name for event or process. | Any Str | Recommended |
+| kind | Read operation types. | Str: ``normal``, ``with_shared_locks``, ``high_priority``, ``no_insert``, ``external`` | Recommended |
 
 ### mysql.table.lock_wait.read.time
 
@@ -572,15 +572,15 @@ The total table lock wait read events times.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | false | development |
+| ns | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | false |
-| table | Table name for event or process. | Any Str | false |
-| kind | Read operation types. | Str: ``normal``, ``with_shared_locks``, ``high_priority``, ``no_insert``, ``external`` | false |
+| schema | The schema of the object. | Any Str | Recommended |
+| table | Table name for event or process. | Any Str | Recommended |
+| kind | Read operation types. | Str: ``normal``, ``with_shared_locks``, ``high_priority``, ``no_insert``, ``external`` | Recommended |
 
 ### mysql.table.lock_wait.write.count
 
@@ -588,15 +588,15 @@ The total table lock wait write events.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | false |
-| table | Table name for event or process. | Any Str | false |
-| kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | false |
+| schema | The schema of the object. | Any Str | Recommended |
+| table | Table name for event or process. | Any Str | Recommended |
+| kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended |
 
 ### mysql.table.lock_wait.write.time
 
@@ -604,15 +604,15 @@ The total table lock wait write events times.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | false | development |
+| ns | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | false |
-| table | Table name for event or process. | Any Str | false |
-| kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | false |
+| schema | The schema of the object. | Any Str | Recommended |
+| table | Table name for event or process. | Any Str | Recommended |
+| kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended |
 
 ### mysql.table.rows
 
@@ -620,14 +620,14 @@ The number of rows for a given table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| table | Table name for event or process. | Any Str | false |
-| schema | The schema of the object. | Any Str | false |
+| table | Table name for event or process. | Any Str | Recommended |
+| schema | The schema of the object. | Any Str | Recommended |
 
 ### mysql.table.size
 
@@ -635,15 +635,15 @@ The table size in bytes for a given table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| table | Table name for event or process. | Any Str | false |
-| schema | The schema of the object. | Any Str | false |
-| kind | The table size types. | Str: ``data``, ``index`` | false |
+| table | Table name for event or process. | Any Str | Recommended |
+| schema | The schema of the object. | Any Str | Recommended |
+| kind | The table size types. | Str: ``data``, ``index`` | Recommended |
 
 ### mysql.table_open_cache
 
@@ -651,13 +651,13 @@ The number of hits, misses or overflows for open tables cache lookups.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | false |
+| status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Recommended |
 
 ## Default Events
 
@@ -694,6 +694,33 @@ This provides real-time visibility into active queries, helping users monitor da
 | client.port | TCP port used by the client. | Any Int |
 | network.peer.address | IP address of the peer client. | Any Str |
 | network.peer.port | TCP port used by the peer client. | Any Int |
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.top_query
+
+Top query collection enables monitoring of the queries that consumed the most CPU in the database.
+This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
+
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db.system.name | The name of the database system. | Str: ``mysql`` |
+| db.query.text | The SQL statement text for the event. | Any Str |
+| mysql.query_plan | The query plan for the statement, if available. | Any Str |
+| mysql.events_statements_summary_by_digest.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str |
+| mysql.events_statements_summary_by_digest.count_star | The number of times the statement was executed, report in delta value. | Any Int |
+| mysql.events_statements_summary_by_digest.sum_timer_wait | The total time spent executing the statement, report in delta seconds. | Any Double |
 
 ## Resource Attributes
 

@@ -15,7 +15,7 @@ import (
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -40,6 +40,7 @@ type datadogReceiver struct {
 
 	nextTracesConsumer  consumer.Traces
 	nextMetricsConsumer consumer.Metrics
+	nextLogsConsumer    consumer.Logs
 
 	metricsTranslator *translator.MetricsTranslator
 	statsTranslator   *translator.StatsTranslator
@@ -47,7 +48,7 @@ type datadogReceiver struct {
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
 
-	traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]
+	traceIDCache *lru.Cache[uint64, pcommon.TraceID]
 }
 
 // Endpoint specifies an API endpoint definition.
@@ -138,6 +139,15 @@ func (ddr *datadogReceiver) getEndpoints() []endpoint {
 		}...)
 	}
 
+	if ddr.nextLogsConsumer != nil {
+		endpoints = append(endpoints, []endpoint{
+			{
+				Pattern: "/api/v2/logs",
+				Handler: ddr.handleLogs,
+			},
+		}...)
+	}
+
 	infoResponse, _ := ddr.buildInfoResponse(endpoints)
 
 	endpoints = append(endpoints, endpoint{
@@ -154,9 +164,9 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		return nil, err
 	}
 
-	var cache *simplelru.LRU[uint64, pcommon.TraceID]
+	var cache *lru.Cache[uint64, pcommon.TraceID]
 	if FullTraceIDFeatureGate.IsEnabled() {
-		cache, err = simplelru.NewLRU[uint64, pcommon.TraceID](config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
+		cache, err = lru.NewWithEvict(config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
 			params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
 		})
 		if err != nil {
@@ -211,7 +221,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	var err error
 	ddr.server, err = ddr.config.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		ddr.params.TelemetrySettings,
 		ddmux,
 	)
@@ -260,6 +270,71 @@ func (ddr *datadogReceiver) handleInfo(w http.ResponseWriter, _ *http.Request, i
 		http.Error(w, "Error writing /info endpoint response", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request) {
+	if req.ContentLength == 0 { // Ping mechanism of Datadog SDK perform http request with empty body when GET /info not implemented.
+		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
+		return
+	}
+	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
+	var (
+		logCount int
+		err      error
+	)
+	defer func(logCount *int) {
+		ddr.tReceiver.EndLogsOp(obsCtx, "datadog", *logCount, err)
+	}(&logCount)
+
+	if req.Method != http.MethodPost {
+		http.Error(w, "method not allowed, supported: [POST]", http.StatusMethodNotAllowed)
+		return
+	}
+
+	switch contentType := req.Header.Get("Content-Type"); contentType {
+	case "application/json":
+		buf := translator.GetBuffer()
+		defer translator.PutBuffer(buf)
+		if _, err = io.Copy(buf, req.Body); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ddr.params.Logger.Error(err.Error())
+			return
+		}
+
+		// try parsing as array first, then single record
+		var ddLogs []*translator.DatadogLogPayload
+
+		if err = json.Unmarshal(buf.Bytes(), &ddLogs); err != nil {
+			// now try parsing as a single record
+			var ddLog *translator.DatadogLogPayload
+			if err = json.Unmarshal(buf.Bytes(), &ddLog); err != nil {
+				http.Error(w, "unable to unmarshal logs", http.StatusBadRequest)
+				ddr.params.Logger.Error("unable to unmarshal logs", zap.Error(err))
+				return
+			}
+			ddLogs = append(ddLogs, ddLog)
+		}
+
+		plogs := translator.ToPlog(ddLogs)
+
+		logCount = plogs.LogRecordCount()
+		err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, plogs)
+		if err != nil {
+			errorutil.HTTPError(w, err)
+			ddr.params.Logger.Error("log consumer errored out", zap.Error(err))
+			return
+		}
+	default:
+		http.Error(w, fmt.Sprintf("unsupported media type '%s', supported: [application/json]", contentType), http.StatusUnsupportedMediaType)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	response := map[string]any{
+		"errors": []string{},
+	}
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {

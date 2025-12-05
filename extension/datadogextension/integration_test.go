@@ -71,12 +71,11 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	// - otlp: 3 times (traces, metrics, logs)
 	// - hostmetrics: 1 time (metrics)
 	// - memory_limiter: 3 times (traces, metrics, logs)
-	// - batch: 3 times (traces, metrics, logs)
 	// - debug: 3 times (traces, metrics, logs)
 	// - otlphttp: 3 times (traces, metrics, logs)
 	// - datadog/connector: 2 times (traces exporter, metrics receiver)
-	// Total: 2 + 3 + 1 + 3 + 3 + 3 + 3 + 2 = 20
-	expectedComponentCount := 20
+	// Total: 2 + 3 + 1 + 3 + 3 + 3 + 2 = 17
+	expectedComponentCount := 17
 	assert.Len(t, *activeComponents, expectedComponentCount, "should have expected number of active components")
 
 	// Verify that extensions are present
@@ -86,7 +85,6 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	// Verify that pipeline components are present
 	hasOtlp := false
 	hasHostmetrics := false
-	hasBatch := false
 	hasMemoryLimiter := false
 	hasDebug := false
 	hasOtlphttp := false
@@ -109,10 +107,6 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 			hasHostmetrics = true
 			assert.Equal(t, "receiver", component.Kind)
 			assert.Equal(t, "metrics", component.Pipeline)
-		case "batch":
-			hasBatch = true
-			assert.Equal(t, "processor", component.Kind)
-			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
 		case "memory_limiter":
 			hasMemoryLimiter = true
 			assert.Equal(t, "processor", component.Kind)
@@ -140,7 +134,6 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	assert.True(t, hasPprof, "should have pprof extension")
 	assert.True(t, hasOtlp, "should have otlp receiver")
 	assert.True(t, hasHostmetrics, "should have hostmetrics receiver")
-	assert.True(t, hasBatch, "should have batch processor")
 	assert.True(t, hasMemoryLimiter, "should have memory_limiter processor")
 	assert.True(t, hasDebug, "should have debug exporter")
 	assert.True(t, hasOtlphttp, "should have otlphttp exporter")
@@ -364,6 +357,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 		version,
 		site,
 		fullConfig,
+		"unknown",
 		buildInfo,
 	)
 
@@ -570,6 +564,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 		"0.127.0",
 		"datadoghq.com",
 		fullConfig,
+		"unknown",
 		buildInfo,
 	)
 	if activeComponents != nil {
@@ -728,6 +723,7 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 		"1.0.0",
 		"datadoghq.com",
 		"{}",
+		"unknown",
 		buildInfo,
 	)
 
@@ -816,6 +812,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 		"1.0.0",
 		"datadoghq.com",
 		"{}",
+		"unknown",
 		buildInfo,
 	)
 

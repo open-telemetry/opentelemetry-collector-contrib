@@ -44,10 +44,6 @@ func TestValidate(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "empty_bucket_name"),
 			expectedErr: "bucket: name is required",
 		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "empty_encoding"),
-			expectedErr: "encoding is required",
-		},
 	}
 
 	for _, tt := range tests {

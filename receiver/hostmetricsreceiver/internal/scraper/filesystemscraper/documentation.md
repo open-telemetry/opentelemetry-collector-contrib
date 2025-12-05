@@ -18,17 +18,17 @@ FileSystem inodes used.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {inodes} | Sum | Int | Cumulative | false | development |
+| {inodes} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Identifier of the filesystem. | Any Str | false |
-| mode | Mountpoint mode such "ro", "rw", etc. | Any Str | false |
-| mountpoint | Mountpoint path. | Any Str | false |
-| type | Filesystem type, such as, "ext4", "tmpfs", etc. | Any Str | false |
-| state | Breakdown of filesystem usage by type. | Str: ``free``, ``reserved``, ``used`` | false |
+| device | Identifier of the filesystem. | Any Str | Recommended |
+| mode | Mountpoint mode such "ro", "rw", etc. | Any Str | Recommended |
+| mountpoint | Mountpoint path. | Any Str | Recommended |
+| type | Filesystem type, such as, "ext4", "tmpfs", etc. | Any Str | Recommended |
+| state | Breakdown of filesystem usage by type. | Str: ``free``, ``reserved``, ``used`` | Recommended |
 
 ### system.filesystem.usage
 
@@ -36,17 +36,17 @@ Filesystem bytes used.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Identifier of the filesystem. | Any Str | false |
-| mode | Mountpoint mode such "ro", "rw", etc. | Any Str | false |
-| mountpoint | Mountpoint path. | Any Str | false |
-| type | Filesystem type, such as, "ext4", "tmpfs", etc. | Any Str | false |
-| state | Breakdown of filesystem usage by type. | Str: ``free``, ``reserved``, ``used`` | false |
+| device | Identifier of the filesystem. | Any Str | Recommended |
+| mode | Mountpoint mode such "ro", "rw", etc. | Any Str | Recommended |
+| mountpoint | Mountpoint path. | Any Str | Recommended |
+| type | Filesystem type, such as, "ext4", "tmpfs", etc. | Any Str | Recommended |
+| state | Breakdown of filesystem usage by type. | Str: ``free``, ``reserved``, ``used`` | Recommended |
 
 ## Optional Metrics
 
@@ -64,13 +64,13 @@ Fraction of filesystem bytes used.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Identifier of the filesystem. | Any Str | false |
-| mode | Mountpoint mode such "ro", "rw", etc. | Any Str | false |
-| mountpoint | Mountpoint path. | Any Str | false |
-| type | Filesystem type, such as, "ext4", "tmpfs", etc. | Any Str | false |
+| device | Identifier of the filesystem. | Any Str | Recommended |
+| mode | Mountpoint mode such "ro", "rw", etc. | Any Str | Recommended |
+| mountpoint | Mountpoint path. | Any Str | Recommended |
+| type | Filesystem type, such as, "ext4", "tmpfs", etc. | Any Str | Recommended |

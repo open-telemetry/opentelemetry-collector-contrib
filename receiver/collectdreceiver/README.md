@@ -37,7 +37,7 @@ The following settings are required:
 The following settings are optional:
 
 - `attributes_prefix` (no default): Used to add query parameters in key=value format to all metrics.
-- `timeout` (default = `30s`): The request timeout for any docker daemon query.
+- `timeout` (default = `30s`): Used as the `read_timeout` and `write_timeout` for the listening server.
 
 Example:
 

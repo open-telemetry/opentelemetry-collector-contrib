@@ -22,26 +22,32 @@ resource_attributes:
     type: string
 
 attributes:
-  vcs.repository.url.full:
-    description: The canonical URL of the repository providing the complete HTTPS address.
-    type: string
-  vcs.repository.name:
-    description: The name of the VCS repository.
-    type: string
-  vcs.ref.head.name:
-    description: The name of the VCS head reference (branch).
-    type: string
-  vcs.ref.head.type:
-    description: The type of the head reference (branch, tag).
+  vcs.change.state:
+    description: The state of a change (pull request)
     type: string
     enum:
-      - branch
-      - tag
+      - open
+      - merged
+  vcs.line_change.type:
+    description: The type of line change being measured on a ref (branch).
+    type: string
+    enum:
+      - added
+      - removed
   vcs.ref.base.name:
     description: The name of the VCS base reference (branch/tag) for comparison.
     type: string
   vcs.ref.base.type:
     description: The type of the base reference (branch, tag).
+    type: string
+    enum:
+      - branch
+      - tag
+  vcs.ref.head.name:
+    description: The name of the VCS head reference (branch).
+    type: string
+  vcs.ref.head.type:
+    description: The type of the head reference (branch, tag).
     type: string
     enum:
       - branch
@@ -52,107 +58,20 @@ attributes:
     enum:
       - branch
       - tag
-  vcs.change.state:
-    description: The state of a change (pull request)
+  vcs.repository.name:
+    description: The name of the VCS repository.
     type: string
-    enum:
-      - open
-      - merged
+  vcs.repository.url.full:
+    description: The canonical URL of the repository providing the complete HTTPS address.
+    type: string
   vcs.revision_delta.direction:
     description: The type of revision comparison.
     type: string
     enum:
       - ahead
       - behind
-  vcs.line_change.type:
-    description: The type of line change being measured on a ref (branch).
-    type: string
-    enum:
-      - added
-      - removed
 
 metrics:
-  vcs.repository.count:
-    enabled: true
-    description: The number of repositories in an organization.
-    stability:
-      level: development
-    unit: "{repository}"
-    gauge:
-      value_type: int
-    attributes: []
-  vcs.ref.count:
-    enabled: true
-    description: The number of refs of type branch in a repository.
-    stability:
-      level: development
-    unit: "{ref}"
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.type]
-  vcs.ref.time:
-    enabled: true
-    description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.type` attribute will always be `branch`.
-    stability:
-      level: development
-    unit: s
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
-  vcs.ref.revisions_delta:
-    enabled: true
-    description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
-    stability:
-      level: development
-    unit: "{revision}"
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.ref.base.name, vcs.ref.base.type, vcs.revision_delta.direction]
-  vcs.ref.lines_delta:
-    enabled: true
-    description: The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
-    stability:
-      level: development
-    unit: "{line}"
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.ref.base.name, vcs.ref.base.type, vcs.line_change.type]
-  vcs.contributor.count:
-    enabled: false
-    description: The number of unique contributors to a repository.
-    stability:
-      level: development
-    unit: "{contributor}"
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name]
-  vcs.change.duration:
-    enabled: true
-    description: The time duration a change (pull request/merge request/changelist) has been in an open state.
-    stability:
-      level: development
-    unit: s
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.change.state]
-  vcs.change.time_to_merge:
-    enabled: true
-    description: The amount of time it took a change (pull request) to go from open to merged.
-    stability:
-      level: development
-    unit: s
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]
-  vcs.change.time_to_approval:
-    enabled: true
-    description: The amount of time it took a change (pull request) to go from open to approved.
-    stability:
-      level: development
-    unit: s
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]
   vcs.change.count:
     description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
     enabled: true
@@ -162,6 +81,87 @@ metrics:
       value_type: int
     unit: "{change}"
     attributes: [vcs.repository.url.full, vcs.change.state, vcs.repository.name]
+  vcs.change.duration:
+    enabled: true
+    description: The time duration a change (pull request/merge request/changelist) has been in an open state.
+    stability:
+      level: development
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.change.state]
+  vcs.change.time_to_approval:
+    enabled: true
+    description: The amount of time it took a change (pull request) to go from open to approved.
+    stability:
+      level: development
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]
+  vcs.change.time_to_merge:
+    enabled: true
+    description: The amount of time it took a change (pull request) to go from open to merged.
+    stability:
+      level: development
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]
+  vcs.contributor.count:
+    enabled: false
+    description: The number of unique contributors to a repository.
+    stability:
+      level: development
+    unit: "{contributor}"
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name]
+  vcs.ref.count:
+    enabled: true
+    description: The number of refs of type branch in a repository.
+    stability:
+      level: development
+    unit: "{ref}"
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.type]
+  vcs.ref.lines_delta:
+    enabled: true
+    description: The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
+    stability:
+      level: development
+    unit: "{line}"
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.ref.base.name, vcs.ref.base.type, vcs.line_change.type]
+  vcs.ref.revisions_delta:
+    enabled: true
+    description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
+    stability:
+      level: development
+    unit: "{revision}"
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.ref.base.name, vcs.ref.base.type, vcs.revision_delta.direction]
+  vcs.ref.time:
+    enabled: true
+    description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.type` attribute will always be `branch`.
+    stability:
+      level: development
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
+  vcs.repository.count:
+    enabled: true
+    description: The number of repositories in an organization.
+    stability:
+      level: development
+    unit: "{repository}"
+    gauge:
+      value_type: int
+    attributes: []
 
 tests:
   config:

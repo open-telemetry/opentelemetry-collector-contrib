@@ -16,6 +16,7 @@ type s3Marshaler struct {
 	metricsMarshaler pmetric.Marshaler
 	logger           *zap.Logger
 	fileFormat       string
+	IsCompressed     bool
 }
 
 func (marshaler *s3Marshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
@@ -32,4 +33,8 @@ func (marshaler *s3Marshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 
 func (marshaler *s3Marshaler) format() string {
 	return marshaler.fileFormat
+}
+
+func (marshaler *s3Marshaler) compressed() bool {
+	return marshaler.IsCompressed
 }

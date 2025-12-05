@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -236,7 +237,7 @@ func TestOnlyMetadata(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
 
-	err = expTraces.Start(ctx, nil)
+	err = expTraces.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 	defer func() {
 		assert.NoError(t, expTraces.Shutdown(ctx))
@@ -284,9 +285,9 @@ func TestStopExporters(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
 
-	err = expTraces.Start(ctx, nil)
+	err = expTraces.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
-	err = expMetrics.Start(ctx, nil)
+	err = expMetrics.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	finishShutdown := make(chan bool)
@@ -304,4 +305,32 @@ func TestStopExporters(t *testing.T) {
 	case <-time.After(time.Second * 10):
 		t.Fatal("Timed out")
 	}
+}
+
+func TestCheckAndCastConfigError(t *testing.T) {
+	factory := NewFactory()
+	ctx := t.Context()
+	settings := exportertest.NewNopSettings(metadata.Type)
+
+	// Create a mock config of wrong type (using a simple struct instead of *datadogconfig.Config)
+	type wrongConfig struct{}
+	invalidCfg := &wrongConfig{}
+
+	// Test that CreateMetrics returns an error when given wrong config type
+	_, err := factory.CreateMetrics(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
+
+	// Test that CreateTraces returns an error when given wrong config type
+	_, err = factory.CreateTraces(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
+
+	// Test that CreateLogs returns an error when given wrong config type
+	_, err = factory.CreateLogs(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
 }

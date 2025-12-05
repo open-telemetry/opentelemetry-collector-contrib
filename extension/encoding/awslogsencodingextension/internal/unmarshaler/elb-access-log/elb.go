@@ -237,9 +237,9 @@ type ALBAccessLogRecord struct {
 	TargetIPPort           string // Target IP:Port or -
 	TargetIP               string // Target IP
 	TargetPort             int64  // Target port
-	RequestProcessingTime  string // Time taken to process the request in seconds
-	TargetProcessingTime   string // Time taken for the target to process the request in seconds
-	ResponseProcessingTime string // Time taken to send the response to the client in seconds
+	RequestProcessingTime  string // Time taken to process the request in milliseconds
+	TargetProcessingTime   string // Time taken for the target to process the request in milliseconds
+	ResponseProcessingTime string // Time taken to send the response to the client in milliseconds
 	ELBStatusCode          int64  // Status code from the load balancer
 	TargetStatusCode       string // Status code from the target
 	ReceivedBytes          int64  // Size of the request in bytes
@@ -264,6 +264,10 @@ type ALBAccessLogRecord struct {
 	TargetStatusCodeList   string // List of status codes from targets
 	Classification         string // Classification of the request
 	ClassificationReason   string // Reason for classification
+	ConnectionTraceID      string // The connection traceability ID
+	TransformedHost        string // The transformed host header
+	TransformedURI         string // The URI after it is modified by a URL rewrite transform
+	RequestTransformStatus string // The status of the rewrite transform
 }
 
 // convertTextToALBAccessLogRecord converts a slice of strings into a ALBAccessLogRecord
@@ -299,6 +303,18 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 		TargetStatusCodeList:   fields[26],
 		Classification:         fields[27],
 		ClassificationReason:   fields[28],
+		ConnectionTraceID:      unknownField,
+		TransformedHost:        unknownField,
+		TransformedURI:         unknownField,
+		RequestTransformStatus: unknownField,
+	}
+	if len(fields) >= 30 {
+		record.ConnectionTraceID = fields[29]
+	}
+	if len(fields) >= 33 {
+		record.TransformedHost = fields[30]
+		record.TransformedURI = fields[31]
+		record.RequestTransformStatus = fields[32]
 	}
 	var clientPort string
 	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[3]); err != nil {
@@ -403,12 +419,11 @@ func convertToUnixEpoch(isoTimestamp string) (int64, error) {
 	return t.UnixNano(), nil
 }
 
-// scanField gets the next value in the log line by moving
-// one space. If the value starts with a quote, it moves
-// forward until it finds the ending quote, and considers
-// that just 1 value. Otherwise, it returns the value as
-// it is.
-func scanField(logLine string) (string, string, error) {
+// scanField gets the next value in the log line by moving through space delimiters.
+// If the value starts with a quote, it moves forward until it finds the ending quote.
+// Note that quotes are not preserved. For example "a","b" becomes a,b.
+// Otherwise, it returns the value as it is.
+func scanField(logLine string) (value, remainder string, err error) {
 	if logLine == "" {
 		return "", "", io.EOF
 	}
@@ -418,19 +433,35 @@ func scanField(logLine string) (string, string, error) {
 		return value, remaining, nil
 	}
 
-	// if there is a quote, we need to get the rest of the value
-	logLine = logLine[1:] // remove first quote
-	value, remaining, found := strings.Cut(logLine, `"`)
-	if !found {
-		return "", "", fmt.Errorf("value %q has no end quote", logLine)
+	// preserve values without quotes, terminate at space after the closing quote or at line end
+	var quoteStack []rune
+	var unquotedValue []rune
+	for i, char := range logLine {
+		if char == ' ' && len(quoteStack) == 0 {
+			// terminating space found, return the value
+			return string(unquotedValue), logLine[i+1:], nil
+		}
+
+		if char != '"' {
+			unquotedValue = append(unquotedValue, char)
+		}
+
+		if char == '"' {
+			if len(quoteStack) > 0 && quoteStack[len(quoteStack)-1] == '"' {
+				quoteStack = quoteStack[:len(quoteStack)-1]
+			} else {
+				quoteStack = append(quoteStack, char)
+			}
+		}
 	}
 
-	// Remove space after closing quote if present
-	if remaining != "" && remaining[0] == ' ' {
-		remaining = remaining[1:]
+	if len(quoteStack) == 0 {
+		// No quotes means we are at the end of log line
+		return string(unquotedValue), "", nil
 	}
 
-	return value, remaining, nil
+	// Invalid log line - must not happen in well-formed logs
+	return "", "", fmt.Errorf("log line has no end quote: %v", logLine)
 }
 
 func extractFields(logLine string) ([]string, error) {
@@ -457,32 +488,40 @@ func extractFields(logLine string) ([]string, error) {
 func parseRequestField(raw string) (method, uri, protoName, protoVersion string, err error) {
 	method, remaining, _ := strings.Cut(raw, " ")
 	if method == "" {
-		err = fmt.Errorf("unexpected: request field %q has no method", raw)
-		return
+		err = fmt.Errorf("unexpected: field %q has no method section", raw)
+		return method, uri, protoName, protoVersion, err
 	}
 
-	uri, remaining, _ = strings.Cut(remaining, " ")
-	if uri == "" {
-		err = fmt.Errorf("unexpected: request field %q has no URI", raw)
-		return
-	}
+	var protocol string
 
-	protocol, leftover, _ := strings.Cut(remaining, " ")
-	if protocol == "" || leftover != "" {
-		err = fmt.Errorf(`request field %q does not match expected format "<method> <uri> <protocol>"`, raw)
-		return
+	index := strings.LastIndex(remaining, " ")
+	switch {
+	case index == -1:
+		err = fmt.Errorf("unexpected: field %q has no protocol/version section", raw)
+		return method, uri, protoName, protoVersion, err
+	case index == len(remaining)-1:
+		uri = strings.TrimSpace(remaining)
+		protocol = unknownField
+	default:
+		uri = remaining[:index]
+		protocol = remaining[index+1:]
 	}
 
 	protoName, protoVersion, err = netProtocol(protocol)
 	if err != nil {
 		err = fmt.Errorf("invalid protocol in request field: %w", err)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
-	return
+
+	return method, uri, protoName, protoVersion, nil
 }
 
 // netProtocol returns protocol name and version based on proto value
 func netProtocol(proto string) (string, string, error) {
+	if proto == unknownField {
+		return unknownField, unknownField, nil
+	}
+
 	name, version, found := strings.Cut(proto, "/")
 	if !found || name == "" || version == "" {
 		return "", "", errors.New(`request uri protocol does not follow expected scheme "<name>/<version>"`)

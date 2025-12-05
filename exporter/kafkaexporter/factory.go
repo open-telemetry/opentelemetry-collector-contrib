@@ -32,6 +32,8 @@ const (
 	defaultPartitionMetricsByResourceAttributesEnabled = false
 	// partitioning logs by resource attributes is disabled by default
 	defaultPartitionLogsByResourceAttributesEnabled = false
+	// partitioning logs by trace id is disabled by default
+	defaultPartitionLogsByTraceIDEnabled = false
 )
 
 // NewFactory creates Kafka exporter factory.
@@ -71,6 +73,7 @@ func createDefaultConfig() component.Config {
 		},
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
+		PartitionLogsByTraceID:               defaultPartitionLogsByTraceIDEnabled,
 	}
 }
 

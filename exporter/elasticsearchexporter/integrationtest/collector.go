@@ -25,10 +25,12 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -110,7 +112,7 @@ func createConfigSection(m map[string]string) (sections, list string) {
 			first = false
 		}
 	}
-	return
+	return sections, list
 }
 
 // recreatableOtelCol creates an otel collector that can be used to simulate
@@ -147,8 +149,9 @@ func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 		debugexporter.NewFactory(),
 	)
 	require.NoError(tb, err)
+	factories.Telemetry = otelconftelemetry.NewFactory()
 	return &recreatableOtelCol{
-		tempDir:   tb.TempDir(),
+		tempDir:   testutil.TempDir(tb),
 		factories: factories,
 	}
 }

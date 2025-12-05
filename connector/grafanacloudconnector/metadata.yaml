@@ -15,24 +15,6 @@ tests:
 
 telemetry:
   metrics:
-    grafanacloud_host_count:
-      description: Number of unique hosts
-      unit: "1"
-      enabled: true
-      stability:
-        level: development
-      gauge:
-        value_type: int
-        async: true
-    grafanacloud_flush_count:
-      description: Number of metrics flushes
-      unit: "1"
-      enabled: true
-      stability:
-        level: development
-      sum:
-        value_type: int
-        monotonic: true
     grafanacloud_datapoint_count:
       description: Number of datapoints sent to Grafana Cloud
       unit: "1"
@@ -42,3 +24,21 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    grafanacloud_flush_count:
+      description: Number of metrics flushes
+      unit: "1"
+      enabled: true
+      stability:
+        level: development
+      sum:
+        value_type: int
+        monotonic: true
+    grafanacloud_host_count:
+      description: Number of unique hosts
+      unit: "1"
+      enabled: true
+      stability:
+        level: development
+      gauge:
+        value_type: int
+        async: true

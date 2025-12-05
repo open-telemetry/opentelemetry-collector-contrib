@@ -47,22 +47,22 @@ exporters:
   datadog:
     api:
       key: ${env:DD_API_KEY}
+    sending_queue:
+      batch:
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [datadog/connector]
 
     traces/2: # this pipeline uses sampling
       receivers: [datadog/connector]
-      processors: [batch, probabilistic_sampler]
+      processors: [probabilistic_sampler]
       exporters: [datadog]
 
     metrics:
       receivers: [datadog/connector]
-      processors: [batch]
       exporters: [datadog]
 ```
 

@@ -138,7 +138,7 @@ func TestGetCGroupMountPoint(t *testing.T) {
 			err:     errors.New(""),
 		},
 		{
-			name:    "the mount is not properly formated",
+			name:    "the mount is not properly formatted",
 			input:   "test/mountinfo_err3",
 			wantRes: "",
 			err:     errors.New(""),

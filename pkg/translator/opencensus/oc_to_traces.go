@@ -20,8 +20,11 @@ import (
 )
 
 // OCToTraces may be used only by OpenCensus receiver and exporter implementations.
+//
 // Deprecated: use ptrace.Traces instead.
 // TODO: move this function to OpenCensus package.
+//
+// Deprecated: this functionality is no longer maintained and will be removed.
 func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*octrace.Span) ptrace.Traces {
 	traceData := ptrace.NewTraces()
 	if node == nil && resource == nil && len(spans) == 0 {

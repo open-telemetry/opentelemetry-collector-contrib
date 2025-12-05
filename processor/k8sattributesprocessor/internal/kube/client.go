@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	batch_v1 "k8s.io/api/batch/v1"
@@ -65,7 +65,7 @@ const (
 	K8sJobAnnotation = "k8s.job.annotation.%s"
 )
 
-var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
+var AllowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.labelsAnnotationsSingular.allow",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
@@ -139,6 +139,10 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
+
+// Extract Deployment name from the ReplicaSet name. Deployment name is created using
+// format: [deployment-name]-[hash]
+var deploymentHashSuffixPattern = regexp.MustCompile(`^[a-z0-9]{10}$`)
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
@@ -291,7 +295,9 @@ func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
+	// The replicaset informer is needed to get the deployment UID.
+	// It is also needed to get the deployment name if the feature gate is not enabled.
+	if c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) {
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -829,22 +835,25 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
-					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						name := replicaset.Deployment.Name
-						if name != "" {
-							if c.Rules.DeploymentName {
-								tags[string(conventions.K8SDeploymentNameKey)] = name
-							}
-							if c.Rules.ServiceName {
-								// deployment name wins over replicaset name
-								tags[string(conventions.ServiceNameKey)] = name
-							}
+					var deploymentName string
+					if c.Rules.DeploymentNameFromReplicaSet {
+						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
+					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						deploymentName = replicaset.Deployment.Name
+					}
+					if deploymentName != "" {
+						if c.Rules.DeploymentName {
+							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
+						}
+						if c.Rules.ServiceName {
+							// deployment name wins over replicaset name
+							tags[string(conventions.ServiceNameKey)] = deploymentName
 						}
 					}
 				}
 				if c.Rules.DeploymentUID {
 					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						if replicaset.Deployment.Name != "" {
+						if replicaset.Deployment.UID != "" {
 							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
 					}
@@ -904,19 +913,19 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.Node {
-		tags[tagNodeName] = pod.Spec.NodeName
+		tags[string(conventions.K8SNodeNameKey)] = pod.Spec.NodeName
 	}
 
 	if c.Rules.ClusterUID {
 		if val, ok := c.Namespaces["kube-system"]; ok {
-			tags[tagClusterUID] = val.NamespaceUID
+			tags[string(conventions.K8SClusterUIDKey)] = val.NamespaceUID
 		} else {
 			c.logger.Debug("unable to find kube-system namespace, cluster uid will not be available")
 		}
 	}
 
 	formatterLabel := K8sPodLabelsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
+	if AllowLabelsAnnotationsSingular.IsEnabled() {
 		formatterLabel = K8sPodLabelKey
 	}
 
@@ -925,7 +934,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	formatterAnnotation := K8sPodAnnotationsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
+	if AllowLabelsAnnotationsSingular.IsEnabled() {
 		formatterAnnotation = K8sPodAnnotationKey
 	}
 
@@ -1161,7 +1170,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	tags := map[string]string{}
 
 	formatterLabel := K8sNamespaceLabelsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
+	if AllowLabelsAnnotationsSingular.IsEnabled() {
 		formatterLabel = K8sNamespaceLabelKey
 	}
 
@@ -1170,7 +1179,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	}
 
 	formatterAnnotation := K8sNamespaceAnnotationsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
+	if AllowLabelsAnnotationsSingular.IsEnabled() {
 		formatterAnnotation = K8sNamespaceAnnotationKey
 	}
 
@@ -1185,7 +1194,7 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	tags := map[string]string{}
 
 	formatterLabel := K8sNodeLabelsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
+	if AllowLabelsAnnotationsSingular.IsEnabled() {
 		formatterLabel = K8sNodeLabelKey
 	}
 
@@ -1194,7 +1203,7 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	}
 
 	formatterAnnotation := K8sNodeAnnotationsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
+	if AllowLabelsAnnotationsSingular.IsEnabled() {
 		formatterAnnotation = K8sNodeAnnotationKey
 	}
 
@@ -1846,4 +1855,27 @@ func ignoreDeletedFinalStateUnknown(obj any) any {
 func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 	resNames := []string{pod.Namespace, pod.Name, containerName}
 	return strings.Join(resNames, ".")
+}
+
+// extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name
+// by trimming the pod template hash suffix. ReplicaSets created by Deployments follow the pattern:
+// <deployment-name>-<pod-template-hash> where pod-template-hash is a 10-character alphanumeric string.
+func extractDeploymentNameFromReplicaSet(replicasetName string) string {
+	if replicasetName == "" {
+		return ""
+	}
+
+	parts := strings.Split(replicasetName, "-")
+	if len(parts) < 2 {
+		return ""
+	}
+
+	// Check if the last part is a valid 10-character alphanumeric hash using the pre-compiled regex.
+	lastPart := parts[len(parts)-1]
+	if deploymentHashSuffixPattern.MatchString(lastPart) {
+		// Return everything except the last part (the hash), joined back by hyphens.
+		return strings.Join(parts[:len(parts)-1], "-")
+	}
+
+	return ""
 }

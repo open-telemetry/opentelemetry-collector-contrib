@@ -16,12 +16,6 @@ resource_attributes:
     type: string
 
 attributes:
-  request:
-    description: The request operation type.
-    type: string
-    enum:
-      - put
-      - get
   operation:
     description: The operation type for index operations.
     type: string
@@ -29,8 +23,24 @@ attributes:
       - read
       - write
       - delete
+  request:
+    description: The request operation type.
+    type: string
+    enum:
+      - put
+      - get
 
 metrics:
+  riak.memory.limit:
+    description: The amount of memory allocated to the node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
   riak.node.operation.count:
     description: The number of operations performed by the node.
     unit: "{operation}"
@@ -61,13 +71,14 @@ metrics:
     enabled: true
     stability:
       level: development
-  riak.memory.limit:
-    description: The amount of memory allocated to the node.
-    unit: By
+  riak.vnode.index.operation.count:
+    description: The number of index operations performed by vnodes on the node.
+    unit: "{operation}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
+    attributes: [operation]
     enabled: true
     stability:
       level: development
@@ -82,14 +93,3 @@ metrics:
     stability:
       level: development
     attributes: [request]
-  riak.vnode.index.operation.count:
-    description: The number of index operations performed by vnodes on the node.
-    unit: "{operation}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-    attributes: [operation]
-    enabled: true
-    stability:
-      level: development

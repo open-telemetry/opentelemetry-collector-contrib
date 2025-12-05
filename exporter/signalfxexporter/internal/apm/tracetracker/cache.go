@@ -88,7 +88,7 @@ func (t *TimeoutCache) UpdateOrCreate(o *CacheKey, now time.Time) (isNew bool) {
 		t.keysActive[*o] = elm
 		t.ActiveCount++
 	}
-	return
+	return isNew
 }
 
 // UpdateIfExists

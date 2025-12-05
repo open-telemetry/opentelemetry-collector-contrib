@@ -18,14 +18,14 @@ The number of connections.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | development |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| protocol | Network protocol, e.g. TCP or UDP. | Str: ``tcp`` | false |
-| state | State of the network connection. | Any Str | false |
+| protocol | Network protocol, e.g. TCP or UDP. | Str: ``tcp`` | Recommended |
+| state | State of the network connection. | Any Str | Recommended |
 
 ### system.network.dropped
 
@@ -33,14 +33,14 @@ The number of packets dropped.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the network interface. | Any Str | false |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
+| device | Name of the network interface. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
 
 ### system.network.errors
 
@@ -48,14 +48,14 @@ The number of errors encountered.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | development |
+| {errors} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the network interface. | Any Str | false |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
+| device | Name of the network interface. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
 
 ### system.network.io
 
@@ -63,14 +63,14 @@ The number of bytes transmitted and received.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the network interface. | Any Str | false |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
+| device | Name of the network interface. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
 
 ### system.network.packets
 
@@ -78,14 +78,14 @@ The number of packets transferred.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {packets} | Sum | Int | Cumulative | true | development |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| device | Name of the network interface. | Any Str | false |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | false |
+| device | Name of the network interface. | Any Str | Recommended |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
 
 ## Optional Metrics
 
@@ -103,7 +103,7 @@ The count of entries in conntrack table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {entries} | Sum | Int | Cumulative | false | development |
+| {entries} | Sum | Int | Cumulative | false | Development |
 
 ### system.network.conntrack.max
 
@@ -111,4 +111,4 @@ The limit for entries in the conntrack table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {entries} | Sum | Int | Cumulative | false | development |
+| {entries} | Sum | Int | Cumulative | false | Development |

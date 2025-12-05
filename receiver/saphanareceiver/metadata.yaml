@@ -15,199 +15,246 @@ tests:
         - "github.com/SAP/go-hdb/driver.(*metrics).collect"
 
 resource_attributes:
-  saphana.host:
-    type: string
-    description: The SAP HANA host.
-    enabled: true
   db.system:
     type: string
     description: The type of database system.
     enabled: true
+  saphana.host:
+    type: string
+    description: The SAP HANA host.
+    enabled: true
 
 attributes:
-  database:
-    description: The SAP HANA database.
-    type: string
-  system:
-    description: The SAP HANA system.
-    type: string
-  product:
-    description: The SAP HANA product.
-    type: string
-  primary_host:
-    name_override: primary
-    description: The primary SAP HANA host in replication.
-    type: string
-  secondary_host:
-    name_override: secondary
-    description: The secondary SAP HANA host in replication.
-    type: string
-  port:
-    description: The SAP HANA port.
-    type: string
-  replication_mode:
-    name_override: mode
-    description: The replication mode.
-    type: string
-  component:
-    description: The SAP HANA component.
-    type: string
-  schema:
-    description: The SAP HANA schema.
-    type: string
-  service:
-    description: The SAP HANA service.
-    type: string
-  path:
-    description: The SAP HANA disk path.
-    type: string
-  disk_usage_type:
-    name_override: usage_type
-    description: The SAP HANA disk & volume usage type.
-    type: string
-  transaction_type:
-    name_override: type
-    description: The transaction type.
-    type: string
-    enum:
-    - update
-    - commit
-    - rollback
-  connection_status:
-    name_override: status
-    description: The connection status.
-    type: string
-    enum:
-    - running
-    - idle
-    - queueing
-  cpu_type:
-    name_override: type
-    description: The type of cpu.
-    type: string
-    enum:
-    - user
-    - system
-    - io_wait
-    - idle
-  alert_rating:
-    name_override: rating
-    description: The alert rating.
-    type: string
-  column_memory_type:
-    name_override: type
-    description: The type of column store memory.
-    type: string
-    enum:
-    - main
-    - delta
-  column_memory_subtype:
-    name_override: subtype
-    description: The subtype of column store memory.
-    type: string
-    enum:
-    - data
-    - dict
-    - index
-    - misc
-  row_memory_type:
-    name_override: type
-    description: The type of row store memory.
-    type: string
-    enum:
-    - fixed
-    - variable
-  schema_memory_type:
-    name_override: type
-    description: The type of schema memory.
-    type: string
-    enum:
-    - main
-    - delta
-    - history_main
-    - history_delta
-  schema_record_type:
-    name_override: type
-    description: The type of schema record.
-    type: string
-    enum:
-    - main
-    - delta
-    - history_main
-    - history_delta
-  memory_state_used_free:
-    name_override: state
-    description: The state of memory.
-    type: string
-    enum:
-    - used
-    - free
-  disk_state_used_free:
-    name_override: state
-    description: The state of the disk storage.
-    type: string
-    enum:
-    - used
-    - free
-  host_swap_state:
-    name_override: state
-    description: The state of swap data.
-    type: string
-    enum:
-    - used
-    - free
-  schema_operation_type:
-    name_override: type
-    description: The type of operation.
-    type: string
-    enum:
-    - read
-    - write
-    - merge
-  service_status:
-    name_override: status
-    description: The status of services.
-    type: string
-    enum:
-    - active
-    - inactive
-  thread_status:
-    name_override: status
-    description: The status of threads.
-    type: string
-    enum:
-    - active
-    - inactive
-  service_memory_used_type:
-    name_override: type
-    description: The type of service memory.
-    type: string
-    enum:
-    - logical
-    - physical
-  volume_operation_type:
-    name_override: type
-    description: The type of operation.
-    type: string
-    enum:
-    - read
-    - write
   active_pending_request_state:
     name_override: state
     description: The state of network request.
     type: string
     enum:
-    - active
-    - pending
+      - active
+      - pending
+  alert_rating:
+    name_override: rating
+    description: The alert rating.
+    type: string
+  column_memory_subtype:
+    name_override: subtype
+    description: The subtype of column store memory.
+    type: string
+    enum:
+      - data
+      - dict
+      - index
+      - misc
+  column_memory_type:
+    name_override: type
+    description: The type of column store memory.
+    type: string
+    enum:
+      - main
+      - delta
+  component:
+    description: The SAP HANA component.
+    type: string
+  connection_status:
+    name_override: status
+    description: The connection status.
+    type: string
+    enum:
+      - running
+      - idle
+      - queueing
+  cpu_type:
+    name_override: type
+    description: The type of cpu.
+    type: string
+    enum:
+      - user
+      - system
+      - io_wait
+      - idle
+  database:
+    description: The SAP HANA database.
+    type: string
+  disk_state_used_free:
+    name_override: state
+    description: The state of the disk storage.
+    type: string
+    enum:
+      - used
+      - free
+  disk_usage_type:
+    name_override: usage_type
+    description: The SAP HANA disk & volume usage type.
+    type: string
+  host_swap_state:
+    name_override: state
+    description: The state of swap data.
+    type: string
+    enum:
+      - used
+      - free
   internal_external_request_type:
     name_override: type
     description: The type of network request.
     type: string
     enum:
-    - internal
-    - external
+      - internal
+      - external
+
+  memory_state_used_free:
+    name_override: state
+    description: The state of memory.
+    type: string
+    enum:
+      - used
+      - free
+  path:
+    description: The SAP HANA disk path.
+    type: string
+  port:
+    description: The SAP HANA port.
+    type: string
+  primary_host:
+    name_override: primary
+    description: The primary SAP HANA host in replication.
+    type: string
+  product:
+    description: The SAP HANA product.
+    type: string
+  replication_mode:
+    name_override: mode
+    description: The replication mode.
+    type: string
+  row_memory_type:
+    name_override: type
+    description: The type of row store memory.
+    type: string
+    enum:
+      - fixed
+      - variable
+  schema:
+    description: The SAP HANA schema.
+    type: string
+  schema_memory_type:
+    name_override: type
+    description: The type of schema memory.
+    type: string
+    enum:
+      - main
+      - delta
+      - history_main
+      - history_delta
+  schema_operation_type:
+    name_override: type
+    description: The type of operation.
+    type: string
+    enum:
+      - read
+      - write
+      - merge
+  schema_record_type:
+    name_override: type
+    description: The type of schema record.
+    type: string
+    enum:
+      - main
+      - delta
+      - history_main
+      - history_delta
+  secondary_host:
+    name_override: secondary
+    description: The secondary SAP HANA host in replication.
+    type: string
+  service:
+    description: The SAP HANA service.
+    type: string
+  service_memory_used_type:
+    name_override: type
+    description: The type of service memory.
+    type: string
+    enum:
+      - logical
+      - physical
+  service_status:
+    name_override: status
+    description: The status of services.
+    type: string
+    enum:
+      - active
+      - inactive
+  system:
+    description: The SAP HANA system.
+    type: string
+  thread_status:
+    name_override: status
+    description: The status of threads.
+    type: string
+    enum:
+      - active
+      - inactive
+  transaction_type:
+    name_override: type
+    description: The transaction type.
+    type: string
+    enum:
+      - update
+      - commit
+      - rollback
+  volume_operation_type:
+    name_override: type
+    description: The type of operation.
+    type: string
+    enum:
+      - read
+      - write
 
 metrics:
+  saphana.alert.count:
+    description: Number of current alerts.
+    stability:
+      level: development
+    unit: '{alerts}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [alert_rating]
+    enabled: true
+  saphana.backup.latest:
+    description: The age of the latest backup by start time.
+    stability:
+      level: development
+    unit: s
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    enabled: true
+  saphana.column.memory.used:
+    description: The memory used in all columns.
+    stability:
+      level: development
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [column_memory_type, column_memory_subtype]
+    enabled: true
+  saphana.component.memory.used:
+    description: The memory used in components.
+    stability:
+      level: development
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [component]
+    enabled: true
   saphana.connection.count:
     description: The number of current connections.
     stability:
@@ -232,44 +279,8 @@ metrics:
       input_type: string
     attributes: [cpu_type]
     enabled: true
-  saphana.alert.count:
-    description: Number of current alerts.
-    stability:
-      level: development
-    unit: '{alerts}'
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [alert_rating]
-    enabled: true
-  saphana.uptime:
-    description: The uptime of the database.
-    stability:
-      level: development
-    unit: s
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [system, database]
-    enabled: true
-  saphana.replication.backlog.time:
-    description: The current replication backlog.
-    stability:
-      level: development
-    unit: us
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [primary_host, secondary_host, port, replication_mode]
-    enabled: true
-  saphana.replication.backlog.size:
-    description: The current replication backlog size.
+  saphana.disk.size.current:
+    description: The disk size.
     stability:
       level: development
     unit: By
@@ -278,45 +289,73 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [primary_host, secondary_host, port, replication_mode]
+    attributes: [path, disk_usage_type, disk_state_used_free]
     enabled: true
-  saphana.replication.average_time:
-    description: The average amount of time consumed replicating a log.
+  saphana.host.memory.current:
+    description: The amount of physical memory on the host.
     stability:
       level: development
-    unit: us
-    gauge:
-      value_type: double
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
       input_type: string
-    attributes: [primary_host, secondary_host, port, replication_mode]
+    attributes: [memory_state_used_free]
     enabled: true
-  saphana.backup.latest:
-    description: The age of the latest backup by start time.
+  saphana.host.swap.current:
+    description: The amount of swap space on the host.
     stability:
       level: development
-    unit: s
-    gauge:
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [host_swap_state]
+    enabled: true
+  saphana.instance.code_size:
+    description: The instance code size, including shared libraries of SAP HANA processes.
+    stability:
+      level: development
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: []
     enabled: true
-  saphana.transaction.count:
-    description: The number of transactions.
+  saphana.instance.memory.current:
+    description: The size of the memory pool for all SAP HANA processes.
     stability:
       level: development
-    unit: '{transactions}'
+    unit: By
     sum:
-      monotonic: true
+      monotonic: false
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [transaction_type]
+    attributes: [memory_state_used_free]
     enabled: true
-  saphana.transaction.blocked:
-    description: The number of transactions waiting for a lock.
+  saphana.instance.memory.shared.allocated:
+    description: The shared memory size of SAP HANA processes.
     stability:
       level: development
-    unit: '{transactions}'
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: []
+    enabled: true
+  saphana.instance.memory.used.peak:
+    description: The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).
+    stability:
+      level: development
+    unit: By
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -358,68 +397,52 @@ metrics:
       input_type: string
     attributes: [system, product]
     enabled: true
-  saphana.instance.memory.current:
-    description: The size of the memory pool for all SAP HANA processes.
+  saphana.network.request.average_time:
+    description: The average response time calculated over recent requests
     stability:
       level: development
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [memory_state_used_free]
-    enabled: true
-  saphana.instance.memory.used.peak:
-    description: The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).
-    stability:
-      level: development
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
+    unit: ms
+    gauge:
+      value_type: double
       input_type: string
     attributes: []
     enabled: true
-  saphana.instance.code_size:
-    description: The instance code size, including shared libraries of SAP HANA processes.
+  saphana.network.request.count:
+    description: The number of active and pending service requests.
     stability:
       level: development
-    unit: By
+    unit: '{requests}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: []
+    attributes: [active_pending_request_state]
     enabled: true
-  saphana.instance.memory.shared.allocated:
-    description: The shared memory size of SAP HANA processes.
+  saphana.network.request.finished.count:
+    description: The number of service requests that have completed.
     stability:
       level: development
-    unit: By
+    unit: '{requests}'
     sum:
-      monotonic: false
+      monotonic: true
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: []
+    attributes: [internal_external_request_type]
     enabled: true
-  saphana.host.memory.current:
-    description: The amount of physical memory on the host.
+  saphana.replication.average_time:
+    description: The average amount of time consumed replicating a log.
     stability:
       level: development
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
+    unit: us
+    gauge:
+      value_type: double
       input_type: string
-    attributes: [memory_state_used_free]
+    attributes: [primary_host, secondary_host, port, replication_mode]
     enabled: true
-  saphana.host.swap.current:
-    description: The amount of swap space on the host.
+  saphana.replication.backlog.size:
+    description: The current replication backlog size.
     stability:
       level: development
     unit: By
@@ -428,19 +451,19 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [host_swap_state]
+    attributes: [primary_host, secondary_host, port, replication_mode]
     enabled: true
-  saphana.column.memory.used:
-    description: The memory used in all columns.
+  saphana.replication.backlog.time:
+    description: The current replication backlog.
     stability:
       level: development
-    unit: By
+    unit: us
     sum:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [column_memory_type, column_memory_subtype]
+    attributes: [primary_host, secondary_host, port, replication_mode]
     enabled: true
   saphana.row_store.memory.used:
     description: The used memory for all row tables.
@@ -453,18 +476,6 @@ metrics:
       value_type: int
       input_type: string
     attributes: [row_memory_type]
-    enabled: true
-  saphana.component.memory.used:
-    description: The memory used in components.
-    stability:
-      level: development
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [component]
     enabled: true
   saphana.schema.memory.used.current:
     description: The memory size for all tables in schema.
@@ -490,17 +501,17 @@ metrics:
       input_type: string
     attributes: [schema]
     enabled: true
-  saphana.schema.record.count:
-    description: The number of records for all tables in schema.
+  saphana.schema.operation.count:
+    description: The number of operations done on all tables in schema.
     stability:
       level: development
-    unit: '{records}'
+    unit: '{operations}'
     sum:
-      monotonic: false
+      monotonic: true
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [schema, schema_record_type]
+    attributes: [schema, schema_operation_type]
     enabled: true
   saphana.schema.record.compressed.count:
     description: The number of entries in main during the last optimize compression run for all tables in schema.
@@ -514,53 +525,17 @@ metrics:
       input_type: string
     attributes: [schema]
     enabled: true
-  saphana.schema.operation.count:
-    description: The number of operations done on all tables in schema.
+  saphana.schema.record.count:
+    description: The number of records for all tables in schema.
     stability:
       level: development
-    unit: '{operations}'
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [schema, schema_operation_type]
-    enabled: true
-  saphana.service.count:
-    description: The number of services in a given status.
-    stability:
-      level: development
-    unit: '{services}'
+    unit: '{records}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [service_status]
-    enabled: true
-  saphana.service.thread.count:
-    description: The number of service threads in a given status.
-    stability:
-      level: development
-    unit: '{threads}'
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [thread_status]
-    enabled: true
-  saphana.service.memory.used:
-    description: The used memory from the operating system perspective.
-    stability:
-      level: development
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [service, service_memory_used_type]
+    attributes: [schema, schema_record_type]
     enabled: true
   saphana.service.code_size:
     description: The service code size, including shared libraries.
@@ -574,41 +549,17 @@ metrics:
       input_type: string
     attributes: [service]
     enabled: true
-  saphana.service.stack_size:
-    description: The service stack size.
+  saphana.service.count:
+    description: The number of services in a given status.
     stability:
       level: development
-    unit: By
+    unit: '{services}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [service]
-    enabled: true
-  saphana.service.memory.heap.current:
-    description: The size of the heap portion of the memory pool.
-    stability:
-      level: development
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [service, memory_state_used_free]
-    enabled: true
-  saphana.service.memory.shared.current:
-    description: The size of the shared portion of the memory pool.
-    stability:
-      level: development
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [service, memory_state_used_free]
+    attributes: [service_status]
     enabled: true
   saphana.service.memory.compactors.allocated:
     description: The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.
@@ -634,18 +585,6 @@ metrics:
       input_type: string
     attributes: [service]
     enabled: true
-  saphana.service.memory.limit:
-    description: The configured maximum memory pool size.
-    stability:
-      level: development
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [service]
-    enabled: true
   saphana.service.memory.effective_limit:
     description: The effective maximum memory pool size, calculated considering the pool sizes of other processes.
     stability:
@@ -658,8 +597,8 @@ metrics:
       input_type: string
     attributes: [service]
     enabled: true
-  saphana.disk.size.current:
-    description: The disk size.
+  saphana.service.memory.heap.current:
+    description: The size of the heap portion of the memory pool.
     stability:
       level: development
     unit: By
@@ -668,7 +607,103 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [path, disk_usage_type, disk_state_used_free]
+    attributes: [service, memory_state_used_free]
+    enabled: true
+  saphana.service.memory.limit:
+    description: The configured maximum memory pool size.
+    stability:
+      level: development
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [service]
+    enabled: true
+  saphana.service.memory.shared.current:
+    description: The size of the shared portion of the memory pool.
+    stability:
+      level: development
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [service, memory_state_used_free]
+    enabled: true
+  saphana.service.memory.used:
+    description: The used memory from the operating system perspective.
+    stability:
+      level: development
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [service, service_memory_used_type]
+    enabled: true
+  saphana.service.stack_size:
+    description: The service stack size.
+    stability:
+      level: development
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [service]
+    enabled: true
+  saphana.service.thread.count:
+    description: The number of service threads in a given status.
+    stability:
+      level: development
+    unit: '{threads}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [thread_status]
+    enabled: true
+  saphana.transaction.blocked:
+    description: The number of transactions waiting for a lock.
+    stability:
+      level: development
+    unit: '{transactions}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: []
+    enabled: true
+  saphana.transaction.count:
+    description: The number of transactions.
+    stability:
+      level: development
+    unit: '{transactions}'
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [transaction_type]
+    enabled: true
+  saphana.uptime:
+    description: The uptime of the database.
+    stability:
+      level: development
+    unit: s
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [system, database]
     enabled: true
   saphana.volume.operation.count:
     description: The number of operations executed.
@@ -705,38 +740,4 @@ metrics:
       value_type: int
       input_type: string
     attributes: [path, disk_usage_type, volume_operation_type]
-    enabled: true
-  saphana.network.request.count:
-    description: The number of active and pending service requests.
-    stability:
-      level: development
-    unit: '{requests}'
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [active_pending_request_state]
-    enabled: true
-  saphana.network.request.finished.count:
-    description: The number of service requests that have completed.
-    stability:
-      level: development
-    unit: '{requests}'
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [internal_external_request_type]
-    enabled: true
-  saphana.network.request.average_time:
-    description: The average response time calculated over recent requests
-    stability:
-      level: development
-    unit: ms
-    gauge:
-      value_type: double
-      input_type: string
-    attributes: []
     enabled: true

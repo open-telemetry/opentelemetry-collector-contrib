@@ -10,20 +10,20 @@ status:
     active: [dashpole]
 
 resource_attributes:
-  cloud.provider:
-    description: The cloud.provider
+  cloud.availability_zone:
+    description: The cloud.availability_zone
     type: string
     enabled: true
   cloud.platform:
     description: The cloud.platform
     type: string
     enabled: true
-  cloud.region:
-    description: The cloud.region
+  cloud.provider:
+    description: The cloud.provider
     type: string
     enabled: true
-  cloud.availability_zone:
-    description: The cloud.availability_zone
+  cloud.region:
+    description: The cloud.region
     type: string
     enabled: true
   host.id:

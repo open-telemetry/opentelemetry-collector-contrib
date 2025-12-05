@@ -1,0 +1,47 @@
+{
+  "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+  "@odata.id": "/redfish/v1/Chassis/S7",
+  "@odata.type": "#Chassis.v1_23_0.Chassis",
+  "Id": "S7",
+  "AssetTag": "",
+  "ChassisType": "RackMount",
+  "IndicatorLED": "Off",
+  "Links": {
+    "ManagedBy": [
+      {
+        "@odata.id": "/redfish/v1/Managers/S7"
+      }
+    ],
+    "ComputerSystems": [
+      {
+        "@odata.id": "/redfish/v1/Systems/S7"
+      }
+    ]
+  },
+  "LocationIndicatorActive": false,
+  "Manufacturer": "HPE",
+  "Model": "ProLiant DL20 Gen10 Plus",
+  "Name": "Computer System Chassis",
+  "NetworkAdapters": {
+    "@odata.id": "/redfish/v1/Chassis/S7/NetworkAdapters"
+  },
+  "PCIeDevices": {
+    "@odata.id": "/redfish/v1/Chassis/S7/PCIeDevices"
+  },
+  "PCIeSlots": {
+    "@odata.id": "/redfish/v1/Chassis/S7/PCIeSlots"
+  },
+  "Power": {
+    "@odata.id": "/redfish/v1/Chassis/S7/Power"
+  },
+  "PowerState": "On",
+  "SKU": "P45110-B21",
+  "SerialNumber": "2M131992H0",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+  "Thermal": {
+    "@odata.id": "/redfish/v1/Chassis/S7/Thermal"
+  }
+}

@@ -59,12 +59,12 @@ across all spans:
 - `service.name`
 - `span.name`
 - `span.kind`
-- `status.code`
+- `status.code` (or `otel.status_code` when the `spanmetrics.statusCodeConvention.useOtelPrefix` feature gate is enabled)
 - `collector.instance.id`
 
-The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector 
+The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector
 does not violate the **Single Writer Principle** when spanmetrics is used in a multi-deployment model.
-Currently, `collector.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeServiceInstanceID`.
+Currently, `collector.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeCollectorInstanceID`.
 More detail, please see [Known Limitation: the Single Writer Principle](#known-limitation-the-single-writer-principle)
 
 ## Span to Metrics processor to Span to metrics connector
@@ -136,9 +136,10 @@ The following settings can be optionally configured:
 - `events`: Use to configure the events metric.
   - `enabled`: (default: `false`): enabling will add the events metric.
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
-- `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash(It's only used to build the hash key, not copy the attributes to metrics resource attributes). 
+- `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash(It's only used to build the hash key, not copy the attributes to metrics resource attributes).
    Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
+- `add_resource_attributes` (default: `false`): Add the resource attributes to the resulting metrics. This option enables the old behavior before the `connector.spanmetrics.excludeResourceMetrics` feature gate was introduced. When set to `true`, resource attributes will be included in the metrics even if the feature gate is enabled. See [GitHub issue #42103](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103) for more context.
 
 The feature gate `connector.spanmetrics.legacyMetricNames` (disabled by default) controls the connector to use legacy metric names.
 
@@ -283,7 +284,7 @@ connectors:
       - telemetry.sdk.language
       - telemetry.sdk.name
 ```
-* Manually enable the feature gate: `connector.spanmetrics.includeServiceInstanceID` to produce uniquely identified metrics.
+* Manually enable the feature gate: `connector.spanmetrics.includeCollectorInstanceID` to produce uniquely identified metrics.
 * For exporters like Prometheus, which rely on the single writer assumption, use a dedicated pipeline with a single `spanmetricsconnector` instance
 
 More context is available in [GitHub issue #21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).

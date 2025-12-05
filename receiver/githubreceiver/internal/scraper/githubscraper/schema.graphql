@@ -22376,7 +22376,7 @@ enum ThreadSubscriptionState {
   SUBSCRIBED_TO_THREAD_TYPE
   "The User is notified because they are subscribed to the thread"
   SUBSCRIBED_TO_THREAD
-  "The User is not recieving notifications from this thread"
+  "The User is not receiving notifications from this thread"
   NONE
 }
 "Reason that the suggested topic is declined."

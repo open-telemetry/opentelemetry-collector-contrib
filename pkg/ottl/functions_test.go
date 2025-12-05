@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -527,17 +528,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	p, _ := NewParser(
-		defaultFunctionsForTests(),
-		testParsePath[any],
-		componenttest.NewNopTelemetrySettings(),
-		WithEnumParser[any](testParseEnum),
-	)
-
 	tests := []struct {
-		name string
-		inv  editor
-		want any
+		name      string
+		inv       editor
+		want      any
+		wantError string
 	}{
 		{
 			name: "no arguments",
@@ -797,7 +792,13 @@ func Test_NewFunctionCall(t *testing.T) {
 							List: &list{
 								Values: []value{
 									{
-										String: ottltest.Strp("test"),
+										Literal: &mathExprLiteral{
+											Path: &path{
+												Fields: []field{
+													{Name: "dur1"},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -816,7 +817,13 @@ func Test_NewFunctionCall(t *testing.T) {
 							List: &list{
 								Values: []value{
 									{
-										String: ottltest.Strp("test"),
+										Literal: &mathExprLiteral{
+											Path: &path{
+												Fields: []field{
+													{Name: "time1"},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -835,7 +842,9 @@ func Test_NewFunctionCall(t *testing.T) {
 							List: &list{
 								Values: []value{
 									{
-										String: ottltest.Strp("1.1"),
+										Literal: &mathExprLiteral{
+											Float: ottltest.Floatp(1.1),
+										},
 									},
 									{
 										Literal: &mathExprLiteral{
@@ -1232,7 +1241,13 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							String: ottltest.Strp("test"),
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{Name: "dur1"},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -1245,7 +1260,13 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							String: ottltest.Strp("test"),
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{Name: "time1"},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -1296,12 +1317,14 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							String: ottltest.Strp("1.1"),
+							Literal: &mathExprLiteral{
+								Float: ottltest.Floatp(1.1),
+							},
 						},
 					},
 				},
 			},
-			want: nil,
+			want: "anything",
 		},
 		{
 			name: "floatlikegetter arg",
@@ -1341,13 +1364,13 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Float: ottltest.Floatp(1.1),
+								Int: ottltest.Intp(1),
 							},
 						},
 					},
 				},
 			},
-			want: nil,
+			want: "anything",
 		},
 		{
 			name: "byteslicelikegetter arg",
@@ -1726,14 +1749,30 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 	}
+
+	p, _ := NewParser(
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	testMap := pcommon.NewMap()
+	testMap.PutStr("foo", "bar")
+
+	testSlice := pcommon.NewSlice()
+	testSlice.AppendEmpty().SetStr("test")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fn, err := p.newFunctionCall(tt.inv)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
+			result, err := fn.Eval(t.Context(), nil)
 			if tt.want != nil {
-				result, _ := fn.Eval(t.Context(), nil)
 				assert.Equal(t, tt.want, result)
+			} else if tt.wantError != "" {
+				assert.ErrorContains(t, err, tt.wantError)
 			}
 		})
 	}
@@ -2570,7 +2609,7 @@ func Test_basePath_isComplete(t *testing.T) {
 			if tt.expectedError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -2619,7 +2658,7 @@ func Test_basePath_NextWithIsComplete(t *testing.T) {
 			if tt.expectedError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -2648,7 +2687,7 @@ func Test_newPath(t *testing.T) {
 	}
 
 	np, err := ps.newPath(&path{Fields: fields})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	p := Path[any](np)
 	assert.Equal(t, "body", p.Name())
 	assert.Nil(t, p.Keys())
@@ -2659,10 +2698,10 @@ func Test_newPath(t *testing.T) {
 	assert.Nil(t, p.Next())
 	assert.Len(t, p.Keys(), 1)
 	v, err := p.Keys()[0].String(t.Context(), struct{}{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "key", *v)
 	i, err := p.Keys()[0].Int(t.Context(), struct{}{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, i)
 }
 
@@ -2731,7 +2770,7 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 				assert.Error(t, err, tt.expectedError)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			p := Path[any](np)
 			contextParsedAsField := len(tt.pathContextNames) == 0 && tt.pathContext != ""
 			if contextParsedAsField {
@@ -2761,10 +2800,10 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 			assert.Nil(t, p.Next())
 			assert.Len(t, p.Keys(), 1)
 			v, err := p.Keys()[0].String(t.Context(), struct{}{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, "key", *v)
 			i, err := p.Keys()[0].Int(t.Context(), struct{}{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Nil(t, i)
 		})
 	}
@@ -2775,7 +2814,7 @@ func Test_baseKey_String(t *testing.T) {
 		s: ottltest.Strp("test"),
 	}
 	s, err := bp.String(t.Context(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "test", *s)
 }
@@ -2785,7 +2824,7 @@ func Test_baseKey_Int(t *testing.T) {
 		i: ottltest.Intp(1),
 	}
 	i, err := bp.Int(t.Context(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, i)
 	assert.Equal(t, int64(1), *i)
 }
@@ -2811,11 +2850,11 @@ func Test_newKey(t *testing.T) {
 	assert.Len(t, ks, 2)
 
 	s, err := ks[0].String(t.Context(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "foo", *s)
 	s, err = ks[1].String(t.Context(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "bar", *s)
 }

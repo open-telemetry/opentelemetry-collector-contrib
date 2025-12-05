@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v75/github"
+	"github.com/google/go-github/v79/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -193,6 +193,11 @@ func TestScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreMetricValues(
+					"vcs.ref.time",
+					"vcs.change.duration",
+					"vcs.change.time_to_merge",
+				),
 			))
 		})
 	}

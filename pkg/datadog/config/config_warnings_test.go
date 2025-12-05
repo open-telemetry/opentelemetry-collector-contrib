@@ -4,6 +4,7 @@
 package config // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -180,4 +181,57 @@ func TestDeprecateHostnameSourceFirstResource(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, cfg.warnings, 1)
 	assert.ErrorContains(t, cfg.warnings[0], "first_resource is deprecated, opt in to https://docs.datadoghq.com/opentelemetry/mapping/host_metadata/ instead")
+}
+
+func TestAddWarning(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+
+	// Add a warning
+	cfg.AddWarning(errors.New("test warning"))
+
+	// Verify warning was added
+	assert.Len(t, cfg.warnings, 1)
+	assert.Equal(t, "test warning", cfg.warnings[0].Error())
+}
+
+func TestGetWarnings(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+	cfg.warnings = []error{errors.New("test warning")}
+
+	// Get warnings
+	warnings := cfg.GetWarnings()
+
+	// Verify warnings are returned correctly
+	assert.Len(t, warnings, 1)
+	assert.Equal(t, "test warning", warnings[0].Error())
+}
+
+func TestGetWarningsReturnsACopy(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+	originalWarning := errors.New("original warning")
+	cfg.warnings = []error{originalWarning}
+
+	// Get warnings
+	warnings := cfg.GetWarnings()
+
+	// Modify the returned slice
+	warnings = append(warnings, errors.New("new warning"))
+
+	// Verify original warnings are unchanged
+	assert.Len(t, cfg.warnings, 1)
+	assert.Equal(t, "original warning", cfg.warnings[0].Error())
+
+	// Verify the returned slice was modified
+	assert.Len(t, warnings, 2)
+}
+
+func TestAddWarningf(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+
+	// Add formatted warning
+	cfg.AddWarningf("hostname \"%s\" is ignored", "test-host")
+
+	// Verify warning was added with correct formatting
+	assert.Len(t, cfg.warnings, 1)
+	assert.Equal(t, "hostname \"test-host\" is ignored", cfg.warnings[0].Error())
 }

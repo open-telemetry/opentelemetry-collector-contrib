@@ -5,6 +5,7 @@ package prometheusexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -75,7 +76,7 @@ func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 		}
 	}
 
-	return
+	return n
 }
 
 func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) int {
@@ -90,9 +91,11 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scope
 		return a.accumulateHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
 	case pmetric.MetricTypeSummary:
 		return a.accumulateSummary(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
+	case pmetric.MetricTypeExponentialHistogram:
+		return a.accumulateExponentialHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
 	default:
 		a.logger.With(
-			zap.String("data_type", string(metric.Type())),
+			zap.String("data_type", metric.Type().String()),
 			zap.String("metric_name", metric.Name()),
 		).Error("failed to translate metric")
 	}
@@ -160,7 +163,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName,
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
-	return
+	return n
 }
 
 func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
@@ -168,7 +171,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 
 	// Drop metrics with unspecified aggregations
 	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityUnspecified {
-		return
+		return n
 	}
 
 	// Drop non-monotonic and non-cumulative metrics
@@ -225,7 +228,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
-	return
+	return n
 }
 
 func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
@@ -294,7 +297,78 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
-	return
+	return n
+}
+
+func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
+	expHistogram := metric.ExponentialHistogram()
+	a.logger.Debug("Accumulate native histogram.....")
+	dps := expHistogram.DataPoints()
+
+	for i := 0; i < dps.Len(); i++ {
+		ip := dps.At(i)
+		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
+		if ip.Flags().NoRecordedValue() {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
+
+		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particular time series
+		if !ok {
+			// first data point
+			m := copyMetricMetadata(metric)
+			ip.CopyTo(m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty())
+			m.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			n++
+			continue
+		}
+		mv := v.(*accumulatedValue)
+
+		m := copyMetricMetadata(metric)
+		m.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+		switch expHistogram.AggregationTemporality() {
+		case pmetric.AggregationTemporalityDelta:
+			pp := mv.value.ExponentialHistogram().DataPoints().At(0) // previous aggregated value for time range
+			if ip.StartTimestamp().AsTime() != pp.Timestamp().AsTime() {
+				// treat misalignment as restart and reset, or violation of single-writer principle and drop
+				a.logger.With(
+					zap.String("ip_start_time", ip.StartTimestamp().String()),
+					zap.String("pp_start_time", pp.StartTimestamp().String()),
+					zap.String("pp_timestamp", pp.Timestamp().String()),
+					zap.String("ip_timestamp", ip.Timestamp().String()),
+				).Warn("Misaligned starting timestamps")
+				if !ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
+					a.logger.With(
+						zap.String("metric_name", metric.Name()),
+					).Warn("Dropped misaligned histogram datapoint")
+					continue
+				}
+				a.logger.Debug("Treating it like reset")
+				ip.CopyTo(m.ExponentialHistogram().DataPoints().AppendEmpty())
+			} else {
+				a.logger.Debug("Accumulate another histogram datapoint")
+				accumulateExponentialHistogramValues(pp, ip, m.ExponentialHistogram().DataPoints().AppendEmpty())
+			}
+		case pmetric.AggregationTemporalityCumulative:
+			if ip.Timestamp().AsTime().Before(mv.value.ExponentialHistogram().DataPoints().At(0).Timestamp().AsTime()) {
+				// only keep datapoint with latest timestamp
+				continue
+			}
+
+			ip.CopyTo(m.ExponentialHistogram().DataPoints().AppendEmpty())
+		default:
+			// unsupported temporality
+			continue
+		}
+
+		// Store the updated metric and advance count
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		n++
+	}
+
+	return n
 }
 
 // Collect returns a slice with relevant aggregated metrics and their resource attributes.
@@ -405,4 +479,180 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	}
 
 	dest.ExplicitBounds().FromRaw(newer.ExplicitBounds().AsRaw())
+}
+
+// calculateBucketUpperBound calculates the upper bound for an exponential histogram bucket
+func calculateBucketUpperBound(scale, offset int32, index int) float64 {
+	// For exponential histograms with base = 2:
+	// Upper bound = 2^(scale + offset + index + 1)
+	return math.Pow(2, float64(scale+offset+int32(index)+1))
+}
+
+// filterBucketsForZeroThreshold filters buckets that fall below the zero threshold
+// and returns the filtered buckets and the additional zero count
+func filterBucketsForZeroThreshold(offset int32, counts []uint64, scale int32, zeroThreshold float64) (newOffset int32, filteredCounts []uint64, additionalZeroCount uint64) {
+	if len(counts) == 0 || zeroThreshold <= 0 {
+		return offset, counts, 0
+	}
+
+	additionalZeroCount = uint64(0)
+	filteredCounts = make([]uint64, 0, len(counts))
+	newOffset = offset
+
+	// Find the first bucket whose upper bound is > zeroThreshold
+	for i, count := range counts {
+		upperBound := calculateBucketUpperBound(scale, offset, i)
+		if upperBound > zeroThreshold {
+			filteredCounts = append(filteredCounts, counts[i:]...)
+			break
+		}
+		// This bucket's range falls entirely below the zero threshold
+		additionalZeroCount += count
+		newOffset = offset + int32(i) + 1 // Move offset to next bucket
+	}
+
+	// If all buckets were filtered out, return empty buckets
+	if len(filteredCounts) == 0 {
+		return 0, nil, additionalZeroCount
+	}
+
+	return newOffset, filteredCounts, additionalZeroCount
+}
+
+func accumulateExponentialHistogramValues(prev, current, dest pmetric.ExponentialHistogramDataPoint) {
+	if current.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
+		dest.SetStartTimestamp(current.StartTimestamp())
+		prev.Attributes().CopyTo(dest.Attributes())
+		dest.SetTimestamp(prev.Timestamp())
+	} else {
+		dest.SetStartTimestamp(prev.StartTimestamp())
+		current.Attributes().CopyTo(dest.Attributes())
+		dest.SetTimestamp(current.Timestamp())
+	}
+
+	targetScale := min(current.Scale(), prev.Scale())
+	dest.SetScale(targetScale)
+
+	// Determine the new zero threshold (maximum of the two)
+	newZeroThreshold := max(prev.ZeroThreshold(), current.ZeroThreshold())
+	dest.SetZeroThreshold(newZeroThreshold)
+
+	// Downscale buckets to target scale
+	pPosOff, pPosCounts := downscaleBucketSide(prev.Positive().Offset(), prev.Positive().BucketCounts().AsRaw(), prev.Scale(), targetScale)
+	pNegOff, pNegCounts := downscaleBucketSide(prev.Negative().Offset(), prev.Negative().BucketCounts().AsRaw(), prev.Scale(), targetScale)
+	cPosOff, cPosCounts := downscaleBucketSide(current.Positive().Offset(), current.Positive().BucketCounts().AsRaw(), current.Scale(), targetScale)
+	cNegOff, cNegCounts := downscaleBucketSide(current.Negative().Offset(), current.Negative().BucketCounts().AsRaw(), current.Scale(), targetScale)
+
+	// Filter buckets that fall below the new zero threshold
+	additionalZeroCount := uint64(0)
+
+	// Filter positive buckets from previous histogram
+	if newZeroThreshold > prev.ZeroThreshold() {
+		var filteredZeroCount uint64
+		pPosOff, pPosCounts, filteredZeroCount = filterBucketsForZeroThreshold(pPosOff, pPosCounts, targetScale, newZeroThreshold)
+		additionalZeroCount += filteredZeroCount
+	}
+
+	// Filter positive buckets from current histogram
+	if newZeroThreshold > current.ZeroThreshold() {
+		var filteredZeroCount uint64
+		cPosOff, cPosCounts, filteredZeroCount = filterBucketsForZeroThreshold(cPosOff, cPosCounts, targetScale, newZeroThreshold)
+		additionalZeroCount += filteredZeroCount
+	}
+
+	// Merge the remaining buckets
+	mPosOff, mPosCounts := mergeBuckets(pPosOff, pPosCounts, cPosOff, cPosCounts)
+	mNegOff, mNegCounts := mergeBuckets(pNegOff, pNegCounts, cNegOff, cNegCounts)
+
+	dest.Positive().SetOffset(mPosOff)
+	dest.Positive().BucketCounts().FromRaw(mPosCounts)
+	dest.Negative().SetOffset(mNegOff)
+	dest.Negative().BucketCounts().FromRaw(mNegCounts)
+
+	// Set zero count including additional counts from filtered buckets
+	dest.SetZeroCount(prev.ZeroCount() + current.ZeroCount() + additionalZeroCount)
+	dest.SetCount(prev.Count() + current.Count())
+
+	if prev.HasSum() && current.HasSum() {
+		dest.SetSum(prev.Sum() + current.Sum())
+	}
+
+	switch {
+	case prev.HasMin() && current.HasMin():
+		dest.SetMin(min(prev.Min(), current.Min()))
+	case prev.HasMin():
+		dest.SetMin(prev.Min())
+	case current.HasMin():
+		dest.SetMin(current.Min())
+	}
+
+	switch {
+	case prev.HasMax() && current.HasMax():
+		dest.SetMax(max(prev.Max(), current.Max()))
+	case prev.HasMax():
+		dest.SetMax(prev.Max())
+	case current.HasMax():
+		dest.SetMax(current.Max())
+	}
+}
+
+func downscaleBucketSide(offset int32, counts []uint64, fromScale, targetScale int32) (int32, []uint64) {
+	if len(counts) == 0 || fromScale <= targetScale {
+		return offset, counts
+	}
+	shift := fromScale - targetScale
+	factor := int32(1) << shift
+
+	first := offset
+	last := offset + int32(len(counts)) - 1
+	newOffset := floorDivInt32(first, factor)
+	newLast := floorDivInt32(last, factor)
+	newLen := int(newLast - newOffset + 1)
+	for i := range counts {
+		k := offset + int32(i)
+		nk := floorDivInt32(k, factor)
+		if k%factor == 0 {
+			counts[nk-newOffset] = counts[i]
+		} else {
+			counts[nk-newOffset] += counts[i]
+		}
+	}
+	return newOffset, counts[:newLen]
+}
+
+func mergeBuckets(offsetA int32, countsA []uint64, offsetB int32, countsB []uint64) (int32, []uint64) {
+	if len(countsA) == 0 && len(countsB) == 0 {
+		return 0, nil
+	}
+	if len(countsA) == 0 {
+		return offsetB, countsB
+	}
+	if len(countsB) == 0 {
+		return offsetA, countsA
+	}
+	minOffset := min(offsetB, offsetA)
+	lastA := offsetA + int32(len(countsA)) - 1
+	lastB := offsetB + int32(len(countsB)) - 1
+	maxLast := max(lastB, lastA)
+	newBucketLen := int(maxLast - minOffset + 1)
+	newBucketCount := make([]uint64, newBucketLen)
+	for i := range countsA {
+		k := offsetA + int32(i)
+		newBucketCount[k-minOffset] += countsA[i]
+	}
+	for i := range countsB {
+		k := offsetB + int32(i)
+		newBucketCount[k-minOffset] += countsB[i]
+	}
+	return minOffset, newBucketCount
+}
+
+func floorDivInt32(a, b int32) int32 {
+	if b <= 0 {
+		return 0
+	}
+	if a >= 0 {
+		return a / b
+	}
+	return -(((-a) + b - 1) / b)
 }

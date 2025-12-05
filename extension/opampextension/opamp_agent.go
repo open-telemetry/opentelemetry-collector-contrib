@@ -148,7 +148,6 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 			},
 			OnMessage: o.onMessage,
 		},
-		Capabilities: o.capabilities.toAgentCapabilities(),
 	}
 
 	if err := o.createAgentDescription(); err != nil {
@@ -170,6 +169,11 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		if err := o.opampClient.SetAvailableComponents(o.availableComponents); err != nil {
 			return err
 		}
+	}
+
+	capabilities := o.capabilities.toAgentCapabilities()
+	if err := o.opampClient.SetCapabilities(&capabilities); err != nil {
+		return err
 	}
 
 	o.logger.Debug("Starting OpAMP client...")

@@ -29,15 +29,6 @@ metrics:
       value_type: int
     unit: ms
     attributes: [tcpcheck.endpoint]
-  tcpcheck.status:
-    description: 1 if the TCP client successfully connected, otherwise 0.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: "1"
-    attributes: [tcpcheck.endpoint]
   tcpcheck.error:
     description: Records errors occurring during TCP check.
     enabled: true
@@ -49,3 +40,12 @@ metrics:
       monotonic: true
     unit: "{error}"
     attributes: [tcpcheck.endpoint, error.code]
+  tcpcheck.status:
+    description: 1 if the TCP client successfully connected, otherwise 0.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes: [tcpcheck.endpoint]

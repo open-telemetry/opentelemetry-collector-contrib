@@ -32,7 +32,7 @@ The following settings are optional for the websocket client:
 The following settings are optional for the HTTP client:
 
 - `server`: The OpAMP server connection settings.
-  - `http`: The OpAMP websocket transport settings.
+  - `http`: The OpAMP HTTP transport settings.
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
     - `polling_interval`: The interval at which the extension will poll the server. Defaults to 30s.

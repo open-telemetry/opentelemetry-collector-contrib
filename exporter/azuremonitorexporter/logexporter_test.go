@@ -15,10 +15,13 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
 )
 
 const (
@@ -180,10 +183,43 @@ func TestLogRecordToEnvelopeCloudTags(t *testing.T) {
 	require.Equal(t, expectedCloudRoleInstance, envelope.Tags[aiCloudRoleInstanceConvention])
 }
 
+func TestLogRecordToEnvelopeApplicationTags(t *testing.T) {
+	const aiAppVersionConvention = "ai.application.ver"
+
+	resource, scope, logRecord := getTestLogRecord(1)
+	logPacker := getLogPacker()
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
+
+	resourceAttributes := resource.Attributes().AsRaw()
+	expectedAppVer := resourceAttributes[string(conventions.ServiceVersionKey)].(string)
+	require.Equal(t, expectedAppVer, envelope.Tags[aiAppVersionConvention])
+}
+
+func TestLogRecordToEnvelopeDeviceTags(t *testing.T) {
+	const aiDeviceModelConvention = "ai.device.model"
+	const aiDeviceTypeConvention = "ai.device.type"
+	const aiDeviceOSConvention = "ai.device.osVersion"
+
+	resource, scope, logRecord := getTestLogRecord(1)
+	logPacker := getLogPacker()
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
+
+	resourceAttributes := resource.Attributes().AsRaw()
+	expectedDeviceModel := resourceAttributes[string(conventions.DeviceManufacturerKey)].(string)
+	require.Equal(t, expectedDeviceModel, envelope.Tags[aiDeviceModelConvention])
+	expectedDeviceType := resourceAttributes[string(conventions.DeviceModelIdentifierKey)].(string)
+	require.Equal(t, expectedDeviceType, envelope.Tags[aiDeviceTypeConvention])
+	expectedOSVersion := resourceAttributes[string(conventions.OSNameKey)].(string) + " " + resourceAttributes[string(conventions.OSVersionKey)].(string)
+	require.Equal(t, expectedOSVersion, envelope.Tags[aiDeviceOSConvention])
+}
+
 func getLogsExporter(config *Config, transportChannel appinsights.TelemetryChannel) *azureMonitorExporter {
 	return &azureMonitorExporter{
 		config,
 		transportChannel,
+		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
 	}
@@ -202,6 +238,11 @@ func getTestLogs() plog.Logs {
 	resource.Attributes().PutStr(string(conventions.ServiceNameKey), defaultServiceName)
 	resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), defaultServiceNamespace)
 	resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), defaultServiceInstance)
+	resource.Attributes().PutStr(string(conventions.ServiceVersionKey), defaultServiceVersion)
+	resource.Attributes().PutStr(string(conventions.OSNameKey), defaultOSName)
+	resource.Attributes().PutStr(string(conventions.OSVersionKey), defaultOSVersion)
+	resource.Attributes().PutStr(string(conventions.DeviceManufacturerKey), defaultDeviceManufacturer)
+	resource.Attributes().PutStr(string(conventions.DeviceModelIdentifierKey), defaultDeviceModelIdentifier)
 
 	// add the scope
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()

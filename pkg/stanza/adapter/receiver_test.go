@@ -137,7 +137,6 @@ func TestShutdownFlush(t *testing.T) {
 			select {
 			case <-closeCh:
 				assert.NoError(t, logsReceiver.Shutdown(t.Context()))
-				fmt.Println(">> Shutdown called")
 				return
 			default:
 				err := stanzaReceiver.emitter.Process(t.Context(), entry.New())
@@ -242,7 +241,7 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int, batchingInput, batchi
 	rcv.set = set
 	rcv.emitter = emitter
 
-	require.NoError(b, rcv.Start(b.Context(), nil))
+	require.NoError(b, rcv.Start(b.Context(), componenttest.NewNopHost()))
 
 	for b.Loop() {
 		nextIteration <- struct{}{}

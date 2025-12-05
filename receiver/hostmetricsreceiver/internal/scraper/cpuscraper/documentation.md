@@ -18,14 +18,14 @@ Total seconds each logical CPU spent on each mode.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu | Logical CPU number starting at 0. | Any Str | false |
-| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | false |
+| cpu | Logical CPU number starting at 0. | Any Str | Recommended |
+| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended |
 
 ## Optional Metrics
 
@@ -43,13 +43,13 @@ Current frequency of the CPU core in Hz.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| Hz | Gauge | Double | development |
+| Hz | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu | Logical CPU number starting at 0. | Any Str | false |
+| cpu | Logical CPU number starting at 0. | Any Str | Recommended |
 
 ### system.cpu.logical.count
 
@@ -57,7 +57,7 @@ Number of available logical CPUs.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cpu} | Sum | Int | Cumulative | false | development |
+| {cpu} | Sum | Int | Cumulative | false | Development |
 
 ### system.cpu.physical.count
 
@@ -65,7 +65,7 @@ Number of available physical CPUs.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cpu} | Sum | Int | Cumulative | false | development |
+| {cpu} | Sum | Int | Cumulative | false | Development |
 
 ### system.cpu.utilization
 
@@ -73,11 +73,11 @@ Difference in system.cpu.time since the last measurement per logical CPU, divide
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cpu | Logical CPU number starting at 0. | Any Str | false |
-| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | false |
+| cpu | Logical CPU number starting at 0. | Any Str | Recommended |
+| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended |

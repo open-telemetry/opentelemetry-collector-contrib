@@ -35,7 +35,7 @@ func (h *httpForwarder) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
 	}
 
-	httpClient, err := h.config.Egress.ToClient(ctx, host, h.settings)
+	httpClient, err := h.config.Egress.ToClient(ctx, host.GetExtensions(), h.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -44,7 +44,7 @@ func (h *httpForwarder) Start(ctx context.Context, host component.Host) error {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", h.forwardRequest)
 
-	h.server, err = h.config.Ingress.ToServer(ctx, host, h.settings, handler)
+	h.server, err = h.config.Ingress.ToServer(ctx, host.GetExtensions(), h.settings, handler)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -78,7 +78,7 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 	forwarderRequest.RequestURI = ""
 
 	// Add additional headers.
-	for k, v := range h.config.Egress.Headers {
+	for k, v := range h.config.Egress.Headers.Iter {
 		forwarderRequest.Header.Add(k, string(v))
 	}
 

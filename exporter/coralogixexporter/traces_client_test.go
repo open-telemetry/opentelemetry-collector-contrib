@@ -47,8 +47,10 @@ func TestNewTracesExporter(t *testing.T) {
 		{
 			name: "Valid traces endpoint config",
 			cfg: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint: "localhost:4317",
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: "localhost:4317",
+					},
 				},
 				PrivateKey: "test-key",
 			},
@@ -81,9 +83,6 @@ func TestTracesExporter_Start(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Traces: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-		},
 	}
 
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -92,8 +91,9 @@ func TestTracesExporter_Start(t *testing.T) {
 	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
-	assert.NotNil(t, exp.traceExporter)
-	assert.Contains(t, exp.config.Traces.Headers, "Authorization")
+	assert.NotNil(t, exp.grpcTracesExporter)
+	_, ok := exp.config.Traces.Headers.Get("Authorization")
+	assert.True(t, ok)
 
 	err = exp.shutdown(t.Context())
 	require.NoError(t, err)
@@ -103,9 +103,11 @@ func TestTracesExporter_EnhanceContext(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Traces: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{
-				"test-header": "test-value",
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Headers: configopaque.MapList{
+					{Name: "test-header", Value: "test-value"},
+				},
 			},
 		},
 	}
@@ -122,9 +124,6 @@ func TestTracesExporter_PushTraces(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Traces: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-		},
 	}
 
 	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -168,9 +167,6 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
-				Traces: configgrpc.ClientConfig{
-					Headers: map[string]configopaque.String{},
-				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.configEnabled,
 					Threshold: 1,
@@ -271,12 +267,13 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 	}
@@ -360,12 +357,13 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 	}
@@ -421,12 +419,13 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 		RateLimiter: RateLimiterConfig{
@@ -553,12 +552,13 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 		RateLimiter: RateLimiterConfig{
@@ -611,10 +611,12 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Traces: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
 		},
 		PrivateKey: "test-key",

@@ -68,12 +68,12 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.QueueBatchConfig{
-		Enabled:      true,
-		NumConsumers: 23,
-		QueueSize:    42,
-		Sizer:        exporterhelper.RequestSizerTypeRequests,
-	}
+	queueCfg := func() exporterhelper.QueueBatchConfig {
+		queue := exporterhelper.NewDefaultQueueConfig()
+		queue.NumConsumers = 23
+		queue.QueueSize = 42
+		return queue
+	}()
 
 	timeoutCfg := exporterhelper.TimeoutConfig{
 		Timeout: 8,
@@ -438,6 +438,25 @@ func TestCompressionName(t *testing.T) {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_proto",
+	}, e,
+	)
+
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "zstd")].(*Config)
+
+	assert.Equal(t, &Config{
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Compression:       "zstd",
+			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+		},
+		MarshalerName: "otlp_json",
 	}, e,
 	)
 }

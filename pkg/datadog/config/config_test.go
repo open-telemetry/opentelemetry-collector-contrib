@@ -180,10 +180,12 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
-					Endpoint:             "endpoint",
-					Compression:          "gzip",
-					Auth:                 someAuth,
-					Headers:              map[string]configopaque.String{"key": "val"},
+					Endpoint:    "endpoint",
+					Compression: "gzip",
+					Auth:        someAuth,
+					Headers: configopaque.MapList{
+						{Name: "key", Value: "val"},
+					},
 					HTTP2ReadIdleTimeout: 250,
 					HTTP2PingTimeout:     200,
 				},
@@ -198,6 +200,73 @@ func TestValidate(t *testing.T) {
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 4 * time.Minute},
 			},
 			err: "reporter_period must be 5 minutes or higher",
+		},
+	}
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			err := testInstance.cfg.Validate()
+			if testInstance.err != "" {
+				assert.ErrorContains(t, err, testInstance.err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateConnectorComponentConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *ConnectorComponentConfig
+		err  string
+	}{
+		{
+			name: "valid connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					TracesConfig: TracesConfig{
+						IgnoreResources: []string{},
+						PeerTags:        []string{"tag1", "tag2"},
+					},
+					BucketInterval: 10 * time.Second,
+					TraceBuffer:    1000,
+				},
+			},
+		},
+		{
+			name: "unsupported ignore_missing_datadog_fields in connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					IgnoreMissingDatadogFields: true,
+				},
+			},
+			err: "ignore_missing_datadog_fields is not yet supported in the connector",
+		},
+		{
+			name: "valid ignore_missing_datadog_fields in connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					IgnoreMissingDatadogFields: false,
+				},
+			},
+		},
+		{
+			name: "invalid trace_buffer in connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					TraceBuffer: -1,
+				},
+			},
+			err: "trace buffer must be non-negative",
+		},
+		{
+			name: "invalid bucket_interval in connector",
+			cfg: &ConnectorComponentConfig{
+				Traces: TracesConnectorConfig{
+					BucketInterval: -1,
+				},
+			},
+			err: "bucket interval must be non-negative",
 		},
 	}
 	for _, testInstance := range tests {
@@ -463,6 +532,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 		HostnameDetectionTimeout: 25 * time.Second,
 		OnlyMetadata:             false,
+		OrchestratorExplorer: OrchestratorExplorerConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
+			},
+			Enabled: false,
+		},
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -539,6 +614,12 @@ func TestLoadConfig(t *testing.T) {
 				},
 				HostnameDetectionTimeout: 25 * time.Second,
 				OnlyMetadata:             false,
+				OrchestratorExplorer: OrchestratorExplorerConfig{
+					TCPAddrConfig: confignet.TCPAddrConfig{
+						Endpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
+					},
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -607,6 +688,12 @@ func TestLoadConfig(t *testing.T) {
 					ReporterPeriod: 30 * time.Minute,
 				},
 				HostnameDetectionTimeout: 25 * time.Second,
+				OrchestratorExplorer: OrchestratorExplorerConfig{
+					TCPAddrConfig: confignet.TCPAddrConfig{
+						Endpoint: "https://orchestrator.datadoghq.eu/api/v2/orchmanif",
+					},
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -673,6 +760,12 @@ func TestLoadConfig(t *testing.T) {
 					ReporterPeriod: 30 * time.Minute,
 				},
 				HostnameDetectionTimeout: 25 * time.Second,
+				OrchestratorExplorer: OrchestratorExplorerConfig{
+					TCPAddrConfig: confignet.TCPAddrConfig{
+						Endpoint: "https://orchestrator.datadoghq.test/api/v2/orchmanif",
+					},
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -734,6 +827,12 @@ func TestLoadConfig(t *testing.T) {
 				},
 				HostnameDetectionTimeout: 25 * time.Second,
 				OnlyMetadata:             false,
+				OrchestratorExplorer: OrchestratorExplorerConfig{
+					TCPAddrConfig: confignet.TCPAddrConfig{
+						Endpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
+					},
+					Enabled: false,
+				},
 			},
 		},
 	}
@@ -754,75 +853,93 @@ func TestLoadConfig(t *testing.T) {
 
 func TestOverrideEndpoints(t *testing.T) {
 	tests := []struct {
-		componentID             string
-		expectedSite            string
-		expectedMetricsEndpoint string
-		expectedTracesEndpoint  string
-		expectedLogsEndpoint    string
+		componentID                          string
+		expectedSite                         string
+		expectedMetricsEndpoint              string
+		expectedTracesEndpoint               string
+		expectedLogsEndpoint                 string
+		expectedOrchestratorExplorerEndpoint string
 	}{
 		{
-			componentID:             "nositeandnoendpoints",
-			expectedSite:            "datadoghq.com",
-			expectedMetricsEndpoint: "https://api.datadoghq.com",
-			expectedTracesEndpoint:  "https://trace.agent.datadoghq.com",
-			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.com",
+			componentID:                          "nositeandnoendpoints",
+			expectedSite:                         "datadoghq.com",
+			expectedMetricsEndpoint:              "https://api.datadoghq.com",
+			expectedTracesEndpoint:               "https://trace.agent.datadoghq.com",
+			expectedLogsEndpoint:                 "https://http-intake.logs.datadoghq.com",
+			expectedOrchestratorExplorerEndpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
 		},
 		{
-			componentID:             "nositeandmetricsendpoint",
-			expectedSite:            "datadoghq.com",
-			expectedMetricsEndpoint: "metricsendpoint:1234",
-			expectedTracesEndpoint:  "https://trace.agent.datadoghq.com",
-			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.com",
+			componentID:                          "nositeandmetricsendpoint",
+			expectedSite:                         "datadoghq.com",
+			expectedMetricsEndpoint:              "metricsendpoint:1234",
+			expectedTracesEndpoint:               "https://trace.agent.datadoghq.com",
+			expectedLogsEndpoint:                 "https://http-intake.logs.datadoghq.com",
+			expectedOrchestratorExplorerEndpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
 		},
 		{
-			componentID:             "nositeandtracesendpoint",
-			expectedSite:            "datadoghq.com",
-			expectedMetricsEndpoint: "https://api.datadoghq.com",
-			expectedTracesEndpoint:  "tracesendpoint:1234",
-			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.com",
+			componentID:                          "nositeandtracesendpoint",
+			expectedSite:                         "datadoghq.com",
+			expectedMetricsEndpoint:              "https://api.datadoghq.com",
+			expectedTracesEndpoint:               "tracesendpoint:1234",
+			expectedLogsEndpoint:                 "https://http-intake.logs.datadoghq.com",
+			expectedOrchestratorExplorerEndpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
 		},
 		{
-			componentID:             "nositeandlogsendpoint",
-			expectedSite:            "datadoghq.com",
-			expectedMetricsEndpoint: "https://api.datadoghq.com",
-			expectedTracesEndpoint:  "https://trace.agent.datadoghq.com",
-			expectedLogsEndpoint:    "logsendpoint:1234",
+			componentID:                          "nositeandlogsendpoint",
+			expectedSite:                         "datadoghq.com",
+			expectedMetricsEndpoint:              "https://api.datadoghq.com",
+			expectedTracesEndpoint:               "https://trace.agent.datadoghq.com",
+			expectedLogsEndpoint:                 "logsendpoint:1234",
+			expectedOrchestratorExplorerEndpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
 		},
 		{
-			componentID:             "nositeandallendpoints",
-			expectedSite:            "datadoghq.com",
-			expectedMetricsEndpoint: "metricsendpoint:1234",
-			expectedTracesEndpoint:  "tracesendpoint:1234",
-			expectedLogsEndpoint:    "logsendpoint:1234",
+			componentID:                          "nositeandallendpoints",
+			expectedSite:                         "datadoghq.com",
+			expectedMetricsEndpoint:              "metricsendpoint:1234",
+			expectedTracesEndpoint:               "tracesendpoint:1234",
+			expectedLogsEndpoint:                 "logsendpoint:1234",
+			expectedOrchestratorExplorerEndpoint: "orchestratorexplorerendpoint:1234",
 		},
 
 		{
-			componentID:             "siteandnoendpoints",
-			expectedSite:            "datadoghq.eu",
-			expectedMetricsEndpoint: "https://api.datadoghq.eu",
-			expectedTracesEndpoint:  "https://trace.agent.datadoghq.eu",
-			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.eu",
+			componentID:                          "siteandnoendpoints",
+			expectedSite:                         "datadoghq.eu",
+			expectedMetricsEndpoint:              "https://api.datadoghq.eu",
+			expectedTracesEndpoint:               "https://trace.agent.datadoghq.eu",
+			expectedLogsEndpoint:                 "https://http-intake.logs.datadoghq.eu",
+			expectedOrchestratorExplorerEndpoint: "https://orchestrator.datadoghq.eu/api/v2/orchmanif",
 		},
 		{
-			componentID:             "siteandmetricsendpoint",
-			expectedSite:            "datadoghq.eu",
-			expectedMetricsEndpoint: "metricsendpoint:1234",
-			expectedTracesEndpoint:  "https://trace.agent.datadoghq.eu",
-			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.eu",
+			componentID:                          "siteandmetricsendpoint",
+			expectedSite:                         "datadoghq.eu",
+			expectedMetricsEndpoint:              "metricsendpoint:1234",
+			expectedTracesEndpoint:               "https://trace.agent.datadoghq.eu",
+			expectedLogsEndpoint:                 "https://http-intake.logs.datadoghq.eu",
+			expectedOrchestratorExplorerEndpoint: "https://orchestrator.datadoghq.eu/api/v2/orchmanif",
 		},
 		{
-			componentID:             "siteandtracesendpoint",
-			expectedSite:            "datadoghq.eu",
-			expectedMetricsEndpoint: "https://api.datadoghq.eu",
-			expectedTracesEndpoint:  "tracesendpoint:1234",
-			expectedLogsEndpoint:    "https://http-intake.logs.datadoghq.eu",
+			componentID:                          "siteandtracesendpoint",
+			expectedSite:                         "datadoghq.eu",
+			expectedMetricsEndpoint:              "https://api.datadoghq.eu",
+			expectedTracesEndpoint:               "tracesendpoint:1234",
+			expectedLogsEndpoint:                 "https://http-intake.logs.datadoghq.eu",
+			expectedOrchestratorExplorerEndpoint: "https://orchestrator.datadoghq.eu/api/v2/orchmanif",
 		},
 		{
-			componentID:             "siteandallendpoints",
-			expectedSite:            "datadoghq.eu",
-			expectedMetricsEndpoint: "metricsendpoint:1234",
-			expectedTracesEndpoint:  "tracesendpoint:1234",
-			expectedLogsEndpoint:    "logsendpoint:1234",
+			componentID:                          "siteandallendpoints",
+			expectedSite:                         "datadoghq.eu",
+			expectedMetricsEndpoint:              "metricsendpoint:1234",
+			expectedTracesEndpoint:               "tracesendpoint:1234",
+			expectedLogsEndpoint:                 "logsendpoint:1234",
+			expectedOrchestratorExplorerEndpoint: "orchestratorexplorerendpoint:1234",
+		},
+		{
+			componentID:                          "siteandorchestratorexplorerendpoint",
+			expectedSite:                         "datadoghq.eu",
+			expectedMetricsEndpoint:              "https://api.datadoghq.eu",
+			expectedTracesEndpoint:               "https://trace.agent.datadoghq.eu",
+			expectedLogsEndpoint:                 "https://http-intake.logs.datadoghq.eu",
+			expectedOrchestratorExplorerEndpoint: "orchestratorexplorerendpoint:1234",
 		},
 	}
 

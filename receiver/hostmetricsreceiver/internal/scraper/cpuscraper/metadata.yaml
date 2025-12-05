@@ -21,6 +21,38 @@ attributes:
     enum: [idle, interrupt, nice, softirq, steal, system, user, wait]
 
 metrics:
+  system.cpu.frequency:
+    enabled: false
+    description: Current frequency of the CPU core in Hz.
+    unit: "Hz"
+    stability:
+      level: development
+    gauge:
+      value_type: double
+    attributes: [cpu]
+
+  system.cpu.logical.count:
+    enabled: false
+    description: Number of available logical CPUs.
+    unit: "{cpu}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  system.cpu.physical.count:
+    enabled: false
+    description: Number of available physical CPUs.
+    unit: "{cpu}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
   system.cpu.time:
     enabled: true
     description: Total seconds each logical CPU spent on each mode.
@@ -42,35 +74,3 @@ metrics:
     gauge:
       value_type: double
     attributes: [cpu, state]
-
-  system.cpu.physical.count:
-    enabled: false
-    description: Number of available physical CPUs.
-    unit: "{cpu}"
-    stability:
-      level: development
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-
-  system.cpu.logical.count:
-    enabled: false
-    description: Number of available logical CPUs.
-    unit: "{cpu}"
-    stability:
-      level: development
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-
-  system.cpu.frequency:
-    enabled: false
-    description: Current frequency of the CPU core in Hz.
-    unit: "Hz"
-    stability:
-      level: development
-    gauge:
-      value_type: double
-    attributes: [cpu]

@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -33,7 +32,7 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // consumer.Logs.
 type router[C any] struct {
 	resourceParser   ottl.Parser[ottlresource.TransformContext]
-	spanParser       ottl.Parser[ottlspan.TransformContext]
+	spanParser       ottl.Parser[*ottlspan.TransformContext]
 	metricParser     ottl.Parser[ottlmetric.TransformContext]
 	dataPointParser  ottl.Parser[ottldatapoint.TransformContext]
 	logParser        ottl.Parser[ottllog.TransformContext]
@@ -75,7 +74,7 @@ type routingItem[C any] struct {
 	consumer           C
 	requestCondition   *requestCondition
 	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
-	spanStatement      *ottl.Statement[ottlspan.TransformContext]
+	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
 	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
 	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
 	logStatement       *ottl.Statement[ottllog.TransformContext]
@@ -102,7 +101,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	var errs error
 	if buildResource {
 		parser, err := ottlresource.NewParser(
-			common.StandardFunctions[ottlresource.TransformContext](),
+			standardFunctions[ottlresource.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -113,7 +112,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildSpan {
 		parser, err := ottlspan.NewParser(
-			common.SpanFunctions(),
+			spanFunctions(),
 			settings,
 		)
 		if err == nil {
@@ -124,7 +123,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildMetric {
 		parser, err := ottlmetric.NewParser(
-			common.StandardFunctions[ottlmetric.TransformContext](),
+			standardFunctions[ottlmetric.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -135,7 +134,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildDataPoint {
 		parser, err := ottldatapoint.NewParser(
-			common.StandardFunctions[ottldatapoint.TransformContext](),
+			standardFunctions[ottldatapoint.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -146,7 +145,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildLog {
 		parser, err := ottllog.NewParser(
-			common.StandardFunctions[ottllog.TransformContext](),
+			standardFunctions[ottllog.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -246,7 +245,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 				route.logStatement = statement
 			}
 		} else {
-			pipelineNames := []string{}
+			var pipelineNames []string
 			for _, pipeline := range item.Pipelines {
 				pipelineNames = append(pipelineNames, pipeline.String())
 			}

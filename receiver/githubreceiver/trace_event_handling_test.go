@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v75/github"
+	"github.com/google/go-github/v79/github"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -39,7 +39,7 @@ func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 	err = json.Unmarshal(data, &event)
 	require.NoError(t, err, "Failed to unmarshal workflow run event")
 
-	traces, err := receiver.handleWorkflowRun(&event)
+	traces, err := receiver.handleWorkflowRun(&event, data)
 	require.NoError(t, err, "Failed to handle workflow run event")
 
 	expectedFile := filepath.Join("testdata", "workflow-run-expected.yaml")
@@ -69,7 +69,7 @@ func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 	err = json.Unmarshal(data, &event)
 	require.NoError(t, err, "Failed to unmarshal workflow job event")
 
-	traces, err := receiver.handleWorkflowJob(&event)
+	traces, err := receiver.handleWorkflowJob(&event, data)
 	require.NoError(t, err, "Failed to handle workflow job event")
 
 	expectedFile := filepath.Join("testdata", "workflow-job-expected.yaml")
@@ -99,7 +99,7 @@ func TestHandleWorkflowJobWithGoldenFileSkipped(t *testing.T) {
 	err = json.Unmarshal(data, &event)
 	require.NoError(t, err, "Failed to unmarshal workflow job event")
 
-	traces, err := receiver.handleWorkflowJob(&event)
+	traces, err := receiver.handleWorkflowJob(&event, data)
 	require.NoError(t, err, "Failed to handle workflow job event")
 
 	expectedFile := filepath.Join("testdata", "workflow-job-skipped-expected.yaml")
@@ -701,5 +701,240 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 		spanID2, err2 := newJobSpanID(runID, runAttempt, jobName)
 		require.NoError(t, err2)
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")
+	}
+}
+
+func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.IncludeSpanEvents = true // Enable span events
+	consumer := consumertest.NewNop()
+
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), config, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	testFilePath := filepath.Join("testdata", "workflow-run-completed.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowRunEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow run event")
+
+	traces, err := receiver.handleWorkflowRun(&event, data)
+	require.NoError(t, err, "Failed to handle workflow run event")
+
+	// Verify span event is present
+	resourceSpans := traces.ResourceSpans()
+	require.Equal(t, 1, resourceSpans.Len())
+
+	scopeSpans := resourceSpans.At(0).ScopeSpans()
+	require.Positive(t, scopeSpans.Len(), 0)
+
+	spans := scopeSpans.At(0).Spans()
+	require.Positive(t, spans.Len(), 0)
+
+	rootSpan := spans.At(0)
+	events := rootSpan.Events()
+	require.Equal(t, 1, events.Len(), "Expected one span event")
+
+	spanEvent := events.At(0)
+	require.Equal(t, "github.workflow_run.event", spanEvent.Name())
+
+	payload, exists := spanEvent.Attributes().Get("event.payload")
+	require.True(t, exists, "event.payload attribute should exist")
+	require.NotEmpty(t, payload.Str(), "event.payload should not be empty")
+
+	// Verify the payload is valid JSON
+	var unmarshaled map[string]any
+	err = json.Unmarshal([]byte(payload.Str()), &unmarshaled)
+	require.NoError(t, err, "event.payload should be valid JSON")
+}
+
+func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.IncludeSpanEvents = true // Enable span events
+	consumer := consumertest.NewNop()
+
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), config, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	testFilePath := filepath.Join("testdata", "workflow-job-completed.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowJobEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow job event")
+
+	traces, err := receiver.handleWorkflowJob(&event, data)
+	require.NoError(t, err, "Failed to handle workflow job event")
+
+	// Verify span event is present on the job span (first scope span)
+	resourceSpans := traces.ResourceSpans()
+	require.Equal(t, 1, resourceSpans.Len())
+
+	scopeSpans := resourceSpans.At(0).ScopeSpans()
+	require.Positive(t, scopeSpans.Len(), 0)
+
+	// The job span is the first span
+	jobSpan := scopeSpans.At(0).Spans().At(0)
+	events := jobSpan.Events()
+	require.Equal(t, 1, events.Len(), "Expected one span event on job span")
+
+	spanEvent := events.At(0)
+	require.Equal(t, "github.workflow_job.event", spanEvent.Name())
+
+	payload, exists := spanEvent.Attributes().Get("event.payload")
+	require.True(t, exists, "event.payload attribute should exist")
+	require.NotEmpty(t, payload.Str(), "event.payload should not be empty")
+
+	// Verify the payload is valid JSON
+	var unmarshaled map[string]any
+	err = json.Unmarshal([]byte(payload.Str()), &unmarshaled)
+	require.NoError(t, err, "event.payload should be valid JSON")
+}
+
+func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.WebHook.Endpoint = "localhost:0"
+	// IncludeSpanEvents defaults to false
+	consumer := consumertest.NewNop()
+
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), config, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	testFilePath := filepath.Join("testdata", "workflow-run-completed.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowRunEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow run event")
+
+	traces, err := receiver.handleWorkflowRun(&event, data)
+	require.NoError(t, err, "Failed to handle workflow run event")
+
+	// Verify NO span events are present
+	resourceSpans := traces.ResourceSpans()
+	require.Equal(t, 1, resourceSpans.Len())
+
+	scopeSpans := resourceSpans.At(0).ScopeSpans()
+	require.Positive(t, scopeSpans.Len(), 0)
+
+	spans := scopeSpans.At(0).Spans()
+	require.Positive(t, spans.Len(), 0)
+
+	rootSpan := spans.At(0)
+	events := rootSpan.Events()
+	require.Equal(t, 0, events.Len(), "Expected no span events when disabled")
+}
+
+func TestStepSpansHaveNoEvents(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.IncludeSpanEvents = true // Enable span events
+	consumer := consumertest.NewNop()
+
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), config, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	testFilePath := filepath.Join("testdata", "workflow-job-completed.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowJobEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow job event")
+
+	traces, err := receiver.handleWorkflowJob(&event, data)
+	require.NoError(t, err, "Failed to handle workflow job event")
+
+	// Verify step spans (not the first span) don't have events
+	resourceSpans := traces.ResourceSpans()
+	scopeSpans := resourceSpans.At(0).ScopeSpans()
+
+	// Check spans beyond the first one (which is the job span)
+	// Queue span and step spans should have no events
+	for i := 1; i < scopeSpans.Len(); i++ {
+		spans := scopeSpans.At(i).Spans()
+		for j := 0; j < spans.Len(); j++ {
+			span := spans.At(j)
+			require.Equal(t, 0, span.Events().Len(),
+				"Step/queue span '%s' should not have events", span.Name())
+		}
+	}
+}
+
+func TestCorrectActionTimestamps(t *testing.T) {
+	tests := []struct {
+		name          string
+		start         time.Time
+		end           time.Time
+		expectedStart time.Time
+		expectedEnd   time.Time
+	}{
+		{
+			name:          "normal order - no change needed",
+			start:         time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "same timestamp - no change needed",
+			start:         time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+		},
+		{
+			name:          "inverted timestamps - end before start",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "end one second before start",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "large time difference - inverted",
+			start:         time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 0, 0, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+		},
+		{
+			name:          "nanosecond precision - inverted",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 55, 99, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+		},
+		{
+			name:          "zero times",
+			start:         time.Time{},
+			end:           time.Time{},
+			expectedStart: time.Time{},
+			expectedEnd:   time.Time{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStart, gotEnd := correctActionTimestamps(tt.start, tt.end)
+
+			require.Equal(t, tt.expectedStart, gotStart, "start timestamp mismatch")
+			require.Equal(t, tt.expectedEnd, gotEnd, "end timestamp mismatch")
+
+			// Verify the invariant: end is never before start
+			require.False(t, gotEnd.Before(gotStart), "end timestamp should not be before start timestamp")
+		})
 	}
 }

@@ -14,11 +14,13 @@ connector/datadogconnector connector/datadog
 connector/exceptionsconnector connector/exceptions
 connector/failoverconnector connector/failover
 connector/grafanacloudconnector connector/grafanacloud
+connector/metricsaslogsconnector connector/metricsaslogs
 connector/otlpjsonconnector connector/otlpjson
 connector/roundrobinconnector connector/roundrobin
 connector/routingconnector connector/routing
 connector/servicegraphconnector connector/servicegraph
 connector/signaltometricsconnector connector/signaltometrics
+connector/slowsqlconnector connector/slowsql
 connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
@@ -81,6 +83,7 @@ extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
 extension/encoding/awslogsencodingextension extension/encoding/awslogsencoding
+extension/encoding/azureencodingextension extension/encoding/azureencoding
 extension/encoding/googlecloudlogentryencodingextension extension/encoding/googlecloudlogentryencoding
 extension/encoding/jaegerencodingextension extension/encoding/jaegerencoding
 extension/encoding/jsonlogencodingextension extension/encoding/jsonlogencoding
@@ -90,6 +93,7 @@ extension/encoding/textencodingextension extension/encoding/textencoding
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
+extension/healthcheckextension extension/healthcheck
 extension/healthcheckv2extension extension/healthcheckv2
 extension/httpforwarderextension extension/httpforwarder
 extension/jaegerremotesampling extension/jaegerremotesampling
@@ -119,13 +123,14 @@ internal/collectd internal/collectd
 internal/common internal/common
 internal/coreinternal internal/core
 internal/datadog internal/datadog
+internal/datadog/e2e internal/datadog/e2e
 internal/docker internal/docker
-internal/e2e internal/e2e
 internal/exp/metrics internal/exp/metrics
 internal/filter internal/filter
 internal/grpcutil internal/grpcutil
 internal/healthcheck internal/healthcheck
 internal/k8sconfig internal/k8sconfig
+internal/k8sinventory internal/k8sinventory
 internal/kafka internal/kafka
 internal/kubelet internal/kubelet
 internal/metadataproviders internal/metadataproviders
@@ -151,6 +156,7 @@ pkg/resourcetotelemetry pkg/resourcetotelemetry
 pkg/sampling pkg/sampling
 pkg/stanza pkg/stanza
 pkg/stanza/fileconsumer pkg/stanza/fileconsumer
+pkg/stanza/operator/input/journald pkg/stanza/operator/input/journald
 pkg/status pkg/status
 pkg/translator/azure pkg/translator/azure
 pkg/translator/azurelogs pkg/translator/azurelogs
@@ -158,6 +164,7 @@ pkg/translator/faro pkg/translator/faro
 pkg/translator/jaeger pkg/translator/jaeger
 pkg/translator/loki pkg/translator/loki
 pkg/translator/opencensus pkg/translator/opencensus
+pkg/translator/pprof pkg/translator/pprof
 pkg/translator/prometheus pkg/translator/prometheus
 pkg/translator/prometheusremotewrite pkg/translator/prometheusremotewrite
 pkg/translator/signalfx pkg/translator/signalfx
@@ -189,6 +196,7 @@ processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
 processor/resourcedetectionprocessor/internal/akamai processor/resourcedetection/internal/akamai
+processor/resourcedetectionprocessor/internal/azure processor/resourcedetection/internal/azure
 processor/resourcedetectionprocessor/internal/digitalocean processor/resourcedetection/internal/digitalocean
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
 processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
@@ -212,6 +220,7 @@ receiver/awscloudwatchreceiver receiver/awscloudwatch
 receiver/awscontainerinsightreceiver receiver/awscontainerinsight
 receiver/awsecscontainermetricsreceiver receiver/awsecscontainermetrics
 receiver/awsfirehosereceiver receiver/awsfirehose
+receiver/awslambdareceiver receiver/awslambda
 receiver/awss3receiver receiver/awss3
 receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
@@ -219,6 +228,8 @@ receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
 receiver/chronyreceiver receiver/chrony
 receiver/ciscoosreceiver receiver/ciscoos
+receiver/ciscoosreceiver/internal/scraper/interfacesscraper receiver/ciscoos/internal/scraper/interfaces
+receiver/ciscoosreceiver/internal/scraper/systemscraper receiver/ciscoos/internal/scraper/systemscraper
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
@@ -236,6 +247,7 @@ receiver/fluentforwardreceiver receiver/fluentforward
 receiver/githubreceiver receiver/github
 receiver/gitlabreceiver receiver/gitlab
 receiver/googlecloudmonitoringreceiver receiver/googlecloudmonitoring
+receiver/googlecloudpubsubpushreceiver receiver/googlecloudpubsubpush
 receiver/googlecloudpubsubreceiver receiver/googlecloudpubsub
 receiver/googlecloudspannerreceiver receiver/googlecloudspanner
 receiver/haproxyreceiver receiver/haproxy
@@ -253,6 +265,7 @@ receiver/hostmetricsreceiver/internal/scraper/processscraper receiver/hostmetric
 receiver/hostmetricsreceiver/internal/scraper/systemscraper receiver/hostmetrics/internal/scraper/system
 receiver/httpcheckreceiver receiver/httpcheck
 receiver/huaweicloudcesreceiver receiver/huaweicloudces
+receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
 receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger
@@ -260,13 +273,13 @@ receiver/jmxreceiver receiver/jmx
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
 receiver/k8seventsreceiver receiver/k8sevents
-receiver/k8slogreceiver receiver/k8slog
 receiver/k8sobjectsreceiver receiver/k8sobjects
 receiver/kafkametricsreceiver receiver/kafkametrics
 receiver/kafkareceiver receiver/kafka
 receiver/kubeletstatsreceiver receiver/kubeletstats
 receiver/libhoneyreceiver receiver/libhoney
 receiver/lokireceiver receiver/loki
+receiver/macosunifiedloggingreceiver receiver/macosunifiedlogging
 receiver/memcachedreceiver receiver/memcached
 receiver/mongodbatlasreceiver receiver/mongodbatlas
 receiver/mongodbreceiver receiver/mongodb
@@ -290,6 +303,7 @@ receiver/purefareceiver receiver/purefa
 receiver/purefbreceiver receiver/purefb
 receiver/rabbitmqreceiver receiver/rabbitmq
 receiver/receivercreator receiver/receivercreator
+receiver/redfishreceiver receiver/redfish
 receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
@@ -318,6 +332,7 @@ receiver/webhookeventreceiver receiver/webhookevent
 receiver/windowseventlogreceiver receiver/windowseventlog
 receiver/windowsperfcountersreceiver receiver/windowsperfcounters
 receiver/windowsservicereceiver receiver/windowsservice
+receiver/yanggrpcreceiver receiver/yanggrpc
 receiver/zipkinreceiver receiver/zipkin
 receiver/zookeeperreceiver receiver/zookeeper
 scraper/zookeeperscraper scraper/zookeeper
@@ -327,8 +342,6 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/carbonexporter exporter/carbon
-extension/healthcheckextension extension/healthcheck
-extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon
+receiver/k8slogreceiver receiver/k8slog

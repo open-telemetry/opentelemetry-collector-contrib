@@ -28,14 +28,14 @@ type MappingHintGetter struct {
 func NewMappingHintGetter(attr pcommon.Map) (g MappingHintGetter) {
 	v, ok := attr.Get(MappingHintsAttrKey)
 	if !ok || v.Type() != pcommon.ValueTypeSlice {
-		return
+		return g
 	}
 	slice := v.Slice()
 	g.hints = slices.Grow(g.hints, slice.Len())
 	for _, hint := range slice.All() {
 		g.hints = append(g.hints, MappingHint(hint.Str()))
 	}
-	return
+	return g
 }
 
 // HasMappingHint checks whether the getter contains the requested mapping hint

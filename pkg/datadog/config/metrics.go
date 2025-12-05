@@ -71,6 +71,7 @@ type HistogramConfig struct {
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
 	// The default is false.
+	//
 	// Deprecated: [v0.75.0] Use `send_aggregation_metrics` (HistogramConfig.SendAggregations) instead.
 	SendCountSum bool `mapstructure:"send_count_sum_metrics"`
 
@@ -187,7 +188,7 @@ func (sm *SummaryMode) UnmarshalText(in []byte) error {
 
 // SummaryConfig customizes export of OTLP Summaries.
 type SummaryConfig struct {
-	// Mode is the the mode for exporting OTLP Summaries.
+	// Mode is the mode for exporting OTLP Summaries.
 	// Valid values are 'noquantiles' or 'gauges'.
 	//  - 'noquantiles' sends no `.quantile` metrics. `.sum` and `.count` metrics will still be sent.
 	//  - 'gauges' sends `.quantile` metrics as gauges tagged by the quantile.

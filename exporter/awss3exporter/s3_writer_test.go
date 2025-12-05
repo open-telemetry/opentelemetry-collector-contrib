@@ -65,6 +65,7 @@ func TestNewUploadManager(t *testing.T) {
 				tc.conf,
 				"metrics",
 				"otlp",
+				false,
 			)
 
 			if tc.errVal != "" {

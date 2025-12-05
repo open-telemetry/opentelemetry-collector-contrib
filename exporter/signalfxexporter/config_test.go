@@ -55,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 				Realm:       "ap0",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:              10 * time.Second,
-					Headers:              map[string]configopaque.String{},
 					MaxIdleConns:         hundred,
 					MaxIdleConnsPerHost:  hundred,
 					MaxConnsPerHost:      defaultMaxConnsPerHost,
@@ -85,6 +84,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxConnsPerHost:     20,
 					IdleConnTimeout:     30 * time.Second,
 					Timeout:             10 * time.Second,
+					DropTags:            false,
 				},
 				ExcludeMetrics:      nil,
 				IncludeMetrics:      nil,
@@ -94,7 +94,6 @@ func TestLoadConfig(t *testing.T) {
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint:            "",
 						Timeout:             5 * time.Second,
-						Headers:             map[string]configopaque.String{},
 						MaxIdleConns:        defaultMaxIdleConns,
 						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 						MaxConnsPerHost:     defaultMaxConnsPerHost,
@@ -126,9 +125,9 @@ func TestLoadConfig(t *testing.T) {
 				Realm:       "us1",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 2 * time.Second,
-					Headers: map[string]configopaque.String{
-						"added-entry": "added value",
-						"dot.test":    "test",
+					Headers: configopaque.MapList{
+						{Name: "added-entry", Value: "added value"},
+						{Name: "dot.test", Value: "test"},
 					},
 					MaxIdleConns:         seventy,
 					MaxIdleConnsPerHost:  seventy,
@@ -146,12 +145,14 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+				QueueSettings: func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.Enabled = true
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return queue
+				}(),
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
 				},
 				LogDimensionUpdates: true,
@@ -163,6 +164,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxConnsPerHost:     10000,
 					IdleConnTimeout:     2 * time.Hour,
 					Timeout:             20 * time.Second,
+					DropTags:            false,
 				},
 				ExcludeMetrics: []dpfilters.MetricFilter{
 					{
@@ -229,7 +231,6 @@ func TestLoadConfig(t *testing.T) {
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint:            "",
 						Timeout:             5 * time.Second,
-						Headers:             map[string]configopaque.String{},
 						MaxIdleConns:        defaultMaxIdleConns,
 						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 						MaxConnsPerHost:     defaultMaxConnsPerHost,

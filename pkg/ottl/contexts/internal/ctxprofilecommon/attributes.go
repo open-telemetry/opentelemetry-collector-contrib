@@ -34,9 +34,18 @@ func AccessAttributes[K any](source attributeSource[K]) ottl.StandardGetSetter[K
 			dict, attributable := source(tCtx)
 			attributable.AttributeIndices().FromRaw([]int32{})
 			for k, v := range m.All() {
-				if err := pprofile.PutAttribute(dict.AttributeTable(), attributable, dict, k, v); err != nil {
+				kvu := pprofile.NewKeyValueAndUnit()
+				keyIdx, err := pprofile.SetString(dict.StringTable(), k)
+				if err != nil {
 					return err
 				}
+				kvu.SetKeyStrindex(keyIdx)
+				v.CopyTo(kvu.Value())
+				idx, err := pprofile.SetAttribute(dict.AttributeTable(), kvu)
+				if err != nil {
+					return err
+				}
+				attributable.AttributeIndices().Append(idx)
 			}
 			return nil
 		},
@@ -57,11 +66,37 @@ func AccessAttributesKey[K any](key []ottl.Key[K], source attributeSource[K]) ot
 
 			dict, attributable := source(tCtx)
 			v := getAttributeValue(dict, attributable.AttributeIndices(), *newKey)
-			if err := ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:]); err != nil {
+			err = ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:])
+			if err != nil {
 				return err
 			}
 
-			return pprofile.PutAttribute(dict.AttributeTable(), attributable, dict, *newKey, v)
+			kvu := pprofile.NewKeyValueAndUnit()
+			keyIdx, err := pprofile.SetString(dict.StringTable(), *newKey)
+			if err != nil {
+				return err
+			}
+			kvu.SetKeyStrindex(keyIdx)
+			v.CopyTo(kvu.Value())
+			idx, err := pprofile.SetAttribute(dict.AttributeTable(), kvu)
+			if err != nil {
+				return err
+			}
+
+			for k, i := range attributable.AttributeIndices().All() {
+				if i == idx {
+					return nil
+				}
+
+				attr := dict.AttributeTable().At(int(i))
+				if attr.KeyStrindex() == keyIdx {
+					attributable.AttributeIndices().SetAt(k, idx)
+					return nil
+				}
+			}
+
+			attributable.AttributeIndices().Append(idx)
+			return nil
 		},
 	}
 }

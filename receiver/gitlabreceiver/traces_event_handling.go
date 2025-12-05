@@ -8,12 +8,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
 var (
@@ -32,7 +34,7 @@ const (
 // It enables unified span creation logic while allowing type-specific customization
 // It must be implemented by all GitLab event types (pipeline, stage, job) to create spans
 type GitlabEvent interface {
-	setAttributes(ptrace.Span) error
+	setAttributes(pcommon.Map)
 	setSpanIDs(ptrace.Span, pcommon.SpanID) error
 	setTimeStamps(ptrace.Span, string, string) error
 	setSpanData(ptrace.Span) error
@@ -41,7 +43,8 @@ type GitlabEvent interface {
 func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace.Traces, error) {
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
-	r.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), e.Project.PathWithNamespace)
+
+	gtr.setResourceAttributes(r.Resource().Attributes(), e)
 
 	traceID, err := newTraceID(e.ObjectAttributes.ID, e.ObjectAttributes.FinishedAt)
 	if err != nil {
@@ -95,17 +98,21 @@ func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipel
 }
 
 func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPipeline, traceID pcommon.TraceID, stages map[string]*glPipelineStage) error {
-	for i := range p.Builds {
-		job := p.Builds[i]
-		jobEvent := glPipelineJob(job)
+	baseJobURL := p.Project.WebURL + "/-/jobs/"
 
-		if job.FinishedAt != "" {
-			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, job.Stage, stages[job.Stage].StartedAt)
+	for i := range p.Builds {
+		glJob := glPipelineJob{
+			event:  (*glJobEvent)(&p.Builds[i]),
+			jobURL: baseJobURL + strconv.Itoa(p.Builds[i].ID),
+		}
+
+		if glJob.event.FinishedAt != "" {
+			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, glJob.event.Stage, stages[glJob.event.Stage].StartedAt)
 			if err != nil {
 				return err
 			}
 
-			err = gtr.createSpan(r, &jobEvent, traceID, parentSpanID)
+			err = gtr.createSpan(r, &glJob, traceID, parentSpanID)
 			if err != nil {
 				return err
 			}
@@ -236,7 +243,7 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 			}
 			stages[job.Stage] = stage
 		}
-		if err := gtr.setStageTime(stage, job); err != nil {
+		if err := gtr.setStageTime(stage, job.StartedAt, job.FinishedAt); err != nil {
 			return nil, fmt.Errorf("updating stage timing for %s: %w", job.Stage, err)
 		}
 	}
@@ -245,12 +252,12 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 }
 
 // setStageTime determines stage start/finish times by finding the earliest start and latest finish time
-func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipelineJob) error {
+func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, jobStartedAt, jobFinishedAt string) error {
 	// Handle start time
 	if stage.StartedAt == "" {
-		stage.StartedAt = job.StartedAt
-	} else if job.StartedAt != "" {
-		jobStartTime, err := parseGitlabTime(job.StartedAt)
+		stage.StartedAt = jobStartedAt
+	} else if jobStartedAt != "" {
+		jobStartTime, err := parseGitlabTime(jobStartedAt)
 		if err != nil {
 			return fmt.Errorf("parsing job start time: %w", err)
 		}
@@ -261,15 +268,15 @@ func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipeline
 		}
 
 		if jobStartTime.Before(stageStartTime) {
-			stage.StartedAt = job.StartedAt
+			stage.StartedAt = jobStartedAt
 		}
 	}
 
 	// Handle finish time
 	if stage.FinishedAt == "" {
-		stage.FinishedAt = job.FinishedAt
-	} else if job.FinishedAt != "" {
-		jobFinishTime, err := parseGitlabTime(job.FinishedAt)
+		stage.FinishedAt = jobFinishedAt
+	} else if jobFinishedAt != "" {
+		jobFinishTime, err := parseGitlabTime(jobFinishedAt)
 		if err != nil {
 			return fmt.Errorf("parsing job finish time: %w", err)
 		}
@@ -280,7 +287,7 @@ func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipeline
 		}
 
 		if jobFinishTime.After(stageFinishTime) {
-			stage.FinishedAt = job.FinishedAt
+			stage.FinishedAt = jobFinishedAt
 		}
 	}
 
@@ -324,4 +331,84 @@ func parseGitlabTime(t string) (time.Time, error) {
 	}
 
 	return time.Time{}, err
+}
+
+// map GitLab status to OTel span status and set optional message
+// Relevant GitLab docs:
+// - Job: https://docs.gitlab.com/ci/jobs/#available-job-statuses
+// - Pipeline: https://docs.gitlab.com/api/pipelines/#list-project-pipelines (see status field)
+func setSpanStatus(span ptrace.Span, status string) {
+	switch strings.ToLower(status) {
+	case pipelineStatusSuccess:
+		span.Status().SetCode(ptrace.StatusCodeOk)
+	case pipelineStatusFailed, pipelineStatusCanceled:
+		span.Status().SetCode(ptrace.StatusCodeError)
+	case pipelineStatusSkipped:
+		span.Status().SetCode(ptrace.StatusCodeUnset)
+	default:
+		span.Status().SetCode(ptrace.StatusCodeUnset)
+	}
+}
+
+func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *gitlab.PipelineEvent) {
+	// Service
+	attrs.PutStr(string(semconv.ServiceNameKey), e.Project.PathWithNamespace)
+
+	// CICD
+	attrs.PutStr(string(semconv.CICDPipelineNameKey), e.ObjectAttributes.Name)
+	attrs.PutStr(string(semconv.CICDPipelineResultKey), e.ObjectAttributes.Status)
+	attrs.PutInt(string(semconv.CICDPipelineRunIDKey), int64(e.ObjectAttributes.ID))
+	attrs.PutStr(string(semconv.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
+
+	// Resource attributes for workers are not applicable for GitLab, because GitLab provides worker information on job level
+	// One pipeline can have multiple jobs, and each job can have a different worker
+	// Therefore we set the worker attributes on job level
+
+	// VCS
+	attrs.PutStr(string(semconv.VCSProviderNameGitlab.Key), semconv.VCSProviderNameGitlab.Value.AsString())
+
+	attrs.PutStr(string(semconv.VCSRepositoryNameKey), e.Project.Name)
+	attrs.PutStr(string(semconv.VCSRepositoryURLFullKey), e.Project.WebURL)
+
+	attrs.PutStr(string(semconv.VCSRefHeadNameKey), e.ObjectAttributes.Ref)
+	refType := semconv.VCSRefTypeBranch.Value.AsString()
+	if e.ObjectAttributes.Tag {
+		refType = semconv.VCSRefTypeTag.Value.AsString()
+	}
+	attrs.PutStr(string(semconv.VCSRefHeadTypeKey), refType)
+	attrs.PutStr(string(semconv.VCSRefHeadRevisionKey), e.ObjectAttributes.SHA)
+
+	// Merge Request attributes (only for MR-triggered pipelines)
+	if e.MergeRequest.ID != 0 {
+		attrs.PutStr(string(semconv.VCSChangeIDKey), strconv.Itoa(e.MergeRequest.ID))
+		attrs.PutStr(string(semconv.VCSChangeStateKey), e.MergeRequest.State)
+		attrs.PutStr(string(semconv.VCSChangeTitleKey), e.MergeRequest.Title)
+		attrs.PutStr(string(semconv.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
+		attrs.PutStr(string(semconv.VCSRefBaseTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
+	}
+
+	// ---------- The following attributes are not part of semconv yet ----------
+
+	// VCS
+	// We need to check if the commit timestamp is not nil, otherwise we might have a nil pointer dereference when calling Format()
+	if e.Commit.Timestamp != nil {
+		attrs.PutStr(AttributeVCSRefHeadRevisionTimestamp, e.Commit.Timestamp.Format(gitlabEventTimeFormat))
+	}
+
+	attrs.PutStr(AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
+	attrs.PutStr(AttributeGitLabProjectNamespace, e.Project.Namespace)
+	attrs.PutStr(AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
+
+	// User details are only included if explicitly enabled in configuration
+	if gtr.cfg.WebHook.IncludeUserAttributes {
+		attrs.PutStr(AttributeVCSRefHeadRevisionAuthorName, e.Commit.Author.Name)
+		attrs.PutStr(AttributeVCSRefHeadRevisionAuthorEmail, e.Commit.Author.Email)
+		attrs.PutStr(AttributeVCSRefHeadRevisionMessage, e.Commit.Message)
+
+		if e.User != nil {
+			attrs.PutInt(AttributeCICDPipelineRunActorID, int64(e.User.ID))
+			attrs.PutStr(AttributeGitLabPipelineRunActorUsername, e.User.Username)
+			attrs.PutStr(AttributeCICDPipelineRunActorName, e.User.Name)
+		}
+	}
 }

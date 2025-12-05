@@ -10,6 +10,13 @@ status:
     active: [JaredTan95, carsonip, lahsivjar]
 
 attributes:
+  error.type:
+    description: The type of error that occurred when processing the documents.
+    type: string
+  failure_store:
+    description: The status of the failure store.
+    type: string
+    enum: [unknown, not_enabled, used, failed]
   http.response.status_code:
     description: HTTP status code.
     type: int
@@ -17,13 +24,6 @@ attributes:
     description: The operation outcome.
     type: string
     enum: [success, failed_client, failed_server, timeout, too_many, failure_store, internal_server_error]
-  failure_store:
-    description: The status of the failure store.
-    type: string
-    enum: [unknown, not_enabled, used, failed]
-  error.type:
-    description: The type of error that occurred when processing the documents.
-    type: string
 
 telemetry:
   metrics:
@@ -38,16 +38,17 @@ telemetry:
         value_type: int
         monotonic: true
       attributes: [outcome, http.response.status_code]
-    elasticsearch.docs.received:
+    elasticsearch.bulk_requests.latency:
       prefix: otelcol.
       stability:
         level: alpha
       enabled: true
-      description: Count of Elasticsearch documents successfully received to be buffered.
-      unit: "1"
-      sum:
-        value_type: int
-        monotonic: true
+      description: Latency of Elasticsearch bulk operations in seconds.
+      unit: s
+      histogram:
+        value_type: double
+        bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]
+      attributes: [outcome, http.response.status_code]
     elasticsearch.docs.processed:
       prefix: otelcol.
       stability:
@@ -59,6 +60,16 @@ telemetry:
         value_type: int
         monotonic: true
       attributes: [outcome, http.response.status_code, failure_store, error.type]
+    elasticsearch.docs.received:
+      prefix: otelcol.
+      stability:
+        level: alpha
+      enabled: true
+      description: Count of Elasticsearch documents successfully received to be buffered.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
     elasticsearch.docs.retried:
       prefix: otelcol.
       stability:
@@ -90,17 +101,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    elasticsearch.bulk_requests.latency:
-      prefix: otelcol.
-      stability:
-        level: alpha
-      enabled: true
-      description: Latency of Elasticsearch bulk operations in seconds.
-      unit: s
-      histogram:
-        value_type: double
-        bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]
-      attributes: [outcome, http.response.status_code]
 
 tests:
   config:

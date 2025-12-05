@@ -60,7 +60,7 @@ func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values
 		counts = append(counts, safeUint64ToInt64(count))
 		values = append(values, lb+(ub-lb)/2)
 	}
-	return
+	return counts, values
 }
 
 func safeUint64ToInt64(v uint64) int64 {

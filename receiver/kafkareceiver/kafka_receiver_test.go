@@ -59,10 +59,11 @@ func init() {
 }
 
 func runTestForClients(t *testing.T, fn func(t *testing.T)) {
-	clients := []string{"Sarama", "Franz"}
+	// Only run tests with Franz client since the feature gate is now stable.
+	// Sarama tests will be removed in a future version.
+	clients := []string{"Franz"}
 	for _, client := range clients {
 		t.Run(client, func(t *testing.T) {
-			setFranzGo(t, client == "Franz")
 			fn(t)
 		})
 	}
@@ -319,7 +320,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "snappy"),
+						attribute.String("compression_codec", "none"),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -331,7 +332,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "snappy"),
+						attribute.String("compression_codec", "none"),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -342,7 +343,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "snappy"),
+						attribute.String("compression_codec", "none"),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
@@ -353,7 +354,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "snappy"),
+						attribute.String("compression_codec", "none"),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
@@ -552,7 +553,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 									attribute.String("topic", "otlp_spans"),
 									attribute.Int64("partition", 0),
 									attribute.String("outcome", "success"),
-									attribute.String("compression_codec", "snappy"),
+									attribute.String("compression_codec", "none"),
 								),
 							},
 						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
@@ -761,6 +762,26 @@ func TestNewProfilesReceiver(t *testing.T) {
 	})
 }
 
+func TestExcludeTopicWithSarama(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+		// Configure exclude_topic - only supported with franz-go
+		receiverConfig.Traces.Topics = []string{"^otlp_spans.*"}
+		receiverConfig.Traces.ExcludeTopics = []string{"^otlp_spans-test$"}
+
+		set, _, _ := mustNewSettings(t)
+		_, err := newTracesReceiver(receiverConfig, set, &consumertest.TracesSink{})
+
+		if franzGoConsumerFeatureGate.IsEnabled() {
+			require.NoError(t, err)
+		} else {
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "exclude_topic is configured but is not supported when using Sarama consumer")
+		}
+	})
+}
+
 func TestComponentStatus(t *testing.T) {
 	runTestForClients(t, func(t *testing.T) {
 		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
@@ -917,7 +938,14 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 }
 
 func mustNewClient(tb testing.TB, cluster *kfake.Cluster) *kgo.Client {
-	client, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	client, err := kgo.NewClient(
+		kgo.SeedBrokers(cluster.ListenAddrs()...),
+
+		// Disable compression for greater determinism in tests
+		// relating to record sizes. This is important for tests
+		// that set minimum fetch size, for example.
+		kgo.ProducerBatchCompression(kgo.NoCompression()),
+	)
 	require.NoError(tb, err)
 	tb.Cleanup(client.Close)
 	return client

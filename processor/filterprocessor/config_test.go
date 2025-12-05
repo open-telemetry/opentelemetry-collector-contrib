@@ -32,11 +32,14 @@ func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	for _, f := range DefaultMetricFunctions() {
 		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
 	}
-	for _, f := range DefaultSpanFunctions() {
+	for _, f := range DefaultSpanFunctionsNew() {
 		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
 	}
 	for _, f := range DefaultSpanEventFunctions() {
 		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
+	}
+	for _, f := range DefaultProfileFunctions() {
+		assert.Contains(t, config.profileFunctions, f.Name(), "missing profile function %v", f.Name())
 	}
 }
 
@@ -871,6 +874,9 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
 				Traces: TraceFilters{
+					ResourceConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
 					},
@@ -879,6 +885,9 @@ func TestLoadingConfigOTTL(t *testing.T) {
 					},
 				},
 				Metrics: MetricFilters{
+					ResourceConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 					MetricConditions: []string{
 						`name == "pass"`,
 					},
@@ -887,7 +896,18 @@ func TestLoadingConfigOTTL(t *testing.T) {
 					},
 				},
 				Logs: LogFilters{
+					ResourceConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 					LogConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+				},
+				Profiles: ProfileFilters{
+					ResourceConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+					ProfileConditions: []string{
 						`attributes["test"] == "pass"`,
 					},
 				},

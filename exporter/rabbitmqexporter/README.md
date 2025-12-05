@@ -30,7 +30,7 @@ The following settings can be configured:
       - `username` (required): username for authentication
       - `password`: password for authentication
   - `tls` (optional): [TLS configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/configtls.go#L32)
-  - `name` (optional): The name of the connection, visible in in RabbitMQ management interface
+  - `name` (optional): The name of the connection, visible in RabbitMQ management interface
 - `routing`:
   - `routing_key` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): Routing key used to route exported messages to RabbitMQ consumers
   - `exchange`: Name of the exchange used to route messages. If omitted, the [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-default) is used which routes to a queue with the same as the routing key. Only [direct exchanges](https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-direct) are currently supported. Note that this component does not handle queue creation or binding.

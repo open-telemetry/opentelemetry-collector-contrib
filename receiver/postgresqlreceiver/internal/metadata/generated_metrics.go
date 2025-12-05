@@ -1711,7 +1711,7 @@ type metricPostgresqlTableVacuumCount struct {
 func (m *metricPostgresqlTableVacuumCount) init() {
 	m.data.SetName("postgresql.table.vacuum.count")
 	m.data.SetDescription("Number of times a table has manually been vacuumed.")
-	m.data.SetUnit("{vacuums}")
+	m.data.SetUnit("{vacuum}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

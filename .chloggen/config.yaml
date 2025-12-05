@@ -19,11 +19,13 @@ components:
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
+    - connector/metricsaslogs
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
     - connector/servicegraph
     - connector/signaltometrics
+    - connector/slowsql
     - connector/spanmetrics
     - connector/sum
     - exporter/alertmanager
@@ -37,7 +39,6 @@ components:
     - exporter/azuredataexplorer
     - exporter/azuremonitor
     - exporter/bmchelix
-    - exporter/carbon
     - exporter/cassandra
     - exporter/clickhouse
     - exporter/coralogix
@@ -81,6 +82,7 @@ components:
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awslogs_encoding
     - extension/awsproxy
+    - extension/azure_encoding
     - extension/azureauth
     - extension/basicauth
     - extension/bearertokenauth
@@ -90,7 +92,6 @@ components:
     - extension/db_storage
     - extension/docker_observer
     - extension/ecs_observer
-    - extension/ecs_task_observer
     - extension/encoding
     - extension/file_storage
     - extension/googleclientauth
@@ -127,13 +128,14 @@ components:
     - internal/common
     - internal/coreinternal
     - internal/datadog
+    - internal/datadog/e2e
     - internal/docker
-    - internal/e2e
     - internal/exp/metrics
     - internal/filter
     - internal/grpcutil
     - internal/healthcheck
     - internal/k8sconfig
+    - internal/k8sinventory
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
@@ -159,6 +161,7 @@ components:
     - pkg/resourcetotelemetry
     - pkg/sampling
     - pkg/stanza
+    - pkg/stanza/operator/input/journald
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
@@ -166,6 +169,7 @@ components:
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/opencensus
+    - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
@@ -175,6 +179,7 @@ components:
     - pkg/xk8stest
     - processor/akamaidetector
     - processor/attributes
+    - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
     - processor/datadogsemantics
@@ -224,6 +229,7 @@ components:
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
+    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azureblob
@@ -232,7 +238,7 @@ components:
     - receiver/bigip
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoosreceiver
+    - receiver/ciscoos
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
@@ -251,11 +257,13 @@ components:
     - receiver/gitlab
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
+    - receiver/googlecloudpubsubpush
     - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/hostmetrics
     - receiver/httpcheck
     - receiver/huaweicloudcesreceiver
+    - receiver/icmpcheckreceiver
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
@@ -270,6 +278,7 @@ components:
     - receiver/kubeletstats
     - receiver/libhoney
     - receiver/loki
+    - receiver/macosunifiedlogging
     - receiver/memcached
     - receiver/mongodb
     - receiver/mongodbatlas
@@ -294,6 +303,7 @@ components:
     - receiver/purefb
     - receiver/rabbitmq
     - receiver/receiver_creator
+    - receiver/redfish
     - receiver/redis
     - receiver/riak
     - receiver/saphana
@@ -321,11 +331,13 @@ components:
     - receiver/windowseventlog
     - receiver/windowsperfcounters
     - receiver/windowsservice
+    - receiver/yanggrpc
     - receiver/zipkin
     - receiver/zookeeper
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/interfaces
     - scraper/load
     - scraper/memory
     - scraper/network
@@ -333,6 +345,7 @@ components:
     - scraper/paging
     - scraper/process
     - scraper/processes
+    - scraper/system
     - scraper/system
     - scraper/zookeeper
     - testbed

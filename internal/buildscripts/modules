@@ -6,6 +6,7 @@ beta_modules=(
   "go.opentelemetry.io/collector/internal/fanoutconsumer"
   "go.opentelemetry.io/collector/internal/sharedcomponent"
   "go.opentelemetry.io/collector/internal/telemetry"
+  "go.opentelemetry.io/collector/internal/testutil"
   "go.opentelemetry.io/collector/cmd/builder"
   "go.opentelemetry.io/collector/cmd/mdatagen"
   "go.opentelemetry.io/collector/component/componentstatus"
@@ -59,8 +60,10 @@ beta_modules=(
   "go.opentelemetry.io/collector/scraper"
   "go.opentelemetry.io/collector/scraper/scraperhelper"
   "go.opentelemetry.io/collector/scraper/scrapertest"
+  "go.opentelemetry.io/collector/scraper/xscraper"
   "go.opentelemetry.io/collector/service"
   "go.opentelemetry.io/collector/service/hostcapabilities"
+  "go.opentelemetry.io/collector/service/telemetry/telemetrytest"
   "go.opentelemetry.io/collector/filter"
 )
 

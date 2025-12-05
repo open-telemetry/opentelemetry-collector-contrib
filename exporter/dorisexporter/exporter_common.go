@@ -98,7 +98,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
 	req.Header.Set("read_json_by_line", "true")
-	groupCommit := string(cfg.Headers["group_commit"])
+	groupCommit, _ := cfg.Headers.Get("group_commit")
 	if groupCommit == "" || groupCommit == "off_mode" {
 		req.Header.Set("label", label)
 	}
@@ -111,7 +111,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 }
 
 func createDorisHTTPClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	client, err := cfg.ToClient(ctx, host, settings)
+	client, err := cfg.ToClient(ctx, host.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
 	}
