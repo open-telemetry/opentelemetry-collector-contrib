@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
 	expected.MaxInterval = 5 * time.Second
-	expected.QueueSettings = configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	expected.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 30 * time.Second
 	clientConfig.Compression = configcompression.TypeGzip
