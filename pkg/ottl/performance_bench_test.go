@@ -35,7 +35,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
 
-	spanParser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
+	spanParser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create span parser: %v", err)
 	}
@@ -156,7 +156,7 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 
 func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
+	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create span parser: %v", err)
 	}
@@ -179,7 +179,7 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 		}
 		sequence := ottlspan.NewStatementSequence(parsed, settings)
 
-		contexts := make([]ottlspan.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottlspan.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkSpanContext(len(scenario.statements))
 		}
@@ -193,6 +193,9 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 				}
 			}
 		})
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
@@ -328,7 +331,7 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 
 func buildMetricStatements(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 5 {
 		case 0:
 			result = append(result, fmt.Sprintf(`set(metric.metadata["copy_source_%[1]d"], metric.metadata["source_%[1]d"])`, i))
@@ -347,7 +350,7 @@ func buildMetricStatements(count int) []string {
 
 func buildMetricConditions(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 5 {
 		case 0:
 			result = append(result, "metric.type == METRIC_DATA_TYPE_SUM")
@@ -400,7 +403,7 @@ func newBenchmarkMetricContext(attributeCount int) ottlmetric.TransformContext {
 	dp.Attributes().PutStr("method", "GET")
 	dp.SetIntValue(4200)
 
-	for i := 0; i < attributeCount; i++ {
+	for i := range attributeCount {
 		metric.Metadata().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("value_%d", i))
 		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
 	}
@@ -410,7 +413,7 @@ func newBenchmarkMetricContext(attributeCount int) ottlmetric.TransformContext {
 
 func buildLogStatements(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 5 {
 		case 0:
 			result = append(result, fmt.Sprintf(`set(log.attributes["conditional_copy_%[1]d"], log.attributes["source_%[1]d"]) where log.attributes["severity_text"] == "error"`, i))
@@ -429,7 +432,7 @@ func buildLogStatements(count int) []string {
 
 func buildSpanStatements(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 4 {
 		case 0:
 			result = append(result, fmt.Sprintf(`set(span.attributes["span_copy_%[1]d"], span.attributes["source_%[1]d"]) where span.kind.string == "SPAN_KIND_CLIENT"`, i))
@@ -446,7 +449,7 @@ func buildSpanStatements(count int) []string {
 
 func buildLogConditions(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 3 {
 		case 0:
 			result = append(result, fmt.Sprintf(`log.attributes["source_%[1]d"] != nil`, i))
@@ -481,7 +484,7 @@ func newBenchmarkLogContext(attributeCount int) ottllog.TransformContext {
 	tags.AppendEmpty().SetStr("prod")
 	tags.AppendEmpty().SetStr("critical")
 
-	for i := 0; i < attributeCount; i++ {
+	for i := range attributeCount {
 		logRecord.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("value_%d", i))
 	}
 
@@ -490,7 +493,7 @@ func newBenchmarkLogContext(attributeCount int) ottllog.TransformContext {
 	return ottllog.NewTransformContext(logRecord, scope, resource, scopeLogs, resourceLogs)
 }
 
-func newBenchmarkSpanContext(attributeCount int) ottlspan.TransformContext {
+func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 	resource := resourceSpans.Resource()
@@ -513,11 +516,11 @@ func newBenchmarkSpanContext(attributeCount int) ottlspan.TransformContext {
 	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Status().SetMessage("ok")
 
-	for i := 0; i < attributeCount; i++ {
+	for i := range attributeCount {
 		span.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("span_value_%d", i))
 	}
 
-	return ottlspan.NewTransformContext(span, scope, resource, scopeSpans, resourceSpans)
+	return ottlspan.NewTransformContextPtr(span, scope, resource, scopeSpans, resourceSpans)
 }
 
 func BenchmarkSliceToMap(b *testing.B) {
@@ -619,7 +622,7 @@ func newSliceContextWithPrimitiveArr(arrSize int) ottllog.TransformContext {
 
 	arr := lr.Attributes().PutEmptySlice("arr")
 	arr.EnsureCapacity(arrSize)
-	for i := 0; i < arrSize; i++ {
+	for i := range arrSize {
 		arr.AppendEmpty().SetStr("v_" + strconv.Itoa(i))
 	}
 
@@ -637,7 +640,7 @@ func newSliceContextWithMapArr(arrSize int) ottllog.TransformContext {
 
 	arr := lr.Attributes().PutEmptySlice("arr")
 	arr.EnsureCapacity(arrSize)
-	for i := 0; i < arrSize; i++ {
+	for i := range arrSize {
 		elem := arr.AppendEmpty()
 		m := elem.SetEmptyMap()
 		m.PutStr("id", "item_"+strconv.Itoa(i))
