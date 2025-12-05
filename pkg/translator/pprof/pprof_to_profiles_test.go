@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/google/pprof/profile"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -28,13 +29,9 @@ func TestConvertPprofToPprofile(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			inbytes, err := os.ReadFile(filepath.Join("internal/testdata/", name))
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			p, err := profile.Parse(bytes.NewBuffer(inbytes))
-			if err != nil {
-				t.Fatalf("%s: %s", name, err)
-			}
+			require.NoError(t, err)
 
 			pprofile, err := convertPprofToPprofile(p)
 			switch {
@@ -44,12 +41,8 @@ func TestConvertPprofToPprofile(t *testing.T) {
 			default:
 				t.Fatalf("expected error '%s' but got '%s'", tc.expectedError, err)
 			}
-			if err != nil {
-				t.Fatalf("%s: %s", name, err)
-			}
-			if _, err := convertPprofileToPprof(pprofile); err != nil {
-				t.Fatalf("%s: %s", name, err)
-			}
+			_, err = convertPprofileToPprof(pprofile)
+			require.NoError(t, err)
 		})
 	}
 }
