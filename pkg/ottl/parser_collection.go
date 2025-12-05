@@ -232,7 +232,8 @@ func createConditionsParserWithConverter[K, R any](converter ParsedConditionsCon
 	}
 }
 
-// createValueExpressionsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
+// createValueExpressionsParserWithConverter creates a parser wrapper for value expressions.
+// See createConditionsParserWithConverter for details on path normalization behavior.
 func createValueExpressionsParserWithConverter[K, R any](converter ParsedValueExpressionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ValueExpressionsGetter] {
 	return func(pc *ParserCollection[R], context string, expressions ValueExpressionsGetter) (R, error) {
 		originalValueExpressions := expressions.GetValueExpressions()
@@ -259,7 +260,8 @@ func createValueExpressionsParserWithConverter[K, R any](converter ParsedValueEx
 	}
 }
 
-// createStatementsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
+// createStatementsParserWithConverter creates a parser wrapper for statements.
+// See createConditionsParserWithConverter for details on path normalization behavior.
 func createStatementsParserWithConverter[K, R any](converter ParsedStatementsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, StatementsGetter] {
 	return func(pc *ParserCollection[R], context string, statements StatementsGetter) (R, error) {
 		originalStatements := statements.GetStatements()
