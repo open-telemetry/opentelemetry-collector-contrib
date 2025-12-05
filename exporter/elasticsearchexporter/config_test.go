@@ -350,7 +350,7 @@ func TestConfig(t *testing.T) {
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
-				cfg.QueueBatchConfig = configoptional.Default(*cfg.QueueBatchConfig.Get())
+				cfg.QueueBatchConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 			}),
 		},
 		{
