@@ -176,6 +176,12 @@ func (c ConsumerConfig) Validate() error {
 	}
 
 	// Validate fetch size constraints
+	if c.MinFetchSize < 0 {
+		return fmt.Errorf("min_fetch_size (%d) must be non-negative", c.MinFetchSize)
+	}
+	if c.MaxFetchSize < 0 {
+		return fmt.Errorf("max_fetch_size (%d) must be non-negative", c.MaxFetchSize)
+	}
 	if c.MaxFetchSize < c.MinFetchSize {
 		return fmt.Errorf(
 			"max_fetch_size (%d) cannot be less than min_fetch_size (%d)",
