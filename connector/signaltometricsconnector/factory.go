@@ -50,10 +50,10 @@ func createTracesToMetrics(
 		return nil, fmt.Errorf("failed to create OTTL statement parser for spans: %w", err)
 	}
 
-	metricDefs := make([]model.MetricDef[ottlspan.TransformContext], 0, len(c.Spans))
+	metricDefs := make([]model.MetricDef[*ottlspan.TransformContext], 0, len(c.Spans))
 	for i := range c.Spans {
 		info := c.Spans[i]
-		var md model.MetricDef[ottlspan.TransformContext]
+		var md model.MetricDef[*ottlspan.TransformContext]
 		if err := md.FromMetricInfo(info, parser, set.TelemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to parse provided metric information; %w", err)
 		}
