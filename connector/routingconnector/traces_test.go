@@ -80,8 +80,8 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	assert.NoError(t, conn.Shutdown(t.Context()))
 }
 
-func TestTracesRoutingWithQualifiedContextPaths(t *testing.T) {
-	// This test demonstrates the modern, explicit context-qualified syntax.
+func TestTracesRoutingWithInferredContexts(t *testing.T) {
+	// This test demonstrates context inference with explicit context-qualified paths.
 	// Using resource.attributes["..."] or span.attributes["..."] makes it clear
 	// which context is being accessed.
 	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")

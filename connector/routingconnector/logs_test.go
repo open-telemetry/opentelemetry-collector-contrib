@@ -82,8 +82,8 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	assert.NoError(t, conn.Shutdown(t.Context()))
 }
 
-func TestLogsRoutingWithQualifiedContextPaths(t *testing.T) {
-	// This test demonstrates the modern, explicit context-qualified syntax.
+func TestLogsRoutingWithInferredContexts(t *testing.T) {
+	// This test demonstrates context inference with explicit context-qualified paths.
 	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
 	logsProd := pipeline.NewIDWithName(pipeline.SignalLogs, "prod")
 	logsErrors := pipeline.NewIDWithName(pipeline.SignalLogs, "errors")
