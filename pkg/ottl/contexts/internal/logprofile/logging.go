@@ -116,6 +116,21 @@ func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return joinedErr
 }
 
+type ProfileStack struct {
+	pprofile.Stack
+	Profile    pprofile.Profile
+	Dictionary pprofile.ProfilesDictionary
+}
+
+func (s ProfileStack) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	var joinedErr error
+
+	values := newValues(s.LocationIndices())
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("values", values))
+
+	return joinedErr
+}
+
 type ProfileSample struct {
 	pprofile.Sample
 	Profile    pprofile.Profile
@@ -414,17 +429,32 @@ func (s values) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	return joinedErr
 }
 
-func newValues(pvalues pcommon.Int64Slice) values {
-	vs := make(values, 0, pvalues.Len())
-	for i := range pvalues.Len() {
-		vs = append(vs, value(pvalues.At(i)))
-	}
-	return vs
+type value struct {
+	val int64
 }
 
-type value int64
-
 func (v value) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	encoder.AddInt64("value", int64(v))
+	encoder.AddInt64("value", v.val)
 	return nil
+}
+
+type numeric interface {
+	~int8 | ~uint8 | ~int16 | ~uint16 | ~int32 | ~int64 | ~uint32 | ~uint64
+}
+
+type pcommonSliceWrapper[T numeric] interface {
+	Len() int
+	At(i int) T
+}
+
+func newValue[T numeric](v T) value {
+	return value{val: int64(v)}
+}
+
+func newValues[T numeric](pvalues pcommonSliceWrapper[T]) values {
+	vs := make(values, 0, pvalues.Len())
+	for i := range pvalues.Len() {
+		vs = append(vs, newValue(pvalues.At(i)))
+	}
+	return vs
 }
