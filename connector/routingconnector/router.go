@@ -81,7 +81,17 @@ type routingItem[C any] struct {
 }
 
 func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.TelemetrySettings) error {
-	// Prioritize resource context to maintain backward compatibility for ambiguous paths (e.g. 'attributes').
+	// Context inference priority list: when a condition uses an ambiguous path (one that exists
+	// in multiple contexts), the inferrer tries each context in order until one can parse it.
+	//
+	// "resource" is first for backward compatibility: before context inference existed, the
+	// routing connector only supported resource context. Existing configs with conditions like
+	// `attributes["env"] == "prod"` must continue to resolve to resource.attributes.
+	//
+	// The remaining order matters less in practice because most ambiguous paths (like "attributes")
+	// exist in resource anyway, and non-ambiguous paths (like "body", "severity_text", "name")
+	// only exist in one context regardless of priority. That said, the order is sorted based on which
+	// events are most common in practice, hence 'span' is first.
 	priorities := []string{
 		"resource",
 		"span",
