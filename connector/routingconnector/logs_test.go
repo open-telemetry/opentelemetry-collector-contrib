@@ -120,7 +120,7 @@ func TestLogsRoutingWithInferredContexts(t *testing.T) {
 	require.NoError(t, err)
 
 	// Helper function to create logs with specific attributes
-	createLogs := func(env string, severity string) plog.Logs {
+	createLogs := func(env, severity string) plog.Logs {
 		logs := plog.NewLogs()
 		rl := logs.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr("env", env)
