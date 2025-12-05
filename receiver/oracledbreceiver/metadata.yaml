@@ -148,6 +148,12 @@ attributes:
   oracledb.duration_sec:
     description: Total time taken by a database query to execute.
     type: double
+  oracledb.object_id:
+    description: The identifier of the stored procedure or function being executed by the query.
+    type: int
+  oracledb.object_owner:
+    description: The schema owner of the stored procedure or function being executed.
+    type: string
 
 events:
   db.server.top_query:
@@ -176,6 +182,10 @@ events:
       - oracledb.physical_write_requests
       - oracledb.rows_processed
       - oracledb.user_io_wait_time
+      - oracledb.object_id
+      - oracledb.object_owner
+      - oracledb.object_name
+      - oracledb.object_type
   db.server.query_sample:
     enabled: false
     description: sample query
@@ -197,6 +207,7 @@ events:
       - oracledb.state
       - oracledb.wait_class
       - oracledb.event
+      - oracledb.object_id
       - oracledb.object_name
       - oracledb.object_type
       - oracledb.osuser

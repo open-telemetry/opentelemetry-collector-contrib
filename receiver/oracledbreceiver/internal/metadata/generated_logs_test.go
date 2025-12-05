@@ -130,10 +130,10 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "client.address-val", "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", "oracledb.object_name-val", "oracledb.object_type-val", "oracledb.osuser-val", 21.100000)
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "client.address-val", "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", 67890, "oracledb.object_name-val", "oracledb.object_type-val", "oracledb.osuser-val", 21.100000)
 
 			allEventsCount++
-			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.system.name-val", "db.server.name-val", "db.query.text-val", "oracledb.query_plan-val", "oracledb.sql_id-val", "oracledb.child_number-val", 30.100000, 20, 26.100000, 30.100000, 17.100000, 21, 22, 19, 21.100000, 19, 28, 31, 29, 32, 23, 26.100000)
+			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.system.name-val", "db.server.name-val", "db.query.text-val", "oracledb.query_plan-val", "oracledb.sql_id-val", "oracledb.child_number-val", 30.100000, 20, 26.100000, 30.100000, 17.100000, 21, 22, 19, 21.100000, 19, 28, 31, 29, 32, 23, 26.100000, 12345, "oracledb.object_owner-val", "oracledb.object_name-val", "oracledb.object_type-val")
 
 			rb := lb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
@@ -218,6 +218,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("oracledb.event")
 					assert.True(t, ok)
 					assert.Equal(t, "oracledb.event-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.object_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, 67890, attrVal.Int())
 					attrVal, ok = lr.Attributes().Get("oracledb.object_name")
 					assert.True(t, ok)
 					assert.Equal(t, "oracledb.object_name-val", attrVal.Str())
@@ -303,6 +306,18 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("oracledb.user_io_wait_time")
 					assert.True(t, ok)
 					assert.Equal(t, 26.100000, attrVal.Double())
+					attrVal, ok = lr.Attributes().Get("oracledb.object_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, 12345, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("oracledb.object_owner")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.object_owner-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.object_name")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.object_name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.object_type")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.object_type-val", attrVal.Str())
 				}
 			}
 		})
