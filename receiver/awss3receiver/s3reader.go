@@ -193,7 +193,7 @@ func getTimeKey(partitionFormat string, t time.Time, location *time.Location) st
 }
 
 func determineTimestep(partitionFormat string) (time.Duration, error) {
-	startTime := time.Now()
+	startTime := time.Date(2025, time.December, 5, 11, 30, 0, 0, time.UTC)
 	startTimeKey := getTimeKey(partitionFormat, startTime, time.UTC)
 	for _, step := range []time.Duration{time.Minute, time.Hour} {
 		nextTime := startTime.Add(step)
