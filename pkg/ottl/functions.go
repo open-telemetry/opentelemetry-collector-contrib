@@ -805,6 +805,10 @@ func NewTestingLiteralGetter[K, V any](literal bool, getter typedGetter[K, V]) (
 
 // NewTestingLiteralByteSliceLikeGetter creates a literal ByteSliceLikeGetter for testing OTTL functions.
 // The returned getter implements literalGetter, so GetLiteralValue will return the bytes.
+//
+// This is a convenience wrapper around NewTestingLiteralGetter that returns a concrete type.
+// This avoids changing NewTestingLiteralGetter's return type, we could shift it to 'any' at
+// some point in the future if we want to.
 func NewTestingLiteralByteSliceLikeGetter[K any](bytes []byte) ByteSliceLikeGetter[K] {
 	return newLiteral[K, []byte](bytes)
 }
