@@ -82,8 +82,6 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 
 func TestTracesRoutingWithInferredContexts(t *testing.T) {
 	// This test demonstrates context inference with explicit context-qualified paths.
-	// Using resource.attributes["..."] or span.attributes["..."] makes it clear
-	// which context is being accessed.
 	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
 	tracesProd := pipeline.NewIDWithName(pipeline.SignalTraces, "prod")
 	tracesHTTP := pipeline.NewIDWithName(pipeline.SignalTraces, "http")
@@ -92,12 +90,10 @@ func TestTracesRoutingWithInferredContexts(t *testing.T) {
 		DefaultPipelines: []pipeline.ID{tracesDefault},
 		Table: []RoutingTableItem{
 			{
-				// Explicit resource context - routes based on resource attributes
 				Condition: `resource.attributes["env"] == "prod"`,
 				Pipelines: []pipeline.ID{tracesProd},
 			},
 			{
-				// Explicit span context - routes based on span attributes
 				Condition: `span.attributes["http.method"] == "GET"`,
 				Pipelines: []pipeline.ID{tracesHTTP},
 			},
@@ -121,48 +117,79 @@ func TestTracesRoutingWithInferredContexts(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Test resource context routing: env=prod should route to prod sink
-	prodTraces := ptrace.NewTraces()
-	rs := prodTraces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr("env", "prod")
-	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", "POST")
+	// Helper function to create traces with specific attributes
+	createTraces := func(env, httpMethod string) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("env", env)
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", httpMethod)
+		return traces
+	}
 
-	require.NoError(t, conn.ConsumeTraces(t.Context(), prodTraces))
-	assert.Equal(t, 1, prodSink.SpanCount())
-	assert.Equal(t, 0, httpSink.SpanCount())
-	assert.Equal(t, 0, defaultSink.SpanCount())
+	// Helper function to reset all sinks
+	resetSinks := func() {
+		prodSink.Reset()
+		httpSink.Reset()
+		defaultSink.Reset()
+	}
 
-	// Reset sinks
-	prodSink.Reset()
-	httpSink.Reset()
-	defaultSink.Reset()
+	// Helper function to assert sink counts
+	assertSinkCounts := func(t *testing.T, prodCount, httpCount, defaultCount int) {
+		assert.Equal(t, prodCount, prodSink.SpanCount(), "prod sink count")
+		assert.Equal(t, httpCount, httpSink.SpanCount(), "http sink count")
+		assert.Equal(t, defaultCount, defaultSink.SpanCount(), "default sink count")
+	}
 
-	// Test span context routing: GET method should route to http sink
-	httpTraces := ptrace.NewTraces()
-	rs = httpTraces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr("env", "dev") // not prod
-	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", "GET")
+	testCases := []struct {
+		name            string
+		env             string
+		httpMethod      string
+		expectedProd    int
+		expectedHTTP    int
+		expectedDefault int
+	}{
+		{
+			name:            "resource context routing: env=prod routes to prod sink",
+			env:             "prod",
+			httpMethod:      "POST",
+			expectedProd:    1,
+			expectedHTTP:    0,
+			expectedDefault: 0,
+		},
+		{
+			name:            "span context routing: GET method routes to http sink",
+			env:             "dev",
+			httpMethod:      "GET",
+			expectedProd:    0,
+			expectedHTTP:    1,
+			expectedDefault: 0,
+		},
+		{
+			name:            "default routing: non-matching traces go to default",
+			env:             "dev",
+			httpMethod:      "POST",
+			expectedProd:    0,
+			expectedHTTP:    0,
+			expectedDefault: 1,
+		},
+		{
+			name:            "multiple route matches: both prod env and GET http.method",
+			env:             "prod",
+			httpMethod:      "GET",
+			expectedProd:    1,
+			expectedHTTP:    0,
+			expectedDefault: 0,
+		},
+	}
 
-	require.NoError(t, conn.ConsumeTraces(t.Context(), httpTraces))
-	assert.Equal(t, 0, prodSink.SpanCount())
-	assert.Equal(t, 1, httpSink.SpanCount())
-	assert.Equal(t, 0, defaultSink.SpanCount())
-
-	// Reset sinks
-	prodSink.Reset()
-	httpSink.Reset()
-	defaultSink.Reset()
-
-	// Test default routing: non-matching traces go to default
-	otherTraces := ptrace.NewTraces()
-	rs = otherTraces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr("env", "dev")
-	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", "POST")
-
-	require.NoError(t, conn.ConsumeTraces(t.Context(), otherTraces))
-	assert.Equal(t, 0, prodSink.SpanCount())
-	assert.Equal(t, 0, httpSink.SpanCount())
-	assert.Equal(t, 1, defaultSink.SpanCount())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetSinks()
+			traces := createTraces(tc.env, tc.httpMethod)
+			require.NoError(t, conn.ConsumeTraces(t.Context(), traces))
+			assertSinkCounts(t, tc.expectedProd, tc.expectedHTTP, tc.expectedDefault)
+		})
+	}
 }
 
 func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {

@@ -119,48 +119,79 @@ func TestLogsRoutingWithInferredContexts(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Test resource context routing: env=prod should route to prod sink
-	prodLogs := plog.NewLogs()
-	rl := prodLogs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("env", "prod")
-	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("INFO")
+	// Helper function to create logs with specific attributes
+	createLogs := func(env string, severity string) plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("env", env)
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText(severity)
+		return logs
+	}
 
-	require.NoError(t, conn.ConsumeLogs(t.Context(), prodLogs))
-	assert.Equal(t, 1, prodSink.LogRecordCount())
-	assert.Equal(t, 0, errorsSink.LogRecordCount())
-	assert.Equal(t, 0, defaultSink.LogRecordCount())
+	// Helper function to reset all sinks
+	resetSinks := func() {
+		prodSink.Reset()
+		errorsSink.Reset()
+		defaultSink.Reset()
+	}
 
-	// Reset sinks
-	prodSink.Reset()
-	errorsSink.Reset()
-	defaultSink.Reset()
+	// Helper function to assert sink counts
+	assertSinkCounts := func(t *testing.T, prodCount, errorsCount, defaultCount int) {
+		assert.Equal(t, prodCount, prodSink.LogRecordCount(), "prod sink count")
+		assert.Equal(t, errorsCount, errorsSink.LogRecordCount(), "errors sink count")
+		assert.Equal(t, defaultCount, defaultSink.LogRecordCount(), "default sink count")
+	}
 
-	// Test log context routing: ERROR severity should route to errors sink
-	errorLogs := plog.NewLogs()
-	rl = errorLogs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("env", "dev") // not prod
-	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("ERROR")
+	testCases := []struct {
+		name            string
+		env             string
+		severity        string
+		expectedProd    int
+		expectedErrors  int
+		expectedDefault int
+	}{
+		{
+			name:            "resource context routing: env=prod routes to prod sink",
+			env:             "prod",
+			severity:        "INFO",
+			expectedProd:    1,
+			expectedErrors:  0,
+			expectedDefault: 0,
+		},
+		{
+			name:            "log context routing: ERROR severity routes to errors sink",
+			env:             "dev",
+			severity:        "ERROR",
+			expectedProd:    0,
+			expectedErrors:  1,
+			expectedDefault: 0,
+		},
+		{
+			name:            "default routing: non-matching logs go to default",
+			env:             "dev",
+			severity:        "INFO",
+			expectedProd:    0,
+			expectedErrors:  0,
+			expectedDefault: 1,
+		},
+		{
+			name:            "multiple route matches: both prod env and ERROR severity",
+			env:             "prod",
+			severity:        "ERROR",
+			expectedProd:    1,
+			expectedErrors:  0,
+			expectedDefault: 0,
+		},
+	}
 
-	require.NoError(t, conn.ConsumeLogs(t.Context(), errorLogs))
-	assert.Equal(t, 0, prodSink.LogRecordCount())
-	assert.Equal(t, 1, errorsSink.LogRecordCount())
-	assert.Equal(t, 0, defaultSink.LogRecordCount())
-
-	// Reset sinks
-	prodSink.Reset()
-	errorsSink.Reset()
-	defaultSink.Reset()
-
-	// Test default routing: non-matching logs go to default
-	otherLogs := plog.NewLogs()
-	rl = otherLogs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("env", "dev")
-	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("INFO")
-
-	require.NoError(t, conn.ConsumeLogs(t.Context(), otherLogs))
-	assert.Equal(t, 0, prodSink.LogRecordCount())
-	assert.Equal(t, 0, errorsSink.LogRecordCount())
-	assert.Equal(t, 1, defaultSink.LogRecordCount())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetSinks()
+			logs := createLogs(tc.env, tc.severity)
+			require.NoError(t, conn.ConsumeLogs(t.Context(), logs))
+			assertSinkCounts(t, tc.expectedProd, tc.expectedErrors, tc.expectedDefault)
+		})
+	}
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {

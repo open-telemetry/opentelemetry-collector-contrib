@@ -83,8 +83,6 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 
 func TestMetricsRoutingWithInferredContexts(t *testing.T) {
 	// This test demonstrates context inference with explicit context-qualified paths.
-	// Using resource.attributes["..."] or metric.name makes it clear
-	// which context is being accessed.
 	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
 	metricsProd := pipeline.NewIDWithName(pipeline.SignalMetrics, "prod")
 	metricsHTTP := pipeline.NewIDWithName(pipeline.SignalMetrics, "http")
@@ -93,12 +91,10 @@ func TestMetricsRoutingWithInferredContexts(t *testing.T) {
 		DefaultPipelines: []pipeline.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
-				// Explicit resource context - routes based on resource attributes
 				Condition: `resource.attributes["env"] == "prod"`,
 				Pipelines: []pipeline.ID{metricsProd},
 			},
 			{
-				// Explicit metric context - routes based on metric name
 				Condition: `metric.name == "http_requests_total"`,
 				Pipelines: []pipeline.ID{metricsHTTP},
 			},
@@ -122,54 +118,81 @@ func TestMetricsRoutingWithInferredContexts(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Test resource context routing: env=prod should route to prod sink
-	prodMetrics := pmetric.NewMetrics()
-	rm := prodMetrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("env", "prod")
-	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	m.SetName("other_metric")
-	m.SetEmptyGauge().DataPoints().AppendEmpty()
+	// Helper function to create metrics with specific attributes
+	createMetrics := func(env, metricName string) pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("env", env)
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName(metricName)
+		m.SetEmptyGauge().DataPoints().AppendEmpty()
+		return metrics
+	}
 
-	require.NoError(t, conn.ConsumeMetrics(t.Context(), prodMetrics))
-	assert.Len(t, prodSink.AllMetrics(), 1)
-	assert.Empty(t, httpSink.AllMetrics())
-	assert.Empty(t, defaultSink.AllMetrics())
+	// Helper function to reset all sinks
+	resetSinks := func() {
+		prodSink.Reset()
+		httpSink.Reset()
+		defaultSink.Reset()
+	}
 
-	// Reset sinks
-	prodSink.Reset()
-	httpSink.Reset()
-	defaultSink.Reset()
+	// Helper function to assert sink counts
+	assertSinkCounts := func(t *testing.T, prodCount, httpCount, defaultCount int) {
+		assert.Len(t, prodSink.AllMetrics(), prodCount, "prod sink count")
+		assert.Len(t, httpSink.AllMetrics(), httpCount, "http sink count")
+		assert.Len(t, defaultSink.AllMetrics(), defaultCount, "default sink count")
+	}
 
-	// Test metric context routing: http_requests_total should route to http sink
-	httpMetrics := pmetric.NewMetrics()
-	rm = httpMetrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("env", "dev") // not prod
-	m = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	m.SetName("http_requests_total")
-	m.SetEmptyGauge().DataPoints().AppendEmpty()
+	testCases := []struct {
+		name            string
+		env             string
+		metricName      string
+		expectedProd    int
+		expectedHTTP    int
+		expectedDefault int
+	}{
+		{
+			name:            "resource context routing: env=prod routes to prod sink",
+			env:             "prod",
+			metricName:      "other_metric",
+			expectedProd:    1,
+			expectedHTTP:    0,
+			expectedDefault: 0,
+		},
+		{
+			name:            "metric context routing: http_requests_total routes to http sink",
+			env:             "dev",
+			metricName:      "http_requests_total",
+			expectedProd:    0,
+			expectedHTTP:    1,
+			expectedDefault: 0,
+		},
+		{
+			name:            "default routing: non-matching metrics go to default",
+			env:             "dev",
+			metricName:      "other_metric",
+			expectedProd:    0,
+			expectedHTTP:    0,
+			expectedDefault: 1,
+		},
+		{
+			name:            "multiple route matches: both prod env and http_requests_total metric",
+			env:             "prod",
+			metricName:      "http_requests_total",
+			expectedProd:    1,
+			expectedHTTP:    0,
+			expectedDefault: 0,
+		},
+	}
 
-	require.NoError(t, conn.ConsumeMetrics(t.Context(), httpMetrics))
-	assert.Empty(t, prodSink.AllMetrics())
-	assert.Len(t, httpSink.AllMetrics(), 1)
-	assert.Empty(t, defaultSink.AllMetrics())
-
-	// Reset sinks
-	prodSink.Reset()
-	httpSink.Reset()
-	defaultSink.Reset()
-
-	// Test default routing: non-matching metrics go to default
-	otherMetrics := pmetric.NewMetrics()
-	rm = otherMetrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("env", "dev")
-	m = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	m.SetName("other_metric")
-	m.SetEmptyGauge().DataPoints().AppendEmpty()
-
-	require.NoError(t, conn.ConsumeMetrics(t.Context(), otherMetrics))
-	assert.Empty(t, prodSink.AllMetrics())
-	assert.Empty(t, httpSink.AllMetrics())
-	assert.Len(t, defaultSink.AllMetrics(), 1)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetSinks()
+			metrics := createMetrics(tc.env, tc.metricName)
+			require.NoError(t, conn.ConsumeMetrics(t.Context(), metrics))
+			assertSinkCounts(t, tc.expectedProd, tc.expectedHTTP, tc.expectedDefault)
+		})
+	}
 }
 
 func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
