@@ -130,7 +130,9 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			evaluate, err := convertSummaryQuantileValToGauge(tt.key, tt.suffix)
 			require.NoError(t, err)
 
-			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetric, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			tCtx := ottlmetric.NewTransformContextPtr(tt.input, actualMetric, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			defer tCtx.Close()
+			_, err = evaluate(t.Context(), tCtx)
 			require.NoError(t, err)
 
 			expected := pmetric.NewMetricSlice()
