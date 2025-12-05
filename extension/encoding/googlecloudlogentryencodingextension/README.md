@@ -27,7 +27,7 @@ Currently, this extension [can parse the following logs](#supported-log-types) i
 - [Cloud DNS logs](https://docs.cloud.google.com/dns/docs/monitoring#dns-log-record-format) (extension [mapping](#cloud-dns-logs))
 - Passthrough Network Load Balancer logs (extension [mapping](#passthrough-network-load-balancer-logs))
   - [External Network Load Balancer](https://cloud.google.com/load-balancing/docs/network/networklb-monitoring)
-  - [Internal Network Load Balancer](https://cloud.google.com/load-balancing/docs/internal/internal-monitoring)
+  - [Internal Network Load Balancer](https://docs.cloud.google.com/load-balancing/docs/internal/internal-logging-monitoring)
 
 For all others logs, the payload will be placed in the log record attribute. In this case, the following configuration options are supported:
 
@@ -492,7 +492,7 @@ Resource labels such as `backend_name`, `network_name`, and `load_balancing_sche
 
 ### Passthrough Network Load Balancer logs
 
-Passthrough Network Load Balancer flow logs cover both [External](https://cloud.google.com/load-balancing/docs/network/networklb-monitoring) and [Internal](https://cloud.google.com/load-balancing/docs/internal/internal-monitoring) Network Load Balancers. These logs are mapped into OpenTelemetry attributes as follows:
+Passthrough Network Load Balancer flow logs cover both [External](https://cloud.google.com/load-balancing/docs/network/networklb-monitoring) and [Internal](https://docs.cloud.google.com/load-balancing/docs/internal/internal-logging-monitoring) Network Load Balancers. These logs are mapped into OpenTelemetry attributes as follows:
 
 | Original field | Log record attribute |
 |---|---|
