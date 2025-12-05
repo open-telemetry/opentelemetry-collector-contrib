@@ -10,7 +10,7 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource/resourcekeys"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
@@ -28,7 +28,7 @@ func getOCLangCodeToLangMap() map[occommon.LibraryInfo_Language]string {
 	mappings[7] = conventions.TelemetrySDKLanguagePHP.Value.AsString()
 	mappings[8] = conventions.TelemetrySDKLanguagePython.Value.AsString()
 	mappings[9] = conventions.TelemetrySDKLanguageRuby.Value.AsString()
-	mappings[10] = conventions.TelemetrySDKLanguageWebjs.Value.AsString()
+	mappings[10] = conventions.TelemetrySDKLanguageWebJS.Value.AsString()
 	return mappings
 }
 
