@@ -4,7 +4,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/exporterhelper
+component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note:   It's recommended to change the field type in your component configuration to be `configoptional.Optional[exporterhelper.QueueBatchConfig]` to keep the `enabled` subfield. Use configoptional.Some(exporterhelper.NewDefaultQueueConfig()) to enable by default. Use configoptional.Default(exporterhelper.NewDefaultQueueConfig()) to disable by default.
