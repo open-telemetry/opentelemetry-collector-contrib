@@ -90,10 +90,10 @@ func TestLegacyReadyNotReadyBehavior(t *testing.T) {
 }
 
 func TestV2ExtensionEnabledByGate(t *testing.T) {
-	prev := disableCompatibilityWrapperGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableCompatibilityWrapperGate.ID(), true))
+	prev := useComponentStatusGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(disableCompatibilityWrapperGate.ID(), prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), prev))
 	})
 
 	transport := &http.Transport{

@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
@@ -40,22 +39,24 @@ func TestLoadConfigLegacy(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:13",
-						TLS: configoptional.Some(configtls.ServerConfig{
-							Config: configtls.Config{
-								CAFile:   "/path/to/ca",
-								CertFile: "/path/to/cert",
-								KeyFile:  "/path/to/key",
-							},
-						}),
-					},
-					Path: "/",
-					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-						Enabled:                  false,
-						Interval:                 "5m",
-						ExporterFailureThreshold: 5,
+				Config: healthcheck.Config{
+					LegacyConfig: healthcheck.HTTPLegacyConfig{
+						ServerConfig: confighttp.ServerConfig{
+							Endpoint: "localhost:13",
+							TLS: configoptional.Some(configtls.ServerConfig{
+								Config: configtls.Config{
+									CAFile:   "/path/to/ca",
+									CertFile: "/path/to/cert",
+									KeyFile:  "/path/to/key",
+								},
+							}),
+						},
+						Path: "/",
+						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+							Enabled:                  false,
+							Interval:                 "5m",
+							ExporterFailureThreshold: 5,
+						},
 					},
 				},
 			},
@@ -109,20 +110,19 @@ func TestLoadConfigV2WithoutGate(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 	assert.NotNil(t, cfg.(*Config).HTTPConfig)
 
-	// Without the feature gate, v2 config should cause an error.
+	// Without the feature gate, v2 config should cause a validation error.
 	// This makes it immediately obvious to users that the configuration is invalid.
-	f := NewFactory()
-	ext, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
+	err = xconfmap.Validate(cfg)
 	require.Error(t, err)
-	assert.ErrorIs(t, err, errV2ConfigWithoutFeatureGate)
-	assert.Nil(t, ext, "should not create extension when v2 config is present without feature gate")
+	assert.Contains(t, err.Error(), "v2 healthcheck configuration")
+	assert.Contains(t, err.Error(), "feature gate is disabled")
 }
 
 func TestLoadConfigV2WithGate(t *testing.T) {
-	prev := disableCompatibilityWrapperGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableCompatibilityWrapperGate.ID(), true))
+	prev := useComponentStatusGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(disableCompatibilityWrapperGate.ID(), prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), prev))
 	})
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -135,42 +135,44 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 
 	assert.NoError(t, xconfmap.Validate(cfg))
 	assert.Equal(t, &Config{
-		LegacyConfig: healthcheck.HTTPLegacyConfig{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: "localhost:13133",
-			},
-			Path: "/",
-			CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-				Enabled:                  false,
-				Interval:                 "5m",
-				ExporterFailureThreshold: 5,
-			},
-		},
-		HTTPConfig: &healthcheck.HTTPConfig{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: "localhost:13133",
-			},
-			Status: healthcheck.PathConfig{
-				Enabled: true,
-				Path:    "/status",
-			},
-			Config: healthcheck.PathConfig{
-				Enabled: true,
-				Path:    "/config",
-			},
-		},
-		GRPCConfig: &healthcheck.GRPCConfig{
-			ServerConfig: configgrpc.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "localhost:13132",
-					Transport: confignet.TransportTypeTCP,
+		Config: healthcheck.Config{
+			LegacyConfig: healthcheck.HTTPLegacyConfig{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:13133",
+				},
+				Path: "/",
+				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+					Enabled:                  false,
+					Interval:                 "5m",
+					ExporterFailureThreshold: 5,
 				},
 			},
-		},
-		ComponentHealthConfig: &healthcheck.ComponentHealthConfig{
-			IncludePermanent:   true,
-			IncludeRecoverable: true,
-			RecoveryDuration:   time.Minute,
+			HTTPConfig: &healthcheck.HTTPConfig{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:13133",
+				},
+				Status: healthcheck.PathConfig{
+					Enabled: true,
+					Path:    "/status",
+				},
+				Config: healthcheck.PathConfig{
+					Enabled: true,
+					Path:    "/config",
+				},
+			},
+			GRPCConfig: &healthcheck.GRPCConfig{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:13132",
+						Transport: confignet.TransportTypeTCP,
+					},
+				},
+			},
+			ComponentHealthConfig: &healthcheck.ComponentHealthConfig{
+				IncludePermanent:   true,
+				IncludeRecoverable: true,
+				RecoveryDuration:   time.Minute,
+			},
 		},
 	}, cfg)
 }

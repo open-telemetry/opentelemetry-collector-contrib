@@ -5,7 +5,6 @@ package healthcheckextension // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -19,15 +18,9 @@ import (
 
 const defaultPort = 13133
 
-var errV2ConfigWithoutFeatureGate = errors.New(
-	"v2 healthcheck configuration (http/grpc fields) detected but feature gate is disabled. " +
-		"Either remove the v2 config fields or enable the feature gate with: " +
-		"--feature-gates=+extension.healthcheck.disableCompatibilityWrapper",
-)
-
 // Feature gate that switches the extension to the shared healthcheck implementation
-var disableCompatibilityWrapperGate = featuregate.GlobalRegistry().MustRegister(
-	"extension.healthcheck.disableCompatibilityWrapper",
+var useComponentStatusGate = featuregate.GlobalRegistry().MustRegister(
+	"extension.healthcheck.useComponentStatus",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Switch to the shared healthcheck implementation powered by component status events"),
 	featuregate.WithRegisterFromVersion("v0.142.0"),
@@ -47,15 +40,17 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		LegacyConfig: healthcheck.HTTPLegacyConfig{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: testutil.EndpointForPort(defaultPort),
-			},
-			Path: "/",
-			CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-				Enabled:                  false,
-				Interval:                 "5m",
-				ExporterFailureThreshold: 5,
+		Config: healthcheck.Config{
+			LegacyConfig: healthcheck.HTTPLegacyConfig{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: testutil.EndpointForPort(defaultPort),
+				},
+				Path: "/",
+				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+					Enabled:                  false,
+					Interval:                 "5m",
+					ExporterFailureThreshold: 5,
+				},
 			},
 		},
 	}
@@ -64,7 +59,7 @@ func createDefaultConfig() component.Config {
 func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 
-	if disableCompatibilityWrapperGate.IsEnabled() {
+	if useComponentStatusGate.IsEnabled() {
 		// When feature gate is enabled, use v2 implementation directly.
 		// The feature gate controls behavior, not the presence of v2 config fields.
 		config.UseV2 = true
@@ -89,14 +84,9 @@ func createExtension(ctx context.Context, set extension.Settings, cfg component.
 			}
 		}
 
-		return healthcheck.NewHealthCheckExtension(ctx, *config, set), nil
+		return healthcheck.NewHealthCheckExtension(ctx, config.Config, set), nil
 	}
 
 	// Feature gate disabled: use legacy implementation.
-	// Fail if v2 config fields are present to make the invalid configuration immediately obvious.
-	if config.HTTPConfig != nil || config.GRPCConfig != nil {
-		return nil, errV2ConfigWithoutFeatureGate
-	}
-
 	return newServer(*config, set.TelemetrySettings), nil
 }

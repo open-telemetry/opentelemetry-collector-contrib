@@ -68,7 +68,7 @@ with detailed sample configurations in [testdata/config.yaml](./testdata/config.
 
 This extension maintains full backward compatibility with the original Ready/NotReady behavior by keeping the legacy implementation active unless a feature gate is enabled.
 
-### Feature Gate: `extension.healthcheck.disableCompatibilityWrapper`
+### Feature Gate: `extension.healthcheck.useComponentStatus`
 
 - **Default**: Disabled (false)
 - **Purpose**: Switches the extension to the shared healthcheck implementation that reports status from component events
@@ -81,7 +81,7 @@ To use the new event-driven behavior:
 
 ```bash
 # Set the feature gate to true
---feature-gates=+extension.healthcheck.disableCompatibilityWrapper
+--feature-gates=+extension.healthcheck.useComponentStatus
 ```
 
 #### Migration Timeline

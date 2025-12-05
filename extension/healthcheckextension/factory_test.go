@@ -23,15 +23,17 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	expected := &Config{
-		LegacyConfig: healthcheck.HTTPLegacyConfig{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: "localhost:13133",
-			},
-			Path: "/",
-			CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-				Enabled:                  false,
-				Interval:                 "5m",
-				ExporterFailureThreshold: 5,
+		Config: healthcheck.Config{
+			LegacyConfig: healthcheck.HTTPLegacyConfig{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:13133",
+				},
+				Path: "/",
+				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+					Enabled:                  false,
+					Interval:                 "5m",
+					ExporterFailureThreshold: 5,
+				},
 			},
 		},
 	}
@@ -87,10 +89,10 @@ func TestLegacyExtensionPortAlreadyInUse(t *testing.T) {
 }
 
 func TestFactory_CreateV2Extension(t *testing.T) {
-	prev := disableCompatibilityWrapperGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableCompatibilityWrapperGate.ID(), true))
+	prev := useComponentStatusGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(disableCompatibilityWrapperGate.ID(), prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), prev))
 	})
 
 	cfg := createDefaultConfig().(*Config)

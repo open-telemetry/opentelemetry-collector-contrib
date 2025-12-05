@@ -49,15 +49,17 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithoutCheckCollectorPipeline",
 			config: &Config{
-				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.GetAvailableLocalAddress(t),
-					},
-					Path: "/",
-					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-						Enabled:                  false,
-						Interval:                 "5m",
-						ExporterFailureThreshold: 5,
+				Config: healthcheck.Config{
+					LegacyConfig: healthcheck.HTTPLegacyConfig{
+						ServerConfig: confighttp.ServerConfig{
+							Endpoint: testutil.GetAvailableLocalAddress(t),
+						},
+						Path: "/",
+						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+							Enabled:                  false,
+							Interval:                 "5m",
+							ExporterFailureThreshold: 5,
+						},
 					},
 				},
 			},
@@ -81,15 +83,17 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCustomizedPathWithoutCheckCollectorPipeline",
 			config: &Config{
-				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.GetAvailableLocalAddress(t),
-					},
-					Path: "/health",
-					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-						Enabled:                  false,
-						Interval:                 "5m",
-						ExporterFailureThreshold: 5,
+				Config: healthcheck.Config{
+					LegacyConfig: healthcheck.HTTPLegacyConfig{
+						ServerConfig: confighttp.ServerConfig{
+							Endpoint: testutil.GetAvailableLocalAddress(t),
+						},
+						Path: "/health",
+						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+							Enabled:                  false,
+							Interval:                 "5m",
+							ExporterFailureThreshold: 5,
+						},
 					},
 				},
 			},
@@ -110,19 +114,21 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithBothCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: &Config{
-				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.GetAvailableLocalAddress(t),
-					},
-					Path: "/",
-					ResponseBody: &healthcheck.ResponseBodyConfig{
-						Healthy:   "ALL OK",
-						Unhealthy: "NOT OK",
-					},
-					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-						Enabled:                  false,
-						Interval:                 "5m",
-						ExporterFailureThreshold: 5,
+				Config: healthcheck.Config{
+					LegacyConfig: healthcheck.HTTPLegacyConfig{
+						ServerConfig: confighttp.ServerConfig{
+							Endpoint: testutil.GetAvailableLocalAddress(t),
+						},
+						Path: "/",
+						ResponseBody: &healthcheck.ResponseBodyConfig{
+							Healthy:   "ALL OK",
+							Unhealthy: "NOT OK",
+						},
+						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+							Enabled:                  false,
+							Interval:                 "5m",
+							ExporterFailureThreshold: 5,
+						},
 					},
 				},
 			},
@@ -146,18 +152,20 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithHealthyCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: &Config{
-				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.GetAvailableLocalAddress(t),
-					},
-					Path: "/",
-					ResponseBody: &healthcheck.ResponseBodyConfig{
-						Healthy: "ALL OK",
-					},
-					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-						Enabled:                  false,
-						Interval:                 "5m",
-						ExporterFailureThreshold: 5,
+				Config: healthcheck.Config{
+					LegacyConfig: healthcheck.HTTPLegacyConfig{
+						ServerConfig: confighttp.ServerConfig{
+							Endpoint: testutil.GetAvailableLocalAddress(t),
+						},
+						Path: "/",
+						ResponseBody: &healthcheck.ResponseBodyConfig{
+							Healthy: "ALL OK",
+						},
+						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+							Enabled:                  false,
+							Interval:                 "5m",
+							ExporterFailureThreshold: 5,
+						},
 					},
 				},
 			},
@@ -181,18 +189,20 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithUnhealthyCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: &Config{
-				LegacyConfig: healthcheck.HTTPLegacyConfig{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.GetAvailableLocalAddress(t),
-					},
-					Path: "/",
-					ResponseBody: &healthcheck.ResponseBodyConfig{
-						Unhealthy: "NOT OK",
-					},
-					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-						Enabled:                  false,
-						Interval:                 "5m",
-						ExporterFailureThreshold: 5,
+				Config: healthcheck.Config{
+					LegacyConfig: healthcheck.HTTPLegacyConfig{
+						ServerConfig: confighttp.ServerConfig{
+							Endpoint: testutil.GetAvailableLocalAddress(t),
+						},
+						Path: "/",
+						ResponseBody: &healthcheck.ResponseBodyConfig{
+							Unhealthy: "NOT OK",
+						},
+						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+							Enabled:                  false,
+							Interval:                 "5m",
+							ExporterFailureThreshold: 5,
+						},
 					},
 				},
 			},
@@ -265,15 +275,17 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := &Config{
-		LegacyConfig: healthcheck.HTTPLegacyConfig{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: testutil.GetAvailableLocalAddress(t),
-			},
-			Path: "/",
-			CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
-				Enabled:                  false,
-				Interval:                 "5m",
-				ExporterFailureThreshold: 5,
+		Config: healthcheck.Config{
+			LegacyConfig: healthcheck.HTTPLegacyConfig{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Path: "/",
+				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+					Enabled:                  false,
+					Interval:                 "5m",
+					ExporterFailureThreshold: 5,
+				},
 			},
 		},
 	}
