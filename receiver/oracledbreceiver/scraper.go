@@ -93,6 +93,12 @@ const (
 	queryDiskReadsMetric        = "DISK_READS"
 	queryDirectReadsMetric      = "DIRECT_READS"
 	queryDirectWritesMetric     = "DIRECT_WRITES"
+
+	// Stored procedure columns
+	objectIDAttr    = "PROGRAM_ID"
+	objectOwnerAttr = "OWNER"
+	objectNameAttr  = "OBJECT_NAME"
+	objectTypeAttr  = "OBJECT_TYPE"
 )
 
 var (
@@ -524,6 +530,10 @@ type queryMetricCacheHit struct {
 	childAddress string
 	queryText    string
 	metrics      map[string]int64
+	objectID     int64
+	objectOwner  string
+	objectName   string
+	objectType   string
 }
 
 func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
@@ -586,12 +596,22 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 		// if we have a cache hit and the query doesn't belong to top N, cache is updated anyway
 		// as a result, once it finally makes its way to the top N queries, only the latest delta will be sent downstream
 		if oldCacheVal, ok := s.metricCache.Get(cacheKey); ok {
+			// Parse stored procedure PROGRAM_ID
+			var objectID int64
+			if row[objectIDAttr] != "" {
+				objectID, _ = strconv.ParseInt(row[objectIDAttr], 10, 64)
+			}
+
 			hit := queryMetricCacheHit{
 				sqlID:        row[sqlIDAttr],
 				queryText:    row[sqlTextAttr],
 				childNumber:  row[childNumberAttr],
 				childAddress: row[childAddressAttr],
 				metrics:      make(map[string]int64, len(metricNames)),
+				objectID:     objectID,
+				objectOwner:  row[objectOwnerAttr],
+				objectName:   row[objectNameAttr],
+				objectType:   row[objectTypeAttr],
 			}
 
 			// it is possible we get a record with all deltas equal to zero. we don't want to process it any further
@@ -674,7 +694,11 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.metrics[physicalWriteBytesMetric],
 			hit.metrics[physicalWriteRequestsMetric],
 			hit.metrics[rowsProcessedMetric],
-			asFloatInSeconds(hit.metrics[userIoWaitTimeMetric]))
+			asFloatInSeconds(hit.metrics[userIoWaitTimeMetric]),
+			hit.objectID,
+			hit.objectOwner,
+			hit.objectName,
+			hit.objectType)
 	}
 
 	hitCount := len(hits)
@@ -694,6 +718,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const hostName = "MACHINE"
 	const module = "MODULE"
 	const osUser = "OSUSER"
+	const objectID = "OBJECT_ID"
 	const objectName = "OBJECT_NAME"
 	const objectType = "OBJECT_TYPE"
 	const process = "PROCESS"
@@ -749,13 +774,19 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			clientPort = 0
 		}
 
+		// Parse stored procedure OBJECT_ID
+		var objID int64
+		if row[objectID] != "" {
+			objID, _ = strconv.ParseInt(row[objectID], 10, 64)
+		}
+
 		queryContext := propagator.Extract(context.Background(), propagation.MapCarrier{
 			"traceparent": row[action],
 		})
 
 		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
-			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], row[objectName], row[objectType],
+			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], objID, row[objectName], row[objectType],
 			row[osUser], queryDuration)
 	}
 
