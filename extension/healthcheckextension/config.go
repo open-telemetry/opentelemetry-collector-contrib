@@ -24,8 +24,7 @@ func (c *Config) Validate() error {
 		)
 	}
 
-	// Delegate to the shared config validation
-	return c.Config.Validate()
+	return nil
 }
 
 // Type alias for backward compatibility
