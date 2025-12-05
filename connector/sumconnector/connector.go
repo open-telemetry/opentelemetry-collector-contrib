@@ -29,7 +29,7 @@ type sum struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spansMetricDefs      map[string]metricDef[ottlspan.TransformContext]
+	spansMetricDefs      map[string]metricDef[*ottlspan.TransformContext]
 	spanEventsMetricDefs map[string]metricDef[ottlspanevent.TransformContext]
 	metricsMetricDefs    map[string]metricDef[ottlmetric.TransformContext]
 	dataPointsMetricDefs map[string]metricDef[ottldatapoint.TransformContext]
@@ -46,7 +46,7 @@ func (c *sum) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	sumMetrics.ResourceMetrics().EnsureCapacity(td.ResourceSpans().Len())
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
-		spansSummer := newSummer[ottlspan.TransformContext](c.spansMetricDefs)
+		spansSummer := newSummer[*ottlspan.TransformContext](c.spansMetricDefs)
 		spanEventsSummer := newSummer[ottlspanevent.TransformContext](c.spanEventsMetricDefs)
 
 		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
@@ -54,8 +54,9 @@ func (c *sum) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 			for k := 0; k < scopeSpan.Spans().Len(); k++ {
 				span := scopeSpan.Spans().At(k)
-				sCtx := ottlspan.NewTransformContext(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+				sCtx := ottlspan.NewTransformContextPtr(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
 				multiError = errors.Join(multiError, spansSummer.update(ctx, span.Attributes(), sCtx))
+				sCtx.Close()
 
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)

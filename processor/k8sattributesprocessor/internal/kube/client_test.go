@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -371,7 +371,6 @@ func TestPodCreate(t *testing.T) {
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
 	c.Associations = append(c.Associations, Association{
-		Name: "name",
 		Sources: []AssociationSource{
 			{
 				From: ResourceSource,
@@ -1068,9 +1067,9 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
@@ -1367,9 +1366,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
@@ -1625,9 +1624,9 @@ func TestNodeExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
