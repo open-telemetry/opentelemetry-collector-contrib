@@ -40,7 +40,6 @@ type itemCardinalityFilter struct {
 	cache              *ttlcache.Cache[string, struct{}]
 	stopOnce           sync.Once
 	startOnce          sync.Once
-	wg                 sync.WaitGroup
 }
 
 type currentLimitByTimestamp struct {
@@ -101,11 +100,7 @@ func (f *itemCardinalityFilter) Filter(sourceItems []*Item) []*Item {
 // Idempotent: safe to call multiple times.
 func (f *itemCardinalityFilter) StartCache() {
 	f.startOnce.Do(func() {
-		f.wg.Add(1)
-		go func() {
-			defer f.wg.Done()
-			f.cache.Start()
-		}()
+		go f.cache.Start()
 	})
 }
 
@@ -149,24 +144,7 @@ func (f *itemCardinalityFilter) canIncludeNewItem(currentLimitByTimestamp int) b
 func (f *itemCardinalityFilter) Shutdown() error {
 	f.stopOnce.Do(func() {
 		f.cache.Stop()
-
-		// Wait for goroutines to finish with timeout
-		done := make(chan struct{})
-		go func() {
-			f.wg.Wait()
-			close(done)
-		}()
-
-		select {
-		case <-done:
-			// Shutdown completed successfully
-		case <-time.After(5 * time.Second):
-			// Timeout occurred, but we don't treat this as a fatal error
-			// The goroutine will eventually finish after cache.Start() returns
-			f.logger.Debug("Timeout waiting for ttlcache shutdown, continuing anyway", zap.String("metric", f.metricName))
-		}
 	})
-
 	return nil
 }
 
