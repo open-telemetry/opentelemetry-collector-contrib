@@ -26,7 +26,7 @@ The following exporter configuration parameters are supported.
 | `region`                | AWS region.                                                                                                                                | "us-east-1" | Optional |
 | `s3_bucket`             | S3 bucket                                                                                                                                  |             | Required |
 | `s3_prefix`             | prefix for the S3 key (root directory inside bucket).                                                                                      |             | Required |
-| `s3_partition_format`   | Go `timefmt-go` template for the partition key. Determines the time granularity used when scanning S3 paths.                               | `"year=%Y/month=%m/day=%d/hour=%H/minute=%M"` | Optional |
+| `s3_partition_format`   | Format for the partition key, See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.  | `"year=%Y/month=%m/day=%d/hour=%H/minute=%M"` | Optional |
 | `s3_partition_timezone` | IANA timezone name applied when formatting the partition key.                                                                              | Local time  | Optional |
 | `file_prefix`           | file prefix defined by user                                                                                                                |             | Optional |
 | `file_prefix_include_telemetry_type` | whether to append `<telemetry_type>_` to the file prefix when building S3 keys                                                             | true        | Optional |
