@@ -484,13 +484,14 @@ The value of the last-mapped attribute will take precedence.
 
 ### Span attribute mapping
 
-| Semantic Convention Name   | ECS Name                                                  | Preserve |
-|----------------------------|-----------------------------------------------------------|----------|
-| messaging.operation.name   | span.action                                               | false    |
-| db.system                  | span.db.type                                              | false    |
-| db.namespace               | span.db.instance                                          | false    |
-| db.query.text              | span.db.statement                                         | false    |
-| http.response.body.size    | http.response.encoded_body_size                           | false    |
+| Semantic Convention Name | ECS Name                                                  | Preserve |
+|--------------------------|-----------------------------------------------------------|----------|
+| messaging.operation.name | span.action                                               | false    |
+| messaging.system         | span.subtype                                              | false    |
+| db.system                | span.db.type                                              | false    |
+| db.namespace             | span.db.instance                                          | false    |
+| db.query.text            | span.db.statement                                         | false    |
+| http.response.body.size  | http.response.encoded_body_size                           | false    |
 
 
 ### Compound Mapping
