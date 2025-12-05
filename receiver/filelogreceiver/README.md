@@ -253,7 +253,7 @@ to set the value of the `poll_interval` setting to something lower than the syml
 Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics)
 will also provide telemetry metrics for the state of the receiver's file consumption.
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
-are provided.``
+are provided.
 
 ## Resource Attributes
 
