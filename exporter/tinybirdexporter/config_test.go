@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 					cfg.Enabled = false
 					return cfg
 				}(),
-				QueueConfig: configoptional.Default(*createDefaultConfig().(*Config).QueueConfig.Get()),
+				QueueConfig: configoptional.None[exporterhelper.QueueBatchConfig](),
 				Token:       "test-token",
 				Metrics: metricSignalConfigs{
 					MetricsGauge:                SignalConfig{Datasource: "gauge"},
