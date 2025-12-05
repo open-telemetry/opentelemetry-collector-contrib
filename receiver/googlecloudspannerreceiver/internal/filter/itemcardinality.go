@@ -4,6 +4,7 @@
 package filter // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -104,14 +105,7 @@ func (f *itemCardinalityFilter) StartCache() {
 		f.wg.Add(1)
 		go func() {
 			defer f.wg.Done()
-
-			done := make(chan struct{})
-			go func() {
-				f.cache.Start()
-				close(done)
-			}()
-
-			<-done
+			f.cache.Start()
 		}()
 	})
 }
@@ -154,21 +148,25 @@ func (f *itemCardinalityFilter) canIncludeNewItem(currentLimitByTimestamp int) b
 }
 
 func (f *itemCardinalityFilter) Shutdown() error {
+	var err error
 	f.stopOnce.Do(func() {
-		stopped := make(chan struct{})
+		f.cache.Stop()
+
+		done := make(chan struct{})
 		go func() {
-			f.cache.Stop()
 			f.wg.Wait()
-			close(stopped)
+			close(done)
 		}()
 
 		select {
-		case <-stopped:
+		case <-done:
+			// Shutdown completed successfully
 		case <-time.After(5 * time.Second):
 			f.logger.Warn("Timeout waiting for ttlcache shutdown", zap.String("metric", f.metricName))
+			err = errors.New("timeout waiting for ttlcache shutdown")
 		}
 	})
-	return nil
+	return err
 }
 
 func groupByTimestamp(items []*Item) map[time.Time][]*Item {
@@ -182,12 +180,10 @@ func groupByTimestamp(items []*Item) map[time.Time][]*Item {
 }
 
 func sortedKeys(groupedItems map[time.Time][]*Item) []time.Time {
-	keysForSorting := make([]time.Time, len(groupedItems))
+	keysForSorting := make([]time.Time, 0, len(groupedItems))
 
-	i := 0
 	for key := range groupedItems {
-		keysForSorting[i] = key
-		i++
+		keysForSorting = append(keysForSorting, key)
 	}
 
 	sort.Slice(keysForSorting, func(i, j int) bool { return keysForSorting[i].Before(keysForSorting[j]) })
