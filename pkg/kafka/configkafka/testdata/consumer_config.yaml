@@ -22,7 +22,6 @@ kafka/invalid_initial_offset:
 kafka/invalid_fetch_size:
   min_fetch_size: 1000
   max_fetch_size: 100
-
 kafka/negative_min_fetch_size:
   min_fetch_size: -100
   max_fetch_size: 1048576
