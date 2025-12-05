@@ -5,7 +5,6 @@ package elasticsearchexporter
 
 import (
 	"compress/gzip"
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
