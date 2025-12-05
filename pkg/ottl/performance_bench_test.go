@@ -35,7 +35,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
 
-	spanParser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
+	spanParser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create span parser: %v", err)
 	}
@@ -156,7 +156,7 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 
 func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
+	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create span parser: %v", err)
 	}
@@ -179,7 +179,7 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 		}
 		sequence := ottlspan.NewStatementSequence(parsed, settings)
 
-		contexts := make([]ottlspan.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottlspan.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkSpanContext(len(scenario.statements))
 		}
@@ -193,6 +193,9 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 				}
 			}
 		})
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
@@ -490,7 +493,7 @@ func newBenchmarkLogContext(attributeCount int) ottllog.TransformContext {
 	return ottllog.NewTransformContext(logRecord, scope, resource, scopeLogs, resourceLogs)
 }
 
-func newBenchmarkSpanContext(attributeCount int) ottlspan.TransformContext {
+func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 	resource := resourceSpans.Resource()
@@ -517,7 +520,7 @@ func newBenchmarkSpanContext(attributeCount int) ottlspan.TransformContext {
 		span.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("span_value_%d", i))
 	}
 
-	return ottlspan.NewTransformContext(span, scope, resource, scopeSpans, resourceSpans)
+	return ottlspan.NewTransformContextPtr(span, scope, resource, scopeSpans, resourceSpans)
 }
 
 func BenchmarkSliceToMap(b *testing.B) {
