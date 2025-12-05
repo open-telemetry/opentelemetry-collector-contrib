@@ -156,6 +156,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	extensionUUID := "unit-test-uuid-67890"
 	version := "0.127.0"
 	site := "datadoghq.com"
+	deploymentType := "gateway"
 
 	// Prepare base metadata
 	metadata := PrepareOtelCollectorMetadata(
@@ -165,6 +166,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 		version,
 		site,
 		fullConfig,
+		deploymentType,
 		buildInfo,
 	)
 
@@ -312,6 +314,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	assert.Equal(t, hostname+"-"+extensionUUID, testPayload.Metadata.CollectorID)
 	assert.Equal(t, version, testPayload.Metadata.CollectorVersion)
 	assert.Equal(t, site, testPayload.Metadata.ConfigSite)
+	assert.Equal(t, deploymentType, testPayload.Metadata.CollectorDeploymentType)
 	assert.Equal(t, buildInfo, testPayload.Metadata.BuildInfo)
 	assert.Equal(t, fullConfig, testPayload.Metadata.FullConfiguration)
 	assert.Contains(t, testPayload.Metadata.HealthStatus, "healthy")
@@ -392,4 +395,68 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	assert.Contains(t, metadataMap, "build_info")
 	assert.Contains(t, metadataMap, "full_configuration")
 	assert.Contains(t, metadataMap, "health_status")
+	assert.Contains(t, metadataMap, "collector_deployment_type")
+	assert.Equal(t, "gateway", metadataMap["collector_deployment_type"])
+}
+
+func TestPrepareOtelCollectorMetadata_DeploymentType(t *testing.T) {
+	tests := []struct {
+		name           string
+		deploymentType string
+	}{
+		{
+			name:           "gateway deployment type",
+			deploymentType: "gateway",
+		},
+		{
+			name:           "daemonset deployment type",
+			deploymentType: "daemonset",
+		},
+		{
+			name:           "unknown deployment type",
+			deploymentType: "unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buildInfo := CustomBuildInfo{
+				Command:     "otelcol",
+				Description: "Test Collector",
+				Version:     "1.0.0",
+			}
+
+			metadata := PrepareOtelCollectorMetadata(
+				"test-host",
+				"config",
+				"test-uuid",
+				"1.0.0",
+				"datadoghq.com",
+				"{}",
+				tt.deploymentType,
+				buildInfo,
+			)
+
+			assert.Equal(t, tt.deploymentType, metadata.CollectorDeploymentType)
+
+			// Verify it's present in JSON serialization
+			payload := &OtelCollectorPayload{
+				Hostname:  "test-host",
+				Timestamp: time.Now().UnixNano(),
+				UUID:      "test-uuid",
+				Metadata:  metadata,
+			}
+
+			jsonData, err := json.Marshal(payload)
+			require.NoError(t, err)
+
+			var jsonMap map[string]any
+			err = json.Unmarshal(jsonData, &jsonMap)
+			require.NoError(t, err)
+
+			metadataMap, ok := jsonMap["otel_collector"].(map[string]any)
+			require.True(t, ok)
+			assert.Equal(t, tt.deploymentType, metadataMap["collector_deployment_type"])
+		})
+	}
 }

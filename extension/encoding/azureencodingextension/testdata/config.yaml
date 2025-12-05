@@ -1,0 +1,35 @@
+azure_encoding:
+
+azure_encoding/incorrect_format:
+  format: json
+
+azure_encoding/blobstorage_format:
+  format: blobstorage
+
+azure_encoding/metrics_time_formats:
+  metrics:
+    time_formats: ["01/02/2006 15:04:05", "2006-01-02T15:04:05Z"]
+
+azure_encoding/metrics_aggregations:
+  metrics:
+    aggregations: ["count", "total", "average"]
+
+azure_encoding/metrics_aggregations_unknown:
+  metrics:
+    aggregations: ["unknown"]
+
+azure_encoding/traces_time_formats:
+  traces:
+    time_formats: ["01/02/2006 15:04:05", "2006-01-02T15:04:05Z"]
+
+azure_encoding/logs_time_formats:
+  logs:
+    time_formats: ["01/02/2006 15:04:05", "2006-01-02T15:04:05Z"]
+
+azure_encoding/logs_include_categories:
+  logs:
+    include_categories: ["AzureCdnAccessLog", "FrontDoorAccessLog"]
+
+azure_encoding/logs_exclude_categories:
+  logs:
+    exclude_categories: ["AppServiceAppLogs", "AppServiceAuditLogs"]

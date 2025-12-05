@@ -6,6 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
+    active: [ishaish103]
     emeritus: [nslaughter]
 
 resource_attributes:
