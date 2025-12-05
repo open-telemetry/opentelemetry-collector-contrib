@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -40,6 +41,7 @@ type Manager struct {
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
 	enableNativeHistograms bool
+	wg                     sync.WaitGroup
 
 	// configUpdateCount tracks how many times the config has changed, for
 	// testing.
@@ -70,7 +72,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		// the target allocator is disabled
 		return nil
 	}
-	httpClient, err := m.cfg.ToClient(ctx, host, m.settings.TelemetrySettings)
+	httpClient, err := m.cfg.ToClient(ctx, host.GetExtensions(), m.settings.TelemetrySettings)
 	if err != nil {
 		m.settings.Logger.Error("Failed to create http client", zap.Error(err))
 		return err
@@ -92,7 +94,9 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 	if err != nil {
 		return err
 	}
+	m.wg.Add(1)
 	go func() {
+		defer m.wg.Done()
 		targetAllocatorIntervalTicker := time.NewTicker(m.cfg.Interval)
 		for {
 			select {
@@ -115,6 +119,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 
 func (m *Manager) Shutdown() {
 	close(m.shutdown)
+	m.wg.Wait()
 }
 
 // sync request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
@@ -239,7 +244,7 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 	}
 
 	jobToScrapeConfig := map[string]*promconfig.ScrapeConfig{}
-	envReplacedBody := instantiateShard(body)
+	envReplacedBody := instantiateShard(body, os.LookupEnv)
 	err = yaml.Unmarshal(envReplacedBody, &jobToScrapeConfig)
 	if err != nil {
 		return nil, err
@@ -252,8 +257,9 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 }
 
 // instantiateShard inserts the SHARD environment variable in the returned configuration
-func instantiateShard(body []byte) []byte {
-	shard, ok := os.LookupEnv("SHARD")
+func instantiateShard(body []byte, lookup func(string) (string, bool)) []byte {
+	shard, ok := lookup("SHARD")
+
 	if !ok {
 		shard = "0"
 	}

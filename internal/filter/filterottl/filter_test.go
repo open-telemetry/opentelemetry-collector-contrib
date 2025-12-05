@@ -55,7 +55,7 @@ func Test_NewBoolExprForSpan(t *testing.T) {
 			spanBoolExpr, err := NewBoolExprForSpan(tt.conditions, StandardSpanFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, spanBoolExpr)
-			result, err := spanBoolExpr.Eval(t.Context(), ottlspan.TransformContext{})
+			result, err := spanBoolExpr.Eval(t.Context(), &ottlspan.TransformContext{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
@@ -68,7 +68,7 @@ func Test_NewBoolExprForSpanWithOptions(t *testing.T) {
 		StandardSpanFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottl.Option[ottlspan.TransformContext]{ottlspan.EnablePathContextNames()},
+		[]ottl.Option[*ottlspan.TransformContext]{ottlspan.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }
