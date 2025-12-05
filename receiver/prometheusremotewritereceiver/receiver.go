@@ -738,7 +738,8 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
 	labelMap := ls.Map()
-	attrs.EnsureCapacity(len(labelMap) - 5) // Exclude job, instance, metric name and scope name/version
+	// job, instance and metric name will always become labels, but scope name and version may or may not be present
+	attrs.EnsureCapacity(len(labelMap) - 3)
 	for labelName, labelValue := range labelMap {
 		if labelName == "instance" || labelName == "job" || // Become resource attributes
 			labelName == labels.MetricName || // Becomes metric name
