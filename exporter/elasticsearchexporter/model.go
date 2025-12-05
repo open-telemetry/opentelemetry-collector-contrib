@@ -257,11 +257,13 @@ func (ecsModeEncoder) encodeSpan(
 
 	// Finally, try to map record-level attributes to ECS fields.
 
-	// determine the correct message queue name based on the trace type (Elastic span or transaction)
+	// handle mappings that are specific to the span type (Elastic span or transaction)
 	messageQueueName := "span.message.queue.name"
+	spanName := "span.name"
 	processor, _ := span.Attributes().Get("processor.event")
 	if processor.Str() == "transaction" {
 		messageQueueName = "transaction.message.queue.name"
+		spanName = "transaction.name"
 	}
 
 	spanAttrsConversionMap := map[string]string{
@@ -281,7 +283,7 @@ func (ecsModeEncoder) encodeSpan(
 	document.AddTimestamp("@timestamp", span.StartTimestamp())
 	document.AddTraceID("trace.id", span.TraceID())
 	document.AddSpanID("span.id", span.SpanID())
-	document.AddString("span.name", span.Name())
+	document.AddString(spanName, span.Name())
 	document.AddSpanID("parent.id", span.ParentSpanID())
 	if span.Status().Code() == ptrace.StatusCodeOk {
 		document.AddString("event.outcome", "success")

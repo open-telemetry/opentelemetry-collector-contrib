@@ -544,10 +544,20 @@ Otherwise, it is mapped to an empty string ("").
 
 In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
 
-### `messaging.destination.name`
 
-Maps to `span.message.queue.name` for regular spans, but to `transaction.message.queue.name` when the `processor.event` attribute equals "transaction".
-This attribute is only applicable at the trace level. 
+### Elastic span and transactions
+ECS mappings may differ based on the span type (Elastic span and transactions) for the fields listed below.
+By default, all spans are considered Elastic spans. 
+Elastic transactions are identified when the span attribute `processor.event` equals `transaction`.
+These attribute mappings are only applicable at the span level.
+
+| Elastic Span Type | SemConv Value              | ECS Value                      |
+|-------------------|----------------------------|--------------------------------|
+| span              | span.Name                  | span.name                      |
+| transaction       | span.Name                  | transaction.name               |
+| span              | messaging.destination.name | span.name                      |
+| transaction       | messaging.destination.name | transaction.message.queue.name |
+
 
 ## Setting a document id dynamically
 
