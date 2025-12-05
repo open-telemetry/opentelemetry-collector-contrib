@@ -4,6 +4,12 @@ resourceLogs:
         - key: cloud.provider
           value:
             stringValue: aws
+        - key: aws.log.group.names
+          value:
+            stringValue: /aws/vpc/flowlogs
+        - key: aws.log.stream.names
+          value:
+            stringValue: eni-1235b8ca123456789
         - key: cloud.account.id
           value:
             stringValue: "123456789010"
