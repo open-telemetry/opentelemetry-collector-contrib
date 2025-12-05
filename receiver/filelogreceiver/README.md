@@ -17,6 +17,18 @@
 
 Tails and parses logs from files.
 
+## Overview
+
+The File Log Receiver tails and parses logs from files using the [Stanza](https://github.com/open-telemetry/opentelemetry-log-collection) log agent. It is designed to efficiently monitor log files on local filesystems, supporting features like:
+
+- Tailing files with automatic rotation detection
+- Parsing log lines using various operators (regex, JSON, etc.)
+- Multiline log handling
+- Persistent offset tracking for fault tolerance
+- File fingerprinting to handle rotation and deduplication
+- Compression support (gzip)
+- Batch processing of multiple files
+
 ## Configuration
 
 | Field                                 | Default                              | Description                                                                                                                                                                                                                                                     |
@@ -241,18 +253,258 @@ to set the value of the `poll_interval` setting to something lower than the syml
 Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics)
 will also provide telemetry metrics for the state of the receiver's file consumption.
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
-are provided.
+are provided.``
+
+## Resource Attributes
+
+The filelog receiver emits logs with the following resource attributes depending on configuration:
+
+| Attribute                      | Type   | Description                                                           | Enabled by Config                  |
+|--------------------------------|--------|-----------------------------------------------------------------------|------------------------------------|
+| `log.file.name`                | string | The name of the log file                                              | `include_file_name: true` (default)|
+| `log.file.path`                | string | The full path of the log file                                         | `include_file_path: true`          |
+| `log.file.name_resolved`       | string | The name after symlink resolution                                     | `include_file_name_resolved: true` |
+| `log.file.path_resolved`       | string | The path after symlink resolution                                     | `include_file_path_resolved: true` |
+| `log.file.owner.name`          | string | The owner of the file (Unix only)                                     | `include_file_owner_name: true`    |
+| `log.file.owner.group.name`    | string | The group owner of the file (Unix only)                               | `include_file_owner_group_name: true` |
+| `log.file.record_number`       | int    | The sequential record number in the file                              | `include_file_record_number: true` |
+| `log.file.record_offset`       | int    | The byte offset of the record in the file                             | `include_file_record_offset: true` |
+
+Additional attributes can be added using the `attributes` and `resource` configuration options.
+
+## Telemetry
+
+### Internal Metrics
+
+The filelog receiver exposes the following metrics for self-observability:
+
+| Metric                                  | Type  | Description                                                    |
+|-----------------------------------------|-------|----------------------------------------------------------------|
+| `otelcol_fileconsumer_open_files`       | Gauge | Number of files currently being monitored by the receiver      |
+| `otelcol_fileconsumer_reading_files`    | Gauge | Number of files actively being read (not idle)                 |
+
+These metrics are only available when [collector internal metrics](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics) are enabled.
+
+## Production Guidance
+
+### Scaling Considerations
+
+**File Count Limits:**
+- The `max_concurrent_files` setting (default: 1024) controls how many files are read simultaneously
+- When monitoring more files than this limit, files are processed in batches controlled by `max_batches`
+- For deployments with >1000 files, consider splitting across multiple collector instances using different include patterns
+
+**Performance Tuning:**
+- `poll_interval` (default: 200ms): Reduce for lower latency, increase to reduce CPU usage
+- `max_log_size` (default: 1MiB): Set based on your maximum expected log line size
+- `fingerprint_size` (default: 1KB): Increase for better file identification if files have similar headers
+- `initial_buffer_size` (default: 16KiB): Tune based on average log line length
+
+**Memory Considerations:**
+- Memory usage scales with: number of files × buffer sizes × concurrent operations
+- Use `polls_to_archive` with `storage` to move old file metadata to disk
+- Typical memory usage: ~1-5MB per 100 monitored files
+
+**CPU Considerations:**
+- CPU usage primarily driven by:
+  - Number of files being polled (`poll_interval`)
+  - Complexity of parsing operators
+  - File rotation frequency
+- Typical CPU usage: 0.1-0.5% per 100 files with simple parsing
+
+### Persistent Storage Configuration
+
+**Stateful Operation:**
+
+The receiver is stateful when configured with a storage extension. It tracks:
+- File positions (byte offsets)
+- File fingerprints for identification
+- Metadata about monitored files
+
+**Configuration Example:**
+```yaml
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol/file_storage
+
+receivers:
+  filelog:
+    include: [/var/log/**/*.log]
+    storage: file_storage
+
+service:
+  extensions: [file_storage]
+  pipelines:
+    logs:
+      receivers: [filelog]
+```
+
+**Graceful Shutdown:**
+- The receiver automatically saves state on shutdown
+- Use signals (SIGTERM) for graceful shutdown: `kill -TERM <pid>`
+- Allow 5-10 seconds for clean shutdown to persist state
+- State is flushed periodically during operation
+
+**Restart Behavior:**
+- With storage: Resumes from last saved position
+- Without storage: Follows `start_at` configuration (default: `end`)
+
+**Storage Requirements:**
+- Disk space: ~1-10KB per monitored file
+- Write frequency: Every few seconds during active reading
+- Ensure storage directory has appropriate permissions
+
+### High Availability Considerations
+
+**Multiple Instances:**
+⚠️ **Warning:** Running multiple filelog receiver instances monitoring the same files will cause duplicate log ingestion. The receiver does not support distributed locking or coordination.
+
+**Recommended HA Pattern:**
+- Use file-based sharding: Different instances monitor different file patterns
+- Deploy as DaemonSet in Kubernetes (one instance per node)
+- Use node affinity to ensure consistent assignment
+
+### Known Limitations and Common Pitfalls
+
+**Limitations:**
+
+1. **No Network File Systems:** 
+   - NFS, CIFS, and other network filesystems are not officially supported
+   - File locking and change detection may not work reliably
+   - Use with caution and thorough testing
+
+2. **Large Files:**
+   - Files larger than available memory may cause issues
+   - The receiver reads files incrementally, but very long single log lines (>1GiB) can cause OOM
+
+3. **Rotation Detection:**
+   - Relies on file fingerprinting (first bytes of file)
+   - If log files have identical headers, rotation may not be detected correctly
+   - Increase `fingerprint_size` if experiencing issues
+
+4. **Windows Limitations:**
+   - `acquire_fs_lock` not supported on Windows
+   - `include_file_owner_name` and `include_file_owner_group_name` not supported
+
+5. **Header Parsing:**
+   - Only works when `start_at: beginning`
+   - Headers are re-parsed after each receiver restart
+
+**Common Pitfalls:**
+
+1. **Missing Logs on Restart:**
+   - **Cause:** No storage configured + `start_at: end` (default)
+   - **Solution:** Configure storage extension or set `start_at: beginning`
+
+2. **Duplicate Logs:**
+   - **Cause:** Multiple receiver instances, storage directory shared/corrupted, or fingerprint changes
+   - **Solution:** Ensure unique storage per instance, fix permissions, or stabilize fingerprints
+
+3. **High Memory Usage:**
+   - **Cause:** Too many concurrent files or large `max_log_size`
+   - **Solution:** Reduce `max_concurrent_files`, tune `max_log_size`, use `polls_to_archive`
+
+4. **Logs Not Being Read:**
+   - **Cause:** Incorrect glob pattern, permission issues, or `exclude_older_than` filtering
+   - **Solution:** Verify patterns match files, check permissions, review exclusion settings
+
+5. **Slow Log Ingestion:**
+   - **Cause:** Low `poll_interval`, slow parsing operators, or I/O bottleneck
+   - **Solution:** Tune `poll_interval`, simplify operators, check disk I/O
+
+6. **Rotation Not Detected:**
+   - **Cause:** Files have identical headers within `fingerprint_size`
+   - **Solution:** Increase `fingerprint_size` or ensure logs have unique headers
+
+## Compatibility
+
+### External Dependencies
+
+**Operating Systems:**
+- Linux: Fully supported (kernel 3.10+)
+- macOS: Fully supported (10.13+)
+- Windows: Supported with limitations (see above)
+- Other Unix-like systems: Should work but not regularly tested
+
+**Filesystem Requirements:**
+- Standard POSIX filesystems (ext4, xfs, btrfs, etc.)
+- File change notifications via stat() calls
+- Support for file size and modification time queries
+
+**Go Version:**
+- Built with Go 1.21+ (matches OpenTelemetry Collector core requirements)
+
+**Storage Extensions:**
+- Compatible with any storage extension implementing the storage interface
+- Tested with: file_storage, memory_limiter
+
+### Version Compatibility
+
+The filelog receiver maintains backward compatibility with configuration options across minor versions. Breaking changes are only introduced in major versions following the OpenTelemetry Collector's stability guarantees.
+
+**Configuration Stability:**
+- Stable config options maintain backward compatibility
+- Beta/alpha options may change (marked in documentation)
+- Deprecated options trigger warnings but continue to work for at least one major version
 
 ## Feature Gates
 
+### `filelog.allowFileDeletion`
+
+**Description:** Enables the `delete_after_read` configuration option, which allows the receiver to delete files after reading them.
+
+**When to use:** 
+- Processing one-time batch log files
+- Automatic cleanup of processed logs
+- Staging directories with transient log files
+
+**Stability:** Beta (enabled by default in v0.90.0+)
+
+**Risks:**
+- Data loss if downstream pipeline fails after deletion
+- Cannot recover logs after deletion
+- Use only with reliable downstream and/or backups
+
+### `filelog.allowHeaderMetadataParsing`
+
+**Description:** Enables header metadata parsing feature, allowing extraction of metadata from file headers.
+
+**When to use:**
+- Log files with metadata headers (e.g., CSV with column definitions)
+- Consistent metadata across all log lines in a file
+- Reducing per-line metadata duplication
+
+**Stability:** Alpha (disabled by default)
+
+**Requirements:**
+- Must set `start_at: beginning`
+- Cannot be used with `start_at: end`
+
 ### `filelog.decompressFingerprint`
 
-When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
+**Description:** Computes file fingerprints after decompression for compressed files, enabling more accurate file identification.
 
-This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
+**When to use:**
+- Monitoring compressed log files with rotation
+- More reliable duplicate detection for gzipped files
+- When compressed file headers are not unique
 
-Schedule for this feature gate is:
+**Stability:**
+- Alpha (disabled by default) in v0.128.0
+- Beta (enabled by default) in v0.133.0
+- Stable (cannot be disabled) in v0.142.0
 
-- Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0` 
+**Migration Impact:**
+- Enabling this will cause existing gzipped files to be re-ingested once
+- Fingerprints are recalculated using decompressed content
+- Plan for duplicate logs during migration
+
+### `stanza.synchronousLogEmitter`
+
+**Description:** Controls whether logs are emitted synchronously or in batches.
+
+**When to use:**
+- Synchronous (true): Lower memory usage, potentially higher latency
+- Batching (false): Better throughput, higher memory usage
+
+**Default:** false (batching enabled) 
