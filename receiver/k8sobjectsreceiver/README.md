@@ -34,7 +34,7 @@ The following is example configuration
         field_selector: status.phase=Running
         interval: 15m
         exclude_namespaces:
-          - regexp: ignore
+          - regexp: namespace-to-ignore
       - name: events
         mode: watch
         group: events.k8s.io
