@@ -581,7 +581,7 @@ func TestConfigS3BasePrefix(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.None[exporterhelper.QueueBatchConfig]()
 	timeoutCfg := exporterhelper.TimeoutConfig{
 		Timeout: 5 * time.Second,
 	}
@@ -619,7 +619,7 @@ func TestConfigS3BasePrefixWithResourceAttrs(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.None[exporterhelper.QueueBatchConfig]()
 	timeoutCfg := exporterhelper.TimeoutConfig{
 		Timeout: 5 * time.Second,
 	}
