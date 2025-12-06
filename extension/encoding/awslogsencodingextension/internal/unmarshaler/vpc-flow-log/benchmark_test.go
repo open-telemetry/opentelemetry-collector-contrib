@@ -50,9 +50,9 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 	}
 
 	u := vpcFlowLogUnmarshaler{
-		fileFormat: constants.FileFormatPlainText,
-		buildInfo:  component.BuildInfo{},
-		logger:     zap.NewNop(),
+		cfg:       Config{FileFormat: constants.FileFormatPlainText},
+		buildInfo: component.BuildInfo{},
+		logger:    zap.NewNop(),
 	}
 
 	for name, test := range tests {
