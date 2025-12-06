@@ -79,6 +79,9 @@ resourceLogs:
               - key: oracledb.event
                 value:
                   stringValue: ""
+              - key: oracledb.object_id
+                value:
+                  intValue: "12345"
               - key: oracledb.object_name
                 value:
                   stringValue: BLAH
