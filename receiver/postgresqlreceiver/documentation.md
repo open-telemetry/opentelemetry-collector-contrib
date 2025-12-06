@@ -315,6 +315,14 @@ The number of sequential scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {sequential_scan} | Sum | Int | Cumulative | true | Development |
 
+### postgresql.table.autovacuum.count
+
+Number of times a table has manually been autovacuumed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {autovacuum} | Sum | Int | Cumulative | true | development |
+
 ### postgresql.temp.io
 
 Total amount of data written to temporary files by queries.
