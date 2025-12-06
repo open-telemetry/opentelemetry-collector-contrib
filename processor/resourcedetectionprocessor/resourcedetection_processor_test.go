@@ -719,7 +719,7 @@ func TestProcessorWithMultipleResources(t *testing.T) {
 
 		td := ptrace.NewTraces()
 		// Add 3 resource spans
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			rs := td.ResourceSpans().AppendEmpty()
 			rs.Resource().Attributes().PutStr("original", "value")
 		}
@@ -741,7 +741,7 @@ func TestProcessorWithMultipleResources(t *testing.T) {
 		defer func() { _ = mp.Shutdown(ctx) }()
 
 		md := pmetric.NewMetrics()
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			rm := md.ResourceMetrics().AppendEmpty()
 			rm.Resource().Attributes().PutStr("original", "value")
 		}
