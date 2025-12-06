@@ -104,6 +104,8 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
+		kgo.FetchMinBytes(consumerCfg.MinFetchSize),
+		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
 	}, opts...)...)
 	if err != nil {
 		return nil, err
@@ -136,13 +138,7 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 		opts = append(opts, kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval))
 	}
 
-	// Configure fetch sizes
-	if consumerCfg.MinFetchSize > 0 {
-		opts = append(opts, kgo.FetchMinBytes(consumerCfg.MinFetchSize))
-	}
-	if consumerCfg.DefaultFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxBytes(consumerCfg.DefaultFetchSize))
-	}
+	// Configure per-partition fetch size
 	if consumerCfg.MaxPartitionFetchSize > 0 {
 		opts = append(opts, kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize))
 	}
