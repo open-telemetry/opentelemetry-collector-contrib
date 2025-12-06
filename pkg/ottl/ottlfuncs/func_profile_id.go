@@ -4,21 +4,21 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
-	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const profileIDFuncName = "ProfileID"
+
 type ProfileIDArguments[K any] struct {
-	Bytes []byte
+	Target ottl.ByteSliceLikeGetter[K]
 }
 
 func NewProfileIDFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ProfileID", &ProfileIDArguments[K]{}, createProfileIDFunction[K])
+	return ottl.NewFactory(profileIDFuncName, &ProfileIDArguments[K]{}, createProfileIDFunction[K])
 }
 
 func createProfileIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
@@ -28,16 +28,9 @@ func createProfileIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("ProfileIDFactory args must be of type *ProfileIDArguments[K]")
 	}
 
-	return profileID[K](args.Bytes)
+	return profileID[K](args.Target), nil
 }
 
-func profileID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
-	id := pprofile.ProfileID{}
-	if len(bytes) != len(id) {
-		return nil, fmt.Errorf("profile ids must be %d bytes", len(id))
-	}
-	copy(id[:], bytes)
-	return func(context.Context, K) (any, error) {
-		return id, nil
-	}, nil
+func profileID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
+	return newIDExprFunc[K, pprofile.ProfileID](profileIDFuncName, target)
 }
