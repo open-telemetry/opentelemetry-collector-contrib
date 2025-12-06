@@ -212,8 +212,20 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "keep resource",
+			conditions: TraceFilters{
+				Action: keepAction,
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			want:      func(_ ptrace.Traces) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop spans",
 			conditions: TraceFilters{
+				Action: dropAction,
 				SpanConditions: []string{
 					`name == "operationA"`,
 				},
@@ -229,8 +241,27 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep spans",
+			conditions: TraceFilters{
+				Action: keepAction,
+				SpanConditions: []string{
+					`name == "operationA"`,
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(1).Spans().RemoveIf(func(span ptrace.Span) bool {
+					return span.Name() != "operationA"
+				})
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
+					return span.Name() != "operationA"
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop everything by dropping all spans",
 			conditions: TraceFilters{
+				Action: dropAction,
 				SpanConditions: []string{
 					`IsMatch(name, "operation.*")`,
 				},
@@ -239,8 +270,20 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "keep everything",
+			conditions: TraceFilters{
+				Action: keepAction,
+				SpanConditions: []string{
+					`IsMatch(name, "operation.*")`,
+				},
+			},
+			want:      func(_ ptrace.Traces) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop span events",
 			conditions: TraceFilters{
+				Action: dropAction,
 				SpanEventConditions: []string{
 					`name == "spanEventA"`,
 				},
@@ -256,8 +299,27 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep span events",
+			conditions: TraceFilters{
+				Action: keepAction,
+				SpanEventConditions: []string{
+					`name == "spanEventA"`,
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(1).Spans().At(1).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
+					return event.Name() != "spanEventA"
+				})
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
+					return event.Name() != "spanEventA"
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "multiple conditions",
 			conditions: TraceFilters{
+				Action: dropAction,
 				SpanConditions: []string{
 					`name == "operationZ"`,
 					`span_id != nil`,
@@ -267,8 +329,21 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "multiple conditions keep everything",
+			conditions: TraceFilters{
+				Action: keepAction,
+				SpanConditions: []string{
+					`name == "operationZ"`,
+					`span_id != nil`,
+				},
+			},
+			want:      func(_ ptrace.Traces) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "with error conditions",
 			conditions: TraceFilters{
+				Action: dropAction,
 				SpanConditions: []string{
 					`Substring("", 0, 100) == "test"`,
 				},
