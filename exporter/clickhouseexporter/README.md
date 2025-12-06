@@ -292,6 +292,7 @@ Connection options:
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
 - `tls` Advanced TLS configuration (See [TLS](#tls)).
+- `release_connection` (default = false): Instructs the driver to release the connection back to the pool immediately after the batch is sent. This is recommended for high-concurrency scenarios to prevent connection exhaustion.
 
 Additional DSN features:
 

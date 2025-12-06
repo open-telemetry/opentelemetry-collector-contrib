@@ -17,7 +17,8 @@ import (
 )
 
 type metricsExporter struct {
-	db driver.Conn
+	db           driver.Conn
+	batchOptions []driver.PrepareBatchOption
 
 	logger       *zap.Logger
 	cfg          *Config
@@ -59,6 +60,10 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if e.cfg.ReleaseConnection {
+		e.batchOptions = append(e.batchOptions, driver.WithReleaseConnection())
 	}
 
 	return nil
@@ -106,5 +111,5 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		}
 	}
 
-	return metrics.InsertMetrics(ctx, e.db, metricsMap)
+	return metrics.InsertMetrics(ctx, e.db, metricsMap, e.batchOptions)
 }
