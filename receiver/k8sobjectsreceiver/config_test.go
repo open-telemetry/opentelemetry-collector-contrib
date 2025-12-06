@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/filter"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
@@ -316,6 +317,23 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			desc: "namespaces and exclude_namespaces both set is invalid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:       "pods",
+						Mode:       WatchMode,
+						Namespaces: []string{"default"},
+						ExcludeNamespaces: []filter.Config{{
+							Regex: "namespace-to-ignore",
+						}},
+					},
+				},
+			},
+			expectedErr: "namespaces and exclude_namespaces cannot both be set at the same time",
 		},
 	}
 
