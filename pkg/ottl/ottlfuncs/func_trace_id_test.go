@@ -89,10 +89,27 @@ func BenchmarkTraceID(b *testing.B) {
 		}
 	})
 
-	// Scenario 3: Dynamic 16-byte slice with get and set (worst case)
+	// Scenario 3: Dynamic 16-byte slice with get and set
 	b.Run("dynamic_bytes_get_and_set", func(b *testing.B) {
 		dynamicBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 		dynamicGetter := makeIDGetter(dynamicBytes)
+		expr := traceID[any](dynamicGetter)
+		ctx := b.Context()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			result, err := expr(ctx, nil)
+			if err != nil {
+				b.Fatal(err)
+			}
+			span.SetTraceID(result.(pcommon.TraceID))
+		}
+	})
+
+	// Scenario 4: Dynamic 32-char hex string with get and set (includes hex decode)
+	b.Run("dynamic_hex_string_get_and_set", func(b *testing.B) {
+		dynamicHexString := []byte("0102030405060708090a0b0c0d0e0f10")
+		dynamicGetter := makeIDGetter(dynamicHexString)
 		expr := traceID[any](dynamicGetter)
 		ctx := b.Context()
 		b.ReportAllocs()
