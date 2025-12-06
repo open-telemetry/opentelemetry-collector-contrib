@@ -596,26 +596,26 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	}`, buf.String())
 }
 
-func TestEncodeSpanECSModeMessageQueueName(t *testing.T) {
+func TestEncodeSpanECSTransactionAttributes(t *testing.T) {
 	tests := map[string]struct {
-		processorEvent             string
-		expectedMessageQueuePrefix string
+		processorEvent string
+		expectedPrefix string
 	}{
 		"processor event: span": {
-			processorEvent:             "span",
-			expectedMessageQueuePrefix: "span",
+			processorEvent: "span",
+			expectedPrefix: "span",
 		},
 		"processor event: other": {
-			processorEvent:             "other",
-			expectedMessageQueuePrefix: "span",
+			processorEvent: "other",
+			expectedPrefix: "span",
 		},
 		"processor event missing": {
-			processorEvent:             "",
-			expectedMessageQueuePrefix: "span",
+			processorEvent: "",
+			expectedPrefix: "span",
 		},
 		"processor event: transaction": {
-			processorEvent:             "transaction",
-			expectedMessageQueuePrefix: "transaction",
+			processorEvent: "transaction",
+			expectedPrefix: "transaction",
 		},
 	}
 
@@ -625,6 +625,7 @@ func TestEncodeSpanECSModeMessageQueueName(t *testing.T) {
 			resourceSpans := traces.ResourceSpans().AppendEmpty()
 			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 			span := scopeSpans.Spans().AppendEmpty()
+			span.SetName("GET /users")
 			err := span.Attributes().FromRaw(map[string]any{
 				"processor.event": test.processorEvent,
 				string(semconv.MessagingDestinationNameKey): "orders_queue",
@@ -644,15 +645,16 @@ func TestEncodeSpanECSModeMessageQueueName(t *testing.T) {
 
 			require.JSONEq(t, fmt.Sprintf(`{
 			  "@timestamp": "2024-03-13T23:50:59.123456789Z",
-              "processor": { "event": %q },
+			  "processor": { "event": %q },
 			  %q: { 
+				"name": "GET /users",
 				"message": { 
 					"queue": { 
 						"name": "orders_queue" 
 						} 
 					} 
 				}
-			}`, test.processorEvent, test.expectedMessageQueuePrefix), buf.String())
+			}`, test.processorEvent, test.expectedPrefix), buf.String())
 		})
 	}
 }
