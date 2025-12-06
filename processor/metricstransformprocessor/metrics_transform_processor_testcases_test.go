@@ -38,6 +38,23 @@ var standardTests = []metricsTransformTest{
 		},
 	},
 	{
+		name: "metric_description_update",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				NewName:             "new/metric1",
+				NewDescription:      "new/description",
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1").addDescription("description").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "new/metric1").addDescription("new/description").build(),
+		},
+	},
+	{
 		name: "metric_name_update_chained",
 		transforms: []internalTransform{
 			{

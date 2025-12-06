@@ -143,6 +143,7 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 			MetricIncludeFilter: filter,
 			Action:              t.Action,
 			NewName:             t.NewName,
+			NewDescription:      t.NewDescription,
 			GroupResourceLabels: t.GroupResourceLabels,
 			AggregationType:     t.AggregationType,
 			Operations:          make([]internalOperation, len(t.Operations)),

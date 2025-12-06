@@ -32,8 +32,9 @@ func TestLoadConfig(t *testing.T) {
 							Include:   "name",
 							MatchType: "",
 						},
-						Action:  "update",
-						NewName: "new_name",
+						Action:         "update",
+						NewName:        "new_name",
+						NewDescription: "new_description",
 					},
 				},
 			},
@@ -48,8 +49,9 @@ func TestLoadConfig(t *testing.T) {
 							Include:   "name1",
 							MatchType: "strict",
 						},
-						Action:  "insert",
-						NewName: "new_name",
+						Action:         "insert",
+						NewName:        "new_name",
+						NewDescription: "new_description",
 						Operations: []operation{
 							{
 								Action:   "add_label",
@@ -66,8 +68,9 @@ func TestLoadConfig(t *testing.T) {
 								"my_label": "my_value",
 							},
 						},
-						Action:  "insert",
-						NewName: "new_name_copy_1",
+						Action:         "insert",
+						NewName:        "new_name_copy_1",
+						NewDescription: "new_description_copy_1",
 					},
 					{
 						MetricIncludeFilter: filterConfig{
@@ -77,8 +80,9 @@ func TestLoadConfig(t *testing.T) {
 								"my_label": ".*label",
 							},
 						},
-						Action:  "insert",
-						NewName: "new_name_copy_2",
+						Action:         "insert",
+						NewName:        "new_name_copy_2",
+						NewDescription: "new_description_copy_2",
 					},
 					{
 						MetricIncludeFilter: filterConfig{
