@@ -25,6 +25,7 @@ type logsExporter struct {
 	schemaFeatures struct {
 		EventName bool
 	}
+	batchOptions []driver.PrepareBatchOption
 
 	logger *zap.Logger
 	cfg    *Config
@@ -65,6 +66,10 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 
 	e.renderInsertLogsSQL()
 
+	if e.cfg.ReleaseConnection {
+		e.batchOptions = append(e.batchOptions, driver.WithReleaseConnection())
+	}
+
 	return nil
 }
 
@@ -96,7 +101,7 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	batch, err := e.db.PrepareBatch(ctx, e.insertSQL)
+	batch, err := e.db.PrepareBatch(ctx, e.insertSQL, e.batchOptions...)
 	if err != nil {
 		return err
 	}

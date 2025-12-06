@@ -27,9 +27,11 @@ type anyTracesExporter interface {
 }
 
 type tracesJSONExporter struct {
-	cfg            *Config
-	logger         *zap.Logger
-	db             driver.Conn
+	cfg          *Config
+	logger       *zap.Logger
+	db           driver.Conn
+	batchOptions []driver.PrepareBatchOption
+
 	insertSQL      string
 	schemaFeatures struct {
 		AttributeKeys bool
@@ -71,6 +73,10 @@ func (e *tracesJSONExporter) start(ctx context.Context, _ component.Host) error 
 
 	e.renderInsertTracesJSONSQL()
 
+	if e.cfg.ReleaseConnection {
+		e.batchOptions = append(e.batchOptions, driver.WithReleaseConnection())
+	}
+
 	return nil
 }
 
@@ -109,7 +115,7 @@ func (e *tracesJSONExporter) shutdown(_ context.Context) error {
 }
 
 func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
-	batch, err := e.db.PrepareBatch(ctx, e.insertSQL)
+	batch, err := e.db.PrepareBatch(ctx, e.insertSQL, e.batchOptions...)
 	if err != nil {
 		return err
 	}

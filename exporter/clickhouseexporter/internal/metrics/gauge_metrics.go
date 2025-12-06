@@ -28,14 +28,14 @@ type gaugeMetrics struct {
 	count       int
 }
 
-func (g *gaugeMetrics) insert(ctx context.Context, db driver.Conn) error {
+func (g *gaugeMetrics) insert(ctx context.Context, db driver.Conn, batchOptions []driver.PrepareBatchOption) error {
 	if g.count == 0 {
 		return nil
 	}
 
 	processStart := time.Now()
 
-	batch, err := db.PrepareBatch(ctx, g.insertSQL)
+	batch, err := db.PrepareBatch(ctx, g.insertSQL, batchOptions...)
 	if err != nil {
 		return err
 	}

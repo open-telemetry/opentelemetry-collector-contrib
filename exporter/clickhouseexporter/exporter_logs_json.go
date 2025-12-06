@@ -35,6 +35,7 @@ type logsJSONExporter struct {
 		AttributeKeys bool
 		EventName     bool
 	}
+	batchOptions []driver.PrepareBatchOption
 }
 
 func newLogsJSONExporter(logger *zap.Logger, cfg *Config) *logsJSONExporter {
@@ -71,6 +72,10 @@ func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	e.renderInsertLogsJSONSQL()
+
+	if e.cfg.ReleaseConnection {
+		e.batchOptions = append(e.batchOptions, driver.WithReleaseConnection())
+	}
 
 	return nil
 }
@@ -116,7 +121,7 @@ func (e *logsJSONExporter) shutdown(_ context.Context) error {
 }
 
 func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	batch, err := e.db.PrepareBatch(ctx, e.insertSQL)
+	batch, err := e.db.PrepareBatch(ctx, e.insertSQL, e.batchOptions...)
 	if err != nil {
 		return err
 	}

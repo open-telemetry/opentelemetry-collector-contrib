@@ -92,6 +92,7 @@ func TestLoadConfig(t *testing.T) {
 						KeyFile:  "client.key",
 					},
 				},
+				ReleaseConnection: true,
 			},
 		},
 	}

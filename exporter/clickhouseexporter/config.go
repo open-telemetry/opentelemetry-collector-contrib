@@ -68,6 +68,9 @@ type Config struct {
 	AsyncInsert bool `mapstructure:"async_insert"`
 	// MetricsTables defines the table names for metric types.
 	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
+	// ReleaseConnection configures the driver to immediately return the connection to the pool upon batch completion.
+	// This reduces connection contention and improves stability under high load.
+	ReleaseConnection bool `mapstructure:"release_connection"`
 }
 
 type MetricTablesConfig struct {
