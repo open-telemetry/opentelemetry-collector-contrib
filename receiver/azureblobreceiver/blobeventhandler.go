@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +18,8 @@ type blobEventHandler interface {
 	close(ctx context.Context) error
 	setLogsDataConsumer(logsDataConsumer logsDataConsumer)
 	setTracesDataConsumer(tracesDataConsumer tracesDataConsumer)
+	getLogsEncoding() *component.ID
+	getTracesEncoding() *component.ID
 }
 
 type azureBlobEventHandler struct {
@@ -24,7 +27,9 @@ type azureBlobEventHandler struct {
 	logsDataConsumer         logsDataConsumer
 	tracesDataConsumer       tracesDataConsumer
 	logsContainerName        string
+	logsEncoding             *component.ID
 	tracesContainerName      string
+	tracesEncoding           *component.ID
 	eventHubConnectionString string
 	hub                      *eventhub.Hub
 	logger                   *zap.Logger
@@ -79,32 +84,34 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 	if marshalErr != nil {
 		return marshalErr
 	}
-	subject := eventDataSlice[0].Subject
-	containerName := strings.Split(strings.Split(subject, "containers/")[1], "/")[0]
-	eventType := eventDataSlice[0].EventType
-	blobName := strings.Split(subject, "blobs/")[1]
+	for _, event := range eventDataSlice {
+		subject := event.Subject
+		containerName := strings.Split(strings.Split(subject, "containers/")[1], "/")[0]
+		eventType := event.EventType
+		blobName := strings.Split(subject, "blobs/")[1]
 
-	if eventType == blobCreatedEventType {
-		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
-		if err != nil {
-			return err
-		}
-		switch containerName {
-		case p.logsContainerName:
-			err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
+		if eventType == blobCreatedEventType {
+			p.logger.Info("Staring reading blob", zap.String("containerName", containerName), zap.String("blobName", blobName))
+			blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
 			if err != nil {
 				return err
 			}
-		case p.tracesContainerName:
-			err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
-			if err != nil {
-				return err
+			switch containerName {
+			case p.logsContainerName:
+				err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
+				if err != nil {
+					return err
+				}
+			case p.tracesContainerName:
+				err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
+				if err != nil {
+					return err
+				}
+			default:
+				p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
 			}
-		default:
-			p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
 		}
 	}
-
 	return nil
 }
 
@@ -127,12 +134,22 @@ func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesD
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
+func (p *azureBlobEventHandler) getLogsEncoding() *component.ID {
+	return p.logsEncoding
+}
+
+func (p *azureBlobEventHandler) getTracesEncoding() *component.ID {
+	return p.tracesEncoding
+}
+
+func newBlobEventHandler(cfg *Config, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
 	return &azureBlobEventHandler{
 		blobClient:               blobClient,
-		logsContainerName:        logsContainerName,
-		tracesContainerName:      tracesContainerName,
-		eventHubConnectionString: eventHubConnectionString,
+		logsContainerName:        cfg.Logs.ContainerName,
+		logsEncoding:             cfg.Logs.Encodings,
+		tracesContainerName:      cfg.Traces.ContainerName,
+		tracesEncoding:           cfg.Traces.Encodings,
+		eventHubConnectionString: cfg.EventHub.EndPoint,
 		logger:                   logger,
 	}
 }
