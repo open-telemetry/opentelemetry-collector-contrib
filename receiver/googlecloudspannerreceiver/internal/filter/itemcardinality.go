@@ -23,6 +23,7 @@ type ItemFilter interface {
 	Shutdown() error
 	TotalLimit() int
 	LimitByTimestamp() int
+	StartCache()
 }
 
 type ItemFilterResolver interface {
@@ -38,6 +39,7 @@ type itemCardinalityFilter struct {
 	logger             *zap.Logger
 	cache              *ttlcache.Cache[string, struct{}]
 	stopOnce           sync.Once
+	startOnce          sync.Once
 }
 
 type currentLimitByTimestamp struct {
@@ -63,7 +65,6 @@ func NewItemCardinalityFilter(metricName string, totalLimit, limitByTimestamp in
 		ttlcache.WithCapacity[string, struct{}](uint64(totalLimit)),
 		ttlcache.WithDisableTouchOnHit[string, struct{}](),
 	)
-	go cache.Start()
 
 	return &itemCardinalityFilter{
 		metricName:         metricName,
@@ -93,6 +94,14 @@ func (f *itemCardinalityFilter) Filter(sourceItems []*Item) []*Item {
 	}
 
 	return filteredItems
+}
+
+// StartCache explicitly starts the TTL cache cleanup loop.
+// Idempotent: safe to call multiple times.
+func (f *itemCardinalityFilter) StartCache() {
+	f.startOnce.Do(func() {
+		go f.cache.Start()
+	})
 }
 
 func (f *itemCardinalityFilter) filterItems(items []*Item) []*Item {
@@ -133,7 +142,9 @@ func (f *itemCardinalityFilter) canIncludeNewItem(currentLimitByTimestamp int) b
 }
 
 func (f *itemCardinalityFilter) Shutdown() error {
-	f.stopOnce.Do(func() { f.cache.Stop() })
+	f.stopOnce.Do(func() {
+		f.cache.Stop()
+	})
 	return nil
 }
 
@@ -148,12 +159,10 @@ func groupByTimestamp(items []*Item) map[time.Time][]*Item {
 }
 
 func sortedKeys(groupedItems map[time.Time][]*Item) []time.Time {
-	keysForSorting := make([]time.Time, len(groupedItems))
+	keysForSorting := make([]time.Time, 0, len(groupedItems))
 
-	i := 0
 	for key := range groupedItems {
-		keysForSorting[i] = key
-		i++
+		keysForSorting = append(keysForSorting, key)
 	}
 
 	sort.Slice(keysForSorting, func(i, j int) bool { return keysForSorting[i].Before(keysForSorting[j]) })
