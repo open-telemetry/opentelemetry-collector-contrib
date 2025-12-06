@@ -224,6 +224,8 @@ go.opentelemetry.io/collector/extension/extensiontest v0.141.0 h1:JjnCUMDk5+fgjg
 go.opentelemetry.io/collector/extension/extensiontest v0.141.0/go.mod h1:w8PCvxBL1R1v1waezDZlNtm5Wmxtkfljjj+Vnj5cviU=
 go.opentelemetry.io/collector/featuregate v1.47.0 h1:LuJnDngViDzPKds5QOGxVYNL1QCCVWN/m61lHTV8Pf4=
 go.opentelemetry.io/collector/featuregate v1.47.0/go.mod h1:d0tiRzVYrytB6LkcYgz2ESFTv7OktRPQe0QEQcPt1L4=
+go.opentelemetry.io/collector/filter v0.141.0 h1:LJ4yNUbAmkd5GHAlA41jU44hbLV/Spuadt5SIGBwhNY=
+go.opentelemetry.io/collector/filter v0.141.0/go.mod h1:BCSL/JhvAKY5GRp9+rsLq4zxV1maYjCKCiRl0/qXwRI=
 go.opentelemetry.io/collector/internal/sharedcomponent v0.141.0 h1:amWZluSQZ+wCK1MB8lvQv8i3ZPorUaECR7VcxseAMx0=
 go.opentelemetry.io/collector/internal/sharedcomponent v0.141.0/go.mod h1:iBOHpV5ulGnq6bFzsTlQUV+Xh2E8WosLpZ+zc0z9iu4=
 go.opentelemetry.io/collector/internal/telemetry v0.141.0 h1:vHbH5YbBJGtsn1+PH99WZRJsODgkBD4g39zONslfti4=
