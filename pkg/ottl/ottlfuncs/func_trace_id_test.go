@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func Test_traceID(t *testing.T) {
@@ -50,9 +51,12 @@ func Test_traceID_validation(t *testing.T) {
 }
 
 func BenchmarkTraceID(b *testing.B) {
-	// Scenario 1: Literal 16-byte slice (original use case)
-	// Create a literal getter to ensure the optimization path is taken
-	b.Run("literal_bytes", func(b *testing.B) {
+	// Create a span to set the trace ID on (shared across benchmarks)
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	// Scenario 1: Literal 16-byte slice with get and set
+	b.Run("literal_bytes_get_and_set", func(b *testing.B) {
 		literalBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 		literalGetter := makeLiteralIDGetter(literalBytes)
 		expr := traceID[any](literalGetter)
@@ -60,15 +64,16 @@ func BenchmarkTraceID(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for b.Loop() {
-			_, err := expr(ctx, nil)
+			result, err := expr(ctx, nil)
 			if err != nil {
 				b.Fatal(err)
 			}
+			span.SetTraceID(result.(pcommon.TraceID))
 		}
 	})
 
-	// Scenario 2: Literal 32-char hex string (new feature)
-	b.Run("literal_hex_string", func(b *testing.B) {
+	// Scenario 2: Literal 32-char hex string with get and set
+	b.Run("literal_hex_string_get_and_set", func(b *testing.B) {
 		literalHexString := []byte("0102030405060708090a0b0c0d0e0f10")
 		literalGetter := makeLiteralIDGetter(literalHexString)
 		expr := traceID[any](literalGetter)
@@ -76,15 +81,16 @@ func BenchmarkTraceID(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for b.Loop() {
-			_, err := expr(ctx, nil)
+			result, err := expr(ctx, nil)
 			if err != nil {
 				b.Fatal(err)
 			}
+			span.SetTraceID(result.(pcommon.TraceID))
 		}
 	})
 
-	// Scenario 3: Dynamic 16-byte slice (worst case - no optimization)
-	b.Run("dynamic_bytes", func(b *testing.B) {
+	// Scenario 3: Dynamic 16-byte slice with get and set (worst case)
+	b.Run("dynamic_bytes_get_and_set", func(b *testing.B) {
 		dynamicBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 		dynamicGetter := makeIDGetter(dynamicBytes)
 		expr := traceID[any](dynamicGetter)
@@ -92,10 +98,11 @@ func BenchmarkTraceID(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for b.Loop() {
-			_, err := expr(ctx, nil)
+			result, err := expr(ctx, nil)
 			if err != nil {
 				b.Fatal(err)
 			}
+			span.SetTraceID(result.(pcommon.TraceID))
 		}
 	})
 }
