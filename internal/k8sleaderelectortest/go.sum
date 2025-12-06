@@ -1,0 +1,4 @@
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.139.0/go.mod h1:n/7UPWuIuKD/hIoKWQH8eB2NjYZiEHoXJO4k6XQEcOI=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.141.0/go.mod h1:T+W37F6R1X4lIbEhepO7OHnqBRwAtbzl68gmUddr2WA=
+go.opentelemetry.io/collector/component v1.47.0/go.mod h1:Hz9fcIbc7tOA4hIjvW5bb1rJJc2TH0gtQEvDBaZLUUA=
+go.opentelemetry.io/collector/pipeline v1.47.0/go.mod h1:xUrAqiebzYbrgxyoXSkk6/Y3oi5Sy3im2iCA51LwUAI=
