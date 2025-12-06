@@ -181,7 +181,9 @@ func Test_extractCountMetric(t *testing.T) {
 			evaluate, err := extractCountMetric(tt.monotonicity, tt.suffix)
 			require.NoError(t, err)
 
-			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			tCtx := ottlmetric.NewTransformContextPtr(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			defer tCtx.Close()
+			_, err = evaluate(t.Context(), tCtx)
 			assert.Equal(t, tt.wantErr, err)
 
 			if tt.want != nil {

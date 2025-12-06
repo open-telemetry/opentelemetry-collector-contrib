@@ -318,7 +318,9 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			evaluate, err := AggregateOnAttributes(tt.t, tt.attributes)
 			require.NoError(t, err)
 
-			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			tCtx := ottlmetric.NewTransformContextPtr(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			_, err = evaluate(nil, tCtx)
+			tCtx.Close()
 			assert.Equal(t, tt.wantErr, err)
 
 			actualMetric := pmetric.NewMetricSlice()

@@ -25,7 +25,7 @@ func SpanFunctions() map[string]ottl.Factory[*ottlspan.TransformContext] {
 	return functions
 }
 
-func SpanEventFunctions() map[string]ottl.Factory[ottlspanevent.TransformContext] {
+func SpanEventFunctions() map[string]ottl.Factory[*ottlspanevent.TransformContext] {
 	// No trace-only functions yet.
-	return ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
+	return ottlfuncs.StandardFuncs[*ottlspanevent.TransformContext]()
 }

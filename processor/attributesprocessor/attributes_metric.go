@@ -17,13 +17,13 @@ import (
 type metricAttributesProcessor struct {
 	logger   *zap.Logger
 	attrProc *attraction.AttrProc
-	skipExpr expr.BoolExpr[ottlmetric.TransformContext]
+	skipExpr expr.BoolExpr[*ottlmetric.TransformContext]
 }
 
 // newMetricAttributesProcessor returns a processor that modifies attributes of a
 // metric record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, skipExpr expr.BoolExpr[ottlmetric.TransformContext]) *metricAttributesProcessor {
+func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, skipExpr expr.BoolExpr[*ottlmetric.TransformContext]) *metricAttributesProcessor {
 	return &metricAttributesProcessor{
 		logger:   logger,
 		attrProc: attrProc,
@@ -44,7 +44,9 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetr
 			for k := 0; k < metrics.Len(); k++ {
 				m := metrics.At(k)
 				if a.skipExpr != nil {
-					skip, err := a.skipExpr.Eval(ctx, ottlmetric.NewTransformContext(m, metrics, scope, resource, ils, rs))
+					tCtx := ottlmetric.NewTransformContextPtr(m, metrics, scope, resource, ils, rs)
+					skip, err := a.skipExpr.Eval(ctx, tCtx)
+					tCtx.Close()
 					if err != nil {
 						return md, err
 					}

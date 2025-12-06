@@ -19,11 +19,31 @@ subtext: |
   Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
   TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
   pattern and reuse objects between calls. Deprecated funcs are:
-  - `ottlspan.NewTransformContext` in favor of `ottlspan.BorrowContext`;
+  - `ottldatapoint.NewTransformContext` in favor of `ottldatapoint.NewTransformContextPtr`;
+  - `ottllog.NewTransformContext` in favor of `ottllog.NewTransformContextPtr`;
+  - `ottlmetric.NewTransformContext` in favor of `ottlmetric.NewTransformContextPtr`;
+  - `ottlspan.NewTransformContext` in favor of `ottlspan.NewTransformContextPtr`;
+  - `ottlspanevent.NewTransformContext` in favor of `ottlspanevent.NewTransformContextPtr`;
+  - `filtermprocessor.DefaultDataPointFunctions` in favor of `filtermprocessor.DefaultDataPointFunctionsNew`
+  - `filtermprocessor.WithDataPointFunctions` in favor of `filtermprocessor.WithDataPointFunctionsNew`
+  - `filtermprocessor.DefaultLogFunctions` in favor of `filtermprocessor.DefaultLogFunctionsNew`
+  - `filtermprocessor.WithLogFunctions` in favor of `filtermprocessor.WithLogFunctionsNew`
+  - `filtermprocessor.DefaultMetricFunctions` in favor of `filtermprocessor.DefaultMetricFunctionsNew`
+  - `filtermprocessor.WithMetricFunctions` in favor of `filtermprocessor.WithMetricFunctionsNew`
   - `filtermprocessor.DefaultSpanFunctions` in favor of `filtermprocessor.DefaultSpanFunctionsNew`
   - `filtermprocessor.WithSpanFunctions` in favor of `filtermprocessor.WithSpanFunctionsNew`
+  - `filtermprocessor.DefaultSpanEventFunctions` in favor of `filtermprocessor.DefaultSpanEventFunctionsNew`
+  - `filtermprocessor.WithSpanEventFunctions` in favor of `filtermprocessor.WithSpanEventFunctionsNew`
+  - `transformprocessor.DefaultDataPointFunctions` in favor of `transformprocessor.DefaultDataPointFunctionsNew`
+  - `transformprocessor.WithDataPointFunctions` in favor of `transformprocessor.WithDataPointFunctionsNew`
+  - `transformprocessor.DefaultLogFunctions` in favor of `transformprocessor.DefaultLogFunctionsNew`
+  - `transformprocessor.WithLogFunctions` in favor of `transformprocessor.WithLogFunctionsNew`
+  - `transformprocessor.DefaultMetricFunctions` in favor of `transformprocessor.DefaultMetricFunctionsNew`
+  - `transformprocessor.WithMetricFunctions` in favor of `transformprocessor.WithMetricFunctionsNew`
   - `transformprocessor.DefaultSpanFunctions` in favor of `transformprocessor.DefaultSpanFunctionsNew`
   - `transformprocessor.WithSpanFunctions` in favor of `transformprocessor.WithSpanFunctionsNew`
+  - `transformprocessor.DefaultSpanEventFunctions` in favor of `transformprocessor.DefaultSpanEventFunctionsNew`
+  - `transformprocessor.WithSpanEventFunctions` in favor of `transformprocessor.WithSpanEventFunctionsNew`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
