@@ -16,37 +16,20 @@ This extension is designed for unmarshaling logs/traces/metrics encoded in speci
 produced by [Azure Diagnostic Settings Export](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings) or
 [Azure Data Collection Rules (DCRs)](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview)
 
-## Configuration
+### Configuration
 
-Encoding extension has both top-level configuration, that applied to all telemetry signals
-and own set of configuration options for each type of telemetry signals
+This Encoding extension has set of configuration options for each type of telemetry signals,
+for list of specific configuration options and example - see below.
 
-### General configuration options
+### Supported formats
 
-***format (Optional)***
+Azure can expose log records in multiple different wrapper formats, depending on export destination and log Category.
 
-Identifies format of incoming JSON records for all supported telemetry signals:
+This extension supports auto-detection and parsing of the following formats:
 
-* `eventhub` (default) - extension will be expecting JSON records as they are exposed to Azure EventHub,
-i.e. `{ "records": [ {... record ...}, {... record ...} ] }`
-* `blobstorage` - extension will be expecting JSON records as they are exposed to Azure Blob Storage,
-i.e. `[ {... record ...}, {... record ...} ]`
-
-#### Example configuration for incoming format
-
-```yaml
-extensions:
-  azure_encoding:
-    format: eventhub
-    metrics:
-      time_formats: ["01/02/2006 15:04:05", "2006-01-02T15:04:05Z"]
-      aggregations: ["total", "count", "average"]
-...
-receivers:
-  kafka:
-    metrics:
-      encoding: azure_encoding
-```
+* `{ "records": [ {... record ...}, {... record ...} ] }` - mostly used in Azure EventHub export, but sometimes could be used for Azure BlobStorage export
+* `[ {... record ...}, {... record ...} ]` - detected for some cases in Azure BlobStorage export
+* `{... record ...}\n{... record ...}` (Newline-delimited JSON) - detected for some cases in Azure BlobStorage export
 
 ### Metrics
 
@@ -61,7 +44,7 @@ List of time formats that should be applied during Timestamp parsing of incoming
 
 Time formats are based on standard [Go time parsing layouts](https://pkg.go.dev/time#Layout).
 
-Formats are applied in order specified in configuration, if all failed - will be used ISO8601 parser.
+Formats are applied in order specified in configuration, ISO8601 parser will be checked first no matter of provided list of formats.
 
 Default: (unset), parse provided timestamp using default ISO8601
 
@@ -115,7 +98,7 @@ List of time formats that should be applied during Timestamp parsing of incoming
 
 Time formats are based on standard [Go time parsing layouts](https://pkg.go.dev/time#Layout).
 
-Formats are applied in order specified in configuration, if all failed - will be used ISO8601 parser.
+Formats are applied in order specified in configuration, ISO8601 parser will be checked first no matter of provided list of formats.
 
 Default: (unset), parse provided timestamp using default ISO8601
 
@@ -142,17 +125,25 @@ Currently supported following Azure Resource Logs export formats:
 
 Currently only subset of available Azure Resource Logs Categories properly translated using OpenTelemetry SemConv.
 
+[Transformation rules from Azure Resource Logs fields to OpenTelemetry](./internal/unmarshaler/logs/README.md).
+
 Unsupported Categories simply copies attributes from "properties" field of incoming Azure Log Record to OpenTelemetry Log Attributes as a strings.
 
 ***time_formats (Optional)***
 
-List of time formats that should be applied during Timestamp parsing of incoming logs records.
+This option will override the list of time formats that should be applied during Timestamp parsing of incoming logs records.
+
+If not set - following list of time formats will be used:
+
+* `01/02/2006 15:04:05`
+* `1/2/2006 3:04:05.000 PM -07:00`
+* `1/2/2006 3:04:05 PM -07:00`
 
 Time formats are based on standard [Go time parsing layouts](https://pkg.go.dev/time#Layout).
 
-Formats are applied in order specified in configuration, if all failed - will be used ISO8601 parser.
+Formats are applied in order specified in configuration, ISO8601 parser will be checked first no matter of provided list of formats.
 
-Default: (unset), parse provided timestamp using default ISO8601
+Default: (unset), parse provided timestamp using default formats set
 
 ***include_categories (Optional)***
 
@@ -175,7 +166,7 @@ the `exclude_categories` takes precedences and Categories will be ignored even i
 extensions:
   azure_encoding:
     logs:
-      time_formats: ["01/02/2006 15:04:05", "2006-01-02T15:04:05Z"]
+      time_formats: ["01/02/2006 15:04:05", "1/2/2006 3:04:05.000 PM -07:00"]
       exclude_categories: ["AzureCdnAccessLog"]
       include_categories: ["AzureCdnAccessLog", "FrontDoorAccessLog"] # only FrontDoorAccessLog will be processed
 ...
