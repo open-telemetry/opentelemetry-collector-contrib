@@ -485,6 +485,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	span := scopeSpans.Spans().AppendEmpty()
 	err = span.Attributes().FromRaw(map[string]any{
 		string(semconv.MessagingDestinationNameKey): "users_queue",
+		string(semconv.MessagingSystemKey):          "kafka",
 		"messaging.operation.name":                  "receive",
 		string(semconv22.DBSystemKey):               "sql",
 		"db.namespace":                              "users",
@@ -534,6 +535,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"name": "client span",
 		"action": "receive",
 		"kind": "CLIENT",
+		"subtype": "kafka",
 		"db": {
 		  "instance": "users",
 		  "statement": "SELECT * FROM users WHERE user_id=?",
