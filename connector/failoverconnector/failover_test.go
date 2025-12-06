@@ -43,6 +43,7 @@ func TestFailoverRecovery(t *testing.T) {
 
 	failoverConnector := conn.(*tracesFailover)
 	tRouter := failoverConnector.failover
+	strategy := tRouter.strategy.(*standardTracesStrategy)
 
 	tr := sampleTrace()
 
@@ -54,13 +55,13 @@ func TestFailoverRecovery(t *testing.T) {
 		defer func() {
 			resetConsumers(tRouter, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
 		}()
-		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 
+		tRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
-		idx := failoverConnector.failover.TestGetCurrentConsumerIndex()
+		idx := strategy.TestGetCurrentConsumerIndex()
 		require.Equal(t, 1, idx)
 
-		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+		tRouter.ModifyConsumerAtIndex(0, &sinkFirst)
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 0, tr)
@@ -71,21 +72,22 @@ func TestFailoverRecovery(t *testing.T) {
 		defer func() {
 			resetConsumers(tRouter, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
 		}()
-		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
-		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+
+		tRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+		tRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 2, tr)
 		}, 3*time.Second, 5*time.Millisecond)
 
 		// Simulate recovery of exporter
-		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+		tRouter.ModifyConsumerAtIndex(1, &sinkSecond)
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 1, tr)
 		}, 3*time.Second, 5*time.Millisecond)
 
-		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+		tRouter.ModifyConsumerAtIndex(0, &sinkFirst)
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 0, tr)
@@ -96,34 +98,35 @@ func TestFailoverRecovery(t *testing.T) {
 		defer func() {
 			resetConsumers(tRouter, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
 		}()
-		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
-		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+
+		tRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+		tRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 2, tr)
 		}, 3*time.Second, 5*time.Millisecond)
 
 		// Simulate recovery of exporter
-		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+		tRouter.ModifyConsumerAtIndex(1, &sinkSecond)
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 1, tr)
 		}, 3*time.Second, 5*time.Millisecond)
 
-		failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errTracesConsumer))
-		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+		tRouter.ModifyConsumerAtIndex(2, consumertest.NewErr(errTracesConsumer))
+		tRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 3, tr)
 		}, 3*time.Second, 5*time.Millisecond)
 
-		failoverConnector.failover.ModifyConsumerAtIndex(2, &sinkThird)
+		tRouter.ModifyConsumerAtIndex(2, &sinkThird)
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 2, tr)
 		}, 3*time.Second, 5*time.Millisecond)
 
-		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkThird)
+		tRouter.ModifyConsumerAtIndex(0, &sinkThird)
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 0, tr)
@@ -135,5 +138,6 @@ func resetConsumers(router *tracesRouter, consumers ...consumer.Traces) {
 	for i, sink := range consumers {
 		router.ModifyConsumerAtIndex(i, sink)
 	}
-	router.TestSetStableConsumerIndex(0)
+	strategy := router.strategy.(*standardTracesStrategy)
+	strategy.TestSetStableConsumerIndex(0)
 }
