@@ -187,7 +187,7 @@ func TestExport(t *testing.T) {
 						// the case where exporter begins to forcedly flush
 						// encoded data.
 						pointCount := int64(0)
-						for i := 0; i < 2*cfg.QueueConfig.NumConsumers; i++ {
+						for i := 0; i < 2*cfg.QueueConfig.Get().NumConsumers; i++ {
 							md := testdata.GenerateMetrics(1)
 							pointCount += int64(md.DataPointCount())
 							err := exp.ConsumeMetrics(t.Context(), md)
