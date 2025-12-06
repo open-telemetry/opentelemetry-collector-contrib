@@ -98,6 +98,9 @@ func (c *Config) Validate() error {
 		if object.Mode == PullMode && c.IncludeInitialState {
 			return errors.New("include_initial_state can only be used with watch mode")
 		}
+		if len(object.ExcludeNamespaces) != 0 && len(object.Namespaces) != 0 {
+			return errors.New("namespaces and exclude_namespaces cannot both be set at the same time")
+		}
 	}
 	return nil
 }
