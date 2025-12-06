@@ -86,6 +86,17 @@ func TestLog10kDPSNoProcessors(t *testing.T) {
 				ExpectedMaxRAM: 120,
 			},
 		},
+		{
+			name:                "Batch size 1000 with batch processor and exporter batcher, queue",
+			withBatchProcessor:  true,
+			withExporterBatcher: true,
+			withQueue:           true,
+			batchSize:           1000,
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 120,
+			},
+		},
 	}
 
 	for _, test := range tests {
