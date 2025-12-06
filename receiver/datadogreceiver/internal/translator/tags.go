@@ -7,8 +7,17 @@ import (
 	"strings"
 	"sync"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+)
+
+var MultiTagParsingFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.datadogreceiver.EnableMultiTagParsing",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, parses `key:value` tags with duplicate keys into a slice attribute."),
+	featuregate.WithRegisterFromVersion("v0.142.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44747"),
 )
 
 // See:
@@ -185,7 +194,31 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 				// type string[]
 				attrs.resource.PutEmptySlice(key).AppendEmpty().SetStr(val)
 			} else {
-				attrs.dp.PutStr(key, val)
+				if !MultiTagParsingFeatureGate.IsEnabled() {
+					attrs.dp.PutStr(key, val)
+				} else {
+					// Datadog does, semantically, generate tags with the same key prefix but different values
+					// (e.g. the `kube_service` tag when using the `kubelet` integration)
+					// (https://docs.datadoghq.com/containers/kubernetes/tag/)
+					// and we handle this by using a slice whenever there is more than one value for the same key
+					value, exists := attrs.dp.Get(key)
+					if exists {
+						switch value.Type() {
+						case pcommon.ValueTypeSlice:
+							value.Slice().AppendEmpty().SetStr(val)
+						default:
+							oldValue := pcommon.NewValueEmpty()
+							value.CopyTo(oldValue)
+							attrs.dp.Remove(key)
+							slice := attrs.dp.PutEmptySlice(key)
+							firstValue := slice.AppendEmpty()
+							oldValue.CopyTo(firstValue)
+							slice.AppendEmpty().SetStr(val)
+						}
+					} else {
+						attrs.dp.PutStr(key, val)
+					}
+				}
 			}
 		}
 	}
