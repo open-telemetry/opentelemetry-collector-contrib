@@ -27,6 +27,9 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
 	traces1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
 
+	// The unqualified `attributes["X-Tenant"]` syntax is the legacy form that
+	// defaults to resource context for backward compatibility. The modern form
+	// is `resource.attributes["X-Tenant"]` which explicitly specifies the context.
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{tracesDefault},
 		Table: []RoutingTableItem{
@@ -75,6 +78,118 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, conn.Shutdown(t.Context()))
+}
+
+func TestTracesRoutingWithInferredContexts(t *testing.T) {
+	// This test demonstrates context inference with explicit context-qualified paths.
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	tracesProd := pipeline.NewIDWithName(pipeline.SignalTraces, "prod")
+	tracesHTTP := pipeline.NewIDWithName(pipeline.SignalTraces, "http")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `resource.attributes["env"] == "prod"`,
+				Pipelines: []pipeline.ID{tracesProd},
+			},
+			{
+				Condition: `span.attributes["http.method"] == "GET"`,
+				Pipelines: []pipeline.ID{tracesHTTP},
+			},
+		},
+	}
+
+	var defaultSink, prodSink, httpSink consumertest.TracesSink
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		tracesProd:    &prodSink,
+		tracesHTTP:    &httpSink,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateTracesToTraces(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Traces),
+	)
+	require.NoError(t, err)
+
+	// Helper function to create traces with specific attributes
+	createTraces := func(env, httpMethod string) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("env", env)
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", httpMethod)
+		return traces
+	}
+
+	// Helper function to reset all sinks
+	resetSinks := func() {
+		prodSink.Reset()
+		httpSink.Reset()
+		defaultSink.Reset()
+	}
+
+	// Helper function to assert sink counts
+	assertSinkCounts := func(t *testing.T, prodCount, httpCount, defaultCount int) {
+		assert.Equal(t, prodCount, prodSink.SpanCount(), "prod sink count")
+		assert.Equal(t, httpCount, httpSink.SpanCount(), "http sink count")
+		assert.Equal(t, defaultCount, defaultSink.SpanCount(), "default sink count")
+	}
+
+	testCases := []struct {
+		name            string
+		env             string
+		httpMethod      string
+		expectedProd    int
+		expectedHTTP    int
+		expectedDefault int
+	}{
+		{
+			name:            "resource context routing: env=prod routes to prod sink",
+			env:             "prod",
+			httpMethod:      "POST",
+			expectedProd:    1,
+			expectedHTTP:    0,
+			expectedDefault: 0,
+		},
+		{
+			name:            "span context routing: GET method routes to http sink",
+			env:             "dev",
+			httpMethod:      "GET",
+			expectedProd:    0,
+			expectedHTTP:    1,
+			expectedDefault: 0,
+		},
+		{
+			name:            "default routing: non-matching traces go to default",
+			env:             "dev",
+			httpMethod:      "POST",
+			expectedProd:    0,
+			expectedHTTP:    0,
+			expectedDefault: 1,
+		},
+		{
+			name:            "multiple route matches: both prod env and GET http.method",
+			env:             "prod",
+			httpMethod:      "GET",
+			expectedProd:    1,
+			expectedHTTP:    0,
+			expectedDefault: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetSinks()
+			traces := createTraces(tc.env, tc.httpMethod)
+			require.NoError(t, conn.ConsumeTraces(t.Context(), traces))
+			assertSinkCounts(t, tc.expectedProd, tc.expectedHTTP, tc.expectedDefault)
+		})
+	}
 }
 
 func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {

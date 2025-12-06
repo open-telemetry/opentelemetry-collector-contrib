@@ -255,7 +255,7 @@ func convertDataPointStatements(pc *ottl.ParserCollection[MetricsConsumer], stat
 func (mpc *MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (MetricsConsumer, error) {
 	pc := ottl.ParserCollection[MetricsConsumer](*mpc)
 	if contextStatements.Context != "" {
-		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)
+		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements)
 	}
 	return pc.ParseStatements(contextStatements, ottl.WithContextInferenceConditions(contextStatements.Conditions))
 }
