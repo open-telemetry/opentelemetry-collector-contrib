@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
@@ -70,11 +71,12 @@ func requireNotPanicsProfiles(t *testing.T, profiles pprofile.Profiles) {
 
 func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
-		name             string
-		conditions       ProfileFilters
-		filterEverything bool
-		want             func(pprofile.Profiles)
-		errorMode        ottl.ErrorMode
+		name              string
+		conditions        ProfileFilters
+		contextConditions []common.ContextConditions
+		filterEverything  bool
+		want              func(pprofile.Profiles)
+		errorMode         ottl.ErrorMode
 	}{
 		{
 			name: "drop resource",
@@ -134,10 +136,18 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			want:      func(_ pprofile.Profiles) {},
 			errorMode: ottl.IgnoreError,
 		},
+		{
+			name: "with context conditions",
+			contextConditions: []common.ContextConditions{
+				{Conditions: []string{`IsMatch(profile.original_payload_format, ".*legacy")`}},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Profiles: tt.conditions, profileFunctions: defaultProfileFunctionsMap()}
+			cfg := &Config{Profiles: tt.conditions, ProfileConditions: tt.contextConditions, profileFunctions: defaultProfileFunctionsMap()}
 			processor, err := newFilterProfilesProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
