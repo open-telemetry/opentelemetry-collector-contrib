@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
-	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
+	pubsub "cloud.google.com/go/pubsub/v2/apiv1"
+	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -18,7 +18,7 @@ import (
 // publisherClient subset of `pubsub.PublisherClient`
 type publisherClient interface {
 	Close() error
-	Publish(ctx context.Context, req *pubsubpb.PublishRequest, opts ...gax.CallOption) (*pubsubpb.PublishResponse, error)
+	Publish(ctx context.Context, in *pubsubpb.PublishRequest, opts ...gax.CallOption) (*pubsubpb.PublishResponse, error)
 }
 
 // wrappedPublisherClient allows to override the close function
@@ -40,7 +40,8 @@ func newPublisherClient(ctx context.Context, config *Config, userAgent string) (
 		return nil, fmt.Errorf("failed preparing the gRPC client options to PubSub: %w", err)
 	}
 
-	client, err := pubsub.NewPublisherClient(ctx, clientOptions...)
+	// In new v2 client the Publish is moved to the TopicAdmin client
+	client, err := pubsub.NewTopicAdminClient(ctx, clientOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating the gRPC client to PubSub: %w", err)
 	}

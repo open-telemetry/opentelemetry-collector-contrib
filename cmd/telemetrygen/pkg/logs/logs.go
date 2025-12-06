@@ -14,19 +14,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
-	"go.opentelemetry.io/otel/log"
+	apilog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/log"
 )
 
 // Start starts the log telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
+	logger, err := log.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
@@ -147,10 +147,10 @@ func createExporter(cfg *Config, logger *zap.Logger) (sdklog.Exporter, error) {
 	return exp, err
 }
 
-func parseSeverity(severityText string, severityNumber int32) (string, log.Severity, error) {
-	sn := log.Severity(severityNumber)
-	if sn < log.SeverityTrace1 || sn > log.SeverityFatal4 {
-		return "", log.SeverityUndefined, errors.New("severity-number is out of range, the valid range is [1,24]")
+func parseSeverity(severityText string, severityNumber int32) (string, apilog.Severity, error) {
+	sn := apilog.Severity(severityNumber)
+	if sn < apilog.SeverityTrace1 || sn > apilog.SeverityFatal4 {
+		return "", apilog.SeverityUndefined, errors.New("severity-number is out of range, the valid range is [1,24]")
 	}
 
 	// severity number should match well-known severityText
