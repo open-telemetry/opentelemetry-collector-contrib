@@ -1,0 +1,85 @@
+default:
+all_set:
+  metrics:
+    system.psi.cpu.some.avg10:
+      enabled: true
+    system.psi.cpu.some.avg300:
+      enabled: true
+    system.psi.cpu.some.avg60:
+      enabled: true
+    system.psi.cpu.some.total:
+      enabled: true
+    system.psi.io.full.avg10:
+      enabled: true
+    system.psi.io.full.avg300:
+      enabled: true
+    system.psi.io.full.avg60:
+      enabled: true
+    system.psi.io.full.total:
+      enabled: true
+    system.psi.io.some.avg10:
+      enabled: true
+    system.psi.io.some.avg300:
+      enabled: true
+    system.psi.io.some.avg60:
+      enabled: true
+    system.psi.io.some.total:
+      enabled: true
+    system.psi.memory.full.avg10:
+      enabled: true
+    system.psi.memory.full.avg300:
+      enabled: true
+    system.psi.memory.full.avg60:
+      enabled: true
+    system.psi.memory.full.total:
+      enabled: true
+    system.psi.memory.some.avg10:
+      enabled: true
+    system.psi.memory.some.avg300:
+      enabled: true
+    system.psi.memory.some.avg60:
+      enabled: true
+    system.psi.memory.some.total:
+      enabled: true
+none_set:
+  metrics:
+    system.psi.cpu.some.avg10:
+      enabled: false
+    system.psi.cpu.some.avg300:
+      enabled: false
+    system.psi.cpu.some.avg60:
+      enabled: false
+    system.psi.cpu.some.total:
+      enabled: false
+    system.psi.io.full.avg10:
+      enabled: false
+    system.psi.io.full.avg300:
+      enabled: false
+    system.psi.io.full.avg60:
+      enabled: false
+    system.psi.io.full.total:
+      enabled: false
+    system.psi.io.some.avg10:
+      enabled: false
+    system.psi.io.some.avg300:
+      enabled: false
+    system.psi.io.some.avg60:
+      enabled: false
+    system.psi.io.some.total:
+      enabled: false
+    system.psi.memory.full.avg10:
+      enabled: false
+    system.psi.memory.full.avg300:
+      enabled: false
+    system.psi.memory.full.avg60:
+      enabled: false
+    system.psi.memory.full.total:
+      enabled: false
+    system.psi.memory.some.avg10:
+      enabled: false
+    system.psi.memory.some.avg300:
+      enabled: false
+    system.psi.memory.some.avg60:
+      enabled: false
+    system.psi.memory.some.total:
+      enabled: false
