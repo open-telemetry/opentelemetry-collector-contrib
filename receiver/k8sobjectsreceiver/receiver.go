@@ -184,10 +184,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 	kr.setting.Logger.Info("Started collecting",
 		zap.Any("gvr", object.gvr),
 		zap.Any("mode", object.Mode),
-		zap.Any("namespaces", object.Namespaces),
 	)
-	// If ExcludeNamespaces is set with a regex and Namespaces is not set,
-	// we need to list all namespaces and exclude the ones matching the regex.
 	if len(object.ExcludeNamespaces) > 0 {
 		allNamespaces, err := kr.client.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -212,6 +209,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 			}
 		}
 	}
+	kr.setting.Logger.Info("Collecting from namespaces", zap.Strings("namespaces", object.Namespaces))
 
 	switch object.Mode {
 	case PullMode:
