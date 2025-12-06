@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	gojson "github.com/goccy/go-json"
@@ -70,6 +71,9 @@ type azureLogRecord struct {
 	Level             *json.Number    `json:"Level"`
 	Location          *string         `json:"location"`
 	Properties        json.RawMessage `json:"properties"`
+	// rawRecord stores the raw JSON bytes of the entire record to capture
+	// fields that aren't in the struct (e.g., vnet flow log fields)
+	rawRecord json.RawMessage
 }
 
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
@@ -89,6 +93,18 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 	if iter.Error != nil {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
+	}
+
+	// Re-parse to capture raw record JSON for fields not in the struct
+	var rawRecords struct {
+		Records []json.RawMessage `json:"records"`
+	}
+	if err := json.Unmarshal(buf, &rawRecords); err == nil {
+		for i := range azureLogs.Records {
+			if i < len(rawRecords.Records) {
+				azureLogs.Records[i].rawRecord = rawRecords.Records[i]
+			}
+		}
 	}
 
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
@@ -226,9 +242,55 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	// TODO Keep adding other common fields, like tenant ID
 }
 
-func extractRawAttributes(log *azureLogRecord) map[string]any {
-	attrs := map[string]any{}
+// parseRawRecord splits known vs unknown fields from the raw record JSON.
+func parseRawRecord(log *azureLogRecord) (map[string]any, map[string]any) {
+	if len(log.rawRecord) == 0 {
+		return nil, nil
+	}
 
+	var raw map[string]any
+	if err := gojson.Unmarshal(log.rawRecord, &raw); err != nil {
+		return nil, nil
+	}
+
+	// Extract all fields from raw record, excluding known struct fields
+	// Use case-insensitive matching to handle both camelCase and PascalCase JSON formats
+	// Map uses lowercase keys for case-insensitive O(1) lookup
+	knownFields := map[string]bool{
+		"time":              true,
+		"timestamp":         true,
+		"resourceid":        true,
+		"tenantid":          true,
+		"operationname":     true,
+		"operationversion":  true,
+		"category":          true,
+		"resulttype":        true,
+		"resultsignature":   true,
+		"resultdescription": true,
+		"durationms":        true,
+		"calleripaddress":   true,
+		"correlationid":     true,
+		"identity":          true,
+		"level":             true,
+		"location":          true,
+		"properties":        true,
+	}
+
+	known := make(map[string]any)
+	unknown := make(map[string]any)
+
+	for k, v := range raw {
+		if knownFields[strings.ToLower(k)] {
+			known[k] = v
+		} else {
+			unknown[k] = v
+		}
+	}
+	return known, unknown
+}
+
+// addCommonAzureFields fills attrs with the standard Azure fields.
+func addCommonAzureFields(attrs map[string]any, log *azureLogRecord) {
 	attrs[azureCategory] = log.Category
 	setIf(attrs, azureCorrelationID, log.CorrelationID)
 	if log.DurationMs != nil {
@@ -242,11 +304,6 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 	}
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
-
-	if log.Properties != nil {
-		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
-	}
-
 	setIf(attrs, azureResultDescription, log.ResultDescription)
 	setIf(attrs, azureResultSignature, log.ResultSignature)
 	setIf(attrs, azureResultType, log.ResultType)
@@ -254,30 +311,62 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 
 	setIf(attrs, string(conventions.CloudRegionKey), log.Location)
 	setIf(attrs, string(conventions.NetworkPeerAddressKey), log.CallerIPAddress)
-	return attrs
 }
 
-func copyPropertiesAndApplySemanticConventions(category string, properties []byte, attrs map[string]any) {
-	if len(properties) == 0 {
-		return
-	}
+func extractRawAttributes(log *azureLogRecord) map[string]any {
+	attrs := map[string]any{}
+	_, unknown := parseRawRecord(log)
 
 	// TODO @constanca-m: This is a temporary workaround to
 	// this function. This will be removed once category_logs.log
 	// is implemented for all currently supported categories
 	var props map[string]any
-	if err := gojson.Unmarshal(properties, &props); err != nil {
-		var val any
-		if err = json.Unmarshal(properties, &val); err == nil {
-			// Try primitive value
-			attrs[azureProperties] = val
-			return
+	var propsVal any
+
+	// Try to parse properties as a map first
+	if len(log.Properties) > 0 {
+		if err := gojson.Unmarshal(log.Properties, &props); err != nil {
+			// If not a map, try to parse as a primitive value
+			if err := json.Unmarshal(log.Properties, &propsVal); err != nil {
+				// If parsing fails, treat as string
+				propsVal = string(log.Properties)
+			}
 		}
-		// Otherwise add it as a string
-		attrs[azureProperties] = string(properties)
-		return
 	}
 
+	// Merge unknown fields into props
+	if len(unknown) > 0 {
+		if props == nil {
+			props = make(map[string]any)
+		}
+		// If we have a primitive property, add it to the map under 'properties' key
+		// so it is preserved when merging with unknown fields
+		if propsVal != nil {
+			props[azureProperties] = propsVal
+			propsVal = nil
+		}
+		for k, v := range unknown {
+			props[k] = v
+		}
+	}
+
+	// Apply semantic conventions if we have a map
+	if props != nil {
+		remainingProps := applySemanticConventions(log.Category, props, attrs)
+		if len(remainingProps) > 0 {
+			attrs[azureProperties] = remainingProps
+		}
+	} else if propsVal != nil {
+		attrs[azureProperties] = propsVal
+	}
+
+	// Add standardized Azure fields
+	addCommonAzureFields(attrs, log)
+	return attrs
+}
+
+// applySemanticConventions extracts known fields into attrs and returns the remaining fields.
+func applySemanticConventions(category string, props, attrs map[string]any) map[string]any {
 	var handleFunc func(string, any, map[string]any, map[string]any)
 	switch category {
 	case categoryFrontDoorAccessLog:
@@ -304,13 +393,11 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 		}
 	}
 
-	attrsProps := map[string]any{}
+	remainingProps := make(map[string]any)
 	for field, value := range props {
-		handleFunc(field, value, attrs, attrsProps)
+		handleFunc(field, value, attrs, remainingProps)
 	}
-	if len(attrsProps) > 0 {
-		attrs[azureProperties] = attrsProps
-	}
+	return remainingProps
 }
 
 func setIf(attrs map[string]any, key string, value *string) {

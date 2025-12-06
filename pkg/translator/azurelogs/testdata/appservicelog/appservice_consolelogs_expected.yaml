@@ -15,9 +15,6 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: category
-                    value:
-                      stringValue: AppServiceConsoleLogs
                   - key: operation.name
                     value:
                       stringValue: ConsoleLog
@@ -27,6 +24,9 @@ resourceLogs:
                   - key: host.id
                     value:
                       stringValue: HOST
+                  - key: category
+                    value:
+                      stringValue: AppServiceConsoleLogs
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs
