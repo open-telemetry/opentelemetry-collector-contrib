@@ -249,22 +249,9 @@ func New(
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
-			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
+			informersFactory.newReplicaSetInformer = NewReplicaSetMetaInformerProvider(apiCfg)
 		}
 		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
-
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
@@ -1760,17 +1747,70 @@ func needContainerAttributes(rules ExtractionRules) bool {
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
-	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	switch rs := obj.(type) {
+	case *apps_v1.ReplicaSet:
+		c.addOrUpdateReplicaSetTyped(rs)
+	case *meta_v1.PartialObjectMetadata:
+		c.addOrUpdateReplicaSetMeta(rs)
+	case cache.DeletedFinalStateUnknown:
+		if rs.Obj != nil {
+			c.handleReplicaSetAdd(rs.Obj)
+		} else {
+			c.logger.Warn("DeletedFinalStateUnknown with nil Obj")
+		}
+	default:
+		c.logger.Warn("object received was not ReplicaSet", zap.Any("obj", obj))
 	}
+}
+
+func (c *WatchClient) addOrUpdateReplicaSetTyped(rs *apps_v1.ReplicaSet) {
+	newRS := &ReplicaSet{
+		Name:      rs.GetName(),
+		Namespace: rs.GetNamespace(),
+		UID:       string(rs.GetUID()),
+	}
+	for _, owner := range rs.OwnerReferences {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+			newRS.Deployment = Deployment{
+				Name: owner.Name,
+				UID:  string(owner.UID),
+			}
+			break
+		}
+	}
+	c.m.Lock()
+	if rs.GetUID() != "" {
+		c.ReplicaSets[string(rs.GetUID())] = newRS
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateReplicaSetMeta(rs *meta_v1.PartialObjectMetadata) {
+	newRS := &ReplicaSet{
+		Name:      rs.GetName(),
+		Namespace: rs.GetNamespace(),
+		UID:       string(rs.GetUID()),
+	}
+	for _, owner := range rs.GetOwnerReferences() {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+			newRS.Deployment = Deployment{
+				Name: owner.Name,
+				UID:  string(owner.UID),
+			}
+			break
+		}
+	}
+
+	c.m.Lock()
+	if uid := rs.GetUID(); uid != "" {
+		c.ReplicaSets[string(uid)] = newRS
+	}
+	c.m.Unlock()
 }
 
 func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
-	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
+	if replicaset, ok := newRS.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateReplicaSet(replicaset)
 	} else {
 		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
@@ -1778,18 +1818,38 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
-	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
+	switch v := obj.(type) {
+	case *apps_v1.ReplicaSet:
+		uid := string(v.GetUID())
+		if uid == "" {
+			c.logger.Warn("delete ReplicaSet missing UID", zap.Any("obj", obj))
+			return
+		}
 		c.m.Lock()
-		key := string(replicaset.UID)
-		delete(c.ReplicaSets, key)
+		delete(c.ReplicaSets, uid)
 		c.m.Unlock()
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	case *meta_v1.PartialObjectMetadata:
+		uid := string(v.GetUID())
+		if uid == "" {
+			c.logger.Warn("delete PartialObjectMetadata missing UID", zap.Any("obj", obj))
+			return
+		}
+		c.m.Lock()
+		delete(c.ReplicaSets, uid)
+		c.m.Unlock()
+	case cache.DeletedFinalStateUnknown:
+		if v.Obj == nil {
+			c.logger.Warn("DeletedFinalStateUnknown with nil Obj")
+			return
+		}
+		// Recurse for inner object
+		c.handleReplicaSetDelete(v.Obj)
+	default:
+		c.logger.Warn("delete received non-ReplicaSet object", zap.Any("obj", obj))
 	}
 }
 
-func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
+func (c *WatchClient) addOrUpdateReplicaSet(replicaset *meta_v1.PartialObjectMetadata) {
 	newReplicaSet := &ReplicaSet{
 		Name:      replicaset.Name,
 		Namespace: replicaset.Namespace,
@@ -1811,19 +1871,6 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
 	}
 	c.m.Unlock()
-}
-
-// This function removes all data from the ReplicaSet except what is required by extraction rules
-func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
-	transformedReplicaset := apps_v1.ReplicaSet{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      replicaset.GetName(),
-			Namespace: replicaset.GetNamespace(),
-			UID:       replicaset.GetUID(),
-		},
-	}
-	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
-	return &transformedReplicaset
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete

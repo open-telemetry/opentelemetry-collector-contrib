@@ -1081,8 +1081,7 @@ func TestExtractionRules(t *testing.T) {
 			maps.Copy(podCopy.Annotations, tc.additionalAnnotations)
 			maps.Copy(podCopy.Labels, tc.additionalLabels)
 			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
-			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
-			c.handleReplicaSetAdd(transformedReplicaset)
+			c.handleReplicaSetAdd(replicaset)
 			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", podCopy.Status.PodIP))
 			require.True(t, ok)
@@ -1237,8 +1236,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
 			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
-			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
-			c.handleReplicaSetAdd(transformedReplicaset)
+			c.handleReplicaSetAdd(replicaset)
 			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
