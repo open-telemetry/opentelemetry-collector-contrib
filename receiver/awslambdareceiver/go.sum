@@ -38,6 +38,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.41.1 h1:GdGmKtG+/Krag7VfyOXV17xjTCz0
 github.com/aws/aws-sdk-go-v2/service/sts v1.41.1/go.mod h1:6TxbXoDSgBQ225Qd8Q+MbxUxUh6TtNKwbRt/EPS9xso=
 github.com/aws/smithy-go v1.23.2 h1:Crv0eatJUQhaManss33hS5r40CG3ZFH+21XSkqMrIUM=
 github.com/aws/smithy-go v1.23.2/go.mod h1:LEj2LM3rBRQJxPZTB4KuzZkaZYnZPnvgIhb4pu07mx0=
+github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
+github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
@@ -111,8 +113,6 @@ go.opentelemetry.io/collector/consumer/consumertest v0.141.0 h1:Q5X7rOI8I5xj35Q1
 go.opentelemetry.io/collector/consumer/consumertest v0.141.0/go.mod h1:yjSSOFx0oBjH2fouw0TTN/U82hYyJPq35ClIZrpz60g=
 go.opentelemetry.io/collector/consumer/xconsumer v0.141.0 h1:qR9H8tWo6NtPBDBv3fz8J8QBkqbnaU8vwUvtIO3QeZo=
 go.opentelemetry.io/collector/consumer/xconsumer v0.141.0/go.mod h1:Ud55EhQ0cgqDTtnvHQNjtktLGMeefOzF6SFk0bLheOc=
-go.opentelemetry.io/collector/extension v1.47.0 h1:3tuOP79eXWHQvS1ITtSzipPqURK4JDHj1n8HFQQWe3A=
-go.opentelemetry.io/collector/extension v1.47.0/go.mod h1:Zfozkdo63ltydtPnuu1PotxWXJRsaX1wPamxuF3JbaQ=
 go.opentelemetry.io/collector/featuregate v1.47.0 h1:LuJnDngViDzPKds5QOGxVYNL1QCCVWN/m61lHTV8Pf4=
 go.opentelemetry.io/collector/featuregate v1.47.0/go.mod h1:d0tiRzVYrytB6LkcYgz2ESFTv7OktRPQe0QEQcPt1L4=
 go.opentelemetry.io/collector/internal/testutil v0.141.0 h1:/rUGApojPtUPMN3rFfApNgEjAt03rCGt2qxNxGGs/4A=

@@ -54,44 +54,27 @@ The `awslambdareceiver` operates as follows:
 
 The following receiver configuration parameters are supported.
 
-| Name                  | Description                                                                                                                                | Default     | Required |
-|:----------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|----------|
-| `s3_encoding`         | Name of the encoding extension to use for S3 objects                                                                                       | "awslogs_encoding" | Optional |
+| Name       | Description                                                                                      |
+|:-----------|:-------------------------------------------------------------------------------------------------|
+| `encoding` | Optional encoder to use for further processing of the payloads retrieved from the Lambda trigger | 
+
+## Supported Trigger Types
+
+- **Logs**: Supported through S3 and CloudWatch Logs event sources
+- **Metrics**: Supported through S3
+
+> [!IMPORTANT]  
+> Metrics will always be decoded using `awscloudwatchmetricstreams_encoding` extension regardless of the `encoding` parameter set in the receiver configuration.
+> Please make sure ingesting metrics can be decoded using this extension.
 
 ### Example Configuration
-
-```yaml
-receivers:
-  awslambda:
-    s3_encoding: awslogs_encoding
-
-extensions:
-  awslogs_encoding:
-    format: vpcflow
-    vpcflow:
-      file_format: plain-text
-
-exporters:
-  otlphttp:
-    endpoint: "https://my-backend:443"
-
-service:
-  extensions:
-    - awslogs_encoding
-  pipelines:
-    logs:
-      receivers: [awslambda]
-      exporters: [otlphttp]
-```
-
-## Examples
 
 ### Example 1: VPC Flow Logs from S3
 
 ```yaml
 receivers:
   awslambda:
-    s3_encoding: awslogs_encoding
+    encoding: awslogs_encoding
 
 extensions:
   awslogs_encoding:
@@ -112,14 +95,20 @@ service:
       exporters: [otlphttp]
 ```
 
-In this example, `awslambdareceiver` receives a notification when a new VPC flow log file is stored in an S3 bucket. The receiver fetches the log file from S3 and parses it using the `awslogs_encoding` extension with vpcflow format. The parsed logs are then sent to an OTLP listener using the `otlphttp` exporter.
+In this example, the `awslambdareceiver` is expected to be triggered when a VPC flow log is created at S3 bucket.
+The receiver retrieves the log file from S3 and decodes it using the `awslogs_encoding` extension with the vpcflow format.
+Parsed logs are forwarded to an OTLP listener via the `otlphttp` exporter.
+
+> [!NOTE]  
+> Support is planned for CloudWatch VPC Flow Logs subscription filter.
+> Please refer to this [GitHub issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44710)
 
 ### Example 2: ELB Access Logs from S3
 
 ```yaml
 receivers:
   awslambda:
-    s3_encoding: awslogs_encoding
+    encoding: awslogs_encoding
 
 extensions:
   awslogs_encoding:
@@ -140,7 +129,7 @@ service:
       exporters: [otlphttp]
 ```
 
-### Example 3: CloudWatch Logs Subscription
+### Example 3: CloudWatch Logs using CloudWatch Subscription Filters
 
 ```yaml
 receivers:
@@ -157,12 +146,30 @@ service:
       exporters: [otlphttp]
 ```
 
-In this example, `awslambdareceiver` is invoked by a CloudWatch Logs subscription filter. The receiver automatically parses the CloudWatch Logs data using the default `awslogs_encoding` extension with cloudwatch format. No explicit encoding configuration is needed. The parsed logs are then sent to an OTLP listener using the `otlphttp` exporter.
+For this deployment configuration, when receiver is triggered by a CloudWatch Logs subscription filter, the CloudWatch
+messages will be extracted and converted to an OpenTelemetry log record. These logs then get forwarded to an OTLP listener via the `otlphttp` exporter.
 
-## Supported Data Types
+### Example 4: Arbitrary S3 content (logs or metrics)
 
-- **Logs** (Primary support)
-- **Metrics** (Future consideration)
+```yaml
+receivers:
+  awslambda:
+
+exporters:
+  otlphttp:
+    endpoint: "https://my-backend:443"
+
+service:
+  pipelines:
+    logs:
+      receivers: [awslambda]
+      exporters: [otlphttp]
+```
+
+For this deployment configuration, when receiver is triggered by an S3 event, 
+
+- Logs: Content of the S3 object will be added to an OpenTelemetry log record. If logs are string, then they will be added as-is.
+- Metrics: Metrics are always decoded using `awscloudwatchmetricstreams_encoding` extension.
 
 ## AWS Permissions
 
