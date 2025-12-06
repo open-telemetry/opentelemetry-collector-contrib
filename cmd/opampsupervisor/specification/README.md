@@ -578,7 +578,7 @@ extensions:
   opamp:
     # OpAMP server URL. Supports WS or plain http transport,
     # based on the scheme of the URL (ws,wss,http,https).
-    # Any other settings defined in ClientConfig, squashed. This
+    # Any other settings defined in ClientConfig is squashed. This
     # includes ability to specify an "auth" setting that refers
     # to an extension that implements the Authentication interface.
     endpoint:
@@ -632,5 +632,3 @@ on opamp extension to report the health when it changes?*
     [https://github.com/open-telemetry/opamp-go](https://github.com/open-telemetry/opamp-go)
 - Example Supervisor implementation:
     [https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor](https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor)
-- OpAMP Milestone in the Collector:
-    [https://github.com/open-telemetry/opentelemetry-collector/milestone/29](https://github.com/open-telemetry/opentelemetry-collector/milestone/29)
