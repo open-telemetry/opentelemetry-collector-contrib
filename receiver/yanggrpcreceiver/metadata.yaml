@@ -8,28 +8,6 @@ status:
   codeowners:
     active: [atoulme]
 
-resource_attributes:
-  cisco.device_type:
-    description: Cisco device type (e.g., "IOS-XE", "NX-OS", "IOS-XR")
-    type: string
-    enabled: true
-  cisco.encoding_path:
-    description: YANG model path for the telemetry data
-    type: string
-    enabled: true
-  cisco.node_id:
-    description: Cisco device node identifier from telemetry message
-    type: string
-    enabled: true
-  cisco.subscription_id:
-    description: Cisco telemetry subscription identifier
-    type: string
-    enabled: true
-  cisco.yang_module:
-    description: Discovered YANG module name
-    type: string
-    enabled: true
-
 # Internal telemetry metrics for component observability
 telemetry:
   metrics:
