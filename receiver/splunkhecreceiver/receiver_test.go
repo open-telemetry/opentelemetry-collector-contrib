@@ -148,6 +148,215 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 		},
 		{
+			name: "multiple events",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
+				splunkMetricMsg := buildSplunkHecMetricsMsg("metric", currentTime, 10, 2)
+				splunkMetricMsg2 := buildSplunkHecMetricsMsg("metric", currentTime, 13, 2)
+
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+
+				msgBytes2, err := json.Marshal(splunkMsg2)
+				require.NoError(t, err)
+
+				msgBytes3, err := json.Marshal(splunkMsg3)
+				require.NoError(t, err)
+
+				metricMsgBytes, err := json.Marshal(splunkMetricMsg)
+				require.NoError(t, err)
+
+				metricMsgBytes2, err := json.Marshal(splunkMetricMsg2)
+				require.NoError(t, err)
+
+				combined := strings.Join(
+					[]string{
+						string(msgBytes),
+						string(msgBytes2),
+						string(msgBytes3),
+						string(metricMsgBytes),
+						string(metricMsgBytes2),
+					},
+					"",
+				)
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{
+					"text": "Success",
+					"code": float64(0),
+				}, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Len(t, sink.AllLogs(), 1)
+				assert.Equal(t, 3, sink.LogRecordCount())
+			},
+			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
+				assert.Len(t, sink.AllMetrics(), 1)
+				assert.Equal(t, 2, sink.DataPointCount())
+			},
+		},
+		{
+			name: "empty JSON array",
+			req: func() *http.Request {
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte("[]")))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{
+					"text": "No data",
+					"code": float64(5),
+				}, body)
+			},
+		},
+		{
+			name: "one object in JSON array",
+			req: func() *http.Request {
+				messages := []*splunk.Event{splunkMsg}
+
+				msgBytes, err := json.Marshal(messages)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{
+					"text": "Success",
+					"code": float64(0),
+				}, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Len(t, sink.AllLogs(), 1)
+				assert.Equal(t, 1, sink.LogRecordCount())
+			},
+		},
+		{
+			name: "multiple objects in JSON array",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
+				splunkMetricMsg := buildSplunkHecMetricsMsg("metric", currentTime, 10, 2)
+				splunkMetricMsg2 := buildSplunkHecMetricsMsg("metric", currentTime, 13, 2)
+
+				messages := []*splunk.Event{splunkMsg, splunkMsg2, splunkMsg3, splunkMetricMsg, splunkMetricMsg2}
+
+				msgBytes, err := json.Marshal(messages)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{
+					"text": "Success",
+					"code": float64(0),
+				}, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Len(t, sink.AllLogs(), 1)
+				assert.Equal(t, 3, sink.LogRecordCount())
+			},
+			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
+				assert.Len(t, sink.AllMetrics(), 1)
+				assert.Equal(t, 2, sink.DataPointCount())
+			},
+		},
+		{
+			name: "multiple JSON array",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
+
+				messages1 := []*splunk.Event{splunkMsg, splunkMsg2}
+				messages2 := []*splunk.Event{splunkMsg3}
+
+				msgBytes, err := json.Marshal(messages1)
+				require.NoError(t, err)
+
+				msgBytes2, err := json.Marshal(messages2)
+				require.NoError(t, err)
+
+				combined := string(msgBytes) + string(msgBytes2)
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{"code": float64(6), "text": "Invalid data format"}, body)
+			},
+		},
+		{
+			name: "JSON array first with objects",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
+
+				messages := []*splunk.Event{splunkMsg, splunkMsg2}
+
+				msgBytes, err := json.Marshal(messages)
+				require.NoError(t, err)
+
+				msgBytes2, err := json.Marshal(splunkMsg3)
+				require.NoError(t, err)
+
+				combined := string(msgBytes) + string(msgBytes2)
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{"code": float64(6), "text": "Invalid data format"}, body)
+			},
+		},
+		{
+			name: "objects first with JSON array",
+			req: func() *http.Request {
+				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
+				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
+
+				messages := []*splunk.Event{splunkMsg, splunkMsg2}
+
+				msgBytes, err := json.Marshal(messages)
+				require.NoError(t, err)
+
+				msgBytes2, err := json.Marshal(splunkMsg3)
+				require.NoError(t, err)
+
+				combined := string(msgBytes2) + string(msgBytes)
+
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte(combined)))
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{"code": float64(6), "text": "Invalid data format"}, body)
+			},
+		},
+		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", http.NoBody)
