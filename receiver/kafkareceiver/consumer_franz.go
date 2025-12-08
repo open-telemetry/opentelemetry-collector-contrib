@@ -310,6 +310,17 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			)
 			return
 		}
+		if pcErr := assign.ctx.Err(); pcErr != nil {
+			// If the context is canceled, for example due to the partition getting
+			// lost, then log and return.
+			c.settings.Logger.Warn(
+				"attempted to process records for a partition with context done",
+				zap.Error(pcErr),
+				zap.String("topic", tp.topic),
+				zap.Int64("partition", int64(tp.partition)),
+			)
+			return
+		}
 		// Try to add a new in-flight message processing goroutine to the
 		// partition consumer. Return immediately if the partition has been
 		// lost or reassigned.
