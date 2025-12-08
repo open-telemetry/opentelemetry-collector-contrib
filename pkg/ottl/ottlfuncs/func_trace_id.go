@@ -4,6 +4,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"encoding/hex"
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -32,5 +33,13 @@ func createTraceIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 }
 
 func traceID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
-	return newIDExprFunc[K, pcommon.TraceID](traceIDFuncName, target)
+	return newIDExprFunc(traceIDFuncName, target, decodeHexToTraceID)
+}
+
+func decodeHexToTraceID(b []byte) (pcommon.TraceID, error) {
+	var id pcommon.TraceID
+	if _, err := hex.Decode(id[:], b); err != nil {
+		return pcommon.TraceID{}, err
+	}
+	return id, nil
 }

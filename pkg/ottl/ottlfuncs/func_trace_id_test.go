@@ -59,7 +59,7 @@ func BenchmarkTraceID(b *testing.B) {
 	b.Run("literal_bytes_get_and_set", func(b *testing.B) {
 		literalBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 		literalGetter := makeLiteralIDGetter(literalBytes)
-		expr := traceID[any](literalGetter)
+		expr := traceID(literalGetter)
 		ctx := b.Context()
 		b.ReportAllocs()
 		b.ResetTimer()

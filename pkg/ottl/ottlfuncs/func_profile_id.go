@@ -4,6 +4,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"encoding/hex"
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -32,5 +33,13 @@ func createProfileIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 }
 
 func profileID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
-	return newIDExprFunc[K, pprofile.ProfileID](profileIDFuncName, target)
+	return newIDExprFunc(profileIDFuncName, target, decodeHexToProfileID)
+}
+
+func decodeHexToProfileID(b []byte) (pprofile.ProfileID, error) {
+	var id pprofile.ProfileID
+	if _, err := hex.Decode(id[:], b); err != nil {
+		return pprofile.ProfileID{}, err
+	}
+	return id, nil
 }

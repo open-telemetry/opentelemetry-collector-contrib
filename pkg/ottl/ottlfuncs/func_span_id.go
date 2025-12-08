@@ -4,6 +4,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"encoding/hex"
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -32,5 +33,13 @@ func createSpanIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 }
 
 func spanID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
-	return newIDExprFunc[K, pcommon.SpanID](spanIDFuncName, target)
+	return newIDExprFunc(spanIDFuncName, target, decodeHexToSpanID)
+}
+
+func decodeHexToSpanID(b []byte) (pcommon.SpanID, error) {
+	var id pcommon.SpanID
+	if _, err := hex.Decode(id[:], b); err != nil {
+		return pcommon.SpanID{}, err
+	}
+	return id, nil
 }

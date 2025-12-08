@@ -5,7 +5,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -28,14 +27,16 @@ type idByteArray interface {
 // newIDExprFunc builds an expression function that accepts either a byte slice
 // of the target length or a hex string twice that size.
 // If the target is a literal getter, the ID is pre-computed once for optimal performance.
-func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
+// We pass the hex decoder function as a parameter to allow implementations to decode directly into the ID type.
+// This reduces allocations.
+func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceLikeGetter[K], hexDecoder func([]byte) (R, error)) ottl.ExprFunc[K] {
 	var zero R
 	idLen := len(zero)
 	idHexLen := idLen * 2
 
 	// Check if target is a literal getter, just grab the raw bytes if so
 	if b, ok := ottl.GetLiteralValue(target); ok {
-		result, err := bytesToID[R](funcName, b, idLen, idHexLen)
+		result, err := bytesToID(funcName, b, idLen, idHexLen, hexDecoder)
 		if err != nil {
 			return func(_ context.Context, _ K) (any, error) {
 				return nil, err
@@ -52,25 +53,24 @@ func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceL
 		if err != nil {
 			return nil, err
 		}
-		return bytesToID[R](funcName, b, idLen, idHexLen)
+		return bytesToID(funcName, b, idLen, idHexLen, hexDecoder)
 	}
 }
 
 // bytesToID converts a byte slice to an ID of the specified type.
 // It accepts either raw bytes of length idLen or hex-encoded bytes of length idHexLen.
-func bytesToID[R idByteArray](funcName string, b []byte, idLen, idHexLen int) (any, error) {
+func bytesToID[R idByteArray](funcName string, b []byte, idLen, idHexLen int, hexDecoder func([]byte) (R, error)) (any, error) {
 	var id R
 	switch len(b) {
 	case idLen:
 		copyToFixedLenID(&id, b)
 		return id, nil
 	case idHexLen:
-		decoded := make([]byte, idLen)
-		if _, err := hex.Decode(decoded, b); err != nil {
+		decoded, err := hexDecoder(b)
+		if err != nil {
 			return nil, fmt.Errorf("%s: %w: %w", funcName, errIDHexDecode, err)
 		}
-		copyToFixedLenID(&id, decoded)
-		return id, nil
+		return decoded, nil
 	default:
 		return nil, fmt.Errorf("%s: %w: expected %d or %d bytes, got %d", funcName, errIDInvalidLength, idLen, idHexLen, len(b))
 	}

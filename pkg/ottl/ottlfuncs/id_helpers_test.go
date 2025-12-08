@@ -17,7 +17,7 @@ const fakeFuncName = "funkyfake"
 
 func Test_newIDExprFunc_rawBytes(t *testing.T) {
 	target := &literalByteGetter[pcommon.SpanID]{value: []byte{1, 2, 3, 4, 5, 6, 7, 8}}
-	expr := newIDExprFunc[any, pcommon.SpanID](fakeFuncName, target)
+	expr := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
 
 	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
@@ -26,7 +26,7 @@ func Test_newIDExprFunc_rawBytes(t *testing.T) {
 
 func Test_newIDExprFunc_hexBytes(t *testing.T) {
 	target := &literalByteGetter[pprofile.ProfileID]{value: []byte("0102030405060708090a0b0c0d0e0f10")}
-	expr := newIDExprFunc[any, pprofile.ProfileID](fakeFuncName, target)
+	expr := newIDExprFunc(fakeFuncName, target, decodeHexToProfileID)
 
 	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
@@ -54,7 +54,7 @@ func Test_newIDExprFunc_errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			target := &literalByteGetter[pcommon.SpanID]{value: tt.value}
-			expr := newIDExprFunc[any, pcommon.SpanID](fakeFuncName, target)
+			expr := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
 
 			result, err := expr(t.Context(), nil)
 
@@ -75,7 +75,7 @@ func (g *literalByteGetter[R]) Get(context.Context, any) ([]byte, error) {
 
 func Test_newIDExprFunc_stringInput(t *testing.T) {
 	target := &literalStringGetter[pcommon.TraceID]{value: "0102030405060708090a0b0c0d0e0f10"}
-	expr := newIDExprFunc[any, pcommon.TraceID](fakeFuncName, target)
+	expr := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
 
 	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
@@ -103,7 +103,7 @@ func Test_newIDExprFunc_stringErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			target := &literalStringGetter[pcommon.TraceID]{value: tt.value}
-			expr := newIDExprFunc[any, pcommon.TraceID](fakeFuncName, target)
+			expr := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
 
 			result, err := expr(t.Context(), nil)
 
