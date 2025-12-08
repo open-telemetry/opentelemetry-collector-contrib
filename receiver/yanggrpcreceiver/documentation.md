@@ -2,16 +2,6 @@
 
 # yanggrpc
 
-## Resource Attributes
-
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cisco.device_type | Cisco device type (e.g., "IOS-XE", "NX-OS", "IOS-XR") | Any Str | true |
-| cisco.encoding_path | YANG model path for the telemetry data | Any Str | true |
-| cisco.node_id | Cisco device node identifier from telemetry message | Any Str | true |
-| cisco.subscription_id | Cisco telemetry subscription identifier | Any Str | true |
-| cisco.yang_module | Discovered YANG module name | Any Str | true |
-
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.
