@@ -3,7 +3,7 @@ type: sshcheck
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    beta: [metrics]
   distributions: [contrib]
   codeowners:
     active: [ishaish103]
