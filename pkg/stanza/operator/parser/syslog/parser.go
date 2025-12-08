@@ -29,13 +29,13 @@ type rawSyslogMessage struct {
 	message string
 }
 
-func (r *rawSyslogMessage) Valid() bool                 { return true }
-func (r *rawSyslogMessage) FacilityMessage() *string    { return nil }
-func (r *rawSyslogMessage) FacilityLevel() *string      { return nil }
-func (r *rawSyslogMessage) SeverityMessage() *string    { return nil }
-func (r *rawSyslogMessage) SeverityLevel() *string      { return nil }
-func (r *rawSyslogMessage) SeverityShortLevel() *string { return nil }
-func (r *rawSyslogMessage) ComputeFromPriority(_ uint8) {}
+func (*rawSyslogMessage) Valid() bool                 { return true }
+func (*rawSyslogMessage) FacilityMessage() *string    { return nil }
+func (*rawSyslogMessage) FacilityLevel() *string      { return nil }
+func (*rawSyslogMessage) SeverityMessage() *string    { return nil }
+func (*rawSyslogMessage) SeverityLevel() *string      { return nil }
+func (*rawSyslogMessage) SeverityShortLevel() *string { return nil }
+func (*rawSyslogMessage) ComputeFromPriority(_ uint8) {}
 func (r *rawSyslogMessage) GetMessage() string          { return r.message }
 
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
@@ -103,7 +103,7 @@ func (p *Parser) parse(value any) (any, error) {
 	case *rfc5424.SyslogMessage:
 		return p.parseRFC5424(message, skipPriHeaderValues)
 	case *rawSyslogMessage:
-		return p.parseRaw(message)
+		return p.parseRaw(message), nil
 	default:
 		return nil, errors.New("parsed value was not rfc3164 or rfc5424 compliant")
 	}
@@ -202,7 +202,7 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 
 // parseRaw will parse a raw syslog message that doesn't conform to RFC3164 or RFC5424.
 // It attempts best-effort timestamp extraction and returns the original message.
-func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) (map[string]any, error) {
+func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) map[string]any {
 	msg := syslogMessage.GetMessage()
 	value := map[string]any{
 		"message": msg,
@@ -213,7 +213,7 @@ func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) (map[string]any, erro
 		value["timestamp"] = *ts
 	}
 
-	return value, nil
+	return value
 }
 
 // Common timestamp formats found in syslog messages
