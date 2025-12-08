@@ -36,7 +36,7 @@ func (*rawSyslogMessage) SeverityMessage() *string    { return nil }
 func (*rawSyslogMessage) SeverityLevel() *string      { return nil }
 func (*rawSyslogMessage) SeverityShortLevel() *string { return nil }
 func (*rawSyslogMessage) ComputeFromPriority(_ uint8) {}
-func (r *rawSyslogMessage) GetMessage() string          { return r.message }
+func (r *rawSyslogMessage) GetMessage() string        { return r.message }
 
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)
