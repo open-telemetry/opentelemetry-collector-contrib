@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest
 
 go 1.24.0
 
@@ -67,3 +67,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector => ../../extension/k8sleaderelector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../k8sconfig
