@@ -37,8 +37,8 @@ func TestScale(t *testing.T) {
 			},
 			args: ScaleArguments{
 				Multiplier: 10.0,
-				Unit: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-					Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+				Unit: ottl.NewTestingOptional[ottl.StringGetter[*ottlmetric.TransformContext]](ottl.StandardStringGetter[*ottlmetric.TransformContext]{
+					Getter: func(context.Context, *ottlmetric.TransformContext) (any, error) {
 						return "kWh", nil
 					},
 				}),
@@ -161,7 +161,7 @@ func TestScale(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := ottlmetric.NewTransformContext(
+			target := ottlmetric.NewTransformContextPtr(
 				tt.valueFunc(),
 				pmetric.NewMetricSlice(),
 				pcommon.NewInstrumentationScope(),
@@ -169,6 +169,7 @@ func TestScale(t *testing.T) {
 				pmetric.NewScopeMetrics(),
 				pmetric.NewResourceMetrics(),
 			)
+			defer target.Close()
 
 			expressionFunc, _ := Scale(tt.args)
 			_, err := expressionFunc(t.Context(), target)

@@ -30,8 +30,8 @@ type signalToMetrics struct {
 	logger                *zap.Logger
 
 	spanMetricDefs    []model.MetricDef[*ottlspan.TransformContext]
-	dpMetricDefs      []model.MetricDef[ottldatapoint.TransformContext]
-	logMetricDefs     []model.MetricDef[ottllog.TransformContext]
+	dpMetricDefs      []model.MetricDef[*ottldatapoint.TransformContext]
+	logMetricDefs     []model.MetricDef[*ottllog.TransformContext]
 	profileMetricDefs []model.MetricDef[ottlprofile.TransformContext]
 
 	component.StartFunc
@@ -102,7 +102,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(m.ResourceMetrics().Len())
-	aggregator := aggregator.NewAggregator[ottldatapoint.TransformContext](processedMetrics)
+	aggregator := aggregator.NewAggregator[*ottldatapoint.TransformContext](processedMetrics)
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {
 		resourceMetric := m.ResourceMetrics().At(i)
 		resourceAttrs := resourceMetric.Resource().Attributes()
@@ -116,13 +116,15 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 					aggregate := func(dp any, dpAttrs pcommon.Map) error {
 						// The transform context is created from original attributes so that the
 						// OTTL expressions are also applied on the original attributes.
-						tCtx := ottldatapoint.NewTransformContext(dp, metric, metrics, scopeMetric.Scope(), resourceMetric.Resource(), scopeMetric, resourceMetric)
+						tCtx := ottldatapoint.NewTransformContextPtr(dp, metric, metrics, scopeMetric.Scope(), resourceMetric.Resource(), scopeMetric, resourceMetric)
 						if md.Conditions != nil {
 							match, err := md.Conditions.Eval(ctx, tCtx)
 							if err != nil {
+								tCtx.Close()
 								return fmt.Errorf("failed to evaluate conditions: %w", err)
 							}
 							if !match {
+								tCtx.Close()
 								sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
 								return nil
 							}
@@ -210,7 +212,7 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(logs.ResourceLogs().Len())
-	aggregator := aggregator.NewAggregator[ottllog.TransformContext](processedMetrics)
+	aggregator := aggregator.NewAggregator[*ottllog.TransformContext](processedMetrics)
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		resourceLog := logs.ResourceLogs().At(i)
 		resourceAttrs := resourceLog.Resource().Attributes()
@@ -227,19 +229,23 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
-					tCtx := ottllog.NewTransformContext(log, scopeLog.Scope(), resourceLog.Resource(), scopeLog, resourceLog)
+					tCtx := ottllog.NewTransformContextPtr(log, scopeLog.Scope(), resourceLog.Resource(), scopeLog, resourceLog)
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
+							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
 						}
 						if !match {
+							tCtx.Close()
 							sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
 							continue
 						}
 					}
 					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
-					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1); err != nil {
+					err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1)
+					tCtx.Close()
+					if err != nil {
 						return err
 					}
 				}
