@@ -29,14 +29,14 @@ type rawSyslogMessage struct {
 	message string
 }
 
-func (r *rawSyslogMessage) Valid() bool                        { return true }
-func (r *rawSyslogMessage) FacilityMessage() *string           { return nil }
-func (r *rawSyslogMessage) FacilityLevel() *string             { return nil }
-func (r *rawSyslogMessage) SeverityMessage() *string           { return nil }
-func (r *rawSyslogMessage) SeverityLevel() *string             { return nil }
-func (r *rawSyslogMessage) SeverityShortLevel() *string        { return nil }
-func (r *rawSyslogMessage) ComputeFromPriority(_ uint8)        {}
-func (r *rawSyslogMessage) GetMessage() string                 { return r.message }
+func (r *rawSyslogMessage) Valid() bool                 { return true }
+func (r *rawSyslogMessage) FacilityMessage() *string    { return nil }
+func (r *rawSyslogMessage) FacilityLevel() *string      { return nil }
+func (r *rawSyslogMessage) SeverityMessage() *string    { return nil }
+func (r *rawSyslogMessage) SeverityLevel() *string      { return nil }
+func (r *rawSyslogMessage) SeverityShortLevel() *string { return nil }
+func (r *rawSyslogMessage) ComputeFromPriority(_ uint8) {}
+func (r *rawSyslogMessage) GetMessage() string          { return r.message }
 
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)
