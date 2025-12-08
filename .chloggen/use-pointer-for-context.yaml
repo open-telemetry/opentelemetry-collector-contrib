@@ -24,14 +24,14 @@ subtext: |
   - `ottlmetric.NewTransformContext` in favor of `ottlmetric.NewTransformContextPtr`;
   - `ottlspan.NewTransformContext` in favor of `ottlspan.NewTransformContextPtr`;
   - `ottlspanevent.NewTransformContext` in favor of `ottlspanevent.NewTransformContextPtr`;
-  - `filtermprocessor.DefaultDataPointFunctions` in favor of `filtermprocessor.DefaultDataPointFunctionsNew`
-  - `filtermprocessor.WithDataPointFunctions` in favor of `filtermprocessor.WithDataPointFunctionsNew`
-  - `filtermprocessor.DefaultLogFunctions` in favor of `filtermprocessor.DefaultLogFunctionsNew`
-  - `filtermprocessor.WithLogFunctions` in favor of `filtermprocessor.WithLogFunctionsNew`
-  - `filtermprocessor.DefaultMetricFunctions` in favor of `filtermprocessor.DefaultMetricFunctionsNew`
-  - `filtermprocessor.WithMetricFunctions` in favor of `filtermprocessor.WithMetricFunctionsNew`
-  - `filtermprocessor.DefaultSpanFunctions` in favor of `filtermprocessor.DefaultSpanFunctionsNew`
-  - `filtermprocessor.WithSpanFunctions` in favor of `filtermprocessor.WithSpanFunctionsNew`
+  - `filterprocessor.DefaultDataPointFunctions` in favor of `filtermprocessor.DefaultDataPointFunctionsNew`
+  - `filterprocessor.WithDataPointFunctions` in favor of `filterprocessor.WithDataPointFunctionsNew`
+  - `filterprocessor.DefaultLogFunctions` in favor of `filterprocessor.DefaultLogFunctionsNew`
+  - `filterprocessor.WithLogFunctions` in favor of `filterprocessor.WithLogFunctionsNew`
+  - `filterprocessor.DefaultMetricFunctions` in favor of `filterprocessor.DefaultMetricFunctionsNew`
+  - `filterprocessor.WithMetricFunctions` in favor of `filterprocessor.WithMetricFunctionsNew`
+  - `filterprocessor.DefaultSpanFunctions` in favor of `filterprocessor.DefaultSpanFunctionsNew`
+  - `filterprocessor.WithSpanFunctions` in favor of `filterprocessor.WithSpanFunctionsNew`
   - `filtermprocessor.DefaultSpanEventFunctions` in favor of `filtermprocessor.DefaultSpanEventFunctionsNew`
   - `filtermprocessor.WithSpanEventFunctions` in favor of `filtermprocessor.WithSpanEventFunctionsNew`
   - `transformprocessor.DefaultDataPointFunctions` in favor of `transformprocessor.DefaultDataPointFunctionsNew`
