@@ -121,7 +121,6 @@ linters:
             - go.opentelemetry.io/otel/semconv/v1.25.0
             - go.opentelemetry.io/otel/semconv/v1.26.0
             - go.opentelemetry.io/otel/semconv/v1.27.0
-            - go.opentelemetry.io/otel/semconv/v1.28.0
             - go.opentelemetry.io/otel/semconv/v1.30.0
             - go.opentelemetry.io/otel/semconv/v1.32.0
             - go.opentelemetry.io/otel/semconv/v1.34.0
