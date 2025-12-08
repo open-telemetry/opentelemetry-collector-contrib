@@ -185,6 +185,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		zap.Any("gvr", object.gvr),
 		zap.Any("mode", object.Mode),
 	)
+	// TODO: when using informers, we should find a way to get just the metadata.name of the namespace, and then filter on that
 	if len(object.ExcludeNamespaces) > 0 {
 		allNamespaces, err := kr.client.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}).List(ctx, metav1.ListOptions{})
 		if err != nil {
