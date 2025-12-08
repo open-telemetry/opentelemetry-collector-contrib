@@ -167,10 +167,33 @@ func TestConsumerConfig(t *testing.T) {
 				MaxPartitionFetchSize: 4096,
 			},
 		},
+		"zero_min_fetch_size": {
+			expected: ConsumerConfig{
+				SessionTimeout:    10 * time.Second,
+				HeartbeatInterval: 3 * time.Second,
+				GroupID:           "otel-collector",
+				InitialOffset:     "latest",
+				AutoCommit: AutoCommitConfig{
+					Enable:   true,
+					Interval: 1 * time.Second,
+				},
+				MinFetchSize:          0,
+				DefaultFetchSize:      1048576,
+				MaxFetchSize:          1048576,
+				MaxFetchWait:          250 * time.Millisecond,
+				MaxPartitionFetchSize: 1048576,
+			},
+		},
 
 		// Invalid configurations
 		"invalid_initial_offset": {
 			expectedErr: "initial_offset should be one of 'latest' or 'earliest'. configured value middle",
+		},
+		"invalid_fetch_size": {
+			expectedErr: "max_fetch_size (100) cannot be less than min_fetch_size (1000)",
+		},
+		"negative_min_fetch_size": {
+			expectedErr: "min_fetch_size (-100) must be non-negative",
 		},
 	})
 }
