@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.0
 	go.opentelemetry.io/collector/component/componenttest v0.141.0
@@ -97,6 +97,8 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector => ../../extension/k8sleaderelector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest => ../../internal/k8sleaderelectortest
 
 retract (
 	v0.76.2
