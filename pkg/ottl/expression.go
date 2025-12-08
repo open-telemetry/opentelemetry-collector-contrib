@@ -248,6 +248,39 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	return result, nil
 }
 
+// PSliceGetSetter is a GetSetter that must interact with a pcommon.Slice
+type PSliceGetSetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (pcommon.Slice, error)
+	Set(ctx context.Context, tCtx K, val pcommon.Slice) error
+}
+
+// StandardPSliceGetSetter is a basic implementation of PSliceGetSetter
+type StandardPSliceGetSetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (pcommon.Slice, error)
+	Setter func(ctx context.Context, tCtx K, val any) error
+}
+
+func (path StandardPSliceGetSetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice, error) {
+	return path.Getter(ctx, tCtx)
+}
+
+func (path StandardPSliceGetSetter[K]) Set(ctx context.Context, tCtx K, val pcommon.Slice) error {
+	return path.Setter(ctx, tCtx, val)
+}
+
+// newStandardPSliceGetSetter creates a new StandardPSliceGetSetter from a GetSetter[K],
+// also validates getter on each use and checks if the GetSetter is a literalGetter.
+func newStandardPSliceGetSetter[K any](getSetter GetSetter[K]) (PSliceGetSetter[K], error) {
+	g, err := newStandardPSliceGetter[K](getSetter)
+	if err != nil {
+		return nil, err
+	}
+	return StandardPSliceGetSetter[K]{
+		Getter: g.Get,
+		Setter: getSetter.Set,
+	}, nil
+}
+
 // PSliceGetter is a Getter that must return a pcommon.Slice.
 type PSliceGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (pcommon.Slice, error)
