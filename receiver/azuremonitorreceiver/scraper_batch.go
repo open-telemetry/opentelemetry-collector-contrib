@@ -17,7 +17,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -44,6 +43,7 @@ func newBatchScraper(conf *Config, settings receiver.Settings) *azureBatchScrape
 		clientOptionsResolver:        newClientOptionsResolver(conf.Cloud),
 		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
 		storageAccountSpecificConfig: newStorageAccountSpecificConfig(conf.Services),
+		loader:                       nil, // sera initialisé dans start
 	}
 }
 
@@ -67,6 +67,7 @@ type azureBatchScraper struct {
 	time                         timeNowIface
 	clientOptionsResolver        ClientOptionsResolver
 	storageAccountSpecificConfig storageAccountSpecificConfig
+	loader                       *SubscriptionLoader
 }
 
 func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetrics.Client, error) {
@@ -84,6 +85,16 @@ func (s *azureBatchScraper) start(_ context.Context, host component.Host) (err e
 	s.resourceTypes = map[string]map[string]*azureType{}
 	s.resources = map[string]map[string]*azureResource{}
 	s.regions = map[string]map[string]struct{}{}
+
+	s.loader = newSubscriptionLoader(
+		s.cred,
+		s.clientOptionsResolver.GetArmSubscriptionsClientOptions(),
+		s.settings.Logger,
+		s.cfg.MetricsBuilderConfig.ResourceAttributes,
+		s.cfg.CacheResources,
+		s.cfg.DiscoverSubscriptions,
+		s.cfg.SubscriptionIDs,
+	)
 
 	return err
 }
@@ -165,76 +176,16 @@ func (s *azureBatchScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	return resultMetrics, nil
 }
 
-// TODO: duplicate
 func (s *azureBatchScraper) getSubscriptions(ctx context.Context) {
 	if time.Since(s.subscriptionsUpdated).Seconds() < s.cfg.CacheResources {
 		return
 	}
-
-	// if subscriptions discovery is enabled, we'll need a client
-	armSubscriptionClient, clientErr := armsubscriptions.NewClient(s.cred, s.clientOptionsResolver.GetArmSubscriptionsClientOptions())
-	if clientErr != nil {
-		s.settings.Logger.Error("failed to initialize the client to get Azure Subscriptions", zap.Error(clientErr))
-		return
-	}
-
-	// Make a special case for when we only have subscription ids configured (discovery disabled)
-	if !s.cfg.DiscoverSubscriptions {
-		for _, subID := range s.cfg.SubscriptionIDs {
-			// we don't need additional info,
-			// => It simply load the subscription id
-			if !s.cfg.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled {
-				s.loadSubscription(azureSubscription{
-					SubscriptionID: subID,
-				})
-				continue
-			}
-
-			// We need additional info,
-			// => It makes some get requests
-			resp, err := armSubscriptionClient.Get(ctx, subID, &armsubscriptions.ClientGetOptions{})
-			if err != nil {
-				s.settings.Logger.Error("failed to get Azure Subscription", zap.String("subscription_id", subID), zap.Error(err))
-				return
-			}
-			s.loadSubscription(azureSubscription{
-				SubscriptionID: *resp.SubscriptionID,
-				DisplayName:    *resp.DisplayName,
-			})
-		}
-		s.subscriptionsUpdated = time.Now()
-		return
-	}
-
-	opts := &armsubscriptions.ClientListOptions{}
-	pager := armSubscriptionClient.NewListPager(opts)
-
-	existingSubscriptions := map[string]void{}
-	for id := range s.subscriptions {
-		existingSubscriptions[id] = void{}
-	}
-
-	for pager.More() {
-		nextResult, err := pager.NextPage(ctx)
-		if err != nil {
-			s.settings.Logger.Error("failed to get Azure Subscriptions", zap.Error(err))
-			return
-		}
-
-		for _, subscription := range nextResult.Value {
-			s.loadSubscription(azureSubscription{
-				SubscriptionID: *subscription.SubscriptionID,
-				DisplayName:    *subscription.DisplayName,
-			})
-			delete(existingSubscriptions, *subscription.SubscriptionID)
-		}
-	}
-	if len(existingSubscriptions) > 0 {
-		for idToDelete := range existingSubscriptions {
-			s.unloadSubscription(idToDelete)
-		}
-	}
-
+	s.subscriptions = s.loader.loadSubscriptions(
+		ctx,
+		s.subscriptions,
+		s.loadSubscription,
+		s.unloadSubscription,
+	)
 	s.subscriptionsUpdated = time.Now()
 }
 
