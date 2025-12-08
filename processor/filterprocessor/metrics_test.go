@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
@@ -550,11 +551,12 @@ var (
 
 func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
-		name             string
-		conditions       MetricFilters
-		filterEverything bool
-		want             func(md pmetric.Metrics)
-		errorMode        ottl.ErrorMode
+		name              string
+		conditions        MetricFilters
+		contextConditions []common.ContextConditions
+		filterEverything  bool
+		want              func(md pmetric.Metrics)
+		errorMode         ottl.ErrorMode
 	}{
 		{
 			name: "drop resource",
@@ -771,10 +773,18 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
 		},
+		{
+			name: "with context conditions",
+			contextConditions: []common.ContextConditions{
+				{Conditions: []string{`not IsMatch(metric.name, ".*")`}},
+			},
+			want:      func(_ pmetric.Metrics) {},
+			errorMode: ottl.IgnoreError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode, metricFunctions: defaultMetricFunctionsMap()}
+			cfg := &Config{Metrics: tt.conditions, MetricConditions: tt.contextConditions, ErrorMode: tt.errorMode, metricFunctions: defaultMetricFunctionsMap()}
 			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
