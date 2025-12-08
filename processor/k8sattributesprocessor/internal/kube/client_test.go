@@ -35,7 +35,7 @@ import (
 )
 
 func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-	return fake.NewSimpleClientset(), nil
+	return fake.NewClientset(), nil
 }
 
 func newPodIdentifier(from, name, value string) PodIdentifier {
