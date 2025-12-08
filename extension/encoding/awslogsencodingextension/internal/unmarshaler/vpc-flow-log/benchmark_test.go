@@ -36,7 +36,7 @@ func createVPCFlowLogContent(b *testing.B, filename string, nLogs int) []byte {
 
 func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 	// each log line of this file is around 80B
-	filename := "./testdata/valid_vpc_flow_log.log"
+	filename := "./testdata/valid_vpc_flow_log_single.log"
 
 	tests := map[string]struct {
 		nLogs int

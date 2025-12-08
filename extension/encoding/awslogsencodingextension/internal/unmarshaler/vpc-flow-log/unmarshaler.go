@@ -115,7 +115,7 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 
 	if line[0] == '{' {
 		// Dealing with a JSON logs, so check for CW bound trigger
-		return v.fromCWTrigger(v.cfg.parsedFormat, line)
+		return v.fromCloudWatch(v.cfg.parsedFormat, line)
 	}
 
 	// This is S3 bound data hence expect first line to have the fields
@@ -124,6 +124,7 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 	return v.fromS3(fields, *bufReader)
 }
 
+// fromS3 expects VPC logs from S3 in plain text format
 func (v *vpcFlowLogUnmarshaler) fromS3(fields []string, reader bufio.Reader) (plog.Logs, error) {
 	logs, resourceLogs, scopeLogs := v.createLogs()
 	for {
@@ -144,7 +145,8 @@ func (v *vpcFlowLogUnmarshaler) fromS3(fields []string, reader bufio.Reader) (pl
 	return logs, nil
 }
 
-func (v *vpcFlowLogUnmarshaler) fromCWTrigger(fields []string, cwContent []byte) (plog.Logs, error) {
+// fromCWTrigger expects VPC logs from CloudWatch Logs subscription filter trigger
+func (v *vpcFlowLogUnmarshaler) fromCloudWatch(fields []string, cwContent []byte) (plog.Logs, error) {
 	var cwLog events.CloudwatchLogsData
 	err := gojson.NewDecoder(bytes.NewReader(cwContent)).Decode(&cwLog)
 	if err != nil {

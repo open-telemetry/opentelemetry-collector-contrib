@@ -62,15 +62,21 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 		featureGateEnabled   bool
 	}{
 		{
-			name:                 "Valid VPC flow log from S3",
-			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log.log"),
-			logsExpectedFilename: "valid_vpc_flow_log_expected.yaml",
+			name:                 "Valid VPC flow log from S3 - single logs",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_single.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_single_expected.yaml",
+			featureGateEnabled:   false,
+		},
+		{
+			name:                 "Valid VPC flow log from S3 - multi logs",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_multi.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_expected_multi.yaml",
 			featureGateEnabled:   false,
 		},
 		{
 			name:                 "Valid VPC flow log from S3 with ISO8601 timestamps",
-			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log.log"),
-			logsExpectedFilename: "valid_vpc_flow_log_expected_iso8601.yaml",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_multi.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_expected_multi_iso8601.yaml",
 			featureGateEnabled:   true,
 		},
 		{
@@ -118,6 +124,9 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 				require.ErrorContains(t, err, test.expectedErr)
 				return
 			}
+
+			// To generate the golden files, uncomment the following line:
+			// golden.WriteLogsToFile(filepath.Join(dir, test.logsExpectedFilename), logs)
 
 			require.NoError(t, err)
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.logsExpectedFilename))
