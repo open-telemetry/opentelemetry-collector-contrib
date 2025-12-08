@@ -61,6 +61,72 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 
 	cases := []Case{
 		{
+			"NoneProtocolWithRFC5424Timestamp",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `2015-08-05T21:58:59.693Z my custom syslog message that doesn't match any RFC`,
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `2015-08-05T21:58:59.693Z my custom syslog message that doesn't match any RFC`,
+				},
+				Body: `2015-08-05T21:58:59.693Z my custom syslog message that doesn't match any RFC`,
+			},
+			true,
+			true,
+		},
+		{
+			"NoneProtocolWithRFC3164Timestamp",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				cfg.Location = location["utc"].String()
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: fmt.Sprintf("%s my custom syslog message", ts.Format("Jan _2 15:04:05")),
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 0, location["utc"]),
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": fmt.Sprintf("%s my custom syslog message", ts.Format("Jan _2 15:04:05")),
+				},
+				Body: fmt.Sprintf("%s my custom syslog message", ts.Format("Jan _2 15:04:05")),
+			},
+			true,
+			true,
+		},
+		{
+			"NoneProtocolNoTimestamp",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `my custom syslog message without any timestamp`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `my custom syslog message without any timestamp`,
+				},
+				Body: `my custom syslog message without any timestamp`,
+			},
+			true,
+			true,
+		},
+		{
 			"RFC3164SkipPriAbsent",
 			func() *syslog.Config {
 				cfg := basicConfig()
