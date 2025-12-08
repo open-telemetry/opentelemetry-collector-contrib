@@ -1422,7 +1422,7 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		statements         []common.ContextStatements
 		wantErrorWith      string
 		spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
-		spanEventFunctions map[string]ottl.Factory[ottlspanevent.TransformContext]
+		spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
 	}
 
 	tests := []testCase{
@@ -1461,9 +1461,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 				},
 			},
 			spanFunctions: DefaultSpanFunctions,
-			spanEventFunctions: map[string]ottl.Factory[ottlspanevent.TransformContext]{
+			spanEventFunctions: map[string]ottl.Factory[*ottlspanevent.TransformContext]{
 				"set":               DefaultSpanEventFunctions["set"],
-				"TestSpanEventFunc": NewTestSpanEventFuncFactory[ottlspanevent.TransformContext](),
+				"TestSpanEventFunc": NewTestSpanEventFuncFactory[*ottlspanevent.TransformContext](),
 			},
 		},
 		{

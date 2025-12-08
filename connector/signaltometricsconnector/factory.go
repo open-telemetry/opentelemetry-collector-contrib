@@ -82,10 +82,10 @@ func createMetricsToMetrics(
 		return nil, fmt.Errorf("failed to create OTTL statement parser for datapoints: %w", err)
 	}
 
-	metricDefs := make([]model.MetricDef[ottldatapoint.TransformContext], 0, len(c.Datapoints))
+	metricDefs := make([]model.MetricDef[*ottldatapoint.TransformContext], 0, len(c.Datapoints))
 	for i := range c.Datapoints {
 		info := c.Datapoints[i]
-		var md model.MetricDef[ottldatapoint.TransformContext]
+		var md model.MetricDef[*ottldatapoint.TransformContext]
 		if err := md.FromMetricInfo(info, parser, set.TelemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to parse provided metric information; %w", err)
 		}
@@ -114,10 +114,10 @@ func createLogsToMetrics(
 		return nil, fmt.Errorf("failed to create OTTL statement parser for logs: %w", err)
 	}
 
-	metricDefs := make([]model.MetricDef[ottllog.TransformContext], 0, len(c.Logs))
+	metricDefs := make([]model.MetricDef[*ottllog.TransformContext], 0, len(c.Logs))
 	for i := range c.Logs {
 		info := c.Logs[i]
-		var md model.MetricDef[ottllog.TransformContext]
+		var md model.MetricDef[*ottllog.TransformContext]
 		if err := md.FromMetricInfo(info, parser, set.TelemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to parse provided metric information; %w", err)
 		}

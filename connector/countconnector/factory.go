@@ -64,9 +64,9 @@ func createTracesToMetrics(
 		spanMetricDefs[name] = md
 	}
 
-	spanEventMetricDefs := make(map[string]metricDef[ottlspanevent.TransformContext], len(c.SpanEvents))
+	spanEventMetricDefs := make(map[string]metricDef[*ottlspanevent.TransformContext], len(c.SpanEvents))
 	for name, info := range c.SpanEvents {
-		md := metricDef[ottlspanevent.TransformContext]{
+		md := metricDef[*ottlspanevent.TransformContext]{
 			desc:  info.Description,
 			attrs: info.Attributes,
 		}
@@ -94,9 +94,9 @@ func createMetricsToMetrics(
 ) (connector.Metrics, error) {
 	c := cfg.(*Config)
 
-	metricMetricDefs := make(map[string]metricDef[ottlmetric.TransformContext], len(c.Metrics))
+	metricMetricDefs := make(map[string]metricDef[*ottlmetric.TransformContext], len(c.Metrics))
 	for name, info := range c.Metrics {
-		md := metricDef[ottlmetric.TransformContext]{
+		md := metricDef[*ottlmetric.TransformContext]{
 			desc: info.Description,
 		}
 		if len(info.Conditions) > 0 {
@@ -107,9 +107,9 @@ func createMetricsToMetrics(
 		metricMetricDefs[name] = md
 	}
 
-	dataPointMetricDefs := make(map[string]metricDef[ottldatapoint.TransformContext], len(c.DataPoints))
+	dataPointMetricDefs := make(map[string]metricDef[*ottldatapoint.TransformContext], len(c.DataPoints))
 	for name, info := range c.DataPoints {
-		md := metricDef[ottldatapoint.TransformContext]{
+		md := metricDef[*ottldatapoint.TransformContext]{
 			desc:  info.Description,
 			attrs: info.Attributes,
 		}
@@ -137,9 +137,9 @@ func createLogsToMetrics(
 ) (connector.Logs, error) {
 	c := cfg.(*Config)
 
-	metricDefs := make(map[string]metricDef[ottllog.TransformContext], len(c.Logs))
+	metricDefs := make(map[string]metricDef[*ottllog.TransformContext], len(c.Logs))
 	for name, info := range c.Logs {
-		md := metricDef[ottllog.TransformContext]{
+		md := metricDef[*ottllog.TransformContext]{
 			desc:  info.Description,
 			attrs: info.Attributes,
 		}

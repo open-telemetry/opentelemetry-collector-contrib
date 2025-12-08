@@ -25,7 +25,7 @@ import (
 type filterSpanProcessor struct {
 	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
 	skipSpanExpr      expr.BoolExpr[*ottlspan.TransformContext]
-	skipSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
+	skipSpanEventExpr expr.BoolExpr[*ottlspanevent.TransformContext]
 	telemetry         *filterTelemetry
 	logger            *zap.Logger
 }
@@ -129,7 +129,9 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 				}
 				if fsp.skipSpanEventExpr != nil {
 					span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
-						skip, err := fsp.skipSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvent, span, scope, resource, ss, rs))
+						tCtx := ottlspanevent.NewTransformContextPtr(spanEvent, span, scope, resource, ss, rs)
+						skip, err := fsp.skipSpanEventExpr.Eval(ctx, tCtx)
+						tCtx.Close()
 						if err != nil {
 							errors = multierr.Append(errors, err)
 							return false

@@ -90,7 +90,12 @@ func NewTransformContextPtr(span ptrace.Span, instrumentationScope pcommon.Instr
 // Close the current TransformContext.
 // After this function returns this instance cannot be used.
 func (tCtx *TransformContext) Close() {
+	tCtx.span = ptrace.Span{}
+	tCtx.instrumentationScope = pcommon.InstrumentationScope{}
+	tCtx.resource = pcommon.Resource{}
 	tCtx.cache.Clear()
+	tCtx.scopeSpans = ptrace.ScopeSpans{}
+	tCtx.resourceSpans = ptrace.ResourceSpans{}
 	tcPool.Put(tCtx)
 }
 
