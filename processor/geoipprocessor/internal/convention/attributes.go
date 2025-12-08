@@ -3,7 +3,7 @@
 
 package conventions // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/convention"
 
-import semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+import semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 const (
 	// AttributeGeoCityName represents the attribute name for the city name in geographical data.

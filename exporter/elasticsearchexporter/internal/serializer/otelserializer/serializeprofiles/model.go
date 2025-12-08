@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // EcsVersionString is the value for the `ecs.version` metrics field.
