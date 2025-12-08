@@ -161,14 +161,7 @@ func TestScale(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := ottlmetric.NewTransformContextPtr(
-				tt.valueFunc(),
-				pmetric.NewMetricSlice(),
-				pcommon.NewInstrumentationScope(),
-				pcommon.NewResource(),
-				pmetric.NewScopeMetrics(),
-				pmetric.NewResourceMetrics(),
-			)
+			target := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.valueFunc())
 			defer target.Close()
 
 			expressionFunc, _ := Scale(tt.args)

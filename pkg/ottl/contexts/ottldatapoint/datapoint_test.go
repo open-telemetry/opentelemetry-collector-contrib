@@ -80,7 +80,7 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := NewTransformContextPtr(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -512,7 +512,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := NewTransformContextPtr(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -960,7 +960,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
 
-			ctx := NewTransformContextPtr(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), histogramDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -1492,7 +1492,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
-			ctx := NewTransformContextPtr(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), expoHistogramDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -1925,7 +1925,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
 
-			ctx := NewTransformContextPtr(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), summaryDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -2107,7 +2107,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 			metric := createMetricTelemetry()
 
-			ctx := NewTransformContextPtr(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, pmetric.NewNumberDataPoint())
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -2228,23 +2228,15 @@ func Test_ParseEnum_False(t *testing.T) {
 }
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
-	resource := pcommon.NewResource()
-	resource.Attributes().PutStr("foo", "bar")
+	rm := pmetric.NewResourceMetrics()
+	rm.Resource().Attributes().PutStr("foo", "bar")
 
-	metric := pmetric.NewMetric()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("instrumentation_scope")
+	metric := sm.Metrics().AppendEmpty()
 	metric.SetName("metric")
 
-	instrumentationScope := pcommon.NewInstrumentationScope()
-	instrumentationScope.SetName("instrumentation_scope")
-
-	ctx := NewTransformContextPtr(
-		pmetric.NewNumberDataPoint(),
-		metric,
-		pmetric.NewMetricSlice(),
-		instrumentationScope,
-		resource,
-		pmetric.NewScopeMetrics(),
-		pmetric.NewResourceMetrics())
+	ctx := NewTransformContextPtr(rm, sm, metric, pmetric.NewNumberDataPoint())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -2276,32 +2268,32 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		{
 			name:     "metric",
 			path:     &pathtest.Path[*TransformContext]{N: "metric", NextPath: &pathtest.Path[*TransformContext]{N: "name"}},
-			expected: metric.Name(),
+			expected: "metric",
 		},
 		{
 			name:     "metric with context",
 			path:     &pathtest.Path[*TransformContext]{C: "metric", N: "name"},
-			expected: metric.Name(),
+			expected: "metric",
 		},
 		{
 			name:     "instrumentation_scope",
 			path:     &pathtest.Path[*TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[*TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			expected: "instrumentation_scope",
 		},
 		{
 			name:     "instrumentation_scope with context",
 			path:     &pathtest.Path[*TransformContext]{C: "instrumentation_scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			expected: "instrumentation_scope",
 		},
 		{
 			name:     "scope",
 			path:     &pathtest.Path[*TransformContext]{N: "scope", NextPath: &pathtest.Path[*TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			expected: "instrumentation_scope",
 		},
 		{
 			name:     "scope with context",
 			path:     &pathtest.Path[*TransformContext]{C: "scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			expected: "instrumentation_scope",
 		},
 	}
 
