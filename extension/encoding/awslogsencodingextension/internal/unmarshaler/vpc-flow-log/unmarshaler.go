@@ -107,37 +107,57 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 	// use buffered reader for efficiency and to avoid any size restrictions
 	bufReader := bufio.NewReader(reader)
 
-	line, _, err := bufReader.ReadLine()
+	b, err := bufReader.ReadByte()
 	if err != nil {
-		// Nothing that can be handled
-		return plog.Logs{}, fmt.Errorf("error reading first line of VPC logs: %w", err)
+		return plog.Logs{}, fmt.Errorf("failed to read first byte: %w", err)
 	}
 
-	if line[0] == '{' {
+	err = bufReader.UnreadByte()
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unread first byte: %w", err)
+	}
+
+	if b == '{' {
+		// Read all bytes and forward to fromCloudWatch
+		line, err := io.ReadAll(bufReader)
+		if err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to read cloudwatch bound VPC flow log: %w", err)
+		}
+
 		// Dealing with a JSON logs, so check for CW bound trigger
 		return v.fromCloudWatch(v.cfg.parsedFormat, line)
 	}
 
-	// This is S3 bound data hence expect first line to have the fields
-	// Since we already read the first line, we can split and pass it
-	fields := strings.Split(string(line), " ")
-	return v.fromS3(fields, *bufReader)
+	// This is S3 bound data, so use fromS3
+	return v.fromS3(bufReader)
 }
 
 // fromS3 expects VPC logs from S3 in plain text format
-func (v *vpcFlowLogUnmarshaler) fromS3(fields []string, reader bufio.Reader) (plog.Logs, error) {
+func (v *vpcFlowLogUnmarshaler) fromS3(reader *bufio.Reader) (plog.Logs, error) {
+	var err error
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to read first line of VPC logs from S3: %w", err)
+	}
+
+	fields := strings.Split(strings.TrimSpace(line), " ")
 	logs, resourceLogs, scopeLogs := v.createLogs()
 	for {
-		line, _, err := reader.ReadLine()
+		line, err = reader.ReadString('\n')
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				// Reached the end of the file
+				// Reached the end of the file, add the last line and exit
+				// EOF is ignored as we have already processed all log lines
+				if addLogErr := v.addToLogs(resourceLogs, scopeLogs, fields, strings.TrimSpace(line)); addLogErr != nil {
+					return plog.Logs{}, addLogErr
+				}
 				break
 			}
+
 			return plog.Logs{}, fmt.Errorf("error reading VPC logs: %w", err)
 		}
 
-		if err := v.addToLogs(resourceLogs, scopeLogs, fields, string(line)); err != nil {
+		if err := v.addToLogs(resourceLogs, scopeLogs, fields, strings.TrimSpace(line)); err != nil {
 			return plog.Logs{}, err
 		}
 	}
