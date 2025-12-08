@@ -18,19 +18,18 @@ type ValuePoint struct {
 }
 
 type HistogramPoint struct {
-	Count   uint64
-	Sum     float64
-	Buckets []uint64
+	Count        uint64
+	Sum          float64
+	BucketBounds []float64
+	BucketCounts []uint64
 }
 
 func (point *HistogramPoint) Clone() HistogramPoint {
-	bucketValues := make([]uint64, len(point.Buckets))
-	copy(bucketValues, point.Buckets)
-
 	return HistogramPoint{
-		Count:   point.Count,
-		Sum:     point.Sum,
-		Buckets: bucketValues,
+		Count:        point.Count,
+		Sum:          point.Sum,
+		BucketBounds: slices.Clone(point.BucketBounds),
+		BucketCounts: slices.Clone(point.BucketCounts),
 	}
 }
 
@@ -63,6 +62,7 @@ func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
 		zeroCount += bucketCount
 	}
 	buckets.BucketCounts = buckets.BucketCounts[trimmed:]
+	buckets.Offset += int32(trimmed)
 	return zeroCount
 }
 

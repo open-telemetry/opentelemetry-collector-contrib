@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"slices"
 	"sync"
 	"time"
 
@@ -159,7 +160,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			value.Sum = prevValue.Sum
 		}
 
-		if len(value.Buckets) != len(prevValue.Buckets) {
+		if len(value.BucketCounts) != len(prevValue.BucketCounts) || !slices.Equal(value.BucketBounds, prevValue.BucketBounds) {
 			valid = false
 		}
 
@@ -169,8 +170,8 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		if valid && delta.Count >= prevValue.Count {
 			delta.Count -= prevValue.Count
 			delta.Sum -= prevValue.Sum
-			for index, prevBucket := range prevValue.Buckets {
-				delta.Buckets[index] -= prevBucket
+			for index, prevBucket := range prevValue.BucketCounts {
+				delta.BucketCounts[index] -= prevBucket
 			}
 		}
 
@@ -195,7 +196,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			// the greatest i such that 2**(2**(-scale) * index) < threshold
 			scaleFactor := math.Ldexp(math.Log2E, int(prevValue.Scale))
 			thresholdBucket := int32(math.Ceil(math.Log(value.ZeroThreshold)*scaleFactor) - 1)
-			// If the threshold falls in the middle of a populated bucket the threshold falls into is populated in the old histogram,
+			// If the bucket the threshold falls into is populated in the old histogram,
 			// then it must also be populated in the new histogram, which has ill-defined semantics,
 			// so we will assume this doesn't happen instead of adjusting the threshold as recommended in the spec.
 			prevValue.ZeroCount += prevValue.Positive.TrimZeros(thresholdBucket)
