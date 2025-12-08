@@ -43,7 +43,7 @@ func selectors() (labels.Selector, fields.Selector) {
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
 func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _ time.Duration) (kube.Client, error) {
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 
 	ls, fs := selectors()
 	return &fakeClient{
