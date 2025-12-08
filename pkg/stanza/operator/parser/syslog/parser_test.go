@@ -111,7 +111,7 @@ func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 }
 
 func TestSyslogProtocolConfig(t *testing.T) {
-	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164"} {
+	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164", "None", "none", "NONE"} {
 		cfg := basicConfig()
 		cfg.Protocol = proto
 		set := componenttest.NewNopTelemetrySettings()
@@ -119,7 +119,7 @@ func TestSyslogProtocolConfig(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	for _, proto := range []string{"RFC5424a", "rfc5424b", "RFC3164c", "rfc3164d"} {
+	for _, proto := range []string{"RFC5424a", "rfc5424b", "RFC3164c", "rfc3164d", "nonex"} {
 		cfg := basicConfig()
 		cfg.Protocol = proto
 		set := componenttest.NewNopTelemetrySettings()

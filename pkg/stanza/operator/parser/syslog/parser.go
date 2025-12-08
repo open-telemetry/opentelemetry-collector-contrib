@@ -23,6 +23,21 @@ import (
 
 var priRegex = regexp.MustCompile(`<\d{1,3}>`)
 
+// rawSyslogMessage is a simple container for raw syslog data that doesn't conform
+// to RFC3164 or RFC5424 formats. It implements sl.Message interface.
+type rawSyslogMessage struct {
+	message string
+}
+
+func (r *rawSyslogMessage) Valid() bool                        { return true }
+func (r *rawSyslogMessage) FacilityMessage() *string           { return nil }
+func (r *rawSyslogMessage) FacilityLevel() *string             { return nil }
+func (r *rawSyslogMessage) SeverityMessage() *string           { return nil }
+func (r *rawSyslogMessage) SeverityLevel() *string             { return nil }
+func (r *rawSyslogMessage) SeverityShortLevel() *string        { return nil }
+func (r *rawSyslogMessage) ComputeFromPriority(_ uint8)        {}
+func (r *rawSyslogMessage) GetMessage() string                 { return r.message }
+
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)
 
@@ -43,6 +58,11 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 // Process will parse an entry field as syslog.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+	// For 'none' protocol, use raw postprocessing which handles optional timestamp
+	if p.protocol == None {
+		return p.ProcessWithCallback(ctx, entry, p.parse, postprocessRaw)
+	}
+
 	// if pri header is missing and this is an expected behavior then facility and severity values should be skipped.
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
 		bytes, err := toBytes(entry.Body)
@@ -82,6 +102,8 @@ func (p *Parser) parse(value any) (any, error) {
 		return p.parseRFC3164(message, skipPriHeaderValues)
 	case *rfc5424.SyslogMessage:
 		return p.parseRFC5424(message, skipPriHeaderValues)
+	case *rawSyslogMessage:
+		return p.parseRaw(message)
 	default:
 		return nil, errors.New("parsed value was not rfc3164 or rfc5424 compliant")
 	}
@@ -115,6 +137,10 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 				return rfc5424.NewMachine().Parse(input)
 			}, nil
 		}
+	case None:
+		return func(input []byte) (sl.Message, error) {
+			return &rawSyslogMessage{message: string(input)}, nil
+		}, nil
 
 	default:
 		return nil, fmt.Errorf("invalid protocol %s", p.protocol)
@@ -172,6 +198,89 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 	}
 
 	return p.toSafeMap(value)
+}
+
+// parseRaw will parse a raw syslog message that doesn't conform to RFC3164 or RFC5424.
+// It attempts best-effort timestamp extraction and returns the original message.
+func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) (map[string]any, error) {
+	msg := syslogMessage.GetMessage()
+	value := map[string]any{
+		"message": msg,
+	}
+
+	// Attempt best-effort timestamp extraction
+	if ts := p.extractTimestamp(msg); ts != nil {
+		value["timestamp"] = *ts
+	}
+
+	return value, nil
+}
+
+// Common timestamp formats found in syslog messages
+var timestampFormats = []string{
+	// RFC3339 and variations (RFC5424 style)
+	time.RFC3339Nano,
+	time.RFC3339,
+	"2006-01-02T15:04:05.999999Z07:00",
+	"2006-01-02T15:04:05Z07:00",
+	"2006-01-02T15:04:05.999999",
+	"2006-01-02T15:04:05",
+	// RFC3164 BSD style (month day time)
+	"Jan _2 15:04:05",
+	"Jan 02 15:04:05",
+	// Common variations
+	"2006-01-02 15:04:05.999999",
+	"2006-01-02 15:04:05",
+	"2006/01/02 15:04:05",
+	"01/02/2006 15:04:05",
+	"02/Jan/2006:15:04:05 -0700",
+	"02/Jan/2006:15:04:05",
+}
+
+// Regex patterns to help extract potential timestamp substrings
+var timestampPatterns = []*regexp.Regexp{
+	// RFC5424 style: 2015-08-05T21:58:59.693Z or with timezone offset
+	regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?`),
+	// RFC3164 BSD style: Jan  5 15:04:05 or Jan 05 15:04:05
+	regexp.MustCompile(`[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}`),
+	// ISO date with space: 2006-01-02 15:04:05
+	regexp.MustCompile(`\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?`),
+	// Common log format: 02/Jan/2006:15:04:05 -0700
+	regexp.MustCompile(`\d{2}/[A-Z][a-z]{2}/\d{4}:\d{2}:\d{2}:\d{2}(?:\s+[+-]\d{4})?`),
+}
+
+// extractTimestamp attempts to extract a timestamp from the raw message using common formats.
+func (p *Parser) extractTimestamp(msg string) *time.Time {
+	for _, pattern := range timestampPatterns {
+		if match := pattern.FindString(msg); match != "" {
+			if ts := p.tryParseTimestamp(match); ts != nil {
+				return ts
+			}
+		}
+	}
+	return nil
+}
+
+// tryParseTimestamp attempts to parse the given string as a timestamp using known formats.
+func (p *Parser) tryParseTimestamp(s string) *time.Time {
+	for _, format := range timestampFormats {
+		if ts, err := time.Parse(format, s); err == nil {
+			// For formats without year (like RFC3164), use current year
+			if ts.Year() == 0 {
+				now := time.Now()
+				if p.location != nil {
+					now = now.In(p.location)
+				}
+				ts = ts.AddDate(now.Year(), 0, 0)
+			}
+			// Apply location if available
+			if p.location != nil && ts.Location() == time.UTC {
+				ts = time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), ts.Nanosecond(), p.location)
+			}
+			return &ts
+		}
+	}
+	return nil
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
@@ -272,6 +381,18 @@ func cleanupTimestamp(e *entry.Entry) error {
 
 func postprocessWithoutPriHeader(e *entry.Entry) error {
 	return cleanupTimestamp(e)
+}
+
+// postprocessRaw handles post-processing for raw syslog messages where timestamp may be absent.
+func postprocessRaw(e *entry.Entry) error {
+	timestampField := entry.NewAttributeField("timestamp")
+	// Try to get and set the timestamp if it exists
+	if ts, ok := timestampField.Delete(e); ok {
+		if timestamp, ok := ts.(time.Time); ok {
+			e.Timestamp = timestamp
+		}
+	}
+	return nil
 }
 
 func postprocess(e *entry.Entry) error {
