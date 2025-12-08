@@ -183,6 +183,7 @@ components:
         - kubeletstats
         - libhoney
         - loki
+        - macosunifiedlogging
         - memcached
         - mongodb
         - mongodbatlas
