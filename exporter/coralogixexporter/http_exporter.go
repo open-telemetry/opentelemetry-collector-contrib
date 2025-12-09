@@ -46,7 +46,7 @@ func (e *httpError) Error() string {
 
 func newHTTPLogsExporter(client *http.Client, config *Config) httpLogsExporter {
 	// TODO: Refactor tests and remove redundant assignment, already done in Unmarshal.
-	// See TODO
+	// See github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
 	endpoint := config.Logs.Endpoint
 	if isEmpty(endpoint) {
 		endpoint = ensureHTTPScheme(setDomainGrpcSettings(config))
