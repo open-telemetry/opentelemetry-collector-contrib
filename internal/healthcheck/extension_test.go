@@ -34,6 +34,8 @@ func TestComponentStatus(t *testing.T) {
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 	defer func() {
+		// Use Background context for shutdown in defer to avoid cancellation issues
+		//nolint:usetesting // defer functions may run after test context is cancelled
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		require.NoError(t, ext.Shutdown(ctx))
@@ -86,7 +88,7 @@ func TestComponentStatus(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.NotReady())
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	require.NoError(t, ext.Shutdown(ctx))
 
@@ -120,6 +122,8 @@ func TestNotifyConfig(t *testing.T) {
 
 	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 	defer func() {
+		// Use Background context for shutdown in defer to avoid cancellation issues
+		//nolint:usetesting // defer functions may run after test context is cancelled
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		require.NoError(t, ext.Shutdown(ctx))
@@ -166,7 +170,7 @@ func TestShutdown(t *testing.T) {
 		// Get address already in use here
 		require.Error(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 		require.NoError(t, ext.Shutdown(ctx))
 	})

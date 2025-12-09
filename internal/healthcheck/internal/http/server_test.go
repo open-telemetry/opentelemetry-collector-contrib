@@ -2945,22 +2945,24 @@ func TestStatus(t *testing.T) {
 				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthConfig)),
 			)
 
-		require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-			require.NoError(t, server.Shutdown(ctx))
-		}()
+			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				// Use Background context for shutdown in defer to avoid cancellation issues
+				//nolint:usetesting // defer functions may run after test context is cancelled
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				require.NoError(t, server.Shutdown(ctx))
+			}()
 
-		var url string
-		if tc.legacyConfig.UseV2 {
-			url = fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Status.Path)
-		} else {
-			url = fmt.Sprintf("http://%s%s", tc.legacyConfig.Endpoint, tc.legacyConfig.Path)
-		}
+			var url string
+			if tc.legacyConfig.UseV2 {
+				url = fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Status.Path)
+			} else {
+				url = fmt.Sprintf("http://%s%s", tc.legacyConfig.Endpoint, tc.legacyConfig.Path)
+			}
 
-		client := &http.Client{}
-		defer client.CloseIdleConnections()
+			client := &http.Client{}
+			defer client.CloseIdleConnections()
 
 			for _, ts := range tc.teststeps {
 				if ts.step != nil {
@@ -2972,46 +2974,46 @@ func TestStatus(t *testing.T) {
 					stepURL = fmt.Sprintf("%s?%s", stepURL, ts.queryParams)
 				}
 
-			var err error
-			var resp *http.Response
-			var body []byte
+				var err error
+				var resp *http.Response
+				var body []byte
 
-			if ts.eventually {
-				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
-					localResp, localErr := client.Get(stepURL)
-					require.NoError(tt, localErr)
-					defer localResp.Body.Close()
-					assert.Equal(tt, ts.expectedStatusCode, localResp.StatusCode)
-				}, time.Second, 10*time.Millisecond)
-				// Make a final request to get the body for assertions
-				resp, err = client.Get(stepURL)
-				require.NoError(t, err)
-				body, err = io.ReadAll(resp.Body)
-				require.NoError(t, err)
-				require.NoError(t, resp.Body.Close())
-			} else {
-				resp, err = client.Get(stepURL)
-				require.NoError(t, err)
-				body, err = io.ReadAll(resp.Body)
-				require.NoError(t, err)
-				require.NoError(t, resp.Body.Close())
-				assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
-			}
-
-			assert.Contains(t, string(body), ts.expectedBody)
-
-			if ts.expectedComponentStatus != nil {
-				st := &serializableStatus{}
-				require.NoError(t, json.Unmarshal(body, st))
-				if strings.Contains(ts.queryParams, "verbose") && !strings.Contains(ts.queryParams, "verbose=false") {
-					assertStatusDetailed(t, ts.expectedComponentStatus, st)
-					continue
+				if ts.eventually {
+					assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+						localResp, localErr := client.Get(stepURL)
+						require.NoError(tt, localErr)
+						defer localResp.Body.Close()
+						assert.Equal(tt, ts.expectedStatusCode, localResp.StatusCode)
+					}, time.Second, 10*time.Millisecond)
+					// Make a final request to get the body for assertions
+					resp, err = client.Get(stepURL)
+					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
+				} else {
+					resp, err = client.Get(stepURL)
+					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
+					assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
 				}
-				assertStatusSimple(t, ts.expectedComponentStatus, st)
+
+				assert.Contains(t, string(body), ts.expectedBody)
+
+				if ts.expectedComponentStatus != nil {
+					st := &serializableStatus{}
+					require.NoError(t, json.Unmarshal(body, st))
+					if strings.Contains(ts.queryParams, "verbose") && !strings.Contains(ts.queryParams, "verbose=false") {
+						assertStatusDetailed(t, ts.expectedComponentStatus, st)
+						continue
+					}
+					assertStatusSimple(t, ts.expectedComponentStatus, st)
+				}
 			}
-		}
-	})
-}
+		})
+	}
 }
 
 func assertStatusDetailed(
@@ -3136,29 +3138,31 @@ func TestConfig(t *testing.T) {
 				status.NewAggregator(status.PriorityPermanent),
 			)
 
-		require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-			require.NoError(t, server.Shutdown(ctx))
-		}()
+			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				// Use Background context for shutdown in defer to avoid cancellation issues
+				//nolint:usetesting // defer functions may run after test context is cancelled
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				require.NoError(t, server.Shutdown(ctx))
+			}()
 
-		client := &http.Client{}
-		defer client.CloseIdleConnections()
-		url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)
+			client := &http.Client{}
+			defer client.CloseIdleConnections()
+			url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)
 
-		if tc.setup != nil {
-			tc.setup()
-		}
+			if tc.setup != nil {
+				tc.setup()
+			}
 
-		resp, err := client.Get(url)
-		require.NoError(t, err)
-		assert.Equal(t, tc.expectedStatusCode, resp.StatusCode)
+			resp, err := client.Get(url)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedStatusCode, resp.StatusCode)
 
-		body, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
-		assert.Equal(t, tc.expectedBody, body)
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
+			assert.Equal(t, tc.expectedBody, body)
 		})
 	}
 }

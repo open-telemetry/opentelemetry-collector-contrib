@@ -16,8 +16,9 @@ import (
 
 func Test_SpanFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
-	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
-	expected[isRootSpanFactory.Name()] = isRootSpanFactory
+	expected["IsRootSpan"] = ottlfuncs.NewIsRootSpanFactory()
+	expected["set_semconv_span_name"] = NewSetSemconvSpanNameFactory()
+
 	actual := SpanFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {
