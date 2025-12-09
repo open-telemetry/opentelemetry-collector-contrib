@@ -66,10 +66,13 @@ func deleteFrom[K any](target ottl.PSliceGetSetter[K], indexGetter ottl.IntGette
 		// ToDo: This would be better with RemoveAt if it was supported.
 		resSlice := pcommon.NewSlice()
 		resSlice.EnsureCapacity(int(sliceLen - (endIndex - index)))
-		for i := int64(0); i < sliceLen; i++ {
-			if i < index || i >= endIndex {
-				t.At(int(i)).MoveTo(resSlice.AppendEmpty())
-			}
+
+		for i := int64(0); i < index; i++ {
+			t.At(int(i)).MoveTo(resSlice.AppendEmpty())
+		}
+
+		for i := endIndex; i < sliceLen; i++ {
+			t.At(int(i)).MoveTo(resSlice.AppendEmpty())
 		}
 
 		return nil, target.Set(ctx, tCtx, resSlice)
