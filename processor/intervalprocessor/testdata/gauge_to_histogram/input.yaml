@@ -1,0 +1,53 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: response.latency
+            unit: ms
+            description: Response latency in milliseconds
+            gauge:
+              dataPoints:
+                - timeUnixNano: 10
+                  asDouble: 5.5
+                  attributes:
+                    - key: endpoint
+                      value:
+                        stringValue: /api/v1
+                - timeUnixNano: 20
+                  asDouble: 15.2
+                  attributes:
+                    - key: endpoint
+                      value:
+                        stringValue: /api/v1
+                - timeUnixNano: 30
+                  asDouble: 25.8
+                  attributes:
+                    - key: endpoint
+                      value:
+                        stringValue: /api/v1
+                - timeUnixNano: 40
+                  asDouble: 150.0
+                  attributes:
+                    - key: endpoint
+                      value:
+                        stringValue: /api/v1
+                - timeUnixNano: 50
+                  asDouble: 8.3
+                  attributes:
+                    - key: endpoint
+                      value:
+                        stringValue: /api/v1
+

@@ -1,0 +1,55 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: request.size
+            unit: bytes
+            description: Request size in bytes
+            sum:
+              aggregationTemporality: 1
+              isMonotonic: false
+              dataPoints:
+                - timeUnixNano: 10
+                  asDouble: 100
+                  attributes:
+                    - key: method
+                      value:
+                        stringValue: GET
+                - timeUnixNano: 20
+                  asDouble: 500
+                  attributes:
+                    - key: method
+                      value:
+                        stringValue: GET
+                - timeUnixNano: 30
+                  asDouble: 1500
+                  attributes:
+                    - key: method
+                      value:
+                        stringValue: GET
+                - timeUnixNano: 40
+                  asDouble: 5000
+                  attributes:
+                    - key: method
+                      value:
+                        stringValue: GET
+                - timeUnixNano: 50
+                  asDouble: 250
+                  attributes:
+                    - key: method
+                      value:
+                        stringValue: GET
+

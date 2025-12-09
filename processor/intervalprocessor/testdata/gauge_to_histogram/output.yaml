@@ -1,0 +1,35 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: response.latency_histogram
+            unit: ms
+            description: Response latency in milliseconds
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - startTimeUnixNano: 10
+                  timeUnixNano: 50
+                  count: 5
+                  sum: 204.8
+                  min: 5.5
+                  max: 150
+                  explicitBounds: [10, 25, 50, 100]
+                  bucketCounts: [2, 1, 1, 0, 1]
+                  attributes:
+                    - key: endpoint
+                      value:
+                        stringValue: /api/v1

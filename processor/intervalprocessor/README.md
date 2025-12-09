@@ -46,7 +46,22 @@ interval:
     # Whether gauges should be aggregated or passed through to the next component as they are
     [ gauge: <bool> | default = false ]
     # Whether summaries should be aggregated or passed through to the next component as they are
-    [ summary: <boo>l | default = false ]
+    [ summary: <bool> | default = false ]
+
+  # Aggregate gauge or counter (Sum) metrics into histograms over the interval
+  aggregate_to_histogram:
+    # The name of the source metric to aggregate (exact match)
+    - metric_name: <string>
+      # The name of the resulting histogram metric. Defaults to "<metric_name>_histogram" if not specified
+      [ output_name: <string> ]
+      # Type of histogram to produce: "explicit" or "exponential". Defaults to "explicit"
+      [ histogram_type: <string> | default = "explicit" ]
+      # For explicit histograms: bucket boundaries (must be sorted in ascending order)
+      # Required when histogram_type is "explicit", ignored for "exponential"
+      [ buckets: [<float>, ...] ]
+      # For exponential histograms: maximum number of buckets. Defaults to 160
+      # Only used when histogram_type is "exponential"
+      [ max_size: <int32> | default = 160 ]
 ```
 
 ## Example of metric flows
@@ -79,3 +94,81 @@ At the next `interval` (15s by default), the processor would pass the following 
 
 > [!IMPORTANT]
 > After exporting, any internal state is cleared. So if no new metrics come in, the next interval will export nothing.
+
+## Aggregating Gauges or Counters to Histograms
+
+The processor can aggregate gauge or counter (Sum) metrics into histograms over the configured interval. This is useful when you have a stream of individual measurements and want to compute histogram distributions.
+
+Two histogram types are supported:
+- **Explicit bucket histograms**: You define the bucket boundaries
+- **Exponential histograms**: Bucket boundaries are automatically determined using a logarithmic scale
+
+### Example Configuration
+
+```yaml
+processors:
+  interval:
+    interval: 60s
+    aggregate_to_histogram:
+      # Explicit bucket histogram
+      - metric_name: response.latency
+        output_name: response.latency.distribution
+        histogram_type: explicit
+        buckets: [10, 25, 50, 100, 250, 500, 1000]
+      # Exponential histogram (automatic bucket boundaries)
+      - metric_name: request.duration
+        histogram_type: exponential
+        max_size: 160
+      # Default is explicit histogram
+      - metric_name: request.size
+        buckets: [100, 500, 1000, 5000, 10000]
+```
+
+### How it Works
+
+1. When a gauge or counter metric matches a configured `metric_name`, all data points are collected during the interval
+2. At each interval, the collected values are aggregated into a histogram
+3. The resulting histogram has:
+   - Delta aggregation temporality
+   - Count, sum, min, and max statistics
+   - Bucket structure based on the configured type
+   - All original attributes preserved
+
+### Explicit Bucket Histogram Example
+
+Given the following gauge metrics arriving during an interval:
+
+| Timestamp | Metric Name      | Value  | Attributes      |
+| --------- | ---------------- | -----: | --------------- |
+| 10        | response.latency |    5.5 | endpoint: /api  |
+| 20        | response.latency |   15.2 | endpoint: /api  |
+| 30        | response.latency |   25.8 | endpoint: /api  |
+| 40        | response.latency |  150.0 | endpoint: /api  |
+| 50        | response.latency |    8.3 | endpoint: /api  |
+
+With buckets configured as `[10, 25, 50, 100]`, the processor outputs a histogram:
+
+| Metric Name                      | Bucket Bounds    | Bucket Counts   | Sum   | Count | Min | Max |
+| -------------------------------- | ---------------- | --------------- | ----: | ----: | --: | --: |
+| response.latency_histogram       | [10, 25, 50, 100]| [2, 1, 1, 0, 1] | 204.8 |     5 | 5.5 | 150 |
+
+Where bucket counts represent: `[≤10, ≤25, ≤50, ≤100, >100]`
+
+### Exponential Histogram
+
+Exponential histograms use a logarithmic scale where bucket boundaries are automatically determined based on the data. This provides:
+- Better resolution for values close to zero
+- Automatic adaptation to the data range
+- More efficient storage for high-cardinality data
+
+```yaml
+aggregate_to_histogram:
+  - metric_name: request.duration
+    histogram_type: exponential
+    max_size: 160  # Maximum number of buckets (default: 160)
+```
+
+The exponential histogram will automatically:
+- Handle both positive and negative values
+- Track zero-count separately
+- Adjust the scale based on the data range

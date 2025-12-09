@@ -1,0 +1,35 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: request.size_histogram
+            unit: bytes
+            description: Request size in bytes
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - startTimeUnixNano: 10
+                  timeUnixNano: 50
+                  count: 5
+                  sum: 7350
+                  min: 100
+                  max: 5000
+                  explicitBounds: [100, 500, 1000, 5000]
+                  bucketCounts: [1, 2, 0, 2, 0]
+                  attributes:
+                    - key: method
+                      value:
+                        stringValue: GET
