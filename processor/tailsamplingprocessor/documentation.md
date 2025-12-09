@@ -101,6 +101,12 @@ Count of sampling policy evaluation errors [Development]
 | ---- | ----------- | ---------- | --------- | --------- |
 | {errors} | Sum | Int | true | Development |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| early | Whether the decision was made early or after the decision wait | Any Bool |
+
 ### otelcol_processor_tail_sampling_sampling_policy_execution_count
 
 Total number of executions of a specific sampling policy [Development]

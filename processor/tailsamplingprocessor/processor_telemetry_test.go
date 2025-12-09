@@ -197,6 +197,9 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 					Temporality: metricdata.CumulativeTemporality,
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
+							Attributes: attribute.NewSet(
+								attribute.Bool("early", false),
+							),
 							Value: 0,
 						},
 					},
@@ -919,6 +922,9 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints: []metricdata.DataPoint[int64]{
 				{
+					Attributes: attribute.NewSet(
+						attribute.Bool("early", false),
+					),
 					Value: 2,
 				},
 			},

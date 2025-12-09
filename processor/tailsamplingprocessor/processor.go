@@ -255,6 +255,9 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 
 	// We do not support early evaluation when drop policies are present yet.
 	earlyEvaluationPossible := len(dropPolicies) == 0
+	if tsp.cfg.EarlyDecisions && !earlyEvaluationPossible {
+		tsp.logger.Debug("Early evaluations are not possible when drop policies are present")
+	}
 
 	// Dropped decision takes precedence over all others, therefore we evaluate them first.
 	return slices.Concat(dropPolicies, policies), earlyEvaluationPossible, nil
@@ -593,7 +596,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, time.Since(startTime).Milliseconds())
 	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(len(tsp.idToTrace)))
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
-	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
+	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount, attrNormalDecision)
 
 	for decision, count := range globalTracesSampledByDecision {
 		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, count, decisionToAttributes[decision])
@@ -805,7 +808,7 @@ policyLoop:
 	for _, p := range tsp.policies {
 		decision, err := p.evaluator.EarlyEvaluate(tsp.ctx, id, currentSpans, trace)
 		if err != nil {
-			tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, 1)
+			tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, 1, attrEarlyDecision)
 			tsp.logger.Debug("Sampling policy error during early evaluation", zap.Error(err))
 			continue
 		}

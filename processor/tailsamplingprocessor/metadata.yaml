@@ -115,6 +115,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      attributes: [early]
 
     processor_tail_sampling_sampling_policy_execution_count:
       description: Total number of executions of a specific sampling policy
