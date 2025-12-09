@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -121,9 +120,6 @@ func TestTracesPusher_ctx(t *testing.T) {
 }
 
 func TestTracesPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_traces"
 	expectedTopicFromAttribute := "topic_from_traces_attr_kgo"
@@ -154,8 +150,6 @@ func TestTracesPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestTracesPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"
@@ -573,8 +567,6 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 }
 
 func TestMetricsDataPusher_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	config := createDefaultConfig().(*Config)
 
 	exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
@@ -603,9 +595,6 @@ func TestMetricsDataPusher_Kgo(t *testing.T) {
 }
 
 func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_metrics"
 	expectedTopicFromAttribute := "topic_from_metrics_attr_kgo"
@@ -782,8 +771,6 @@ func TestLogsDataPusher_ctx(t *testing.T) {
 }
 
 func TestLogsDataPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_logs"
 	expectedTopicFromAttribute := "topic_from_logs_attr_kgo"
@@ -814,8 +801,6 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_logs_topic_from_ctx"
@@ -1152,9 +1137,6 @@ func TestProfilesPusher_ctx(t *testing.T) {
 }
 
 func TestProfilesPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_profile"
 	expectedTopicFromAttribute := "topic_from_profiles_attr_kgo"
@@ -1185,8 +1167,6 @@ func TestProfilesPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestProfilesPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"

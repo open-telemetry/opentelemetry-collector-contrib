@@ -13,6 +13,8 @@ import (
 
 // OCToMetrics converts OC data format to pmetric.Metrics,
 // may be used only by OpenCensus receiver and exporter implementations.
+//
+// Deprecated: this functionality is no longer maintained and will be removed.
 func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*ocmetrics.Metric) pmetric.Metrics {
 	dest := pmetric.NewMetrics()
 	if node == nil && resource == nil && len(metrics) == 0 {

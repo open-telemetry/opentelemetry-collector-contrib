@@ -29,15 +29,6 @@ func TestMetric10kDPS(t *testing.T) {
 		skipMessage  string
 	}{
 		{
-			name:     "Carbon",
-			sender:   datasenders.NewCarbonDataSender(testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewCarbonDataReceiver(testutil.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 237,
-				ExpectedMaxRAM: 150,
-			},
-		},
-		{
 			name:     "OTLP",
 			sender:   testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),

@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: e2ek8sattribute-container-id-association-only
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+      k8sattributes:
+        extract:
+          metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.namespace.name
+          - k8s.deployment.name
+          - k8s.node.name
+          - k8s.cluster.uid
+          - k8s.container.name
+          - container.image.name
+          - container.image.tag
+          labels:
+          - from: pod
+            key: app
+            tag_name: k8s.labels.app
+          - from: namespace
+            key: test-namespace
+            tag_name: k8s.namespace.labels.test-namespace
+        pod_association:
+        - sources:
+          - from: resource_attribute
+            name: container.id
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+    service:
+      extensions:
+      - health_check
+      pipelines:
+        logs:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp
+        metrics:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp
+        traces:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp
+        profiles:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp

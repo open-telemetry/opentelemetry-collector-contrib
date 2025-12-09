@@ -72,7 +72,7 @@ func TestCollectData(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	_ = r.Start(t.Context(), nil)
+	_ = r.Start(t.Context(), componenttest.NewNopHost())
 	ctx := t.Context()
 	r.k8sapiserver = &mockK8sAPIServer{}
 	r.cadvisor = &mockCadvisor{}
@@ -98,7 +98,7 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	_ = r.Start(t.Context(), nil)
+	_ = r.Start(t.Context(), componenttest.NewNopHost())
 	r.cadvisor = &mockCadvisor{}
 	r.k8sapiserver = &mockK8sAPIServer{}
 	ctx := t.Context()
@@ -120,7 +120,7 @@ func TestCollectDataWithECS(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	_ = r.Start(t.Context(), nil)
+	_ = r.Start(t.Context(), componenttest.NewNopHost())
 	ctx := t.Context()
 
 	r.cadvisor = &mockCadvisor{}

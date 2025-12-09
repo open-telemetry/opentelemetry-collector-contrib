@@ -86,7 +86,7 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 	}
 
 	var err error
-	if r.server, err = httpCfg.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux); err != nil {
+	if r.server, err = httpCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, httpMux); err != nil {
 		return err
 	}
 

@@ -68,7 +68,7 @@ func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	}
 
 	if cwLog.MessageType == "CONTROL_MESSAGE" {
-		return plog.Logs{}, nil
+		return plog.NewLogs(), nil
 	}
 
 	if err := validateLog(cwLog); err != nil {

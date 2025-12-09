@@ -49,7 +49,7 @@ type S3UploaderConfig struct {
 	StorageClass string `mapstructure:"storage_class"`
 	// Compression sets the algorithm used to process the payload
 	// before uploading to S3.
-	// Valid values are: `gzip` or no value set.
+	// Valid values are: `gzip`, `zstd`, or no value set.
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// RetryMode specifies the retry mode for S3 client, default is "standard".
@@ -143,7 +143,7 @@ func (c *Config) Validate() error {
 
 	compression := c.S3Uploader.Compression
 	if compression.IsCompressed() {
-		if compression != configcompression.TypeGzip {
+		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
 			errs = multierr.Append(errs, errors.New("unknown compression type"))
 		}
 	}

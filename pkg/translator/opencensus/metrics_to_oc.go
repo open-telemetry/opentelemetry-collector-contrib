@@ -26,6 +26,8 @@ type labelKeysAndType struct {
 
 // ResourceMetricsToOC converts pmetric.ResourceMetrics to OC data format,
 // may be used only by OpenCensus receiver and exporter implementations.
+//
+// Deprecated: this functionality is no longer maintained and will be removed.
 func ResourceMetricsToOC(rm pmetric.ResourceMetrics) (*occommon.Node, *ocresource.Resource, []*ocmetrics.Metric) {
 	node, resource := internalResourceToOC(rm.Resource())
 	ilms := rm.ScopeMetrics()

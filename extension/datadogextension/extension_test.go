@@ -405,6 +405,75 @@ func TestSimpleInterfaceMethods(t *testing.T) {
 	assert.NotPanics(t, func() { ext.ComponentStatusChanged(nil, nil) })
 }
 
+func TestExtension_DeploymentTypeInPayload(t *testing.T) {
+	tests := []struct {
+		name           string
+		deploymentType string
+		expected       string
+	}{
+		{
+			name:           "gateway deployment type",
+			deploymentType: "gateway",
+			expected:       "gateway",
+		},
+		{
+			name:           "daemonset deployment type",
+			deploymentType: "daemonset",
+			expected:       "daemonset",
+		},
+		{
+			name:           "unknown deployment type",
+			deploymentType: "unknown",
+			expected:       "unknown",
+		},
+		{
+			name:           "empty defaults to unknown",
+			deploymentType: "",
+			expected:       "unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			set := extension.Settings{
+				TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+				BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+			}
+			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+			uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+			cfg := &Config{
+				API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+				HTTPConfig: &httpserver.Config{
+					ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+					Path:         "/test-path",
+				},
+				DeploymentType: tt.deploymentType,
+			}
+
+			// Validate will set the default if empty
+			err := cfg.Validate()
+			require.NoError(t, err)
+
+			ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+			require.NoError(t, err)
+			ext.serializer = &mockSerializer{}
+			require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+			// Minimal config to trigger NotifyConfig
+			conf := confmap.NewFromStringMap(map[string]any{})
+			err = ext.NotifyConfig(t.Context(), conf)
+			require.NoError(t, err)
+
+			// Verify the deployment type is set correctly in the payload
+			require.NotNil(t, ext.otelCollectorMetadata)
+			assert.Equal(t, tt.expected, ext.otelCollectorMetadata.CollectorDeploymentType, "CollectorDeploymentType should be set correctly")
+
+			// Cleanup
+			assert.NoError(t, ext.Shutdown(t.Context()))
+		})
+	}
+}
+
 func TestRealUUIDProvider(t *testing.T) {
 	p := &realUUIDProvider{}
 	uuid := p.NewString()

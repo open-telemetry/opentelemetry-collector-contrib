@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -236,7 +237,7 @@ func TestOnlyMetadata(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
 
-	err = expTraces.Start(ctx, nil)
+	err = expTraces.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 	defer func() {
 		assert.NoError(t, expTraces.Shutdown(ctx))
@@ -284,9 +285,9 @@ func TestStopExporters(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
 
-	err = expTraces.Start(ctx, nil)
+	err = expTraces.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
-	err = expMetrics.Start(ctx, nil)
+	err = expMetrics.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	finishShutdown := make(chan bool)

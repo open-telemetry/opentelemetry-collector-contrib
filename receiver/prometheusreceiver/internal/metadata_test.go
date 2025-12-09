@@ -4,12 +4,11 @@
 package internal
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/scrape"
-
-	fakemetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 func TestMetadataForMetric_Internal(t *testing.T) {
@@ -27,7 +26,7 @@ func TestMetadataForMetric_Internal(t *testing.T) {
 }
 
 func TestMetadataForMetric_ExternalExactHit(t *testing.T) {
-	store := fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
+	store := newFakeMetadataStore(map[string]scrape.MetricMetadata{
 		"http_requests_total": {
 			MetricFamily: "http_requests_total",
 			Type:         model.MetricTypeCounter,
@@ -46,7 +45,7 @@ func TestMetadataForMetric_ExternalExactHit(t *testing.T) {
 
 func TestMetadataForMetric_NormalizedFallback_Gauge(t *testing.T) {
 	// Simulate a merged metric like "histogram_count" where store only knows the base name.
-	store := fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
+	store := newFakeMetadataStore(map[string]scrape.MetricMetadata{
 		"histogram": {
 			MetricFamily: "histogram",
 			Type:         model.MetricTypeGauge,
@@ -68,7 +67,7 @@ func TestMetadataForMetric_NormalizedFallback_Gauge(t *testing.T) {
 
 func TestMetadataForMetric_NormalizedFallback_CounterKeepsOriginal(t *testing.T) {
 	// If normalized metadata type is Counter, resolved should stay the original name.
-	store := fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
+	store := newFakeMetadataStore(map[string]scrape.MetricMetadata{
 		"requests": {
 			MetricFamily: "requests",
 			Type:         model.MetricTypeCounter,
@@ -106,7 +105,7 @@ func TestMetadataForMetric_Unknown(t *testing.T) {
 
 func TestMetadataForMetric_PrefersInternalOverExternal(t *testing.T) {
 	// Ensure internal metric metadata is used even if external store provides a conflicting entry.
-	store := fakemetadata.NewFakeMetadataStore(map[string]scrape.MetricMetadata{
+	store := newFakeMetadataStore(map[string]scrape.MetricMetadata{
 		scrapeUpMetricName: {
 			MetricFamily: "up_external",
 			Type:         model.MetricTypeCounter,
@@ -125,4 +124,39 @@ func TestMetadataForMetric_PrefersInternalOverExternal(t *testing.T) {
 	if m.MetricFamily != scrapeUpMetricName {
 		t.Fatalf("expected family %q from internal map, got %q", scrapeUpMetricName, m.MetricFamily)
 	}
+}
+
+// fakeMetadataStore implements scrape.MetricMetadataStore for tests.
+// It is safe to use from other packages' tests
+type fakeMetadataStore struct {
+	data map[string]scrape.MetricMetadata
+}
+
+// newFakeMetadataStore creates a FakeMetadataStore initialized with the given metadata.
+func newFakeMetadataStore(init map[string]scrape.MetricMetadata) *fakeMetadataStore {
+	// copy defensively to avoid external mutation
+	cp := make(map[string]scrape.MetricMetadata, len(init))
+	maps.Copy(cp, init)
+	return &fakeMetadataStore{data: cp}
+}
+
+func (f fakeMetadataStore) ListMetadata() []scrape.MetricMetadata {
+	out := make([]scrape.MetricMetadata, 0, len(f.data))
+	for _, m := range f.data {
+		out = append(out, m)
+	}
+	return out
+}
+
+func (f fakeMetadataStore) GetMetadata(name string) (scrape.MetricMetadata, bool) {
+	m, ok := f.data[name]
+	return m, ok
+}
+
+func (f fakeMetadataStore) SizeMetadata() int {
+	return len(f.data)
+}
+
+func (f fakeMetadataStore) LengthMetadata() int {
+	return len(f.data)
 }
