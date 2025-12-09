@@ -311,13 +311,9 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordNetworkCount(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbOperationCount.Enabled {
-		s.recordOperations(now, document, errs)
-	}
+	s.recordOperations(now, document, errs)
 
-	if s.config.Metrics.MongodbOperationReplCount.Enabled {
-		s.recordOperationsRepl(now, document, errs)
-	}
+	s.recordOperationsRepl(now, document, errs)
 
 	if s.config.Metrics.MongodbSessionCount.Enabled {
 		s.recordSessionCount(now, document, errs)
