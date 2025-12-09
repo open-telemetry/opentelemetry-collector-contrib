@@ -90,8 +90,8 @@ The following settings can be optionally configured:
   - If set to an empty string (or not set), the consumer is treated as a dynamic member. In this case, the consumer's partition assignments may change during rebalances.
   - Using a `group_instance_id` is useful for stateful consumers or when you need to ensure that a specific consumer instance is always assigned the same set of partitions.
 - `min_fetch_size` (default = `1`): The minimum number of message bytes to fetch in a request, defaults to 1 byte.
-- `default_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request, defaults to 1MB.
-- `max_fetch_size` (default = `0`): The maximum number of message bytes to fetch in a request, defaults to unlimited.
+- `default_fetch_size` (default = `1048576`): (Deprecated [v0.142.0]: only used with legacy Sarama client. Use `max_fetch_size` instead) The default number of message bytes to fetch in a request, defaults to 1MB.
+- `max_fetch_size` (default = `1048576`): The maximum number of message bytes to fetch in a request, defaults to 1MB. Must be greater than or equal to `min_fetch_size`.
 - `max_fetch_wait` (default = `250ms`): The maximum amount of time the broker should wait for `min_fetch_size` bytes to be available before returning anyway.
 - `max_partition_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request per partition, defaults to 1MB. If a single record batch is larger than this value, the broker will still return it to ensure the consumer can make progress. This setting only applies while using [`franz-go`](https://github.com/twmb/franz-go).
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.

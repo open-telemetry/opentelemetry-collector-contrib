@@ -13,7 +13,7 @@ import (
 
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
-	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/otel/otelstef"
 	"github.com/splunk/stef/go/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +66,7 @@ func (m *mockMetricDestServer) start() {
 
 	m.grpcServer = grpcServer
 
-	schema, err := oteltef.MetricsWireSchema()
+	schema, err := otelstef.MetricsWireSchema()
 	if err != nil {
 		m.logger.Fatal("Failed to load schema", zap.Error(err))
 	}
@@ -96,7 +96,7 @@ func (m *mockMetricDestServer) stop() {
 func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.STEFStream) error {
 	m.logger.Info("Incoming TEF/gRPC connection.")
 
-	reader, err := oteltef.NewMetricsReader(grpcReader)
+	reader, err := otelstef.NewMetricsReader(grpcReader)
 	if err != nil {
 		m.logger.Error("Error creating metrics reader from connection", zap.Error(err))
 		return err
