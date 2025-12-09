@@ -165,7 +165,7 @@ func (v *vpcFlowLogUnmarshaler) fromS3(reader *bufio.Reader) (plog.Logs, error) 
 	return logs, nil
 }
 
-// fromCWTrigger expects VPC logs from CloudWatch Logs subscription filter trigger
+// fromCloudWatch expects VPC logs from CloudWatch Logs subscription filter trigger
 func (v *vpcFlowLogUnmarshaler) fromCloudWatch(fields []string, cwContent []byte) (plog.Logs, error) {
 	var cwLog events.CloudwatchLogsData
 	err := gojson.NewDecoder(bytes.NewReader(cwContent)).Decode(&cwLog)
