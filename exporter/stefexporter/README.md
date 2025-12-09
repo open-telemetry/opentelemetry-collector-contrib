@@ -19,7 +19,7 @@ Exports data via gRPC using
 [Otel/STEF format](https://github.com/splunk/stef/tree/main/go/otel).
 Otel/STEF is a compact and fast telemetry format. It is currently the fastest
 benchmarked metric format in the Collector. Here are recent 
-[benchmarking results](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/runs/15381307862/job/43272589155),
+[benchmarking results](https://www.stefdata.net/benchmarks.html),
 comparing CPU usage when using a few different formats (lower is better):
 
 | Test                    | CPU Avg% | CPU Max% |
@@ -39,10 +39,8 @@ that  are more than 10x smaller than OTLP payloads. In compressed mode, STEF is
 typically 5-7 times more compact than OTLP.
 
 Here are some 
-[STEF benchmark results](https://splunk.github.io/stef/benchmarks/results/benchmarks.html),
+[STEF benchmark results](https://www.stefdata.net/benchmarks.html),
 comparing STEF and OTLP payload sizes for a few sample payloads produced by Collector:
-
-<img src="images/astronomymetricssize.png">
 
 <img src="images/astronomymetricssize.png">
 
