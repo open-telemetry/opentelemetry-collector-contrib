@@ -32,7 +32,9 @@ import (
 
 var removeStartTimeAdjustment = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
-	featuregate.StageBeta,
+	featuregate.StageStable,
+	featuregate.WithRegisterFromVersion("v0.120.1"),
+	featuregate.WithRegisterToVersion("v0.142.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" leave the start time unset. Use the new metricstarttime processor instead."),
 )
@@ -588,13 +590,6 @@ func (t *transaction) Commit() error {
 	numPoints := md.DataPointCount()
 	if numPoints == 0 {
 		return nil
-	}
-
-	if !removeStartTimeAdjustment.IsEnabled() {
-		if err = t.metricAdjuster.AdjustMetrics(md); err != nil {
-			t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
-			return err
-		}
 	}
 
 	err = t.sink.ConsumeMetrics(ctx, md)
