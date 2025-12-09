@@ -35,5 +35,5 @@ var AttributeSliceMultiTagExportingFeatureGate = featuregate.GlobalRegistry().Mu
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, attributes with slice values will have their elements turned into individual `key:value` Datadog tags."),
 	featuregate.WithRegisterFromVersion("v0.142.0"),
-	featuregate.WithRegisterReferenceURL("TODO (PR link)"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44859"),
 )
