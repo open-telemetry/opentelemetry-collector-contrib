@@ -59,10 +59,11 @@ func init() {
 }
 
 func runTestForClients(t *testing.T, fn func(t *testing.T)) {
-	clients := []string{"Sarama", "Franz"}
+	// Only run tests with Franz client since the feature gate is now stable.
+	// Sarama tests will be removed in a future version.
+	clients := []string{"Franz"}
 	for _, client := range clients {
 		t.Run(client, func(t *testing.T) {
-			setFranzGo(t, client == "Franz")
 			fn(t)
 		})
 	}
@@ -766,8 +767,8 @@ func TestExcludeTopicWithSarama(t *testing.T) {
 		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
 
 		// Configure exclude_topic - only supported with franz-go
-		receiverConfig.Traces.Topic = "^otlp_spans.*"
-		receiverConfig.Traces.ExcludeTopic = "^otlp_spans-test$"
+		receiverConfig.Traces.Topics = []string{"^otlp_spans.*"}
+		receiverConfig.Traces.ExcludeTopics = []string{"^otlp_spans-test$"}
 
 		set, _, _ := mustNewSettings(t)
 		_, err := newTracesReceiver(receiverConfig, set, &consumertest.TracesSink{})

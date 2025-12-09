@@ -183,6 +183,7 @@ components:
         - kubeletstats
         - libhoney
         - loki
+        - macosunifiedlogging
         - memcached
         - mongodb
         - mongodbatlas
@@ -221,6 +222,7 @@ components:
         - statsd
         - stef
         - syslog
+        - systemd
         - tcpcheck
         - tcplog
         - tlscheck
