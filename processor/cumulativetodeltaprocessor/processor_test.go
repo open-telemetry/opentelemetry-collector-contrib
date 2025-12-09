@@ -403,12 +403,16 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				metricCounts: [][]uint64{{0, 100, 200, 500}},
 				metricSums:   [][]float64{{0, 100, 200, 500}},
 				metricBuckets: [][][]uint64{{
-					{0, 0, 0}, {50, 25, 25},
-					{100, 50, 50}, {250, 125, 125},
+					{0, 0, 0},
+					{50, 25, 25},
+					{100, 50, 50},
+					{250, 125, 125},
 				}},
 				metricBounds: [][][]float64{{
-					{1.0, 2.0}, {1.0, 2.0},
-					{1.5, 3.0}, {1.5, 3.0}, // Change of bucket bounds: first data point will be ignored
+					{1.0, 2.0},
+					{1.0, 2.0},
+					{1.5, 3.0},
+					{1.5, 3.0}, // Change of bucket bounds: first data point will be ignored
 				}},
 				isCumulative: []bool{true},
 			}),
