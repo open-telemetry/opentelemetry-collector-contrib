@@ -747,8 +747,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(tb traceBatch) {
 		actualData.SpanCount += tb.spanCount
 	}
 
-	if tb.rootSpan != nil && actualData.TraceData.RootSpan == nil {
-		actualData.TraceData.RootSpan = tb.rootSpan
+	if tb.rootSpan != nil && actualData.RootSpan == nil {
+		actualData.RootSpan = tb.rootSpan
 	}
 
 	finalDecision := actualData.finalDecision
