@@ -164,13 +164,11 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		setFranzGo(tb, true)
 
 		kafkaClient, cfg := mustNewFakeCluster(tb, kfake.SeedTopics(1, topic))
-		cfg.ConsumerConfig = configkafka.ConsumerConfig{
-			GroupID:    tb.Name(),
-			AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second},
-
-			// Set MinFetchSize to ensure all records are fetched at once
-			MinFetchSize: int32(len(data) * len(rs)),
-		}
+		cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
+		cfg.GroupID = tb.Name()
+		cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second}
+		// Set MinFetchSize to ensure all records are fetched at once
+		cfg.MinFetchSize = int32(len(data) * len(rs))
 		cfg.ErrorBackOff = testConfig.backOff
 		cfg.MessageMarking = testConfig.mark
 
@@ -264,12 +262,11 @@ func TestRaceLostVsConsume(t *testing.T) {
 	setFranzGo(t, true)
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.ConsumerConfig = configkafka.ConsumerConfig{
-		GroupID:      t.Name(),
-		MaxFetchSize: 1, // Force a lot of iterations of consume()
-		AutoCommit: configkafka.AutoCommitConfig{
-			Enable: true, Interval: 100 * time.Millisecond,
-		},
+	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
+	cfg.GroupID = t.Name()
+	cfg.MaxFetchSize = 1 // Force a lot of iterations of consume()
+	cfg.AutoCommit = configkafka.AutoCommitConfig{
+		Enable: true, Interval: 100 * time.Millisecond,
 	}
 
 	// Produce records.
@@ -343,10 +340,9 @@ func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
 	cfg.UseLeaderEpoch = false // <-- exercise the option
-	cfg.ConsumerConfig = configkafka.ConsumerConfig{
-		GroupID:    t.Name(),
-		AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
-	}
+	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
+	cfg.GroupID = t.Name()
+	cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
 
 	var called atomic.Int64
 	settings, _, _ := mustNewSettings(t)
@@ -413,11 +409,10 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 		kfake.SeedTopics(1, "logs-c"),
 	)
 
-	cfg.ConsumerConfig = configkafka.ConsumerConfig{
-		GroupID:       t.Name(),
-		InitialOffset: "earliest",
-		AutoCommit:    configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
-	}
+	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
+	cfg.GroupID = t.Name()
+	cfg.InitialOffset = "earliest"
+	cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
 
 	// Prepare test data
 	traces := testdata.GenerateTraces(5)
