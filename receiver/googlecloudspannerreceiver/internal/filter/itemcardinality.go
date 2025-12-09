@@ -159,10 +159,12 @@ func groupByTimestamp(items []*Item) map[time.Time][]*Item {
 }
 
 func sortedKeys(groupedItems map[time.Time][]*Item) []time.Time {
-	keysForSorting := make([]time.Time, 0, len(groupedItems))
+	keysForSorting := make([]time.Time, len(groupedItems))
 
+	i := 0
 	for key := range groupedItems {
-		keysForSorting = append(keysForSorting, key)
+		keysForSorting[i] = key
+		i++
 	}
 
 	sort.Slice(keysForSorting, func(i, j int) bool { return keysForSorting[i].Before(keysForSorting[j]) })
