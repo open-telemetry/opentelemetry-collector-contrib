@@ -1781,6 +1781,19 @@ func (c *WatchClient) addOrUpdateReplicaSetMeta(rs *meta_v1.PartialObjectMetadat
 	c.m.Unlock()
 }
 
+// This function removes all data from the ReplicaSet except what is required by extraction rules
+func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
+	transformedReplicaset := apps_v1.ReplicaSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      replicaset.GetName(),
+			Namespace: replicaset.GetNamespace(),
+			UID:       replicaset.GetUID(),
+		},
+	}
+	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
+	return &transformedReplicaset
+}
+
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	switch v := obj.(type) {
 	case *apps_v1.ReplicaSet:

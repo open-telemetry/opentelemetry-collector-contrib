@@ -311,3 +311,30 @@ func daemonsetWatchFuncWithSelectors(client kubernetes.Interface, namespace stri
 		return client.AppsV1().DaemonSets(namespace).Watch(ctx, opts)
 	}
 }
+
+func newReplicaSetSharedInformer(
+	client kubernetes.Interface,
+	namespace string,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListWithContextFunc:  replicasetListFuncWithSelectors(client, namespace),
+			WatchFuncWithContext: replicasetWatchFuncWithSelectors(client, namespace),
+		},
+		&apps_v1.ReplicaSet{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListWithContextFunc {
+	return func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
+		return client.AppsV1().ReplicaSets(namespace).List(ctx, opts)
+	}
+}
+
+func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFuncWithContext {
+	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+		return client.AppsV1().ReplicaSets(namespace).Watch(ctx, opts)
+	}
+}
