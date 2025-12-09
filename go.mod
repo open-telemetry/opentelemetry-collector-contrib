@@ -85,3 +85,17 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver => ./receiver/k8sobjectsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ./pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ./pkg/xk8stest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ./pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ./pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector => ./extension/k8sleaderelector
