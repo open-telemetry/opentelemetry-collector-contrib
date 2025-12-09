@@ -25,20 +25,39 @@ func TestComponentConfigStruct(t *testing.T) {
 }
 
 func TestLoadTargetAllocatorConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	cfg := &Config{}
+	t.Run("basic", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+		cfg := &Config{}
 
-	sub, err := cm.Sub("target_allocator")
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+		sub, err := cm.Sub("target_allocator")
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.NoError(t, xconfmap.Validate(cfg))
 
-	assert.Equal(t, "http://localhost:8080", cfg.Endpoint)
-	assert.Equal(t, 5*time.Second, cfg.Timeout)
-	assert.Equal(t, "client.crt", cfg.TLS.CertFile)
-	assert.Equal(t, 30*time.Second, cfg.Interval)
-	assert.Equal(t, "collector-1", cfg.CollectorID)
+		assert.Equal(t, "http://localhost:8080", cfg.Endpoint)
+		assert.Equal(t, 5*time.Second, cfg.Timeout)
+		assert.Equal(t, "client.crt", cfg.TLS.CertFile)
+		assert.Equal(t, 30*time.Second, cfg.Interval)
+		assert.Equal(t, "collector-1", cfg.CollectorID)
+	})
+
+	t.Run("special characters in password", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_with_special_chars.yaml"))
+		require.NoError(t, err)
+
+		var cfg Config
+		sub, err := cm.Sub("target_allocator")
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(&cfg))
+
+		require.NotNil(t, cfg.HTTPSDConfig, "http_sd_config should be present")
+		require.NotNil(t, cfg.HTTPScrapeConfig, "http_scrape_config should be present")
+		require.NotNil(t, cfg.HTTPScrapeConfig.BasicAuth, "basic_auth should be present")
+		assert.Equal(t, "testuser", cfg.HTTPScrapeConfig.BasicAuth.Username)
+		assert.Equal(t, "%password-with-percent", string(cfg.HTTPScrapeConfig.BasicAuth.Password),
+			"password with special YAML characters should be preserved")
+	})
 }
 
 func TestPromHTTPClientConfigValidateAuthorization(t *testing.T) {
