@@ -293,6 +293,22 @@ func AssertEqualOtelsvcK8sPodAdded(t *testing.T, tt *componenttest.Telemetry, dp
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualOtelsvcK8sPodAssociation(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_otelsvc_k8s_pod_association",
+		Description: "Number of pod associations [Development]",
+		Unit:        "{resources}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_pod_association")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualOtelsvcK8sPodDeleted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_pod_deleted",

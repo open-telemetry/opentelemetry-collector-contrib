@@ -148,6 +148,22 @@ tests:
   goleak:
     skip: true
 
+attributes:
+  k8s_telemetry_type:
+    description: The type of telemetry data being processed (traces, metrics, logs, profiles)
+    type: string
+    enum:
+      - traces
+      - metrics
+      - logs
+      - profiles
+  status:
+    description: The status of the pod association operation
+    type: string
+    enum:
+      - success
+      - error
+
 telemetry:
   metrics:
     otelsvc_k8s_daemonset_added:
@@ -303,6 +319,16 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    otelsvc_k8s_pod_association:
+      enabled: true
+      description: Number of pod associations
+      stability:
+        level: development
+      unit: "{resources}"
+      attributes: [k8s_telemetry_type, status]
+      sum:
+        value_type: int
+        monotonic: true
     otelsvc_k8s_pod_deleted:
       enabled: true
       description: Number of pod delete events received
@@ -383,3 +409,4 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+

@@ -42,6 +42,7 @@ type TelemetryBuilder struct {
 	OtelsvcK8sNodeDeleted        metric.Int64Counter
 	OtelsvcK8sNodeUpdated        metric.Int64Counter
 	OtelsvcK8sPodAdded           metric.Int64Counter
+	OtelsvcK8sPodAssociation     metric.Int64Counter
 	OtelsvcK8sPodDeleted         metric.Int64Counter
 	OtelsvcK8sPodTableSize       metric.Int64Gauge
 	OtelsvcK8sPodUpdated         metric.Int64Counter
@@ -182,6 +183,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_otelsvc_k8s_pod_added",
 		metric.WithDescription("Number of pod add events received [Development]"),
 		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sPodAssociation, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_pod_association",
+		metric.WithDescription("Number of pod associations [Development]"),
+		metric.WithUnit("{resources}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.OtelsvcK8sPodDeleted, err = builder.meter.Int64Counter(
