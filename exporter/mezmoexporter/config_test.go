@@ -60,8 +60,8 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: configoptional.None[exporterhelper.QueueBatchConfig](),
-				IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
-				IngestKey: "1234509876",
+				IngestURL:     "https://alternate.mezmo.com/otel/ingest/rest",
+				IngestKey:     "1234509876",
 			},
 		},
 	}
