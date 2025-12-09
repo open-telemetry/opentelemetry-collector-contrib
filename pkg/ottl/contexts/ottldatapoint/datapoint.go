@@ -44,7 +44,7 @@ var (
 type TransformContext struct {
 	dataPoint            any
 	metric               pmetric.Metric
-	metrics              pmetric.MetricSlice
+	metricSlice          pmetric.MetricSlice
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
@@ -80,7 +80,7 @@ func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.M
 	tc := TransformContext{
 		dataPoint:            dataPoint,
 		metric:               metric,
-		metrics:              metrics,
+		metricSlice:          metrics,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
@@ -95,13 +95,13 @@ func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.M
 
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(dataPoint any, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options ...TransformContextOption) *TransformContext {
+func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dataPoint any, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.dataPoint = dataPoint
 	tCtx.metric = metric
-	tCtx.metrics = metrics
-	tCtx.instrumentationScope = instrumentationScope
-	tCtx.resource = resource
+	tCtx.metricSlice = scopeMetrics.Metrics()
+	tCtx.instrumentationScope = scopeMetrics.Scope()
+	tCtx.resource = resourceMetrics.Resource()
 	tCtx.scopeMetrics = scopeMetrics
 	tCtx.resourceMetrics = resourceMetrics
 	for _, opt := range options {
@@ -115,7 +115,7 @@ func NewTransformContextPtr(dataPoint any, metric pmetric.Metric, metrics pmetri
 func (tCtx *TransformContext) Close() {
 	tCtx.dataPoint = nil
 	tCtx.metric = pmetric.Metric{}
-	tCtx.metrics = pmetric.MetricSlice{}
+	tCtx.metricSlice = pmetric.MetricSlice{}
 	tCtx.instrumentationScope = pcommon.InstrumentationScope{}
 	tCtx.resource = pcommon.Resource{}
 	tCtx.cache.Clear()
@@ -146,7 +146,7 @@ func (tCtx *TransformContext) GetMetric() pmetric.Metric {
 
 // GetMetrics returns the metric slice from the TransformContext.
 func (tCtx *TransformContext) GetMetrics() pmetric.MetricSlice {
-	return tCtx.metrics
+	return tCtx.metricSlice
 }
 
 // GetScopeSchemaURLItem returns the scope schema URL item from the TransformContext.

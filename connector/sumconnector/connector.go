@@ -100,7 +100,7 @@ func (c *sum) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
-				mCtx := ottlmetric.NewTransformContextPtr(metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+				mCtx := ottlmetric.NewTransformContextPtr(resourceMetric, scopeMetrics, metric)
 				multiError = errors.Join(multiError, metricsSummer.update(ctx, pcommon.NewMap(), mCtx))
 				mCtx.Close()
 
@@ -111,35 +111,35 @@ func (c *sum) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 				case pmetric.MetricTypeGauge:
 					dps := metric.Gauge().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
 				case pmetric.MetricTypeSummary:
 					dps := metric.Summary().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}

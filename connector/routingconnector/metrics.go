@@ -88,7 +88,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		case "metric":
 			pmetricutil.MoveMetricsWithContextIf(md, matched,
 				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
-					mtx := ottlmetric.NewTransformContextPtr(m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
+					mtx := ottlmetric.NewTransformContextPtr(rm, sm, m)
 					_, isMatch, err := route.metricStatement.Execute(ctx, mtx)
 					mtx.Close()
 					// If error during statement evaluation consider it as not a match.
@@ -102,7 +102,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		case "datapoint":
 			pmetricutil.MoveDataPointsWithContextIf(md, matched,
 				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
-					dptx := ottldatapoint.NewTransformContextPtr(dp, m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
+					dptx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
 					_, isMatch, err := route.dataPointStatement.Execute(ctx, dptx)
 					dptx.Close()
 					// If error during statement evaluation consider it as not a match.
