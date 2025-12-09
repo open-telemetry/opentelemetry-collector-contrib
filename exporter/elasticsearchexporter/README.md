@@ -440,7 +440,8 @@ The value of the last-mapped attribute will take precedence.
 | faas.instance               | faas.id                     | false    |
 | faas.trigger                | faas.trigger.type           | false    |
 | host.arch                   | host.architecture           | false    |
-| host.name                   | host.hostname               | true     |
+| host.name                   | host.name                   | true     |
+| host.hostname               | host.hostname               | true     |
 | k8s.cluster.name            | orchestrator.cluster.name   | false    |
 | k8s.container.name          | kubernetes.container.name   | false    |
 | k8s.cronjob.name            | kubernetes.cronjob.name     | false    |
@@ -517,6 +518,11 @@ These values are all valid:
 #### `agent.version`
 
 Takes the value of `telemetry.distro.version` or `telemetry.sdk.version`. If both telemetry.distro.version and telemetry.sdk.version are present, telemetry.distro.version takes precedence.
+
+#### `host.name` and `host.hostname`
+
+Maintains the SemConv Value `host.name` as ECS value `host.name`.
+Keeps `host.hostname` in ECS, despite not being a valid SemConv Value for backwards compatibility. 
 
 #### `host.os.type`
 

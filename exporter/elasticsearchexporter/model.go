@@ -42,7 +42,6 @@ var resourceAttrsConversionMap = map[string]string{
 	string(semconv.TelemetryDistroVersionKey):    "",
 	string(semconv.CloudPlatformKey):             "cloud.service.name",
 	string(semconv.ContainerImageTagsKey):        "container.image.tag",
-	string(semconv.HostNameKey):                  "host.hostname",
 	string(semconv.HostArchKey):                  "host.architecture",
 	string(semconv.ProcessParentPIDKey):          "process.parent.pid",
 	string(semconv.ProcessExecutableNameKey):     "process.title",
@@ -75,9 +74,7 @@ var resourceAttrsConversionMap = map[string]string{
 // resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
 // This can happen when an attribute needs to be mapped to an ECS equivalent but
 // at the same time be preserved to its original form.
-var resourceAttrsToPreserve = map[string]bool{
-	string(semconv.HostNameKey): true,
-}
+var resourceAttrsToPreserve = map[string]bool{}
 
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
