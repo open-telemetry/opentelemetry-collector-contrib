@@ -422,7 +422,7 @@ func newBenchmarkMetricContext(attributeCount int) *ottlmetric.TransformContext 
 		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
 	}
 
-	return ottlmetric.NewTransformContextPtr(metric, scopeMetrics.Metrics(), scope, resource, scopeMetrics, resourceMetrics)
+	return ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
 }
 
 func buildLogStatements(count int) []string {

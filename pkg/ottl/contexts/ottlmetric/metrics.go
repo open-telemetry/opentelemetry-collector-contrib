@@ -81,12 +81,12 @@ func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, ins
 
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options ...TransformContextOption) *TransformContext {
+func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.metric = metric
-	tCtx.metrics = metrics
-	tCtx.instrumentationScope = instrumentationScope
-	tCtx.resource = resource
+	tCtx.metrics = scopeMetrics.Metrics()
+	tCtx.instrumentationScope = scopeMetrics.Scope()
+	tCtx.resource = resourceMetrics.Resource()
 	tCtx.scopeMetrics = scopeMetrics
 	tCtx.resourceMetrics = resourceMetrics
 	for _, opt := range options {

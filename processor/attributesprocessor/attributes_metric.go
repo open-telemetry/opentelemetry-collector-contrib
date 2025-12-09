@@ -35,16 +35,14 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetr
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rs := rms.At(i)
-		resource := rs.Resource()
 		ilms := rs.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ils := ilms.At(j)
-			scope := ils.Scope()
 			metrics := ils.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				m := metrics.At(k)
 				if a.skipExpr != nil {
-					tCtx := ottlmetric.NewTransformContextPtr(m, metrics, scope, resource, ils, rs)
+					tCtx := ottlmetric.NewTransformContextPtr(rs, ils, m)
 					skip, err := a.skipExpr.Eval(ctx, tCtx)
 					tCtx.Close()
 					if err != nil {
