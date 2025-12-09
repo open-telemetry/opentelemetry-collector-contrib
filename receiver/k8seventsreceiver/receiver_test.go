@@ -27,7 +27,7 @@ import (
 func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
-		return fake.NewSimpleClientset(), nil
+		return fake.NewClientset(), nil
 	}
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
@@ -139,7 +139,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.K8sLeaderElector = &leaderID
 	cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
-		return fake.NewSimpleClientset(), nil
+		return fake.NewClientset(), nil
 	}
 
 	sink := new(consumertest.LogsSink)

@@ -14,7 +14,7 @@ import (
 )
 
 func Test_LogFunctions(t *testing.T) {
-	expected := ottlfuncs.StandardFuncs[ottllog.TransformContext]()
+	expected := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
 	actual := LogFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {

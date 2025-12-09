@@ -95,6 +95,12 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	ghs.mb.RecordVcsRepositoryCountDataPoint(now, int64(count))
 
+	// Create semaphore for concurrency limiting
+	var sem chan struct{}
+	if ghs.cfg.ConcurrencyLimit > 0 {
+		sem = make(chan struct{}, ghs.cfg.ConcurrencyLimit)
+	}
+
 	// Get the ref (branch) count (future branch data) for each repo and record
 	// the given metrics
 	var wg sync.WaitGroup
@@ -107,20 +113,38 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		trunk := repo.DefaultBranchRef.Name
 		now := now
 
+		// Acquire semaphore slot before launching goroutine
+		if sem != nil {
+			select {
+			case sem <- struct{}{}:
+				// Acquired slot, continue
+			case <-ctx.Done():
+				// Context cancelled, skip remaining repos
+				wg.Done()
+				continue
+			}
+		}
+
 		go func() {
 			defer wg.Done()
+			// Release semaphore slot when done
+			if sem != nil {
+				defer func() { <-sem }()
+			}
 
 			branches, count, err := ghs.getBranches(ctx, genClient, name, trunk)
 			if err != nil {
 				ghs.logger.Sugar().Errorf("error getting branch count: %v", zap.Error(err))
 			}
 
+			refType := metadata.AttributeVcsRefTypeBranch
+
 			// Create a mutual exclusion lock to prevent the recordDataPoint
 			// SetStartTimestamp call from having a nil pointer panic
+			// This will be repeated before and after each metric recording.
 			mux.Lock()
-
-			refType := metadata.AttributeVcsRefTypeBranch
 			ghs.mb.RecordVcsRefCountDataPoint(now, int64(count), url, name, refType)
+			mux.Unlock()
 
 			// Iterate through the refs (branches) populating the Branch focused
 			// metrics
@@ -138,8 +162,10 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/githubreceiver/internal/scraper/githubscraper/README.md#github-limitations
 				// for more information as to why `BehindBy` and `AheadBy` are
 				// swapped.
+				mux.Lock()
 				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsRevisionDeltaDirectionAhead)
 				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsRevisionDeltaDirectionBehind)
+				mux.Unlock()
 
 				var additions int
 				var deletions int
@@ -151,9 +177,11 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					continue
 				}
 
+				mux.Lock()
 				ghs.mb.RecordVcsRefTimeDataPoint(now, age, url, branch.Repository.Name, branch.Name, headRefType)
 				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(additions), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsLineChangeTypeAdded)
 				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(deletions), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsLineChangeTypeRemoved)
+				mux.Unlock()
 			}
 
 			// Get the contributor count for each of the repositories
@@ -161,7 +189,9 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			if err != nil {
 				ghs.logger.Sugar().Errorf("error getting contributor count: %v", zap.Error(err))
 			}
+			mux.Lock()
 			ghs.mb.RecordVcsContributorCountDataPoint(now, int64(contribs), url, name)
+			mux.Unlock()
 
 			// Get change (pull request) data
 			prs, err := ghs.getPullRequests(ctx, genClient, name)
@@ -179,22 +209,29 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 					age := getAge(pr.CreatedAt, pr.MergedAt)
 
+					mux.Lock()
 					ghs.mb.RecordVcsChangeTimeToMergeDataPoint(now, age, url, name, pr.HeadRefName)
+					mux.Unlock()
 				} else {
 					open++
 
 					age := getAge(pr.CreatedAt, now.AsTime())
 
+					mux.Lock()
 					ghs.mb.RecordVcsChangeDurationDataPoint(now, age, url, name, pr.HeadRefName, metadata.AttributeVcsChangeStateOpen)
+					mux.Unlock()
 
 					if pr.Reviews.TotalCount > 0 {
 						age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
 
+						mux.Lock()
 						ghs.mb.RecordVcsChangeTimeToApprovalDataPoint(now, age, url, name, pr.HeadRefName)
+						mux.Unlock()
 					}
 				}
 			}
 
+			mux.Lock()
 			ghs.mb.RecordVcsChangeCountDataPoint(now, int64(open), url, metadata.AttributeVcsChangeStateOpen, name)
 			ghs.mb.RecordVcsChangeCountDataPoint(now, int64(merged), url, metadata.AttributeVcsChangeStateMerged, name)
 			mux.Unlock()

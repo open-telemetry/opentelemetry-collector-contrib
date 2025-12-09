@@ -34,6 +34,8 @@ func newTestExtension(t *testing.T, cfg Config) *ext {
 }
 
 func TestHandleLogLine(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		logLine     []byte
@@ -75,6 +77,8 @@ func TestHandleLogLine(t *testing.T) {
 }
 
 func TestUnmarshalLogs(t *testing.T) {
+	t.Parallel()
+
 	// this test will test all common log fields at once
 	data, err := os.ReadFile("testdata/log_entry.json")
 	require.NoError(t, err)
@@ -133,7 +137,7 @@ func TestUnmarshalLogs(t *testing.T) {
 }
 
 func TestPayloads(t *testing.T) {
-	// TODO Keep adding tests when adding new log types support
+	t.Parallel()
 
 	tests := []struct {
 		name             string
@@ -192,6 +196,16 @@ func TestPayloads(t *testing.T) {
 			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-w-internet-routing-details_expected.yaml",
 		},
 		{
+			name:             "vpc flow log - google services",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-google-service.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-google-service_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - managed instance mig regions",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-managed-instance.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-managed-instance_expected.yaml",
+		},
+		{
 			name:             "armor log - enforced security policy",
 			logFilename:      "testdata/armorlog/enforced_security_policy.json",
 			expectedFilename: "testdata/armorlog/enforced_security_policy_expected.yaml",
@@ -231,9 +245,10 @@ func TestPayloads(t *testing.T) {
 			data, err := os.ReadFile(tt.logFilename)
 			require.NoError(t, err)
 
-			content := bytes.NewBuffer([]byte{})
-			err = gojson.Compact(content, data)
-			require.NoError(t, err)
+			// Logs are expected to be one JSON object per line, so we compact them.
+			content := bytes.NewBuffer(nil)
+			compactionErr := gojson.Compact(content, data)
+			require.NoError(t, compactionErr)
 
 			logs, err := extension.UnmarshalLogs(content.Bytes())
 			require.NoError(t, err)

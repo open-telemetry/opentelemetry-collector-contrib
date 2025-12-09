@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -1112,7 +1112,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 				string(conventions.ServiceInstanceIDKey):  "instance-1",
 				string(conventions.ServiceVersionKey):     "1.0.1",
 			},
@@ -1151,7 +1151,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 			},
 		},
 		{
@@ -1196,7 +1196,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 				string(conventions.ServiceInstanceIDKey):  "explicit-instance",
 				string(conventions.ServiceVersionKey):     "explicit-version",
 				string(conventions.ServiceNameKey):        "explicit-name",
@@ -1235,7 +1235,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 			},
 		},
 		{
@@ -1314,9 +1314,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                     "1.1.1.1",
-				string(conventions.K8SContainerNameKey): "app",
-				containerImageRepoDigests:               []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
+				kube.K8sIPLabelName:                              "1.1.1.1",
+				string(conventions.K8SContainerNameKey):          "app",
+				string(conventions.ContainerImageRepoDigestsKey): []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
 		},
 		{
@@ -1407,7 +1407,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 			},
 		},
 		{

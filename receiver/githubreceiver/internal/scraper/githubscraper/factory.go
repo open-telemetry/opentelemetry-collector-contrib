@@ -30,6 +30,7 @@ func (*Factory) CreateDefaultConfig() internal.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ClientConfig:         clientConfig,
+		ConcurrencyLimit:     50, // Default to 50 concurrent goroutines
 	}
 }
 

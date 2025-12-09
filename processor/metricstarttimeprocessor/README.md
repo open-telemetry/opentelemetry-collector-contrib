@@ -20,15 +20,33 @@ points without a start time.
 
 ## Configuration
 
-Configuration allows configuring the strategy used to set the start time.
+The processor will work without configuring any settings, but the following options are supported:
+
+- `strategy` (default `true_reset_point`): Specifies which strategy to use. Valid values are
+  `true_reset_point`, `subtract_initial_point`, and `start_time_metric`. See
+  below for how each strategy works.
+- `gc_interval` (default `10m`): Defines the interval to check if any resources
+  have not emitted data since the last check. If a resource has not emitted any
+  data, it is removed from the cache to free up memory. Any additional data from
+  resources removed from the cache will be given a new start time.
+- `start_time_metric_regex`: Allows specifying a regex for a metric name
+  containing the start time for a resource. This option is only supported when
+  the strategy is `start_time_metric`, and if unset, the `process_start_time`
+  metric is used.
+
+Example configurations:
 
 ```yaml
 processors:
-    # processor name: metricstarttime
-    metricstarttime:
+  metricstarttime:
+```
 
-        # specify the strategy to use for setting the start time
-        strategy: true_reset_point
+```yaml
+processors:
+  metricstarttime:
+    strategy: start_time_metric
+    gc_interval: 1h
+    start_time_metric_regex: "^.+_start_time$"
 ```
 
 ### Strategy: True Reset Point

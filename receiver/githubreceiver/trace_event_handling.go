@@ -222,7 +222,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	span.SetParentSpanID(parentSpanID)
 	span.SetSpanID(jobSpanID)
 	span.SetName(event.GetWorkflowJob().GetName())
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 
 	startTime, endTime := correctActionTimestamps(event.GetWorkflowJob().GetCreatedAt().Time, event.GetWorkflowJob().GetCompletedAt().Time)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
@@ -335,7 +335,7 @@ func (*githubTracesReceiver) createStepSpan(
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetName(name)
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
@@ -410,7 +410,7 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	spanName := fmt.Sprintf("queue-%s", jobName)
 
 	span.SetName(spanName)
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 

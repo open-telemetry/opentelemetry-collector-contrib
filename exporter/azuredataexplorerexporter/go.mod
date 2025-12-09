@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azured
 go 1.24.0
 
 require (
-	github.com/Azure/azure-kusto-go/azkustodata v1.1.0
+	github.com/Azure/azure-kusto-go/azkustodata v1.1.1
 	github.com/Azure/azure-kusto-go/azkustoingest v1.1.0
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12

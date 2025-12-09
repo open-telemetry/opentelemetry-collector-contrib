@@ -6,7 +6,8 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [jackgopack4, dineshg13, mx-psi, songy23]
+    active: [ankitpatel96, dineshg13, IbraheemA, jade-guiton-dd,  mx-psi, songy23]
+    emeritus: [jackgopack4]
 
 tests:
   goleak:

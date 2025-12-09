@@ -53,7 +53,7 @@ resourceSpans:
       - scope: {}
         spans:
           - endTimeUnixNano: "1746195355000000000"
-            kind: 2
+            kind: 1
             name: build
             parentSpanId: 3b54c768f3ef27e1
             spanId: 84e27971417e5249
@@ -68,7 +68,7 @@ resourceSpans:
                 value:
                   doubleValue: 0
             endTimeUnixNano: "1746195355000000000"
-            kind: 2
+            kind: 1
             name: queue-build
             parentSpanId: 84e27971417e5249
             spanId: 750687c67fcd26a3
