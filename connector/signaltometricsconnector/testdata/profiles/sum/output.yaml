@@ -15,6 +15,7 @@ resourceMetrics:
           - description: Count total number of profiles
             name: total.profiles.sum
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "3"
@@ -22,6 +23,7 @@ resourceMetrics:
           - description: Count total number of profiles as per profile.foo attribute
             name: profiles.foo.sum
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "1"
@@ -45,6 +47,7 @@ resourceMetrics:
           - description: Count total number of profiles with resource attribute foo
             name: total.profiles.resource.foo.sum
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "3"

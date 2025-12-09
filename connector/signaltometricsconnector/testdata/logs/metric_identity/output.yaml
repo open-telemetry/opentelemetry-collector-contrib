@@ -176,6 +176,7 @@ resourceMetrics:
           - description: Logrecords as sum with log.duration from attributes
             name: metric.log.duration
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asDouble: 128

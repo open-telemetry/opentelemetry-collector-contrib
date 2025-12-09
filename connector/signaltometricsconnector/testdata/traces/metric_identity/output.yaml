@@ -181,6 +181,7 @@ resourceMetrics:
           - description: Spans with resource attribute including resource.foo as a sum metric
             name: metric.trace.duration
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "30902"
