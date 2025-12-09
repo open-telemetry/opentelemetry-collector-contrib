@@ -228,7 +228,7 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
-					tCtx := ottllog.NewTransformContextPtr(log, scopeLog.Scope(), resourceLog.Resource(), scopeLog, resourceLog)
+					tCtx := ottllog.NewTransformContextPtr(resourceLog, scopeLog, log)
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {

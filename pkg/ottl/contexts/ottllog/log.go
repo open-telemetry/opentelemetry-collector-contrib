@@ -100,11 +100,11 @@ func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.
 
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(logRecord plog.LogRecord, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeLogs plog.ScopeLogs, resourceLogs plog.ResourceLogs, options ...TransformContextOption) *TransformContext {
+func NewTransformContextPtr(resourceLogs plog.ResourceLogs, scopeLogs plog.ScopeLogs, logRecord plog.LogRecord, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.logRecord = logRecord
-	tCtx.instrumentationScope = instrumentationScope
-	tCtx.resource = resource
+	tCtx.instrumentationScope = scopeLogs.Scope()
+	tCtx.resource = resourceLogs.Resource()
 	tCtx.scopeLogs = scopeLogs
 	tCtx.resourceLogs = resourceLogs
 	for _, opt := range options {

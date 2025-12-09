@@ -36,15 +36,13 @@ func (a *logAttributesProcessor) processLogs(ctx context.Context, ld plog.Logs) 
 	for i := 0; i < rls.Len(); i++ {
 		rs := rls.At(i)
 		ilss := rs.ScopeLogs()
-		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			logs := ils.LogRecords()
-			library := ils.Scope()
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
 				if a.skipExpr != nil {
-					lCtx := ottllog.NewTransformContextPtr(lr, library, resource, ils, rs)
+					lCtx := ottllog.NewTransformContextPtr(rs, ils, lr)
 					skip, err := a.skipExpr.Eval(ctx, lCtx)
 					lCtx.Close()
 					if err != nil {

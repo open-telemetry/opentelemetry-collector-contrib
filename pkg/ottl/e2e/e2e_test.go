@@ -2044,14 +2044,14 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 }
 
 func constructLogTransformContext() *ottllog.TransformContext {
-	resource := pcommon.NewResource()
-	resource.Attributes().PutStr("host.name", "localhost")
-	resource.Attributes().PutStr("A|B|C", "newValue")
+	rLogs := plog.NewResourceLogs()
+	rLogs.Resource().Attributes().PutStr("host.name", "localhost")
+	rLogs.Resource().Attributes().PutStr("A|B|C", "newValue")
 
-	scope := pcommon.NewInstrumentationScope()
+	scope := rLogs.ScopeLogs().AppendEmpty().Scope()
 	scope.SetName("scope")
 
-	logRecord := plog.NewLogRecord()
+	logRecord := rLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("operationA")
 	logRecord.SetTimestamp(TestLogTimestamp)
 	logRecord.SetObservedTimestamp(TestObservedTimestamp)
@@ -2107,17 +2107,17 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	s4.AppendEmpty().SetInt(42)
 	s4.AppendEmpty().SetBool(true)
 
-	return ottllog.NewTransformContextPtr(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructLogTransformContextEditors() *ottllog.TransformContext {
-	resource := pcommon.NewResource()
-	resource.Attributes().PutStr("host.name", "localhost")
+	rLogs := plog.NewResourceLogs()
+	rLogs.Resource().Attributes().PutStr("host.name", "localhost")
 
-	scope := pcommon.NewInstrumentationScope()
+	scope := rLogs.ScopeLogs().AppendEmpty().Scope()
 	scope.SetName("scope")
 
-	logRecord := plog.NewLogRecord()
+	logRecord := rLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("operationA")
 	logRecord.SetTimestamp(TestLogTimestamp)
 	logRecord.SetObservedTimestamp(TestObservedTimestamp)
@@ -2154,18 +2154,18 @@ func constructLogTransformContextEditors() *ottllog.TransformContext {
 	thing2.PutStr("name", "bar")
 	thing2.PutInt("value", 5)
 
-	return ottllog.NewTransformContextPtr(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
-	resource := pcommon.NewResource()
-	resource.Attributes().PutStr("host.name", "localhost")
-	resource.Attributes().PutStr("A|B|C", "newValue")
+	rLogs := plog.NewResourceLogs()
+	rLogs.Resource().Attributes().PutStr("host.name", "localhost")
+	rLogs.Resource().Attributes().PutStr("A|B|C", "newValue")
 
-	scope := pcommon.NewInstrumentationScope()
+	scope := rLogs.ScopeLogs().AppendEmpty().Scope()
 	scope.SetName("scope")
 
-	logRecord := plog.NewLogRecord()
+	logRecord := rLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("operationA")
 	logRecord.SetTimestamp(TestLogTimestamp)
 	logRecord.SetObservedTimestamp(TestObservedTimestamp)
@@ -2206,7 +2206,7 @@ func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
 	thing2 := s2.AppendEmpty().SetEmptyMap()
 	thing2.PutStr("name", "bar")
 
-	return ottllog.NewTransformContextPtr(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructSpanTransformContext() *ottlspan.TransformContext {
@@ -2271,11 +2271,10 @@ func fillSpanOne(span ptrace.Span) {
 func Benchmark_XML_Functions(b *testing.B) {
 	testXML := `<Data><From><Test>1</Test><Test>2</Test></From><To></To></Data>`
 	tCtxWithTestBody := func() *ottllog.TransformContext {
-		resource := pcommon.NewResource()
-		scope := pcommon.NewInstrumentationScope()
-		logRecord := plog.NewLogRecord()
+		rLogs := plog.NewResourceLogs()
+		logRecord := rLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(testXML)
-		return ottllog.NewTransformContextPtr(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+		return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 	}
 
 	settings := componenttest.NewNopTelemetrySettings()
