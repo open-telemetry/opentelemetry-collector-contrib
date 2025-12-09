@@ -30,8 +30,6 @@ github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/SAP/go-hdb v1.14.13 h1:wHq0Px0+omlXpj6jxQG2e8QLaSb5TeHIUCbg1hnWCmk=
-github.com/SAP/go-hdb v1.14.13/go.mod h1:p6N5zhGECK/7oE7l+DVp23QWhr11e09AorFo/Ps6nOk=
 github.com/SAP/go-hdb v1.14.14 h1:4dEY3nYL5aEEkZNiB1bmPAMiwX2ldf2o7x5N/r/RzN4=
 github.com/SAP/go-hdb v1.14.14/go.mod h1:EditCW+JejwimsVBBS6rFL7f7F8CIfwkAEfSYcpxdPM=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
