@@ -136,10 +136,10 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.11 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	github.com/splunk/stef/go/grpc v0.0.8 // indirect
-	github.com/splunk/stef/go/otel v0.0.8 // indirect
-	github.com/splunk/stef/go/pdata v0.0.8 // indirect
-	github.com/splunk/stef/go/pkg v0.0.8 // indirect
+	github.com/splunk/stef/go/grpc v0.0.9 // indirect
+	github.com/splunk/stef/go/otel v0.0.9 // indirect
+	github.com/splunk/stef/go/pdata v0.0.9 // indirect
+	github.com/splunk/stef/go/pkg v0.0.9 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
@@ -242,7 +242,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
 	google.golang.org/grpc v1.77.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	modernc.org/b/v2 v2.1.0 // indirect
+	modernc.org/b/v2 v2.1.10 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../../receiver/syslogreceiver
