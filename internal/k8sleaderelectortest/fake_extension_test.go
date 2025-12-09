@@ -31,7 +31,7 @@ func TestFakeLeaderElection_SetCallBackFuncs_And_Invoke(t *testing.T) {
 	var leadingCalled, stoppingCalled bool
 	fle := &FakeLeaderElection{}
 	fle.SetCallBackFuncs(
-		func(ctx context.Context) { leadingCalled = true },
+		func(_ context.Context) { leadingCalled = true },
 		func() { stoppingCalled = true },
 	)
 	fle.InvokeOnLeading()
@@ -46,10 +46,10 @@ func TestFakeLeaderElection_SetCallBackFuncs_And_Invoke(t *testing.T) {
 
 func TestFakeLeaderElection_Start_Shutdown(t *testing.T) {
 	fle := &FakeLeaderElection{}
-	if err := fle.Start(context.Background(), nil); err != nil {
+	if err := fle.Start(t.Context(), nil); err != nil {
 		t.Errorf("expected Start to return nil, got %v", err)
 	}
-	if err := fle.Shutdown(context.Background()); err != nil {
+	if err := fle.Shutdown(t.Context()); err != nil {
 		t.Errorf("expected Shutdown to return nil, got %v", err)
 	}
 }
