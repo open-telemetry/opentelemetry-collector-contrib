@@ -219,7 +219,8 @@ const successfulInstanceResponse = `{
     "full_configuration": "",
     "health_status": "",
     "collector_resource_attributes": {},
-    "collector_deployment_type": "unknown"
+    "collector_deployment_type": "unknown",
+	"ttl": 0
   },
   "uuid": "test-uuid"
 }`
