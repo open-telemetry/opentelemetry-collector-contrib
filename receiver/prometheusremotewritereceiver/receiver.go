@@ -15,7 +15,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
-	promconfig "github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -162,7 +162,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return
 	}
-	if msgType != promconfig.RemoteWriteProtoMsgV2 {
+	if msgType != remoteapi.WriteV2MessageType {
 		prw.settings.Logger.Warn("message received with unsupported proto version, rejecting")
 		http.Error(w, "Unsupported proto version", http.StatusUnsupportedMediaType)
 		return
@@ -209,7 +209,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
 // We can't expect that senders of remote-write v1 will add the "proto=" parameter since it was not
 // a requirement in v1. So, if the parameter is not found, we assume v1.
-func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig.RemoteWriteProtoMsg, error) {
+func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.WriteMessageType, error) {
 	contentType = strings.TrimSpace(contentType)
 
 	parts := strings.Split(contentType, ";")
@@ -224,7 +224,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig
 		}
 
 		if strings.TrimSpace(parameter[0]) == "proto" {
-			ret := promconfig.RemoteWriteProtoMsg(parameter[1])
+			ret := remoteapi.WriteMessageType(parameter[1])
 			if err := ret.Validate(); err != nil {
 				return "", fmt.Errorf("got %v content type; %w", contentType, err)
 			}
@@ -233,7 +233,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig
 	}
 
 	// No "proto=" parameter found, assume v1.
-	return promconfig.RemoteWriteProtoMsgV1, nil
+	return remoteapi.WriteV1MessageType, nil
 }
 
 // getOrCreateRM returns or creates the ResourceMetrics for a job/instance pair within an HTTP request.
