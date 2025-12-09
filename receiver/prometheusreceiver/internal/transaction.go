@@ -33,7 +33,7 @@ import (
 var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	featuregate.StageStable,
-	featuregate.WithRegisterFromVersion("v0.120.1"),
+	featuregate.WithRegisterFromVersion("v0.121.0"),
 	featuregate.WithRegisterToVersion("v0.142.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" leave the start time unset. Use the new metricstarttime processor instead."),
