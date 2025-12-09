@@ -86,21 +86,21 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.177 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.10 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.10 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.50.0 // indirect
-	github.com/DataDog/datadog-go/v5 v5.8.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.51.0 // indirect
+	github.com/DataDog/datadog-go/v5 v5.8.2 // indirect
 	github.com/DataDog/go-sqllexer v0.1.9 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
@@ -314,7 +314,7 @@ require (
 	github.com/splunk/stef/go/pdata v0.0.9 // indirect
 	github.com/splunk/stef/go/pkg v0.0.9 // indirect
 	github.com/stackitcloud/stackit-sdk-go/core v0.17.3 // indirect
-	github.com/tinylib/msgp v1.5.0 // indirect
+	github.com/tinylib/msgp v1.6.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
