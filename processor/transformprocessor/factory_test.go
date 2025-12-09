@@ -46,7 +46,7 @@ func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	for _, f := range DefaultSpanFunctionsNew() {
 		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
 	}
-	for _, f := range DefaultSpanEventFunctions() {
+	for _, f := range DefaultSpanEventFunctionsNew() {
 		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
 	}
 	for _, f := range DefaultProfileFunctions() {
@@ -921,7 +921,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			factoryOptions: []FactoryOption{
 				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
 				WithSpanFunctionsNew([]ottl.Factory[*ottlspan.TransformContext]{createTestFuncFactory[*ottlspan.TransformContext]("TestSpanFunc")}),
-				WithSpanEventFunctionsNew(DefaultSpanEventFunctions()),
+				WithSpanEventFunctionsNew(DefaultSpanEventFunctionsNew()),
 			},
 		},
 		{
@@ -935,7 +935,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			wantErrorWith: `undefined function "TestSpanFunc"`,
 			factoryOptions: []FactoryOption{
 				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
-				WithSpanEventFunctionsNew(DefaultSpanEventFunctions()),
+				WithSpanEventFunctionsNew(DefaultSpanEventFunctionsNew()),
 			},
 		},
 		{
@@ -973,7 +973,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			},
 			factoryOptions: []FactoryOption{
 				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
-				WithSpanEventFunctionsNew(DefaultSpanEventFunctions()),
+				WithSpanEventFunctionsNew(DefaultSpanEventFunctionsNew()),
 				WithSpanEventFunctionsNew([]ottl.Factory[*ottlspanevent.TransformContext]{createTestFuncFactory[*ottlspanevent.TransformContext]("TestSpanEventFunc")}),
 			},
 		},
@@ -988,7 +988,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			wantErrorWith: `undefined function "TestSpanEventFunc"`,
 			factoryOptions: []FactoryOption{
 				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
-				WithSpanEventFunctionsNew(DefaultSpanEventFunctions()),
+				WithSpanEventFunctionsNew(DefaultSpanEventFunctionsNew()),
 			},
 		},
 		{

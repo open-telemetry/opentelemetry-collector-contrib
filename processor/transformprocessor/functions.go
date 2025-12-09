@@ -66,7 +66,12 @@ func DefaultSpanFunctionsNew() []ottl.Factory[*ottlspan.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanFunctionsMap()))
 }
 
-func DefaultSpanEventFunctions() []ottl.Factory[*ottlspanevent.TransformContext] {
+// Deprecated: [v0.142.0] use DefaultSpanEventFunctionsNew.
+func DefaultSpanEventFunctions() []ottl.Factory[ottlspanevent.TransformContext] {
+	return slices.Collect(maps.Values(ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()))
+}
+
+func DefaultSpanEventFunctionsNew() []ottl.Factory[*ottlspanevent.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanEventFunctionsMap()))
 }
 
