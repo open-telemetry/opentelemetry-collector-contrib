@@ -7,11 +7,11 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.74.0-rc.3
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.74.0-rc.2
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.74.0-rc.2
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.74.0-rc.3
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.74.0-rc.3
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.74.0-rc.2
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.74.0-rc.2
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.74.0-rc.3
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.74.0-rc.3
@@ -92,8 +92,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/types v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/metrics v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.74.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/rum v0.74.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.74.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/rum v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.74.0-rc.3 // indirect
@@ -132,7 +132,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/api/api/def v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets/noop-impl v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/helper v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/orchestrator/util v0.74.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/orchestrator/util v0.74.0-rc.3 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
