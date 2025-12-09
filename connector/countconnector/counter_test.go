@@ -14,8 +14,8 @@ import (
 )
 
 func Test_update_attribute_inheritance(t *testing.T) {
-	spanMetricDefs := make(map[string]metricDef[ottlspan.TransformContext])
-	spanMetricDefs[defaultMetricNameSpans] = metricDef[ottlspan.TransformContext]{
+	spanMetricDefs := make(map[string]metricDef[*ottlspan.TransformContext])
+	spanMetricDefs[defaultMetricNameSpans] = metricDef[*ottlspan.TransformContext]{
 		desc: defaultMetricDescSpans,
 		attrs: []AttributeConfig{
 			{
@@ -129,8 +129,8 @@ func Test_update_attribute_inheritance(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spansCounter := newCounter[ottlspan.TransformContext](spanMetricDefs)
-			err := spansCounter.update(t.Context(), tt.spanAttr, tt.scopeAttr, tt.resourceAttr, ottlspan.TransformContext{})
+			spansCounter := newCounter[*ottlspan.TransformContext](spanMetricDefs)
+			err := spansCounter.update(t.Context(), tt.spanAttr, tt.scopeAttr, tt.resourceAttr, &ottlspan.TransformContext{})
 			require.NoError(t, err)
 			require.NotNil(t, spansCounter)
 			m := spansCounter.counts[defaultMetricNameSpans]
@@ -215,15 +215,15 @@ func Test_update_attributes_types(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		spanMetricDefs := make(map[string]metricDef[ottlspan.TransformContext])
-		spanMetricDefs[defaultMetricNameSpans] = metricDef[ottlspan.TransformContext]{
+		spanMetricDefs := make(map[string]metricDef[*ottlspan.TransformContext])
+		spanMetricDefs[defaultMetricNameSpans] = metricDef[*ottlspan.TransformContext]{
 			desc:  defaultMetricDescSpans,
 			attrs: tt.config,
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
 			spansCounter := newCounter(spanMetricDefs)
-			err := spansCounter.update(t.Context(), pcommon.NewMap(), pcommon.NewMap(), tt.inputAttr, ottlspan.TransformContext{})
+			err := spansCounter.update(t.Context(), pcommon.NewMap(), pcommon.NewMap(), tt.inputAttr, &ottlspan.TransformContext{})
 			require.NoError(t, err)
 			require.NotNil(t, spansCounter)
 			m := spansCounter.counts[defaultMetricNameSpans]

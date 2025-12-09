@@ -11,7 +11,7 @@ import (
 
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
-	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/otel/otelstef"
 	stefpdatametrics "github.com/splunk/stef/go/pdata/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -49,7 +49,7 @@ func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
 
-	schema, err := oteltef.MetricsWireSchema()
+	schema, err := otelstef.MetricsWireSchema()
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (r *stefReceiver) Shutdown(context.Context) error {
 func (r *stefReceiver) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.STEFStream) error {
 	r.settings.Logger.Debug("Incoming STEF/gRPC connection.")
 
-	reader, err := oteltef.NewMetricsReader(grpcReader)
+	reader, err := otelstef.NewMetricsReader(grpcReader)
 	if err != nil {
 		r.settings.Logger.Error("Cannot decode data on incoming STEF/gRPC connection", zap.Error(err))
 		return err

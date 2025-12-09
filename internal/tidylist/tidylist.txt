@@ -158,9 +158,9 @@ extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
 extension/headerssetterextension
-extension/healthcheckextension
 pkg/status
 internal/healthcheck
+extension/healthcheckextension
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
