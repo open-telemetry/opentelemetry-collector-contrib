@@ -30,7 +30,7 @@ import (
 
 const (
 	payloadSendingInterval = 5 * time.Minute
-	payloadTTL             = payloadSendingInterval * 2
+	payloadTTL             = payloadSendingInterval * 3
 )
 
 // uuidProvider defines an interface for generating UUIDs, allowing for mocking in tests.
