@@ -49,10 +49,10 @@ require (
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.74.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.74.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.74.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.74.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.74.0-rc.3 // indirect
@@ -87,11 +87,11 @@ require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.74.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/rum v0.74.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/rum v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/orchestrator/util v0.74.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/orchestrator/util v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.74.0-rc.3 // indirect
