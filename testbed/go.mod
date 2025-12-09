@@ -309,10 +309,10 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	github.com/splunk/stef/go/grpc v0.0.8 // indirect
-	github.com/splunk/stef/go/otel v0.0.8 // indirect
-	github.com/splunk/stef/go/pdata v0.0.8 // indirect
-	github.com/splunk/stef/go/pkg v0.0.8 // indirect
+	github.com/splunk/stef/go/grpc v0.0.9 // indirect
+	github.com/splunk/stef/go/otel v0.0.9 // indirect
+	github.com/splunk/stef/go/pdata v0.0.9 // indirect
+	github.com/splunk/stef/go/pkg v0.0.9 // indirect
 	github.com/stackitcloud/stackit-sdk-go/core v0.17.3 // indirect
 	github.com/tinylib/msgp v1.5.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
@@ -420,7 +420,7 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
-	modernc.org/b/v2 v2.1.0 // indirect
+	modernc.org/b/v2 v2.1.10 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
