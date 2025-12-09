@@ -37,6 +37,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.OtelsvcK8sNodeDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sNodeUpdated.Add(context.Background(), 1)
 	tb.OtelsvcK8sPodAdded.Add(context.Background(), 1)
+	tb.OtelsvcK8sPodAssociation.Add(context.Background(), 1)
 	tb.OtelsvcK8sPodDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sPodTableSize.Record(context.Background(), 1)
 	tb.OtelsvcK8sPodUpdated.Add(context.Background(), 1)
@@ -95,6 +96,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sPodAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sPodAssociation(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sPodDeleted(t, testTel,
