@@ -130,9 +130,9 @@ const (
 	// Autoscale specific attributes
 	attributeAzureAutoscaleDescription     = "azure.autoscale.description"
 	attributeAzureAutoscaleResourceName    = "azure.autoscale.resource.name"
-	attributeAzureAutoscaleOldInstances    = "azure.autoscale.old_instances_count"
-	attributeAzureAutoscaleNewInstances    = "azure.autoscale.new_instances_count"
-	attributeAzureAutoscaleLastScaleAction = "azure.autoscale.last_scale_timestamp"
+	attributeAzureAutoscaleOldInstances    = "azure.autoscale.instances.previous_count"
+	attributeAzureAutoscaleNewInstances    = "azure.autoscale.instances.count"
+	attributeAzureAutoscaleLastScaleAction = "azure.autoscale.resource.last_scale"
 
 	// Policy specific attributes
 	attributeAzurePolicyIsComplianceCheck = "azure.policy.compliance_check"
@@ -169,8 +169,8 @@ const (
 	attributeAzureServiceHealthCommunicationRouteType   = "azure.servicehealth.communication.route_type"
 	attributeAzureServiceHealthIncidentType             = "azure.servicehealth.incident.type"
 	attributeAzureServiceHealthTrackingID               = "azure.servicehealth.tracking.id"
-	attributeAzureServiceHealthImpactStartTime          = "azure.servicehealth.impact.start_timestamp"
-	attributeAzureServiceHealthImpactMitigationTime     = "azure.servicehealth.impact.mitigation_timestamp"
+	attributeAzureServiceHealthImpactStartTime          = "azure.servicehealth.impact.start"
+	attributeAzureServiceHealthImpactMitigationTime     = "azure.servicehealth.impact.mitigation"
 	attributeAzureServiceHealthImpactedServices         = "azure.servicehealth.impact.services"
 	attributeAzureServiceHealthImpactType               = "azure.servicehealth.impact.type"
 	attributeAzureServiceHealthImpactCategory           = "azure.servicehealth.impact.category"
@@ -193,8 +193,8 @@ const (
 	// Resource Health specific attributes
 	attributeAzureResourceHealthTitle                = "azure.resourcehealth.title"
 	attributeAzureResourceHealthDetails              = "azure.resourcehealth.details"
-	attributeAzureResourceHealthCurrentHealthStatus  = "azure.resourcehealth.current_health_status"
-	attributeAzureResourceHealthPreviousHealthStatus = "azure.resourcehealth.previous_health_status"
+	attributeAzureResourceHealthCurrentHealthStatus  = "azure.resourcehealth.state"
+	attributeAzureResourceHealthPreviousHealthStatus = "azure.resourcehealth.previous_state"
 	attributeAzureResourceHealthType                 = "azure.resourcehealth.type"
 	attributeAzureResourceHealthCause                = "azure.resourcehealth.cause"
 )
