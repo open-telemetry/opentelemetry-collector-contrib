@@ -6,6 +6,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -169,6 +170,8 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second}
 		// Set MinFetchSize to ensure all records are fetched at once
 		cfg.MinFetchSize = int32(len(data) * len(rs))
+		// Use a very short MaxFetchWait to avoid delays when MinFetchSize cannot be met
+		cfg.MaxFetchWait = 10 * time.Millisecond
 		cfg.ErrorBackOff = testConfig.backOff
 		cfg.MessageMarking = testConfig.mark
 
@@ -202,10 +205,16 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			require.NoError(tb, consumer.Start(ctx, componenttest.NewNopHost()))
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
 
+			// Use longer timeout on Windows due to tick granularity and slower CI
+			timeout := 2 * time.Second
+			if runtime.GOOS == "windows" {
+				timeout = 5 * time.Second
+			}
+
 			select {
 			case consuming <- struct{}{}:
 				close(consuming) // Close the channel so the rest exit.
-			case <-time.After(2 * time.Second):
+			case <-time.After(timeout):
 				tb.Fatal("expected to consume a message")
 			}
 
