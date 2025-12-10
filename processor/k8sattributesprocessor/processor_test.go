@@ -198,6 +198,25 @@ func newMultiTest(
 	m.mp = mp
 	m.lp = lp
 	m.pp = pp
+
+	// Register cleanup to shutdown all processors
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if m.tp != nil {
+			_ = m.tp.Shutdown(ctx)
+		}
+		if m.mp != nil {
+			_ = m.mp.Shutdown(ctx)
+		}
+		if m.lp != nil {
+			_ = m.lp.Shutdown(ctx)
+		}
+		if m.pp != nil {
+			_ = m.pp.Shutdown(ctx)
+		}
+	})
+
 	return m
 }
 
