@@ -1086,6 +1086,54 @@ func TestNumericAttributeCases(t *testing.T) {
 	}
 }
 
+// TestDeleteQueueCleared verifies that all in memory traces are removed from
+// both the idToTrace map as well as the deleteTraceQueue.
+func TestDeleteQueueCleared(t *testing.T) {
+	controller := newTestTSPController()
+
+	traceIDs, batches := generateIDsAndBatches(128)
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		// Use cache so that traces are cleared from memory.
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    128,
+			NonSampledCacheSize: 128,
+		},
+		PolicyCfgs: testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = sp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = sp.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	for _, batch := range batches {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+	}
+	controller.waitForTick()
+	controller.waitForTick()
+
+	// Make sure about half of traces are sampled before a tick is called.
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 128)
+	// All traces should be flushed from the map.
+	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
+	// All traces should be removed from the delete queue.
+	assert.Zero(t, sp.(*tailSamplingSpanProcessor).deleteTraceQueue.Len())
+}
+
 func TestExtension(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)

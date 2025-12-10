@@ -50,6 +50,7 @@ type traceData struct {
 	arrivalTime   time.Time
 	decisionTime  time.Time
 	finalDecision samplingpolicy.Decision
+	deleteElement *list.Element
 }
 
 type tailSamplingSpanProcessor struct {
@@ -525,8 +526,11 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 		tsp.logger.Error("deleteTraceQueue is empty, but we're waiting for space. This is a bug!")
 		return
 	}
-	tsp.dropTrace(front.Value.(pcommon.TraceID), time.Now())
-	tsp.deleteTraceQueue.Remove(front)
+	if !tsp.dropTrace(front.Value.(pcommon.TraceID), time.Now()) {
+		// Somehow the trace was already removed from idToTrace, but not the
+		// queue. Drop the element to avoid an infinite loop.
+		tsp.deleteTraceQueue.Remove(front)
+	}
 }
 
 // samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
@@ -716,7 +720,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.decisionBatcher.AddToCurrentBatch(id)
 
 		if !tsp.blockOnOverflow {
-			tsp.deleteTraceQueue.PushBack(id)
+			actualData.deleteElement = tsp.deleteTraceQueue.PushBack(id)
 		}
 	} else {
 		actualData.SpanCount += spanCount
@@ -772,15 +776,21 @@ func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletionTime time.Time) {
+// dropTrace removes the trace from all memory locations. Returns true if it was removed and false if not found.
+func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletionTime time.Time) bool {
 	trace, ok := tsp.idToTrace[traceID]
 	if !ok {
 		tsp.logger.Debug("Attempt to delete trace ID not on table", zap.Stringer("id", traceID))
-		return
+		return false
 	}
 
 	delete(tsp.idToTrace, traceID)
+	if trace.deleteElement != nil {
+		tsp.deleteTraceQueue.Remove(trace.deleteElement)
+	}
+
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.arrivalTime)/time.Second))
+	return true
 }
 
 // forwardSpans sends the trace data to the next consumer. it is different from
