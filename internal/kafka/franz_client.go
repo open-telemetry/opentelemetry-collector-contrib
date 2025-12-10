@@ -97,24 +97,35 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConfig,
 	consumerCfg configkafka.ConsumerConfig,
 	topics []string,
+	excludeTopics []string,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
 	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
+		kgo.FetchMinBytes(consumerCfg.MinFetchSize),
+		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
 	}, opts...)...)
 	if err != nil {
 		return nil, err
 	}
 
+	// Check if any topic uses regex pattern
+	isRegex := false
 	for _, t := range topics {
 		// Similar to librdkafka, if the topic starts with `^`, it is a regex topic:
 		// https://github.com/confluentinc/librdkafka/blob/b871fdabab84b2ea1be3866a2ded4def7e31b006/src/rdkafka.h#L3899-L3938
 		if strings.HasPrefix(t, "^") {
+			isRegex = true
 			opts = append(opts, kgo.ConsumeRegex())
 			break
 		}
+	}
+
+	// Add exclude topics only when regex consumption is enabled
+	if len(excludeTopics) > 0 && isRegex {
+		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
 	}
 
 	// Configure session timeout
@@ -127,13 +138,7 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 		opts = append(opts, kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval))
 	}
 
-	// Configure fetch sizes
-	if consumerCfg.MinFetchSize > 0 {
-		opts = append(opts, kgo.FetchMinBytes(consumerCfg.MinFetchSize))
-	}
-	if consumerCfg.DefaultFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxBytes(consumerCfg.DefaultFetchSize))
-	}
+	// Configure per-partition fetch size
 	if consumerCfg.MaxPartitionFetchSize > 0 {
 		opts = append(opts, kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize))
 	}

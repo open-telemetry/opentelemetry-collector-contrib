@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -629,7 +629,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				Name: "k8s.pod.ip",
 				Sources: []kube.AssociationSource{
 					{
 						From: "resource_attribute",
@@ -638,7 +637,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 				},
 			},
 			{
-				Name: "k8s.pod.ip",
 				Sources: []kube.AssociationSource{
 					{
 						From: "resource_attribute",
@@ -647,7 +645,6 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 				},
 			},
 			{
-				Name: "k8s.pod.ip",
 				Sources: []kube.AssociationSource{
 					{
 						From: "resource_attribute",
@@ -870,6 +867,71 @@ func TestAddNamespaceLabels(t *testing.T) {
 	})
 }
 
+func TestServiceNamespaceAnnotationTakesPrecedence(t *testing.T) {
+	// This test verifies that when a pod has an explicit service.namespace attribute
+	// (e.g., from resource.opentelemetry.io/service.namespace annotation),
+	// it should take precedence over the k8s.namespace.name value as per semantic conventions
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{string(conventions.ServiceNamespaceKey), "k8s.pod.ip"}
+			return cfg
+		}(),
+		nil,
+	)
+
+	podIP := "1.1.1.1"
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				Sources: []kube.AssociationSource{
+					{
+						From: "connection",
+					},
+				},
+			},
+		}
+	})
+
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		pi := kube.PodIdentifier{
+			kube.PodIdentifierAttributeFromConnection(podIP),
+		}
+		// Pod is in kubernetes namespace "default" but has explicit service.namespace="agent" from annotation
+		kp.kc.(*fakeClient).Pods[pi] = &kube.Pod{
+			Name:      "test-pod",
+			Namespace: "default",
+			Attributes: map[string]string{
+				string(conventions.ServiceNamespaceKey): "agent", // from resource.opentelemetry.io/service.namespace annotation
+			},
+		}
+	})
+
+	ctx := client.NewContext(t.Context(), client.Info{
+		Addr: &net.IPAddr{
+			IP: net.ParseIP(podIP),
+		},
+	})
+	m.testConsume(
+		ctx,
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		generateProfiles(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(res pcommon.Resource) {
+		// service.namespace should be "agent" from the annotation, NOT "default" from k8s.namespace.name
+		assertResourceHasStringAttribute(t, res, "service.namespace", "agent")
+		assertResourceHasStringAttribute(t, res, "k8s.pod.ip", podIP)
+	})
+}
+
 func TestAddNodeLabels(t *testing.T) {
 	m := newMultiTest(
 		t,
@@ -1020,7 +1082,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1051,7 +1112,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 				string(conventions.ServiceInstanceIDKey):  "instance-1",
 				string(conventions.ServiceVersionKey):     "1.0.1",
 			},
@@ -1061,7 +1122,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1091,7 +1151,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 			},
 		},
 		{
@@ -1099,7 +1159,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1137,7 +1196,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 				string(conventions.ServiceInstanceIDKey):  "explicit-instance",
 				string(conventions.ServiceVersionKey):     "explicit-version",
 				string(conventions.ServiceNameKey):        "explicit-name",
@@ -1149,7 +1208,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1177,7 +1235,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 			},
 		},
 		{
@@ -1256,9 +1314,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                     "1.1.1.1",
-				string(conventions.K8SContainerNameKey): "app",
-				containerImageRepoDigests:               []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
+				kube.K8sIPLabelName:                              "1.1.1.1",
+				string(conventions.K8SContainerNameKey):          "app",
+				string(conventions.ContainerImageRepoDigestsKey): []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
 		},
 		{
@@ -1322,7 +1380,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1350,7 +1407,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				containerImageTag:                         "1.0.1",
 			},
 		},
 		{
@@ -1358,7 +1415,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
-						Name: "k8s.pod.uid",
 						Sources: []kube.AssociationSource{
 							{
 								From: "resource_attribute",
@@ -1441,7 +1497,6 @@ func TestProcessorPicksUpPassthroughPodIp(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				Name: "k8s.pod.ip",
 				Sources: []kube.AssociationSource{
 					{
 						From: "resource_attribute",
@@ -1602,9 +1657,6 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			hostname: "invalid-ip",
 			expectedAttrs: map[string]string{
 				string(conventions.HostNameKey): "invalid-ip",
-				"k":                             "v",
-				"1":                             "2",
-				"aa":                            "b",
 			},
 		},
 		{

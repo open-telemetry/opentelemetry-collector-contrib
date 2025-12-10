@@ -16,7 +16,7 @@ jobs:
       go_sources: ${{ steps.changes.outputs.go_sources }}
       go_tests: ${{ steps.changes.outputs.go_tests }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
 
@@ -25,31 +25,43 @@ jobs:
         id: changes
         env:
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        # Skip scoped tests if too many files are changed
         run: |
           changed_files="$(git diff --name-only --diff-filter=ACMRTUXB "$(git merge-base origin/main "$PR_HEAD")" "$PR_HEAD")"
           echo changed_files
           echo "$changed_files"
+          LIMIT=50
 
           go_sources=$(echo "$changed_files" | tr ' ' '\n' | grep -E '\.go$' | grep -v -E '.*_test\.go$' || true)
           echo go_sources
           echo "$go_sources"
           if [[ -n "$go_sources" ]]; then
-            {
-              echo 'go_sources<<EOF'
-              echo "$go_sources"
-              echo EOF
-            } >> "$GITHUB_OUTPUT"
+            count=$(echo "$go_sources" | wc -l)
+            if [ "$count" -gt "$LIMIT" ]; then
+              echo "Skipping scoped go_sources: This PR modified $count .go files which is over the $LIMIT files threshold."
+            else
+              {
+                echo 'go_sources<<EOF'
+                echo "$go_sources"
+                echo EOF
+              } >> "$GITHUB_OUTPUT"
+            fi
           fi
 
           go_tests=$(echo "$changed_files" | tr ' ' '\n' | grep -E '.*_test\.go$' || true)
           echo go_tests
           echo "$go_tests"
           if [[ -n "$go_tests" ]]; then
-            {
-              echo 'go_tests<<EOF'
-              echo "$go_tests"
-              echo EOF
-            } >> "$GITHUB_OUTPUT"
+            count=$(echo "$go_tests" | wc -l)
+            if [ "$count" -gt "$LIMIT" ]; then
+              echo "Skipping scoped go_tests: This PR modified $count test files which is over the $LIMIT files threshold."
+            else
+              {
+                echo 'go_tests<<EOF'
+                echo "$go_tests"
+                echo EOF
+              } >> "$GITHUB_OUTPUT"
+            fi
           fi
 
   scoped-tests-matrix:
@@ -68,9 +80,9 @@ jobs:
         run: |
           echo "go_sources: ${{ needs.changedfiles.outputs.go_sources }}"
           echo "go_tests: ${{ needs.changedfiles.outputs.go_tests }}"
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -97,8 +109,16 @@ jobs:
         if: needs.changedfiles.outputs.go_sources
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
+        shell: bash
+        # Only run linter on windows-2025 to avoid redundant runs
         run: |
-          make for-affected-components CMD="make lint test-twice"
+          if [[ "${{ matrix.runner }}" == "windows-2025" ]]; then
+            make for-affected-components CMD="make lint test-twice"
+          else
+            make for-affected-components CMD="make test-twice"
+          fi
+
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   scoped-tests:
     # Keeps the name of the job required for merging in the GH configuration, make it
