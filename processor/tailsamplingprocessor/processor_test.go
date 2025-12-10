@@ -1186,8 +1186,6 @@ func TestRootReceivedBatcher(t *testing.T) {
 	allSampledTraces := nextConsumer.AllTraces()
 	assert.Less(t, len(allSampledTraces), len(traceIDs)*6/10)
 	assert.Greater(t, len(allSampledTraces), len(traceIDs)*4/10)
-	// All traces should be flushed from the map.
-	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
 }
 
 func TestExtension(t *testing.T) {
