@@ -15,9 +15,9 @@ import (
 
 func TestStableConventions(t *testing.T) {
 	require.Equal(t, "service.name", string(conventions.ServiceNameKey))
-	require.Equal(t, "service.instance.id", string(conventions.ServiceInstanceIDKey))
 }
 
 func TestDevelopmentConventions(t *testing.T) {
 	require.Equal(t, "host.name", string(conventions.HostNameKey))
+	require.Equal(t, "service.instance.id", string(conventions.ServiceInstanceIDKey))
 }
