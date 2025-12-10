@@ -77,9 +77,9 @@ type azureRecords struct {
 type evidence struct {
 	Role                string `json:"role"`
 	RoleAssignmentScope string `json:"roleAssignmentScope"`
-	RoleAssignmentId    string `json:"roleAssignmentId"`
-	RoleDefinitionId    string `json:"roleDefinitionId"`
-	PrincipalId         string `json:"principalId"`
+	RoleAssignmentID    string `json:"roleAssignmentId"`
+	RoleDefinitionID    string `json:"roleDefinitionId"`
+	PrincipalID         string `json:"principalId"`
 	PrincipalType       string `json:"principalType"`
 }
 
@@ -452,9 +452,9 @@ func addIdentityAttributes(identityJSON json.RawMessage, record plog.LogRecord) 
 		if id.Authorization.Evidence != nil {
 			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRole, id.Authorization.Evidence.Role)
 			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentScope, id.Authorization.Evidence.RoleAssignmentScope)
-			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentId, id.Authorization.Evidence.RoleAssignmentId)
-			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleDefinitionId, id.Authorization.Evidence.RoleDefinitionId)
-			record.Attributes().PutStr(attributeIdentityAuthorizationEvidencePrincipalId, id.Authorization.Evidence.PrincipalId)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentID, id.Authorization.Evidence.RoleAssignmentID)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleDefinitionID, id.Authorization.Evidence.RoleDefinitionID)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidencePrincipalID, id.Authorization.Evidence.PrincipalID)
 			record.Attributes().PutStr(attributeIdentityAuthorizationEvidencePrincipalType, id.Authorization.Evidence.PrincipalType)
 		}
 	}
