@@ -1,4 +1,4 @@
-change_type: bugfix
+change_type: bug_fix
 component: pkg/ottl
 note: Return errors when OTTL context accessors receive values of the wrong type (part 2)
 issues: [40198]
