@@ -68,7 +68,7 @@ func TestDetect(t *testing.T) {
 		// We hardcode them here because no Go constant exists in semconv as of this writing.
 		expected := map[string]any{
 			string(conventions.CloudProviderKey):         conventions.CloudProviderOracleCloud.Value.AsString(),
-			string(conventions.CloudPlatformKey):         conventions.CloudPlatformOracleCloudOke.Value.AsString(),
+			string(conventions.CloudPlatformKey):         conventions.CloudPlatformOracleCloudOKE.Value.AsString(),
 			string(conventions.CloudRegionKey):           "us-ashburn-1",
 			string(conventions.CloudAvailabilityZoneKey): "AD-1",
 			string(conventions.HostIDKey):                "ocid1.instance.oc1..aaaaaaa",
