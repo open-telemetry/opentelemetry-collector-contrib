@@ -2210,30 +2210,30 @@ func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
 }
 
 func constructSpanTransformContext() *ottlspan.TransformContext {
-	resource := pcommon.NewResource()
+	rs := ptrace.NewResourceSpans()
 
-	scope := pcommon.NewInstrumentationScope()
-	scope.SetName("scope")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope")
 
-	td := ptrace.NewSpan()
-	fillSpanOne(td)
+	span := ss.Spans().AppendEmpty()
+	fillSpanOne(span)
 
-	return ottlspan.NewTransformContextPtr(td, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+	return ottlspan.NewTransformContextPtr(rs, ss, span)
 }
 
 func constructSpanEventTransformContext() *ottlspanevent.TransformContext {
-	resource := pcommon.NewResource()
+	rs := ptrace.NewResourceSpans()
 
-	scope := pcommon.NewInstrumentationScope()
-	scope.SetName("scope")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope")
 
-	span := ptrace.NewSpan()
+	span := ss.Spans().AppendEmpty()
 	fillSpanOne(span)
 
 	ev1 := span.Events().AppendEmpty()
 	ev1.SetName("event-1")
 
-	return ottlspanevent.NewTransformContextPtr(ev1, span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), ottlspanevent.WithEventIndex(0))
+	return ottlspanevent.NewTransformContextPtr(rs, ss, span, ev1, ottlspanevent.WithEventIndex(0))
 }
 
 func newResourceLogs(tCtx *ottllog.TransformContext) plog.ResourceLogs {

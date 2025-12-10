@@ -534,7 +534,7 @@ func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
 		span.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("span_value_%d", i))
 	}
 
-	return ottlspan.NewTransformContextPtr(span, scope, resource, scopeSpans, resourceSpans)
+	return ottlspan.NewTransformContextPtr(resourceSpans, scopeSpans, span)
 }
 
 func BenchmarkSliceToMap(b *testing.B) {

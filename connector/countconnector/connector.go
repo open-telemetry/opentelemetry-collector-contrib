@@ -62,14 +62,14 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 				span := scopeSpan.Spans().At(k)
 				spansCounter.updateTimestamp(span.StartTimestamp())
 				spansCounter.updateTimestamp(span.EndTimestamp())
-				sCtx := ottlspan.NewTransformContextPtr(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+				sCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
 				multiError = errors.Join(multiError, spansCounter.update(ctx, span.Attributes(), scopeAttrs, resourceAttrs, sCtx))
 				sCtx.Close()
 
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					spanEventsCounter.updateTimestamp(event.Timestamp())
-					eCtx := ottlspanevent.NewTransformContextPtr(event, span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+					eCtx := ottlspanevent.NewTransformContextPtr(resourceSpan, scopeSpan, span, event)
 					multiError = errors.Join(multiError, spanEventsCounter.update(ctx, event.Attributes(), scopeAttrs, resourceAttrs, eCtx))
 					eCtx.Close()
 				}

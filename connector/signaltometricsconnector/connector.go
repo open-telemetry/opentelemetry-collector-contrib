@@ -67,7 +67,7 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
-					tCtx := ottlspan.NewTransformContextPtr(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+					tCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
