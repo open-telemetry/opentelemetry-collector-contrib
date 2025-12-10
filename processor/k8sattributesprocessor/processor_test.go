@@ -201,7 +201,7 @@ func newMultiTest(
 
 	// Register cleanup to shutdown all processors
 	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 		defer cancel()
 		if m.tp != nil {
 			_ = m.tp.Shutdown(ctx)
