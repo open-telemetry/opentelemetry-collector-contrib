@@ -34,13 +34,13 @@ const (
 )
 
 var (
-	ErrUnmarshalPayload  = errors.New("failed to unmarshal Passthrough NLB log payload")
-	ErrUnexpectedLogType = errors.New("unexpected log type")
-	ErrBytesReceived     = errors.New("failed to add bytes received")
-	ErrBytesSent         = errors.New("failed to add bytes sent")
-	ErrPacketsReceived   = errors.New("failed to packets received")
-	ErrPacketsSent       = errors.New("failed to add packets sent")
-	ErrRTT               = errors.New("failed to add RTT")
+	errUnmarshalPayload  = errors.New("failed to unmarshal Passthrough NLB log payload")
+	errUnexpectedLogType = errors.New("unexpected log type")
+	errBytesReceived     = errors.New("failed to add bytes received")
+	errBytesSent         = errors.New("failed to add bytes sent")
+	errPacketsReceived   = errors.New("failed to packets received")
+	errPacketsSent       = errors.New("failed to add packets sent")
+	errRTT               = errors.New("failed to add RTT")
 )
 
 type loadBalancerLog struct {
@@ -73,34 +73,34 @@ type connection struct {
 func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 	var log loadBalancerLog
 	if err := gojson.Unmarshal(payload, &log); err != nil {
-		return fmt.Errorf("%w: %w", ErrUnmarshalPayload, err)
+		return fmt.Errorf("%w: %w", errUnmarshalPayload, err)
 	}
 
 	if log.Type != externalLoadBalancerLogType && log.Type != internalLoadBalancerLogType {
-		return fmt.Errorf("%w: %q, expected %q or %q", ErrUnexpectedLogType, log.Type, externalLoadBalancerLogType, internalLoadBalancerLogType)
+		return fmt.Errorf("%w: %q, expected %q or %q", errUnexpectedLogType, log.Type, externalLoadBalancerLogType, internalLoadBalancerLogType)
 	}
 
 	handleConnection(log.Connection, attr)
 	handleTimestamps(log.StartTime, log.EndTime, attr)
 
 	if err := shared.AddStrAsInt(gcpPassthroughNLBBytesReceived, log.BytesReceived, attr); err != nil {
-		return fmt.Errorf("%w: %w", ErrBytesReceived, err)
+		return fmt.Errorf("%w: %w", errBytesReceived, err)
 	}
 
 	if err := shared.AddStrAsInt(gcpPassthroughNLBBytesSent, log.BytesSent, attr); err != nil {
-		return fmt.Errorf("%w: %w", ErrBytesSent, err)
+		return fmt.Errorf("%w: %w", errBytesSent, err)
 	}
 
 	if err := shared.AddStrAsInt(gcpPassthroughNLBPacketsReceived, log.PacketsReceived, attr); err != nil {
-		return fmt.Errorf("%w: %w", ErrPacketsReceived, err)
+		return fmt.Errorf("%w: %w", errPacketsReceived, err)
 	}
 
 	if err := shared.AddStrAsInt(gcpPassthroughNLBPacketsSent, log.PacketsSent, attr); err != nil {
-		return fmt.Errorf("%w: %w", ErrPacketsSent, err)
+		return fmt.Errorf("%w: %w", errPacketsSent, err)
 	}
 
 	if err := shared.PutDurationAsSeconds(gcpPassthroughNLBRTT, log.RTT, attr); err != nil {
-		return fmt.Errorf("%w: %w", ErrRTT, err)
+		return fmt.Errorf("%w: %w", errRTT, err)
 	}
 
 	return nil
