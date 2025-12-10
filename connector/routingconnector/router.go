@@ -33,9 +33,9 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 type router[C any] struct {
 	resourceParser   ottl.Parser[ottlresource.TransformContext]
 	spanParser       ottl.Parser[*ottlspan.TransformContext]
-	metricParser     ottl.Parser[ottlmetric.TransformContext]
-	dataPointParser  ottl.Parser[ottldatapoint.TransformContext]
-	logParser        ottl.Parser[ottllog.TransformContext]
+	metricParser     ottl.Parser[*ottlmetric.TransformContext]
+	dataPointParser  ottl.Parser[*ottldatapoint.TransformContext]
+	logParser        ottl.Parser[*ottllog.TransformContext]
 	defaultConsumer  C
 	logger           *zap.Logger
 	routes           map[string]routingItem[C]
@@ -75,9 +75,9 @@ type routingItem[C any] struct {
 	requestCondition   *requestCondition
 	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
 	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
-	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
-	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
-	logStatement       *ottl.Statement[ottllog.TransformContext]
+	metricStatement    *ottl.Statement[*ottlmetric.TransformContext]
+	dataPointStatement *ottl.Statement[*ottldatapoint.TransformContext]
+	logStatement       *ottl.Statement[*ottllog.TransformContext]
 	statementContext   string
 }
 
@@ -123,7 +123,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildMetric {
 		parser, err := ottlmetric.NewParser(
-			standardFunctions[ottlmetric.TransformContext](),
+			standardFunctions[*ottlmetric.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -134,7 +134,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildDataPoint {
 		parser, err := ottldatapoint.NewParser(
-			standardFunctions[ottldatapoint.TransformContext](),
+			standardFunctions[*ottldatapoint.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -145,7 +145,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildLog {
 		parser, err := ottllog.NewParser(
-			standardFunctions[ottllog.TransformContext](),
+			standardFunctions[*ottllog.TransformContext](),
 			settings,
 		)
 		if err == nil {
