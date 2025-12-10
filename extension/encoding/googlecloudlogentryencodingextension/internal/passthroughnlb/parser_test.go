@@ -84,15 +84,15 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 	}{
 		"invalid json": {
 			payload:     []byte("not-json"),
-			expectedErr: ErrUnmarshalPayload,
+			expectedErr: errUnmarshalPayload,
 		},
 		"unexpected type": {
 			payload:     []byte(`{"@type":"invalid"}`),
-			expectedErr: ErrUnexpectedLogType,
+			expectedErr: errUnexpectedLogType,
 		},
 		"invalid bytes": {
 			payload:     []byte(`{"bytesReceived":"abc"}`),
-			expectedErr: ErrUnexpectedLogType,
+			expectedErr: errUnexpectedLogType,
 		},
 		"success - external NLB": {
 			payload: []byte(`{
