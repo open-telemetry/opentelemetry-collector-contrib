@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/googleapi"
 )
@@ -130,7 +131,7 @@ func TestStart(t *testing.T) {
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
 			component.MustNewID(encodingFailsID):    nil,
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
 		},
 	}
 
@@ -145,6 +146,7 @@ func TestStart(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
 		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
+		require.Equal(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
 	})
 
 	gcsExporter.cfg.Encoding = &id
@@ -191,7 +193,7 @@ func TestUploadFile(t *testing.T) {
 	encodingSucceedsID := "id_success"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
 		},
 	}
 	id := component.MustNewID(encodingSucceedsID)
@@ -308,7 +310,7 @@ func TestConsumeLogs(t *testing.T) {
 	encodingFailsID := "id_fail"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
 			component.MustNewID(encodingFailsID):    &mockLogMarshaler{shouldFail: true},
 		},
 	}
@@ -351,6 +353,31 @@ func TestConsumeLogs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConsumeTraces(t *testing.T) {
+	uploadBucketName := "upload-bucket"
+	newTestStorageEmulator(t, "", uploadBucketName)
+
+	encodingSucceedsID := "id_success"
+	mHost := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
+		},
+	}
+	id := component.MustNewID(encodingSucceedsID)
+	gcsExporter := newTestGCSExporter(t, &Config{
+		Bucket: bucketConfig{
+			Name: uploadBucketName,
+		},
+		Encoding: &id,
+	})
+
+	errStart := gcsExporter.Start(t.Context(), mHost)
+	require.NoError(t, errStart)
+
+	err := gcsExporter.ConsumeTraces(t.Context(), ptrace.NewTraces())
+	require.NoError(t, err)
 }
 
 func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
@@ -429,3 +456,28 @@ func (m *mockLogMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
 }
 
 var _ plog.Marshaler = (*mockLogMarshaler)(nil)
+
+type mockTraceMarshaler struct {
+	extension.Extension
+}
+
+func (*mockTraceMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return nil, nil
+}
+
+var _ ptrace.Marshaler = (*mockTraceMarshaler)(nil)
+
+type mockBothMarshaler struct {
+	extension.Extension
+}
+
+func (*mockBothMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	return nil, nil
+}
+
+func (*mockBothMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return nil, nil
+}
+
+var _ plog.Marshaler = (*mockBothMarshaler)(nil)
+var _ ptrace.Marshaler = (*mockBothMarshaler)(nil)
