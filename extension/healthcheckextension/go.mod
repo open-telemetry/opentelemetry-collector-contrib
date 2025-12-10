@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck v0.141.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.1-0.20251204124628-a330ae2ccbb5
 	go.opentelemetry.io/collector/component/componentstatus v0.141.1-0.20251204124628-a330ae2ccbb5

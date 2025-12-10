@@ -6,10 +6,11 @@ require (
 	github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d
 	go.opentelemetry.io/collector/pdata v1.47.1-0.20251204124628-a330ae2ccbb5
 	go.opentelemetry.io/collector/pdata/pprofile v0.141.1-0.20251204124628-a330ae2ccbb5
-	go.opentelemetry.io/otel v1.38.0
+	go.opentelemetry.io/otel v1.39.0
 )
 
 require (
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

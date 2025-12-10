@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/processor v1.47.1-0.20251204124628-a330ae2ccbb5
 	go.opentelemetry.io/collector/processor/processorhelper v0.141.1-0.20251204124628-a330ae2ccbb5
 	go.opentelemetry.io/collector/processor/processortest v0.141.1-0.20251204124628-a330ae2ccbb5
-	go.opentelemetry.io/otel/schema v0.0.13
+	go.opentelemetry.io/otel/schema v0.0.14
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1

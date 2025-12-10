@@ -87,6 +87,14 @@ receivers:
           fail_on_invalid_key: true
 ```
 
+### Metric Tag→Attribute Conversion
+
+Datadog [metric tags](https://docs.datadoghq.com/getting_started/tagging/) are expected to be in a `key:value` format.
+Tags not in this format will be given an `unnamed_` prefix when added to the attribute map (e.g. the tag `prod` will be converted to `unnamed_prod = prod`).
+
+By default, multiple tags for the same data point with the same `key:` prefix will only have the last tag retained (e.g. `["env:a","env:b"]` will be converted to `{env = b}`).
+If the `receiver.datadogreceiver.EnableMultiTagParsing` feature gate is enabled, multiple tags with the same key will instead be stored as a slice (e.g. `["env:a","env:b"]` will be converted to `{env = [a,b]}`).
+
 ### Default Attributes
 
 - `dd.span.Resource`: The datadog resource name (as distinct from the span name)
