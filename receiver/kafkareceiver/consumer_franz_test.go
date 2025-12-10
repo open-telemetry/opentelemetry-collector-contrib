@@ -167,10 +167,6 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
 		cfg.GroupID = tb.Name()
 		cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second}
-		// Set MinFetchSize to ensure all records are fetched at once
-		cfg.MinFetchSize = int32(len(data) * len(rs))
-		// Use a shorter MaxFetchWait for tests to reduce latency
-		cfg.MaxFetchWait = 10 * time.Millisecond
 		cfg.ErrorBackOff = testConfig.backOff
 		cfg.MessageMarking = testConfig.mark
 
