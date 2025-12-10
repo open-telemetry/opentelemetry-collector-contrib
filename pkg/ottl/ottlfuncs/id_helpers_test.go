@@ -16,8 +16,9 @@ import (
 const fakeFuncName = "funkyfake"
 
 func Test_newIDExprFunc_rawBytes(t *testing.T) {
-	target := &literalByteGetter[pcommon.SpanID]{value: []byte{1, 2, 3, 4, 5, 6, 7, 8}}
-	expr := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
+	target := makeLiteralIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
+	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
 
 	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
@@ -25,15 +26,25 @@ func Test_newIDExprFunc_rawBytes(t *testing.T) {
 }
 
 func Test_newIDExprFunc_hexBytes(t *testing.T) {
-	target := &literalByteGetter[pprofile.ProfileID]{value: []byte("0102030405060708090a0b0c0d0e0f10")}
-	expr := newIDExprFunc(fakeFuncName, target, decodeHexToProfileID)
+	target := makeLiteralIDGetter([]byte("0102030405060708090a0b0c0d0e0f10"))
+	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToProfileID)
+	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
 
 	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
 	assert.Equal(t, pprofile.ProfileID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, result)
 }
 
-func Test_newIDExprFunc_errors(t *testing.T) {
+func Test_newIDExprFunc_literalSuccess(t *testing.T) {
+	target := makeLiteralIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	expr, err := spanID[any](target)
+	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
+	got, err := expr(t.Context(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, pcommon.SpanID{1, 2, 3, 4, 5, 6, 7, 8}, got)
+}
+
+func Test_newIDExprFunc_literalInitErrors(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   []byte
@@ -53,36 +64,30 @@ func Test_newIDExprFunc_errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := &literalByteGetter[pcommon.SpanID]{value: tt.value}
-			expr := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
+			// Use makeLiteralIDGetter to ensure we get a proper literal getter
+			target := makeLiteralIDGetter(tt.value)
+			expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
 
-			result, err := expr(t.Context(), nil)
-
+			// For literal getters with invalid data, initialization should fail
+			require.Error(t, err, "initialization should fail for literal getters with invalid data")
+			assert.Nil(t, expr, "expression should be nil when initialization fails")
 			assertErrorIsFuncDecode(t, err, fakeFuncName)
 			assert.ErrorIs(t, err, tt.wantErr)
-			assert.Nil(t, result)
 		})
 	}
 }
 
-type literalByteGetter[R idByteArray] struct {
-	value []byte
-}
-
-func (g *literalByteGetter[R]) Get(context.Context, any) ([]byte, error) {
-	return g.value, nil
-}
-
 func Test_newIDExprFunc_stringInput(t *testing.T) {
-	target := &literalStringGetter[pcommon.TraceID]{value: "0102030405060708090a0b0c0d0e0f10"}
-	expr := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
+	target := makeLiteralIDGetter([]byte("0102030405060708090a0b0c0d0e0f10"))
+	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
+	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
 
 	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
 	assert.Equal(t, pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, result)
 }
 
-func Test_newIDExprFunc_stringErrors(t *testing.T) {
+func Test_newIDExprFunc_literalStringInitErrors(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   string
@@ -102,22 +107,42 @@ func Test_newIDExprFunc_stringErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := &literalStringGetter[pcommon.TraceID]{value: tt.value}
-			expr := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
+			// Use makeLiteralIDGetter to ensure we get a proper literal getter
+			target := makeLiteralIDGetter([]byte(tt.value))
+			expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
 
-			result, err := expr(t.Context(), nil)
-
+			// For literal getters with invalid data, initialization should fail
+			require.Error(t, err, "initialization should fail for literal getters with invalid data")
+			assert.Nil(t, expr, "expression should be nil when initialization fails")
 			assertErrorIsFuncDecode(t, err, fakeFuncName)
 			assert.ErrorIs(t, err, tt.wantErr)
-			assert.Nil(t, result)
 		})
 	}
 }
 
-type literalStringGetter[R idByteArray] struct {
-	value string
+type nonLiteralByteGetter[R idByteArray] struct {
+	value []byte
 }
 
-func (g *literalStringGetter[R]) Get(context.Context, any) ([]byte, error) {
-	return []byte(g.value), nil
+func (g *nonLiteralByteGetter[R]) Get(context.Context, any) ([]byte, error) {
+	return g.value, nil
+}
+
+func Test_newIDExprFunc_dynamicSuccess(t *testing.T) {
+	target := &nonLiteralByteGetter[pcommon.SpanID]{value: []byte{1, 2, 3, 4, 5, 6, 7, 8}}
+	expr, err := spanID[any](target)
+	require.NoError(t, err, "init should succeed for dynamic getters")
+	result, err := expr(t.Context(), nil)
+	require.NoError(t, err, "execution should succeed for dynamic getters with valid data")
+	assert.Equal(t, pcommon.SpanID{1, 2, 3, 4, 5, 6, 7, 8}, result)
+}
+
+func Test_newIDExprFunc_dynamicErrors(t *testing.T) {
+	target := &nonLiteralByteGetter[pcommon.SpanID]{value: []byte{1, 2, 3}}
+	expr, err := spanID[any](target)
+	require.NoError(t, err, "init should succeed for dynamic getters")
+	result, err := expr(t.Context(), nil)
+	assert.Nil(t, result)
+	assertErrorIsFuncDecode(t, err, spanIDFuncName)
+	assert.ErrorIs(t, err, errIDInvalidLength)
 }

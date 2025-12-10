@@ -59,7 +59,10 @@ func BenchmarkTraceID(b *testing.B) {
 	b.Run("literal_bytes_get_and_set", func(b *testing.B) {
 		literalBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 		literalGetter := makeLiteralIDGetter(literalBytes)
-		expr := traceID(literalGetter)
+		expr, err := traceID(literalGetter)
+		if err != nil {
+			b.Fatal(err)
+		}
 		ctx := b.Context()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -76,7 +79,10 @@ func BenchmarkTraceID(b *testing.B) {
 	b.Run("literal_hex_string_get_and_set", func(b *testing.B) {
 		literalHexString := []byte("0102030405060708090a0b0c0d0e0f10")
 		literalGetter := makeLiteralIDGetter(literalHexString)
-		expr := traceID[any](literalGetter)
+		expr, err := traceID[any](literalGetter)
+		if err != nil {
+			b.Fatal(err)
+		}
 		ctx := b.Context()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -93,7 +99,10 @@ func BenchmarkTraceID(b *testing.B) {
 	b.Run("dynamic_bytes_get_and_set", func(b *testing.B) {
 		dynamicBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 		dynamicGetter := makeIDGetter(dynamicBytes)
-		expr := traceID[any](dynamicGetter)
+		expr, err := traceID[any](dynamicGetter)
+		if err != nil {
+			b.Fatal(err)
+		}
 		ctx := b.Context()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -110,7 +119,10 @@ func BenchmarkTraceID(b *testing.B) {
 	b.Run("dynamic_hex_string_get_and_set", func(b *testing.B) {
 		dynamicHexString := []byte("0102030405060708090a0b0c0d0e0f10")
 		dynamicGetter := makeIDGetter(dynamicHexString)
-		expr := traceID[any](dynamicGetter)
+		expr, err := traceID[any](dynamicGetter)
+		if err != nil {
+			b.Fatal(err)
+		}
 		ctx := b.Context()
 		b.ReportAllocs()
 		b.ResetTimer()

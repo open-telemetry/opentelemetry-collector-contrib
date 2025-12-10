@@ -29,10 +29,10 @@ func createSpanIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 		return nil, errors.New("SpanIDFactory args must be of type *SpanIDArguments[K]")
 	}
 
-	return spanID[K](args.Target), nil
+	return spanID[K](args.Target)
 }
 
-func spanID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
+func spanID[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error) {
 	return newIDExprFunc(spanIDFuncName, target, decodeHexToSpanID)
 }
 

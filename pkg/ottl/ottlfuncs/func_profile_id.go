@@ -29,10 +29,10 @@ func createProfileIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("ProfileIDFactory args must be of type *ProfileIDArguments[K]")
 	}
 
-	return profileID[K](args.Target), nil
+	return profileID[K](args.Target)
 }
 
-func profileID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
+func profileID[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error) {
 	return newIDExprFunc(profileIDFuncName, target, decodeHexToProfileID)
 }
 

@@ -29,7 +29,7 @@ type idByteArray interface {
 // If the target is a literal getter, the ID is pre-computed once for optimal performance.
 // We pass the hex decoder function as a parameter to allow implementations to decode directly into the ID type.
 // This reduces allocations.
-func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceLikeGetter[K], hexDecoder func([]byte) (R, error)) ottl.ExprFunc[K] {
+func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceLikeGetter[K], hexDecoder func([]byte) (R, error)) (ottl.ExprFunc[K], error) {
 	var zero R
 	idLen := len(zero)
 	idHexLen := idLen * 2
@@ -38,13 +38,11 @@ func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceL
 	if b, ok := ottl.GetLiteralValue(target); ok {
 		result, err := bytesToID(funcName, b, idLen, idHexLen, hexDecoder)
 		if err != nil {
-			return func(_ context.Context, _ K) (any, error) {
-				return nil, err
-			}
+			return nil, err
 		}
 		return func(_ context.Context, _ K) (any, error) {
 			return result, nil
-		}
+		}, nil
 	}
 
 	// Dynamic path: evaluate on every call
@@ -54,7 +52,7 @@ func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceL
 			return nil, err
 		}
 		return bytesToID(funcName, b, idLen, idHexLen, hexDecoder)
-	}
+	}, nil
 }
 
 // bytesToID converts a byte slice to an ID of the specified type.

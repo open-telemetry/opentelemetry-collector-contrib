@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type idExprBuilder func(ottl.ByteSliceLikeGetter[any]) ottl.ExprFunc[any]
+type idExprBuilder func(ottl.ByteSliceLikeGetter[any]) (ottl.ExprFunc[any], error)
 
 type idSuccessTestCase struct {
 	name  string
@@ -46,7 +46,8 @@ func runIDSuccessTests(t *testing.T, builder idExprBuilder, cases []idSuccessTes
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			expr := builder(makeIDGetter(tt.value))
+			expr, err := builder(makeIDGetter(tt.value))
+			require.NoError(t, err)
 			result, err := expr(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, result)
@@ -59,7 +60,10 @@ func runIDErrorTests(t *testing.T, builder idExprBuilder, funcName string, cases
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			expr := builder(makeIDGetter(tt.value))
+			// Dynamic getters succeed at init, fail at execution
+			expr, err := builder(makeIDGetter(tt.value))
+			require.NoError(t, err, "initialization should succeed for dynamic getters")
+
 			result, err := expr(t.Context(), nil)
 
 			assert.Nil(t, result)

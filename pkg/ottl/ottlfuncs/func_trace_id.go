@@ -29,10 +29,10 @@ func createTraceIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 		return nil, errors.New("TraceIDFactory args must be of type *TraceIDArguments[K]")
 	}
 
-	return traceID[K](args.Target), nil
+	return traceID[K](args.Target)
 }
 
-func traceID[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
+func traceID[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error) {
 	return newIDExprFunc(traceIDFuncName, target, decodeHexToTraceID)
 }
 
