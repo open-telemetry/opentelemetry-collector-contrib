@@ -15,30 +15,31 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: exception.type
-                    value:
-                      stringValue: EXCEPTION_CLASS
-                  - key: host.id
-                    value:
-                      stringValue: HOST
-                  - key: category
-                    value:
-                      stringValue: AppServiceAppLogs
-                  - key: operation.name
-                    value:
-                      stringValue: AppLog
-                  - key: code.function
-                    value:
-                      stringValue: METHOD
-                  - key: code.filepath
-                    value:
-                      stringValue: FILEPATH
                   - key: exception.stacktrace
                     value:
                       stringValue: STACKTRACE
                   - key: container.id
                     value:
                       stringValue: CONTAINER_ID
+                  - key: exception.type
+                    value:
+                      stringValue: EXCEPTION_CLASS
+                  - key: category
+                    value:
+                      stringValue: AppServiceAppLogs
+                  - key: operation.name
+                    value:
+                      stringValue: AppLog
+                  - key: host.id
+                    value:
+                      stringValue: HOST
+                  - key: code.function
+                    value:
+                      stringValue: METHOD
+                  - key: code.filepath
+                    value:
+                      stringValue: FILEPATH
+            observedTimeUnixNano: "1765384204815821000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

@@ -18,9 +18,6 @@ resourceLogs:
                   - key: category
                     value:
                       stringValue: NonExistentCategory
-                  - key: operation.name
-                    value:
-                      stringValue: SecretGet
                   - key: identity
                     value:
                       kvlistValue:
@@ -32,6 +29,10 @@ resourceLogs:
                                   - key: oid
                                     value:
                                       stringValue: 607964b6-41a5-4e24-a5db-db7aab3b9b34
+                  - key: operation.name
+                    value:
+                      stringValue: SecretGet
+            observedTimeUnixNano: "1765384204815422000"
             timeUnixNano: "1668142107676714500"
         scope:
           name: otelcol/azureresourcelogs

@@ -15,70 +15,71 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: http.request.header.referer
-                    value:
-                      stringValue: REFERER
-                  - key: http.request.method
-                    value:
-                      stringValue: GET
-                  - key: category
-                    value:
-                      stringValue: AppServiceHTTPLogs
-                  - key: http.response.status_code
-                    value:
-                      intValue: "200"
-                  - key: user_agent.original
-                    value:
-                      stringValue: Mozilla/5.0
-                  - key: url.domain
-                    value:
-                      stringValue: test.com
-                  - key: client.address
-                    value:
-                      stringValue: 42.42.42.42
-                  - key: url.query
-                    value:
-                      stringValue: foo=42
-                  - key: server.port
-                    value:
-                      intValue: "80"
-                  - key: http.request.body.size
-                    value:
-                      intValue: "4242"
                   - key: http.response.body.size
                     value:
                       intValue: "42"
                   - key: host.name
                     value:
                       stringValue: COMPUTER_NAME
+                  - key: network.protocol.version
+                    value:
+                      stringValue: "1.1"
                   - key: properties
                     value:
                       kvlistValue:
                         values:
+                          - key: CsUsername
+                            value:
+                              stringValue: user@test.com
                           - key: Result
                             value:
                               stringValue: Success
                           - key: Cookie
                             value:
                               stringValue: ""
-                          - key: CsUsername
-                            value:
-                              stringValue: user@test.com
-                  - key: operation.name
+                  - key: url.query
                     value:
-                      stringValue: ""
+                      stringValue: foo=42
+                  - key: http.request.body.size
+                    value:
+                      intValue: "4242"
                   - key: url.path
                     value:
                       stringValue: /api/test/
-                  - key: http.server.request.duration
+                  - key: http.response.status_code
                     value:
-                      doubleValue: 0.42
+                      intValue: "200"
                   - key: network.protocol.name
                     value:
                       stringValue: http
-                  - key: network.protocol.version
+                  - key: url.domain
                     value:
-                      stringValue: "1.1"
+                      stringValue: test.com
+                  - key: http.server.request.duration
+                    value:
+                      doubleValue: 0.42
+                  - key: server.port
+                    value:
+                      intValue: "80"
+                  - key: http.request.header.referer
+                    value:
+                      stringValue: REFERER
+                  - key: http.request.method
+                    value:
+                      stringValue: GET
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: category
+                    value:
+                      stringValue: AppServiceHTTPLogs
+                  - key: operation.name
+                    value:
+                      stringValue: ""
+                  - key: user_agent.original
+                    value:
+                      stringValue: Mozilla/5.0
+            observedTimeUnixNano: "1765384204816546000"
             timeUnixNano: "1713959980989337000"
         scope:
           name: otelcol/azureresourcelogs

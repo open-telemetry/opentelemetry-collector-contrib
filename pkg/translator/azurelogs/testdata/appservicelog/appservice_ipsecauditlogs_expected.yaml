@@ -15,6 +15,12 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: url.domain
+                    value:
+                      stringValue: HOST
+                  - key: http.request.header.x-azure-fdid
+                    value:
+                      stringValue: FDID
                   - key: http.request.header.x-fd-healthprobe
                     value:
                       stringValue: HEALTH_PROBE
@@ -33,12 +39,7 @@ resourceLogs:
                   - key: client.address
                     value:
                       stringValue: 42.42.42.42
-                  - key: url.domain
-                    value:
-                      stringValue: HOST
-                  - key: http.request.header.x-azure-fdid
-                    value:
-                      stringValue: FDID
+            observedTimeUnixNano: "1765384204816194000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

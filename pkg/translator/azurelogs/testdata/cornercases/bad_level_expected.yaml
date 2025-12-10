@@ -15,62 +15,65 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: operation.name
+                    value:
+                      stringValue: Microsoft.ApiManagement/GatewayLogs
                   - key: properties
                     value:
                       kvlistValue:
                         values:
-                          - key: clientProtocol
+                          - key: backendTime
                             value:
-                              stringValue: HTTP/1.1
+                              doubleValue: 54
                           - key: backendMethod
                             value:
                               stringValue: GET
+                          - key: backendResponseCode
+                            value:
+                              doubleValue: 200
+                          - key: backendProtocol
+                            value:
+                              stringValue: HTTP/1.1
+                          - key: apiId
+                            value:
+                              stringValue: demo-api
+                          - key: responseCode
+                            value:
+                              doubleValue: 200
                           - key: apimSubscriptionId
                             value:
                               stringValue: master
-                          - key: backendUrl
-                            value:
-                              stringValue: https://api.azurewebsites.net/sessions
-                          - key: apiRevision
-                            value:
-                              stringValue: "1"
-                          - key: responseSize
-                            value:
-                              doubleValue: 102945
                           - key: method
                             value:
                               stringValue: GET
+                          - key: responseSize
+                            value:
+                              doubleValue: 102945
+                          - key: clientTime
+                            value:
+                              doubleValue: 190
+                          - key: clientTlsVersion
+                            value:
+                              stringValue: "1.2"
                           - key: cache
                             value:
                               stringValue: none
                           - key: operationId
                             value:
                               stringValue: GetSessions
-                          - key: responseCode
+                          - key: backendUrl
                             value:
-                              doubleValue: 200
-                          - key: backendTime
+                              stringValue: https://api.azurewebsites.net/sessions
+                          - key: apiRevision
                             value:
-                              doubleValue: 54
-                          - key: clientTime
-                            value:
-                              doubleValue: 190
-                          - key: url
-                            value:
-                              stringValue: https://api.azure-api.net/sessions
-                          - key: clientTlsVersion
-                            value:
-                              stringValue: "1.2"
+                              stringValue: "1"
                           - key: requestSize
                             value:
                               doubleValue: 632
-                          - key: apiId
+                          - key: url
                             value:
-                              stringValue: demo-api
-                          - key: backendResponseCode
-                            value:
-                              doubleValue: 200
-                          - key: backendProtocol
+                              stringValue: https://api.azure-api.net/sessions
+                          - key: clientProtocol
                             value:
                               stringValue: HTTP/1.1
                   - key: result.type
@@ -91,9 +94,7 @@ resourceLogs:
                   - key: duration
                     value:
                       intValue: "243"
-                  - key: operation.name
-                    value:
-                      stringValue: Microsoft.ApiManagement/GatewayLogs
+            observedTimeUnixNano: "1765384204818137000"
             severityNumber: 4
             severityText: "4"
             timeUnixNano: "1698330163341635700"

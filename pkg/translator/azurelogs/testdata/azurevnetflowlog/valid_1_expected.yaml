@@ -51,6 +51,7 @@ resourceLogs:
                               "targetResourceID": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
                               "time": "2025-11-07T15:59:52.9326845Z"
                         }
+            observedTimeUnixNano: "1765384204811426000"
             timeUnixNano: "1762531192932684500"
         scope:
           name: otelcol/azureresourcelogs
