@@ -34,13 +34,13 @@ resourceLogs:
               - key: azure.autoscale.resource.name
                 value:
                   stringValue: /subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/example-resource-group/providers/Microsoft.ClassicCompute/domainNames/example-resource-group/slots/Production/roles/exampleResource
-              - key: azure.autoscale.old_instances_count
+              - key: azure.autoscale.instances.previous_count
                 value:
                   stringValue: "3"
-              - key: azure.autoscale.new_instances_count
+              - key: azure.autoscale.instances.count
                 value:
                   stringValue: "2"
-              - key: azure.autoscale.last_scale_timestamp
+              - key: azure.autoscale.resource.last_scale
                 value:
                   stringValue: "Fri, 21 Jul 2017 01:00:51 GMT"
               - key: cloud.account.id

@@ -19,10 +19,10 @@ resourceLogs:
               - key: azure.resourcehealth.details
                 value:
                   stringValue: Unknown
-              - key: azure.resourcehealth.current_health_status
+              - key: azure.resourcehealth.state
                 value:
                   stringValue: Unavailable
-              - key: azure.resourcehealth.previous_health_status
+              - key: azure.resourcehealth.previous_state
                 value:
                   stringValue: Available
               - key: azure.resourcehealth.type

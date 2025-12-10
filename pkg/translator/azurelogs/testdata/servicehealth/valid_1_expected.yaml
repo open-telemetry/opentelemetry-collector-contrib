@@ -31,10 +31,10 @@ resourceLogs:
               - key: azure.servicehealth.tracking.id
                 value:
                   stringValue: 1_6N-3XG
-              - key: azure.servicehealth.impact.start_timestamp
+              - key: azure.servicehealth.impact.start
                 value:
                   stringValue: 2025-04-22T18:04:08.4705934Z
-              - key: azure.servicehealth.impact.mitigation_timestamp
+              - key: azure.servicehealth.impact.mitigation
                 value:
                   stringValue: 2025-05-06T18:04:08.4705934Z
               - key: azure.servicehealth.impact.services
