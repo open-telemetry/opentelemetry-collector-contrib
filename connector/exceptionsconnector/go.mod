@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/excep
 go 1.24.0
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.141.0
@@ -60,6 +61,8 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions => ../../internal/conventions
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 

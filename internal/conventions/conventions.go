@@ -7,8 +7,11 @@ import semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 // stable as of v1.38.0
 const (
-	ServiceNameKey       = semconv.ServiceNameKey
-	ServiceInstanceIDKey = semconv.ServiceInstanceIDKey
+	ExceptionMessageKey    = semconv.ExceptionMessageKey
+	ExceptionStacktraceKey = semconv.ExceptionStacktraceKey
+	ExceptionTypeKey       = semconv.ExceptionTypeKey
+	ServiceNameKey         = semconv.ServiceNameKey
+	ServiceInstanceIDKey   = semconv.ServiceInstanceIDKey
 )
 
 // development as of v1.38.0
