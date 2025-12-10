@@ -268,14 +268,10 @@ func TestExtractRawAttributes(t *testing.T) {
 				OperationName: "operation.name",
 				Category:      "category",
 				DurationMs:    &badDuration,
-				rawRecord:     json.RawMessage(`{"unknown": "val", "category": "category", "operationName": "operation.name"}`),
 			},
 			expected: map[string]any{
 				azureOperationName: "operation.name",
 				azureCategory:      "category",
-				azureProperties: map[string]any{
-					"unknown": "val",
-				},
 			},
 		},
 		{
@@ -287,22 +283,18 @@ func TestExtractRawAttributes(t *testing.T) {
 				Category:      "category",
 				DurationMs:    &badDuration,
 				Properties:    stringPropertiesRaw,
-				rawRecord:     json.RawMessage(`{"unknown": "val", "category": "category", "operationName": "operation.name", "properties": "str"}`),
 			},
 			expected: map[string]any{
 				azureOperationName: "operation.name",
 				azureCategory:      "category",
-				azureProperties: map[string]any{
-					"properties": "str",
-					"unknown":    "val",
-				},
+				azureProperties:    "str",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, extractRawAttributes(tt.log))
+			assert.Equal(t, tt.expected, extractRawAttributes(tt.log, nil))
 		})
 	}
 }

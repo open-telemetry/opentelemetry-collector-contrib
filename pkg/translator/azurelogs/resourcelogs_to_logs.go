@@ -106,7 +106,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
-<<<<<<< HEAD
 	// Re-parse to capture raw record JSON for fields not in the struct
 	var rawRecords struct {
 		Records []json.RawMessage `json:"records"`
@@ -118,9 +117,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			rawRecordMap[i] = rawRecords.Records[i]
 		}
 	}
-=======
+
 	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
->>>>>>> upstream/main
 
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
 	for i := range azureLogs.Records {
@@ -289,7 +287,7 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
 
 	propertiesParsed := false
-	if log.Properties != nil && len(log.Properties) > 0 {
+	if len(log.Properties) > 0 {
 		propertiesParsed = copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
 	}
 
