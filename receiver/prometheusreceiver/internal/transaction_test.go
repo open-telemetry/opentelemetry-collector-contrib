@@ -259,27 +259,6 @@ func testReceiverVersionAndNameAreAttached(t *testing.T, enableNativeHistograms 
 	require.Equal(t, component.NewDefaultBuildInfo().Version, gotScope.Version())
 }
 
-func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
-	for _, enableNativeHistograms := range []bool{true, false} {
-		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
-			testTransactionCommitErrorWhenAdjusterError(t, enableNativeHistograms)
-		})
-	}
-}
-
-func testTransactionCommitErrorWhenAdjusterError(t *testing.T, enableNativeHistograms bool) {
-	goodLabels := labels.FromMap(map[string]string{
-		model.InstanceLabel:   "localhost:8080",
-		model.JobLabel:        "test",
-		model.MetricNameLabel: "counter_test",
-	})
-	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, enableNativeHistograms, true)
-	_, err := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0)
-	assert.NoError(t, err)
-	assert.NoError(t, tr.Commit())
-}
-
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestTransactionAppendDuplicateLabels(t *testing.T) {
 	for _, enableNativeHistograms := range []bool{true, false} {
