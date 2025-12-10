@@ -26,12 +26,12 @@ const (
 )
 
 var (
-	ErrInvalidIntervalValue           = errors.New("invalid interval value")
-	ErrInvalidHistogramBuckets        = errors.New("histogram buckets must be sorted in ascending order")
-	ErrEmptyHistogramMetricName       = errors.New("histogram aggregation metric name cannot be empty")
-	ErrMissingHistogramBuckets        = errors.New("explicit histogram aggregation requires at least one bucket boundary")
-	ErrInvalidHistogramType           = errors.New("histogram type must be 'explicit' or 'exponential'")
-	ErrExponentialHistogramMaxSize    = errors.New("exponential histogram max_size must be positive")
+	ErrInvalidIntervalValue            = errors.New("invalid interval value")
+	ErrInvalidHistogramBuckets         = errors.New("histogram buckets must be sorted in ascending order")
+	ErrEmptyHistogramMetricName        = errors.New("histogram aggregation metric name cannot be empty")
+	ErrMissingHistogramBuckets         = errors.New("explicit histogram aggregation requires at least one bucket boundary")
+	ErrInvalidHistogramType            = errors.New("histogram type must be 'explicit' or 'exponential'")
+	ErrExponentialHistogramMaxSize     = errors.New("exponential histogram max_size must be positive")
 	ErrBucketsNotAllowedForExponential = errors.New("buckets should not be specified for exponential histograms")
 )
 

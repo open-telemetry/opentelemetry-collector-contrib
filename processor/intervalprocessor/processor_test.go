@@ -254,7 +254,7 @@ func TestExponentialHistogramAggregation(t *testing.T) {
 	assert.Equal(t, "/api/v1", endpointVal.Str())
 
 	// Verify bucket structure is valid (positive buckets since all values are positive)
-	assert.Greater(t, dp.Positive().BucketCounts().Len(), 0)
+	assert.Positive(t, dp.Positive().BucketCounts().Len())
 	// Scale should be set
 	assert.NotEqual(t, int32(0), dp.Scale())
 }
@@ -342,8 +342,8 @@ func TestExponentialHistogramWithNegativeValues(t *testing.T) {
 	assert.InDelta(t, expectedMax, dp.Max(), 0.001)
 
 	// Should have both positive and negative buckets
-	assert.Greater(t, dp.Positive().BucketCounts().Len(), 0, "should have positive buckets")
-	assert.Greater(t, dp.Negative().BucketCounts().Len(), 0, "should have negative buckets")
+	assert.Positive(t, dp.Positive().BucketCounts().Len(), "should have positive buckets")
+	assert.Positive(t, dp.Negative().BucketCounts().Len(), "should have negative buckets")
 	// Zero count should be 1 (for the 0 value)
 	assert.Equal(t, uint64(1), dp.ZeroCount())
 }

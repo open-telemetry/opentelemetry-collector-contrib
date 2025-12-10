@@ -41,10 +41,10 @@ type histogramAggregationState struct {
 	resource pcommon.Resource
 	// original scope
 	scope pcommon.InstrumentationScope
-	// resourceSchemaUrl
-	resourceSchemaUrl string
-	// scopeSchemaUrl
-	scopeSchemaUrl string
+	// resourceSchemaURL is the schema URL for the resource
+	resourceSchemaURL string
+	// scopeSchemaURL is the schema URL for the scope
+	scopeSchemaURL string
 	// original metric name
 	metricName string
 	// original metric unit
@@ -383,8 +383,8 @@ func (p *intervalProcessor) collectForHistogramAggregation(rm pmetric.ResourceMe
 				scopeID:           scopeID,
 				resource:          pcommon.NewResource(),
 				scope:             pcommon.NewInstrumentationScope(),
-				resourceSchemaUrl: rm.SchemaUrl(),
-				scopeSchemaUrl:    sm.SchemaUrl(),
+				resourceSchemaURL: rm.SchemaUrl(),
+				scopeSchemaURL:    sm.SchemaUrl(),
 				metricName:        m.Name(),
 				unit:              m.Unit(),
 				description:       m.Description(),
@@ -449,12 +449,12 @@ func (p *intervalProcessor) buildHistograms(out pmetric.Metrics) {
 	// Group by resource -> scope -> metric name -> streams
 	type scopeStreams struct {
 		scope          pcommon.InstrumentationScope
-		scopeSchemaUrl string
+		scopeSchemaURL string
 		metrics        map[string]map[identity.Stream]*histogramAggregationState
 	}
 	type resourceStreams struct {
 		resource          pcommon.Resource
-		resourceSchemaUrl string
+		resourceSchemaURL string
 		scopes            map[identity.Scope]*scopeStreams
 	}
 
@@ -466,7 +466,7 @@ func (p *intervalProcessor) buildHistograms(out pmetric.Metrics) {
 		if !ok {
 			rs = &resourceStreams{
 				resource:          state.resource,
-				resourceSchemaUrl: state.resourceSchemaUrl,
+				resourceSchemaURL: state.resourceSchemaURL,
 				scopes:            make(map[identity.Scope]*scopeStreams),
 			}
 			resourceMap[state.resID] = rs
@@ -477,7 +477,7 @@ func (p *intervalProcessor) buildHistograms(out pmetric.Metrics) {
 		if !ok {
 			ss = &scopeStreams{
 				scope:          state.scope,
-				scopeSchemaUrl: state.scopeSchemaUrl,
+				scopeSchemaURL: state.scopeSchemaURL,
 				metrics:        make(map[string]map[identity.Stream]*histogramAggregationState),
 			}
 			rs.scopes[state.scopeID] = ss
@@ -495,12 +495,12 @@ func (p *intervalProcessor) buildHistograms(out pmetric.Metrics) {
 	for _, rs := range resourceMap {
 		rm := out.ResourceMetrics().AppendEmpty()
 		rs.resource.CopyTo(rm.Resource())
-		rm.SetSchemaUrl(rs.resourceSchemaUrl)
+		rm.SetSchemaUrl(rs.resourceSchemaURL)
 
 		for _, ss := range rs.scopes {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			ss.scope.CopyTo(sm.Scope())
-			sm.SetSchemaUrl(ss.scopeSchemaUrl)
+			sm.SetSchemaUrl(ss.scopeSchemaURL)
 
 			for metricName, streams := range ss.metrics {
 				aggConfig := p.histogramAggregationConfigs[metricName]
@@ -531,7 +531,7 @@ func (p *intervalProcessor) buildHistograms(out pmetric.Metrics) {
 }
 
 // buildExplicitHistogramDataPoints creates explicit bucket histogram data points from collected values.
-func (p *intervalProcessor) buildExplicitHistogramDataPoints(m pmetric.Metric, streams map[identity.Stream]*histogramAggregationState, buckets []float64) {
+func (*intervalProcessor) buildExplicitHistogramDataPoints(m pmetric.Metric, streams map[identity.Stream]*histogramAggregationState, buckets []float64) {
 	hist := m.SetEmptyHistogram()
 	hist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
@@ -548,21 +548,21 @@ func (p *intervalProcessor) buildExplicitHistogramDataPoints(m pmetric.Metric, s
 		// Calculate histogram from values
 		bucketCounts := make([]uint64, len(buckets)+1)
 		var sum float64
-		var min, max float64
+		var minVal, maxVal float64
 		count := uint64(len(state.values))
 
 		if count > 0 {
-			min = state.values[0]
-			max = state.values[0]
+			minVal = state.values[0]
+			maxVal = state.values[0]
 		}
 
 		for _, v := range state.values {
 			sum += v
-			if v < min {
-				min = v
+			if v < minVal {
+				minVal = v
 			}
-			if v > max {
-				max = v
+			if v > maxVal {
+				maxVal = v
 			}
 
 			// Find the bucket for this value
@@ -577,15 +577,15 @@ func (p *intervalProcessor) buildExplicitHistogramDataPoints(m pmetric.Metric, s
 
 		dp.SetCount(count)
 		dp.SetSum(sum)
-		dp.SetMin(min)
-		dp.SetMax(max)
+		dp.SetMin(minVal)
+		dp.SetMax(maxVal)
 		dp.ExplicitBounds().FromRaw(buckets)
 		dp.BucketCounts().FromRaw(bucketCounts)
 	}
 }
 
 // buildExponentialHistogramDataPoints creates exponential histogram data points from the aggregated exponential histogram.
-func (p *intervalProcessor) buildExponentialHistogramDataPoints(m pmetric.Metric, streams map[identity.Stream]*histogramAggregationState) {
+func (*intervalProcessor) buildExponentialHistogramDataPoints(m pmetric.Metric, streams map[identity.Stream]*histogramAggregationState) {
 	expHist := m.SetEmptyExponentialHistogram()
 	expHist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
