@@ -121,6 +121,7 @@ extension/sumologicextension extension/sumologic
 internal/aws internal/aws
 internal/collectd internal/collectd
 internal/common internal/common
+internal/conventions internal/conventions
 internal/coreinternal internal/core
 internal/datadog internal/datadog
 internal/datadog/e2e internal/datadog/e2e
