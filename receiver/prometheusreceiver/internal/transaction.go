@@ -69,7 +69,6 @@ type transaction struct {
 	scopeAttributes        map[resourceKey]map[scopeID]pcommon.Map
 	logger                 *zap.Logger
 	buildInfo              component.BuildInfo
-	metricAdjuster         MetricsAdjuster
 	obsrecv                *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
@@ -85,7 +84,6 @@ type scopeID struct {
 
 func newTransaction(
 	ctx context.Context,
-	metricAdjuster MetricsAdjuster,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings receiver.Settings,
@@ -102,7 +100,6 @@ func newTransaction(
 		enableNativeHistograms: enableNativeHistograms,
 		useMetadata:            useMetadata,
 		sink:                   sink,
-		metricAdjuster:         metricAdjuster,
 		externalLabels:         externalLabels,
 		logger:                 settings.Logger,
 		buildInfo:              settings.BuildInfo,
