@@ -113,6 +113,7 @@ func (b filterBuilder) constructFiltersForGroups(totalLimitPerMetric, limitPerMe
 			if err != nil {
 				return remainingTotalLimit, err
 			}
+			itemFilter.StartCache()
 			filterByMetric[metricFullName] = itemFilter
 		}
 	}
