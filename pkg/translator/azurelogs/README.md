@@ -183,9 +183,9 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | ----------------------------------- | -------------------------------------- |
 | `properties.description`            | `azure.autoscale.description`          |
 | `properties.resourceName`           | `azure.autoscale.resource.name`        |
-| `properties.oldInstancesCount`      | `azure.autoscale.old_instances_count`  |
-| `properties.newInstancesCount`      | `azure.autoscale.new_instances_count`  |
-| `properties.lastScaleActionTime`    | `azure.autoscale.last_scale_timestamp` |
+| `properties.oldInstancesCount`      | `azure.autoscale.instances.previous_count`  |
+| `properties.newInstancesCount`      | `azure.autoscale.instances.count`  |
+| `properties.lastScaleActionTime`    | `azure.autoscale.resource.last_scale` |
 
 ### Policy
 
@@ -212,8 +212,8 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | ---------------------------------------- | --------------------------------------------- |
 | `properties.title`                       | `azure.resourcehealth.title`                  |
 | `properties.details`                     | `azure.resourcehealth.details`                |
-| `properties.currentHealthStatus`         | `azure.resourcehealth.current_health_status`  |
-| `properties.previousHealthStatus`        | `azure.resourcehealth.previous_health_status` |
+| `properties.currentHealthStatus`         | `azure.resourcehealth.state`  |
+| `properties.previousHealthStatus`        | `azure.resourcehealth.previous_state` |
 | `properties.type`                        | `azure.resourcehealth.type`                   |
 | `properties.cause`                       | `azure.resourcehealth.cause`                  |
 
@@ -245,8 +245,8 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | `properties.communication.routeType`                         | `azure.servicehealth.communication.route_type`     |
 | `properties.incidentType`                                    | `azure.servicehealth.incident.type`                |
 | `properties.trackingId`                                      | `azure.servicehealth.tracking.id`                  |
-| `properties.impactStartTime`                                 | `azure.servicehealth.impact.start_timestamp`       |
-| `properties.impactMitigationTime`                            | `azure.servicehealth.impact.mitigation_timestamp`  |
+| `properties.impactStartTime`                                 | `azure.servicehealth.impact.start`       |
+| `properties.impactMitigationTime`                            | `azure.servicehealth.impact.mitigation`  |
 | `properties.impactedServices`                                | `azure.servicehealth.impact.services` (array)      |
 | `properties.impactedServices[].ServiceName`                  | `name` (within service object)                     |
 | `properties.impactedServices[].ServiceId`                    | `id` (within service object)                       |
