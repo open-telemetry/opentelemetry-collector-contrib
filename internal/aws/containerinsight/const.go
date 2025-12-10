@@ -140,12 +140,17 @@ const (
 	DiskIOWrite              = "Write"
 	DiskIOTotal              = "Total"
 
-	EfaRdmaReadBytes      = "rdma_read_bytes"
-	EfaRdmaWriteBytes     = "rdma_write_bytes"
-	EfaRdmaWriteRecvBytes = "rdma_write_recv_bytes"
-	EfaRxBytes            = "rx_bytes"
-	EfaRxDropped          = "rx_dropped"
-	EfaTxBytes            = "tx_bytes"
+	EfaRdmaReadBytes            = "rdma_read_bytes"
+	EfaRdmaWriteBytes           = "rdma_write_bytes"
+	EfaRdmaWriteRecvBytes       = "rdma_write_recv_bytes"
+	EfaRxBytes                  = "rx_bytes"
+	EfaRxDropped                = "rx_dropped"
+	EfaTxBytes                  = "tx_bytes"
+	EfaRetransBytes             = "retrans_bytes"
+	EfaRetransPkts              = "retrans_pkts"
+	EfaRetransTimeoutEvents     = "retrans_timeout_events"
+	EfaUnresponsiveRemoveEvents = "unresponsive_remote_events"
+	EfaImpairedRemoteConnEvents = "impaired_remote_conn_events"
 
 	GpuLimit              = "gpu_limit"
 	GpuUsageTotal         = "gpu_usage_total"
@@ -377,17 +382,22 @@ func init() {
 		// for CPU and CPU cores, but UnitBytes would be more appropriate for resource type memory.
 
 		// others
-		RunningPodCount:       UnitCount,
-		RunningContainerCount: UnitCount,
-		ContainerCount:        UnitCount,
-		ContainerRestartCount: UnitCount,
-		RunningTaskCount:      UnitCount,
-		EfaRdmaReadBytes:      UnitBytesPerSec,
-		EfaRdmaWriteBytes:     UnitBytesPerSec,
-		EfaRdmaWriteRecvBytes: UnitBytesPerSec,
-		EfaRxBytes:            UnitBytesPerSec,
-		EfaRxDropped:          UnitCountPerSec,
-		EfaTxBytes:            UnitBytesPerSec,
+		RunningPodCount:             UnitCount,
+		RunningContainerCount:       UnitCount,
+		ContainerCount:              UnitCount,
+		ContainerRestartCount:       UnitCount,
+		RunningTaskCount:            UnitCount,
+		EfaRdmaReadBytes:            UnitBytesPerSec,
+		EfaRdmaWriteBytes:           UnitBytesPerSec,
+		EfaRdmaWriteRecvBytes:       UnitBytesPerSec,
+		EfaRxBytes:                  UnitBytesPerSec,
+		EfaRxDropped:                UnitCountPerSec,
+		EfaTxBytes:                  UnitBytesPerSec,
+		EfaRetransBytes:             UnitBytesPerSec,
+		EfaRetransPkts:              UnitCountPerSec,
+		EfaRetransTimeoutEvents:     UnitCountPerSec,
+		EfaUnresponsiveRemoveEvents: UnitCountPerSec,
+		EfaImpairedRemoteConnEvents: UnitCountPerSec,
 
 		EfaLimit:              UnitCount,
 		EfaUsageTotal:         UnitCount,

@@ -30,21 +30,31 @@ const (
 	efaK8sResourceName = "vpc.amazonaws.com/efa"
 
 	// hardware counter names
-	counterRdmaReadBytes      = "rdma_read_bytes"
-	counterRdmaWriteBytes     = "rdma_write_bytes"
-	counterRdmaWriteRecvBytes = "rdma_write_recv_bytes"
-	counterRxBytes            = "rx_bytes"
-	counterRxDrops            = "rx_drops"
-	counterTxBytes            = "tx_bytes"
+	counterRdmaReadBytes            = "rdma_read_bytes"
+	counterRdmaWriteBytes           = "rdma_write_bytes"
+	counterRdmaWriteRecvBytes       = "rdma_write_recv_bytes"
+	counterRxBytes                  = "rx_bytes"
+	counterRxDrops                  = "rx_drops"
+	counterTxBytes                  = "tx_bytes"
+	counterRetransBytes             = "retrans_bytes"
+	counterRetransPkts              = "retrans_pkts"
+	counterRetransTimeoutEvents     = "retrans_timeout_events"
+	counterUnresponsiveRemoteEvents = "unresponsive_remote_events"
+	counterImpairedRemoteConnEvents = "impaired_remote_conn_events"
 )
 
 var counterNames = map[string]any{
-	counterRdmaReadBytes:      nil,
-	counterRdmaWriteBytes:     nil,
-	counterRdmaWriteRecvBytes: nil,
-	counterRxBytes:            nil,
-	counterRxDrops:            nil,
-	counterTxBytes:            nil,
+	counterRdmaReadBytes:            nil,
+	counterRdmaWriteBytes:           nil,
+	counterRdmaWriteRecvBytes:       nil,
+	counterRxBytes:                  nil,
+	counterRxDrops:                  nil,
+	counterTxBytes:                  nil,
+	counterRetransBytes:             nil,
+	counterRetransPkts:              nil,
+	counterRetransTimeoutEvents:     nil,
+	counterUnresponsiveRemoteEvents: nil,
+	counterImpairedRemoteConnEvents: nil,
 }
 
 type Scraper struct {
@@ -98,12 +108,17 @@ type efaDeviceName string
 // /sys/class/infiniband/<Name>/ports/<Port>/hw_counters
 // for a single port of one Amazon Elastic Fabric Adapter device.
 type efaCounters struct {
-	rdmaReadBytes      uint64 // hw_counters/rdma_read_bytes
-	rdmaWriteBytes     uint64 // hw_counters/rdma_write_bytes
-	rdmaWriteRecvBytes uint64 // hw_counters/rdma_write_recv_bytes
-	rxBytes            uint64 // hw_counters/rx_bytes
-	rxDrops            uint64 // hw_counters/rx_drops
-	txBytes            uint64 // hw_counters/tx_bytes
+	rdmaReadBytes            uint64 // hw_counters/rdma_read_bytes
+	rdmaWriteBytes           uint64 // hw_counters/rdma_write_bytes
+	rdmaWriteRecvBytes       uint64 // hw_counters/rdma_write_recv_bytes
+	rxBytes                  uint64 // hw_counters/rx_bytes
+	rxDrops                  uint64 // hw_counters/rx_drops
+	txBytes                  uint64 // hw_counters/tx_bytes
+	retransBytes             uint64 // hw_counters/retrans_bytes
+	retransPkts              uint64 // hw_counters/retrans_pkts
+	retransTimeoutEvents     uint64 // hw_counters/retrans_timeout_events
+	unresponsiveRemoteEvents uint64 // hw_counters/unresponsive_remote_events
+	impairedRemoteConnEvents uint64 // hw_counters/impaired_remote_conn_events
 }
 
 func NewEfaSyfsScraper(logger *zap.Logger, decorator stores.Decorator, podResourcesStore podResourcesStore, hostInfo hostInfoProvider) *Scraper {
@@ -163,12 +178,17 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 		}
 
 		measurementValue := map[string]uint64{
-			ci.EfaRdmaReadBytes:      counters.rdmaReadBytes,
-			ci.EfaRdmaWriteBytes:     counters.rdmaWriteBytes,
-			ci.EfaRdmaWriteRecvBytes: counters.rdmaWriteRecvBytes,
-			ci.EfaRxBytes:            counters.rxBytes,
-			ci.EfaRxDropped:          counters.rxDrops,
-			ci.EfaTxBytes:            counters.txBytes,
+			ci.EfaRdmaReadBytes:            counters.rdmaReadBytes,
+			ci.EfaRdmaWriteBytes:           counters.rdmaWriteBytes,
+			ci.EfaRdmaWriteRecvBytes:       counters.rdmaWriteRecvBytes,
+			ci.EfaRxBytes:                  counters.rxBytes,
+			ci.EfaRxDropped:                counters.rxDrops,
+			ci.EfaTxBytes:                  counters.txBytes,
+			ci.EfaRetransBytes:             counters.retransBytes,
+			ci.EfaRetransPkts:              counters.retransPkts,
+			ci.EfaRetransTimeoutEvents:     counters.retransTimeoutEvents,
+			ci.EfaUnresponsiveRemoveEvents: counters.unresponsiveRemoteEvents,
+			ci.EfaImpairedRemoteConnEvents: counters.impairedRemoteConnEvents,
 		}
 
 		for measurement, value := range measurementValue {
@@ -349,6 +369,16 @@ func (s *Scraper) readCounters(deviceName efaDeviceName, port string, counters *
 			counters.rxDrops += reader(counter)
 		case counterTxBytes:
 			counters.txBytes += reader(counter)
+		case counterRetransBytes:
+			counters.retransBytes += reader(counter)
+		case counterRetransPkts:
+			counters.retransPkts += reader(counter)
+		case counterRetransTimeoutEvents:
+			counters.retransTimeoutEvents += reader(counter)
+		case counterUnresponsiveRemoteEvents:
+			counters.unresponsiveRemoteEvents += reader(counter)
+		case counterImpairedRemoteConnEvents:
+			counters.impairedRemoteConnEvents += reader(counter)
 		}
 	}
 

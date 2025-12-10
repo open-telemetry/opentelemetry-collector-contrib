@@ -68,12 +68,17 @@ func (r mockSysfsReader) GetMACAddressFromDeviceName(deviceName efaDeviceName) (
 }
 
 var mockCounterValues = map[string]uint64{
-	counterRdmaReadBytes:      1,
-	counterRdmaWriteBytes:     2,
-	counterRdmaWriteRecvBytes: 3,
-	counterRxBytes:            4,
-	counterRxDrops:            5,
-	counterTxBytes:            6,
+	counterRdmaReadBytes:            1,
+	counterRdmaWriteBytes:           2,
+	counterRdmaWriteRecvBytes:       3,
+	counterRxBytes:                  4,
+	counterRxDrops:                  5,
+	counterTxBytes:                  6,
+	counterRetransBytes:             7,
+	counterRetransPkts:              8,
+	counterRetransTimeoutEvents:     9,
+	counterUnresponsiveRemoteEvents: 10,
+	counterImpairedRemoteConnEvents: 11,
 }
 
 func (r mockSysfsReader) ReadCounter(deviceName efaDeviceName, port string, counter string) (uint64, error) {
@@ -135,12 +140,17 @@ var mockHost = &mockHostInfo{
 var efa0Metrics = []expectation{
 	{
 		map[string]uint64{
-			"node_efa_rdma_read_bytes":       2,
-			"node_efa_rdma_write_bytes":      4,
-			"node_efa_rdma_write_recv_bytes": 6,
-			"node_efa_rx_bytes":              8,
-			"node_efa_rx_dropped":            10,
-			"node_efa_tx_bytes":              12,
+			"node_efa_rdma_read_bytes":             2,
+			"node_efa_rdma_write_bytes":            4,
+			"node_efa_rdma_write_recv_bytes":       6,
+			"node_efa_rx_bytes":                    8,
+			"node_efa_rx_dropped":                  10,
+			"node_efa_tx_bytes":                    12,
+			"node_efa_retrans_bytes":               14,
+			"node_efa_retrans_pkts":                16,
+			"node_efa_retrans_timeout_events":      18,
+			"node_efa_unresponsive_remote_events":  20,
+			"node_efa_impaired_remote_conn_events": 22,
 		},
 		map[string]string{
 			ci.MetricType: ci.TypeNodeEFA,
@@ -151,12 +161,17 @@ var efa0Metrics = []expectation{
 	},
 	{
 		map[string]uint64{
-			"pod_efa_rdma_read_bytes":       2,
-			"pod_efa_rdma_write_bytes":      4,
-			"pod_efa_rdma_write_recv_bytes": 6,
-			"pod_efa_rx_bytes":              8,
-			"pod_efa_rx_dropped":            10,
-			"pod_efa_tx_bytes":              12,
+			"pod_efa_rdma_read_bytes":             2,
+			"pod_efa_rdma_write_bytes":            4,
+			"pod_efa_rdma_write_recv_bytes":       6,
+			"pod_efa_rx_bytes":                    8,
+			"pod_efa_rx_dropped":                  10,
+			"pod_efa_tx_bytes":                    12,
+			"pod_efa_retrans_bytes":               14,
+			"pod_efa_retrans_pkts":                16,
+			"pod_efa_retrans_timeout_events":      18,
+			"pod_efa_unresponsive_remote_events":  20,
+			"pod_efa_impaired_remote_conn_events": 22,
 		},
 		map[string]string{
 			ci.MetricType:       ci.TypePodEFA,
@@ -170,12 +185,17 @@ var efa0Metrics = []expectation{
 	},
 	{
 		map[string]uint64{
-			"container_efa_rdma_read_bytes":       2,
-			"container_efa_rdma_write_bytes":      4,
-			"container_efa_rdma_write_recv_bytes": 6,
-			"container_efa_rx_bytes":              8,
-			"container_efa_rx_dropped":            10,
-			"container_efa_tx_bytes":              12,
+			"container_efa_rdma_read_bytes":             2,
+			"container_efa_rdma_write_bytes":            4,
+			"container_efa_rdma_write_recv_bytes":       6,
+			"container_efa_rx_bytes":                    8,
+			"container_efa_rx_dropped":                  10,
+			"container_efa_tx_bytes":                    12,
+			"container_efa_retrans_bytes":               14,
+			"container_efa_retrans_pkts":                16,
+			"container_efa_retrans_timeout_events":      18,
+			"container_efa_unresponsive_remote_events":  20,
+			"container_efa_impaired_remote_conn_events": 22,
 		},
 		map[string]string{
 			ci.MetricType:       ci.TypeContainerEFA,
@@ -191,12 +211,17 @@ var efa0Metrics = []expectation{
 
 var efa1NodeMetric = expectation{
 	map[string]uint64{
-		"node_efa_rdma_read_bytes":       2,
-		"node_efa_rdma_write_bytes":      4,
-		"node_efa_rdma_write_recv_bytes": 6,
-		"node_efa_rx_bytes":              8,
-		"node_efa_rx_dropped":            10,
-		"node_efa_tx_bytes":              12,
+		"node_efa_rdma_read_bytes":             2,
+		"node_efa_rdma_write_bytes":            4,
+		"node_efa_rdma_write_recv_bytes":       6,
+		"node_efa_rx_bytes":                    8,
+		"node_efa_rx_dropped":                  10,
+		"node_efa_tx_bytes":                    12,
+		"node_efa_retrans_bytes":               14,
+		"node_efa_retrans_pkts":                16,
+		"node_efa_retrans_timeout_events":      18,
+		"node_efa_unresponsive_remote_events":  20,
+		"node_efa_impaired_remote_conn_events": 22,
 	},
 	map[string]string{
 		ci.MetricType: ci.TypeNodeEFA,
@@ -209,12 +234,17 @@ var efa1NodeMetric = expectation{
 var efa1PodContainerMetrics = []expectation{
 	{
 		map[string]uint64{
-			"pod_efa_rdma_read_bytes":       2,
-			"pod_efa_rdma_write_bytes":      4,
-			"pod_efa_rdma_write_recv_bytes": 6,
-			"pod_efa_rx_bytes":              8,
-			"pod_efa_rx_dropped":            10,
-			"pod_efa_tx_bytes":              12,
+			"pod_efa_rdma_read_bytes":             2,
+			"pod_efa_rdma_write_bytes":            4,
+			"pod_efa_rdma_write_recv_bytes":       6,
+			"pod_efa_rx_bytes":                    8,
+			"pod_efa_rx_dropped":                  10,
+			"pod_efa_tx_bytes":                    12,
+			"pod_efa_retrans_bytes":               14,
+			"pod_efa_retrans_pkts":                16,
+			"pod_efa_retrans_timeout_events":      18,
+			"pod_efa_unresponsive_remote_events":  20,
+			"pod_efa_impaired_remote_conn_events": 22,
 		},
 		map[string]string{
 			ci.MetricType:       ci.TypePodEFA,
@@ -228,12 +258,17 @@ var efa1PodContainerMetrics = []expectation{
 	},
 	{
 		map[string]uint64{
-			"container_efa_rdma_read_bytes":       2,
-			"container_efa_rdma_write_bytes":      4,
-			"container_efa_rdma_write_recv_bytes": 6,
-			"container_efa_rx_bytes":              8,
-			"container_efa_rx_dropped":            10,
-			"container_efa_tx_bytes":              12,
+			"container_efa_rdma_read_bytes":             2,
+			"container_efa_rdma_write_bytes":            4,
+			"container_efa_rdma_write_recv_bytes":       6,
+			"container_efa_rx_bytes":                    8,
+			"container_efa_rx_dropped":                  10,
+			"container_efa_tx_bytes":                    12,
+			"container_efa_retrans_bytes":               14,
+			"container_efa_retrans_pkts":                16,
+			"container_efa_retrans_timeout_events":      18,
+			"container_efa_unresponsive_remote_events":  20,
+			"container_efa_impaired_remote_conn_events": 22,
 		},
 		map[string]string{
 			ci.MetricType:       ci.TypeContainerEFA,
@@ -401,12 +436,17 @@ func TestScrape(t *testing.T) {
 
 	expectedCounters := efaCounters{
 		// All values multiplied by 2 because we mock 2 ports
-		rdmaReadBytes:      2,
-		rdmaWriteBytes:     4,
-		rdmaWriteRecvBytes: 6,
-		rxBytes:            8,
-		rxDrops:            10,
-		txBytes:            12,
+		rdmaReadBytes:            2,
+		rdmaWriteBytes:           4,
+		rdmaWriteRecvBytes:       6,
+		rxBytes:                  8,
+		rxDrops:                  10,
+		txBytes:                  12,
+		retransBytes:             14,
+		retransPkts:              16,
+		retransTimeoutEvents:     18,
+		unresponsiveRemoteEvents: 20,
+		impairedRemoteConnEvents: 22,
 	}
 	expected := efaDevices{
 		efaDevice{
