@@ -88,8 +88,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
+				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
 					NumConsumers: 2,
 					QueueSize:    1000,
 					Sizer:        exporterhelper.RequestSizerTypeItems,
@@ -99,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 						MaxSize:      100,
 						Sizer:        exporterhelper.RequestSizerTypeItems,
 					}),
-				},
+				}),
 				OtelAttrsToHec: splunk.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -223,8 +222,7 @@ func TestConfig_Validate(t *testing.T) {
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.Endpoint = "http://foo_bar.com"
-				cfg.QueueSettings.Enabled = true
-				cfg.QueueSettings.QueueSize = -5
+				cfg.QueueSettings.Get().QueueSize = -5
 				cfg.Token = "foo"
 				return cfg
 			}(),

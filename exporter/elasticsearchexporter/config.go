@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -26,7 +27,7 @@ type Config struct {
 	// QueueBatchConfig configures the sending queue and the batching done
 	// by the exporter. The performed batching can further be customized by
 	// configuring `metadata_keys` which will be used to partition the batches.
-	QueueBatchConfig exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
@@ -315,10 +316,10 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 	if !conf.IsSet("sending_queue::num_consumers") && conf.IsSet("num_workers") {
-		cfg.QueueBatchConfig.NumConsumers = cfg.NumWorkers
+		cfg.QueueBatchConfig.Get().NumConsumers = cfg.NumWorkers
 	}
-	if cfg.QueueBatchConfig.Batch.HasValue() {
-		qbCfg := cfg.QueueBatchConfig.Batch.Get()
+	if cfg.QueueBatchConfig.HasValue() && cfg.QueueBatchConfig.Get().Batch.HasValue() {
+		qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
 		if !conf.IsSet("sending_queue::batch::flush_timeout") && conf.IsSet("flush::interval") {
 			qbCfg.FlushTimeout = cfg.Flush.Interval
 		}

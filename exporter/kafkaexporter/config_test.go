@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -43,12 +44,12 @@ func TestLoadConfig(t *testing.T) {
 					config.MaxElapsedTime = 10 * time.Minute
 					return config
 				}(),
-				QueueBatchConfig: func() exporterhelper.QueueBatchConfig {
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.NumConsumers = 2
 					queue.QueueSize = 10
 					return queue
-				}(),
+				}()),
 				ClientConfig: func() configkafka.ClientConfig {
 					config := configkafka.NewDefaultClientConfig()
 					config.Brokers = []string{"foo:123", "bar:456"}
@@ -88,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-				QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				ClientConfig:     configkafka.NewDefaultClientConfig(),
 				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
@@ -116,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-				QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				ClientConfig:     configkafka.NewDefaultClientConfig(),
 				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{

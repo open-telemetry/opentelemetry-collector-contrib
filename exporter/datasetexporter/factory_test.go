@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -31,7 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		LogsSettings:       newDefaultLogsSettings(),
 		ServerHostSettings: newDefaultServerHostSettings(),
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-		QueueSettings:      exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 	}, cfg, "failed to create default config")
 
@@ -56,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsSettings:       newDefaultLogsSettings(),
 				ServerHostSettings: newDefaultServerHostSettings(),
 				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-				QueueSettings:      exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 			},
 		},
@@ -79,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsSettings:       newDefaultLogsSettings(),
 				ServerHostSettings: newDefaultServerHostSettings(),
 				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-				QueueSettings:      exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 			},
 		},
@@ -129,13 +130,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         12 * time.Nanosecond,
 					MaxElapsedTime:      13 * time.Nanosecond,
 				},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Enabled = true
 					queue.NumConsumers = 14
 					queue.QueueSize = 15
 					return queue
-				}(),
+				}()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 16 * time.Nanosecond,
 				},
@@ -221,7 +221,7 @@ func createExporterTests() []createTest {
 					UseHostName: true,
 				},
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 			},
 			expectedError: nil,

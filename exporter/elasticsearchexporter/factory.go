@@ -54,7 +54,7 @@ func createDefaultConfig() component.Config {
 	httpClientConfig.CompressionParams.Level = gzip.BestSpeed
 
 	return &Config{
-		QueueBatchConfig: qs,
+		QueueBatchConfig: configoptional.Some(qs),
 		ClientConfig:     httpClientConfig,
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,

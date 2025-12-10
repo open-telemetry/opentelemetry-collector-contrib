@@ -76,7 +76,7 @@ type DeprecatedBatchConfig struct {
 // Config defines configuration for Splunk exporter.
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	// DeprecatedBatcher is the deprecated batcher configuration.
 	DeprecatedBatcher DeprecatedBatchConfig `mapstructure:"batcher"`
@@ -156,11 +156,13 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 	if conf.IsSet("batcher") {
 		cfg.DeprecatedBatcher.isSet = true
-		if cfg.QueueSettings.Batch.HasValue() {
+		if cfg.QueueSettings.HasValue() && cfg.QueueSettings.Get().Batch.HasValue() {
 			return errors.New(`deprecated "batcher" cannot be set along with "sending_queue::batch"`)
 		}
 		if cfg.DeprecatedBatcher.Enabled {
-			cfg.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
+			wasEnabled := cfg.QueueSettings.HasValue()
+
+			cfg.QueueSettings.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
 				FlushTimeout: cfg.DeprecatedBatcher.FlushTimeout,
 				Sizer:        cfg.DeprecatedBatcher.Sizer,
 				MinSize:      cfg.DeprecatedBatcher.MinSize,
@@ -169,9 +171,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
 			// behavior of the deprecated batcher.
-			if !cfg.QueueSettings.Enabled {
-				cfg.QueueSettings.Enabled = true
-				cfg.QueueSettings.WaitForResult = true
+			if !wasEnabled {
+				cfg.QueueSettings.Get().WaitForResult = true
 			}
 		}
 	}

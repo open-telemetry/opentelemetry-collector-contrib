@@ -638,8 +638,7 @@ func TestExporterLogs(t *testing.T) {
 					cfg.Retry.MaxInterval = 5 * time.Millisecond
 
 					// use sync flushing
-					cfg.QueueBatchConfig.Enabled = true
-					cfg.QueueBatchConfig.WaitForResult = true
+					cfg.QueueBatchConfig.Get().WaitForResult = true
 				})
 
 				logs := plog.NewLogs()
@@ -682,9 +681,8 @@ func TestExporterLogs(t *testing.T) {
 					cfg.Retry.MaxInterval = 5 * time.Millisecond
 
 					// use async indexer
-					cfg.QueueBatchConfig.Enabled = true
-					cfg.QueueBatchConfig.WaitForResult = false
-					cfg.QueueBatchConfig.BlockOnOverflow = false
+					cfg.QueueBatchConfig.Get().WaitForResult = false
+					cfg.QueueBatchConfig.Get().BlockOnOverflow = false
 				})
 				mustSendLogRecords(t, exporter, plog.NewLogRecord()) // as sync bulk indexer is used, retries are not guaranteed to finish
 
@@ -877,12 +875,12 @@ func TestExporterLogs(t *testing.T) {
 
 		cfgs := map[string]func(*Config){
 			"async": func(cfg *Config) {
-				cfg.QueueBatchConfig.WaitForResult = false
-				cfg.QueueBatchConfig.BlockOnOverflow = false
+				cfg.QueueBatchConfig.Get().WaitForResult = false
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
 			},
 			"sync": func(cfg *Config) {
-				cfg.QueueBatchConfig.WaitForResult = true
-				cfg.QueueBatchConfig.BlockOnOverflow = false
+				cfg.QueueBatchConfig.Get().WaitForResult = true
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
 			},
 		}
 		for _, tt := range tableTests {
@@ -953,12 +951,12 @@ func TestExporterLogs(t *testing.T) {
 
 		cfgs := map[string]func(*Config){
 			"async": func(cfg *Config) {
-				cfg.QueueBatchConfig.WaitForResult = false
-				cfg.QueueBatchConfig.BlockOnOverflow = false
+				cfg.QueueBatchConfig.Get().WaitForResult = false
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
 			},
 			"sync": func(cfg *Config) {
-				cfg.QueueBatchConfig.WaitForResult = true
-				cfg.QueueBatchConfig.BlockOnOverflow = false
+				cfg.QueueBatchConfig.Get().WaitForResult = true
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
 			},
 		}
 		for _, tt := range tableTests {
@@ -2453,7 +2451,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				logs := createLogs(tc.scopes...)
 				exporter := newTestLogsExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
 					// Set wait_for_result to be true so that errors are reported directly via Consume*
-					cfg.QueueBatchConfig.WaitForResult = true
+					cfg.QueueBatchConfig.Get().WaitForResult = true
 				})
 				err := exporter.ConsumeLogs(tc.ctx, logs)
 				if tc.expectErr != "" {
@@ -2481,7 +2479,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				metrics := createMetrics(tc.scopes...)
 				exporter := newTestMetricsExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
 					// Set wait_for_result to be true so that errors are reported directly via Consume*
-					cfg.QueueBatchConfig.WaitForResult = true
+					cfg.QueueBatchConfig.Get().WaitForResult = true
 				})
 				err := exporter.ConsumeMetrics(tc.ctx, metrics)
 				if tc.expectErr != "" {
@@ -2502,7 +2500,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		// the metadata is picked up and invalid modes are rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes, func(cfg *Config) {
 			// Set wait_for_result to be true so that errors are reported directly via Consume*
-			cfg.QueueBatchConfig.WaitForResult = true
+			cfg.QueueBatchConfig.Get().WaitForResult = true
 		})
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
@@ -2526,7 +2524,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				traces := createTraces(tc.scopes...)
 				exporter := newTestTracesExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
 					// Set wait_for_result to be true so that errors are reported directly via Consume*
-					cfg.QueueBatchConfig.WaitForResult = true
+					cfg.QueueBatchConfig.Get().WaitForResult = true
 				})
 				err := exporter.ConsumeTraces(tc.ctx, traces)
 				if tc.expectErr != "" {
@@ -2576,9 +2574,9 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.QueueBatchConfig.Enabled = true
-		cfg.QueueBatchConfig.WaitForResult = true
-		cfg.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		cfg.QueueBatchConfig.GetOrInsertDefault()
+		cfg.QueueBatchConfig.Get().WaitForResult = true
+		cfg.QueueBatchConfig.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
 			FlushTimeout: 200 * time.Millisecond,
 			Sizer:        exporterhelper.RequestSizerTypeItems,
 			MinSize:      8192,
@@ -2627,11 +2625,11 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		})
 		// Configure sending queue with batching enabled. Batching configuration are
 		// kept such that test can simulate batching and the batch matures on age.
-		cfg.QueueBatchConfig.WaitForResult = false
-		cfg.QueueBatchConfig.BlockOnOverflow = true
-		cfg.QueueBatchConfig.QueueSize = 100 // big enough to accommodate all requests
-		cfg.QueueBatchConfig.NumConsumers = 10
-		batchCfg := cfg.QueueBatchConfig.Batch.Get()
+		cfg.QueueBatchConfig.Get().WaitForResult = false
+		cfg.QueueBatchConfig.Get().BlockOnOverflow = true
+		cfg.QueueBatchConfig.Get().QueueSize = 100 // big enough to accommodate all requests
+		cfg.QueueBatchConfig.Get().NumConsumers = 10
+		batchCfg := cfg.QueueBatchConfig.Get().Batch.GetOrInsertDefault()
 		batchCfg.FlushTimeout = 100 * time.Millisecond
 		batchCfg.Sizer = exporterhelper.RequestSizerTypeItems
 		batchCfg.MinSize = 100 // big enough to accommodate all requests
@@ -2813,9 +2811,9 @@ func newUnstartedTestTracesExporter(t *testing.T, url string, fns ...func(*Confi
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.QueueBatchConfig.NumConsumers = 1
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		// Batch is configured by default so we can directly edit flush timeout
-		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2837,9 +2835,9 @@ func newUnstartedTestProfilesExporter(t *testing.T, url string, fns ...func(*Con
 	f := NewFactory().(xexporter.Factory)
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.QueueBatchConfig.NumConsumers = 1
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		// Batch is configured by default so we can directly edit flush timeout
-		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2860,9 +2858,9 @@ func newUnstartedTestMetricsExporter(t *testing.T, url string, fns ...func(*Conf
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.QueueBatchConfig.NumConsumers = 1
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		// Batch is configured by default so we can directly edit flush timeout
-		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2884,9 +2882,9 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.QueueBatchConfig.NumConsumers = 1
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		// Batch is defined as default configuration
-		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
