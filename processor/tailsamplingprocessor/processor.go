@@ -577,6 +577,13 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
+		// A decision was already made, no need to do it again. This happens
+		// when no decision cache is used and a trace was processed both due to
+		// a root span trigger and after decision_wait.
+		if trace.finalDecision != samplingpolicy.Unspecified {
+			continue
+		}
+
 		trace.decisionTime = time.Now()
 
 		decision := tsp.makeDecision(id, &trace.TraceData, metrics)
