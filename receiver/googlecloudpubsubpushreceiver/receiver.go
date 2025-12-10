@@ -159,7 +159,7 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 		p.settings.Logger,
 	)
 
-	server, err := p.cfg.ToServer(ctx, host, p.settings.TelemetrySettings, mux)
+	server, err := p.cfg.ToServer(ctx, host.GetExtensions(), p.settings.TelemetrySettings, mux)
 	if err != nil {
 		return err
 	}

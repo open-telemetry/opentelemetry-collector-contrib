@@ -47,7 +47,6 @@ body:
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/bmchelix
-      - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
@@ -145,6 +144,7 @@ body:
       - internal/healthcheck
       - internal/k8sconfig
       - internal/k8sinventory
+      - internal/k8sleaderelectortest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
