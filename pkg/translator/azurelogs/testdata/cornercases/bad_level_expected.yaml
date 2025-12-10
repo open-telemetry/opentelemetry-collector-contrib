@@ -15,28 +15,22 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: network.peer.address
-                    value:
-                      stringValue: 13.14.15.16
                   - key: properties
                     value:
                       kvlistValue:
                         values:
-                          - key: backendProtocol
+                          - key: clientProtocol
                             value:
                               stringValue: HTTP/1.1
-                          - key: isRequestSuccess
-                            value:
-                              boolValue: true
                           - key: backendMethod
                             value:
                               stringValue: GET
                           - key: apimSubscriptionId
                             value:
                               stringValue: master
-                          - key: backendTime
+                          - key: backendUrl
                             value:
-                              doubleValue: 54
+                              stringValue: https://api.azurewebsites.net/sessions
                           - key: apiRevision
                             value:
                               stringValue: "1"
@@ -46,45 +40,48 @@ resourceLogs:
                           - key: method
                             value:
                               stringValue: GET
-                          - key: apiId
-                            value:
-                              stringValue: demo-api
-                          - key: backendUrl
-                            value:
-                              stringValue: https://api.azurewebsites.net/sessions
-                          - key: truncated
-                            value:
-                              doubleValue: 0
-                          - key: DeploymentVersion
-                            value:
-                              stringValue: 0.40.16708.0
-                          - key: requestSize
-                            value:
-                              doubleValue: 632
-                          - key: operationId
-                            value:
-                              stringValue: GetSessions
-                          - key: clientProtocol
-                            value:
-                              stringValue: HTTP/1.1
-                          - key: url
-                            value:
-                              stringValue: https://api.azure-api.net/sessions
                           - key: cache
                             value:
                               stringValue: none
+                          - key: operationId
+                            value:
+                              stringValue: GetSessions
                           - key: responseCode
                             value:
                               doubleValue: 200
-                          - key: clientTlsVersion
+                          - key: backendTime
                             value:
-                              stringValue: "1.2"
+                              doubleValue: 54
                           - key: clientTime
                             value:
                               doubleValue: 190
+                          - key: url
+                            value:
+                              stringValue: https://api.azure-api.net/sessions
+                          - key: clientTlsVersion
+                            value:
+                              stringValue: "1.2"
+                          - key: requestSize
+                            value:
+                              doubleValue: 632
+                          - key: apiId
+                            value:
+                              stringValue: demo-api
                           - key: backendResponseCode
                             value:
                               doubleValue: 200
+                          - key: backendProtocol
+                            value:
+                              stringValue: HTTP/1.1
+                  - key: result.type
+                    value:
+                      stringValue: Succeeded
+                  - key: cloud.region
+                    value:
+                      stringValue: West US
+                  - key: network.peer.address
+                    value:
+                      stringValue: 13.14.15.16
                   - key: category
                     value:
                       stringValue: GatewayLogs
@@ -97,12 +94,6 @@ resourceLogs:
                   - key: operation.name
                     value:
                       stringValue: Microsoft.ApiManagement/GatewayLogs
-                  - key: result.type
-                    value:
-                      stringValue: Succeeded
-                  - key: cloud.region
-                    value:
-                      stringValue: West US
             severityNumber: 4
             severityText: "4"
             timeUnixNano: "1698330163341635700"

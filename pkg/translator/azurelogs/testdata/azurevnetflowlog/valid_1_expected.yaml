@@ -15,59 +15,42 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: properties
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: flowLogGUID
-                            value:
-                              stringValue: 00000000-0000-0000-0000-000000000000
-                          - key: macAddress
-                            value:
-                              stringValue: "000000000000"
-                          - key: flowLogResourceID
-                            value:
-                              stringValue: /SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.NETWORK/NETWORKWATCHERS/NETWORKWATCHER_EASTUS2/FLOWLOGS/TEST-VNET-FLOWLOG
-                          - key: flowRecords
-                            value:
-                              kvlistValue:
-                                values:
-                                  - key: flows
-                                    value:
-                                      arrayValue:
-                                        values:
-                                          - kvlistValue:
-                                              values:
-                                                - key: aclID
-                                                  value:
-                                                    stringValue: 00000000-0000-0000-0000-000000000000
-                                                - key: flowGroups
-                                                  value:
-                                                    arrayValue:
-                                                      values:
-                                                        - kvlistValue:
-                                                            values:
-                                                              - key: rule
-                                                                value:
-                                                                  stringValue: PlatformRule
-                                                              - key: flowTuples
-                                                                value:
-                                                                  arrayValue:
-                                                                    values:
-                                                                      - stringValue: 1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,E,NX,1,66,1,635
-                                                                      - stringValue: 1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,B,NX,0,0,0,0
-                          - key: targetResourceID
-                            value:
-                              stringValue: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet
-                          - key: flowLogVersion
-                            value:
-                              doubleValue: 4
                   - key: category
                     value:
                       stringValue: FlowLogFlowEvent
                   - key: operation.name
                     value:
                       stringValue: FlowLogFlowEvent
+                  - key: event.original
+                    value:
+                      stringValue: |-
+                        {
+                              "category": "FlowLogFlowEvent",
+                              "flowLogGUID": "00000000-0000-0000-0000-000000000000",
+                              "flowLogResourceID": "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.NETWORK/NETWORKWATCHERS/NETWORKWATCHER_EASTUS2/FLOWLOGS/TEST-VNET-FLOWLOG",
+                              "flowLogVersion": 4,
+                              "flowRecords": {
+                                    "flows": [
+                                          {
+                                                "aclID": "00000000-0000-0000-0000-000000000000",
+                                                "flowGroups": [
+                                                      {
+                                                            "flowTuples": [
+                                                                  "1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,E,NX,1,66,1,635",
+                                                                  "1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,B,NX,0,0,0,0"
+                                                            ],
+                                                            "rule": "PlatformRule"
+                                                      }
+                                                ]
+                                          }
+                                    ]
+                              },
+                              "macAddress": "000000000000",
+                              "operationName": "FlowLogFlowEvent",
+                              "resourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
+                              "targetResourceID": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
+                              "time": "2025-11-07T15:59:52.9326845Z"
+                        }
             timeUnixNano: "1762531192932684500"
         scope:
           name: otelcol/azureresourcelogs
