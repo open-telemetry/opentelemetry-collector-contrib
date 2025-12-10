@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.24.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.176
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.9
-	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.9
-	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.9
-	github.com/DataDog/datadog-api-client-go/v2 v2.50.0
+	github.com/DataDog/agent-payload/v5 v5.0.177
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.11
+	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.11
+	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.11
+	github.com/DataDog/datadog-api-client-go/v2 v2.51.0
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0
@@ -18,7 +18,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.141.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tinylib/msgp v1.5.0
+	github.com/tinylib/msgp v1.6.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/component v1.47.0
 	go.opentelemetry.io/collector/component/componentstatus v0.141.0
@@ -33,24 +33,24 @@ require (
 	go.opentelemetry.io/collector/receiver v1.47.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.141.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.141.0
-	go.opentelemetry.io/otel v1.38.0
-	go.opentelemetry.io/otel/trace v1.38.0
+	go.opentelemetry.io/otel v1.39.0
+	go.opentelemetry.io/otel/trace v1.39.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/protobuf v1.36.10
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.9 // indirect
-	github.com/DataDog/datadog-go/v5 v5.8.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.73.0-rc.11 // indirect
+	github.com/DataDog/datadog-go/v5 v5.8.2 // indirect
 	github.com/DataDog/go-sqllexer v0.1.9 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
@@ -127,15 +127,15 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.47.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.141.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
-	go.opentelemetry.io/otel/metric v1.38.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/metric v1.39.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
