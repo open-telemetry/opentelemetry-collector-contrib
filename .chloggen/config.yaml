@@ -199,6 +199,7 @@ components:
     - processor/k8sattributes
     - processor/logdedup
     - processor/logstransform
+    - processor/lookupprocessor
     - processor/metricsgeneration
     - processor/metricstarttime
     - processor/metricstransform
