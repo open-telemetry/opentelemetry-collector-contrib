@@ -5,6 +5,8 @@ package internal
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -65,4 +67,39 @@ func TestCancelStream(t *testing.T) {
 		handler.CancelNow()
 	}()
 	handler.Wait()
+}
+
+func TestExponentialBackoff(t *testing.T) {
+	tests := []struct {
+		retry int
+		max   time.Duration
+	}{
+		{
+			retry: 0,
+			max:   time.Duration(0),
+		},
+	}
+	for i := 1; i <= 11; i++ {
+		maxBackoff := min(time.Duration(250.0*math.Pow(2, float64(i-1)))*time.Millisecond, time.Duration(2)*time.Minute)
+		tests = append(tests, struct {
+			retry int
+			max   time.Duration
+		}{
+			retry: i,
+			max:   maxBackoff,
+		})
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("retry-%d", tt.retry), func(t *testing.T) {
+			for range 10 {
+				backoff := exponentialBackoff(tt.retry)
+				minBackoffDueToJitter := time.Duration(0.7*float64(tt.max.Milliseconds())) * time.Millisecond
+				assert.Condition(t, func() bool { return backoff <= tt.max },
+					"exponentialBackoff %s should not go over max %s", backoff.String(), tt.max.String())
+				assert.Condition(t, func() bool { return backoff >= minBackoffDueToJitter },
+					"exponentialBackoff %s should not go under min (due to jitter) %s", backoff.String(), minBackoffDueToJitter.String())
+			}
+		})
+	}
 }
