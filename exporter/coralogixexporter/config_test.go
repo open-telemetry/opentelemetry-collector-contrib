@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 						TLS: configtls.ClientConfig{
 							Config:             configtls.Config{},
@@ -106,20 +106,20 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Metrics: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression:     configcompression.TypeGzip,
 						WriteBufferSize: 512 * 1024,
 					},
 				},
 				Logs: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 					},
 				},
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 						TLS: configtls.ClientConfig{
 							Config:             configtls.Config{},
