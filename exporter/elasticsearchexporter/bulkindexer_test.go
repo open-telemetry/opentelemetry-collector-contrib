@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -82,9 +83,9 @@ func TestSyncBulkIndexer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var reqCnt atomic.Int64
 			cfg := Config{
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
 					NumConsumers: 1,
-				},
+				}),
 				MetadataKeys: []string{"x-test"},
 			}
 			esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
