@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -40,7 +41,7 @@ type Config struct {
 	// TLS struct exposes TLS client configuration.
 	TLS configtls.ClientConfig `mapstructure:"tls"`
 
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
