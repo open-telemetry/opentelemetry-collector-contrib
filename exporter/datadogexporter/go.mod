@@ -8,8 +8,8 @@ require (
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.74.0-rc.3
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.74.0-rc.3
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.74.0-rc.3
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.75.0-devel.0.20251210003927-d2b31b212445
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.75.0-devel.0.20251210003927-d2b31b212445
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.74.0-rc.3
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.74.0-rc.3
@@ -24,10 +24,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.74.0-rc.3
 	github.com/DataDog/datadog-api-client-go/v2 v2.51.0
 	github.com/DataDog/datadog-go/v5 v5.8.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.1-0.20251209210115-47c7266a2a71
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.141.1-0.20251209210115-47c7266a2a71
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.141.1-0.20251209210115-47c7266a2a71
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.1-0.20251204124628-a330ae2ccbb5
 	go.opentelemetry.io/collector/component/componenttest v0.141.1-0.20251204124628-a330ae2ccbb5
@@ -233,7 +233,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.67.2 // indirect
+	github.com/prometheus/common v0.67.4 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rs/cors v1.11.1 // indirect

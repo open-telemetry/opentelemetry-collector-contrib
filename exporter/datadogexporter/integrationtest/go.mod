@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.141.1-0.20251209210115-47c7266a2a71
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.141.0
 	github.com/stretchr/testify v1.11.1
@@ -60,8 +60,8 @@ require (
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.74.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.74.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.75.0-devel.0.20251210003927-d2b31b212445 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.75.0-devel.0.20251210003927-d2b31b212445 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.74.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.74.0-rc.3 // indirect
@@ -234,7 +234,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.141.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.1-0.20251209210115-47c7266a2a71 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.141.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.141.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.141.0 // indirect
@@ -242,7 +242,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.141.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.141.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.141.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.141.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.141.1-0.20251209210115-47c7266a2a71 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.141.0 // indirect
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 // indirect
@@ -257,7 +257,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.67.2 // indirect
+	github.com/prometheus/common v0.67.4 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect

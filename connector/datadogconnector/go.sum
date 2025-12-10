@@ -49,10 +49,10 @@ github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.74.0-rc.3 h1:
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.74.0-rc.3/go.mod h1:tqdmxj4/4lBJNKk5K8DfVsp7q6xi9/Xcusy4E7h7LOg=
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.74.0-rc.3 h1:H65R71L7CCby4+qU6YC8aLnxHqFFkGT/0Nr4F5th+0Q=
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.74.0-rc.3/go.mod h1:qOB1YMXiJ56cTL3O+dgMdMILfAaktGaeRK+KPf56hrA=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.74.0-rc.3 h1:oSZEz4r2Uw4sdPo7xd0R3qACYlRMON62QUvlXrDNW8U=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.74.0-rc.3/go.mod h1:lOAeO0/kch5FJsHoHYEHFhTQIpgUokS1iprsug9d0iw=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.74.0-rc.3 h1:5f3yZl68iKR2mWZFv97zfpNTE4h+9AUbhxPYJvy3D9c=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.74.0-rc.3/go.mod h1:hBRNHbXeUi9qdRLKyxCTPXX7/LCbabVHsBmLVnvdSiE=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.75.0-devel.0.20251210003927-d2b31b212445 h1:rOEuO/ZzdHTkIzQif1/xqtZfr7WaGonAVYpeQclDyGQ=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.75.0-devel.0.20251210003927-d2b31b212445/go.mod h1:dMxId60vB++XGAWMX5cnoHwbH6DR3zmRYvlKnqFKDgc=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.75.0-devel.0.20251210003927-d2b31b212445 h1:YKNiMyeuTJLkxa+0YpURlqd+tW2s8q2lAP2eyAbQRy0=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.75.0-devel.0.20251210003927-d2b31b212445/go.mod h1:8MClNQ8xT8xgHDrRrHxAlfUGadxgVi8KN7fj1a7+J+g=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.74.0-rc.3 h1:gHH/LRYLKWewFL6Q61Qo7tvpFAFEEKudSGXadeik3eU=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.74.0-rc.3/go.mod h1:AxgXIMwKRSGm0mr/hXQnUfqeQfeLGfvHVcmz2HGa3uQ=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.74.0-rc.3 h1:kdCcvmmcDJ/ZdA2GIunINd9hPKTz7i9BVPN4B7FKww0=
@@ -504,8 +504,8 @@ github.com/prometheus/client_golang v1.23.2 h1:Je96obch5RDVy3FDMndoUsjAhG5Edi49h
 github.com/prometheus/client_golang v1.23.2/go.mod h1:Tb1a6LWHB3/SPIzCoaDXI4I8UHKeFTEQ1YCr+0Gyqmg=
 github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk=
 github.com/prometheus/client_model v0.6.2/go.mod h1:y3m2F6Gdpfy6Ut/GBsUqTWZqCUvMVzSfMLjcu6wAwpE=
-github.com/prometheus/common v0.67.2 h1:PcBAckGFTIHt2+L3I33uNRTlKTplNzFctXcWhPyAEN8=
-github.com/prometheus/common v0.67.2/go.mod h1:63W3KZb1JOKgcjlIr64WW/LvFGAqKPj0atm+knVGEko=
+github.com/prometheus/common v0.67.4 h1:yR3NqWO1/UyO1w2PhUvXlGQs/PtFmoveVO0KZ4+Lvsc=
+github.com/prometheus/common v0.67.4/go.mod h1:gP0fq6YjjNCLssJCQp0yk4M8W6ikLURwkdd/YKtTbyI=
 github.com/prometheus/otlptranslator v1.0.0 h1:s0LJW/iN9dkIH+EnhiD3BlkkP5QVIUVEoIwkU+A6qos=
 github.com/prometheus/otlptranslator v1.0.0/go.mod h1:vRYWnXvI6aWGpsdY/mOT/cbeVRBlPWtBNDb7kGR3uKM=
 github.com/prometheus/procfs v0.19.2 h1:zUMhqEW66Ex7OXIiDkll3tl9a1ZdilUOd/F6ZXw4Vws=
