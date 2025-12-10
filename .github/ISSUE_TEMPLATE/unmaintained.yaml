@@ -139,6 +139,7 @@ body:
       - internal/aws
       - internal/collectd
       - internal/common
+      - internal/conventions
       - internal/core
       - internal/datadog
       - internal/datadog/e2e
