@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/system
 go 1.24.0
 
 require (
-	github.com/containerd/cgroups/v3 v3.1.1
+	github.com/containerd/cgroups/v3 v3.1.2
 	github.com/godbus/dbus/v5 v5.2.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.141.0
