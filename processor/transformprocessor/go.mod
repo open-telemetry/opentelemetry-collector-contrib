@@ -76,11 +76,11 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.141.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.141.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/collector/pipeline v1.47.1-0.20251210054218-8f51a1792add // indirect
-	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.46.1-0.20251013234738-63d1a5100f82 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
