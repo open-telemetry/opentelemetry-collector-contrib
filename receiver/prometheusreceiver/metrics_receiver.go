@@ -232,7 +232,6 @@ func (r *pReceiver) initScrapeOptions() *scrape.Options {
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
 		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
-		EnableNativeHistogramsIngestion:     r.cfg.enableNativeHistograms,
 	}
 
 	return opts
@@ -352,7 +351,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		5*time.Minute, // LookbackDelta - Using the default value of 5 minutes
 		o.EnableTypeAndUnitLabels,
 		false, // appendMetadata from remote write
-		nil, // OverrideErrorCode
+		nil,   // OverrideErrorCode
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579

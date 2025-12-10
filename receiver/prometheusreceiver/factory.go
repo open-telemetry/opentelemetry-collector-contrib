@@ -27,10 +27,12 @@ var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 
 var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.EnableNativeHistograms",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will convert"+
-		" Prometheus native histograms to OTEL exponential histograms and ignore"+
-		" those Prometheus classic histograms that have a native histogram alternative"),
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("The Prometheus receiver converts Prometheus native histograms "+
+		"to OTEL exponential histograms. To scrape native histograms, configure 'scrape_native_histograms: true' "+
+		"in your Prometheus scrape config (per-job or global). Mixed histograms will prefer native over classic."),
+	featuregate.WithRegisterFromVersion("v0.142.0"),
+	featuregate.WithRegisterToVersion("v0.145.0"),
 )
 
 var enableCreatedTimestampZeroIngestionGate = featuregate.GlobalRegistry().MustRegister(
