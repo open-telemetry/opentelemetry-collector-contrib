@@ -479,5 +479,7 @@ func (*mockBothMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
 	return nil, nil
 }
 
-var _ plog.Marshaler = (*mockBothMarshaler)(nil)
-var _ ptrace.Marshaler = (*mockBothMarshaler)(nil)
+var (
+	_ plog.Marshaler   = (*mockBothMarshaler)(nil)
+	_ ptrace.Marshaler = (*mockBothMarshaler)(nil)
+)
