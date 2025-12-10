@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  python-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    environment:
+      - ECS_CONTAINER_METADATA_URI=http://localhost:8080
+      - ECS_CONTAINER_METADATA_URI_V4=http://localhost:8080

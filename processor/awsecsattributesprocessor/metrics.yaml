@@ -1,0 +1,75 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "ecs-task"
+          static_configs:
+            - targets: ["localhost:9999"]
+
+          metric_relabel_configs:
+            - source_labels: [id]
+              regex: '.*([a-f0-9]{64})'
+              target_label: 'container_id'
+              replacement: '$$1'
+              action: replace
+
+            - source_labels: [container_label_com_amazonaws_ecs_task_definition_family]
+              regex: '(.*)'
+              target_label: 'aws_ecs_task_family'
+              replacement: '$$1'
+              action: replace
+
+processors:
+  # filter/metrics:
+  #   metrics:
+  #     include:
+  #       match_type: expr
+  #       expressions:
+  #         - HasLabel("container_id")
+  #         - HasLabel("aws_ecs_task_family")
+
+  metricstransform:
+    transforms:
+      - include: "container_memory_usage_bytes"
+        action: update
+        new_name: "container_memory_usage_Bytes"
+
+      - include: "container_memory_max_usage_bytes"
+        action: update
+        new_name: "container_memory_usage_limit_Bytes"
+
+      - include: "container_network_receive_bytes_total"
+        action: update
+        new_name: "container_network_io_usage_rx_bytes_Bytes"
+
+      - include: "container_network_transmit_bytes_total"
+        action: update
+        new_name: "container_network_io_usage_tx_bytes_Bytes"
+
+      - include: "container_network_receive_packets_total"
+        action: update
+        new_name: "container_network_io_usage_rx_packets_Count"
+
+      - include: "container_network_transmit_packets_total"
+        action: update
+        new_name: "container_network_io_usage_tx_packets_Count"
+
+      - include: "container_cpu_load_average_10s"
+        action: update
+        new_name: "container_cpu_usage_vcpu_vCPU"
+
+exporters:
+  file/no_rotation:
+    path: ./metric.log
+
+service:
+  pipelines:
+    metrics:
+      receivers:
+        - prometheus
+      processors:
+        # - filter/metrics
+        - metricstransform
+        # - experimental_metricsgeneration
+      exporters:
+        - file/no_rotation
