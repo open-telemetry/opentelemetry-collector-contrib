@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package conventions
+package conventions // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions"
 
 import semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 
