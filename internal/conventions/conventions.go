@@ -22,4 +22,5 @@ const (
 	HostArchKey          = semconv.HostArchKey
 	OSTypeKey            = semconv.OSTypeKey
 	ServiceInstanceIDKey = semconv.ServiceInstanceIDKey
+	ServiceNamespaceKey  = semconv.ServiceNamespaceKey
 )
