@@ -4,8 +4,8 @@ go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/component v1.47.0
-	go.opentelemetry.io/collector/pipeline v1.47.0
+	go.opentelemetry.io/collector/component v1.47.1-0.20251204124628-a330ae2ccbb5
+	go.opentelemetry.io/collector/pipeline v1.47.1-0.20251204124628-a330ae2ccbb5
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -34,9 +34,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.opentelemetry.io/collector/extension v1.47.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.47.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.47.0 // indirect
+	go.opentelemetry.io/collector/extension v1.47.1-0.20251204124628-a330ae2ccbb5 // indirect
+	go.opentelemetry.io/collector/featuregate v1.47.1-0.20251204124628-a330ae2ccbb5 // indirect
+	go.opentelemetry.io/collector/pdata v1.47.1-0.20251204124628-a330ae2ccbb5 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect

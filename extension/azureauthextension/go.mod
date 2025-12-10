@@ -6,14 +6,14 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.47.0
-	go.opentelemetry.io/collector/component/componenttest v0.141.0
-	go.opentelemetry.io/collector/config/configoptional v1.47.0
-	go.opentelemetry.io/collector/confmap v1.47.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.141.0
-	go.opentelemetry.io/collector/extension v1.47.0
-	go.opentelemetry.io/collector/extension/extensionauth v1.47.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.141.0
+	go.opentelemetry.io/collector/component v1.47.1-0.20251204124628-a330ae2ccbb5
+	go.opentelemetry.io/collector/component/componenttest v0.141.1-0.20251204124628-a330ae2ccbb5
+	go.opentelemetry.io/collector/config/configoptional v1.47.1-0.20251204124628-a330ae2ccbb5
+	go.opentelemetry.io/collector/confmap v1.47.1-0.20251204124628-a330ae2ccbb5
+	go.opentelemetry.io/collector/confmap/xconfmap v0.141.1-0.20251204124628-a330ae2ccbb5
+	go.opentelemetry.io/collector/extension v1.47.1-0.20251204124628-a330ae2ccbb5
+	go.opentelemetry.io/collector/extension/extensionauth v1.47.1-0.20251204124628-a330ae2ccbb5
+	go.opentelemetry.io/collector/extension/extensiontest v0.141.1-0.20251204124628-a330ae2ccbb5
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
@@ -28,7 +28,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
@@ -42,8 +42,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.47.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.47.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.47.1-0.20251204124628-a330ae2ccbb5 // indirect
+	go.opentelemetry.io/collector/pdata v1.47.1-0.20251204124628-a330ae2ccbb5 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect

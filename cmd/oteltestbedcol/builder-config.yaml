@@ -54,11 +54,11 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.141.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.47.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.47.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.47.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.47.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.47.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.47.1-0.20251204124628-a330ae2ccbb5
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.47.1-0.20251204124628-a330ae2ccbb5
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.47.1-0.20251204124628-a330ae2ccbb5
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.47.1-0.20251204124628-a330ae2ccbb5
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.47.1-0.20251204124628-a330ae2ccbb5
 
 # When using `make genoteltestbedcol`, the `replaces` content is appended to this
 # file before passing it to OCB, to ensure that local versions are used for all
