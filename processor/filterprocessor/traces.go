@@ -113,10 +113,9 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 			return rs.ScopeSpans().Len() == 0
 		}
 		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
-			scope := ss.Scope()
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
 				if fsp.skipSpanExpr != nil {
-					tCtx := ottlspan.NewTransformContextPtr(span, scope, resource, ss, rs)
+					tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
 					skip, err := fsp.skipSpanExpr.Eval(ctx, tCtx)
 					tCtx.Close()
 					if err != nil {
@@ -129,7 +128,7 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 				}
 				if fsp.skipSpanEventExpr != nil {
 					span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
-						tCtx := ottlspanevent.NewTransformContextPtr(spanEvent, span, scope, resource, ss, rs)
+						tCtx := ottlspanevent.NewTransformContextPtr(rs, ss, span, spanEvent)
 						skip, err := fsp.skipSpanEventExpr.Eval(ctx, tCtx)
 						tCtx.Close()
 						if err != nil {
