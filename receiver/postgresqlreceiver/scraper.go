@@ -210,7 +210,13 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 		return
 	}
 	for _, atts := range attributes {
-		p.lb.RecordDbServerQuerySampleEvent(context.Background(),
+		logCtx := context.Background()
+		if ctxFromQuery, ok := atts[querySampleTraceContextKey]; ok {
+			if ctx, ok := ctxFromQuery.(context.Context); ok {
+				logCtx = ctx
+			}
+		}
+		p.lb.RecordDbServerQuerySampleEvent(logCtx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
 			atts["db.namespace"].(string),

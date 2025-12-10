@@ -439,6 +439,51 @@ func TestScrapeQuerySample(t *testing.T) {
 	assert.NoError(t, errs)
 }
 
+func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{
+		db: db,
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{
+		Logger: logger,
+	}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	traceparent := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
+		[]string{"datname", "usename", "client_addr", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query", "duration_ms"},
+	).FromCSVString(fmt.Sprintf("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,%s,123445.123,idle,select * from pg_stat_activity where id = 32,1.2", traceparent)))
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, actualLogs.ResourceLogs().Len())
+	rl := actualLogs.ResourceLogs().At(0)
+	require.Equal(t, 1, rl.ScopeLogs().Len())
+	sl := rl.ScopeLogs().At(0)
+	require.Equal(t, 1, sl.LogRecords().Len())
+	lr := sl.LogRecords().At(0)
+
+	require.Equal(t, "4bf92f3577b34da6a3ce929d0e0e4736", lr.TraceID().String())
+	require.Equal(t, "00f067aa0ba902b7", lr.SpanID().String())
+
+	applicationName, ok := lr.Attributes().Get("postgresql.application_name")
+	require.True(t, ok)
+	require.Equal(t, traceparent, applicationName.Str())
+}
+
 //go:embed testdata/scraper/top-query/expectedSql.sql
 var expectedScrapeTopQuery string
 
