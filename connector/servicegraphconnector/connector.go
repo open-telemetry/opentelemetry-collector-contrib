@@ -275,7 +275,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
-						if virtualNodeFeatureGate.IsEnabled() {
+						if p.config.IsVirtualNodeEnabled() {
 							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
 						}
 
@@ -366,7 +366,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	p.telemetryBuilder.ConnectorServicegraphExpiredEdges.Add(context.Background(), 1)
 
-	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
+	if p.config.IsVirtualNodeEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if e.ClientService == "" && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"

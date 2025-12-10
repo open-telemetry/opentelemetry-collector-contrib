@@ -41,6 +41,12 @@ type Config struct {
 	// CacheLoop is the time to expire old entries from the store periodically.
 	StoreExpirationLoop time.Duration `mapstructure:"store_expiration_loop"`
 
+	// VirtualNodeEnabled explicitly enables or disables virtual node creation.
+	// When set to true: virtual nodes are enabled regardless of the feature gate.
+	// When set to false: virtual nodes are disabled regardless of the feature gate.
+	// When not set (nil): falls back to the connector.servicegraph.virtualNode feature gate for backwards compatibility.
+	VirtualNodeEnabled *bool `mapstructure:"virtual_node_enabled"`
+
 	// VirtualNodePeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
 	VirtualNodePeerAttributes []string `mapstructure:"virtual_node_peer_attributes"`
 
@@ -84,4 +90,14 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// IsVirtualNodeEnabled returns whether virtual node creation is enabled.
+// It checks the explicit config setting first, then falls back to the feature gate.
+func (c *Config) IsVirtualNodeEnabled() bool {
+	if c.VirtualNodeEnabled != nil {
+		return *c.VirtualNodeEnabled
+	}
+	// Fall back to feature gate for backwards compatibility
+	return virtualNodeFeatureGate.IsEnabled()
 }

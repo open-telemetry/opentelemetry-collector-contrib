@@ -140,6 +140,8 @@ The following settings can be optionally configured:
   - Default: `[peer.service, db.name, db.system]`
 - `virtual_node_extra_label`: adds an extra label `virtual_node` with an optional value of `client` or `server`, indicating which node is the uninstrumented one.
   - Default: `false`
+- `virtual_node_enabled`: explicitly enables or disables virtual node creation. When set to `true`, virtual nodes are enabled regardless of the feature gate. When set to `false`, virtual nodes are disabled regardless of the feature gate. When not set, falls back to the `connector.servicegraph.virtualNode` feature gate for backwards compatibility.
+  - Default: not set (uses feature gate)
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
   - Default: `60s`
 - `metrics_timestamp_offset`: the offset to subtract from metric timestamps. If set to a positive duration, metric timestamps will be set to (current time - offset), effectively shifting metrics to appear as if they were generated in the past.
