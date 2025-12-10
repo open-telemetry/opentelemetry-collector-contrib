@@ -149,7 +149,7 @@ const (
 	EfaRetransBytes             = "retrans_bytes"
 	EfaRetransPkts              = "retrans_pkts"
 	EfaRetransTimeoutEvents     = "retrans_timeout_events"
-	EfaUnresponsiveRemoveEvents = "unresponsive_remote_events"
+	EfaUnresponsiveRemoteEvents = "unresponsive_remote_events"
 	EfaImpairedRemoteConnEvents = "impaired_remote_conn_events"
 
 	GpuLimit              = "gpu_limit"
@@ -396,7 +396,7 @@ func init() {
 		EfaRetransBytes:             UnitBytesPerSec,
 		EfaRetransPkts:              UnitCountPerSec,
 		EfaRetransTimeoutEvents:     UnitCountPerSec,
-		EfaUnresponsiveRemoveEvents: UnitCountPerSec,
+		EfaUnresponsiveRemoteEvents: UnitCountPerSec,
 		EfaImpairedRemoteConnEvents: UnitCountPerSec,
 
 		EfaLimit:              UnitCount,

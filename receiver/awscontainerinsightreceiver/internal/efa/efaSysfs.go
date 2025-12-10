@@ -187,7 +187,7 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 			ci.EfaRetransBytes:             counters.retransBytes,
 			ci.EfaRetransPkts:              counters.retransPkts,
 			ci.EfaRetransTimeoutEvents:     counters.retransTimeoutEvents,
-			ci.EfaUnresponsiveRemoveEvents: counters.unresponsiveRemoteEvents,
+			ci.EfaUnresponsiveRemoteEvents: counters.unresponsiveRemoteEvents,
 			ci.EfaImpairedRemoteConnEvents: counters.impairedRemoteConnEvents,
 		}
 
