@@ -21,7 +21,7 @@ import (
 )
 
 type filterProfileProcessor struct {
-	skipResourceExpr expr.BoolExpr[ottlresource.TransformContext]
+	skipResourceExpr expr.BoolExpr[*ottlresource.TransformContext]
 	skipProfileExpr  expr.BoolExpr[ottlprofile.TransformContext]
 	telemetry        *filterTelemetry
 	logger           *zap.Logger
@@ -68,7 +68,9 @@ func (fpp *filterProfileProcessor) processProfiles(ctx context.Context, pd pprof
 	pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
 		resource := rp.Resource()
 		if fpp.skipResourceExpr != nil {
-			skip, err := fpp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource, rp))
+			tCtx := ottlresource.NewTransformContextPtr(resource, rp)
+			skip, err := fpp.skipResourceExpr.Eval(ctx, tCtx)
+			tCtx.Close()
 			if err != nil {
 				errors = multierr.Append(errors, err)
 				return false

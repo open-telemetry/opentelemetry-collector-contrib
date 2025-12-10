@@ -45,8 +45,8 @@ func StandardDataPointFuncs() map[string]ottl.Factory[*ottldatapoint.TransformCo
 	return ottlfuncs.StandardConverters[*ottldatapoint.TransformContext]()
 }
 
-func StandardScopeFuncs() map[string]ottl.Factory[ottlscope.TransformContext] {
-	return ottlfuncs.StandardConverters[ottlscope.TransformContext]()
+func StandardScopeFuncs() map[string]ottl.Factory[*ottlscope.TransformContext] {
+	return ottlfuncs.StandardConverters[*ottlscope.TransformContext]()
 }
 
 func StandardLogFuncs() map[string]ottl.Factory[*ottllog.TransformContext] {
@@ -57,8 +57,8 @@ func StandardProfileFuncs() map[string]ottl.Factory[ottlprofile.TransformContext
 	return ottlfuncs.StandardConverters[ottlprofile.TransformContext]()
 }
 
-func StandardResourceFuncs() map[string]ottl.Factory[ottlresource.TransformContext] {
-	return ottlfuncs.StandardConverters[ottlresource.TransformContext]()
+func StandardResourceFuncs() map[string]ottl.Factory[*ottlresource.TransformContext] {
+	return ottlfuncs.StandardConverters[*ottlresource.TransformContext]()
 }
 
 type hasAttributeOnDatapointArguments struct {
