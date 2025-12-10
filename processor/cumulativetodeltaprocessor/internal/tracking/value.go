@@ -38,6 +38,8 @@ type ExponentialBuckets struct {
 	BucketCounts []uint64
 }
 
+// Coarsen reduces an exponential histogram's scale by bitsLost,
+// which amounts to dividing bucket indices by 2**bitsLost and merging buckets with the same resulting index.
 func (buckets *ExponentialBuckets) Coarsen(bitsLost int32) (out ExponentialBuckets) {
 	out.Offset = buckets.Offset >> bitsLost
 	if len(buckets.BucketCounts) > 0 {
@@ -51,6 +53,8 @@ func (buckets *ExponentialBuckets) Coarsen(bitsLost int32) (out ExponentialBucke
 	return out
 }
 
+// TrimZeros removes buckets below a given bucket index, returning the sum of their counts.
+// This is used when increasing the zero threshold: the removed count will be added to the zero count.
 func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
 	thresholdIndex := thresholdBucket - buckets.Offset
 	if thresholdIndex < 0 {
@@ -66,6 +70,7 @@ func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
 	return zeroCount
 }
 
+// Diff computes the delta between two sets of buckets with the same scale.
 func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out ExponentialBuckets) {
 	for index, bucketCount := range buckets.BucketCounts {
 		if bucketCount == 0 {

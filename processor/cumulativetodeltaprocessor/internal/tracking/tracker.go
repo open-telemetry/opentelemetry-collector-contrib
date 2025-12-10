@@ -160,8 +160,12 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			value.Sum = prevValue.Sum
 		}
 
-		if len(value.BucketCounts) != len(prevValue.BucketCounts) || !slices.Equal(value.BucketBounds, prevValue.BucketBounds) {
+		if len(value.BucketCounts) != len(prevValue.BucketCounts) {
 			valid = false
+			t.logger.Warn("Points in histogram series have different numbers of buckets; some data will be dropped")
+		} else if !slices.Equal(value.BucketBounds, prevValue.BucketBounds) {
+			valid = false
+			t.logger.Warn("Points in histogram series have different bucket boundaries; some data will be dropped")
 		}
 
 		delta := value.Clone()
