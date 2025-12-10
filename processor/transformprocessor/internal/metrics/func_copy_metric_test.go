@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -112,8 +111,8 @@ func Test_copyMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			ms := pmetric.NewMetricSlice()
-			input := ms.AppendEmpty()
+			ms := pmetric.NewScopeMetrics()
+			input := ms.Metrics().AppendEmpty()
 			input.SetName("test")
 			input.SetDescription("test")
 			input.SetUnit("test")
@@ -121,24 +120,18 @@ func Test_copyMetric(t *testing.T) {
 			d := input.Sum().DataPoints().AppendEmpty()
 			d.SetIntValue(1)
 
-			expected := pmetric.NewMetricSlice()
-			ms.CopyTo(expected)
-			tt.want(expected)
+			expected := pmetric.NewScopeMetrics()
+			ms.Metrics().CopyTo(expected.Metrics())
+			tt.want(expected.Metrics())
 
 			exprFunc, err := copyMetric(tt.name, tt.desc, tt.unit)
 			require.NoError(t, err)
-			tCtx := ottlmetric.NewTransformContextPtr(input, ms, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), ms, input)
 			defer tCtx.Close()
 			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)
 
-			x := pmetric.NewScopeMetrics()
-			y := pmetric.NewScopeMetrics()
-
-			expected.CopyTo(x.Metrics())
-			ms.CopyTo(y.Metrics())
-
-			require.NoError(t, pmetrictest.CompareScopeMetrics(x, y))
+			require.NoError(t, pmetrictest.CompareScopeMetrics(expected, ms))
 		})
 	}
 }

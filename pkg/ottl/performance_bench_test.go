@@ -422,7 +422,7 @@ func newBenchmarkMetricContext(attributeCount int) *ottlmetric.TransformContext 
 		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
 	}
 
-	return ottlmetric.NewTransformContextPtr(metric, scopeMetrics.Metrics(), scope, resource, scopeMetrics, resourceMetrics)
+	return ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
 }
 
 func buildLogStatements(count int) []string {
@@ -504,7 +504,7 @@ func newBenchmarkLogContext(attributeCount int) *ottllog.TransformContext {
 
 	logRecord.Body().SetStr("benchmark log record")
 
-	return ottllog.NewTransformContextPtr(logRecord, scope, resource, scopeLogs, resourceLogs)
+	return ottllog.NewTransformContextPtr(resourceLogs, scopeLogs, logRecord)
 }
 
 func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
@@ -643,7 +643,7 @@ func newSliceContextWithPrimitiveArr(arrSize int) *ottllog.TransformContext {
 		arr.AppendEmpty().SetStr("v_" + strconv.Itoa(i))
 	}
 
-	return ottllog.NewTransformContextPtr(lr, sl.Scope(), rl.Resource(), sl, rl)
+	return ottllog.NewTransformContextPtr(rl, sl, lr)
 }
 
 func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
@@ -666,5 +666,5 @@ func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
 		nm.PutStr("k", "v_"+strconv.Itoa(i))
 	}
 
-	return ottllog.NewTransformContextPtr(lr, sl.Scope(), rl.Resource(), sl, rl)
+	return ottllog.NewTransformContextPtr(rl, sl, lr)
 }

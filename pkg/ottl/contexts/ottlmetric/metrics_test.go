@@ -195,7 +195,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			metric := createTelemetry()
 
-			ctx := NewTransformContextPtr(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -216,13 +216,13 @@ func Test_newPathGetSetter(t *testing.T) {
 }
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
-	resource := pcommon.NewResource()
-	resource.Attributes().PutStr("foo", "bar")
+	rm := pmetric.NewResourceMetrics()
+	rm.Resource().Attributes().PutStr("foo", "bar")
 
-	instrumentationScope := pcommon.NewInstrumentationScope()
+	instrumentationScope := rm.ScopeMetrics().AppendEmpty().Scope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContextPtr(pmetric.NewMetric(), pmetric.NewMetricSlice(), instrumentationScope, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+	ctx := NewTransformContextPtr(rm, rm.ScopeMetrics().At(0), pmetric.NewMetric())
 	defer ctx.Close()
 
 	tests := []struct {
