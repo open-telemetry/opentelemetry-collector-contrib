@@ -31,7 +31,7 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // parameter C is expected to be one of: consumer.Traces, consumer.Metrics, or
 // consumer.Logs.
 type router[C any] struct {
-	resourceParser   ottl.Parser[ottlresource.TransformContext]
+	resourceParser   ottl.Parser[*ottlresource.TransformContext]
 	spanParser       ottl.Parser[*ottlspan.TransformContext]
 	metricParser     ottl.Parser[*ottlmetric.TransformContext]
 	dataPointParser  ottl.Parser[*ottldatapoint.TransformContext]
@@ -73,7 +73,7 @@ func newRouter[C any](
 type routingItem[C any] struct {
 	consumer           C
 	requestCondition   *requestCondition
-	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
+	resourceStatement  *ottl.Statement[*ottlresource.TransformContext]
 	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
 	metricStatement    *ottl.Statement[*ottlmetric.TransformContext]
 	dataPointStatement *ottl.Statement[*ottldatapoint.TransformContext]
@@ -101,7 +101,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	var errs error
 	if buildResource {
 		parser, err := ottlresource.NewParser(
-			standardFunctions[ottlresource.TransformContext](),
+			standardFunctions[*ottlresource.TransformContext](),
 			settings,
 		)
 		if err == nil {
