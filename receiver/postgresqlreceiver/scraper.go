@@ -713,11 +713,7 @@ func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, d
 }
 
 func getInstanceID(instanceString string, logger *zap.Logger) string {
-	const fallback = "unknown:5432"
-	host, port, err := net.SplitHostPort(instanceString)
-	if err != nil {
-		return fallback
-	}
+	host, port, _ := net.SplitHostPort(instanceString)
 
 	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
 		localhost, hostNameErr := os.Hostname()
