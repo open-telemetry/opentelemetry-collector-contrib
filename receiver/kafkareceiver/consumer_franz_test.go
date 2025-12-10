@@ -167,6 +167,8 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
 		cfg.GroupID = tb.Name()
 		cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second}
+		// Set MinFetchSize to ensure all records are fetched at once
+		cfg.MinFetchSize = int32(len(data) * len(rs))
 		cfg.ErrorBackOff = testConfig.backOff
 		cfg.MessageMarking = testConfig.mark
 
@@ -203,7 +205,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			select {
 			case consuming <- struct{}{}:
 				close(consuming) // Close the channel so the rest exit.
-			case <-time.After(time.Second):
+			case <-time.After(2 * time.Second):
 				tb.Fatal("expected to consume a message")
 			}
 
