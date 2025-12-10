@@ -74,9 +74,9 @@ type routingItem[C any] struct {
 	requestCondition   *requestCondition
 	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
 	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
-	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
-	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
-	logStatement       *ottl.Statement[ottllog.TransformContext]
+	metricStatement    *ottl.Statement[*ottlmetric.TransformContext]
+	dataPointStatement *ottl.Statement[*ottldatapoint.TransformContext]
+	logStatement       *ottl.Statement[*ottllog.TransformContext]
 	statementContext   string
 }
 
@@ -125,7 +125,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		return err
 	}
 	metricParser, err := ottlmetric.NewParser(
-		standardFunctions[ottlmetric.TransformContext](),
+		standardFunctions[*ottlmetric.TransformContext](),
 		settings,
 		ottlmetric.EnablePathContextNames(),
 	)
@@ -133,7 +133,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		return err
 	}
 	dataPointParser, err := ottldatapoint.NewParser(
-		standardFunctions[ottldatapoint.TransformContext](),
+		standardFunctions[*ottldatapoint.TransformContext](),
 		settings,
 		ottldatapoint.EnablePathContextNames(),
 	)
@@ -141,7 +141,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		return err
 	}
 	logParser, err := ottllog.NewParser(
-		standardFunctions[ottllog.TransformContext](),
+		standardFunctions[*ottllog.TransformContext](),
 		settings,
 		ottllog.EnablePathContextNames(),
 	)
@@ -165,17 +165,17 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		ottl.WithParserCollectionContext(
 			ottlmetric.ContextName,
 			&metricParser,
-			ottl.WithStatementConverter(singleStatementConverter[ottlmetric.TransformContext]()),
+			ottl.WithStatementConverter(singleStatementConverter[*ottlmetric.TransformContext]()),
 		),
 		ottl.WithParserCollectionContext(
 			ottldatapoint.ContextName,
 			&dataPointParser,
-			ottl.WithStatementConverter(singleStatementConverter[ottldatapoint.TransformContext]()),
+			ottl.WithStatementConverter(singleStatementConverter[*ottldatapoint.TransformContext]()),
 		),
 		ottl.WithParserCollectionContext(
 			ottllog.ContextName,
 			&logParser,
-			ottl.WithStatementConverter(singleStatementConverter[ottllog.TransformContext]()),
+			ottl.WithStatementConverter(singleStatementConverter[*ottllog.TransformContext]()),
 		),
 	)
 	return err
@@ -287,13 +287,13 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			case *ottl.Statement[*ottlspan.TransformContext]:
 				route.spanStatement = s
 				route.statementContext = "span"
-			case *ottl.Statement[ottlmetric.TransformContext]:
+			case *ottl.Statement[*ottlmetric.TransformContext]:
 				route.metricStatement = s
 				route.statementContext = "metric"
-			case *ottl.Statement[ottldatapoint.TransformContext]:
+			case *ottl.Statement[*ottldatapoint.TransformContext]:
 				route.dataPointStatement = s
 				route.statementContext = "datapoint"
-			case *ottl.Statement[ottllog.TransformContext]:
+			case *ottl.Statement[*ottllog.TransformContext]:
 				route.logStatement = s
 				route.statementContext = "log"
 			default:
