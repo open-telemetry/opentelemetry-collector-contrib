@@ -74,9 +74,9 @@ const (
 	// Identity > authorization > evidence
 	attributeIdentityAuthorizationEvidenceRole                = "azure.identity.authorization.evidence.role"
 	attributeIdentityAuthorizationEvidenceRoleAssignmentScope = "azure.identity.authorization.evidence.role.assignment.scope"
-	attributeIdentityAuthorizationEvidenceRoleAssignmentId    = "azure.identity.authorization.evidence.role.assignment.id"
-	attributeIdentityAuthorizationEvidenceRoleDefinitionId    = "azure.identity.authorization.evidence.role.definition.id"
-	attributeIdentityAuthorizationEvidencePrincipalId         = "azure.identity.authorization.evidence.principal.id"
+	attributeIdentityAuthorizationEvidenceRoleAssignmentID    = "azure.identity.authorization.evidence.role.assignment.id"
+	attributeIdentityAuthorizationEvidenceRoleDefinitionID    = "azure.identity.authorization.evidence.role.definition.id"
+	attributeIdentityAuthorizationEvidencePrincipalID         = "azure.identity.authorization.evidence.principal.id"
 	attributeIdentityAuthorizationEvidencePrincipalType       = "azure.identity.authorization.evidence.principal.type"
 	// Identity > claims (standard JWT claims)
 	attributeIdentityClaimsAudience  = "azure.identity.audience"
@@ -117,7 +117,7 @@ const (
 	attributeAzureAdministrativeHierarchy = "azure.administrative.hierarchy"
 
 	// Alert specific attributes
-	attributeAzureAlertRuleUri         = "azure.alert.rule.uri"
+	attributeAzureAlertRuleURI         = "azure.alert.rule.uri"
 	attributeAzureAlertRuleName        = "azure.alert.rule.name"
 	attributeAzureAlertRuleDescription = "azure.alert.rule.description"
 	attributeAzureAlertThreshold       = "azure.alert.threshold"
@@ -148,12 +148,12 @@ const (
 	attributeAzureRecommendationLink          = "azure.recommendation.link"
 
 	// Security specific attributes
-	attributeAzureSecurityAccountLogonId  = "azure.security.account_logon_id"
+	attributeAzureSecurityAccountLogonID  = "azure.security.account_logon_id"
 	attributeAzureSecurityCommandLine     = "azure.security.command_line"
 	attributeAzureSecurityDomainName      = "azure.security.domain_name"
 	attributeAzureSecurityParentProcess   = "azure.security.process.parent"
-	attributeAzureSecurityParentProcessId = "azure.security.process.parent.id"
-	attributeAzureSecurityProcessId       = "azure.security.process.id"
+	attributeAzureSecurityParentProcessID = "azure.security.process.parent.id"
+	attributeAzureSecurityProcessID       = "azure.security.process.id"
 	attributeAzureSecurityProcessName     = "azure.security.process.name"
 	attributeAzureSecurityUserName        = "azure.security.user.name"
 	attributeAzureSecurityUserSID         = "azure.security.user.sid"
@@ -164,11 +164,11 @@ const (
 	attributeAzureServiceHealthTitle                    = "azure.servicehealth.title"
 	attributeAzureServiceHealthService                  = "azure.servicehealth.service"
 	attributeAzureServiceHealthRegion                   = "azure.servicehealth.region"
-	attributeAzureServiceHealthCommunicationId          = "azure.servicehealth.communication.id"
+	attributeAzureServiceHealthCommunicationID          = "azure.servicehealth.communication.id"
 	attributeAzureServiceHealthCommunicationText        = "azure.servicehealth.communication.text"
 	attributeAzureServiceHealthCommunicationRouteType   = "azure.servicehealth.communication.route_type"
 	attributeAzureServiceHealthIncidentType             = "azure.servicehealth.incident.type"
-	attributeAzureServiceHealthTrackingId               = "azure.servicehealth.tracking.id"
+	attributeAzureServiceHealthTrackingID               = "azure.servicehealth.tracking.id"
 	attributeAzureServiceHealthImpactStartTime          = "azure.servicehealth.impact.start_timestamp"
 	attributeAzureServiceHealthImpactMitigationTime     = "azure.servicehealth.impact.mitigation_timestamp"
 	attributeAzureServiceHealthImpactedServices         = "azure.servicehealth.impact.services"
@@ -177,11 +177,11 @@ const (
 	attributeAzureServiceHealthDefaultLanguageTitle     = "azure.servicehealth.default_language.title"
 	attributeAzureServiceHealthDefaultLanguageContent   = "azure.servicehealth.default_language.content"
 	attributeAzureServiceHealthStage                    = "azure.servicehealth.stage"
-	attributeAzureServiceHealthMaintenanceId            = "azure.servicehealth.maintenance.id"
+	attributeAzureServiceHealthMaintenanceID            = "azure.servicehealth.maintenance.id"
 	attributeAzureServiceHealthMaintenanceType          = "azure.servicehealth.maintenance.type"
 	attributeAzureServiceHealthIsHIR                    = "azure.servicehealth.is_hir"
 	attributeAzureServiceHealthIsSynthetic              = "azure.servicehealth.is_synthetic"
-	attributeAzureServiceHealthEmailTemplateId          = "azure.servicehealth.email.template.id"
+	attributeAzureServiceHealthEmailTemplateID          = "azure.servicehealth.email.template.id"
 	attributeAzureServiceHealthEmailTemplateFullVersion = "azure.servicehealth.email.template.full_version"
 	attributeAzureServiceHealthEmailTemplateLocale      = "azure.servicehealth.email.template.locale"
 	attributeAzureServiceHealthSMSText                  = "azure.servicehealth.sms.text"
@@ -738,7 +738,7 @@ func addAdministrativeLogProperties(data []byte, record plog.LogRecord) error {
 // alertLogProperties represents the properties field of an Alert activity log.
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#alert-category
 type alertLogProperties struct {
-	RuleUri             string `json:"RuleUri"`
+	RuleURI             string `json:"RuleUri"`
 	RuleName            string `json:"RuleName"`
 	RuleDescription     string `json:"RuleDescription"`
 	Threshold           string `json:"Threshold"`
@@ -758,7 +758,7 @@ func addAlertLogProperties(data []byte, record plog.LogRecord) error {
 		return fmt.Errorf("failed to parse Alert properties: %w", err)
 	}
 
-	putStr(attributeAzureAlertRuleUri, properties.RuleUri, record)
+	putStr(attributeAzureAlertRuleURI, properties.RuleURI, record)
 	putStr(attributeAzureAlertRuleName, properties.RuleName, record)
 	putStr(attributeAzureAlertRuleDescription, properties.RuleDescription, record)
 	putStr(attributeAzureAlertThreshold, properties.Threshold, record)
@@ -808,9 +808,9 @@ func addAutoscaleLogProperties(data []byte, record plog.LogRecord) error {
 // ------------------------------------------------------------
 
 type policyElement struct {
-	DefinitionId             string   `json:"policyDefinitionId"`
-	SetDefinitionId          string   `json:"policySetDefinitionId"`
-	ReferenceId              string   `json:"policyDefinitionReferenceId"`
+	DefinitionID             string   `json:"policyDefinitionId"`
+	SetDefinitionID          string   `json:"policySetDefinitionId"`
+	ReferenceID              string   `json:"policyDefinitionReferenceId"`
 	SetDefinitionName        string   `json:"policySetDefinitionName"`
 	SetDefinitionDisplayName string   `json:"policySetDefinitionDisplayName"`
 	SetDefinitionVersion     string   `json:"policySetDefinitionVersion"`
@@ -818,12 +818,12 @@ type policyElement struct {
 	DefinitionDisplayName    string   `json:"policyDefinitionDisplayName"`
 	DefinitionVersion        string   `json:"policyDefinitionVersion"`
 	DefinitionEffect         string   `json:"policyDefinitionEffect"`
-	AssignmentId             string   `json:"policyAssignmentId"`
+	AssignmentID             string   `json:"policyAssignmentId"`
 	AssignmentName           string   `json:"policyAssignmentName"`
 	AssignmentDisplayName    string   `json:"policyAssignmentDisplayName"`
 	AssignmentScope          string   `json:"policyAssignmentScope"`
-	ExemptionIds             []string `json:"policyExemptionIds"`
-	AssignmentIds            []string `json:"policyAssignmentIds"`
+	ExemptionIDs             []string `json:"policyExemptionIds"`
+	AssignmentIDs            []string `json:"policyAssignmentIds"`
 }
 
 type policyLogProperties struct {
@@ -855,22 +855,22 @@ func addPolicyLogProperties(data []byte, record plog.LogRecord) error {
 	// Add policies as a slice of maps
 	if len(policies) > 0 {
 		policiesSlice := record.Attributes().PutEmptySlice("azure.policy.policies")
-		for _, p := range policies {
+		for i := range policies {
 			policyMap := policiesSlice.AppendEmpty().SetEmptyMap()
-			policyMap.PutStr("definition.id", p.DefinitionId)
-			policyMap.PutStr("definition.name", p.DefinitionName)
-			policyMap.PutStr("definition.display_name", p.DefinitionDisplayName)
-			policyMap.PutStr("definition.version", p.DefinitionVersion)
-			policyMap.PutStr("definition.effect", p.DefinitionEffect)
-			policyMap.PutStr("definition.reference_id", p.ReferenceId)
-			policyMap.PutStr("set_definition.id", p.SetDefinitionId)
-			policyMap.PutStr("set_definition.name", p.SetDefinitionName)
-			policyMap.PutStr("set_definition.display_name", p.SetDefinitionDisplayName)
-			policyMap.PutStr("set_definition.version", p.SetDefinitionVersion)
-			policyMap.PutStr("assignment.id", p.AssignmentId)
-			policyMap.PutStr("assignment.name", p.AssignmentName)
-			policyMap.PutStr("assignment.display_name", p.AssignmentDisplayName)
-			policyMap.PutStr("assignment.scope", p.AssignmentScope)
+			policyMap.PutStr("definition.id", policies[i].DefinitionID)
+			policyMap.PutStr("definition.name", policies[i].DefinitionName)
+			policyMap.PutStr("definition.display_name", policies[i].DefinitionDisplayName)
+			policyMap.PutStr("definition.version", policies[i].DefinitionVersion)
+			policyMap.PutStr("definition.effect", policies[i].DefinitionEffect)
+			policyMap.PutStr("definition.reference_id", policies[i].ReferenceID)
+			policyMap.PutStr("set_definition.id", policies[i].SetDefinitionID)
+			policyMap.PutStr("set_definition.name", policies[i].SetDefinitionName)
+			policyMap.PutStr("set_definition.display_name", policies[i].SetDefinitionDisplayName)
+			policyMap.PutStr("set_definition.version", policies[i].SetDefinitionVersion)
+			policyMap.PutStr("assignment.id", policies[i].AssignmentID)
+			policyMap.PutStr("assignment.name", policies[i].AssignmentName)
+			policyMap.PutStr("assignment.display_name", policies[i].AssignmentDisplayName)
+			policyMap.PutStr("assignment.scope", policies[i].AssignmentScope)
 		}
 	}
 
@@ -918,12 +918,12 @@ func addRecommendationLogProperties(data []byte, record plog.LogRecord) error {
 // securityLogProperties represents the properties field of a Security activity log.
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#security-category
 type securityLogProperties struct {
-	AccountLogonId  string `json:"accountLogonId"`
+	AccountLogonID  string `json:"accountLogonId"`
 	CommandLine     string `json:"commandLine"`
 	DomainName      string `json:"domainName"`
 	ParentProcess   string `json:"parentProcess"`
-	ParentProcessId string `json:"parentProcess id"`
-	ProcessId       string `json:"processId"`
+	ParentProcessID string `json:"parentProcess id"`
+	ProcessID       string `json:"processId"`
 	ProcessName     string `json:"processName"`
 	UserName        string `json:"userName"`
 	UserSID         string `json:"UserSID"`
@@ -940,12 +940,12 @@ func addSecurityLogProperties(data []byte, record plog.LogRecord) error {
 		return fmt.Errorf("failed to parse Security properties: %w", err)
 	}
 
-	putStr(attributeAzureSecurityAccountLogonId, properties.AccountLogonId, record)
+	putStr(attributeAzureSecurityAccountLogonID, properties.AccountLogonID, record)
 	putStr(attributeAzureSecurityCommandLine, properties.CommandLine, record)
 	putStr(attributeAzureSecurityDomainName, properties.DomainName, record)
 	putStr(attributeAzureSecurityParentProcess, properties.ParentProcess, record)
-	putStr(attributeAzureSecurityParentProcessId, properties.ParentProcessId, record)
-	putStr(attributeAzureSecurityProcessId, properties.ProcessId, record)
+	putStr(attributeAzureSecurityParentProcessID, properties.ParentProcessID, record)
+	putStr(attributeAzureSecurityProcessID, properties.ProcessID, record)
 	putStr(attributeAzureSecurityProcessName, properties.ProcessName, record)
 	putStr(attributeAzureSecurityUserName, properties.UserName, record)
 	putStr(attributeAzureSecurityUserSID, properties.UserSID, record)
@@ -966,16 +966,16 @@ type serviceHealthLogProperties struct {
 	Service                string `json:"service"`
 	Region                 string `json:"region"`
 	CommunicationText      string `json:"communication"`
-	CommunicationId        string `json:"communicationId"`
+	CommunicationID        string `json:"communicationId"`
 	IncidentType           string `json:"incidentType"`
-	TrackingId             string `json:"trackingId"`
+	TrackingID             string `json:"trackingId"`
 	ImpactStartTime        string `json:"impactStartTime"`
 	ImpactMitigationTime   string `json:"impactMitigationTime"`
 	ImpactedServices       string `json:"impactedServices"`
 	DefaultLanguageTitle   string `json:"defaultLanguageTitle"`
 	DefaultLanguageContent string `json:"defaultLanguageContent"`
 	Stage                  string `json:"stage"`
-	MaintenanceId          string `json:"maintenanceId"`
+	MaintenanceID          string `json:"maintenanceId"`
 	MaintenanceType        string `json:"maintenanceType"`
 	IsHIR                  bool   `json:"isHIR"`
 	IsSynthetic            string `json:"IsSynthetic"`
@@ -985,11 +985,11 @@ type serviceHealthLogProperties struct {
 
 type impactedService struct {
 	Name    string `json:"ServiceName"`
-	Id      string `json:"ServiceId"`
-	Guid    string `json:"ServiceGuid"`
+	ID      string `json:"ServiceId"`
+	GUID    string `json:"ServiceGuid"`
 	Regions []struct {
 		Name string `json:"RegionName"`
-		Id   string `json:"RegionId"`
+		ID   string `json:"RegionId"`
 	} `json:"ImpactedRegions"`
 }
 
@@ -1015,15 +1015,15 @@ func addServiceHealthLogProperties(data []byte, record plog.LogRecord) error {
 		for _, s := range impactedServices {
 			impactedServiceMap := impactedServicesSlice.AppendEmpty().SetEmptyMap()
 			impactedServiceMap.PutStr("name", s.Name)
-			impactedServiceMap.PutStr("id", s.Id)
-			impactedServiceMap.PutStr("guid", s.Guid)
+			impactedServiceMap.PutStr("id", s.ID)
+			impactedServiceMap.PutStr("guid", s.GUID)
 
 			if len(s.Regions) > 0 {
 				regionsSlice := impactedServiceMap.PutEmptySlice("regions")
 				for _, r := range s.Regions {
 					regionMap := regionsSlice.AppendEmpty().SetEmptyMap()
 					regionMap.PutStr("name", r.Name)
-					regionMap.PutStr("id", r.Id)
+					regionMap.PutStr("id", r.ID)
 				}
 			}
 		}
@@ -1033,15 +1033,15 @@ func addServiceHealthLogProperties(data []byte, record plog.LogRecord) error {
 	putStr(attributeAzureServiceHealthService, properties.Service, record)
 	putStr(attributeAzureServiceHealthRegion, properties.Region, record)
 	putStr(attributeAzureServiceHealthCommunicationText, properties.CommunicationText, record)
-	putStr(attributeAzureServiceHealthCommunicationId, properties.CommunicationId, record)
+	putStr(attributeAzureServiceHealthCommunicationID, properties.CommunicationID, record)
 	putStr(attributeAzureServiceHealthIncidentType, properties.IncidentType, record)
-	putStr(attributeAzureServiceHealthTrackingId, properties.TrackingId, record)
+	putStr(attributeAzureServiceHealthTrackingID, properties.TrackingID, record)
 	putStr(attributeAzureServiceHealthImpactStartTime, properties.ImpactStartTime, record)
 	putStr(attributeAzureServiceHealthImpactMitigationTime, properties.ImpactMitigationTime, record)
 	putStr(attributeAzureServiceHealthDefaultLanguageTitle, properties.DefaultLanguageTitle, record)
 	putStr(attributeAzureServiceHealthDefaultLanguageContent, properties.DefaultLanguageContent, record)
 	putStr(attributeAzureServiceHealthStage, properties.Stage, record)
-	putStr(attributeAzureServiceHealthMaintenanceId, properties.MaintenanceId, record)
+	putStr(attributeAzureServiceHealthMaintenanceID, properties.MaintenanceID, record)
 	putStr(attributeAzureServiceHealthMaintenanceType, properties.MaintenanceType, record)
 	if properties.IsHIR {
 		record.Attributes().PutBool(attributeAzureServiceHealthIsHIR, properties.IsHIR)
