@@ -10,6 +10,7 @@ require (
 	github.com/knadh/koanf/providers/rawbytes v1.0.0
 	github.com/knadh/koanf/v2 v2.3.0
 	github.com/open-telemetry/opamp-go v0.22.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.141.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.1-0.20251210054218-8f51a1792add
@@ -336,6 +337,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../internal/metadataproviders
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions => ../../internal/conventions
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
