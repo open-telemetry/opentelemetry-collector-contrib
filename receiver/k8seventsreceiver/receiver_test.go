@@ -19,15 +19,15 @@ import (
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
-		return fake.NewClientset(), nil
+		return fake.NewSimpleClientset(), nil
 	}
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
@@ -139,7 +139,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.K8sLeaderElector = &leaderID
 	cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
-		return fake.NewClientset(), nil
+		return fake.NewSimpleClientset(), nil
 	}
 
 	sink := new(consumertest.LogsSink)
