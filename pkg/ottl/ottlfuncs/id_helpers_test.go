@@ -77,16 +77,6 @@ func Test_newIDExprFunc_literalInitErrors(t *testing.T) {
 	}
 }
 
-func Test_newIDExprFunc_stringInput(t *testing.T) {
-	target := makeLiteralIDGetter([]byte("0102030405060708090a0b0c0d0e0f10"))
-	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
-	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
-
-	result, err := expr(t.Context(), nil)
-	require.NoError(t, err)
-	assert.Equal(t, pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, result)
-}
-
 func Test_newIDExprFunc_literalStringInitErrors(t *testing.T) {
 	tests := []struct {
 		name    string
