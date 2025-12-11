@@ -406,15 +406,13 @@ func (s *StatementSequence[K]) executeStatementWithTracing(ctx context.Context, 
 	statementCtx, statementSpan := s.tracer.Start(ctx, "ottl/StatementExecution")
 	defer statementSpan.End()
 
+	_, condition, err := statement.Execute(statementCtx, tCtx)
+
 	statementSpan.SetAttributes(
 		attribute.KeyValue{
 			Key:   "statement",
 			Value: attribute.StringValue(statement.origText),
 		},
-	)
-
-	_, condition, err := statement.Execute(statementCtx, tCtx)
-	statementSpan.SetAttributes(
 		attribute.KeyValue{
 			Key:   "condition.matched",
 			Value: attribute.BoolValue(condition),
@@ -422,12 +420,12 @@ func (s *StatementSequence[K]) executeStatementWithTracing(ctx context.Context, 
 	)
 
 	if err != nil {
+		err = fmt.Errorf("failed to execute statement '%s': %w", statement.origText, err)
 		statementSpan.RecordError(err)
-		errMsg := fmt.Sprintf("failed to execute statement '%s': %v", statement.origText, err)
-		statementSpan.SetStatus(codes.Error, errMsg)
+		statementSpan.SetStatus(codes.Error, err.Error())
 		if s.errorMode == PropagateError {
-			sequenceSpan.SetStatus(codes.Error, errMsg)
-			return fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
+			sequenceSpan.SetStatus(codes.Error, err.Error())
+			return err
 		}
 		if s.errorMode == IgnoreError {
 			s.telemetrySettings.Logger.Warn(
