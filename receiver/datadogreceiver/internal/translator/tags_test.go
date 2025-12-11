@@ -7,8 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 func TestGetMetricAttributes(t *testing.T) {
@@ -182,4 +184,32 @@ func TestHTTPHeaders(t *testing.T) {
 	header, found = attrs.resource.Get("http.response.header.header")
 	assert.True(t, found)
 	assert.Equal(t, expected, header.AsString())
+}
+
+func TestKeyOverlapWithFeatureGate(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(MultiTagParsingFeatureGate.ID(), true))
+
+	expected := "[\"value1\",\"value2\"]"
+	tags := []string{"env:prod", "foo", "kube_service:value1", "kube_service:value2"}
+	host := "host"
+	pool := newStringPool()
+
+	attrs := tagsToAttributes(tags, host, pool)
+	kubeService, found := attrs.dp.Get("kube_service")
+	assert.True(t, found)
+	assert.Equal(t, expected, kubeService.AsString())
+}
+
+func TestKeyOverlapWithoutFeatureGate(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(MultiTagParsingFeatureGate.ID(), false))
+
+	expected := "value2"
+	tags := []string{"env:prod", "foo", "kube_service:value1", "kube_service:value2"}
+	host := "host"
+	pool := newStringPool()
+
+	attrs := tagsToAttributes(tags, host, pool)
+	kubeService, found := attrs.dp.Get("kube_service")
+	assert.True(t, found)
+	assert.Equal(t, expected, kubeService.AsString())
 }

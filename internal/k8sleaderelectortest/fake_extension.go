@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package k8sleaderelectortest // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
+package k8sleaderelectortest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 
 import (
 	"context"
