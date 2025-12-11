@@ -312,6 +312,7 @@ func daemonsetWatchFuncWithSelectors(client kubernetes.Interface, namespace stri
 	}
 }
 
+// this is still here to compare it in benchmark
 func newReplicaSetSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
