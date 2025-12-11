@@ -149,6 +149,9 @@ tests:
     skip: true
 
 attributes:
+  pod_identifier:
+    description: The pod identifier value(s) used for the association attempt
+    type: string
   status:
     description: The status of the pod association operation
     type: string
@@ -164,7 +167,7 @@ telemetry:
       stability:
         level: development
       unit: "{resources}"
-      attributes: [status]
+      attributes: [status, pod_identifier]
       sum:
         value_type: int
         monotonic: true
