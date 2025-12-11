@@ -67,9 +67,10 @@ The awsecsattributes processor is enabled by adding the keyword `awsecsattribute
 | attributes           | A list of regex patterns that match specific or multiple attribute keys.                                                                                                         |
 | container_id.sources | The **resource** attribute key that contains the container ID. Defaults to `container.id`. If multiple attribute keys are provided, the first none-empty value will be selected. |
 
-Note, given a `log.file.name=<container.id>-json.log`, the `awsecsattributesprocessor` will automatically remove the `-json.log` suffix from the container ID when correlating metadata.
 
 ---
+
+#### Examples
 
 The following config, will collect all the [default attributes](#attributes).
 
