@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: processor/k8sattributes
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Added processor-specific observability metrics: `otelcol.k8s.pod.association` with `status` and `pod_identifier` attributes for tracking pod association success/failures"
+note: "Added processor-specific observability metrics: `otelcol.k8s.pod.association` with `status`, `pod_identifier`, and `otelcol.signal` attributes"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44587]

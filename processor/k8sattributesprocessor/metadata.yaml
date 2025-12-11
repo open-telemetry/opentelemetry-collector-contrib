@@ -149,6 +149,14 @@ tests:
     skip: true
 
 attributes:
+  otelcol.signal:
+    description: The signal type the telemetry metric is associated with
+    type: string
+    enum:
+      - metrics
+      - traces
+      - logs
+      - profiles
   pod_identifier:
     description: The pod identifier value(s) used for the association attempt
     type: string
@@ -167,7 +175,7 @@ telemetry:
       stability:
         level: development
       unit: "{resources}"
-      attributes: [status, pod_identifier]
+      attributes: [status, pod_identifier, otelcol.signal]
       sum:
         value_type: int
         monotonic: true
