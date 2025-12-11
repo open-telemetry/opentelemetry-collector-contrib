@@ -195,43 +195,37 @@ func TestInputStart_RemoteSessionWithDomain(t *testing.T) {
 // TestInputRead_RPCInvalidBound tests that the Input handles RPC_S_INVALID_BOUND errors properly
 func TestInputRead_RPCInvalidBound(t *testing.T) {
 	// Save original procs and restore after test
-	originalNextProc := nextProc
-	originalCloseProc := closeProc
-	originalSubscribeProc := subscribeProc
+	originalEvtNext := evtNext
+	originalEvtClose := evtClose
+	originalEvtSubscribe := evtSubscribe
 
 	// Track calls to our mocked functions
 	var nextCalls, closeCalls, subscribeCalls int
 
 	// Mock the procs
-	closeProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			closeCalls++
-			return 1, 0, nil
-		},
+	evtClose = func(_ uintptr) error {
+		closeCalls++
+		return nil
 	}
 
-	subscribeProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			subscribeCalls++
-			return 42, 0, nil
-		},
+	evtSubscribe = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+		subscribeCalls++
+		return 42, nil
 	}
 
-	nextProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			nextCalls++
-			if nextCalls == 1 {
-				return 0, 0, windows.RPC_S_INVALID_BOUND
-			}
+	evtNext = func(_ uintptr, _ uint32, _ *uintptr, _, _ uint32, _ *uint32) error {
+		nextCalls++
+		if nextCalls == 1 {
+			return windows.RPC_S_INVALID_BOUND
+		}
 
-			return 1, 0, nil
-		},
+		return nil
 	}
 
 	defer func() {
-		nextProc = originalNextProc
-		closeProc = originalCloseProc
-		subscribeProc = originalSubscribeProc
+		evtNext = originalEvtNext
+		evtClose = originalEvtClose
+		evtSubscribe = originalEvtSubscribe
 	}()
 
 	// Create a logger with an observer for testing log output
@@ -402,78 +396,74 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 
 // TestInputRead_Batching tests that the Input handles MaxEventsPerPoll and MaxReads correctly
 func TestInputRead_Batching(t *testing.T) {
-	originalNextProc := nextProc
-	originalRenderProc := renderProc
-	originalCloseProc := closeProc
-	originalSubscribeProc := subscribeProc
+	originalEvtNext := evtNext
+	originalEvtRender := evtRender
+	originalEvtClose := evtClose
+	originalEvtSubscribe := evtSubscribe
 	originalCreateBookmarkProc := createBookmarkProc
-	originalUpdateBookmarkProc := updateBookmarkProc
+	originalEvtUpdateBookmark := evtUpdateBookmark
 	defer func() {
-		nextProc = originalNextProc
-		renderProc = originalRenderProc
-		closeProc = originalCloseProc
-		subscribeProc = originalSubscribeProc
+		evtNext = originalEvtNext
+		evtRender = originalEvtRender
+		evtClose = originalEvtClose
+		evtSubscribe = originalEvtSubscribe
 		createBookmarkProc = originalCreateBookmarkProc
-		updateBookmarkProc = originalUpdateBookmarkProc
+		evtUpdateBookmark = originalEvtUpdateBookmark
 	}()
+
+	evtSubscribe = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+		return 42, nil
+	}
+
+	evtRender = func(_, _ uintptr, _, _ uint32, _ *byte) (*uint32, error) {
+		bufferUsed := new(uint32)
+		return bufferUsed, nil
+	}
+
+	evtClose = func(_ uintptr) error {
+		return nil
+	}
+
+	createBookmarkProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			return 1, 0, nil
+		},
+	}
+
+	evtUpdateBookmark = func(_, _ uintptr) error {
+		return nil
+	}
 
 	var nextCalls, processedEvents, emittedEvents int
 
 	maxEventsToEmit := -1
 
 	mockBatch := make([]uintptr, 99)
-	producedEvents := 0
 	var pinner runtime.Pinner
 	pinner.Pin(&mockBatch[0])
-	pinner.Pin(&producedEvents)
 	defer pinner.Unpin()
+
+	producedEvents := 0
 
 	for i := range mockBatch {
 		mockBatch[i] = uintptr(i)
 	}
 
-	renderProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			return 1, 0, nil
-		},
-	}
-	createBookmarkProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			return 1, 0, nil
-		},
-	}
-	closeProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			return 1, 0, nil
-		},
-	}
-	subscribeProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			return 42, 0, nil
-		},
-	}
-	updateBookmarkProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			return 1, 0, nil
-		},
-	}
-	nextProc = MockProc{
-		call: func(params ...uintptr) (uintptr, uintptr, error) {
-			nextCalls++
+	evtNext = func(_ uintptr, eventsSize uint32, events *uintptr, _, _ uint32, returned *uint32) error {
+		nextCalls++
 
-			wantsToRead := int(params[1])
-			producedEvents = min(len(mockBatch), wantsToRead)
-			if maxEventsToEmit >= 0 {
-				producedEvents = min(producedEvents, maxEventsToEmit-emittedEvents)
-			}
+		wantsToRead := int(eventsSize)
+		producedEvents = min(len(mockBatch), wantsToRead)
+		if maxEventsToEmit >= 0 {
+			producedEvents = min(producedEvents, maxEventsToEmit-emittedEvents)
+		}
 
-			*(*uint32)(unsafe.Pointer(params[5])) = uint32(producedEvents)
-			*(*uintptr)(unsafe.Pointer(params[2])) = uintptr(unsafe.Pointer(&mockBatch[0]))
+		*returned = uint32(producedEvents)
+		*events = uintptr(unsafe.Pointer(&mockBatch[0]))
 
-			emittedEvents += producedEvents
+		emittedEvents += producedEvents
 
-			return 1, 0, nil
-		},
+		return nil
 	}
 
 	input := newTestInput()
