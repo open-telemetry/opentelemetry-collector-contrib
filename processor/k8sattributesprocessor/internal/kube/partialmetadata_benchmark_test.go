@@ -173,8 +173,11 @@ func runPartialMetadata(b *testing.B, N int) {
 }
 
 // Benchmark suite: sweep N values and run typed vs partial
+// gather results using
+// go test -run ^$ -bench RS_ResourceSweep_InProcess -benchmem -count=6 -benchtime=1x > sweep.txt
+// benchstat sweep.txt
 func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
-	Ns := []int{1000, 5000, 10000, 20000}
+	Ns := []int{5000, 10000, 20000}
 
 	for _, N := range Ns {
 		b.Run(fmt.Sprintf("Typed_Full_N=%d", N), func(b *testing.B) {
