@@ -87,10 +87,10 @@ resourceLogs:
                   intValue: "98765"
               - key: oracledb.object_owner
                 value:
-                  stringValue: ADMIN
+                  stringValue: ""
               - key: oracledb.object_name
                 value:
-                  stringValue: MY_PROCEDURE
+                  stringValue: ADMIN.MY_PROCEDURE
               - key: oracledb.object_type
                 value:
                   stringValue: PROCEDURE
