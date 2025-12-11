@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	apps_v1 "k8s.io/api/apps/v1"
-	core_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,58 +18,9 @@ import (
 	ktesting "k8s.io/client-go/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func ptr[T any](v T) *T { return &v }
-
-// Heavy payload for baseline typed decode
-func heavyPodTemplateSpec() core_v1.PodTemplateSpec {
-	envs := make([]core_v1.EnvVar, 0, 20)
-	for i := 0; i < 20; i++ {
-		envs = append(envs, core_v1.EnvVar{Name: fmt.Sprintf("ENV_%d", i), Value: "VALUE"})
-	}
-	containers := make([]core_v1.Container, 0, 6)
-	for i := 0; i < 6; i++ {
-		containers = append(containers, core_v1.Container{
-			Name:  fmt.Sprintf("c%d", i),
-			Image: fmt.Sprintf("repo/app:v%d", i),
-			Env:   envs,
-		})
-	}
-	return core_v1.PodTemplateSpec{
-		ObjectMeta: meta_v1.ObjectMeta{Labels: map[string]string{"app": "example"}},
-		Spec:       core_v1.PodSpec{Containers: containers},
-	}
-}
-
-// Baseline: full ReplicaSets
-func genFullReplicaSets(n int) []runtime.Object {
-	objs := make([]runtime.Object, 0, n)
-	tpl := heavyPodTemplateSpec()
-	for i := 0; i < n; i++ {
-		name := fmt.Sprintf("deploy-%d-abc123defg", i)
-		rs := &apps_v1.ReplicaSet{
-			TypeMeta: meta_v1.TypeMeta{APIVersion: "apps/v1", Kind: "ReplicaSet"},
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name:      name,
-				Namespace: "default",
-				UID:       types.UID(fmt.Sprintf("uid-%d", i)),
-				OwnerReferences: []meta_v1.OwnerReference{
-					{APIVersion: "apps/v1", Kind: "Deployment", Name: fmt.Sprintf("deploy-%d", i), UID: types.UID(fmt.Sprintf("depuid-%d", i)), Controller: ptr(true)},
-				},
-				Labels:      map[string]string{"app": "example"},
-				Annotations: map[string]string{"note": "heavy payload"},
-			},
-			Spec: apps_v1.ReplicaSetSpec{
-				Replicas: ptr(int32(3)),
-				Template: tpl,
-			},
-		}
-		objs = append(objs, rs)
-	}
-	return objs
-}
 
 // Optimized: PartialObjectMetadata (ObjectMeta + OwnerRefs only)
 func genPOMReplicaSets(n int) []runtime.Object {
@@ -114,34 +65,6 @@ func startAndSync(b *testing.B, c Client) {
 	defer c.Stop()
 }
 
-// Typed baseline for a parameterized N
-func runTypedBaseline(b *testing.B, N int) {
-	initial := genFullReplicaSets(N)
-	for i := 0; i < b.N; i++ {
-		fc := fake.NewClientset()
-		setReplicaSetListAndWatch(fc, initial)
-
-		newClientSet := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) { return fc, nil }
-		rules := ExtractionRules{DeploymentName: true}
-		filters := Filters{}
-
-		factory := InformersFactoryList{
-			newInformer:           newSharedInformer,
-			newNamespaceInformer:  NewNoOpInformer,
-			newReplicaSetInformer: newReplicaSetSharedInformer,
-		}
-
-		set := componenttest.NewNopTelemetrySettings()
-		c, err := New(set, k8sconfig.APIConfig{}, rules, filters, []Association{}, Excludes{}, newClientSet, factory, false, 0)
-		if err != nil {
-			b.Fatalf("New: %v", err)
-		}
-
-		b.ReportAllocs()
-		startAndSync(b, c)
-	}
-}
-
 // Partial metadata for a parameterized N
 func runPartialMetadata(b *testing.B, N int) {
 	metaOnly := genPOMReplicaSets(N)
@@ -158,7 +81,7 @@ func runPartialMetadata(b *testing.B, N int) {
 		factory := InformersFactoryList{
 			newInformer:           newSharedInformer,
 			newNamespaceInformer:  NewNoOpInformer,
-			newReplicaSetInformer: NewReplicaSetMetaInformerProvider(k8sconfig.APIConfig{}),
+			newReplicaSetInformer: newReplicaSetMetaInformer(),
 		}
 
 		set := componenttest.NewNopTelemetrySettings()
@@ -172,17 +95,14 @@ func runPartialMetadata(b *testing.B, N int) {
 	}
 }
 
-// Benchmark suite: sweep N values and run typed vs partial
+// Benchmark suite to check increasing amount of replicasets
 // gather results using
 // go test -run ^$ -bench RS_ResourceSweep_InProcess -benchmem -count=6 -benchtime=1x > sweep.txt
 // benchstat sweep.txt
 func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
-	Ns := []int{5000, 10000, 20000}
+	Ns := []int{5000, 10000, 20000, 200000}
 
 	for _, N := range Ns {
-		b.Run(fmt.Sprintf("Typed_Full_N=%d", N), func(b *testing.B) {
-			runTypedBaseline(b, N)
-		})
 		b.Run(fmt.Sprintf("Partial_Metadata_N=%d", N), func(b *testing.B) {
 			runPartialMetadata(b, N)
 		})
