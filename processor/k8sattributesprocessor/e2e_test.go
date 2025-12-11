@@ -1818,75 +1818,69 @@ func scanTracesForAttributes(t *testing.T, ts *consumertest.TracesSink, expected
 	t.Fatalf("no spans found for service %s", expectedService)
 }
 
-func scanMetricsForAttributes(t *testing.T, ms *consumertest.MetricsSink, expectedService string,
-	kvs map[string]*expectedValue,
-) {
-	// Iterate over the received set of metrics starting from the most recent entries due to a bug in the processor:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
-	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
-	for i := len(ms.AllMetrics()) - 1; i >= 0; i-- {
-		metrics := ms.AllMetrics()[i]
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-			resource := metrics.ResourceMetrics().At(i).Resource()
-			service, exist := resource.Attributes().Get("service.name")
-			assert.True(t, exist, "metric do not has 'service.name' attribute in resource")
-			if service.AsString() != expectedService {
+func scanMetricsForAttributes(t *testing.T, ms *consumertest.MetricsSink, expectedService string, kvs map[string]*expectedValue) {
+	all := ms.AllMetrics()
+	for i := 0; i < len(all); i++ {
+		md := all[i]
+		rms := md.ResourceMetrics()
+		for j := 0; j < rms.Len(); j++ {
+			res := rms.At(j).Resource()
+			serviceAttr, ok := res.Attributes().Get("service.name")
+			if !ok || serviceAttr.Str() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
+			if err := resourceHasAttributes(res, kvs); err != nil {
+				t.Fatalf("metrics resource for service %q missing/invalid attributes: %v", expectedService, err)
+			}
 			return
 		}
 	}
-	t.Fatalf("no metric found for service %s", expectedService)
+	t.Fatalf("no metrics resource found for service %q", expectedService)
 }
 
-func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedService string,
-	kvs map[string]*expectedValue,
-) {
-	// Iterate over the received set of logs starting from the most recent entries due to a bug in the processor:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
-	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
-	for i := len(ls.AllLogs()) - 1; i >= 0; i-- {
-		logs := ls.AllLogs()[i]
-		for i := 0; i < logs.ResourceLogs().Len(); i++ {
-			resource := logs.ResourceLogs().At(i).Resource()
-			service, exist := resource.Attributes().Get("service.name")
-			assert.True(t, exist, "log do not has 'service.name' attribute in resource")
-			if service.AsString() != expectedService {
+func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedService string, kvs map[string]*expectedValue) {
+	all := ls.AllLogs()
+	for i := 0; i < len(all); i++ {
+		ld := all[i]
+		rls := ld.ResourceLogs()
+		for j := 0; j < rls.Len(); j++ {
+			res := rls.At(j).Resource()
+			serviceAttr, ok := res.Attributes().Get("service.name")
+			if !ok || serviceAttr.Str() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
+			if err := resourceHasAttributes(res, kvs); err != nil {
+				t.Fatalf("logs resource for service %q missing/invalid attributes: %v", expectedService, err)
+			}
 			return
 		}
 	}
-	t.Fatalf("no logs found for service %s", expectedService)
+	t.Fatalf("no logs resource found for service %q", expectedService)
 }
 
-func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expectedService string,
-	kvs map[string]*expectedValue,
-) {
-	// `telemetrygen` doesn't support profiles
+func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expectedService string, kvs map[string]*expectedValue) {
+	// telemetrygen doesn't support profiles yet:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
-	// TODO: Remove `t.Skip()` once #36127 is resolved
-	t.Skip("Skip profiles test")
+	t.Skip("Skip profiles test until telemetrygen supports profiles")
 
-	// Iterate over the received set of profiles starting from the most recent entries due to a bug in the processor:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
-	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
-	for i := len(ps.AllProfiles()) - 1; i >= 0; i-- {
-		profiles := ps.AllProfiles()[i]
-		for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-			resource := profiles.ResourceProfiles().At(i).Resource()
-			service, exist := resource.Attributes().Get("service.name")
-			assert.True(t, exist, "profile do not has 'service.name' attribute in resource")
-			if service.AsString() != expectedService {
+	// When profiles are supported, enable forward scan similar to metrics/logs:
+	all := ps.AllProfiles()
+	for i := 0; i < len(all); i++ {
+		pd := all[i]
+		rps := pd.ResourceProfiles()
+		for j := 0; j < rps.Len(); j++ {
+			res := rps.At(j).Resource()
+			serviceAttr, ok := res.Attributes().Get("service.name")
+			if !ok || serviceAttr.Str() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
+			if err := resourceHasAttributes(res, kvs); err != nil {
+				t.Fatalf("profiles resource for service %q missing/invalid attributes: %v", expectedService, err)
+			}
 			return
 		}
 	}
-	t.Fatalf("no profiles found for service %s", expectedService)
+	t.Fatalf("no profiles resource found for service %q", expectedService)
 }
 
 func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedValue) error {
