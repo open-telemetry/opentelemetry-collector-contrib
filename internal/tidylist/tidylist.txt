@@ -186,6 +186,8 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+internal/k8sleaderelectortest
+receiver/k8sobjectsreceiver
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -200,7 +202,6 @@ receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
 internal/k8sinventory
-internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
@@ -278,7 +279,6 @@ receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
 receiver/k8slogreceiver
-receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver
 receiver/kubeletstatsreceiver
