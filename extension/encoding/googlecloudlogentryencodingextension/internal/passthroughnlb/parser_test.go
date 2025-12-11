@@ -53,7 +53,8 @@ func TestHandleConnection(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
-			handleConnection(tt.conn, attr)
+			err := handleConnection(tt.conn, attr)
+			require.NoError(t, err)
 			require.Equal(t, tt.expectedAttr, attr.AsRaw())
 		})
 	}
