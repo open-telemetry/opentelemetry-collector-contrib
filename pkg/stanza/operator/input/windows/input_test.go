@@ -106,10 +106,10 @@ func TestInputStart_RemoteSessionError(t *testing.T) {
 func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	persister := testutil.NewMockPersister("")
 
-	originalEvtSubscribeFunc := evtSubscribeFunc
-	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
+	originalEvtSubscribe := evtSubscribe
+	defer func() { evtSubscribe = originalEvtSubscribe }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribe = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_ACCESS_DENIED
 	}
 
@@ -131,10 +131,10 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 func TestInputStart_BadChannelName(t *testing.T) {
 	persister := testutil.NewMockPersister("")
 
-	originalEvtSubscribeFunc := evtSubscribeFunc
-	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
+	originalEvtSubscribe := evtSubscribe
+	defer func() { evtSubscribe = originalEvtSubscribe }()
 
-	evtSubscribeFunc = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+	evtSubscribe = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
 		return 0, windows.ERROR_EVT_CHANNEL_NOT_FOUND
 	}
 
