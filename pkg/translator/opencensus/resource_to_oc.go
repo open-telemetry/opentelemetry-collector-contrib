@@ -11,7 +11,7 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource/resourcekeys"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -63,7 +63,7 @@ func getSDKLangToOCLangCodeMap() map[string]int32 {
 	mappings[conventions.TelemetrySDKLanguagePHP.Value.AsString()] = 7
 	mappings[conventions.TelemetrySDKLanguagePython.Value.AsString()] = 8
 	mappings[conventions.TelemetrySDKLanguageRuby.Value.AsString()] = 9
-	mappings[conventions.TelemetrySDKLanguageWebjs.Value.AsString()] = 10
+	mappings[conventions.TelemetrySDKLanguageWebJS.Value.AsString()] = 10
 	return mappings
 }
 
