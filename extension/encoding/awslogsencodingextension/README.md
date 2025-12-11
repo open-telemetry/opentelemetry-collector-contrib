@@ -47,8 +47,9 @@ extensions:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
       file_format: plain-text 
-      # Optional: format of the VPC flow log. Used when processing VPC logs arriving through CloudWatch Logs subscription filters.
-      # Space delimited list of fields in the VPC flow log.
+      # Optional: format of the VPC flow log. Used when processing VPC flow logs arriving through CloudWatch Logs subscription filters. 
+      # Ignored when decoding VPC flow logs sent to S3, which include the format as a file header.
+      # Accepts a space delimited list of fields in the VPC flow log.
       # When unset, built-in default is used matching fields of Version 2 VPC flow logs format.
       format: version interface-id srcaddr dstaddr
 ```
