@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -98,7 +99,7 @@ func TestStart(t *testing.T) {
 	newBucketName := "new-bucket"
 	bucketExistsName := "bucket-exists"
 
-	newTestStorageEmulator(t, bucketExistsName, "")
+	newTestStorageEmulator(t, bucketExistsName, "", nil)
 
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
@@ -161,7 +162,7 @@ func TestStart(t *testing.T) {
 func TestUploadFile(t *testing.T) {
 	bucketExistsName := "bucket-exists"
 	uploadBucketName := "upload-bucket"
-	newTestStorageEmulator(t, bucketExistsName, uploadBucketName)
+	newTestStorageEmulator(t, bucketExistsName, uploadBucketName, nil)
 
 	encodingSucceedsID := "id_success"
 	mHost := &mockHost{
@@ -190,9 +191,95 @@ func TestUploadFile(t *testing.T) {
 	})
 }
 
+func TestUploadFile_Partition(t *testing.T) {
+	uploadBucketName := "upload-bucket-partition"
+
+	// We'll use a channel to communicate the uploaded filename back to the test
+	filenameCh := make(chan string, 1)
+	newTestStorageEmulator(t, "", uploadBucketName, func(r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/upload/storage/v1/b/"+uploadBucketName+"/o" {
+			filenameCh <- r.URL.Query().Get("name")
+		}
+	})
+
+	encodingSucceedsID := "id_success"
+	mHost := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+		},
+	}
+	id := component.MustNewID(encodingSucceedsID)
+
+	partitionFormat := "year=%Y/month=%m"
+	gcsExporter := newTestGCSExporter(t, &Config{
+		Bucket: bucketConfig{
+			Name:      uploadBucketName,
+			Partition: partitionFormat,
+		},
+		Encoding: &id,
+	})
+
+	errStart := gcsExporter.Start(t.Context(), mHost)
+	require.NoError(t, errStart)
+
+	err := gcsExporter.uploadFile(t.Context(), []byte("test content"))
+	require.NoError(t, err)
+
+	filename := <-filenameCh
+	_, remaining, found := strings.Cut(filename, "year=")
+	require.True(t, found)
+	_, _, found = strings.Cut(remaining, "/month=")
+	require.True(t, found)
+}
+
+func TestConvertStrftimeToGo(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "empty",
+		},
+		{
+			name:     "no tokens",
+			input:    "plain text",
+			expected: "plain text",
+		},
+		{
+			name:     "all tokens",
+			input:    "%Y-%m-%d %H:%M:%S",
+			expected: "2006-01-02 15:04:05",
+		},
+		{
+			name:     "partial content",
+			input:    "year=%Y/month=%m",
+			expected: "year=2006/month=01",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.expected, convertStrftimeToGo(tt.input))
+		})
+	}
+}
+
+func TestShutdown(t *testing.T) {
+	gcsExporter := newTestGCSExporter(t, &Config{})
+	err := gcsExporter.Shutdown(t.Context())
+	require.NoError(t, err)
+}
+
+func TestCapabilities(t *testing.T) {
+	gcsExporter := newTestGCSExporter(t, &Config{})
+	require.False(t, gcsExporter.Capabilities().MutatesData)
+}
+
 func TestConsumeLogs(t *testing.T) {
 	uploadBucketName := "upload-bucket"
-	newTestStorageEmulator(t, "", uploadBucketName)
+	newTestStorageEmulator(t, "", uploadBucketName, nil)
 
 	encodingSucceedsID := "id_success"
 	mHost := &mockHost{
@@ -213,6 +300,26 @@ func TestConsumeLogs(t *testing.T) {
 
 	err := gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
 	require.NoError(t, err)
+
+	t.Run("marshaling fails", func(t *testing.T) {
+		encodingFailsID := "id_fail"
+		mHost := &mockHost{
+			extensions: map[component.ID]component.Component{
+				component.MustNewID(encodingFailsID): &mockLogMarshaler{shouldFail: true},
+			},
+		}
+		id := component.MustNewID(encodingFailsID)
+		gcsExporter := newTestGCSExporter(t, &Config{
+			Bucket: bucketConfig{
+				Name: uploadBucketName,
+			},
+			Encoding: &id,
+		})
+		errStart := gcsExporter.Start(t.Context(), mHost)
+		require.NoError(t, errStart)
+		err := gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
+		require.ErrorContains(t, err, "failed to marshal logs")
+	})
 }
 
 func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
@@ -231,8 +338,11 @@ func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
 	return exp
 }
 
-func newTestStorageEmulator(t *testing.T, bucketExistsName, uploadBucketName string) {
+func newTestStorageEmulator(t *testing.T, bucketExistsName, uploadBucketName string, f func(*http.Request)) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if f != nil {
+			f(r)
+		}
 		switch r.Method + " " + r.URL.Path {
 		case "POST /storage/v1/b":
 			// Handle bucket creation
@@ -280,9 +390,13 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 
 type mockLogMarshaler struct {
 	extension.Extension
+	shouldFail bool
 }
 
-func (*mockLogMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
+func (m *mockLogMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	if m.shouldFail {
+		return nil, errors.New("marshaling failed")
+	}
 	return nil, nil
 }
 

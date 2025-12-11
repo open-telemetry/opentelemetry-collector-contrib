@@ -17,14 +17,15 @@ This exporter writes received OpenTelemetry data to a cloud storage bucket.
 
 ## Configuration
 
-| Name                     | Description                                                                                                                                                                                 | Required | Default |
-|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
-| `encoding`               | The encoding extension ID to use for marshaling logs. If left empty, `plog.JSONMarshaler` will be used.                                                                                     | No       |         |
-| `bucket.project_id`      | The project where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment. | No       |         |
-| `bucket.name`            | Name for the bucket storage.                                                                                                                                                                | Yes      |         |
-| `bucket.file_prefix`     | Prefix for created files. Can include folders; all files will have a suffix defined by the exporter.                                                                                        | No       | `logs`  |
-| `bucket.reuse_if_exists` | If true, use the existing bucket if it already exists; if false, error if bucket exists.                                                                                                    | No       | `false` |
-| `bucket.region`          | Region where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.      | Yes      |         |
+| Name                     | Description                                                                                                                                                                                                              | Required | Default |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
+| `encoding`               | The encoding extension ID to use for marshaling logs. If left empty, `plog.JSONMarshaler` will be used.                                                                                                                  | No       |         |
+| `bucket.project_id`      | The project where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.                              | No       |         |
+| `bucket.name`            | Name for the bucket storage.                                                                                                                                                                                             | Yes      |         |
+| `bucket.file_prefix`     | Prefix for created files. Can include folders; all files will have a suffix defined by the exporter.                                                                                                                     | No       | `logs`  |
+| `bucket.partition`       | Time format string for time-based partitions. If set, formatted UTC time is prepended to the filename. Supports [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) format (e.g., `year=%Y/month=%m`). | No       |         |
+| `bucket.reuse_if_exists` | If true, use the existing bucket if it already exists; if false, error if bucket exists.                                                                                                                                 | No       | `false` |
+| `bucket.region`          | Region where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.                                   | Yes      |         |
 
 ## Example
 
@@ -39,6 +40,7 @@ exporters:
       project_id: project-test
       reuse_if_exists: true
       region: europe-west1
+      partition: "year=%Y/month=%m/day=%d/hour=%H"
 
 extensions:
   # text encoding to ensure only the body is placed in the bucket

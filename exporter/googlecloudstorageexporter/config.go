@@ -33,6 +33,12 @@ type bucketConfig struct {
 	//	Files will be placed in 'folder', and will have the prefix 'file'.
 	FilePrefix string `mapstructure:"file_prefix"`
 
+	// Partition is a time format string used to create time-based partitions.
+	// If set, the current UTC time formatted with this string will be prepended to
+	// the filename. You can use standard strftime format parameters (e.g., %Y, %m, %d, %H, %M, %S).
+	// Example: "year=%Y/month=%m/day=%d" would result in "year=2023/month=10/day=25/"
+	Partition string `mapstructure:"partition"`
+
 	// ReuseIfExists decides if the bucket should be used if it already
 	// exists. If it is set to false, an error will be thrown if the
 	// bucket already exists. Otherwise, the existent bucket will be
