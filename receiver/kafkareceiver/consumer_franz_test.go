@@ -6,6 +6,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -164,13 +165,13 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		setFranzGo(tb, true)
 
 		kafkaClient, cfg := mustNewFakeCluster(tb, kfake.SeedTopics(1, topic))
-		cfg.ConsumerConfig = configkafka.ConsumerConfig{
-			GroupID:    tb.Name(),
-			AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second},
-
-			// Set MinFetchSize to ensure all records are fetched at once
-			MinFetchSize: int32(len(data) * len(rs)),
-		}
+		cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
+		cfg.GroupID = tb.Name()
+		cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second}
+		// Set MinFetchSize to ensure all records are fetched at once
+		cfg.MinFetchSize = int32(len(data) * len(rs))
+		// Use a very short MaxFetchWait to avoid delays when MinFetchSize cannot be met
+		cfg.MaxFetchWait = 10 * time.Millisecond
 		cfg.ErrorBackOff = testConfig.backOff
 		cfg.MessageMarking = testConfig.mark
 
@@ -204,10 +205,16 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			require.NoError(tb, consumer.Start(ctx, componenttest.NewNopHost()))
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
 
+			// Use longer timeout on Windows due to tick granularity and slower CI
+			timeout := 2 * time.Second
+			if runtime.GOOS == "windows" {
+				timeout = 5 * time.Second
+			}
+
 			select {
 			case consuming <- struct{}{}:
 				close(consuming) // Close the channel so the rest exit.
-			case <-time.After(time.Second):
+			case <-time.After(timeout):
 				tb.Fatal("expected to consume a message")
 			}
 
@@ -264,12 +271,11 @@ func TestRaceLostVsConsume(t *testing.T) {
 	setFranzGo(t, true)
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.ConsumerConfig = configkafka.ConsumerConfig{
-		GroupID:      t.Name(),
-		MaxFetchSize: 1, // Force a lot of iterations of consume()
-		AutoCommit: configkafka.AutoCommitConfig{
-			Enable: true, Interval: 100 * time.Millisecond,
-		},
+	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
+	cfg.GroupID = t.Name()
+	cfg.MaxFetchSize = 1 // Force a lot of iterations of consume()
+	cfg.AutoCommit = configkafka.AutoCommitConfig{
+		Enable: true, Interval: 100 * time.Millisecond,
 	}
 
 	// Produce records.
@@ -343,10 +349,9 @@ func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
 	cfg.UseLeaderEpoch = false // <-- exercise the option
-	cfg.ConsumerConfig = configkafka.ConsumerConfig{
-		GroupID:    t.Name(),
-		AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
-	}
+	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
+	cfg.GroupID = t.Name()
+	cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
 
 	var called atomic.Int64
 	settings, _, _ := mustNewSettings(t)
@@ -413,11 +418,10 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 		kfake.SeedTopics(1, "logs-c"),
 	)
 
-	cfg.ConsumerConfig = configkafka.ConsumerConfig{
-		GroupID:       t.Name(),
-		InitialOffset: "earliest",
-		AutoCommit:    configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
-	}
+	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
+	cfg.GroupID = t.Name()
+	cfg.InitialOffset = "earliest"
+	cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
 
 	// Prepare test data
 	traces := testdata.GenerateTraces(5)
