@@ -16,6 +16,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -740,7 +741,7 @@ func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for labelName, labelValue := range ls.Map() {
 		if labelName == "instance" || labelName == "job" || // Become resource attributes
-			labelName == labels.MetricName || // Becomes metric name
+			labelName == string(model.MetricNameLabel) || // Becomes metric name
 			labelName == "otel_scope_name" || labelName == "otel_scope_version" { // Becomes scope name and version
 			continue
 		}
