@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
@@ -230,6 +231,10 @@ func TestTracesDockerClientLifecycleBug(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping Docker integration test in short mode")
 	}
+	// Verify Docker client can be created (doesn't require running daemon)
+	if _, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation()); err != nil {
+		t.Skipf("Skipping test: cannot create Docker client: %v", err)
+	}
 
 	server := httptest.NewServer(http.HandlerFunc(mockMetadataEndpoint))
 	defer server.Close()
@@ -252,8 +257,7 @@ func TestTracesDockerClientLifecycleBug(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := tp.Start(ctx, nil)
-	require.NoError(t, err)
+	require.NoError(t, tp.Start(ctx, nil))
 
 	syncMutex.Lock()
 	initialSyncCount := syncCount
@@ -261,7 +265,5 @@ func TestTracesDockerClientLifecycleBug(t *testing.T) {
 	assert.Greater(t, initialSyncCount, 0, "Initial sync should have occurred")
 
 	time.Sleep(200 * time.Millisecond)
-
-	err = tp.Shutdown(ctx)
-	require.NoError(t, err)
+	require.NoError(t, tp.Shutdown(ctx))
 }
