@@ -190,7 +190,7 @@ func parseDelimiter(spec string) (string, error) {
 	// Hex-encoded delimiter (e.g., "0x09" for tab, "0x5e" for caret)
 	if strings.HasPrefix(spec, "0x") || strings.HasPrefix(spec, "0X") {
 		hexStr := spec[2:]
-		if len(hexStr) == 0 {
+		if hexStr == "" {
 			return "", errors.New("empty hex value")
 		}
 		decoded, err := hex.DecodeString(hexStr)
