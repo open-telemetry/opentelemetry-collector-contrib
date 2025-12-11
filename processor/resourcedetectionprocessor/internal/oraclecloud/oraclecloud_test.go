@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.30.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/oraclecloud"
 	rdpmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
@@ -68,7 +68,7 @@ func TestDetect(t *testing.T) {
 		// We hardcode them here because no Go constant exists in semconv as of this writing.
 		expected := map[string]any{
 			string(conventions.CloudProviderKey):         conventions.CloudProviderOracleCloud.Value.AsString(),
-			string(conventions.CloudPlatformKey):         conventions.CloudPlatformOracleCloudOke.Value.AsString(),
+			string(conventions.CloudPlatformKey):         conventions.CloudPlatformOracleCloudOKE.Value.AsString(),
 			string(conventions.CloudRegionKey):           "us-ashburn-1",
 			string(conventions.CloudAvailabilityZoneKey): "AD-1",
 			string(conventions.HostIDKey):                "ocid1.instance.oc1..aaaaaaa",
@@ -144,7 +144,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 
 		expected := map[string]any{
 			string(conventions.CloudProviderKey):         conventions.CloudProviderOracleCloud.Value.AsString(),
-			string(conventions.CloudPlatformKey):         conventions.CloudPlatformOracleCloudOke.Value.AsString(),
+			string(conventions.CloudPlatformKey):         conventions.CloudPlatformOracleCloudOKE.Value.AsString(),
 			string(conventions.CloudRegionKey):           "us-ashburn-1",
 			string(conventions.CloudAvailabilityZoneKey): "AD-1",
 			string(conventions.HostIDKey):                "ocid1.instance.oc1..aaaaaaa",
