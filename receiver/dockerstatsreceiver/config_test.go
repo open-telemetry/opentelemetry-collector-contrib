@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Config: docker.Config{
 					Endpoint:         "http://example.com/",
-					DockerAPIVersion: "1.40",
+					DockerAPIVersion: "1.44",
 
 					Timeout: 20 * time.Second,
 					ExcludedImages: []string{
@@ -100,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidateErrors(t *testing.T) {
 	cfg := &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig(), Config: docker.Config{
-		DockerAPIVersion: "1.25",
+		DockerAPIVersion: "1.44",
 	}}
 	assert.ErrorContains(t, xconfmap.Validate(cfg), "endpoint must be specified")
 
@@ -111,12 +111,12 @@ func TestValidateErrors(t *testing.T) {
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
 	}
-	assert.ErrorContains(t, xconfmap.Validate(cfg), `"api_version" 1.21 must be at least 1.25`)
+	assert.ErrorContains(t, xconfmap.Validate(cfg), `"api_version" 1.21 must be at least 1.44`)
 
 	cfg = &Config{
 		Config: docker.Config{
 			Endpoint:         "someEndpoint",
-			DockerAPIVersion: "1.25",
+			DockerAPIVersion: "1.44",
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{},
 	}
