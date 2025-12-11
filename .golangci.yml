@@ -123,6 +123,16 @@ linters:
         path: extension/jaegerremotesampling/internal/server/http/
         text: "var-naming: avoid package names that conflict with Go standard library package names"
 
+      - linters:
+          - revive
+        path: extension/sumologicextension/internal/api/
+        text: "var-naming: avoid meaningless package names"
+
+      - linters:
+          - revive
+        path: internal/healthcheck/internal/http/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
 
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
