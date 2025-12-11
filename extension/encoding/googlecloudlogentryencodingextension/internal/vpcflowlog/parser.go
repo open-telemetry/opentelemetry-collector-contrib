@@ -9,7 +9,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -176,16 +176,16 @@ func handleConnection(conn *connection, attr pcommon.Map) {
 	// Map protocol number to string
 	if conn.Protocol != nil {
 		if protocolStr, exists := protocolNames[uint32(*conn.Protocol)]; exists {
-			attr.PutStr(string(semconv.NetworkTransportKey), protocolStr)
+			attr.PutStr(string(conventions.NetworkTransportKey), protocolStr)
 		}
 	}
 
-	shared.PutStr(string(semconv.SourceAddressKey), conn.SrcIP, attr)
-	shared.PutStr(string(semconv.DestinationAddressKey), conn.DestIP, attr)
+	shared.PutStr(string(conventions.SourceAddressKey), conn.SrcIP, attr)
+	shared.PutStr(string(conventions.DestinationAddressKey), conn.DestIP, attr)
 
 	// Only add port attributes if ports are present
-	shared.PutInt(string(semconv.SourcePortKey), conn.SrcPort, attr)
-	shared.PutInt(string(semconv.DestinationPortKey), conn.DestPort, attr)
+	shared.PutInt(string(conventions.SourcePortKey), conn.SrcPort, attr)
+	shared.PutInt(string(conventions.DestinationPortKey), conn.DestPort, attr)
 }
 
 func handleNetworkService(ns *networkService, attr pcommon.Map) {

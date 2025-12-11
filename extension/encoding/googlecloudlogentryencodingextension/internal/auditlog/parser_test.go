@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 func TestIsValid(t *testing.T) {
@@ -110,8 +110,8 @@ func TestHandleStatus(t *testing.T) {
 				Message: "RESOURCE_ALREADY_EXISTS",
 			},
 			expectedAttr: map[string]any{
-				string(semconv.RPCJSONRPCErrorCodeKey):    int64(6),
-				string(semconv.RPCJSONRPCErrorMessageKey): "RESOURCE_ALREADY_EXISTS",
+				string(conventions.RPCJSONRPCErrorCodeKey):    int64(6),
+				string(conventions.RPCJSONRPCErrorMessageKey): "RESOURCE_ALREADY_EXISTS",
 			},
 		},
 	}
@@ -144,8 +144,8 @@ func TestHandleAuthenticationInfo(t *testing.T) {
 				AuthoritySelector:     "https://www.googleapis.com/auth/cloud-platform",
 			},
 			expectedAttr: map[string]any{
-				string(semconv.UserIDKey):                   "serviceAccount:test@opentelemetry.iam.gserviceaccount.com",
-				string(semconv.UserEmailKey):                "test@opentelemetry.iam.gserviceaccount.com",
+				string(conventions.UserIDKey):               "serviceAccount:test@opentelemetry.iam.gserviceaccount.com",
+				string(conventions.UserEmailKey):            "test@opentelemetry.iam.gserviceaccount.com",
 				gcpAuditAuthenticationAuthoritySelector:     "https://www.googleapis.com/auth/cloud-platform",
 				gcpAuditAuthenticationServiceAccountKeyName: "//iam.googleapis.com/projects/test/serviceAccounts/test@opentelemetry.iam.gserviceaccount.com/keys/7ebb40c681d9b7d29fd1942bfc2bd65bf5c56b06",
 			},
@@ -252,9 +252,9 @@ func TestHandleRequestMetadata(t *testing.T) {
 				CallerNetwork:           "//compute.googleapis.com/projects/elastic-apps-163815/global/networks/__unknown__",
 			},
 			expectedAttr: map[string]any{
-				string(semconv.ClientAddressKey):     "104.197.128.48",
-				string(semconv.UserAgentOriginalKey): "Python-httplib2/0.22.0 (gzip), custodian-gcp/0.1 (gzip),gzip(gfe)",
-				gcpAuditRequestCallerNetwork:         "//compute.googleapis.com/projects/elastic-apps-163815/global/networks/__unknown__",
+				string(conventions.ClientAddressKey):     "104.197.128.48",
+				string(conventions.UserAgentOriginalKey): "Python-httplib2/0.22.0 (gzip), custodian-gcp/0.1 (gzip),gzip(gfe)",
+				gcpAuditRequestCallerNetwork:             "//compute.googleapis.com/projects/elastic-apps-163815/global/networks/__unknown__",
 			},
 		},
 		"request attributes": {
@@ -283,22 +283,22 @@ func TestHandleRequestMetadata(t *testing.T) {
 				},
 			},
 			expectedAttr: map[string]any{
-				string(semconv.HTTPRequestSizeKey):     int64(1234),
-				string(semconv.HTTPRequestMethodKey):   "GET",
-				string(semconv.URLQueryKey):            "foo=bar&baz=qux",
-				string(semconv.URLPathKey):             "/test/path",
-				string(semconv.URLSchemeKey):           "https",
-				gcpAuditRequestTime:                    "2025-08-21T12:34:56Z",
-				"http.request.header.host":             "example.com",
-				"http.request.header.user-agent":       "test-client/1.0",
-				"http.request.header.accept":           "application/json",
-				string(semconv.NetworkProtocolNameKey): "http/1.1",
-				gcpAuditRequestReason:                  "test-reason",
-				httpRequestID:                          "req-12345",
-				gcpAuditRequestAuthPrincipal:           "user@example.com",
-				gcpAuditRequestAuthPresenter:           "test-presenter",
-				gcpAuditRequestAuthAccessLevels:        []any{"level1", "level2"},
-				gcpAuditRequestAuthAudiences:           []any{"test-service", "another-service"},
+				string(conventions.HTTPRequestSizeKey):     int64(1234),
+				string(conventions.HTTPRequestMethodKey):   "GET",
+				string(conventions.URLQueryKey):            "foo=bar&baz=qux",
+				string(conventions.URLPathKey):             "/test/path",
+				string(conventions.URLSchemeKey):           "https",
+				gcpAuditRequestTime:                        "2025-08-21T12:34:56Z",
+				"http.request.header.host":                 "example.com",
+				"http.request.header.user-agent":           "test-client/1.0",
+				"http.request.header.accept":               "application/json",
+				string(conventions.NetworkProtocolNameKey): "http/1.1",
+				gcpAuditRequestReason:                      "test-reason",
+				httpRequestID:                              "req-12345",
+				gcpAuditRequestAuthPrincipal:               "user@example.com",
+				gcpAuditRequestAuthPresenter:               "test-presenter",
+				gcpAuditRequestAuthAccessLevels:            []any{"level1", "level2"},
+				gcpAuditRequestAuthAudiences:               []any{"test-service", "another-service"},
 			},
 		},
 		"request attributes - invalid request size format": {
@@ -323,10 +323,10 @@ func TestHandleRequestMetadata(t *testing.T) {
 				},
 			},
 			expectedAttr: map[string]any{
-				string(semconv.ServerPortKey):    int64(8080),
-				string(semconv.ServerAddressKey): "10.0.0.1",
-				gcpAuditDestinationPrincipal:     "serviceAccount:my-svc@project.iam.gserviceaccount.com",
-				gcpAuditDestinationRegionCode:    "us-central1",
+				string(conventions.ServerPortKey):    int64(8080),
+				string(conventions.ServerAddressKey): "10.0.0.1",
+				gcpAuditDestinationPrincipal:         "serviceAccount:my-svc@project.iam.gserviceaccount.com",
+				gcpAuditDestinationRegionCode:        "us-central1",
 				gcpAuditDestinationLabels: map[string]any{
 					"env":        "staging",
 					"team.owner": "devops",

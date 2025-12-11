@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
@@ -348,7 +348,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	}
 
 	if i.includeLogRecordOriginal {
-		e.AddAttribute(string(semconv.LogRecordOriginalKey), eventXML.Original)
+		e.AddAttribute(string(conventions.LogRecordOriginalKey), eventXML.Original)
 	}
 
 	return i.Write(ctx, e)

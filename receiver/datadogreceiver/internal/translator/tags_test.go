@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 func TestGetMetricAttributes(t *testing.T) {
@@ -35,7 +35,7 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(semconv.HostNameKey): "host",
+				string(conventions.HostNameKey): "host",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -45,10 +45,10 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "service:my-service", "version:1.0"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(semconv.HostNameKey):                  "host",
-				string(semconv.DeploymentEnvironmentNameKey): "prod",
-				string(semconv.ServiceNameKey):               "my-service",
-				string(semconv.ServiceVersionKey):            "1.0",
+				string(conventions.HostNameKey):                  "host",
+				string(conventions.DeploymentEnvironmentNameKey): "prod",
+				string(conventions.ServiceNameKey):               "my-service",
+				string(conventions.ServiceVersionKey):            "1.0",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -58,8 +58,8 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "foo"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(semconv.HostNameKey):                  "host",
-				string(semconv.DeploymentEnvironmentNameKey): "prod",
+				string(conventions.HostNameKey):                  "host",
+				string(conventions.DeploymentEnvironmentNameKey): "prod",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs: newMapFromKV(t, map[string]any{
@@ -166,7 +166,7 @@ func TestImageTags(t *testing.T) {
 	pool := newStringPool()
 
 	attrs := tagsToAttributes(tags, host, pool)
-	imageTags, _ := attrs.resource.Get(string(semconv.ContainerImageTagsKey))
+	imageTags, _ := attrs.resource.Get(string(conventions.ContainerImageTagsKey))
 	assert.Equal(t, expected, imageTags.AsString())
 }
 

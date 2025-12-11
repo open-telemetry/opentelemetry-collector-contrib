@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -748,13 +748,13 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 			// Add the instance/job to the input metrics if they aren't already present.
 			for i := 0; i < adjusted.ResourceMetrics().Len(); i++ {
 				rm := adjusted.ResourceMetrics().At(i)
-				_, found := rm.Resource().Attributes().Get(string(semconv.ServiceNameKey))
+				_, found := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 				if !found {
-					rm.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), job)
+					rm.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), job)
 				}
-				_, found = rm.Resource().Attributes().Get(string(semconv.ServiceInstanceIDKey))
+				_, found = rm.Resource().Attributes().Get(string(conventions.ServiceInstanceIDKey))
 				if !found {
-					rm.Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), instance)
+					rm.Resource().Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instance)
 				}
 			}
 			assert.NoError(t, ma.AdjustMetrics(adjusted))
@@ -762,13 +762,13 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 			// Add the instance/job to the expected metrics as well if they aren't already present.
 			for i := 0; i < test.adjusted.ResourceMetrics().Len(); i++ {
 				rm := test.adjusted.ResourceMetrics().At(i)
-				_, found := rm.Resource().Attributes().Get(string(semconv.ServiceNameKey))
+				_, found := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 				if !found {
-					rm.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), job)
+					rm.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), job)
 				}
-				_, found = rm.Resource().Attributes().Get(string(semconv.ServiceInstanceIDKey))
+				_, found = rm.Resource().Attributes().Get(string(conventions.ServiceInstanceIDKey))
 				if !found {
-					rm.Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), instance)
+					rm.Resource().Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instance)
 				}
 			}
 			assert.Equal(t, test.adjusted, adjusted)

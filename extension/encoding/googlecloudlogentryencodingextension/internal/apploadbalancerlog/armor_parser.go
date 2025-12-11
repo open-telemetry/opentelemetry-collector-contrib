@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -150,7 +150,7 @@ func handleUserIPInfo(info *userIPInfo, attr pcommon.Map) {
 	}
 
 	shared.PutStr(gcpArmorUserIPInfoSource, info.Source, attr)
-	shared.PutStr(string(semconv.ClientAddressKey), info.IPAddress, attr)
+	shared.PutStr(string(conventions.ClientAddressKey), info.IPAddress, attr)
 }
 
 func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) error {
@@ -158,10 +158,10 @@ func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) error {
 		return nil
 	}
 
-	shared.PutStr(string(semconv.GeoRegionISOCodeKey), info.RegionCode, attr)
+	shared.PutStr(string(conventions.GeoRegionISOCodeKey), info.RegionCode, attr)
 	shared.PutInt(gcpArmorRemoteIPInfoAsn, info.ASN, attr)
 
-	if _, err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), info.IPAddress, attr); err != nil {
+	if _, err := shared.PutStrIfNotPresent(string(conventions.NetworkPeerAddressKey), info.IPAddress, attr); err != nil {
 		return fmt.Errorf("error setting security policy attribute: %w", err)
 	}
 
@@ -170,7 +170,7 @@ func handleRemoteIPInfo(info *remoteIPInfo, attr pcommon.Map) error {
 
 func handleTLSFingerprints(data *securityPolicyRequestData, attr pcommon.Map) {
 	shared.PutStr(gcpArmorTLSJa4Fingerprint, data.TLSJa4Fingerprint, attr)
-	shared.PutStr(string(semconv.TLSClientJa3Key), data.TLSJa3Fingerprint, attr)
+	shared.PutStr(string(conventions.TLSClientJa3Key), data.TLSJa3Fingerprint, attr)
 }
 
 func handleSecurityPolicyRequestData(data *securityPolicyRequestData, attr pcommon.Map) error {

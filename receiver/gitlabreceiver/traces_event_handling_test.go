@@ -11,7 +11,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // Helper function to parse a PipelineEvent from JSON for the remaining tests
@@ -564,16 +564,16 @@ func TestPipelineWithMissingOptionalFields(t *testing.T) {
 	attrs := resource.Attributes()
 
 	// Required fields should be present
-	serviceName, found := attrs.Get(string(semconv.ServiceNameKey))
+	serviceName, found := attrs.Get(string(conventions.ServiceNameKey))
 	require.True(t, found)
 	require.Equal(t, "test/project", serviceName.Str())
 
 	// Optional fields should be present but may be empty
-	pipelineName, found := attrs.Get(string(semconv.CICDPipelineNameKey))
+	pipelineName, found := attrs.Get(string(conventions.CICDPipelineNameKey))
 	require.True(t, found)
 	require.Empty(t, pipelineName.Str())
 
-	repoName, found := attrs.Get(string(semconv.VCSRepositoryNameKey))
+	repoName, found := attrs.Get(string(conventions.VCSRepositoryNameKey))
 	require.True(t, found)
 	require.Empty(t, repoName.Str())
 
@@ -595,7 +595,7 @@ func TestPipelineWithMissingOptionalFields(t *testing.T) {
 	require.Empty(t, authorEmail.Str())
 
 	// Merge request ID should not create attributes when 0
-	_, found = attrs.Get(string(semconv.VCSChangeIDKey))
+	_, found = attrs.Get(string(conventions.VCSChangeIDKey))
 	require.False(t, found)
 }
 

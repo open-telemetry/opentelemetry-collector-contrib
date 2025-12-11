@@ -8,7 +8,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -143,7 +143,7 @@ func isValid(log *loadbalancerlog) error {
 }
 
 func handleRequestMetadata(log *loadbalancerlog, attr pcommon.Map) error {
-	if _, err := shared.PutStrIfNotPresent(string(semconv.NetworkPeerAddressKey), log.RemoteIP, attr); err != nil {
+	if _, err := shared.PutStrIfNotPresent(string(conventions.NetworkPeerAddressKey), log.RemoteIP, attr); err != nil {
 		return fmt.Errorf("error setting security policy attribute: %w", err)
 	}
 
@@ -188,8 +188,8 @@ func handleTLSInfo(tlsInfo *tlsInfo, attr pcommon.Map) {
 	}
 	tlsMap := attr.PutEmptyMap(gcpLoadBalancingTLSInfo)
 	shared.PutBool(gcpLoadBalancingTLSEarlyDataRequest, tlsInfo.EarlyDataRequest, tlsMap)
-	shared.PutStr(string(semconv.TLSProtocolNameKey), tlsInfo.Protocol, tlsMap)
-	shared.PutStr(string(semconv.TLSCipherKey), tlsInfo.Cipher, tlsMap)
+	shared.PutStr(string(conventions.TLSProtocolNameKey), tlsInfo.Protocol, tlsMap)
+	shared.PutStr(string(conventions.TLSCipherKey), tlsInfo.Cipher, tlsMap)
 }
 
 func handleMtlsInfo(mtlsInfo *mtlsInfo, attr pcommon.Map) {
@@ -201,17 +201,17 @@ func handleMtlsInfo(mtlsInfo *mtlsInfo, attr pcommon.Map) {
 	shared.PutBool(gcpLoadBalancingMtlsClientCertPresent, mtlsInfo.ClientCertPresent, mtlsMap)
 	shared.PutBool(gcpLoadBalancingMtlsClientCertChainVerified, mtlsInfo.ClientCertChainVerified, mtlsMap)
 	shared.PutStr(gcpLoadBalancingMtlsClientCertError, mtlsInfo.ClientCertError, mtlsMap)
-	shared.PutStr(string(semconv.TLSClientHashSha256Key), mtlsInfo.ClientCertSha256Fingerprint, mtlsMap)
+	shared.PutStr(string(conventions.TLSClientHashSha256Key), mtlsInfo.ClientCertSha256Fingerprint, mtlsMap)
 	shared.PutStr(gcpLoadBalancingMtlsClientCertSerialNumber, mtlsInfo.ClientCertSerialNumber, mtlsMap)
-	shared.PutStr(string(semconv.TLSClientNotBeforeKey), mtlsInfo.ClientCertValidStartTime, mtlsMap)
-	shared.PutStr(string(semconv.TLSClientNotAfterKey), mtlsInfo.ClientCertValidEndTime, mtlsMap)
+	shared.PutStr(string(conventions.TLSClientNotBeforeKey), mtlsInfo.ClientCertValidStartTime, mtlsMap)
+	shared.PutStr(string(conventions.TLSClientNotAfterKey), mtlsInfo.ClientCertValidEndTime, mtlsMap)
 	shared.PutStr(gcpLoadBalancingMtlsClientCertSpiffeID, mtlsInfo.ClientCertSpiffeID, mtlsMap)
 	shared.PutStr(gcpLoadBalancingMtlsClientCertURISans, mtlsInfo.ClientCertURISans, mtlsMap)
 	shared.PutStr(gcpLoadBalancingMtlsClientCertDnsnameSans, mtlsInfo.ClientCertDnsnameSans, mtlsMap)
-	shared.PutStr(string(semconv.TLSClientIssuerKey), mtlsInfo.ClientCertIssuerDn, mtlsMap)
-	shared.PutStr(string(semconv.TLSClientSubjectKey), mtlsInfo.ClientCertSubjectDn, mtlsMap)
+	shared.PutStr(string(conventions.TLSClientIssuerKey), mtlsInfo.ClientCertIssuerDn, mtlsMap)
+	shared.PutStr(string(conventions.TLSClientSubjectKey), mtlsInfo.ClientCertSubjectDn, mtlsMap)
 	shared.PutStr(gcpLoadBalancingMtlsClientCertLeaf, mtlsInfo.ClientCertLeaf, mtlsMap)
-	shared.PutStr(string(semconv.TLSClientCertificateChainKey), mtlsInfo.ClientCertChain, mtlsMap)
+	shared.PutStr(string(conventions.TLSClientCertificateChainKey), mtlsInfo.ClientCertChain, mtlsMap)
 }
 
 func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
