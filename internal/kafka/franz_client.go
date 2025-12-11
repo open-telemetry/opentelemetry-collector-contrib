@@ -104,6 +104,12 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
+		kgo.SessionTimeout(consumerCfg.SessionTimeout),
+		kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval),
+		kgo.FetchMinBytes(consumerCfg.MinFetchSize),
+		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
+		kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize),
+		kgo.FetchMaxWait(consumerCfg.MaxFetchWait),
 	}, opts...)...)
 	if err != nil {
 		return nil, err
@@ -124,32 +130,6 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	// Add exclude topics only when regex consumption is enabled
 	if len(excludeTopics) > 0 && isRegex {
 		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
-	}
-
-	// Configure session timeout
-	if consumerCfg.SessionTimeout > 0 {
-		opts = append(opts, kgo.SessionTimeout(consumerCfg.SessionTimeout))
-	}
-
-	// Configure heartbeat interval
-	if consumerCfg.HeartbeatInterval > 0 {
-		opts = append(opts, kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval))
-	}
-
-	// Configure fetch sizes
-	if consumerCfg.MinFetchSize > 0 {
-		opts = append(opts, kgo.FetchMinBytes(consumerCfg.MinFetchSize))
-	}
-	if consumerCfg.DefaultFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxBytes(consumerCfg.DefaultFetchSize))
-	}
-	if consumerCfg.MaxPartitionFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize))
-	}
-
-	// Configure max fetch wait
-	if consumerCfg.MaxFetchWait > 0 {
-		opts = append(opts, kgo.FetchMaxWait(consumerCfg.MaxFetchWait))
 	}
 
 	interval := consumerCfg.AutoCommit.Interval

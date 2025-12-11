@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -311,13 +312,7 @@ func (*grpcService) isKeyField(fieldName string, analysis *internal.PathAnalysis
 
 	// Additional heuristics for common key patterns
 	commonKeys := []string{"name", "id", "index", "interface-name", "neighbor-id", "router-id"}
-	for _, commonKey := range commonKeys {
-		if fieldName == commonKey {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(commonKeys, fieldName)
 }
 
 // extractFieldName extracts the field name from a metric name path
