@@ -286,13 +286,13 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
 
-	if len(log.Properties) > 0 {
+	if log.Properties != nil {
 		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
 	}
 
-	// If properties field doesn't exist and category is FlowLogFlowEvent, capture the raw log message
-	// This is specific to VNet flow logs which don't have a properties field
-	if len(log.Properties) == 0 && log.Category == "FlowLogFlowEvent" && len(rawRecord) > 0 {
+	// If properties field doesn't exist, capture the raw log message
+	// This preserves the original log for logs that don't have a properties field
+	if len(log.Properties) == 0 && len(rawRecord) > 0 {
 		// Format the JSON with proper indentation to match expected output
 		var rawMap map[string]any
 		if err := gojson.Unmarshal(rawRecord, &rawMap); err == nil {
@@ -329,7 +329,7 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 	if err := gojson.Unmarshal(properties, &props); err != nil {
 		var val any
 		if err = json.Unmarshal(properties, &val); err == nil {
-			// Try primitive value - parsing succeeded
+			// Try primitive value
 			attrs[azureProperties] = val
 			return true
 		}
