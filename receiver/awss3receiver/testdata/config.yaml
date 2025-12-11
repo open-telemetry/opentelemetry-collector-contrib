@@ -2,7 +2,7 @@ awss3:
 awss3/1:
   s3downloader:
     s3_bucket: abucket
-    s3_partition: notapartition
+    s3_partition_format: "%Y/%m"
   starttime: "a date"
   endtime: "2024-02-03a"
 awss3/2:
@@ -12,7 +12,11 @@ awss3/2:
   endtime: "2024-02-03"
 awss3/3:
   s3downloader:
-      s3_bucket: abucket
+    s3_bucket: abucket
+    s3_partition_format: "year=%Y/month=%m/day=%d/hour=%H"
+    s3_partition_timezone: "Asia/Tokyo"
+    file_prefix: "otel"
+    file_prefix_include_telemetry_type: false
   starttime: "2024-01-31 15:00"
   endtime: "2024-02-03"
   encodings:

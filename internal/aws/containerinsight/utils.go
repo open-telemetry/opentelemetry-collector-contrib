@@ -33,12 +33,13 @@ func SumFields(fields []map[string]any) map[string]float64 {
 		return result
 	}
 
-	for i := 1; i < len(fields); i++ {
+	for _, currentField := range fields[1:] {
 		for k, v := range result {
-			if fields[i][k] == nil {
+			fieldValue, exists := currentField[k]
+			if !exists || fieldValue == nil {
 				continue
 			}
-			if fv, ok := fields[i][k].(float64); ok {
+			if fv, ok := fieldValue.(float64); ok {
 				result[k] = v + fv
 			}
 		}
