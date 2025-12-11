@@ -6,7 +6,7 @@ This document defines semantic conventions for instrumentations that emit Google
 
 ## Passthrough Network Load Balancer Log
 
-The event name MUST be `gcp.passthrough_nlb.log`.
+The encoding format MUST be `gcp.passthrough-nlb`.
 
 Describes GCP Passthrough Network Load Balancer log events for both [External](https://cloud.google.com/load-balancing/docs/network/networklb-monitoring) and [Internal](https://docs.cloud.google.com/load-balancing/docs/internal/internal-logging-monitoring) Network Load Balancers.
 
