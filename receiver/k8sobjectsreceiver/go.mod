@@ -99,15 +99,15 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.141.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.141.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.141.0 // indirect
-	go.opentelemetry.io/collector/extension v1.47.0 // indirect
+	go.opentelemetry.io/collector/extension v1.47.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.47.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.141.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.47.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.47.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/collector/filter v0.141.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.141.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.141.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.141.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.47.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.141.1-0.20251210054218-8f51a1792add // indirect
+	go.opentelemetry.io/collector/pipeline v1.47.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.141.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
