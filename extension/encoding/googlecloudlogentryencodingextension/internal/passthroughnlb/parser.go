@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package passthroughnlb contains utilities for parsing Google Cloud Passthrough External and Internal Network Load Balancer logs.
-package passthroughnlb // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/externalnlb"
+package passthroughnlb // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/passthroughnlb"
 
 import (
 	"errors"
