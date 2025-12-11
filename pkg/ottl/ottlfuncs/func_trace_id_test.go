@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_traceID(t *testing.T) {
@@ -58,7 +60,8 @@ func BenchmarkTraceID(b *testing.B) {
 	// Scenario 1: Literal 16-byte slice with get and set
 	b.Run("literal_bytes_get_and_set", func(b *testing.B) {
 		literalBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
-		literalGetter := makeLiteralIDGetter(literalBytes)
+		literalGetter, _ := ottl.NewTestingLiteralGetter(true, makeIDGetter(literalBytes))
+
 		expr, err := traceID(literalGetter)
 		if err != nil {
 			b.Fatal(err)
@@ -78,7 +81,7 @@ func BenchmarkTraceID(b *testing.B) {
 	// Scenario 2: Literal 32-char hex string with get and set
 	b.Run("literal_hex_string_get_and_set", func(b *testing.B) {
 		literalHexString := []byte("0102030405060708090a0b0c0d0e0f10")
-		literalGetter := makeLiteralIDGetter(literalHexString)
+		literalGetter, _ := ottl.NewTestingLiteralGetter(true, makeIDGetter(literalHexString))
 		expr, err := traceID[any](literalGetter)
 		if err != nil {
 			b.Fatal(err)

@@ -11,12 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const fakeFuncName = "funkyfake"
 
 func Test_newIDExprFunc_rawBytes(t *testing.T) {
-	target := makeLiteralIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	require.NoError(t, err)
 	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
 	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
 
@@ -26,7 +29,8 @@ func Test_newIDExprFunc_rawBytes(t *testing.T) {
 }
 
 func Test_newIDExprFunc_hexBytes(t *testing.T) {
-	target := makeLiteralIDGetter([]byte("0102030405060708090a0b0c0d0e0f10"))
+	target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter([]byte("0102030405060708090a0b0c0d0e0f10")))
+	require.NoError(t, err)
 	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToProfileID)
 	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
 
@@ -36,7 +40,8 @@ func Test_newIDExprFunc_hexBytes(t *testing.T) {
 }
 
 func Test_newIDExprFunc_literalSuccess(t *testing.T) {
-	target := makeLiteralIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	require.NoError(t, err)
 	expr, err := spanID[any](target)
 	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
 	got, err := expr(t.Context(), nil)
@@ -64,10 +69,10 @@ func Test_newIDExprFunc_literalInitErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use makeLiteralIDGetter to ensure we get a proper literal getter
-			target := makeLiteralIDGetter(tt.value)
-			expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
+			target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter(tt.value))
+			require.NoError(t, err)
 
+			expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
 			// For literal getters with invalid data, initialization should fail
 			require.Error(t, err, "initialization should fail for literal getters with invalid data")
 			assert.Nil(t, expr, "expression should be nil when initialization fails")
@@ -97,8 +102,8 @@ func Test_newIDExprFunc_literalStringInitErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use makeLiteralIDGetter to ensure we get a proper literal getter
-			target := makeLiteralIDGetter([]byte(tt.value))
+			target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter([]byte(tt.value)))
+			require.NoError(t, err)
 			expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
 
 			// For literal getters with invalid data, initialization should fail
