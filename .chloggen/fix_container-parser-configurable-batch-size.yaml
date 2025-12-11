@@ -18,6 +18,7 @@ issues: [43982]
 subtext: |
   The recombine operator now supports setting `max_batch_size: 0` to disable batch size limits.
   This allows unlimited batching, letting entries be combined based only on `max_log_size` and matching conditions.
+  If you have `max_batch_size: 0` in your config and want to keep the behavior unchanged, change the configuration to `max_batch_size: 1`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
