@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"go.opentelemetry.io/collector/component/componenttest"
 	apps_v1 "k8s.io/api/apps/v1"
 	core_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +16,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func ptr[T any](v T) *T { return &v }
@@ -71,12 +71,12 @@ func genFullReplicaSets(n int) []runtime.Object {
 	return objs
 }
 
-// Optimized: metadata-like minimal ReplicaSets (ObjectMeta + OwnerRefs only)
-func genMetaOnlyReplicaSets(n int) []runtime.Object {
+// Optimized: PartialObjectMetadata (ObjectMeta + OwnerRefs only)
+func genPOMReplicaSets(n int) []runtime.Object {
 	objs := make([]runtime.Object, 0, n)
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("deploy-%d-abc123defg", i)
-		rs := &apps_v1.ReplicaSet{
+		pom := &meta_v1.PartialObjectMetadata{
 			TypeMeta: meta_v1.TypeMeta{APIVersion: "apps/v1", Kind: "ReplicaSet"},
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:      name,
@@ -88,7 +88,7 @@ func genMetaOnlyReplicaSets(n int) []runtime.Object {
 				Labels: map[string]string{"app": "example"},
 			},
 		}
-		objs = append(objs, rs)
+		objs = append(objs, pom)
 	}
 	return objs
 }
@@ -114,13 +114,11 @@ func startAndSync(b *testing.B, c Client) {
 	defer c.Stop()
 }
 
-// Baseline: typed informer + full objects (works on main and branch)
-func Benchmark_RS_Typed_Full_InProcess(b *testing.B) {
-	const N = 16700
+// Typed baseline for a parameterized N
+func runTypedBaseline(b *testing.B, N int) {
 	initial := genFullReplicaSets(N)
-
 	for i := 0; i < b.N; i++ {
-		fc := fake.NewSimpleClientset()
+		fc := fake.NewClientset()
 		setReplicaSetListAndWatch(fc, initial)
 
 		newClientSet := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) { return fc, nil }
@@ -130,7 +128,7 @@ func Benchmark_RS_Typed_Full_InProcess(b *testing.B) {
 		factory := InformersFactoryList{
 			newInformer:           newSharedInformer,
 			newNamespaceInformer:  NewNoOpInformer,
-			newReplicaSetInformer: nil, // default typed path
+			newReplicaSetInformer: newReplicaSetSharedInformer,
 		}
 
 		set := componenttest.NewNopTelemetrySettings()
@@ -144,46 +142,15 @@ func Benchmark_RS_Typed_Full_InProcess(b *testing.B) {
 	}
 }
 
-// Optimized: meta-like provider + minimal payload (works on main and branch)
-func NewReplicaSetMetaInformerProviderForBench(initial func() *apps_v1.ReplicaSetList) func(kubernetes.Interface, string) cache.SharedInformer {
-	return func(_ kubernetes.Interface, _ string) cache.SharedInformer {
-		lw := &cache.ListWatch{
-			ListFunc: func(opts meta_v1.ListOptions) (runtime.Object, error) {
-				return initial().DeepCopyObject(), nil
-			},
-			WatchFunc: func(opts meta_v1.ListOptions) (watch.Interface, error) {
-				return watch.NewFake(), nil
-			},
-		}
-		inf := cache.NewSharedIndexInformer(
-			lw,
-			&apps_v1.ReplicaSet{},
-			0,
-			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-		)
-		_ = inf.SetTransform(func(object any) (any, error) {
-			if rs, ok := object.(*apps_v1.ReplicaSet); ok {
-				return removeUnnecessaryReplicaSetData(rs), nil
-			}
-			return object, nil
-		})
-		return inf
-	}
-}
-
-func Benchmark_RS_MetaLike_InProcess(b *testing.B) {
-	const N = 16700
-	metaOnly := genMetaOnlyReplicaSets(N)
-	toList := func() *apps_v1.ReplicaSetList {
-		lst := &apps_v1.ReplicaSetList{Items: make([]apps_v1.ReplicaSet, 0, len(metaOnly))}
-		for _, obj := range metaOnly {
-			lst.Items = append(lst.Items, *(obj.(*apps_v1.ReplicaSet)).DeepCopy())
-		}
-		return lst
-	}
-
+// Partial metadata for a parameterized N
+func runPartialMetadata(b *testing.B, N int) {
+	metaOnly := genPOMReplicaSets(N)
 	for i := 0; i < b.N; i++ {
-		fc := fake.NewSimpleClientset()
+		fc := fake.NewClientset()
+		// We still attach the typed reactors so the fake client satisfies list/watch,
+		// but the informer provider below will emit PartialObjectMetadata.
+		setReplicaSetListAndWatch(fc, metaOnly)
+
 		newClientSet := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) { return fc, nil }
 		rules := ExtractionRules{DeploymentName: true}
 		filters := Filters{}
@@ -191,7 +158,7 @@ func Benchmark_RS_MetaLike_InProcess(b *testing.B) {
 		factory := InformersFactoryList{
 			newInformer:           newSharedInformer,
 			newNamespaceInformer:  NewNoOpInformer,
-			newReplicaSetInformer: NewReplicaSetMetaInformerProviderForBench(toList),
+			newReplicaSetInformer: NewReplicaSetMetaInformerProvider(k8sconfig.APIConfig{}),
 		}
 
 		set := componenttest.NewNopTelemetrySettings()
@@ -202,5 +169,19 @@ func Benchmark_RS_MetaLike_InProcess(b *testing.B) {
 
 		b.ReportAllocs()
 		startAndSync(b, c)
+	}
+}
+
+// Benchmark suite: sweep N values and run typed vs partial
+func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
+	Ns := []int{1000, 5000, 10000, 20000}
+
+	for _, N := range Ns {
+		b.Run(fmt.Sprintf("Typed_Full_N=%d", N), func(b *testing.B) {
+			runTypedBaseline(b, N)
+		})
+		b.Run(fmt.Sprintf("Partial_Metadata_N=%d", N), func(b *testing.B) {
+			runPartialMetadata(b, N)
+		})
 	}
 }
