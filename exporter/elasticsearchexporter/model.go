@@ -25,56 +25,59 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
+type conversionEntry struct {
+	to               string
+	preserveOriginal bool
+	skip             bool
+	skipIfExists     bool
+}
+
 // resourceAttrsConversionMap contains conversions for resource-level attributes
 // from their Semantic Conventions (SemConv) names to equivalent Elastic Common
 // Schema (ECS) names.
 // If the ECS field name is specified as an empty string (""), the converter will
 // neither convert the SemConv key to the equivalent ECS name nor pass-through the
 // SemConv key as-is to become the ECS name.
-var resourceAttrsConversionMap = map[string]string{
-	string(semconv.ServiceInstanceIDKey):         "service.node.name",
-	string(semconv22.DeploymentEnvironmentKey):   "service.environment",
-	string(semconv.DeploymentEnvironmentNameKey): "service.environment",
-	string(semconv.TelemetrySDKNameKey):          "",
-	string(semconv.TelemetrySDKLanguageKey):      "",
-	string(semconv.TelemetrySDKVersionKey):       "",
-	string(semconv.TelemetryDistroNameKey):       "",
-	string(semconv.TelemetryDistroVersionKey):    "",
-	string(semconv.CloudPlatformKey):             "cloud.service.name",
-	string(semconv.ContainerImageTagsKey):        "container.image.tag",
-	string(semconv.HostArchKey):                  "host.architecture",
-	string(semconv.ProcessParentPIDKey):          "process.parent.pid",
-	string(semconv.ProcessExecutableNameKey):     "process.title",
-	string(semconv.ProcessExecutablePathKey):     "process.executable",
-	string(semconv.ProcessCommandLineKey):        "process.args",
-	string(semconv.ProcessRuntimeNameKey):        "service.runtime.name",
-	string(semconv.ProcessRuntimeVersionKey):     "service.runtime.version",
-	string(semconv.OSNameKey):                    "host.os.name",
-	string(semconv.OSTypeKey):                    "host.os.platform",
-	string(semconv.OSDescriptionKey):             "host.os.full",
-	string(semconv.OSVersionKey):                 "host.os.version",
-	string(semconv.ClientAddressKey):             "client.ip",
-	string(semconv.SourceAddressKey):             "source.ip",
-	string(semconv.K8SDeploymentNameKey):         "kubernetes.deployment.name",
-	string(semconv.K8SNamespaceNameKey):          "kubernetes.namespace",
-	string(semconv.K8SNodeNameKey):               "kubernetes.node.name",
-	string(semconv.K8SPodNameKey):                "kubernetes.pod.name",
-	string(semconv.K8SPodUIDKey):                 "kubernetes.pod.uid",
-	string(semconv.K8SJobNameKey):                "kubernetes.job.name",
-	string(semconv.K8SCronJobNameKey):            "kubernetes.cronjob.name",
-	string(semconv.K8SStatefulSetNameKey):        "kubernetes.statefulset.name",
-	string(semconv.K8SReplicaSetNameKey):         "kubernetes.replicaset.name",
-	string(semconv.K8SDaemonSetNameKey):          "kubernetes.daemonset.name",
-	string(semconv.K8SContainerNameKey):          "kubernetes.container.name",
-	string(semconv.K8SClusterNameKey):            "orchestrator.cluster.name",
-	string(semconv.FaaSInstanceKey):              "faas.id",
-	string(semconv.FaaSTriggerKey):               "faas.trigger.type",
+var resourceAttrsConversionMap = map[string]conversionEntry{
+	string(semconv.ServiceInstanceIDKey):         {to: "service.node.name"},
+	string(semconv22.DeploymentEnvironmentKey):   {to: "service.environment"},
+	string(semconv.DeploymentEnvironmentNameKey): {to: "service.environment"},
+	string(semconv.TelemetrySDKNameKey):          {skip: true},
+	string(semconv.TelemetrySDKLanguageKey):      {skip: true},
+	string(semconv.TelemetrySDKVersionKey):       {skip: true},
+	string(semconv.TelemetryDistroNameKey):       {skip: true},
+	string(semconv.TelemetryDistroVersionKey):    {skip: true},
+	string(semconv.CloudPlatformKey):             {to: "cloud.service.name"},
+	string(semconv.ContainerImageTagsKey):        {to: "container.image.tag"},
+	string(semconv.HostNameKey):                  {to: "host.hostname", preserveOriginal: true, skipIfExists: true},
+	string(semconv.HostArchKey):                  {to: "host.architecture"},
+	string(semconv.ProcessParentPIDKey):          {to: "process.parent.pid"},
+	string(semconv.ProcessExecutableNameKey):     {to: "process.title"},
+	string(semconv.ProcessExecutablePathKey):     {to: "process.executable"},
+	string(semconv.ProcessCommandLineKey):        {to: "process.args"},
+	string(semconv.ProcessRuntimeNameKey):        {to: "service.runtime.name"},
+	string(semconv.ProcessRuntimeVersionKey):     {to: "service.runtime.version"},
+	string(semconv.OSNameKey):                    {to: "host.os.name"},
+	string(semconv.OSTypeKey):                    {to: "host.os.platform"},
+	string(semconv.OSDescriptionKey):             {to: "host.os.full"},
+	string(semconv.OSVersionKey):                 {to: "host.os.version"},
+	string(semconv.ClientAddressKey):             {to: "client.ip"},
+	string(semconv.SourceAddressKey):             {to: "source.ip"},
+	string(semconv.K8SDeploymentNameKey):         {to: "kubernetes.deployment.name"},
+	string(semconv.K8SNamespaceNameKey):          {to: "kubernetes.namespace"},
+	string(semconv.K8SNodeNameKey):               {to: "kubernetes.node.name"},
+	string(semconv.K8SPodNameKey):                {to: "kubernetes.pod.name"},
+	string(semconv.K8SPodUIDKey):                 {to: "kubernetes.pod.uid"},
+	string(semconv.K8SJobNameKey):                {to: "kubernetes.job.name"},
+	string(semconv.K8SCronJobNameKey):            {to: "kubernetes.cronjob.name"},
+	string(semconv.K8SStatefulSetNameKey):        {to: "kubernetes.statefulset.name"},
+	string(semconv.K8SReplicaSetNameKey):         {to: "kubernetes.replicaset.name"},
+	string(semconv.K8SDaemonSetNameKey):          {to: "kubernetes.daemonset.name"},
+	string(semconv.K8SContainerNameKey):          {to: "kubernetes.container.name"},
+	string(semconv.K8SClusterNameKey):            {to: "orchestrator.cluster.name"},
+	string(semconv.FaaSInstanceKey):              {to: "faas.id"},
+	string(semconv.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
-
-// resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
-// This can happen when an attribute needs to be mapped to an ECS equivalent but
-// at the same time be preserved to its original form.
-var resourceAttrsToPreserve = map[string]bool{}
 
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
@@ -195,24 +198,24 @@ func (ecsModeEncoder) encodeLog(
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]string{
+	scopeAttrsConversionMap := map[string]conversionEntry{
 		// None at the moment
 	}
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 
 	// Finally, try to map record-level attributes to ECS fields.
-	recordAttrsConversionMap := map[string]string{
-		"event.name":                            "event.action",
-		string(semconv.ExceptionMessageKey):     "error.message",
-		string(semconv.ExceptionStacktraceKey):  "error.stacktrace",
-		string(semconv.ExceptionTypeKey):        "error.type",
-		string(semconv22.ExceptionEscapedKey):   "event.error.exception.handled",
-		string(semconv.HTTPResponseBodySizeKey): "http.response.encoded_body_size",
+	recordAttrsConversionMap := map[string]conversionEntry{
+		"event.name":                            {to: "event.action"},
+		string(semconv.ExceptionMessageKey):     {to: "error.message"},
+		string(semconv.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+		string(semconv.ExceptionTypeKey):        {to: "error.type"},
+		string(semconv22.ExceptionEscapedKey):   {to: "event.error.exception.handled"},
+		string(semconv.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -244,13 +247,13 @@ func (ecsModeEncoder) encodeSpan(
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]string{
+	scopeAttrsConversionMap := map[string]conversionEntry{
 		// None at the moment
 	}
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 
 	// Finally, try to map record-level attributes to ECS fields.
 
@@ -261,17 +264,17 @@ func (ecsModeEncoder) encodeSpan(
 		messageQueueName = "transaction.message.queue.name"
 	}
 
-	spanAttrsConversionMap := map[string]string{
-		string(semconv.MessagingDestinationNameKey): messageQueueName,
-		string(semconv.MessagingOperationNameKey):   "span.action",
-		string(semconv22.DBSystemKey):               "span.db.type",
-		string(semconv.DBNamespaceKey):              "span.db.instance",
-		string(semconv.DBQueryTextKey):              "span.db.statement",
-		string(semconv.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
+	spanAttrsConversionMap := map[string]conversionEntry{
+		string(semconv.MessagingDestinationNameKey): {to: messageQueueName},
+		string(semconv.MessagingOperationNameKey):   {to: "span.action"},
+		string(semconv22.DBSystemKey):               {to: "span.db.type"},
+		string(semconv.DBNamespaceKey):              {to: "span.db.instance"},
+		string(semconv.DBQueryTextKey):              {to: "span.db.statement"},
+		string(semconv.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
 	}
 
 	// Handle special cases.
-	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -464,7 +467,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 ) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
@@ -538,7 +541,7 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string, preserveMap map[string]bool) {
+func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry) {
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
 		// document.
@@ -548,14 +551,18 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 
 	for k, v := range attrs.All() {
 		// If ECS key is found for current k in conversion map, use it.
-		if ecsKey, exists := conversionMap[k]; exists {
-			if ecsKey == "" {
+		if c, exists := conversionMap[k]; exists {
+			if c.skip {
 				// Skip the conversion for this k.
 				continue
 			}
+			if !c.skipIfExists {
+				document.AddAttribute(c.to, v)
+			} else if _, exists := attrs.Get(c.to); !exists {
+				document.AddAttribute(c.to, v)
+			}
 
-			document.AddAttribute(ecsKey, v)
-			if preserve := preserveMap[k]; preserve {
+			if c.preserveOriginal {
 				document.AddAttribute(k, v)
 			}
 			continue

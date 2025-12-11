@@ -420,7 +420,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 
 	resourceContainerImageTags := resource.Attributes().PutEmptySlice(string(semconv.ContainerImageTagsKey))
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
@@ -1161,14 +1161,14 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 func TestMapLogAttributesToECS(t *testing.T) {
 	tests := map[string]struct {
 		attrs         func() pcommon.Map
-		conversionMap map[string]string
+		conversionMap map[string]conversionEntry
 		preserveMap   map[string]bool
 		expectedDoc   func() objmodel.Document
 	}{
 		"no_attrs": {
 			attrs: pcommon.NewMap,
-			conversionMap: map[string]string{
-				"foo.bar": "baz",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "baz"},
 			},
 			expectedDoc: func() objmodel.Document {
 				return objmodel.Document{}
@@ -1192,7 +1192,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{},
+			conversionMap: map[string]conversionEntry{},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
 				d.AddString("foo.bar", "baz")
@@ -1206,9 +1206,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1224,8 +1224,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1241,8 +1241,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"baz": "qux",
+			conversionMap: map[string]conversionEntry{
+				"baz": {to: "qux"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1257,9 +1257,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1273,11 +1273,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
-			}, preserveMap: map[string]bool{
-				"foo.bar": true,
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux", preserveOriginal: true},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1291,7 +1289,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
+			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap)
 
 			expectedDoc := test.expectedDoc()
 			require.Equal(t, expectedDoc, doc)
