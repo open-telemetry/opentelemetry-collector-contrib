@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/multierr"
 )
 
@@ -121,11 +121,11 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 
 	meta := metaToKeyVal(payload.Meta)
 	rls := logs.ResourceLogs().AppendEmpty()
-	rls.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), payload.Meta.App.Name)
-	rls.Resource().Attributes().PutStr(string(semconv.ServiceVersionKey), payload.Meta.App.Version)
-	rls.Resource().Attributes().PutStr(string(semconv.DeploymentEnvironmentKey), payload.Meta.App.Environment)
+	rls.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), payload.Meta.App.Name)
+	rls.Resource().Attributes().PutStr(string(conventions.ServiceVersionKey), payload.Meta.App.Version)
+	rls.Resource().Attributes().PutStr(string(conventions.DeploymentEnvironmentKey), payload.Meta.App.Environment)
 	if payload.Meta.App.Namespace != "" {
-		rls.Resource().Attributes().PutStr(string(semconv.ServiceNamespaceKey), payload.Meta.App.Namespace)
+		rls.Resource().Attributes().PutStr(string(conventions.ServiceNamespaceKey), payload.Meta.App.Namespace)
 	}
 	if payload.Meta.App.BundleID != "" {
 		rls.Resource().Attributes().PutStr(faroAppBundleID, payload.Meta.App.BundleID)
