@@ -18,8 +18,8 @@ var (
 )
 
 type Config struct {
-	Encoding *component.ID `mapstructure:"encoding"`
-	Bucket   bucketConfig  `mapstructure:"bucket"`
+	Encoding component.ID `mapstructure:"encoding"`
+	Bucket   bucketConfig `mapstructure:"bucket"`
 }
 
 type bucketConfig struct {
