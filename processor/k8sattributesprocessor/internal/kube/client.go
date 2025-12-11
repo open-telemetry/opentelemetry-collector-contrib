@@ -1813,30 +1813,6 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	}
 }
 
-func (c *WatchClient) addOrUpdateReplicaSet(replicaset *meta_v1.PartialObjectMetadata) {
-	newReplicaSet := &ReplicaSet{
-		Name:      replicaset.Name,
-		Namespace: replicaset.Namespace,
-		UID:       string(replicaset.UID),
-	}
-
-	for _, ownerReference := range replicaset.OwnerReferences {
-		if ownerReference.Kind == "Deployment" && ownerReference.Controller != nil && *ownerReference.Controller {
-			newReplicaSet.Deployment = Deployment{
-				Name: ownerReference.Name,
-				UID:  string(ownerReference.UID),
-			}
-			break
-		}
-	}
-
-	c.m.Lock()
-	if replicaset.UID != "" {
-		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
-	}
-	c.m.Unlock()
-}
-
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
 // before the informer is started. This is necessary e.g. for the pod informer which requires the replica set informer
 // to be finished to correctly establish the connection to the replicaset/deployment it belongs to.

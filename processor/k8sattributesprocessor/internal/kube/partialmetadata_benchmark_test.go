@@ -48,14 +48,14 @@ func genPOMReplicaSets(n int) []runtime.Object {
 }
 
 func setReplicaSetListAndWatch(fc *fake.Clientset, initial []runtime.Object) {
-	fc.Fake.PrependReactor("list", "replicasets", func(_ ktesting.Action) (bool, runtime.Object, error) {
+	fc.PrependReactor("list", "replicasets", func(_ ktesting.Action) (bool, runtime.Object, error) {
 		list := &apps_v1.ReplicaSetList{}
 		for _, obj := range initial {
 			list.Items = append(list.Items, *(obj.(*apps_v1.ReplicaSet)).DeepCopy())
 		}
 		return true, list, nil
 	})
-	fc.Fake.PrependWatchReactor("replicasets", func(_ ktesting.Action) (bool, watch.Interface, error) {
+	fc.PrependWatchReactor("replicasets", func(_ ktesting.Action) (bool, watch.Interface, error) {
 		return true, watch.NewFake(), nil
 	})
 }
@@ -64,13 +64,12 @@ func startAndSync(b *testing.B, c Client) {
 	if err := c.Start(); err != nil {
 		b.Fatalf("start: %v", err)
 	}
-	_ = wait.PollUntilContextTimeout(context.Background(), time.Millisecond, 50*time.Millisecond, true, func(context.Context) (bool, error) { return true, nil })
-	defer c.Stop()
+	_ = wait.PollUntilContextTimeout(b.Context(), time.Millisecond, 50*time.Millisecond, true, func(context.Context) (bool, error) { return true, nil })
 }
 
 // Partial metadata for a parameterized N
-func runPartialMetadata(b *testing.B, N int) {
-	metaOnly := genPOMReplicaSets(N)
+func runPartialMetadata(b *testing.B, n int) {
+	metaOnly := genPOMReplicaSets(n)
 	for i := 0; i < b.N; i++ {
 		fc := fake.NewClientset()
 		// We still attach the typed reactors so the fake client satisfies list/watch,
@@ -103,11 +102,11 @@ func runPartialMetadata(b *testing.B, N int) {
 // go test -run ^$ -bench RS_ResourceSweep_InProcess -benchmem -count=6 -benchtime=1x > sweep.txt
 // benchstat sweep.txt
 func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
-	Ns := []int{5000, 10000, 20000, 200000}
+	ns := []int{5000, 10000, 20000, 200000}
 
-	for _, N := range Ns {
-		b.Run(fmt.Sprintf("Partial_Metadata_N=%d", N), func(b *testing.B) {
-			runPartialMetadata(b, N)
+	for _, n := range ns {
+		b.Run(fmt.Sprintf("Partial_Metadata_N=%d", n), func(b *testing.B) {
+			runPartialMetadata(b, n)
 		})
 	}
 }
