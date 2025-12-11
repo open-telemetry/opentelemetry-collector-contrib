@@ -770,11 +770,6 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 		generateNamespace("default", "1"),
 		generateNamespace("default_ignore", "2"),
 	)
-	/*mockClient.createPods(
-		generatePod("pod1", "default", map[string]any{
-			"environment": "production",
-		}, "1"),
-	)*/
 
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
