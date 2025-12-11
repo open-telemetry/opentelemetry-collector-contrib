@@ -166,6 +166,16 @@ attributes:
 
 telemetry:
   metrics:
+    otelcol.k8s.pod.association:
+      enabled: false
+      description: Number of pod associations
+      stability:
+        level: development
+      unit: "{resources}"
+      attributes: [k8s_telemetry_type, status]
+      sum:
+        value_type: int
+        monotonic: true
     otelsvc_k8s_daemonset_added:
       enabled: false
       description: Number of daemonset add events received
@@ -319,16 +329,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    otelsvc_k8s_pod_association:
-      enabled: true
-      description: Number of pod associations
-      stability:
-        level: development
-      unit: "{resources}"
-      attributes: [k8s_telemetry_type, status]
-      sum:
-        value_type: int
-        monotonic: true
     otelsvc_k8s_pod_deleted:
       enabled: true
       description: Number of pod delete events received
@@ -409,4 +409,3 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-

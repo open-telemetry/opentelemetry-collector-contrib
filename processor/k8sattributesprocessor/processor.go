@@ -173,7 +173,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 					attribute.String("k8s_telemetry_type", signalType),
 					attribute.String("status", "success"),
 				)
-				kp.telemetry.OtelsvcK8sPodAssociation.Add(ctx, 1, successAttr)
+				kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, successAttr)
 			}
 
 			for key, val := range pod.Attributes {
@@ -189,7 +189,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 					attribute.String("k8s_telemetry_type", signalType),
 					attribute.String("status", "error"),
 				)
-				kp.telemetry.OtelsvcK8sPodAssociation.Add(ctx, 1, errorAttr)
+				kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, errorAttr)
 			}
 		}
 	} else if !podIdentifierValue.IsNotEmpty() {
@@ -200,7 +200,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 				attribute.String("k8s_telemetry_type", signalType),
 				attribute.String("status", "error"),
 			)
-			kp.telemetry.OtelsvcK8sPodAssociation.Add(ctx, 1, errorAttr)
+			kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, errorAttr)
 		}
 	}
 

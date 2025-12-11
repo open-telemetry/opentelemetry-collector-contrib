@@ -105,21 +105,6 @@ Number of pod add events received [Development]
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
-### otelcol_otelsvc_k8s_pod_association
-
-Number of pod associations [Development]
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {resources} | Sum | Int | true | Development |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| k8s_telemetry_type | The type of telemetry data being processed (traces, metrics, logs, profiles) | Str: ``traces``, ``metrics``, ``logs``, ``profiles`` |
-| status | The status of the pod association operation | Str: ``success``, ``error`` |
-
 ### otelcol_otelsvc_k8s_pod_deleted
 
 Number of pod delete events received [Development]
