@@ -74,7 +74,8 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		case "", "resource":
 			ptraceutil.MoveResourcesIf(td, matched,
 				func(rs ptrace.ResourceSpans) bool {
-					rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
+					rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
+					defer rtx.Close()
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 					// If error during statement evaluation consider it as not a match.
 					if err != nil {
@@ -87,7 +88,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		case "span":
 			ptraceutil.MoveSpansWithContextIf(td, matched,
 				func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
-					mtx := ottlspan.NewTransformContextPtr(s, ss.Scope(), rs.Resource(), ss, rs)
+					mtx := ottlspan.NewTransformContextPtr(rs, ss, s)
 					defer mtx.Close()
 					_, isMatch, err := route.spanStatement.Execute(ctx, mtx)
 					// If error during statement evaluation consider it as not a match.

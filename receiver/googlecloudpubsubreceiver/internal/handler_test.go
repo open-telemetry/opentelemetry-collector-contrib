@@ -80,10 +80,7 @@ func TestExponentialBackoff(t *testing.T) {
 		},
 	}
 	for i := 1; i <= 11; i++ {
-		maxBackoff := time.Duration(250.0*math.Pow(2, float64(i-1))) * time.Millisecond
-		if maxBackoff > time.Duration(2)*time.Minute {
-			maxBackoff = time.Duration(2) * time.Minute
-		}
+		maxBackoff := min(time.Duration(250.0*math.Pow(2, float64(i-1)))*time.Millisecond, time.Duration(2)*time.Minute)
 		tests = append(tests, struct {
 			retry int
 			max   time.Duration
@@ -95,7 +92,7 @@ func TestExponentialBackoff(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("retry-%d", tt.retry), func(t *testing.T) {
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				backoff := exponentialBackoff(tt.retry)
 				minBackoffDueToJitter := time.Duration(0.7*float64(tt.max.Milliseconds())) * time.Millisecond
 				assert.Condition(t, func() bool { return backoff <= tt.max },

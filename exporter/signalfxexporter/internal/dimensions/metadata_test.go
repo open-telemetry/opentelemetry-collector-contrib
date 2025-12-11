@@ -22,6 +22,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		},
 	}, 1, make(chan struct{}))
 	type args struct {
+		defaults         map[string]string
 		metadata         metadata.MetadataUpdate
 		metricTranslator *translation.MetricTranslator
 	}
@@ -194,6 +195,34 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Test with defaults",
+			args{
+				defaults: map[string]string{
+					"foo": "bar",
+					"bar": "baz",
+				},
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "name",
+					ResourceID:    "val",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"bar": "foobar",
+						},
+					},
+				},
+				metricTranslator: nil,
+			},
+			&DimensionUpdate{
+				Name:  "name",
+				Value: "val",
+				Properties: getMapToPointers(map[string]string{
+					"foo": "bar",
+					"bar": "foobar",
+				}),
+				Tags: map[string]bool{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -207,7 +236,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				true,
 			)
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.metadata, *converter))
+			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.defaults, tt.args.metadata, *converter))
 		})
 	}
 }

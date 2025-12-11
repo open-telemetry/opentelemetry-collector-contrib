@@ -24,6 +24,7 @@ subtext: |
   - `ottlmetric.NewTransformContext` in favor of `ottlmetric.NewTransformContextPtr`;
   - `ottlspan.NewTransformContext` in favor of `ottlspan.NewTransformContextPtr`;
   - `ottlspanevent.NewTransformContext` in favor of `ottlspanevent.NewTransformContextPtr`;
+  - `filterprocessor.WithResourceFunctions` in favor of `filterprocessor.WithResourceFunctionsNew`
   - `filterprocessor.DefaultDataPointFunctions` in favor of `filtermprocessor.DefaultDataPointFunctionsNew`
   - `filterprocessor.WithDataPointFunctions` in favor of `filterprocessor.WithDataPointFunctionsNew`
   - `filterprocessor.DefaultLogFunctions` in favor of `filterprocessor.DefaultLogFunctionsNew`

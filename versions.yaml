@@ -148,6 +148,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders

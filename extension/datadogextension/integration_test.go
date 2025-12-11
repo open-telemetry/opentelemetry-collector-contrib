@@ -359,6 +359,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 		fullConfig,
 		"unknown",
 		buildInfo,
+		int64(payloadTTL),
 	)
 
 	// Populate with realistic component data
@@ -566,6 +567,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 		fullConfig,
 		"unknown",
 		buildInfo,
+		int64(payloadTTL),
 	)
 	if activeComponents != nil {
 		otelMetadata.ActiveComponents = *activeComponents
@@ -725,6 +727,7 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 		"{}",
 		"unknown",
 		buildInfo,
+		int64(payloadTTL),
 	)
 
 	// Test different server configurations
@@ -814,6 +817,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 		"{}",
 		"unknown",
 		buildInfo,
+		int64(payloadTTL),
 	)
 
 	// Create server

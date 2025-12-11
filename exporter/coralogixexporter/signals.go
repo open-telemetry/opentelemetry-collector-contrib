@@ -135,7 +135,8 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 
 	var transportConfig *TransportConfig
 	if !isEmpty(e.config.Domain) && isEmpty(signalConfig.GetEndpoint()) {
-		transportConfig = e.config.getMergedTransportConfig(signalConfigWrapper.config)
+		// TODO: Remove this function call, already done in Unmarshal, see github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
+		transportConfig = setMergedTransportConfig(e.config, &e.config.DomainSettings, signalConfigWrapper.config)
 	} else {
 		transportConfig = signalConfigWrapper.config
 	}

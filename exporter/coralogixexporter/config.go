@@ -15,7 +15,9 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -54,7 +56,7 @@ func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host,
 
 // Config defines configuration for Coralogix exporter.
 type Config struct {
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 
@@ -96,6 +98,67 @@ type Config struct {
 	SubSystem string `mapstructure:"subsystem_name"`
 
 	RateLimiter RateLimiterConfig `mapstructure:"rate_limiter"`
+}
+
+var _ confmap.Unmarshaler = (*Config)(nil)
+
+// ensureHTTPScheme ensures the endpoint has an https:// scheme
+func ensureHTTPScheme(endpoint string) string {
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		return "https://" + endpoint
+	}
+	return endpoint
+}
+
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+
+	_ = setDomainGrpcSettings(c)
+	var err error
+
+	if !isEmpty(c.Domain) && isEmpty(c.Metrics.Endpoint) {
+		c.Metrics, err = setMergedTransportConfigWithConf(conf, c, &c.Metrics)
+		if err != nil {
+			return err
+		}
+	}
+
+	if isEmpty(c.Metrics.Endpoint) {
+		c.Metrics.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	}
+
+	if !isEmpty(c.Domain) && isEmpty(c.Traces.Endpoint) {
+		c.Traces, err = setMergedTransportConfigWithConf(conf, c, &c.Traces)
+		if err != nil {
+			return err
+		}
+	}
+
+	if isEmpty(c.Traces.Endpoint) {
+		c.Traces.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	}
+
+	if !isEmpty(c.Domain) && isEmpty(c.Logs.Endpoint) {
+		c.Logs, err = setMergedTransportConfigWithConf(conf, c, &c.Logs)
+		if err != nil {
+			return err
+		}
+	}
+
+	if isEmpty(c.Logs.Endpoint) {
+		c.Logs.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	}
+
+	if !isEmpty(c.Domain) && isEmpty(c.Profiles.Endpoint) {
+		tCfg, err := setMergedTransportConfigWithConf(conf, c, &TransportConfig{ClientConfig: c.Profiles})
+		if err != nil {
+			return err
+		}
+		c.Profiles = tCfg.ClientConfig
+	}
+	return nil
 }
 
 type RateLimiterConfig struct {
@@ -189,7 +252,7 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 	return appName, subsystem
 }
 
-func (c *Config) getDomainGrpcSettings() *configgrpc.ClientConfig {
+func setDomainGrpcSettings(c *Config) string {
 	settings := c.DomainSettings.ClientConfig
 	domain := c.Domain
 
@@ -201,14 +264,35 @@ func (c *Config) getDomainGrpcSettings() *configgrpc.ClientConfig {
 		settings.Endpoint = fmt.Sprintf("ingress.%s:443", domain)
 	}
 
-	return &settings
+	return settings.Endpoint
 }
 
-// getMergedTransportConfig returns a TransportConfig that merges signal-specific settings with domain settings.
+// setMergedTransportConfigWithConf returns a TransportConfig that merges signal-specific settings with domain settings.
 // Signal-specific settings take precedence over domain settings.
-func (c *Config) getMergedTransportConfig(signalConfig *TransportConfig) *TransportConfig {
-	merged := c.DomainSettings
+// This is used when unmarshaling from confmap to get domain settings.
+// We pass the conf to get a fresh copy of the domain settings from the confmap.
+//
+// NOTE: This function modifies *Config and *TransportConfig passed as arguments.
+// DO NOT ADD FURTHER USES OUTSIDE OF Unmarshal, see github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
+func setMergedTransportConfigWithConf(conf *confmap.Conf, c *Config, signalConfig *TransportConfig) (TransportConfig, error) {
+	var domainSettings TransportConfig
+	sub, err := conf.Sub("domain_settings")
+	if err != nil {
+		return TransportConfig{}, err
+	}
+	if unmarshalErr := sub.Unmarshal(&domainSettings); unmarshalErr != nil {
+		return TransportConfig{}, unmarshalErr
+	}
 
+	return *setMergedTransportConfig(c, &domainSettings, signalConfig), nil
+}
+
+// setMergedTransportConfig returns a TransportConfig that merges signal-specific settings with domain settings.
+// Signal-specific settings take precedence over domain settings.
+//
+// NOTE: This function modifies *Config and *TransportConfig passed as arguments.
+// DO NOT ADD FURTHER USES OUTSIDE OF Unmarshal, see github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
+func setMergedTransportConfig(c *Config, merged, signalConfig *TransportConfig) *TransportConfig {
 	if signalConfig.ProxyURL != "" {
 		merged.ProxyURL = signalConfig.ProxyURL
 	}
@@ -248,10 +332,10 @@ func (c *Config) getMergedTransportConfig(signalConfig *TransportConfig) *Transp
 	}
 
 	if isEmpty(signalConfig.Endpoint) {
-		merged.Endpoint = c.getDomainGrpcSettings().Endpoint
+		merged.Endpoint = setDomainGrpcSettings(c)
 	} else {
 		merged.Endpoint = signalConfig.Endpoint
 	}
 
-	return &merged
+	return merged
 }

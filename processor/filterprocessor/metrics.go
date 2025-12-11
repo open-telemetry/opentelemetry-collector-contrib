@@ -26,7 +26,7 @@ import (
 )
 
 type filterMetricProcessor struct {
-	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
+	skipResourceExpr  expr.BoolExpr[*ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[*ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[*ottldatapoint.TransformContext]
 	telemetry         *filterTelemetry
@@ -128,7 +128,9 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	var errors error
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
 		if fmp.skipResourceExpr != nil {
-			skip, err := fmp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(rm.Resource(), rm))
+			tCtx := ottlresource.NewTransformContextPtr(rm.Resource(), rm)
+			skip, err := fmp.skipResourceExpr.Eval(ctx, tCtx)
+			tCtx.Close()
 			if err != nil {
 				errors = multierr.Append(errors, err)
 				return false
@@ -196,7 +198,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	return md, nil
 }
 
-func newSkipResExpr(include, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+func newSkipResExpr(include, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[*ottlresource.TransformContext], error) {
 	if filtermetric.UseOTTLBridge.IsEnabled() {
 		mp := filterconfig.MatchConfig{}
 
@@ -223,7 +225,7 @@ func newSkipResExpr(include, exclude *filterconfig.MetricMatchProperties) (expr.
 		return filterottl.NewResourceSkipExprBridge(&mp)
 	}
 
-	var matchers []expr.BoolExpr[ottlresource.TransformContext]
+	var matchers []expr.BoolExpr[*ottlresource.TransformContext]
 	inclExpr, err := newResExpr(include)
 	if err != nil {
 		return nil, err
@@ -243,11 +245,11 @@ func newSkipResExpr(include, exclude *filterconfig.MetricMatchProperties) (expr.
 
 type resExpr filtermatcher.AttributesMatcher
 
-func (r resExpr) Eval(_ context.Context, tCtx ottlresource.TransformContext) (bool, error) {
+func (r resExpr) Eval(_ context.Context, tCtx *ottlresource.TransformContext) (bool, error) {
 	return filtermatcher.AttributesMatcher(r).Match(tCtx.GetResource().Attributes()), nil
 }
 
-func newResExpr(mp *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+func newResExpr(mp *filterconfig.MetricMatchProperties) (expr.BoolExpr[*ottlresource.TransformContext], error) {
 	if mp == nil {
 		return nil, nil
 	}

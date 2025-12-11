@@ -373,7 +373,7 @@ func Test_NewBoolExprForResource(t *testing.T) {
 			resBoolExpr, err := NewBoolExprForResource(tt.conditions, StandardResourceFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, resBoolExpr)
-			result, err := resBoolExpr.Eval(t.Context(), ottlresource.TransformContext{})
+			result, err := resBoolExpr.Eval(t.Context(), &ottlresource.TransformContext{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
@@ -386,7 +386,7 @@ func Test_NewBoolExprForResourceWithOptions(t *testing.T) {
 		StandardResourceFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottl.Option[ottlresource.TransformContext]{ottlresource.EnablePathContextNames()},
+		[]ottl.Option[*ottlresource.TransformContext]{ottlresource.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }
@@ -434,7 +434,7 @@ func Test_NewBoolExprForScope(t *testing.T) {
 			resBoolExpr, err := NewBoolExprForScope(tt.conditions, StandardScopeFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, resBoolExpr)
-			result, err := resBoolExpr.Eval(t.Context(), ottlscope.TransformContext{})
+			result, err := resBoolExpr.Eval(t.Context(), &ottlscope.TransformContext{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
@@ -447,7 +447,7 @@ func Test_NewBoolExprForScopeWithOptions(t *testing.T) {
 		StandardScopeFuncs(),
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
-		[]ottl.Option[ottlscope.TransformContext]{ottlscope.EnablePathContextNames()},
+		[]ottl.Option[*ottlscope.TransformContext]{ottlscope.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }

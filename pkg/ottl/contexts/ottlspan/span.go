@@ -74,11 +74,11 @@ func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.Instrume
 
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans, options ...TransformContextOption) *TransformContext {
+func NewTransformContextPtr(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.span = span
-	tCtx.instrumentationScope = instrumentationScope
-	tCtx.resource = resource
+	tCtx.instrumentationScope = scopeSpans.Scope()
+	tCtx.resource = resourceSpans.Resource()
 	tCtx.scopeSpans = scopeSpans
 	tCtx.resourceSpans = resourceSpans
 	for _, opt := range options {

@@ -183,6 +183,9 @@ func (c ConsumerConfig) Validate() error {
 	if c.MaxFetchSize < 0 {
 		return fmt.Errorf("max_fetch_size (%d) must be non-negative", c.MaxFetchSize)
 	}
+	if c.MaxPartitionFetchSize < 0 {
+		return fmt.Errorf("max_partition_fetch_size (%d) must be non-negative", c.MaxPartitionFetchSize)
+	}
 	if c.MaxFetchSize < c.MinFetchSize {
 		return fmt.Errorf(
 			"max_fetch_size (%d) cannot be less than min_fetch_size (%d)",

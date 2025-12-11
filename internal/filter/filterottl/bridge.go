@@ -86,7 +86,7 @@ func NewLogSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[*ottllog.
 	return NewBoolExprForLog(statements, StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 }
 
-func NewResourceSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottlresource.TransformContext], error) {
+func NewResourceSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[*ottlresource.TransformContext], error) {
 	statements := make([]string, 0, 2)
 	if mc.Include != nil {
 		// OTTL treats resource attributes as attributes for the resource context.

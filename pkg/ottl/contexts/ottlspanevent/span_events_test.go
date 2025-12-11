@@ -26,7 +26,7 @@ import (
 var spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 
 func Test_newPathGetSetter(t *testing.T) {
-	refSpanEvent, _, _, _ := createTelemetry()
+	_, _, _, refSpanEvent := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -58,7 +58,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		orig              any
 		newVal            any
 		expectSetterError bool
-		modified          func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		modified          func(spanEvent ptrace.SpanEvent, cache pcommon.Map)
 	}{
 		{
 			name: "span event time",
@@ -67,7 +67,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
 			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
@@ -78,7 +78,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   pcommon.NewMap(),
 			newVal: newCache,
-			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, cache pcommon.Map) {
+			modified: func(_ ptrace.SpanEvent, cache pcommon.Map) {
 				newCache.CopyTo(cache)
 			},
 		},
@@ -94,7 +94,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   nil,
 			newVal: "new value",
-			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, cache pcommon.Map) {
+			modified: func(_ ptrace.SpanEvent, cache pcommon.Map) {
 				cache.PutStr("temp", "new value")
 			},
 		},
@@ -105,7 +105,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "bear",
 			newVal: "cat",
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.SetName("cat")
 			},
 		},
@@ -116,7 +116,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(100_000_000),
 			newVal: int64(200_000_000),
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
@@ -127,7 +127,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refSpanEvent.Attributes(),
 			newVal: newAttrs,
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				newAttrs.CopyTo(spanEvent.Attributes())
 			},
 		},
@@ -143,7 +143,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "val",
 			newVal: "newVal",
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutStr("str", "newVal")
 			},
 		},
@@ -159,7 +159,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   true,
 			newVal: false,
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutBool("bool", false)
 			},
 		},
@@ -175,7 +175,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutInt("int", 20)
 			},
 		},
@@ -191,7 +191,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   float64(1.2),
 			newVal: float64(2.4),
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutDouble("double", 2.4)
 			},
 		},
@@ -207,7 +207,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
@@ -226,7 +226,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []string{"new"},
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
 		},
@@ -245,7 +245,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []bool{false},
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
 		},
@@ -264,7 +264,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []int64{20},
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
 		},
@@ -283,7 +283,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []float64{2.0},
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
 		},
@@ -302,7 +302,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
 		},
@@ -321,7 +321,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Map()
 			}(),
 			newVal: newPMap,
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				m := spanEvent.Attributes().PutEmptyMap("pMap")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
@@ -342,7 +342,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Map()
 			}(),
 			newVal: newMap,
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				m := spanEvent.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
@@ -370,7 +370,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Str()
 			}(),
 			newVal: "new",
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
 		},
@@ -394,7 +394,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return nil
 			}(),
 			newVal: "new",
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				s := spanEvent.Attributes().PutEmptySlice("new")
 				s.AppendEmpty()
 				s.AppendEmpty()
@@ -408,7 +408,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(spanEvent ptrace.SpanEvent, _ pcommon.Map) {
 				spanEvent.SetDroppedAttributesCount(20)
 			},
 		},
@@ -442,9 +442,9 @@ func Test_newPathGetSetter(t *testing.T) {
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			require.NoError(t, err)
 
-			spanEvent, span, il, resource := createTelemetry()
+			rs, ss, span, spanEvent := createTelemetry()
 
-			tCtx := NewTransformContextPtr(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(1))
+			tCtx := NewTransformContextPtr(rs, ss, span, spanEvent, WithEventIndex(1))
 			defer tCtx.Close()
 
 			got, err := accessor.Get(t.Context(), tCtx)
@@ -458,29 +458,27 @@ func Test_newPathGetSetter(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			exSpanEvent, exSpan, exIl, exRes := createTelemetry()
+			exRS, _, _, exSpanEvent := createTelemetry()
 			exCache := pcommon.NewMap()
-			tt.modified(exSpanEvent, exSpan, exIl, exRes, exCache)
+			tt.modified(exSpanEvent, exCache)
 
-			assert.Equal(t, exSpan, span)
-			assert.Equal(t, exIl, il)
-			assert.Equal(t, exRes, resource)
+			assert.Equal(t, exRS, rs)
 			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
-	resource := pcommon.NewResource()
-	resource.Attributes().PutStr("foo", "bar")
+	rs := ptrace.NewResourceSpans()
+	rs.Resource().Attributes().PutStr("foo", "bar")
 
-	span := ptrace.NewSpan()
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope")
+
+	span := ss.Spans().AppendEmpty()
 	span.SetName("span")
 
-	instrumentationScope := pcommon.NewInstrumentationScope()
-	instrumentationScope.SetName("instrumentation_scope")
-
-	ctx := NewTransformContextPtr(ptrace.NewSpanEvent(), span, instrumentationScope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+	ctx := NewTransformContextPtr(rs, ss, span, ptrace.NewSpanEvent())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -512,22 +510,22 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		{
 			name:     "instrumentation_scope",
 			path:     &pathtest.Path[*TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[*TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			expected: "scope",
 		},
 		{
 			name:     "instrumentation_scope with context",
 			path:     &pathtest.Path[*TransformContext]{C: "instrumentation_scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			expected: "scope",
 		},
 		{
 			name:     "scope",
 			path:     &pathtest.Path[*TransformContext]{N: "scope", NextPath: &pathtest.Path[*TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			expected: "scope",
 		},
 		{
 			name:     "scope with context",
 			path:     &pathtest.Path[*TransformContext]{C: "scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			expected: "scope",
 		},
 		{
 			name:     "span",
@@ -582,13 +580,13 @@ func Test_setAndGetEventIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spanEvent, span, il, resource := createTelemetry()
+			rs, ss, span, spanEvent := createTelemetry()
 
 			var tCtx *TransformContext
 			if tt.setEventIndex {
-				tCtx = NewTransformContextPtr(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(tt.eventIndexValue))
+				tCtx = NewTransformContextPtr(rs, ss, span, spanEvent, WithEventIndex(tt.eventIndexValue))
 			} else {
-				tCtx = NewTransformContextPtr(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+				tCtx = NewTransformContextPtr(rs, ss, span, spanEvent)
 			}
 			defer tCtx.Close()
 
@@ -637,8 +635,10 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 	}
 }
 
-func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {
-	span := ptrace.NewSpan()
+func createTelemetry() (ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span, ptrace.SpanEvent) {
+	rs := ptrace.NewResourceSpans()
+	ss := rs.ScopeSpans().AppendEmpty()
+	span := ss.Spans().AppendEmpty()
 	span.SetName("test")
 
 	spanEvent := span.Events().AppendEmpty()
@@ -682,14 +682,12 @@ func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationSc
 	s := spanEvent.Attributes().PutEmptySlice("slice")
 	s.AppendEmpty().SetEmptyMap().PutStr("map", "pass")
 
-	il := pcommon.NewInstrumentationScope()
-	il.SetName("library")
-	il.SetVersion("version")
+	ss.Scope().SetName("library")
+	ss.Scope().SetVersion("version")
 
-	resource := pcommon.NewResource()
-	span.Attributes().CopyTo(resource.Attributes())
+	span.Attributes().CopyTo(rs.Resource().Attributes())
 
-	return spanEvent, span, il, resource
+	return rs, ss, span, spanEvent
 }
 
 func Test_ParseEnum(t *testing.T) {

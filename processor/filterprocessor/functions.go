@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func DefaultResourceFunctions() []ottl.Factory[ottlresource.TransformContext] {
+func DefaultResourceFunctions() []ottl.Factory[*ottlresource.TransformContext] {
 	return slices.Collect(maps.Values(defaultResourceFunctionsMap()))
 }
 
@@ -80,7 +80,7 @@ func DefaultProfileFunctions() []ottl.Factory[ottlprofile.TransformContext] {
 	return slices.Collect(maps.Values(defaultProfileFunctionsMap()))
 }
 
-func defaultResourceFunctionsMap() map[string]ottl.Factory[ottlresource.TransformContext] {
+func defaultResourceFunctionsMap() map[string]ottl.Factory[*ottlresource.TransformContext] {
 	return filterottl.StandardResourceFuncs()
 }
 
