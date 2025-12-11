@@ -40,6 +40,7 @@ var (
 	errPacketsReceived   = errors.New("failed to packets received")
 	errPacketsSent       = errors.New("failed to add packets sent")
 	errRTT               = errors.New("failed to add RTT")
+	errServerAddress     = errors.New("failed to set server address")
 )
 
 type loadBalancerLog struct {
@@ -124,7 +125,7 @@ func handleConnection(conn *connection, attr pcommon.Map) error {
 	}
 
 	if _, err := shared.PutStrIfNotPresent(string(semconv.ServerAddressKey), conn.ServerIP, attr); err != nil {
-		return fmt.Errorf("error setting security policy attribute: %w", err)
+		return fmt.Errorf("%w: %w", errServerAddress, err)
 	}
 
 	return nil

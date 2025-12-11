@@ -59,6 +59,45 @@ func TestHandleConnection(t *testing.T) {
 	}
 }
 
+func TestHandleConnectionServerAddressAlreadySet(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		conn         *connection
+		expectedErr  error
+		expectedAttr map[string]any
+	}{
+		"tcp connection": {
+			conn: &connection{
+				ClientIP:   "68.168.189.182",
+				ClientPort: int64Ptr(52900),
+				Protocol:   int64Ptr(6),
+				ServerIP:   "35.209.164.189",
+				ServerPort: int64Ptr(80),
+			},
+			expectedErr: errServerAddress,
+			expectedAttr: map[string]any{
+				string(semconv.ClientAddressKey):    "68.168.189.182",
+				string(semconv.ClientPortKey):       int64(52900),
+				string(semconv.ServerAddressKey):    "10.0.0.1",
+				string(semconv.ServerPortKey):       int64(80),
+				string(semconv.NetworkTransportKey): "tcp",
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			attr := pcommon.NewMap()
+			attr.PutStr(string(semconv.ServerAddressKey), "10.0.0.1")
+			err := handleConnection(tt.conn, attr)
+			require.ErrorIs(t, err, tt.expectedErr)
+			require.Equal(t, tt.expectedAttr, attr.AsRaw())
+		})
+	}
+}
+
 func TestHandleTimestamps(t *testing.T) {
 	t.Parallel()
 
