@@ -83,7 +83,7 @@ func runPartialMetadata(b *testing.B, n int) {
 		factory := InformersFactoryList{
 			newInformer:           newSharedInformer,
 			newNamespaceInformer:  NewNoOpInformer,
-			newReplicaSetInformer: newReplicaSetMetaInformer(),
+			newReplicaSetInformer: newReplicaSetMetaInformer(k8sconfig.APIConfig{}),
 		}
 
 		set := componenttest.NewNopTelemetrySettings()
