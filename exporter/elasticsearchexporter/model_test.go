@@ -40,22 +40,22 @@ const (
 	expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 )
 
-const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
+const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
 func TestEncodeSpan(t *testing.T) {
 	t.Run("non data stream", func(t *testing.T) {
@@ -681,6 +681,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		string(semconv.ContainerImageNameKey):        "my-app",
 		string(semconv22.ContainerRuntimeKey):        "docker",
 		string(semconv.HostNameKey):                  "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.hostname":                              "hostname.example.com",
 		string(semconv.HostIDKey):                    "i-103de39e0a",
 		string(semconv.HostTypeKey):                  "t2.medium",
 		string(semconv.HostArchKey):                  "x86_64",
@@ -765,7 +766,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "runtime": "docker"
 		},
 		"host": {
-		  "hostname": "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		  "hostname": "hostname.example.com",
 		  "name": "i-103de39e0a.gke.us-west-1b.cloud.google.com",
 		  "id": "i-103de39e0a",
 		  "type": "t2.medium",
@@ -1162,14 +1163,14 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 func TestMapLogAttributesToECS(t *testing.T) {
 	tests := map[string]struct {
 		attrs         func() pcommon.Map
-		conversionMap map[string]string
+		conversionMap map[string]conversionEntry
 		preserveMap   map[string]bool
 		expectedDoc   func() objmodel.Document
 	}{
 		"no_attrs": {
 			attrs: pcommon.NewMap,
-			conversionMap: map[string]string{
-				"foo.bar": "baz",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "baz"},
 			},
 			expectedDoc: func() objmodel.Document {
 				return objmodel.Document{}
@@ -1193,7 +1194,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{},
+			conversionMap: map[string]conversionEntry{},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
 				d.AddString("foo.bar", "baz")
@@ -1207,9 +1208,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1225,8 +1226,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1242,8 +1243,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"baz": "qux",
+			conversionMap: map[string]conversionEntry{
+				"baz": {to: "qux"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1258,9 +1259,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1274,11 +1275,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
-			}, preserveMap: map[string]bool{
-				"foo.bar": true,
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux", preserveOriginal: true},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1292,7 +1291,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
+			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap)
 
 			expectedDoc := test.expectedDoc()
 			require.Equal(t, expectedDoc, doc)
