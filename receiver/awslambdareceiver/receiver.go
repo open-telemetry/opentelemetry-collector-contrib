@@ -156,14 +156,24 @@ func newLogsHandler(
 	next consumer.Logs,
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
-	var unmarshalFunc unmarshalFunc[plog.Logs]
-	if cfg.Encoding != "" {
-		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.Encoding, "logs")
+	var s3Unmarshaler unmarshalFunc[plog.Logs]
+	if cfg.S3.Encoding != "" {
+		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.S3.Encoding, "logs")
 		if err != nil {
 			return nil, err
 		}
 
-		unmarshalFunc = extension.UnmarshalLogs
+		s3Unmarshaler = extension.UnmarshalLogs
+	}
+
+	var cwUnmarshaler unmarshalFunc[plog.Logs]
+	if cfg.CloudWatch.Encoding != "" {
+		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.CloudWatch.Encoding, "logs")
+		if err != nil {
+			return nil, err
+		}
+
+		cwUnmarshaler = extension.UnmarshalLogs
 	}
 
 	s3Service, err := s3Provider.GetService(ctx)
@@ -180,11 +190,11 @@ func newLogsHandler(
 			return next.ConsumeLogs(ctx, logs)
 		}
 
-		return newS3Handler(s3Service, set.Logger, unmarshalFunc, logsConsumer, plog.Logs{})
+		return newS3Handler(s3Service, set.Logger, s3Unmarshaler, logsConsumer, plog.Logs{})
 	}
 
 	registry[cwEvent] = func() lambdaEventHandler {
-		return newCWLogsSubscriptionHandler(set.Logger, unmarshalFunc, next.ConsumeLogs)
+		return newCWLogsSubscriptionHandler(set.Logger, cwUnmarshaler, next.ConsumeLogs)
 	}
 
 	return newHandlerProvider(registry), nil
@@ -199,9 +209,9 @@ func newMetricsHandler(
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
 	extensionID := defaultMetricsEncodingExtension
-	if cfg.Encoding != "" {
-		// Use the user-specified encoding extension if provided
-		extensionID = cfg.Encoding
+	// Note: for metrics, we currently support S3 as the only event source.
+	if cfg.S3.Encoding != "" {
+		extensionID = cfg.S3.Encoding
 	}
 
 	encodingExtension, err := loadEncodingExtension[pmetric.Unmarshaler](host, extensionID, "metrics")

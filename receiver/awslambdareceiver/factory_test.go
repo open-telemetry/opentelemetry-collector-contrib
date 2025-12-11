@@ -14,7 +14,9 @@ import (
 
 func TestCreateLogsReceiver(t *testing.T) {
 	cfg := createDefaultConfig()
-	cfg.(*Config).Encoding = "awslogs_encoding"
+	config := cfg.(*Config)
+	config.S3.Encoding = "awslogs"
+	config.S3.Encoding = "jsonLogs"
 
 	r, err := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)

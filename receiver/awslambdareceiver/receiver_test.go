@@ -27,9 +27,12 @@ func TestCreateLogs(t *testing.T) {
 
 	// Create receiver using factory with S3 encoding config.
 	// Note: The S3Encoding value must match the component ID used when registering the extension.
+
+	s3Encoding := "awslogs_encoding"
+
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Encoding = "awslogs_encoding"
+	cfg.S3.Encoding = s3Encoding
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	sink := consumertest.LogsSink{}
@@ -55,7 +58,7 @@ func TestCreateLogs(t *testing.T) {
 	// This is required: the extension ID must match cfg.S3Encoding
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID("awslogs_encoding"): &mockExtensionWithPLogUnmarshaler{
+			component.MustNewID(s3Encoding): &mockExtensionWithPLogUnmarshaler{
 				Unmarshaler: unmarshalLogsFunc(func(data []byte) (plog.Logs, error) {
 					require.Equal(t, string(testData), string(data))
 					logs := plog.NewLogs()
@@ -101,7 +104,7 @@ func TestCreateMetrics(t *testing.T) {
 	// Create receiver using factory with a dummy encoding extension.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Encoding = encoderName
+	cfg.S3.Encoding = encoderName
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	sink := consumertest.MetricsSink{}
@@ -167,7 +170,7 @@ func TestStartRequiresLambdaEnvironment(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Encoding = "test_encoding"
+	cfg.S3.Encoding = "test_encoding"
 
 	receiver, err := factory.CreateLogs(
 		t.Context(),
@@ -190,7 +193,9 @@ func TestStartRequiresLambdaEnvironment(t *testing.T) {
 
 func TestProcessLambdaEvent(t *testing.T) {
 	commonCfg := Config{
-		Encoding: "alb",
+		S3: sharedConfig{
+			Encoding: "awslogs",
+		},
 	}
 
 	commonLogger := zap.NewNop()
