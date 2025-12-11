@@ -574,7 +574,14 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	for id := range batch {
 		trace, ok := tsp.idToTrace[id]
 		if !ok {
-			metrics.idNotFoundOnMapCount++
+			// Only increment the not found metric if the trace is not in the
+			// cache. If it is in the cache that means a decision was already
+			// made and the trace properly released. If using block on overflow
+			// we can avoid checking the cache as it is not possible to release
+			// a trace that is still in the batcher with that flow.
+			if !tsp.blockOnOverflow && !tsp.inCache(id) {
+				metrics.idNotFoundOnMapCount++
+			}
 			continue
 		}
 		// A decision was already made, no need to do it again. This happens
@@ -630,6 +637,16 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
 	return hasMore
+}
+
+// inCache returns if a trace id is in either cache, i.e. a decision has been made for it and it was released.
+func (tsp *tailSamplingSpanProcessor) inCache(id pcommon.TraceID) bool {
+	_, ok := tsp.nonSampledIDCache.Get(id)
+	if ok {
+		return true
+	}
+	_, ok = tsp.sampledIDCache.Get(id)
+	return ok
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyTickMetrics) samplingpolicy.Decision {
