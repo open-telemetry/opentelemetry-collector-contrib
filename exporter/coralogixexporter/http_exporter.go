@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -45,18 +44,12 @@ func (e *httpError) Error() string {
 	return e.Message
 }
 
-// ensureHTTPScheme ensures the endpoint has an https:// scheme
-func ensureHTTPScheme(endpoint string) string {
-	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
-		return "https://" + endpoint
-	}
-	return endpoint
-}
-
 func newHTTPLogsExporter(client *http.Client, config *Config) httpLogsExporter {
+	// TODO: Refactor tests and remove redundant assignment, already done in Unmarshal.
+	// See github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
 	endpoint := config.Logs.Endpoint
 	if isEmpty(endpoint) {
-		endpoint = ensureHTTPScheme(config.getDomainGrpcSettings().Endpoint)
+		endpoint = ensureHTTPScheme(setDomainGrpcSettings(config))
 	}
 
 	return httpLogsExporter{
@@ -68,9 +61,11 @@ func newHTTPLogsExporter(client *http.Client, config *Config) httpLogsExporter {
 }
 
 func newHTTPMetricsExporter(client *http.Client, config *Config) httpMetricsExporter {
+	// TODO: Refactor tests and remove redundant assignment, already done in Unmarshal.
+	// See github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
 	endpoint := config.Metrics.Endpoint
 	if isEmpty(endpoint) {
-		endpoint = ensureHTTPScheme(config.getDomainGrpcSettings().Endpoint)
+		endpoint = ensureHTTPScheme(setDomainGrpcSettings(config))
 	}
 
 	return httpMetricsExporter{
@@ -82,9 +77,11 @@ func newHTTPMetricsExporter(client *http.Client, config *Config) httpMetricsExpo
 }
 
 func newHTTPTracesExporter(client *http.Client, config *Config) httpTracesExporter {
+	// TODO: Refactor tests and remove redundant assignment, already done in Unmarshal.
+	// See github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
 	endpoint := config.Traces.Endpoint
 	if isEmpty(endpoint) {
-		endpoint = ensureHTTPScheme(config.getDomainGrpcSettings().Endpoint)
+		endpoint = ensureHTTPScheme(setDomainGrpcSettings(config))
 	}
 
 	return httpTracesExporter{
