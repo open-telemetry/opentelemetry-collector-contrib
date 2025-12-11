@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/logging"
@@ -122,8 +122,8 @@ func newSyncBulkIndexer(
 	logger *zap.Logger,
 ) *syncBulkIndexer {
 	var maxFlushBytes int64
-	if config.QueueBatchConfig.Batch.HasValue() {
-		batch := config.QueueBatchConfig.Batch.Get()
+	if config.QueueBatchConfig.HasValue() && config.QueueBatchConfig.Get().Batch.HasValue() {
+		batch := config.QueueBatchConfig.Get().Batch.Get()
 		if batch.Sizer == exporterhelper.RequestSizerTypeBytes {
 			maxFlushBytes = batch.MaxSize
 		}
