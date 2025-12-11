@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualOtelcolK8sPodAssociation(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelcol.k8s.pod.association",
-		Description: "Number of pod associations [Development]",
+		Description: "Number of pod associations' evaluations [Development]",
 		Unit:        "{resources}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

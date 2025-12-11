@@ -85,7 +85,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.OtelcolK8sPodAssociation, err = builder.meter.Int64Counter(
 		"otelcol_otelcol.k8s.pod.association",
-		metric.WithDescription("Number of pod associations [Development]"),
+		metric.WithDescription("Number of pod associations' evaluations [Development]"),
 		metric.WithUnit("{resources}"),
 	)
 	errs = errors.Join(errs, err)

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -163,6 +164,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 	var pod *kube.Pod
 	var podFound bool
+	podIdentifierStr := buildPodIdentifierString(podIdentifierValue)
 	if podIdentifierValue.IsNotEmpty() {
 		if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound {
 			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
@@ -170,8 +172,8 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			// Record successful pod association
 			if kp.telemetry != nil {
 				successAttr := metric.WithAttributes(
-					attribute.String("k8s_telemetry_type", signalType),
 					attribute.String("status", "success"),
+					attribute.String("pod_identifier", podIdentifierStr),
 				)
 				kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, successAttr)
 			}
@@ -186,19 +188,19 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			kp.logger.Debug("pod not found", zap.Any("podIdentifier", podIdentifierValue))
 			if kp.telemetry != nil {
 				errorAttr := metric.WithAttributes(
-					attribute.String("k8s_telemetry_type", signalType),
 					attribute.String("status", "error"),
+					attribute.String("pod_identifier", podIdentifierStr),
 				)
 				kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, errorAttr)
 			}
 		}
-	} else if !podIdentifierValue.IsNotEmpty() {
+	} else {
 		// Record failed pod association when no identifier found
 		kp.logger.Debug("no pod identifier found", zap.String("signal_type", signalType))
 		if kp.telemetry != nil {
 			errorAttr := metric.WithAttributes(
-				attribute.String("k8s_telemetry_type", signalType),
 				attribute.String("status", "error"),
+				attribute.String("pod_identifier", podIdentifierStr),
 			)
 			kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, errorAttr)
 		}
@@ -440,6 +442,20 @@ func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
 		return ""
 	}
 	return node.NodeUID
+}
+
+// buildPodIdentifierString combines all identifier values into a comma-separated string
+func buildPodIdentifierString(podIdentifierValue kube.PodIdentifier) string {
+	var identifiers []string
+	for i := range podIdentifierValue {
+		if podIdentifierValue[i].Value != "" {
+			identifiers = append(identifiers, podIdentifierValue[i].Value)
+		}
+	}
+	if len(identifiers) > 0 {
+		return strings.Join(identifiers, ",")
+	}
+	return "unknown"
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int

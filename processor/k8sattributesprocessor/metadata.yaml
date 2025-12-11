@@ -149,14 +149,6 @@ tests:
     skip: true
 
 attributes:
-  k8s_telemetry_type:
-    description: The type of telemetry data being processed (traces, metrics, logs, profiles)
-    type: string
-    enum:
-      - traces
-      - metrics
-      - logs
-      - profiles
   status:
     description: The status of the pod association operation
     type: string
@@ -168,11 +160,11 @@ telemetry:
   metrics:
     otelcol.k8s.pod.association:
       enabled: false
-      description: Number of pod associations
+      description: Number of pod associations' evaluations
       stability:
         level: development
       unit: "{resources}"
-      attributes: [k8s_telemetry_type, status]
+      attributes: [status]
       sum:
         value_type: int
         monotonic: true
