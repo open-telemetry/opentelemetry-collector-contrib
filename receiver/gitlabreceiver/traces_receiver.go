@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
@@ -335,5 +335,5 @@ func (gtr *gitlabTracesReceiver) failBadReq(ctx context.Context,
 		gtr.logger.Warn("failed to write json response", zap.Error(writeErr))
 	}
 
-	gtr.logger.Debug(string(jsonResp), zap.Int(string(semconv.HTTPResponseStatusCodeKey), httpStatusCode), zap.Error(err))
+	gtr.logger.Debug(string(jsonResp), zap.Int(string(conventions.HTTPResponseStatusCodeKey), httpStatusCode), zap.Error(err))
 }
