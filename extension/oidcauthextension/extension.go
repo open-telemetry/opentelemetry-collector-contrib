@@ -16,9 +16,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/fsnotify/fsnotify"
 	"github.com/go-jose/go-jose/v4"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -37,8 +39,49 @@ type providerContainer struct {
 	providerCfg ProviderCfg
 	provider    *oidc.Provider
 	verifier    *oidc.IDTokenVerifier
+	verifierMu  sync.RWMutex // protects verifier for hot-reload
+	verifierCfg *oidc.Config // stored for recreating verifier on reload
 	client      *http.Client
 	transport   *http.Transport
+}
+
+func (pc *providerContainer) Verify(ctx context.Context, raw string) (*oidc.IDToken, error) {
+	var verifier *oidc.IDTokenVerifier
+
+	// No need to grab the lock, we aren't hot-reloading from a file.
+	if pc.providerCfg.PublicKeysFile == "" {
+		verifier = pc.verifier
+	} else {
+		pc.verifierMu.RLock()
+		verifier = pc.verifier
+		pc.verifierMu.RUnlock()
+	}
+
+	return verifier.Verify(ctx, raw)
+}
+
+func (pc *providerContainer) refreshPublicKeysFile() error {
+	publicKeys, err := parseJWKSFile(pc.providerCfg.PublicKeysFile)
+	if err != nil {
+		return err
+	}
+
+	keySet := &oidc.StaticKeySet{}
+	supportedAlgs := []string{}
+	for _, pk := range publicKeys {
+		keySet.PublicKeys = append(keySet.PublicKeys, pk.publicKey)
+		for _, a := range pk.supportedAlgorithms {
+			// jose.SignatureAlgorithm actually is a string.
+			supportedAlgs = append(supportedAlgs, string(a))
+		}
+	}
+
+	pc.verifierMu.Lock()
+	pc.verifierCfg.SupportedSigningAlgs = supportedAlgs
+	pc.verifier = oidc.NewVerifier(pc.providerCfg.IssuerURL, keySet, pc.verifierCfg)
+	pc.verifierMu.Unlock()
+
+	return nil
 }
 
 type oidcExtension struct {
@@ -46,6 +89,8 @@ type oidcExtension struct {
 
 	providerContainers map[string]*providerContainer
 	logger             *zap.Logger
+	shutdownCH         chan struct{}
+	shutdownOnce       sync.Once
 }
 
 var (
@@ -57,6 +102,7 @@ var (
 	errUsernameNotString                 = errors.New("the username returned by the OIDC provider isn't a regular string")
 	errGroupsClaimNotFound               = errors.New("groups claim from the OIDC configuration not found on the token returned by the OIDC provider")
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
+	errNoSupportedKeys                   = errors.New("file contains no supported keys (supported types are RSA, ECDSA, and ED25519)")
 )
 
 func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
@@ -80,10 +126,22 @@ func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("failed to get configuration from at least one configured auth server: %w", errs)
 	}
 
+	// Start file watchers for providers with JWKS files
+	if err := e.startFileWatchers(ctx); err != nil {
+		return fmt.Errorf("failed to start file watchers: %w", err)
+	}
+
 	return nil
 }
 
 func (e *oidcExtension) Shutdown(context.Context) error {
+	// Signal file watchers to stop
+	e.shutdownOnce.Do(func() {
+		if e.shutdownCH != nil {
+			close(e.shutdownCH)
+		}
+	})
+
 	for _, p := range e.providerContainers {
 		if p.client != nil {
 			p.client.CloseIdleConnections()
@@ -125,7 +183,7 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, fmt.Errorf("failed to resolve OIDC provider for the issuer %q: %w", unverifiedIssuer, err)
 	}
 
-	idToken, err := pc.verifier.Verify(ctx, raw)
+	idToken, err := pc.Verify(ctx, raw)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
@@ -178,6 +236,22 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 		providerCfg: p,
 	}
 
+	vCfg := &oidc.Config{
+		ClientID:          p.Audience,
+		SkipClientIDCheck: p.IgnoreAudience,
+	}
+
+	if p.PublicKeysFile != "" {
+		pc.verifierCfg = vCfg
+		if err := pc.refreshPublicKeysFile(); err != nil {
+			return fmt.Errorf("failed to load JWKS file %q: %w", p.PublicKeysFile, err)
+		}
+
+		e.providerContainers[p.IssuerURL] = &pc
+
+		return nil
+	}
+
 	pc.transport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
@@ -216,10 +290,7 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 		pc.client.CloseIdleConnections()
 		return fmt.Errorf("failed to create OIDC provider for %q: %w", p.IssuerURL, err)
 	}
-	pc.verifier = pc.provider.Verifier(&oidc.Config{
-		ClientID:          p.Audience,
-		SkipClientIDCheck: p.IgnoreAudience,
-	})
+	pc.verifier = pc.provider.Verifier(vCfg)
 
 	e.providerContainers[p.IssuerURL] = &pc
 
@@ -291,6 +362,95 @@ func getIssuerCACertFromPath(path string) (*x509.Certificate, error) {
 	return x509.ParseCertificate(block.Bytes)
 }
 
+func (e *oidcExtension) startFileWatchers(ctx context.Context) error {
+	filesToWatch := make(map[string][]*providerContainer)
+
+	for _, pc := range e.providerContainers {
+		if pc.providerCfg.PublicKeysFile == "" {
+			continue
+		}
+
+		absPath, err := filepath.Abs(pc.providerCfg.PublicKeysFile)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for %q: %w", pc.providerCfg.PublicKeysFile, err)
+		}
+
+		if pcs, ok := filesToWatch[absPath]; ok {
+			pcs = append(pcs, pc)
+			filesToWatch[absPath] = pcs
+		} else {
+			filesToWatch[absPath] = []*providerContainer{pc}
+		}
+	}
+
+	if len(filesToWatch) == 0 {
+		return nil
+	}
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("failed to create file watcher: %w", err)
+	}
+
+	for absPath := range filesToWatch {
+		dir := filepath.Dir(absPath)
+		if err := watcher.Add(dir); err != nil {
+			watcher.Close()
+			return fmt.Errorf("failed to watch directory %q: %w", dir, err)
+		}
+	}
+
+	e.shutdownCH = make(chan struct{})
+	go e.watchFiles(ctx, watcher, filesToWatch)
+
+	return nil
+}
+
+func (e *oidcExtension) watchFiles(ctx context.Context, watcher *fsnotify.Watcher, filesToWatch map[string][]*providerContainer) {
+	defer watcher.Close()
+
+	for {
+		select {
+		case <-e.shutdownCH:
+			return
+		case <-ctx.Done():
+			return
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+
+			absPath, err := filepath.Abs(event.Name)
+			if err != nil {
+				e.logger.Error("failed to get absolute path", zap.String("file", event.Name), zap.Error(err))
+				continue
+			}
+
+			pcs, found := filesToWatch[absPath]
+			if !found {
+				continue
+			}
+
+			if event.Op&fsnotify.Write == fsnotify.Write ||
+				event.Op&fsnotify.Create == fsnotify.Create ||
+				event.Op&fsnotify.Remove == fsnotify.Remove ||
+				event.Op&fsnotify.Chmod == fsnotify.Chmod ||
+				event.Op&fsnotify.Rename == fsnotify.Rename {
+				for _, pc := range pcs {
+					if err := pc.refreshPublicKeysFile(); err != nil {
+						e.logger.Error("failed to reload JWKS file", zap.String("file", absPath), zap.Error(err))
+					}
+				}
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			e.logger.Error("file watcher error", zap.Error(err))
+		}
+	}
+}
+
 // This struct is kept minimal to avoid unnecessary allocations, especially
 // if the JWT is malicious and contains too many claims.
 type idToken struct {
@@ -302,8 +462,7 @@ type idToken struct {
 // It should only be used to determine which verifier to use for the token.
 func getIssuerFromUnverifiedJWT(rawIDToken string) (string, error) {
 	// TODO: it would be nice if we didn't have to parse the JWT here and then again in the verifier...
-	supportedSigAlgs := []jose.SignatureAlgorithm{jose.RS256, "none"}
-	jws, err := jose.ParseSigned(rawIDToken, supportedSigAlgs)
+	jws, err := jose.ParseSigned(rawIDToken, allSupportedAlgorithms)
 	if err != nil {
 		return "", fmt.Errorf("oidc: malformed jws: %w", err)
 	}
