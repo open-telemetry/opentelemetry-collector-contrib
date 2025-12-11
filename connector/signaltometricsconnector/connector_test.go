@@ -22,12 +22,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -348,9 +348,9 @@ func telemetryResource(t *testing.T) pcommon.Resource {
 	t.Helper()
 
 	r := pcommon.NewResource()
-	r.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "627cc493-f310-47de-96bd-71410b7dec09")
-	r.Attributes().PutStr(string(semconv.ServiceNameKey), "signaltometrics")
-	r.Attributes().PutStr(string(semconv.ServiceNamespaceKey), "test")
+	r.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), "627cc493-f310-47de-96bd-71410b7dec09")
+	r.Attributes().PutStr(string(conventions.ServiceNameKey), "signaltometrics")
+	r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "test")
 	return r
 }
 

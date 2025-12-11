@@ -17,6 +17,7 @@ require (
 	github.com/linode/go-metadata v0.2.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.141.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35
@@ -192,6 +193,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions => ../../internal/conventions
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
 

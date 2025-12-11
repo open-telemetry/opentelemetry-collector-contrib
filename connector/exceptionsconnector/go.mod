@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/excep
 go 1.24.0
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.141.0
@@ -18,7 +19,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.141.1-0.20251210054218-8f51a1792add
 	go.opentelemetry.io/collector/pdata v1.47.1-0.20251210054218-8f51a1792add
 	go.opentelemetry.io/collector/pipeline v1.47.1-0.20251210054218-8f51a1792add
-	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/grpc v1.77.0
@@ -51,6 +51,7 @@ require (
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.141.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.141.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.141.1-0.20251210054218-8f51a1792add // indirect
+	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
@@ -60,6 +61,8 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions => ../../internal/conventions
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 

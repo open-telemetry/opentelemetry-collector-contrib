@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions v0.0.0-00010101000000-000000000000
 	github.com/prometheus/common v0.67.4
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.1-0.20251210054218-8f51a1792add
@@ -21,7 +22,6 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.141.1-0.20251210054218-8f51a1792add
 	go.opentelemetry.io/collector/exporter/exportertest v0.141.1-0.20251210054218-8f51a1792add
 	go.opentelemetry.io/collector/pdata v1.47.1-0.20251210054218-8f51a1792add
-	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
@@ -74,6 +74,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.141.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.141.1-0.20251210054218-8f51a1792add // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
+	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
@@ -98,3 +99,5 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/conventions => ../../internal/conventions
