@@ -4,7 +4,7 @@
 change_type: "breaking"
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: "receiver/dockerstats"
+component: "receiver/docker_stats"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Upgrading Docker API version default from 1.25 to 1.44"
