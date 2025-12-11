@@ -79,8 +79,11 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 		return fmt.Errorf("%w: %q, expected %q or %q", errUnexpectedLogType, log.Type, externalLoadBalancerLogType, internalLoadBalancerLogType)
 	}
 
-	handleConnection(log.Connection, attr)
 	handleTimestamps(log.StartTime, log.EndTime, attr)
+
+	if err := handleConnection(log.Connection, attr); err != nil {
+		return err
+	}
 
 	if err := shared.AddStrAsInt(gcpPassthroughNLBBytesReceived, log.BytesReceived, attr); err != nil {
 		return fmt.Errorf("%w: %w", errBytesReceived, err)
@@ -105,15 +108,13 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 	return nil
 }
 
-func handleConnection(conn *connection, attr pcommon.Map) {
+func handleConnection(conn *connection, attr pcommon.Map) error {
 	if conn == nil {
-		return
+		return nil
 	}
 
 	shared.PutStr(string(semconv.ClientAddressKey), conn.ClientIP, attr)
 	shared.PutInt(string(semconv.ClientPortKey), conn.ClientPort, attr)
-
-	shared.PutStr(string(semconv.ServerAddressKey), conn.ServerIP, attr)
 	shared.PutInt(string(semconv.ServerPortKey), conn.ServerPort, attr)
 
 	if conn.Protocol != nil {
@@ -121,6 +122,12 @@ func handleConnection(conn *connection, attr pcommon.Map) {
 			attr.PutStr(string(semconv.NetworkTransportKey), protoName)
 		}
 	}
+
+	if _, err := shared.PutStrIfNotPresent(string(semconv.ServerAddressKey), conn.ServerIP, attr); err != nil {
+		return fmt.Errorf("error setting security policy attribute: %w", err)
+	}
+
+	return nil
 }
 
 func handleTimestamps(start, end *time.Time, attr pcommon.Map) {
