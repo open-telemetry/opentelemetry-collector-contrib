@@ -19,10 +19,11 @@ type MetadataUpdateClient interface {
 }
 
 func getDimensionUpdateFromMetadata(
+	defaults map[string]string,
 	metadata metadata.MetadataUpdate,
 	metricsConverter translation.MetricsConverter,
 ) *DimensionUpdate {
-	properties, tags := getPropertiesAndTags(metadata)
+	properties, tags := getPropertiesAndTags(defaults, metadata)
 
 	return &DimensionUpdate{
 		Name:       metricsConverter.ConvertDimension(metadata.ResourceIDKey),
@@ -44,9 +45,13 @@ func sanitizeProperty(property string) string {
 	return property
 }
 
-func getPropertiesAndTags(kmu metadata.MetadataUpdate) (map[string]*string, map[string]bool) {
+func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdate) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
 	tags := map[string]bool{}
+
+	for k, v := range defaults {
+		properties[k] = &v
+	}
 
 	for label, val := range kmu.MetadataToAdd {
 		key := sanitizeProperty(label)
@@ -97,7 +102,7 @@ func getPropertiesAndTags(kmu metadata.MetadataUpdate) (map[string]*string, map[
 func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) error {
 	var errs error
 	for _, m := range metadata {
-		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricsConverter)
+		dimensionUpdate := getDimensionUpdateFromMetadata(dc.DefaultProperties, *m, dc.metricsConverter)
 
 		if dimensionUpdate.Name == "" || dimensionUpdate.Value == "" {
 			return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimensionUpdate)

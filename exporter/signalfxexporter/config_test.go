@@ -166,6 +166,10 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:             20 * time.Second,
 					DropTags:            false,
 				},
+				DefaultProperties: map[string]string{
+					"foo":    "bar",
+					"_index": "baz",
+				},
 				ExcludeMetrics: []dpfilters.MetricFilter{
 					{
 						MetricName: "metric1",
@@ -468,6 +472,14 @@ func TestConfigValidateErrors(t *testing.T) {
 				AccessToken:      "access_token",
 				RootPath:         "/foobar",
 				SyncHostMetadata: true,
+			},
+		},
+		{
+			name: "Empty default property",
+			cfg: &Config{
+				DefaultProperties: map[string]string{
+					"foo": "",
+				},
 			},
 		},
 	}

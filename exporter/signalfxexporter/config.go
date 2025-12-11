@@ -133,6 +133,11 @@ type Config struct {
 	// properties to include with dimension updates to the SignalFx backend.
 	ExcludeProperties []dpfilters.PropertyFilter `mapstructure:"exclude_properties"`
 
+	// DefaultProperties defines a set of properties to be added to any dimension
+	// updates to the Splunk Observability backend. Any explicit property value
+	// takes precedence over those defaults.
+	DefaultProperties map[string]string `mapstructure:"default_properties"`
+
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
 
@@ -233,6 +238,12 @@ func (cfg *Config) Validate() error {
 	if cfg.SyncHostMetadata {
 		if err := gopsutilenv.ValidateRootPath(cfg.RootPath); err != nil {
 			return fmt.Errorf("invalid root_path: %w", err)
+		}
+	}
+
+	for k, v := range cfg.DefaultProperties {
+		if v == "" {
+			return fmt.Errorf(`"default_properties" contains an empty value under key %q`, k)
 		}
 	}
 	return nil
