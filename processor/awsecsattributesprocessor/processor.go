@@ -132,6 +132,8 @@ func (p *processorBase[T, D]) syncMetadata(_ context.Context, endpoints map[stri
 			continue
 		}
 
+		defer resp.Body.Close()
+
 		if err = json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
 			p.logger.Error("failed to decode metadata", zap.String("container_id", k), zap.Error(err))
 			continue
