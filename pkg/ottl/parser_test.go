@@ -2713,6 +2713,96 @@ type expectedSpan struct {
 
 func Test_Statements_Execute_Error(t *testing.T) {
 	tests := []struct {
+		name      string
+		condition boolExpressionEvaluator[any]
+		function  ExprFunc[any]
+		errorMode ErrorMode
+	}{
+		{
+			name: "IgnoreError error from condition",
+			condition: func(context.Context, any) (bool, error) {
+				return true, errors.New("test")
+			},
+			function: func(context.Context, any) (any, error) {
+				return 1, nil
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "PropagateError error from condition",
+			condition: func(context.Context, any) (bool, error) {
+				return true, errors.New("test")
+			},
+			function: func(context.Context, any) (any, error) {
+				return 1, nil
+			},
+			errorMode: PropagateError,
+		},
+		{
+			name: "IgnoreError error from function",
+			condition: func(context.Context, any) (bool, error) {
+				return true, nil
+			},
+			function: func(context.Context, any) (any, error) {
+				return 1, errors.New("test")
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "PropagateError error from function",
+			condition: func(context.Context, any) (bool, error) {
+				return true, nil
+			},
+			function: func(context.Context, any) (any, error) {
+				return 1, errors.New("test")
+			},
+			errorMode: PropagateError,
+		},
+		{
+			name: "SilentError error from condition",
+			condition: func(context.Context, any) (bool, error) {
+				return true, errors.New("test")
+			},
+			function: func(context.Context, any) (any, error) {
+				return 1, nil
+			},
+			errorMode: SilentError,
+		},
+		{
+			name: "SilentError error from function",
+			condition: func(context.Context, any) (bool, error) {
+				return true, nil
+			},
+			function: func(context.Context, any) (any, error) {
+				return 1, errors.New("test")
+			},
+			errorMode: SilentError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			telemetrySettings := componenttest.NewNopTelemetrySettings()
+			statements := []*Statement[any]{
+				{
+					condition:         BoolExpr[any]{tt.condition},
+					function:          Expr[any]{exprFunc: tt.function},
+					telemetrySettings: telemetrySettings,
+				},
+			}
+			statementSeq := NewStatementSequence(statements, telemetrySettings, WithStatementSequenceErrorMode[any](tt.errorMode))
+
+			err := statementSeq.Execute(t.Context(), nil)
+			if tt.errorMode == PropagateError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_Statements_Execute_Error_With_Tracing(t *testing.T) {
+	tests := []struct {
 		name          string
 		condition     boolExpressionEvaluator[any]
 		function      ExprFunc[any]
@@ -2942,14 +3032,13 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				errorMode:         tt.errorMode,
 				telemetrySettings: telemetrySettings,
 				tracer:            tracer,
+				statements: []*Statement[any]{{
+					condition:         BoolExpr[any]{tt.condition},
+					function:          Expr[any]{exprFunc: tt.function},
+					telemetrySettings: telemetrySettings,
+					origText:          "test statement",
+				}},
 			}
-			statement := &Statement[any]{
-				condition:         BoolExpr[any]{tt.condition},
-				function:          Expr[any]{exprFunc: tt.function},
-				telemetrySettings: statements.telemetrySettings,
-				origText:          "test statement",
-			}
-			statements.statements = append(statements.statements, statement)
 
 			err := statements.Execute(t.Context(), nil)
 			if tt.errorMode == PropagateError {

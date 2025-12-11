@@ -402,6 +402,65 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 	return s
 }
 
+func (s *StatementSequence[K]) executeStatementWithTracing(ctx context.Context, tCtx K, statement *Statement[K], sequenceSpan trace.Span) error {
+	statementCtx, statementSpan := s.tracer.Start(ctx, "ottl/StatementExecution")
+	defer statementSpan.End()
+
+	statementSpan.SetAttributes(
+		attribute.KeyValue{
+			Key:   "statement",
+			Value: attribute.StringValue(statement.origText),
+		},
+	)
+
+	_, condition, err := statement.Execute(statementCtx, tCtx)
+	statementSpan.SetAttributes(
+		attribute.KeyValue{
+			Key:   "condition.matched",
+			Value: attribute.BoolValue(condition),
+		},
+	)
+
+	if err != nil {
+		statementSpan.RecordError(err)
+		errMsg := fmt.Sprintf("failed to execute statement '%s': %v", statement.origText, err)
+		statementSpan.SetStatus(codes.Error, errMsg)
+		if s.errorMode == PropagateError {
+			sequenceSpan.SetStatus(codes.Error, errMsg)
+			return fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
+		}
+		if s.errorMode == IgnoreError {
+			s.telemetrySettings.Logger.Warn(
+				"failed to execute statement",
+				zap.Error(err),
+				zap.String("statement", statement.origText),
+				zap.String("trace_id", statementSpan.SpanContext().TraceID().String()),
+				zap.String("span_id", statementSpan.SpanContext().SpanID().String()),
+			)
+		}
+	} else {
+		statementSpan.SetStatus(codes.Ok, "statement executed successfully")
+	}
+	return nil
+}
+
+func (s *StatementSequence[K]) executeStatement(ctx context.Context, tCtx K, statement *Statement[K]) error {
+	_, _, err := statement.Execute(ctx, tCtx)
+	if err != nil {
+		if s.errorMode == PropagateError {
+			return fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
+		}
+		if s.errorMode == IgnoreError {
+			s.telemetrySettings.Logger.Warn(
+				"failed to execute statement",
+				zap.Error(err),
+				zap.String("statement", statement.origText),
+			)
+		}
+	}
+	return nil
+}
+
 // Execute is a function that will execute all the statements in the StatementSequence list.
 // When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
@@ -418,43 +477,16 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 		)
 	}
 	for _, statement := range s.statements {
-		statementCtx, statementSpan := s.tracer.Start(ctx, "ottl/StatementExecution")
-		statementSpan.SetAttributes(
-			attribute.KeyValue{
-				Key:   "statement",
-				Value: attribute.StringValue(statement.origText),
-			},
-		)
-		_, condition, err := statement.Execute(statementCtx, tCtx)
-		statementSpan.SetAttributes(
-			attribute.KeyValue{
-				Key:   "condition.matched",
-				Value: attribute.BoolValue(condition),
-			},
-		)
-		if err != nil {
-			statementSpan.RecordError(err)
-			errMsg := fmt.Sprintf("failed to execute statement '%s': %v", statement.origText, err)
-			statementSpan.SetStatus(codes.Error, errMsg)
-			if s.errorMode == PropagateError {
-				sequenceSpan.SetStatus(codes.Error, errMsg)
-				statementSpan.End()
-				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
-				return err
-			}
-			if s.errorMode == IgnoreError {
-				s.telemetrySettings.Logger.Warn(
-					"failed to execute statement",
-					zap.Error(err),
-					zap.String("statement", statement.origText),
-					zap.String("trace_id", statementSpan.SpanContext().TraceID().String()),
-					zap.String("span_id", statementSpan.SpanContext().SpanID().String()),
-				)
-			}
+		var err error
+		if sequenceSpan.IsRecording() {
+			err = s.executeStatementWithTracing(ctx, tCtx, statement, sequenceSpan)
 		} else {
-			statementSpan.SetStatus(codes.Ok, "statement executed successfully")
+			// Fast path with no tracing overhead
+			err = s.executeStatement(ctx, tCtx, statement)
 		}
-		statementSpan.End()
+		if err != nil {
+			return err
+		}
 	}
 	sequenceSpan.SetStatus(codes.Ok, "statement sequence executed successfully")
 	return nil
