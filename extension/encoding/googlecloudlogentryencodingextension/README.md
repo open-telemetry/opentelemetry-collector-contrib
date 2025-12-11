@@ -518,5 +518,5 @@ Passthrough Network Load Balancer flow logs cover both [External](https://cloud.
 - `17` → `udp`
 - `1` → `icmp`
 
-Resource labels such as `backend_group_name`, `backend_network_name`, `forwarding_rule_name`, and `region` are surfaced automatically via the existing `gcp.label.*` attribute pattern.
+Resource labels such as `backend_group_name`, `backend_network_name`, `forwarding_rule_name`, and `region` are set with the `gcp.label.*` prefix.
 
