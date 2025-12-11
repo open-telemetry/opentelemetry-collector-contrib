@@ -89,6 +89,33 @@ func TestFactory(t *testing.T) {
 			},
 		},
 		{
+			desc: "[metrics] Test azure_datasource connection",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.AzureDataSource = "Server=myserver.database.windows.net;Database=mydb;Fedauth=ActiveDirectoryDefault"
+				require.NoError(t, cfg.Validate())
+				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+
+				require.True(t, cfg.isDirectDBConnectionEnabled)
+
+				params := receivertest.NewNopSettings(metadata.Type)
+				scrapers, err := setupScrapers(params, cfg)
+				require.NoError(t, err)
+				require.NotEmpty(t, scrapers)
+
+				r, err := factory.CreateMetrics(
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(t.Context()))
+			},
+		},
+		{
 			desc: "[metrics] Test direct connection",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
@@ -172,6 +199,33 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, err)
 				scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
 				require.Empty(t, scrapers)
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(t.Context()))
+			},
+		},
+		{
+			desc: "[logs] Test azure_datasource connection",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.AzureDataSource = "sqlserver://myserver.database.windows.net?database=mydb&fedauth=ActiveDirectoryDefault"
+				require.NoError(t, cfg.Validate())
+				cfg.Events.DbServerTopQuery.Enabled = true
+
+				require.True(t, cfg.isDirectDBConnectionEnabled)
+
+				params := receivertest.NewNopSettings(metadata.Type)
+				scrapers, err := setupLogsScrapers(params, cfg)
+				require.NoError(t, err)
+				require.NotEmpty(t, scrapers)
+
+				r, err := factory.CreateLogs(
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
 				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(t.Context()))
 			},
