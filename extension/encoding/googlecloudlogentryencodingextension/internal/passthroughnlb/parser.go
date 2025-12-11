@@ -23,7 +23,7 @@ const (
 	externalLoadBalancerLogType = "type.googleapis.com/google.cloud.loadbalancing.type.ExternalNetworkLoadBalancerLogEntry"
 	internalLoadBalancerLogType = "type.googleapis.com/google.cloud.loadbalancing.type.InternalNetworkLoadBalancerLogEntry"
 
-	gcpPassthroughNLBPacketsStartTime = "gcp.load_balancing.passthrough_nlb.packets.start_time"
+	gcpPassthroughNLBPacketsStartTime = "gcp.load_balancing.passthrough_nlb.packets.start_time" // #nosec G101
 	gcpPassthroughNLBPacketsEndTime   = "gcp.load_balancing.passthrough_nlb.packets.end_time"
 	gcpPassthroughNLBBytesReceived    = "gcp.load_balancing.passthrough_nlb.bytes_received"
 	gcpPassthroughNLBBytesSent        = "gcp.load_balancing.passthrough_nlb.bytes_sent"
