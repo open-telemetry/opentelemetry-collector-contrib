@@ -27,7 +27,7 @@ func Test_SpanFunctions(t *testing.T) {
 }
 
 func Test_SpanEventFunctions(t *testing.T) {
-	expected := ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
+	expected := ottlfuncs.StandardFuncs[*ottlspanevent.TransformContext]()
 	actual := SpanEventFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {

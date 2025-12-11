@@ -19,12 +19,12 @@ func SpanFuncs() map[string]ottl.Factory[*ottlspan.TransformContext] {
 	return common
 }
 
-func DatapointFuncs() map[string]ottl.Factory[ottldatapoint.TransformContext] {
-	return commonFuncs[ottldatapoint.TransformContext]()
+func DatapointFuncs() map[string]ottl.Factory[*ottldatapoint.TransformContext] {
+	return commonFuncs[*ottldatapoint.TransformContext]()
 }
 
-func LogFuncs() map[string]ottl.Factory[ottllog.TransformContext] {
-	return commonFuncs[ottllog.TransformContext]()
+func LogFuncs() map[string]ottl.Factory[*ottllog.TransformContext] {
+	return commonFuncs[*ottllog.TransformContext]()
 }
 
 func ProfileFuncs() map[string]ottl.Factory[ottlprofile.TransformContext] {
