@@ -88,11 +88,11 @@ func newKubeSystemSharedInformer(
 ) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
-			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(_ context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace).String()
 				return client.CoreV1().Namespaces().List(context.Background(), opts)
 			},
-			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(_ context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 				opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace).String()
 				return client.CoreV1().Namespaces().Watch(context.Background(), opts)
 			},
