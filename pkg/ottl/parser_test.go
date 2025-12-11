@@ -2665,7 +2665,6 @@ func Test_Statement_Execute(t *testing.T) {
 				condition:         BoolExpr[any]{tt.condition},
 				function:          Expr[any]{exprFunc: tt.function},
 				telemetrySettings: telemetrySettings,
-				tracer:            telemetrySettings.TracerProvider.Tracer("ottl"),
 			}
 
 			result, condition, err := statement.Execute(t.Context(), nil)
@@ -2949,7 +2948,6 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				function:          Expr[any]{exprFunc: tt.function},
 				telemetrySettings: statements.telemetrySettings,
 				origText:          "test statement",
-				tracer:            statements.tracer,
 			}
 			statements.statements = append(statements.statements, statement)
 

@@ -28,57 +28,30 @@ type Statement[K any] struct {
 	condition         BoolExpr[K]
 	origText          string
 	telemetrySettings component.TelemetrySettings
-	tracer            trace.Tracer
-	errorMode         ErrorMode
 }
 
 // Execute is a function that will execute the statement's function if the statement's condition is met.
 // Returns true if the function was run, returns false otherwise.
 // If the statement contains no condition, the function will run and true will be returned.
 // In addition, the functions return value is always returned.
-func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (result any, condition bool, err error) {
-	ctx, span := s.tracer.Start(ctx, "ottl/StatementExecution")
+func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
+	condition, err := s.condition.Eval(ctx, tCtx)
 	defer func() {
-		span.SetAttributes(
-			attribute.String("statement", s.origText),
-			attribute.Bool("condition.matched", condition),
-		)
-
-		if err != nil {
-			err = fmt.Errorf("failed to execute statement '%s': %w", s.origText, err)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			if s.errorMode == IgnoreError {
-				s.telemetrySettings.Logger.Warn(
-					err.Error(),
-					zap.String("statement", s.origText),
-					zap.Any("trace_id", span.SpanContext().TraceID()),
-					zap.Any("span_id", span.SpanContext().SpanID()),
-				)
-			}
-		} else {
-			span.SetStatus(codes.Ok, "statement executed successfully")
-		}
-
 		if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
-			s.telemetrySettings.Logger.Debug(
-				"TransformContext after statement execution",
-				zap.String("statement", s.origText),
-				zap.Bool("condition matched", condition),
-				zap.Any("TransformContext", tCtx),
-				zap.Any("trace_id", span.SpanContext().TraceID()),
-				zap.Any("span_id", span.SpanContext().SpanID()),
-			)
+			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
 		}
-		span.End()
 	}()
-
-	if condition, err = s.condition.Eval(ctx, tCtx); err != nil || !condition {
-		return nil, condition, err
+	if err != nil {
+		return nil, false, err
 	}
-
-	result, err = s.function.Eval(ctx, tCtx)
-	return result, true, err
+	var result any
+	if condition {
+		result, err = s.function.Eval(ctx, tCtx)
+		if err != nil {
+			return nil, true, err
+		}
+	}
+	return result, condition, nil
 }
 
 // Condition holds a top level Condition. A Condition is a boolean expression to match telemetry.
@@ -191,17 +164,12 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	var tracer trace.Tracer = &noop.Tracer{}
-	if p.telemetrySettings.TracerProvider != nil {
-		tracer = p.telemetrySettings.TracerProvider.Tracer("ottl")
-	}
+
 	return &Statement[K]{
 		function:          function,
 		condition:         expression,
 		origText:          statement,
 		telemetrySettings: p.telemetrySettings,
-		tracer:            tracer,
-		errorMode:         PropagateError,
 	}, nil
 }
 
@@ -411,10 +379,6 @@ type StatementSequenceOption[K any] func(*StatementSequence[K])
 func WithStatementSequenceErrorMode[K any](errorMode ErrorMode) StatementSequenceOption[K] {
 	return func(s *StatementSequence[K]) {
 		s.errorMode = errorMode
-
-		for _, stmt := range s.statements {
-			stmt.errorMode = errorMode
-		}
 	}
 }
 
@@ -454,13 +418,43 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 		)
 	}
 	for _, statement := range s.statements {
-		_, _, err := statement.Execute(ctx, tCtx)
+		statementCtx, statementSpan := s.tracer.Start(ctx, "ottl/StatementExecution")
+		statementSpan.SetAttributes(
+			attribute.KeyValue{
+				Key:   "statement",
+				Value: attribute.StringValue(statement.origText),
+			},
+		)
+		_, condition, err := statement.Execute(statementCtx, tCtx)
+		statementSpan.SetAttributes(
+			attribute.KeyValue{
+				Key:   "condition.matched",
+				Value: attribute.BoolValue(condition),
+			},
+		)
 		if err != nil {
+			statementSpan.RecordError(err)
+			errMsg := fmt.Sprintf("failed to execute statement '%s': %v", statement.origText, err)
+			statementSpan.SetStatus(codes.Error, errMsg)
 			if s.errorMode == PropagateError {
-				sequenceSpan.SetStatus(codes.Error, err.Error())
+				sequenceSpan.SetStatus(codes.Error, errMsg)
+				statementSpan.End()
+				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
+			if s.errorMode == IgnoreError {
+				s.telemetrySettings.Logger.Warn(
+					"failed to execute statement",
+					zap.Error(err),
+					zap.String("statement", statement.origText),
+					zap.String("trace_id", statementSpan.SpanContext().TraceID().String()),
+					zap.String("span_id", statementSpan.SpanContext().SpanID().String()),
+				)
+			}
+		} else {
+			statementSpan.SetStatus(codes.Ok, "statement executed successfully")
 		}
+		statementSpan.End()
 	}
 	sequenceSpan.SetStatus(codes.Ok, "statement sequence executed successfully")
 	return nil
