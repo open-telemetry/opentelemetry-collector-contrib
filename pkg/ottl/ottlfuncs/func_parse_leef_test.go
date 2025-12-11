@@ -902,8 +902,7 @@ func Test_parseLEEFAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := parseLEEFAttributes(tt.input, tt.delimiter)
-			require.NoError(t, err)
+			result := parseLEEFAttributes(tt.input, tt.delimiter)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

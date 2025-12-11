@@ -94,12 +94,7 @@ func parseLEEFMessage(message string) (pcommon.Map, error) {
 	// Parse attributes if present
 	var parsedAttrs map[string]any
 	if attributes != "" {
-		parsedAttrs, err = parseLEEFAttributes(attributes, header.delimiter)
-		if err != nil {
-			return pcommon.Map{}, err
-		}
-	} else {
-		parsedAttrs = make(map[string]any)
+		parsedAttrs = parseLEEFAttributes(attributes, header.delimiter)
 	}
 
 	return buildLEEFResult(header, parsedAttrs)
@@ -212,9 +207,9 @@ func parseDelimiter(spec string) (string, error) {
 	return spec, nil
 }
 
-func parseLEEFAttributes(attributes string, delimiter string) (map[string]any, error) {
+func parseLEEFAttributes(attributes, delimiter string) map[string]any {
 	if attributes == "" {
-		return make(map[string]any), nil
+		return make(map[string]any)
 	}
 
 	result := make(map[string]any)
@@ -245,7 +240,7 @@ func parseLEEFAttributes(attributes string, delimiter string) (map[string]any, e
 		result[key] = value
 	}
 
-	return result, nil
+	return result
 }
 
 func buildLEEFResult(header leefHeader, attributes map[string]any) (pcommon.Map, error) {
