@@ -22,14 +22,27 @@ import (
 type Settings struct {
 	// Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
 	Enabled bool `mapstructure:"enabled"`
+	// ExcludeServiceInfo indicates whether to exclude `service.name` and `service.instance.id`
+	// resource attributes from being converted to metric attributes. Default is `false`.
+	// When set to `true`, these attributes will not be added to metric labels since they are
+	// already mapped to Prometheus `job` and `instance` labels respectively.
+	ExcludeServiceInfo bool `mapstructure:"exclude_service_info"`
 }
+
+// serviceNameKey and serviceInstanceIDKey are resource attribute keys for service identification.
+// These are excluded from metric attributes when ExcludeServiceInfo is true.
+const (
+	serviceNameKey       = "service.name"
+	serviceInstanceIDKey = "service.instance.id"
+)
 
 type wrapperMetricsExporter struct {
 	exporter.Metrics
+	excludeServiceInfo bool
 }
 
 func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return wme.Metrics.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
+	return wme.Metrics.ConsumeMetrics(ctx, wme.convertToMetricsAttributes(md))
 }
 
 func (*wrapperMetricsExporter) Capabilities() consumer.Capabilities {
@@ -43,24 +56,46 @@ func WrapMetricsExporter(set Settings, exporter exporter.Metrics) exporter.Metri
 	if !set.Enabled {
 		return exporter
 	}
-	return &wrapperMetricsExporter{Metrics: exporter}
+	return &wrapperMetricsExporter{
+		Metrics:            exporter,
+		excludeServiceInfo: set.ExcludeServiceInfo,
+	}
 }
 
-func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
+func (wme *wrapperMetricsExporter) convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		resource := rms.At(i).Resource()
+		resourceAttrs := rms.At(i).Resource().Attributes()
+
+		// Filter resource attributes if excludeServiceInfo is enabled
+		attrsToAdd := resourceAttrs
+		if wme.excludeServiceInfo {
+			attrsToAdd = filterServiceAttributes(resourceAttrs)
+		}
 
 		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			metricSlice := ilm.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
-				addAttributesToMetric(metricSlice.At(k), resource.Attributes())
+				addAttributesToMetric(metricSlice.At(k), attrsToAdd)
 			}
 		}
 	}
 	return md
+}
+
+// filterServiceAttributes returns a new Map without service.name and service.instance.id attributes.
+func filterServiceAttributes(attrs pcommon.Map) pcommon.Map {
+	filtered := pcommon.NewMap()
+	filtered.EnsureCapacity(attrs.Len())
+	for k, v := range attrs.All() {
+		if k == serviceNameKey || k == serviceInstanceIDKey {
+			continue
+		}
+		v.CopyTo(filtered.PutEmpty(k))
+	}
+	return filtered
 }
 
 // addAttributesToMetric adds additional labels to the given metric
