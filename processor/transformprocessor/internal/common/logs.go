@@ -36,7 +36,7 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				tCtx := ottllog.NewTransformContextPtr(logs.At(k), slogs.Scope(), rlogs.Resource(), slogs, rlogs)
+				tCtx := ottllog.NewTransformContextPtr(rlogs, slogs, logs.At(k))
 				condition, err := l.Eval(ctx, tCtx)
 				if err != nil {
 					tCtx.Close()
