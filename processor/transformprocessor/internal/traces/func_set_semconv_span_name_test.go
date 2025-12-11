@@ -488,7 +488,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			require.NoError(t, err)
 			require.NotNil(t, setSemconvNameFunction)
 
-			tCtx := ottlspan.NewTransformContextPtr(span, scopeSpans.Scope(), pcommon.NewResource(), scopeSpans, resourceSpans)
+			tCtx := ottlspan.NewTransformContextPtr(resourceSpans, scopeSpans, span)
 			defer tCtx.Close()
 			_, err = setSemconvNameFunction(t.Context(), tCtx)
 			require.NoError(t, err)
