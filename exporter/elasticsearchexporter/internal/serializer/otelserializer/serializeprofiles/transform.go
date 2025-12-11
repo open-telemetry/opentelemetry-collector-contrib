@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // Transform transforms a [pprofile.Profile] into our own
@@ -226,6 +226,9 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 		K8sNamespaceName: hostMetadata[string(semconv.K8SNamespaceNameKey)],
 		Count:            1, // Elasticsearch v9.2+ doesn't read the count value any more.
 		Frequency:        frequency,
+		HostName:         hostMetadata[string(semconv.HostNameKey)],
+		ProjectID:        2, // Use a project ID other than 1 to not conflict with ECH default value.
+		ServiceName:      hostMetadata[string(semconv.ServiceNameKey)],
 	}
 
 	// Store event-specific attributes.

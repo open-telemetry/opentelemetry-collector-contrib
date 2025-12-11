@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -66,49 +65,49 @@ func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.Trac
 // testTSPController is a set of mechanisms to make the TSP do predictable
 // things in tests.
 type testTSPController struct {
-	// tickBarrier is a barrier to block ticks until the test is ready
-	tickBarrier chan struct{}
+	tickChan chan chan struct{}
 }
 
 func newTestTSPController() *testTSPController {
 	return &testTSPController{
-		tickBarrier: make(chan struct{}),
+		tickChan: make(chan chan struct{}),
 	}
 }
 
-func (t *testTSPController) waitForTick() {
-	t.concurrentWithTick(func() {})
+func (t *testTSPController) triggerTicks() chan struct{} {
+	// We need a buffer so the ticker can signal completion without
+	// blocking.
+	tickDone := make(chan struct{}, 1)
+	t.tickChan <- tickDone
+	return tickDone
 }
 
 func (t *testTSPController) concurrentWithTick(f func()) {
-	t.tickBarrier <- struct{}{}
+	tickDone := t.triggerTicks()
 	f()
-	<-t.tickBarrier
+	<-tickDone
+}
+
+func (t *testTSPController) waitForTick() {
+	<-t.triggerTicks()
 }
 
 func withTestController(t *testTSPController) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
-		// Replace the policy ticker with a custom one that uses the tick barrier
-		originalOnTickFunc := tsp.policyTicker.OnTickFunc
-		tsp.policyTicker = &timeutils.PolicyTicker{
-			OnTickFunc: func() {
-				select {
-				case <-t.tickBarrier:
-					originalOnTickFunc()
-					t.tickBarrier <- struct{}{}
-				case <-tsp.policyTicker.StopCh:
-					return
-				}
-			},
-		}
+		tsp.tickChan = make(chan chan struct{})
+		t.tickChan = tsp.tickChan
 
-		// use a sync ID batcher to avoid waiting on lots of empty ticks
+		// Use an unbuffered work channel so we know that when ConsumeTraces
+		// completes the traces will have been ingested by the TSP.
+		tsp.workChan = make(chan []traceBatch)
+
+		// use a sync ID batcher to avoid waiting on lots of empty ticks.
+		// We need to close the old one before creating a new one.
 		tsp.decisionBatcher = newSyncIDBatcher()
 
-		// Use a fast tick frequency to avoid waiting on slow ticks. Since we
-		// use the tick barrier, we know the ticks will only fire when we're
-		// ready anyway.
-		tsp.tickerFrequency = 1 * time.Millisecond
+		// Use a slow tick frequency to effectively disable automatic ticks.
+		// We'll manually trigger ticks as needed via the tickChan.
+		tsp.tickerFrequency = time.Hour
 	}
 }
 
@@ -937,6 +936,7 @@ type syncIDBatcher struct {
 	sync.Mutex
 	openBatch idbatcher.Batch
 	batchPipe chan idbatcher.Batch
+	stopped   bool
 }
 
 var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
@@ -951,6 +951,9 @@ func newSyncIDBatcher() idbatcher.Batcher {
 
 func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
 	s.Lock()
+	if s.stopped {
+		panic("cannot add to stopped batcher!")
+	}
 	s.openBatch = append(s.openBatch, id)
 	s.Unlock()
 }
@@ -958,13 +961,24 @@ func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
 	s.Lock()
 	defer s.Unlock()
-	firstBatch := <-s.batchPipe
-	s.batchPipe <- s.openBatch
-	s.openBatch = nil
+	firstBatch, ok := <-s.batchPipe
+	// When batchPipe is closed it means we have stopped and just need to return the openBatch as the last entries.
+	if !ok {
+		return s.openBatch, false
+	}
+	// Do not move the open batch to the channel if we are stopped. It will panic, we return it once the channel is closed instead.
+	if !s.stopped {
+		s.batchPipe <- s.openBatch
+		s.openBatch = nil
+	}
 	return firstBatch, true
 }
 
-func (*syncIDBatcher) Stop() {
+func (s *syncIDBatcher) Stop() {
+	s.Lock()
+	defer s.Unlock()
+	s.stopped = true
+	close(s.batchPipe)
 }
 
 func simpleTraces() ptrace.Traces {
@@ -1070,6 +1084,54 @@ func TestNumericAttributeCases(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, decision, tt.description)
 		})
 	}
+}
+
+// TestDeleteQueueCleared verifies that all in memory traces are removed from
+// both the idToTrace map as well as the deleteTraceQueue.
+func TestDeleteQueueCleared(t *testing.T) {
+	controller := newTestTSPController()
+
+	traceIDs, batches := generateIDsAndBatches(128)
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		// Use cache so that traces are cleared from memory.
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    128,
+			NonSampledCacheSize: 128,
+		},
+		PolicyCfgs: testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = sp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = sp.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	for _, batch := range batches {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+	}
+	controller.waitForTick()
+	controller.waitForTick()
+
+	// Make sure about half of traces are sampled before a tick is called.
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 128)
+	// All traces should be flushed from the map.
+	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
+	// All traces should be removed from the delete queue.
+	assert.Zero(t, sp.(*tailSamplingSpanProcessor).deleteTraceQueue.Len())
 }
 
 func TestExtension(t *testing.T) {

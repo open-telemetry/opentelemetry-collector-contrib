@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // EcsVersionString is the value for the `ecs.version` metrics field.
@@ -56,6 +56,8 @@ type StackTraceEvent struct {
 	ServiceName      string `json:"service.name,omitempty"`
 	Frequency        int64  `json:"Stacktrace.sampling_frequency"`
 	Count            uint16 `json:"Stacktrace.count"`
+	ProjectID        uint32 `json:"profiling.project.id,omitempty"`
+	HostName         string `json:"host.name,omitempty"`
 }
 
 // StackTrace represents a stacktrace serializable into the stacktraces index.
