@@ -15,9 +15,7 @@ issues: [#44407]
   # (Optional) One or more lines of additional information to render under the primary note.
   # These lines will be padded with 2 spaces and then inserted directly into the document.
   # Use pipe (|) for multiline entries.
-  subtext: |
-  In in-process cold-start benchmarks (no API server), PartialObjectMetadata reduced memory by ~57–59% and allocations by ~19–21%,
-  with ~28–37% faster startup at medium/large scales (≥1k ReplicaSets). Exact impact depends on cluster size and selectors.
+  subtext: In in-process cold-start benchmarks (no API server), PartialObjectMetadata reduced memory by ~57–59%, exact impact depends on cluster size and selectors.
 
   # If your change doesn't affect end users or the exported elements of any package,
   # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
