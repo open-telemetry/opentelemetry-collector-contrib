@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/logde
 go 1.24.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.141.0
