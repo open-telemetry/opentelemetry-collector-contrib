@@ -18,7 +18,7 @@ import (
 )
 
 // This file implements config for Prometheus receiver.
-var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.UseCreatedMetric",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+

@@ -178,9 +178,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	tsNanos := timestampFromMs(mg.ts)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
@@ -256,9 +253,6 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	tsNanos := timestampFromMs(mg.ts)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
@@ -397,9 +391,6 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	point.SetTimestamp(tsNanos)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
 }
@@ -411,9 +402,6 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	if mg.mtype == pmetric.MetricTypeSum {
 		if mg.createdSeconds != 0 {
 			point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-		} else if !removeStartTimeAdjustment.IsEnabled() {
-			// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-			point.SetStartTimestamp(tsNanos)
 		}
 	}
 	point.SetTimestamp(tsNanos)

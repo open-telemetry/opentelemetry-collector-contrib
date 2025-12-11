@@ -216,8 +216,3 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 "--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
 ```
 
-- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
-```
