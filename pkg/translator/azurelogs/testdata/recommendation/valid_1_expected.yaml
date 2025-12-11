@@ -59,7 +59,7 @@ resourceLogs:
                 value:
                   stringValue: Microsoft.Advisor
             body: {}
-            observedTimeUnixNano: "1765384204811483000"
+            observedTimeUnixNano: "1765491690617202000"
             severityNumber: 9
             severityText: Informational
             timeUnixNano: "1745503906421669000"

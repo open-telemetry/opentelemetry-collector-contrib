@@ -15,6 +15,9 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: category
+                    value:
+                      stringValue: FlowLogFlowEvent
                   - key: operation.name
                     value:
                       stringValue: FlowLogFlowEvent
@@ -48,9 +51,7 @@ resourceLogs:
                               "targetResourceID": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
                               "time": "2025-11-07T15:59:52.9326845Z"
                         }
-                  - key: category
-                    value:
-                      stringValue: FlowLogFlowEvent
+            observedTimeUnixNano: "1765491690617424000"
             timeUnixNano: "1762531192932684500"
         scope:
           name: otelcol/azureresourcelogs

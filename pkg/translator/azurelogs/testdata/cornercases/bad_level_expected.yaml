@@ -15,6 +15,15 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: category
+                    value:
+                      stringValue: GatewayLogs
+                  - key: correlation.id
+                    value:
+                      stringValue: 128bc026-5ead-40c7-8853-ebb32bc077a3
+                  - key: duration
+                    value:
+                      intValue: "243"
                   - key: operation.name
                     value:
                       stringValue: Microsoft.ApiManagement/GatewayLogs
@@ -22,18 +31,48 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: backendTime
+                          - key: url
                             value:
-                              doubleValue: 54
+                              stringValue: https://api.azure-api.net/sessions
+                          - key: responseSize
+                            value:
+                              doubleValue: 102945
+                          - key: method
+                            value:
+                              stringValue: GET
+                          - key: requestSize
+                            value:
+                              doubleValue: 632
+                          - key: clientTime
+                            value:
+                              doubleValue: 190
+                          - key: apiRevision
+                            value:
+                              stringValue: "1"
                           - key: backendMethod
                             value:
                               stringValue: GET
-                          - key: backendResponseCode
-                            value:
-                              doubleValue: 200
                           - key: backendProtocol
                             value:
                               stringValue: HTTP/1.1
+                          - key: clientTlsVersion
+                            value:
+                              stringValue: "1.2"
+                          - key: backendResponseCode
+                            value:
+                              doubleValue: 200
+                          - key: operationId
+                            value:
+                              stringValue: GetSessions
+                          - key: backendUrl
+                            value:
+                              stringValue: https://api.azurewebsites.net/sessions
+                          - key: cache
+                            value:
+                              stringValue: none
+                          - key: backendTime
+                            value:
+                              doubleValue: 54
                           - key: apiId
                             value:
                               stringValue: demo-api
@@ -43,36 +82,6 @@ resourceLogs:
                           - key: apimSubscriptionId
                             value:
                               stringValue: master
-                          - key: method
-                            value:
-                              stringValue: GET
-                          - key: responseSize
-                            value:
-                              doubleValue: 102945
-                          - key: clientTime
-                            value:
-                              doubleValue: 190
-                          - key: clientTlsVersion
-                            value:
-                              stringValue: "1.2"
-                          - key: cache
-                            value:
-                              stringValue: none
-                          - key: operationId
-                            value:
-                              stringValue: GetSessions
-                          - key: backendUrl
-                            value:
-                              stringValue: https://api.azurewebsites.net/sessions
-                          - key: apiRevision
-                            value:
-                              stringValue: "1"
-                          - key: requestSize
-                            value:
-                              doubleValue: 632
-                          - key: url
-                            value:
-                              stringValue: https://api.azure-api.net/sessions
                           - key: clientProtocol
                             value:
                               stringValue: HTTP/1.1
@@ -85,16 +94,7 @@ resourceLogs:
                   - key: network.peer.address
                     value:
                       stringValue: 13.14.15.16
-                  - key: category
-                    value:
-                      stringValue: GatewayLogs
-                  - key: correlation.id
-                    value:
-                      stringValue: 128bc026-5ead-40c7-8853-ebb32bc077a3
-                  - key: duration
-                    value:
-                      intValue: "243"
-            observedTimeUnixNano: "1765384204818137000"
+            observedTimeUnixNano: "1765493309860121000"
             severityNumber: 4
             severityText: "4"
             timeUnixNano: "1698330163341635700"

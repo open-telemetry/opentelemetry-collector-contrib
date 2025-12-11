@@ -39,7 +39,7 @@ resourceLogs:
                   - key: client.address
                     value:
                       stringValue: 42.42.42.42
-            observedTimeUnixNano: "1765384204816194000"
+            observedTimeUnixNano: "1765493309861714000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

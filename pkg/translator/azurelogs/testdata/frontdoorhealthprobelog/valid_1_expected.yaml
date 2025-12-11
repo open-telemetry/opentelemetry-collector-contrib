@@ -15,6 +15,22 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: healthProbeId
+                            value:
+                              stringValue: AAAA
+                          - key: POP
+                            value:
+                              stringValue: ""
+                          - key: result
+                            value:
+                              stringValue: ""
+                          - key: originName
+                            value:
+                              stringValue: https://probe.net/
                   - key: category
                     value:
                       stringValue: FrontDoorHealthProbeLog
@@ -24,6 +40,12 @@ resourceLogs:
                   - key: url.full
                     value:
                       stringValue: https://probe.net/health
+                  - key: http.request.duration
+                    value:
+                      doubleValue: 0.042
+                  - key: server.address
+                    value:
+                      stringValue: 42.42.42.42
                   - key: dns.lookup.duration
                     value:
                       doubleValue: 0.00023
@@ -33,29 +55,7 @@ resourceLogs:
                   - key: http.response.status_code
                     value:
                       intValue: "200"
-                  - key: http.request.duration
-                    value:
-                      doubleValue: 0.042
-                  - key: server.address
-                    value:
-                      stringValue: 42.42.42.42
-                  - key: properties
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: originName
-                            value:
-                              stringValue: https://probe.net/
-                          - key: POP
-                            value:
-                              stringValue: ""
-                          - key: result
-                            value:
-                              stringValue: ""
-                          - key: healthProbeId
-                            value:
-                              stringValue: AAAA
-            observedTimeUnixNano: "1765384204811577000"
+            observedTimeUnixNano: "1765493309862727000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

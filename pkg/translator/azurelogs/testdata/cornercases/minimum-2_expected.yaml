@@ -30,17 +30,11 @@ resourceLogs:
                               "resourceId": "/RESOURCE_ID",
                               "time": "2022-11-11T04:48:27.6767145Z"
                         }
-            observedTimeUnixNano: "1765431874681040000"
+            observedTimeUnixNano: "1765493309863555000"
             timeUnixNano: "1668142107676714500"
           - body:
               kvlistValue:
                 values:
-                  - key: category
-                    value:
-                      stringValue: AuditEvent
-                  - key: operation.name
-                    value:
-                      stringValue: SecretGet
                   - key: event.original
                     value:
                       stringValue: |-
@@ -50,7 +44,13 @@ resourceLogs:
                               "resourceId": "/RESOURCE_ID",
                               "time": "2022-11-11T04:48:27.6767145Z"
                         }
-            observedTimeUnixNano: "1765431874681040000"
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+                  - key: operation.name
+                    value:
+                      stringValue: SecretGet
+            observedTimeUnixNano: "1765493309863555000"
             timeUnixNano: "1668142107676714500"
         scope:
           name: otelcol/azureresourcelogs

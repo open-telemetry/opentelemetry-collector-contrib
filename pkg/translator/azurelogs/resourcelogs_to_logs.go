@@ -106,16 +106,25 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
-	// Re-parse to capture raw record JSON for fields not in the struct
-	var rawRecords struct {
-		Records []json.RawMessage `json:"records"`
-	}
+	// Lazy initialization: only create rawRecordMap when needed
 	var rawRecordMap map[int]json.RawMessage
-	if err := json.Unmarshal(buf, &rawRecords); err == nil {
-		rawRecordMap = make(map[int]json.RawMessage)
-		for i := range rawRecords.Records {
-			rawRecordMap[i] = rawRecords.Records[i]
+	getRawRecord := func(index int) json.RawMessage {
+		if rawRecordMap == nil {
+			// Create rawRecordMap on first use
+			var rawRecords struct {
+				Records []json.RawMessage `json:"records"`
+			}
+			if err := json.Unmarshal(buf, &rawRecords); err == nil {
+				rawRecordMap = make(map[int]json.RawMessage)
+				for i := range rawRecords.Records {
+					rawRecordMap[i] = rawRecords.Records[i]
+				}
+			}
 		}
+		if rawRecordMap != nil {
+			return rawRecordMap[index]
+		}
+		return nil
 	}
 
 	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
@@ -153,10 +162,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 				// TODO @constanca-m This will be removed once the categories
 				// are properly mapped to the semantic conventions in
 				// category_logs.go
-				var rawRecord json.RawMessage
-				if rawRecordMap != nil {
-					rawRecord = rawRecordMap[i]
-				}
+				rawRecord := getRawRecord(i)
 				err = lr.Body().FromRaw(extractRawAttributes(log, rawRecord))
 				if err != nil {
 					return plog.Logs{}, err
