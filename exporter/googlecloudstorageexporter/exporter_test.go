@@ -282,44 +282,52 @@ func TestConsumeLogs(t *testing.T) {
 	newTestStorageEmulator(t, "", uploadBucketName, nil)
 
 	encodingSucceedsID := "id_success"
+	encodingFailsID := "id_fail"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
 			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingFailsID):    &mockLogMarshaler{shouldFail: true},
 		},
 	}
-	id := component.MustNewID(encodingSucceedsID)
-	gcsExporter := newTestGCSExporter(t, &Config{
-		Bucket: bucketConfig{
-			Name: uploadBucketName,
+
+	tests := []struct {
+		name       string
+		id         string
+		expectsErr string
+	}{
+		{
+			name:       "encoding fails",
+			id:         encodingFailsID,
+			expectsErr: "failed to marshal logs",
 		},
-		Encoding: &id,
-	})
+		{
+			name: "encoding succeeds",
+			id:   encodingSucceedsID,
+		},
+	}
 
-	errStart := gcsExporter.Start(t.Context(), mHost)
-	require.NoError(t, errStart)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			compID := component.MustNewID(tt.id)
 
-	err := gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
-	require.NoError(t, err)
+			gcsExporter := newTestGCSExporter(t, &Config{
+				Bucket: bucketConfig{
+					Name: uploadBucketName,
+				},
+				Encoding: &compID,
+			})
 
-	t.Run("marshaling fails", func(t *testing.T) {
-		encodingFailsID := "id_fail"
-		mHost := &mockHost{
-			extensions: map[component.ID]component.Component{
-				component.MustNewID(encodingFailsID): &mockLogMarshaler{shouldFail: true},
-			},
-		}
-		id := component.MustNewID(encodingFailsID)
-		gcsExporter := newTestGCSExporter(t, &Config{
-			Bucket: bucketConfig{
-				Name: uploadBucketName,
-			},
-			Encoding: &id,
+			errStart := gcsExporter.Start(t.Context(), mHost)
+			require.NoError(t, errStart)
+
+			err := gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
+			if tt.expectsErr != "" {
+				require.ErrorContains(t, err, tt.expectsErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
-		errStart := gcsExporter.Start(t.Context(), mHost)
-		require.NoError(t, errStart)
-		err := gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
-		require.ErrorContains(t, err, "failed to marshal logs")
-	})
+	}
 }
 
 func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
