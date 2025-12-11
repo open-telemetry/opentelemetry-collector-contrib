@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -32,7 +33,7 @@ type Config struct {
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	MappingsSettings          `mapstructure:"mapping"`
-	QueueConfig               exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueConfig               configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/

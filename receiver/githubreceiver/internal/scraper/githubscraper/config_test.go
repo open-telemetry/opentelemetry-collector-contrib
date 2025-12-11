@@ -25,7 +25,47 @@ func TestConfig(t *testing.T) {
 	expectedConfig := &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ClientConfig:         clientConfig,
+		ConcurrencyLimit:     50,
 	}
 
 	assert.Equal(t, expectedConfig, defaultConfig)
+}
+
+func TestConfigValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  Config
+		wantErr bool
+	}{
+		{
+			name: "valid config with concurrency limit",
+			config: Config{
+				ConcurrencyLimit: 50,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid config with zero concurrency (unlimited)",
+			config: Config{
+				ConcurrencyLimit: 0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid config with negative concurrency",
+			config: Config{
+				ConcurrencyLimit: -1,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Config.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

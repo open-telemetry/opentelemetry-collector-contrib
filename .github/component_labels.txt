@@ -131,6 +131,7 @@ internal/grpcutil internal/grpcutil
 internal/healthcheck internal/healthcheck
 internal/k8sconfig internal/k8sconfig
 internal/k8sinventory internal/k8sinventory
+internal/k8sleaderelectortest internal/k8sleaderelectortest
 internal/kafka internal/kafka
 internal/kubelet internal/kubelet
 internal/metadataproviders internal/metadataproviders

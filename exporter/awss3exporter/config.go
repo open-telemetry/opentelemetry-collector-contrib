@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 )
@@ -90,10 +91,10 @@ type ResourceAttrsToS3 struct {
 
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
-	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	S3Uploader      S3UploaderConfig                `mapstructure:"s3uploader"`
-	MarshalerName   MarshalerType                   `mapstructure:"marshaler"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	S3Uploader      S3UploaderConfig                                         `mapstructure:"s3uploader"`
+	MarshalerName   MarshalerType                                            `mapstructure:"marshaler"`
 
 	// Encoding to apply. If present, overrides the marshaler configuration option.
 	Encoding              *component.ID     `mapstructure:"encoding"`

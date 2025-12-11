@@ -169,8 +169,8 @@ func prepareBenchmark(
 	cfg.esCfg.MetricsIndex = TestMetricsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex
 	// sending_queue::batch is defined as a default config
-	cfg.esCfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
-	cfg.esCfg.QueueBatchConfig.NumConsumers = 1
+	cfg.esCfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
+	cfg.esCfg.QueueBatchConfig.Get().NumConsumers = 1
 
 	tc, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 		return nil

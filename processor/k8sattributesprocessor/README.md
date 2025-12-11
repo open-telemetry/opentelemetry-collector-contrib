@@ -8,7 +8,7 @@
 | Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -539,39 +539,13 @@ timestamp value as an RFC3339 compliant timestamp.
 
 ## Feature Gates
 
-### `k8sattr.fieldExtractConfigRegex.disallow`
-
-The `k8sattr.fieldExtractConfigRegex.disallow` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disallows the usage of the `extract.annotations.regex` and `extract.labels.regex` fields.
-The feature gate is in `stable` stage, which means it can no longer be disabled and is therefore enabled by default.
-
-#### Migration
-
-Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the `extract.annotations.regex` and `extract.labels.regex` fields.
-
-##### Example
-
-The following configuration of `k8sattributes processor`:
-
-`config.yaml`:
-
-  ```yaml
-  annotations:
-    - tag_name: a2 # extracts value of annotation with key `annotation2` with regexp and inserts it as a tag with key `a2`
-      key: annotation2
-      regex: field=(?P<value>.+)
-      from: pod
-  ```
-
-can be converted with the usage of `ExtractPatterns` function:
-
-```yaml
-  - set(cache["annotations"], ExtractPatterns(attributes["k8s.pod.annotations["annotation2"], "field=(?P<value>.+))")
-  - set(k8s.pod.annotations["a2"], cache["annotations"]["value"])
-```
-
 ### `k8sattr.labelsAnnotationsSingular.allow`
 
 The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
+
+This affects both:
+- Runtime attribute extraction from Kubernetes metadata
+- Default tag names in configuration when `tag_name` is not specified
 
 The reason behind this change is to align the Kubernetes related resource attribute keys with the latest semantic conventions.
 

@@ -25,11 +25,11 @@ type setSemconvSpanNameArguments struct {
 	OriginalSpanNameAttribute ottl.Optional[string]
 }
 
-func NewSetSemconvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
-	return ottl.NewFactory("set_semconv_span_name", &setSemconvSpanNameArguments{}, createSetSemconvSpanNameFunction)
+func NewSetSemconvSpanNameFactoryLegacy() ottl.Factory[ottlspan.TransformContext] {
+	return ottl.NewFactory("set_semconv_span_name", &setSemconvSpanNameArguments{}, createSetSemconvSpanNameFunctionLegacy)
 }
 
-func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
+func createSetSemconvSpanNameFunctionLegacy(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
 	args, ok := oArgs.(*setSemconvSpanNameArguments)
 
 	if !ok {
@@ -44,6 +44,30 @@ func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 	}
 
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
+		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan())
+		return nil, nil
+	}, nil
+}
+
+func NewSetSemconvSpanNameFactory() ottl.Factory[*ottlspan.TransformContext] {
+	return ottl.NewFactory("set_semconv_span_name", &setSemconvSpanNameArguments{}, createSetSemconvSpanNameFunction)
+}
+
+func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlspan.TransformContext], error) {
+	args, ok := oArgs.(*setSemconvSpanNameArguments)
+
+	if !ok {
+		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
+	}
+	if args.SemconvVersion != supportedSemconvVersion {
+		return nil, fmt.Errorf("unsupported semconv version: %s, supported version: %s", args.SemconvVersion, supportedSemconvVersion)
+	}
+
+	if !args.OriginalSpanNameAttribute.IsEmpty() && args.OriginalSpanNameAttribute.Get() == "" {
+		return nil, errors.New("originalSpanNameAttribute cannot be an empty string")
+	}
+
+	return func(_ context.Context, tCtx *ottlspan.TransformContext) (any, error) {
 		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan())
 		return nil, nil
 	}, nil

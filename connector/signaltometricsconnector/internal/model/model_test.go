@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
@@ -80,7 +80,7 @@ func TestFilterResourceAttributes(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			md := MetricDef[ottlspan.TransformContext]{
+			md := MetricDef[*ottlspan.TransformContext]{
 				IncludeResourceAttributes: tc.includeResourceAttributes,
 			}
 			inputResourceAttrsM := pcommon.NewMap()
@@ -149,7 +149,7 @@ func TestFilterAttributes(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			md := MetricDef[ottlspan.TransformContext]{
+			md := MetricDef[*ottlspan.TransformContext]{
 				Attributes: tc.attributes,
 			}
 			inputAttrM := pcommon.NewMap()

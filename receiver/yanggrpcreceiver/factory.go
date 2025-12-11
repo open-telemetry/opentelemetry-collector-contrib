@@ -31,7 +31,6 @@ func createDefaultConfig() component.Config {
 				BurstSize:         10,
 				CleanupInterval:   time.Minute,
 			},
-			AllowedClients:    []string{}, // Empty means allow all
 			ConnectionTimeout: 30 * time.Second,
 			EnableMetrics:     true,
 		},
