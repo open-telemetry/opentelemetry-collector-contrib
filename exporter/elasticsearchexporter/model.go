@@ -267,6 +267,7 @@ func (ecsModeEncoder) encodeSpan(
 	spanAttrsConversionMap := map[string]conversionEntry{
 		string(semconv.MessagingDestinationNameKey): {to: messageQueueName},
 		string(semconv.MessagingOperationNameKey):   {to: "span.action"},
+		string(semconv.MessagingSystemKey):          {to: "span.subtype"},
 		string(semconv22.DBSystemKey):               {to: "span.db.type"},
 		string(semconv.DBNamespaceKey):              {to: "span.db.instance"},
 		string(semconv.DBQueryTextKey):              {to: "span.db.statement"},
