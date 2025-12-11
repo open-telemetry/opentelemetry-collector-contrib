@@ -23,7 +23,7 @@ func Test_IsRootSpan(t *testing.T) {
 		0, 0, 0, 0, 0, 0, 0, 0,
 	})
 
-	rootCtx := ottlspan.NewTransformContextPtr(spanRoot, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+	rootCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), spanRoot)
 	defer rootCtx.Close()
 	value, err := exprFunc(nil, rootCtx)
 	require.NoError(t, err)
@@ -35,7 +35,7 @@ func Test_IsRootSpan(t *testing.T) {
 		1, 0, 0, 0, 0, 0, 0, 0,
 	})
 
-	nonRootCtx := ottlspan.NewTransformContextPtr(spanNonRoot, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+	nonRootCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), spanNonRoot)
 	defer nonRootCtx.Close()
 	value, err = exprFunc(nil, nonRootCtx)
 	require.NoError(t, err)
