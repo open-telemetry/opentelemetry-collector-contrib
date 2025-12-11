@@ -103,10 +103,12 @@ func TestStart(t *testing.T) {
 
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
+	encodingLogsOnlyID := "id_logs_only"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
 			component.MustNewID(encodingFailsID):    nil,
 			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
+			component.MustNewID(encodingLogsOnlyID): &mockLogMarshaler{},
 		},
 	}
 
@@ -124,7 +126,7 @@ func TestStart(t *testing.T) {
 		require.Equal(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
 	})
 
-	gcsExporter.cfg.Encoding = &id
+	gcsExporter.cfg.Encoding = id
 	t.Run("encoding id not present", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.ErrorContains(t, err, "unknown extension")
@@ -132,14 +134,23 @@ func TestStart(t *testing.T) {
 
 	id = component.MustNewID(encodingFailsID)
 
-	gcsExporter.cfg.Encoding = &id
+	gcsExporter.cfg.Encoding = id
 	t.Run("encoding id not a logs marshaler", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.ErrorContains(t, err, "is not a logs marshaler")
 	})
 
+	id = component.MustNewID(encodingLogsOnlyID)
+	gcsExporter.cfg.Encoding = id
+	t.Run("encoding id only logs marshaler", func(t *testing.T) {
+		err := gcsExporter.Start(t.Context(), mHost)
+		require.NoError(t, err)
+		require.IsType(t, &mockLogMarshaler{}, gcsExporter.logsMarshaler)
+		require.IsType(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
+	})
+
 	id = component.MustNewID(encodingSucceedsID)
-	gcsExporter.cfg.Encoding = &id
+	gcsExporter.cfg.Encoding = id
 
 	t.Run("create new bucket", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
@@ -176,7 +187,7 @@ func TestUploadFile(t *testing.T) {
 		Bucket: bucketConfig{
 			Name: uploadBucketName,
 		},
-		Encoding: &id,
+		Encoding: id,
 	})
 
 	t.Run("empty content", func(t *testing.T) {
@@ -207,7 +218,7 @@ func TestConsumeLogs(t *testing.T) {
 		Bucket: bucketConfig{
 			Name: uploadBucketName,
 		},
-		Encoding: &id,
+		Encoding: id,
 	})
 
 	errStart := gcsExporter.Start(t.Context(), mHost)
@@ -232,7 +243,7 @@ func TestConsumeTraces(t *testing.T) {
 		Bucket: bucketConfig{
 			Name: uploadBucketName,
 		},
-		Encoding: &id,
+		Encoding: id,
 	})
 
 	errStart := gcsExporter.Start(t.Context(), mHost)
