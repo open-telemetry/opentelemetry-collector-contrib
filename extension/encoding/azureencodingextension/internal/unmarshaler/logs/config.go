@@ -17,8 +17,10 @@ type LogsConfig struct {
 // that was detected for supported Azure Resource Log Categories
 // It is used as a default timestamp parsing formats to simplify configuration
 // of logs parser for end-users
-var DefaultTimeFormats = []string{
-	"01/02/2006 15:04:05",
-	"1/2/2006 3:04:05.000 PM -07:00",
-	"1/2/2006 3:04:05 PM -07:00",
+func DefaultTimeFormats() []string {
+	return []string{
+		"01/02/2006 15:04:05",
+		"1/2/2006 3:04:05.000 PM -07:00",
+		"1/2/2006 3:04:05 PM -07:00",
+	}
 }
