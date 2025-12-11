@@ -40,7 +40,7 @@ type conversionEntry struct {
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.ServiceInstanceIDKey):         {to: "service.node.name"},
-	string(semconv22.DeploymentEnvironmentKey):   {to: "service.environment"},
+	string(semconv22.DeploymentEnvironmentKey):       {to: "service.environment"},
 	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
 	string(conventions.TelemetrySDKNameKey):          {skip: true},
 	string(conventions.TelemetrySDKLanguageKey):      {skip: true},
@@ -208,11 +208,11 @@ func (ecsModeEncoder) encodeLog(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]conversionEntry{
-		"event.name":                            {to: "event.action"},
+		"event.name":                                {to: "event.action"},
 		string(conventions.ExceptionMessageKey):     {to: "error.message"},
 		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
 		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		string(semconv22.ExceptionEscapedKey):   {to: "event.error.exception.handled"},
+		string(semconv22.ExceptionEscapedKey):       {to: "event.error.exception.handled"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
@@ -267,7 +267,7 @@ func (ecsModeEncoder) encodeSpan(
 	spanAttrsConversionMap := map[string]conversionEntry{
 		string(conventions.MessagingDestinationNameKey): {to: messageQueueName},
 		string(conventions.MessagingOperationNameKey):   {to: "span.action"},
-		string(semconv22.DBSystemKey):               {to: "span.db.type"},
+		string(semconv22.DBSystemKey):                   {to: "span.db.type"},
 		string(conventions.DBNamespaceKey):              {to: "span.db.instance"},
 		string(conventions.DBQueryTextKey):              {to: "span.db.statement"},
 		string(conventions.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},

@@ -455,7 +455,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	err := resource.Attributes().FromRaw(map[string]any{
 		string(conventions.CloudProviderKey):             "aws",
 		string(conventions.CloudPlatformKey):             "aws_elastic_beanstalk",
-		string(semconv22.DeploymentEnvironmentKey):   "BETA",
+		string(semconv22.DeploymentEnvironmentKey):       "BETA",
 		string(conventions.DeploymentEnvironmentNameKey): "BETA",
 		string(conventions.ServiceInstanceIDKey):         "23",
 		string(conventions.ServiceNameKey):               "some-service",
@@ -485,10 +485,10 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	span := scopeSpans.Spans().AppendEmpty()
 	err = span.Attributes().FromRaw(map[string]any{
 		string(conventions.MessagingDestinationNameKey): "users_queue",
-		"messaging.operation.name":                  "receive",
-		string(semconv22.DBSystemKey):               "sql",
-		"db.namespace":                              "users",
-		"db.query.text":                             "SELECT * FROM users WHERE user_id=?",
+		"messaging.operation.name":                      "receive",
+		string(semconv22.DBSystemKey):                   "sql",
+		"db.namespace":                                  "users",
+		"db.query.text":                                 "SELECT * FROM users WHERE user_id=?",
 		string(conventions.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
 	})
 	require.NoError(t, err)
@@ -662,7 +662,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
 		string(conventions.ServiceNameKey):               "foo.bar",
-		string(semconv22.DeploymentEnvironmentKey):   "BETA",
+		string(semconv22.DeploymentEnvironmentKey):       "BETA",
 		string(conventions.DeploymentEnvironmentNameKey): "BETA",
 		string(conventions.ServiceVersionKey):            "1.1.0",
 		string(conventions.ServiceInstanceIDKey):         "i-103de39e0a",
@@ -677,9 +677,9 @@ func TestEncodeLogECSMode(t *testing.T) {
 		string(conventions.ContainerNameKey):             "happy-seger",
 		string(conventions.ContainerIDKey):               "e69cc5d3dda",
 		string(conventions.ContainerImageNameKey):        "my-app",
-		string(semconv22.ContainerRuntimeKey):        "docker",
+		string(semconv22.ContainerRuntimeKey):            "docker",
 		string(conventions.HostNameKey):                  "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		"host.hostname":                              "hostname.example.com",
+		"host.hostname":                                  "hostname.example.com",
 		string(conventions.HostIDKey):                    "i-103de39e0a",
 		string(conventions.HostTypeKey):                  "t2.medium",
 		string(conventions.HostArchKey):                  "x86_64",
@@ -696,11 +696,11 @@ func TestEncodeLogECSMode(t *testing.T) {
 		string(conventions.DeviceModelIdentifierKey):     "SM-G920F",
 		string(conventions.DeviceModelNameKey):           "Samsung Galaxy S6",
 		string(conventions.DeviceManufacturerKey):        "Samsung",
-		"k8s.namespace.name":                         "default",
-		"k8s.node.name":                              "node-1",
-		"k8s.pod.name":                               "opentelemetry-pod-autoconf",
-		"k8s.pod.uid":                                "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"k8s.deployment.name":                        "coredns",
+		"k8s.namespace.name":                             "default",
+		"k8s.node.name":                                  "node-1",
+		"k8s.pod.name":                                   "opentelemetry-pod-autoconf",
+		"k8s.pod.uid":                                    "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"k8s.deployment.name":                            "coredns",
 		string(conventions.K8SJobNameKey):                "job.name",
 		string(conventions.K8SCronJobNameKey):            "cronjob.name",
 		string(conventions.K8SStatefulSetNameKey):        "statefulset.name",
@@ -725,7 +725,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	record := plog.NewLogRecord()
 	err = record.Attributes().FromRaw(map[string]any{
-		"event.name":                            "user-password-change",
+		"event.name": "user-password-change",
 		string(conventions.HTTPResponseBodySizeKey): 1024,
 	})
 	require.NoError(t, err)

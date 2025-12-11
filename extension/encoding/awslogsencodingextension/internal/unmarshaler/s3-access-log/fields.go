@@ -55,24 +55,24 @@ const (
 var attributeNames = [...]string{
 	fieldIndexSourceAddress:    string(conventions.SourceAddressKey),          // remote IP
 	fieldIndexRequester:        string(conventions.UserIDKey),                 // requester
-	fieldIndexRequestID:        "aws.request_id",                          // request ID
+	fieldIndexRequestID:        "aws.request_id",                              // request ID
 	fieldIndexOperation:        string(conventions.RPCMethodKey),              // operation
 	fieldIndexS3Key:            string(conventions.AWSS3KeyKey),               // key
 	fieldIndexHTTPStatus:       string(conventions.HTTPResponseStatusCodeKey), // HTTP status
 	fieldIndexErrorCode:        string(conventions.ErrorTypeKey),              // error code
 	fieldIndexBytesSent:        string(conventions.HTTPResponseBodySizeKey),   // bytes sent
-	fieldIndexObjectSize:       attributeAWSS3ObjectSize,                  // object size
-	fieldIndexTotalTime:        duration,                                  // total time
-	fieldIndexTurnAroundTime:   attributeAWSS3TurnAroundTime,              // turn around time
-	fieldIndexReferer:          "http.request.header.referer",             // referer
+	fieldIndexObjectSize:       attributeAWSS3ObjectSize,                      // object size
+	fieldIndexTotalTime:        duration,                                      // total time
+	fieldIndexTurnAroundTime:   attributeAWSS3TurnAroundTime,                  // turn around time
+	fieldIndexReferer:          "http.request.header.referer",                 // referer
 	fieldIndexUserAgent:        string(conventions.UserAgentOriginalKey),      // user agent
-	fieldIndexVersionID:        "aws.s3.version_id",                       // version ID
-	fieldIndexHostID:           "aws.extended_request_id",                 // host ID
-	fieldIndexSignatureVersion: "aws.signature.version",                   // signature version
+	fieldIndexVersionID:        "aws.s3.version_id",                           // version ID
+	fieldIndexHostID:           "aws.extended_request_id",                     // host ID
+	fieldIndexSignatureVersion: "aws.signature.version",                       // signature version
 	fieldIndexTLSCipher:        string(conventions.TLSCipherKey),              // cipher suite
-	fieldIndexAuthType:         "aws.s3.auth_type",                        // authentication type
-	fieldIndexHostHeader:       "http.request.header.host",                // host header
+	fieldIndexAuthType:         "aws.s3.auth_type",                            // authentication type
+	fieldIndexHostHeader:       "http.request.header.host",                    // host header
 	fieldIndexTLSVersion:       string(conventions.TLSProtocolVersionKey),     // TLS version
-	fieldIndexAccessPointARN:   "aws.s3.access_point.arn",                 // access point ARN
-	fieldIndexACLRequired:      attributeAWSS3AclRequired,                 // acl required
+	fieldIndexAccessPointARN:   "aws.s3.access_point.arn",                     // access point ARN
+	fieldIndexACLRequired:      attributeAWSS3AclRequired,                     // acl required
 }
