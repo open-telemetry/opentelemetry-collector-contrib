@@ -402,6 +402,9 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 	combinedMetric := pmetric.NewMetric()
 	copyMetricDetails(firstMetric, combinedMetric)
 	combinedMetric.SetName(transform.NewName)
+	if transform.NewDescription != "" {
+		combinedMetric.SetDescription(transform.NewDescription)
+	}
 
 	// append attribute keys based on the transform filter's named capturing groups
 	subexprNames := transform.MetricIncludeFilter.getSubexpNames()
@@ -537,11 +540,17 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 	isMetricEmpty := countDataPoints(metric) == 0
 	canChangeMetric := transform.Action != Update || matchAllDps(metric, transform.MetricIncludeFilter)
 
-	if transform.NewName != "" && canChangeMetric {
-		if newName := transform.MetricIncludeFilter.expand(transform.NewName, metric.Name()); newName != "" {
-			metric.SetName(newName)
-		} else {
-			metric.SetName(transform.NewName)
+	if canChangeMetric {
+		if transform.NewName != "" {
+			if newName := transform.MetricIncludeFilter.expand(transform.NewName, metric.Name()); newName != "" {
+				metric.SetName(newName)
+			} else {
+				metric.SetName(transform.NewName)
+			}
+		}
+
+		if transform.NewDescription != "" {
+			metric.SetDescription(transform.NewDescription)
 		}
 	}
 
