@@ -107,7 +107,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
-	// Lazy initialization: only create rawRecordMap when needed
 	var rawRecordMap map[int]json.RawMessage
 	getRawRecord := func(index int) json.RawMessage {
 		if rawRecordMap == nil {
