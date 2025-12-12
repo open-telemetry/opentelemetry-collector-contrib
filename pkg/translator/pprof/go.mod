@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d
 	go.opentelemetry.io/collector/pdata v1.47.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/pdata/pprofile v0.141.1-0.20251210054218-8f51a1792add
+	go.opentelemetry.io/collector/pdata/pprofile v0.141.1-0.20251211181959-97fcd3d13b4a
 	go.opentelemetry.io/otel v1.39.0
 )
 
