@@ -31,60 +31,60 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: operationId
+                            value:
+                              stringValue: GetSessions
+                          - key: clientProtocol
+                            value:
+                              stringValue: HTTP/1.1
+                          - key: backendUrl
+                            value:
+                              stringValue: https://api.azurewebsites.net/sessions
                           - key: url
                             value:
                               stringValue: https://api.azure-api.net/sessions
+                          - key: cache
+                            value:
+                              stringValue: none
+                          - key: backendMethod
+                            value:
+                              stringValue: GET
                           - key: responseSize
                             value:
                               doubleValue: 102945
                           - key: method
                             value:
                               stringValue: GET
-                          - key: requestSize
-                            value:
-                              doubleValue: 632
-                          - key: clientTime
-                            value:
-                              doubleValue: 190
-                          - key: apiRevision
-                            value:
-                              stringValue: "1"
-                          - key: backendMethod
-                            value:
-                              stringValue: GET
-                          - key: backendProtocol
-                            value:
-                              stringValue: HTTP/1.1
-                          - key: clientTlsVersion
-                            value:
-                              stringValue: "1.2"
-                          - key: backendResponseCode
-                            value:
-                              doubleValue: 200
-                          - key: operationId
-                            value:
-                              stringValue: GetSessions
-                          - key: backendUrl
-                            value:
-                              stringValue: https://api.azurewebsites.net/sessions
-                          - key: cache
-                            value:
-                              stringValue: none
-                          - key: backendTime
-                            value:
-                              doubleValue: 54
-                          - key: apiId
-                            value:
-                              stringValue: demo-api
                           - key: responseCode
                             value:
                               doubleValue: 200
                           - key: apimSubscriptionId
                             value:
                               stringValue: master
-                          - key: clientProtocol
+                          - key: clientTime
+                            value:
+                              doubleValue: 190
+                          - key: backendTime
+                            value:
+                              doubleValue: 54
+                          - key: requestSize
+                            value:
+                              doubleValue: 632
+                          - key: backendProtocol
                             value:
                               stringValue: HTTP/1.1
+                          - key: backendResponseCode
+                            value:
+                              doubleValue: 200
+                          - key: clientTlsVersion
+                            value:
+                              stringValue: "1.2"
+                          - key: apiRevision
+                            value:
+                              stringValue: "1"
+                          - key: apiId
+                            value:
+                              stringValue: demo-api
                   - key: result.type
                     value:
                       stringValue: Succeeded
@@ -94,7 +94,7 @@ resourceLogs:
                   - key: network.peer.address
                     value:
                       stringValue: 13.14.15.16
-            observedTimeUnixNano: "1765493309860121000"
+            observedTimeUnixNano: "1765520010765949000"
             severityNumber: 4
             severityText: "4"
             timeUnixNano: "1698330163341635700"

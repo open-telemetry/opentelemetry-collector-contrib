@@ -4,6 +4,7 @@
 package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -300,14 +301,9 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 	// This preserves the original log for logs that don't have a properties field
 	if len(log.Properties) == 0 && len(rawRecord) > 0 {
 		// Format the JSON with proper indentation to match expected output
-		var rawMap map[string]any
-		if err := gojson.Unmarshal(rawRecord, &rawMap); err == nil {
-			// Re-marshal with indentation to match expected format
-			if formattedJSON, err := json.MarshalIndent(rawMap, "", "      "); err == nil {
-				attrs["event.original"] = string(formattedJSON)
-			} else {
-				attrs["event.original"] = string(rawRecord)
-			}
+		var formattedJSON bytes.Buffer
+		if err := json.Indent(&formattedJSON, rawRecord, "", "      "); err == nil {
+			attrs["event.original"] = formattedJSON.String()
 		} else {
 			attrs["event.original"] = string(rawRecord)
 		}

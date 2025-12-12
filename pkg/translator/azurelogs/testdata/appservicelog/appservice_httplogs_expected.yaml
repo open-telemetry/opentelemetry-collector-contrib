@@ -15,51 +15,42 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: url.domain
-                    value:
-                      stringValue: test.com
-                  - key: url.query
-                    value:
-                      stringValue: foo=42
                   - key: http.response.status_code
                     value:
                       intValue: "200"
                   - key: host.name
                     value:
                       stringValue: COMPUTER_NAME
-                  - key: http.response.body.size
-                    value:
-                      intValue: "42"
-                  - key: category
-                    value:
-                      stringValue: AppServiceHTTPLogs
-                  - key: server.port
-                    value:
-                      intValue: "80"
-                  - key: user_agent.original
-                    value:
-                      stringValue: Mozilla/5.0
-                  - key: network.protocol.version
-                    value:
-                      stringValue: "1.1"
-                  - key: http.request.body.size
-                    value:
-                      intValue: "4242"
-                  - key: client.address
-                    value:
-                      stringValue: 42.42.42.42
-                  - key: url.path
-                    value:
-                      stringValue: /api/test/
-                  - key: http.server.request.duration
-                    value:
-                      doubleValue: 0.42
-                  - key: http.request.header.referer
-                    value:
-                      stringValue: REFERER
                   - key: http.request.method
                     value:
                       stringValue: GET
+                  - key: user_agent.original
+                    value:
+                      stringValue: Mozilla/5.0
+                  - key: url.path
+                    value:
+                      stringValue: /api/test/
+                  - key: network.protocol.version
+                    value:
+                      stringValue: "1.1"
+                  - key: http.response.body.size
+                    value:
+                      intValue: "42"
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: operation.name
+                    value:
+                      stringValue: ""
+                  - key: http.request.header.referer
+                    value:
+                      stringValue: REFERER
+                  - key: server.port
+                    value:
+                      intValue: "80"
+                  - key: http.server.request.duration
+                    value:
+                      doubleValue: 0.42
                   - key: network.protocol.name
                     value:
                       stringValue: http
@@ -70,16 +61,25 @@ resourceLogs:
                           - key: Result
                             value:
                               stringValue: Success
-                          - key: Cookie
-                            value:
-                              stringValue: ""
                           - key: CsUsername
                             value:
                               stringValue: user@test.com
-                  - key: operation.name
+                          - key: Cookie
+                            value:
+                              stringValue: ""
+                  - key: category
                     value:
-                      stringValue: ""
-            observedTimeUnixNano: "1765493309862062000"
+                      stringValue: AppServiceHTTPLogs
+                  - key: url.domain
+                    value:
+                      stringValue: test.com
+                  - key: url.query
+                    value:
+                      stringValue: foo=42
+                  - key: http.request.body.size
+                    value:
+                      intValue: "4242"
+            observedTimeUnixNano: "1765520010767578000"
             timeUnixNano: "1713959980989337000"
         scope:
           name: otelcol/azureresourcelogs

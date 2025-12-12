@@ -15,52 +15,27 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: properties
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: int
-                            value:
-                              doubleValue: 429
-                          - key: float
-                            value:
-                              doubleValue: 3.14
-                          - key: bool
-                            value:
-                              boolValue: false
-                          - key: string
-                            value:
-                              stringValue: string
-                  - key: result.signature
-                    value:
-                      stringValue: Signature
-                  - key: result.type
-                    value:
-                      stringValue: Success
-                  - key: network.peer.address
-                    value:
-                      stringValue: 127.0.0.1
-                  - key: category
-                    value:
-                      stringValue: AuditEvent
-                  - key: duration
-                    value:
-                      intValue: "1234"
-                  - key: operation.version
-                    value:
-                      stringValue: "7.0"
                   - key: result.description
                     value:
                       stringValue: Description
+                  - key: result.type
+                    value:
+                      stringValue: Success
                   - key: tenant.id
                     value:
                       stringValue: /TENANT_ID
                   - key: cloud.region
                     value:
                       stringValue: ukso
+                  - key: network.peer.address
+                    value:
+                      stringValue: 127.0.0.1
                   - key: correlation.id
                     value:
                       stringValue: 607964b6-41a5-4e24-a5db-db7aab3b9b34
+                  - key: duration
+                    value:
+                      intValue: "1234"
                   - key: identity
                     value:
                       kvlistValue:
@@ -75,7 +50,32 @@ resourceLogs:
                   - key: operation.name
                     value:
                       stringValue: SecretGet
-            observedTimeUnixNano: "1765493309861073000"
+                  - key: operation.version
+                    value:
+                      stringValue: "7.0"
+                  - key: result.signature
+                    value:
+                      stringValue: Signature
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: string
+                            value:
+                              stringValue: string
+                          - key: int
+                            value:
+                              doubleValue: 429
+                          - key: float
+                            value:
+                              doubleValue: 3.14
+                          - key: bool
+                            value:
+                              boolValue: false
+            observedTimeUnixNano: "1765520010766720000"
             severityNumber: 13
             severityText: Warning
             timeUnixNano: "1668142107676714500"
@@ -98,12 +98,49 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: network.peer.address
+                  - key: properties
                     value:
-                      stringValue: 127.0.0.1
+                      kvlistValue:
+                        values:
+                          - key: int
+                            value:
+                              doubleValue: 924
+                          - key: float
+                            value:
+                              doubleValue: 41.3
+                          - key: bool
+                            value:
+                              boolValue: true
+                          - key: string
+                            value:
+                              stringValue: string
+                  - key: result.description
+                    value:
+                      stringValue: Description
+                  - key: result.signature
+                    value:
+                      stringValue: Signature
                   - key: correlation.id
                     value:
                       stringValue: 96317703-2132-4a8d-a5d7-e18d2f486783
+                  - key: result.type
+                    value:
+                      stringValue: Success
+                  - key: tenant.id
+                    value:
+                      stringValue: /TENANT_ID
+                  - key: cloud.region
+                    value:
+                      stringValue: ukso
+                  - key: network.peer.address
+                    value:
+                      stringValue: 127.0.0.1
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+                  - key: duration
+                    value:
+                      intValue: "4321"
                   - key: identity
                     value:
                       kvlistValue:
@@ -118,47 +155,10 @@ resourceLogs:
                   - key: operation.name
                     value:
                       stringValue: SecretSet
-                  - key: properties
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: string
-                            value:
-                              stringValue: string
-                          - key: int
-                            value:
-                              doubleValue: 924
-                          - key: float
-                            value:
-                              doubleValue: 41.3
-                          - key: bool
-                            value:
-                              boolValue: true
-                  - key: result.description
-                    value:
-                      stringValue: Description
-                  - key: tenant.id
-                    value:
-                      stringValue: /TENANT_ID
-                  - key: category
-                    value:
-                      stringValue: AuditEvent
-                  - key: duration
-                    value:
-                      intValue: "4321"
                   - key: operation.version
                     value:
                       stringValue: "7.0"
-                  - key: result.signature
-                    value:
-                      stringValue: Signature
-                  - key: result.type
-                    value:
-                      stringValue: Success
-                  - key: cloud.region
-                    value:
-                      stringValue: ukso
-            observedTimeUnixNano: "1765493309861073000"
+            observedTimeUnixNano: "1765520010766720000"
             severityNumber: 13
             severityText: Warning
             timeUnixNano: "1668142109676714500"
@@ -182,13 +182,28 @@ resourceLogs:
                                   - key: oid
                                     value:
                                       stringValue: 4ae807da-39d9-4327-b5b4-0ab685a57f9a
+                  - key: operation.version
+                    value:
+                      stringValue: "7.0"
+                  - key: tenant.id
+                    value:
+                      stringValue: /TENANT_ID
+                  - key: cloud.region
+                    value:
+                      stringValue: ukso
+                  - key: network.peer.address
+                    value:
+                      stringValue: 127.0.0.1
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+                  - key: operation.name
+                    value:
+                      stringValue: SecretGet
                   - key: properties
                     value:
                       kvlistValue:
                         values:
-                          - key: bool
-                            value:
-                              boolValue: false
                           - key: string
                             value:
                               stringValue: string
@@ -198,34 +213,19 @@ resourceLogs:
                           - key: float
                             value:
                               doubleValue: 41.4
+                          - key: bool
+                            value:
+                              boolValue: false
+                  - key: result.description
+                    value:
+                      stringValue: Description
                   - key: result.signature
                     value:
                       stringValue: Signature
                   - key: result.type
                     value:
                       stringValue: Success
-                  - key: tenant.id
-                    value:
-                      stringValue: /TENANT_ID
-                  - key: cloud.region
-                    value:
-                      stringValue: ukso
-                  - key: category
-                    value:
-                      stringValue: AuditEvent
-                  - key: operation.name
-                    value:
-                      stringValue: SecretGet
-                  - key: operation.version
-                    value:
-                      stringValue: "7.0"
-                  - key: result.description
-                    value:
-                      stringValue: Description
-                  - key: network.peer.address
-                    value:
-                      stringValue: 127.0.0.1
-            observedTimeUnixNano: "1765493309861073000"
+            observedTimeUnixNano: "1765520010766720000"
             severityNumber: 13
             severityText: Warning
             timeUnixNano: "1668142111676714500"

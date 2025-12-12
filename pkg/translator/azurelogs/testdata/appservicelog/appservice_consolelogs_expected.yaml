@@ -27,7 +27,7 @@ resourceLogs:
                   - key: host.id
                     value:
                       stringValue: HOST
-            observedTimeUnixNano: "1765493309864985000"
+            observedTimeUnixNano: "1765520010764477000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

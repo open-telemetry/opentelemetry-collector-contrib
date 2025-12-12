@@ -15,6 +15,9 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: category
+                    value:
+                      stringValue: NonExistentCategory
                   - key: identity
                     value:
                       stringValue: John Doe
@@ -25,16 +28,13 @@ resourceLogs:
                     value:
                       stringValue: |-
                         {
-                              "category": "NonExistentCategory",
-                              "identity": "John Doe",
-                              "operationName": "SecretGet",
+                              "time": "2022-11-11T04:48:27.6767145Z",
                               "resourceId": "/RESOURCE_ID",
-                              "time": "2022-11-11T04:48:27.6767145Z"
+                              "operationName": "SecretGet",
+                              "category": "NonExistentCategory",
+                              "identity": "John Doe"
                         }
-                  - key: category
-                    value:
-                      stringValue: NonExistentCategory
-            observedTimeUnixNano: "1765493309864000000"
+            observedTimeUnixNano: "1765520010769077000"
             timeUnixNano: "1668142107676714500"
         scope:
           name: otelcol/azureresourcelogs
