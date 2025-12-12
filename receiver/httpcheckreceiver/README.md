@@ -19,11 +19,12 @@ configured `method`. This scraper generates a metric with a label for each HTTP 
 class. For example, the following metrics will be generated if the endpoint returned a `200`:
 
 ```
-httpcheck.status{http.status_class:1xx, http.status_code:200,...} = 0
+httpcheck.status{http.status_class:1xx,...} = 0
+httpcheck.status{http.status_class:2xx,...} = 1
 httpcheck.status{http.status_class:2xx, http.status_code:200,...} = 1
-httpcheck.status{http.status_class:3xx, http.status_code:200,...} = 0
-httpcheck.status{http.status_class:4xx, http.status_code:200,...} = 0
-httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
+httpcheck.status{http.status_class:3xx,...} = 0
+httpcheck.status{http.status_class:4xx,...} = 0
+httpcheck.status{http.status_class:5xx,...} = 0
 ```
 
 For HTTPS endpoints, the receiver can collect TLS certificate metrics including the time remaining until certificate expiry. This allows monitoring of certificate expiration alongside HTTP availability. Note that TLS certificate metrics are disabled by default and must be explicitly enabled in the metrics configuration.
