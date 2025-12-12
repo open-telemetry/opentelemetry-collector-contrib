@@ -94,8 +94,14 @@ attributes:
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
     type: string
+  oracledb.object_id:
+    description: The identifier of the stored procedure or function being executed by the query.
+    type: int
   oracledb.object_name:
     description: Name of the database object that a query is accessing.
+    type: string
+  oracledb.object_owner:
+    description: The schema owner of the stored procedure or function being executed.
     type: string
   oracledb.object_type:
     description: Type of the database object that a query is accessing.
@@ -196,6 +202,7 @@ events:
       - oracledb.state
       - oracledb.wait_class
       - oracledb.event
+      - oracledb.object_id
       - oracledb.object_name
       - oracledb.object_type
       - oracledb.osuser
@@ -227,6 +234,10 @@ events:
       - oracledb.physical_write_requests
       - oracledb.rows_processed
       - oracledb.user_io_wait_time
+      - oracledb.object_id
+      - oracledb.object_owner
+      - oracledb.object_name
+      - oracledb.object_type
 metrics:
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
