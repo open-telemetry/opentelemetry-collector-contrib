@@ -27,7 +27,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.141.1-0.20251211181959-97fcd3d13b4a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
-	golang.org/x/sync v0.18.0
+	golang.org/x/sync v0.19.0
 	google.golang.org/grpc v1.77.0
 )
 
