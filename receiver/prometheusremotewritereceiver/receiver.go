@@ -15,7 +15,8 @@ import (
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
-	promconfig "github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -162,7 +163,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return
 	}
-	if msgType != promconfig.RemoteWriteProtoMsgV2 {
+	if msgType != remoteapi.WriteV2MessageType {
 		prw.settings.Logger.Warn("message received with unsupported proto version, rejecting")
 		http.Error(w, "Unsupported proto version", http.StatusUnsupportedMediaType)
 		return
@@ -209,7 +210,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
 // We can't expect that senders of remote-write v1 will add the "proto=" parameter since it was not
 // a requirement in v1. So, if the parameter is not found, we assume v1.
-func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig.RemoteWriteProtoMsg, error) {
+func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.WriteMessageType, error) {
 	contentType = strings.TrimSpace(contentType)
 
 	parts := strings.Split(contentType, ";")
@@ -224,7 +225,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig
 		}
 
 		if strings.TrimSpace(parameter[0]) == "proto" {
-			ret := promconfig.RemoteWriteProtoMsg(parameter[1])
+			ret := remoteapi.WriteMessageType(parameter[1])
 			if err := ret.Validate(); err != nil {
 				return "", fmt.Errorf("got %v content type; %w", contentType, err)
 			}
@@ -233,7 +234,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig
 	}
 
 	// No "proto=" parameter found, assume v1.
-	return promconfig.RemoteWriteProtoMsgV1, nil
+	return remoteapi.WriteV1MessageType, nil
 }
 
 // getOrCreateRM returns or creates the ResourceMetrics for a job/instance pair within an HTTP request.
@@ -536,9 +537,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 
 		// Process the individual histogram
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
+			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, stats)
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
+			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, stats)
 		}
 	}
 }
@@ -572,9 +573,10 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 // addNumberDatapoints adds the labels to the datapoints attributes.
 func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts *writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	// Add samples from the timeseries
-	for _, sample := range ts.Samples {
+	for i := range ts.Samples {
+		sample := &ts.Samples[i]
 		dp := datapoints.AppendEmpty()
-		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
+		dp.SetStartTimestamp(pcommon.Timestamp(sample.StartTimestamp * int64(time.Millisecond)))
 		// Set timestamp in nanoseconds (Prometheus uses milliseconds)
 		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * int64(time.Millisecond)))
 		dp.SetDoubleValue(sample.Value)
@@ -585,7 +587,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 	stats.Samples += len(ts.Samples)
 }
 
-func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
+func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, stats *promremote.WriteResponseStats) {
 	// Drop Native Histogram with negative counts
 	if hasNegativeCounts(histogram) {
 		prw.settings.Logger.Info("Dropping Native Histogram series with negative counts",
@@ -594,7 +596,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	}
 
 	dp := datapoints.AppendEmpty()
-	dp.SetStartTimestamp(pcommon.Timestamp(createdTimestamp * int64(time.Millisecond)))
+	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 	dp.SetScale(histogram.Schema)
 	dp.SetZeroThreshold(histogram.ZeroThreshold)
@@ -739,7 +741,7 @@ func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for labelName, labelValue := range ls.Map() {
 		if labelName == "instance" || labelName == "job" || // Become resource attributes
-			labelName == labels.MetricName || // Becomes metric name
+			labelName == string(model.MetricNameLabel) || // Becomes metric name
 			labelName == "otel_scope_name" || labelName == "otel_scope_version" { // Becomes scope name and version
 			continue
 		}
@@ -765,13 +767,13 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (st
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
+func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, stats *promremote.WriteResponseStats) {
 	if len(histogram.CustomValues) == 0 {
 		return
 	}
 
 	dp := datapoints.AppendEmpty()
-	dp.SetStartTimestamp(pcommon.Timestamp(createdTimestamp * int64(time.Millisecond)))
+	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 
 	if value.IsStaleNaN(histogram.Sum) {

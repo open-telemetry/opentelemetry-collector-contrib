@@ -18,7 +18,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	promconfig "github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
@@ -41,22 +41,19 @@ var writeV2RequestFixture = &writev2.Request{
 	Symbols: []string{"", "__name__", "test_metric1", "job", "service-x/test", "instance", "107cn001", "d", "e", "foo", "bar", "f", "g", "h", "i", "Test gauge for test purposes", "Maybe op/sec who knows (:", "Test counter for test purposes"},
 	Timeseries: []writev2.TimeSeries{
 		{
-			Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-			LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Symbolized writeRequestFixture.Timeseries[0].Labels
-			Samples:          []writev2.Sample{{Value: 1, Timestamp: 1}},
-			CreatedTimestamp: 1,
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Symbolized writeRequestFixture.Timeseries[0].Labels
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1, StartTimestamp: 1}},
 		},
 		{
-			Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-			LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Same series as first. Should use the same resource metrics.
-			Samples:          []writev2.Sample{{Value: 2, Timestamp: 2}},
-			CreatedTimestamp: 2,
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Same series as first. Should use the same resource metrics.
+			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2, StartTimestamp: 2}},
 		},
 		{
-			Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-			LabelsRefs:       []uint32{1, 2, 3, 9, 5, 10, 7, 8, 9, 10}, // This series has different label values for job and instance.
-			Samples:          []writev2.Sample{{Value: 2, Timestamp: 2}},
-			CreatedTimestamp: 2,
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{1, 2, 3, 9, 5, 10, 7, 8, 9, 10}, // This series has different label values for job and instance.
+			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2, StartTimestamp: 2}},
 		},
 	},
 }
@@ -132,7 +129,7 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 		},
 		{
 			name:         "x-protobuf/v1 proto parameter",
-			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV1),
+			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV1MessageType),
 			expectedCode: http.StatusUnsupportedMediaType,
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  false,
@@ -143,7 +140,7 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 		},
 		{
 			name:         "x-protobuf/v2 proto parameter",
-			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
 			expectedCode: http.StatusNoContent,
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
@@ -264,10 +261,9 @@ func TestTranslateV2(t *testing.T) {
 				Symbols: []string{"", "__name__", "test_metric", "job", "test_job", "instance", "test_instance"},
 				Timeseries: []writev2.TimeSeries{
 					{
-						Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
-						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6},
-						Samples:          []writev2.Sample{{Value: 1, Timestamp: 1}},
-						CreatedTimestamp: 1,
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1, StartTimestamp: 1}},
 					},
 				},
 			},
@@ -414,17 +410,17 @@ func TestTranslateV2(t *testing.T) {
 					},
 					{
 						// Exponential histogram with scope2
-						Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
-						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 17, 18},
-						CreatedTimestamp: 150,
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 17, 18},
 						Histograms: []writev2.Histogram{
 							{
-								Schema:        0,
-								Count:         &writev2.Histogram_CountInt{CountInt: 6},
-								Sum:           1,
-								Timestamp:     1,
-								ZeroThreshold: 1,
-								ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: 1},
+								Schema:         0,
+								Count:          &writev2.Histogram_CountInt{CountInt: 6},
+								Sum:            1,
+								Timestamp:      1,
+								StartTimestamp: 150,
+								ZeroThreshold:  1,
+								ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 1},
 								PositiveSpans: []writev2.BucketSpan{
 									{Offset: 0, Length: 2},
 								},
@@ -696,7 +692,6 @@ func TestTranslateV2(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						CreatedTimestamp: 1,
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
@@ -705,9 +700,10 @@ func TestTranslateV2(t *testing.T) {
 								Count: &writev2.Histogram_CountInt{
 									CountInt: 20,
 								},
-								Sum:           30,
-								Timestamp:     1,
-								ZeroThreshold: 1,
+								Sum:            30,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								ZeroThreshold:  1,
 								ZeroCount: &writev2.Histogram_ZeroCountInt{
 									ZeroCountInt: 2,
 								},
@@ -780,7 +776,6 @@ func TestTranslateV2(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						CreatedTimestamp: 1,
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
@@ -789,9 +784,10 @@ func TestTranslateV2(t *testing.T) {
 								Count: &writev2.Histogram_CountInt{
 									CountInt: 20,
 								},
-								Sum:           30,
-								Timestamp:     1,
-								ZeroThreshold: 1,
+								Sum:            30,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								ZeroThreshold:  1,
 								ZeroCount: &writev2.Histogram_ZeroCountInt{
 									ZeroCountInt: 2,
 								},
@@ -850,7 +846,6 @@ func TestTranslateV2(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						CreatedTimestamp: 1,
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
@@ -859,9 +854,10 @@ func TestTranslateV2(t *testing.T) {
 								Count: &writev2.Histogram_CountFloat{
 									CountFloat: 20,
 								},
-								Sum:           33.3,
-								Timestamp:     1,
-								ZeroThreshold: 1,
+								Sum:            33.3,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								ZeroThreshold:  1,
 								ZeroCount: &writev2.Histogram_ZeroCountFloat{
 									ZeroCountFloat: 2,
 								},
@@ -933,7 +929,6 @@ func TestTranslateV2(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						CreatedTimestamp: 1,
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
@@ -942,9 +937,10 @@ func TestTranslateV2(t *testing.T) {
 								Count: &writev2.Histogram_CountFloat{
 									CountFloat: 20,
 								},
-								Sum:           33.3,
-								Timestamp:     1,
-								ZeroThreshold: 1,
+								Sum:            33.3,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								ZeroThreshold:  1,
 								ZeroCount: &writev2.Histogram_ZeroCountFloat{
 									ZeroCountFloat: 2,
 								},
@@ -1136,18 +1132,18 @@ func TestTranslateV2(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_hncb_histogram, job=test, instance=localhost:8080
-						CreatedTimestamp: 123456000,
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_hncb_histogram, job=test, instance=localhost:8080
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
 						Histograms: []writev2.Histogram{
 							{
-								Timestamp:    123456789,
-								Schema:       -53, // NHCB schema
-								Sum:          100.5,
-								Count:        &writev2.Histogram_CountInt{CountInt: 180},
-								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
+								Timestamp:      123456789,
+								StartTimestamp: 123456000,
+								Schema:         -53, // NHCB schema
+								Sum:            100.5,
+								Count:          &writev2.Histogram_CountInt{CountInt: 180},
+								CustomValues:   []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
 								PositiveSpans: []writev2.BucketSpan{
 									{Offset: 0, Length: 5}, // 5 buckets: 4 custom + 1 overflow
 								},
@@ -1324,19 +1320,19 @@ func TestTranslateV2(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_mixed_histogram, job=test, instance=localhost:8080
-						CreatedTimestamp: 123456000,
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_mixed_histogram, job=test, instance=localhost:8080
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
 						Histograms: []writev2.Histogram{
 							{
 								// First histogram - NHCB
-								Timestamp:    123456789,
-								Schema:       -53,
-								Sum:          100.5,
-								Count:        &writev2.Histogram_CountInt{CountInt: 180},
-								CustomValues: []float64{1.0, 2.0, 5.0, 10.0},
+								Timestamp:      123456789,
+								StartTimestamp: 123456000,
+								Schema:         -53,
+								Sum:            100.5,
+								Count:          &writev2.Histogram_CountInt{CountInt: 180},
+								CustomValues:   []float64{1.0, 2.0, 5.0, 10.0},
 								PositiveSpans: []writev2.BucketSpan{
 									{Offset: 0, Length: 5},
 								},
@@ -1344,12 +1340,13 @@ func TestTranslateV2(t *testing.T) {
 							},
 							{
 								// Second histogram - Exponential
-								Timestamp:     123456790,
-								Schema:        -4,
-								Sum:           200.0,
-								Count:         &writev2.Histogram_CountInt{CountInt: 100},
-								ZeroThreshold: 1.0,
-								ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: 5},
+								Timestamp:      123456790,
+								StartTimestamp: 123456000,
+								Schema:         -4,
+								Sum:            200.0,
+								Count:          &writev2.Histogram_CountInt{CountInt: 100},
+								ZeroThreshold:  1.0,
+								ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 5},
 								PositiveSpans: []writev2.BucketSpan{
 									{Offset: 1, Length: 2},
 								},
@@ -1429,16 +1426,16 @@ func TestTranslateV2(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						CreatedTimestamp: 1,
-						Metadata:         writev2.Metadata{},
+						Metadata: writev2.Metadata{},
 						Histograms: []writev2.Histogram{
 							{
 								Count: &writev2.Histogram_CountInt{
 									CountInt: 20,
 								},
-								Sum:           30,
-								Timestamp:     1,
-								ZeroThreshold: 1,
+								Sum:            30,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								ZeroThreshold:  1,
 								ZeroCount: &writev2.Histogram_ZeroCountInt{
 									ZeroCountInt: 2,
 								},
@@ -1509,16 +1506,16 @@ func TestTranslateV2(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6},
-						CreatedTimestamp: 123456000,
-						Metadata:         writev2.Metadata{},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Metadata:   writev2.Metadata{},
 						Histograms: []writev2.Histogram{
 							{
-								Timestamp:    123456789,
-								Schema:       -53, // NHCB schema
-								Sum:          100.5,
-								Count:        &writev2.Histogram_CountInt{CountInt: 180},
-								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
+								Timestamp:      123456789,
+								StartTimestamp: 123456000,
+								Schema:         -53, // NHCB schema
+								Sum:            100.5,
+								Count:          &writev2.Histogram_CountInt{CountInt: 180},
+								CustomValues:   []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
 								PositiveSpans: []writev2.BucketSpan{
 									{Offset: 0, Length: 5}, // 5 buckets: 4 custom + 1 overflow
 								},
@@ -1693,7 +1690,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 
 				resp, err := http.Post(
 					ts.URL,
-					fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+					fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
 					bytes.NewBuffer(pBuf.Bytes()),
 				)
 				assert.NoError(t, err)
@@ -1891,7 +1888,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 
 		resp, err := http.Post(
 			ts.URL,
-			fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+			fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
 			bytes.NewBuffer(pBuf.Bytes()),
 		)
 		assert.NoError(t, err)
@@ -1982,7 +1979,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 
 			resp, err := http.Post(
 				ts.URL,
-				fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+				fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
 				bytes.NewBuffer(pBuf.Bytes()),
 			)
 			assert.NoError(t, err)

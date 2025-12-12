@@ -89,7 +89,6 @@ func benchmarkAppendHistogram(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		tx := newBenchmarkTransaction(b)
-		tx.enableNativeHistograms = true
 		b.StartTimer()
 
 		for j := range labelSets {
@@ -149,9 +148,6 @@ func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScop
 		// Setup: Create transaction and append all data (not timed)
 		b.StopTimer()
 		tx := newBenchmarkTransaction(b)
-		if useNativeHistograms {
-			tx.enableNativeHistograms = true
-		}
 
 		if withTargetInfo {
 			targetInfoLabels := createTargetInfoLabels()
@@ -205,7 +201,6 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 		settings,
 		obsrecv,
 		false, // trimSuffixes
-		false, // enableNativeHistograms (not needed for Append benchmark)
 		false, // useMetadata
 	)
 

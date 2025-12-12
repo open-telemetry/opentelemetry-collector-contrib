@@ -52,8 +52,6 @@ type Config struct {
 	// the config, service discovery, and targets for debugging purposes.
 	APIServer APIServer `mapstructure:"api_server"`
 
-	// From feature gate.
-	enableNativeHistograms bool
 	// For testing only.
 	ignoreMetadata bool
 }
