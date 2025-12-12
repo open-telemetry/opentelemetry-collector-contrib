@@ -59,7 +59,6 @@ func runLogsToMetrics(t *testing.T, ccfg *Config, logs plog.Logs) pmetric.Metric
 	conn, err := NewFactory().CreateLogsToMetrics(t.Context(), connectortest.NewNopSettings(metadata.Type), ccfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
-	//nolint:usetesting // t.Context() is cancelled before cleanup runs, use background context
 	t.Cleanup(func() { assert.NoError(t, conn.Shutdown(context.Background())) })
 
 	require.NoError(t, conn.ConsumeLogs(t.Context(), logs))
