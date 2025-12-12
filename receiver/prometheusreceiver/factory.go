@@ -25,7 +25,7 @@ var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
 )
 
-var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.EnableNativeHistograms",
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("The Prometheus receiver converts Prometheus native histograms "+
@@ -72,7 +72,6 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	configWarnings(set.Logger, cfg.(*Config))
-	cfg.(*Config).enableNativeHistograms = enableNativeHistogramsGate.IsEnabled()
 	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer)
 }
 

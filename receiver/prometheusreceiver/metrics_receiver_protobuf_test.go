@@ -583,9 +583,6 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 						},
 					}
 					testComponent(t, targets, func(c *Config) {
-						// enableNativeHistograms is set from the stable feature gate in production.
-						// In tests, we need to set it explicitly since we bypass the factory.
-						c.enableNativeHistograms = true
 						c.ignoreMetadata = ignoreMetadata
 						c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 					}, tc.mutCfg)
@@ -719,9 +716,6 @@ func TestStaleExponentialHistogram(t *testing.T) {
 	}
 
 	testComponent(t, targets, func(c *Config) {
-		// enableNativeHistograms is set from the stable feature gate in production.
-		// In tests, we need to set it explicitly since we bypass the factory.
-		c.enableNativeHistograms = true
 		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	}, func(cfg *PromConfig) {
 		truePtr := true
@@ -788,9 +782,6 @@ func TestFloatCounterHistogram(t *testing.T) {
 	}
 
 	testComponent(t, targets, func(c *Config) {
-		// enableNativeHistograms is set from the stable feature gate in production.
-		// In tests, we need to set it explicitly since we bypass the factory.
-		c.enableNativeHistograms = true
 		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	}, func(cfg *PromConfig) {
 		truePtr := true

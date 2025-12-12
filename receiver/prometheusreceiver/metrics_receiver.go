@@ -98,7 +98,6 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 			set,
 			cfg.TargetAllocator.Get(),
 			&baseCfg,
-			cfg.enableNativeHistograms,
 		),
 	}
 	return pr, nil
@@ -176,7 +175,6 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
-		r.cfg.enableNativeHistograms,
 		!r.cfg.ignoreMetadata,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
