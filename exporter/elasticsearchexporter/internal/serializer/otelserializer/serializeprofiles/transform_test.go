@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 var (
@@ -199,7 +199,7 @@ func TestTransform(t *testing.T) {
 			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
-				rp.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "my_service.name")
+				rp.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "my_service.name")
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
@@ -712,7 +712,7 @@ func TestStackTraceEvent(t *testing.T) {
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				_ = rp.Resource().Attributes().FromRaw(map[string]any{
-					string(semconv.ServiceVersionKey): "1.2.0",
+					string(conventions.ServiceVersionKey): "1.2.0",
 				})
 
 				sp := rp.ScopeProfiles().AppendEmpty()
@@ -794,11 +794,11 @@ func TestStackTraceEvent(t *testing.T) {
 
 				a := dic.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
-				dic.StringTable().Append(string(semconv.ThreadNameKey))
+				dic.StringTable().Append(string(conventions.ThreadNameKey))
 				a.Value().SetStr("my_thread")
 				a = dic.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(2)
-				dic.StringTable().Append(string(semconv.ServiceNameKey))
+				dic.StringTable().Append(string(conventions.ServiceNameKey))
 				a.Value().SetStr("my_service")
 
 				return dic
@@ -806,11 +806,11 @@ func TestStackTraceEvent(t *testing.T) {
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				_ = rp.Resource().Attributes().FromRaw(map[string]any{
-					string(semconv.K8SPodNameKey):       "my_pod",
-					string(semconv.ContainerNameKey):    "my_container",
-					string(semconv.ContainerIDKey):      "my_container_id",
-					string(semconv.K8SNamespaceNameKey): "my_k8s_namespace_name",
-					string(semconv.HostNameKey):         "my_host_name",
+					string(conventions.K8SPodNameKey):       "my_pod",
+					string(conventions.ContainerNameKey):    "my_container",
+					string(conventions.ContainerIDKey):      "my_container_id",
+					string(conventions.K8SNamespaceNameKey): "my_k8s_namespace_name",
+					string(conventions.HostNameKey):         "my_host_name",
 				})
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
