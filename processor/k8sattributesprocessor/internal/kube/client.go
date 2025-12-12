@@ -1758,6 +1758,11 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 		c.logger.Warn("add RS missing UID", zap.String("name", rsView.Name), zap.String("ns", rsView.Namespace))
 		return
 	}
+
+	// Fallback fetch to get ownerRefs if missing (for meta informer)
+	if rsView.DeploymentUID == "" {
+		c.fillReplicaSetOwnerFromTyped(rsView.Namespace, rsView.Name, &rsView)
+	}
 	c.upsertReplicaSet(rsView)
 }
 
@@ -1769,7 +1774,29 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newObj any) {
 		c.logger.Warn("update received invalid RS", zap.Any("obj", newObj))
 		return
 	}
+
+	// Fallback fetch on updates too
+	if rsView.DeploymentUID == "" {
+		c.fillReplicaSetOwnerFromTyped(rsView.Namespace, rsView.Name, &rsView)
+	}
 	c.upsertReplicaSet(rsView)
+}
+
+// Helper: typed GET to enrich ownerRefs
+func (c *WatchClient) fillReplicaSetOwnerFromTyped(namespace, name string, rv *replicasetView) {
+	rsFull, err := c.kc.AppsV1().ReplicaSets(namespace).Get(context.Background(), name, meta_v1.GetOptions{})
+	if err != nil {
+		c.logger.Debug("failed to fetch full RS for ownerRefs",
+			zap.String("name", name), zap.String("ns", namespace), zap.Error(err))
+		return
+	}
+	for _, owner := range rsFull.GetOwnerReferences() {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+			rv.DeploymentName = owner.Name
+			rv.DeploymentUID = string(owner.UID)
+			break
+		}
+	}
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
