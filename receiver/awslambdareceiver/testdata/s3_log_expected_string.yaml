@@ -9,7 +9,7 @@ resourceLogs:
             stringValue: us-east-1
         - key: aws.s3.bucket
           value:
-            stringValue: arn:aws:s3:::test-bucket
+            stringValue: test-bucket
         - key: aws.s3.key
           value:
             stringValue: test-file.txt
@@ -22,6 +22,5 @@ resourceLogs:
             body:
               stringValue: Some log in S3 object
             observedTimeUnixNano: "1764625361000000000"
-            timeUnixNano: "1764625361000000000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver

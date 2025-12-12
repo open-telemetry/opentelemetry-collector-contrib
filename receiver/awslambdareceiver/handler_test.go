@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
@@ -82,7 +83,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				},
 			},
 			bucketData:    []byte("Some log in S3 object"),
-			unmarshaler:   nil,
+			unmarshaler:   bytesToPlogs,
 			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_string.yaml")},
 		},
 		{
@@ -104,7 +105,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				},
 			},
 			bucketData:    []byte("H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA="),
-			unmarshaler:   nil,
+			unmarshaler:   bytesToPlogs,
 			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_gzip.yaml")},
 		},
 		{
@@ -164,8 +165,8 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 			s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return(test.bucketData, nil).AnyTimes()
 
 			// Wrap the consumer to match the new s3EventConsumerFunc signature
-			logsConsumer := func(ctx context.Context, time time.Time, logs plog.Logs) error {
-				setObservedTimestampForAllLogs(logs, time)
+			logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+				enrichS3Logs(logs, event)
 				return test.eventConsumer.ConsumeLogs(ctx, logs)
 			}
 
@@ -257,8 +258,8 @@ func TestS3HandlerParseEvent(t *testing.T) {
 
 	var consumer noOpLogsConsumer
 	// Wrap the consumer to match the new s3EventConsumerFunc signature
-	logsConsumer := func(ctx context.Context, time time.Time, logs plog.Logs) error {
-		setObservedTimestampForAllLogs(logs, time)
+	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+		enrichS3Logs(logs, event)
 		return consumer.ConsumeLogs(ctx, logs)
 	}
 	handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer, plog.Logs{})
@@ -293,7 +294,7 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 		{
 			name:            "Valid CloudWatch log event with built-in unmarshaler and golden validation consumer",
 			eventData:       loadCompressedData(t, filepath.Join(testDataDirectory, "cloudwatch_log.json")),
-			unmarshalerFunc: nil,
+			unmarshalerFunc: cwLogsToPlogs,
 			eventConsumer:   &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "cloudwatch_log_expected_default.yaml")},
 		},
 		{
@@ -305,14 +306,14 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 		{
 			name:            "Invalid CloudWatch log event - invalid base64 data",
 			eventData:       "#",
-			unmarshalerFunc: nil,
+			unmarshalerFunc: cwLogsToPlogs,
 			expectedErr:     "failed to decode data from cloudwatch logs event",
 			eventConsumer:   &noOpLogsConsumer{},
 		},
 		{
 			name:            "Invalid CloudWatch log event - invalid json data",
 			eventData:       "test",
-			unmarshalerFunc: nil,
+			unmarshalerFunc: cwLogsToPlogs,
 			expectedErr:     "failed to decompress data from cloudwatch subscription event",
 			eventConsumer:   &noOpLogsConsumer{},
 		},
@@ -329,7 +330,7 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 			lambdaEvent, err := json.Marshal(cwEvent)
 			require.NoError(t, err)
 
-			handler := newCWLogsSubscriptionHandler(zap.NewNop(), test.unmarshalerFunc, test.eventConsumer.ConsumeLogs)
+			handler := newCWLogsSubscriptionHandler(test.unmarshalerFunc, test.eventConsumer.ConsumeLogs)
 			err = handler.handle(t.Context(), lambdaEvent)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
@@ -340,36 +341,57 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 	}
 }
 
-func TestSetObservedTimestampForAllLogs(t *testing.T) {
+func TestEnrichS3Logs(t *testing.T) {
 	t.Parallel()
 
+	// given
 	logs := plog.NewLogs()
 
-	// Add ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	attr := rl.Resource().Attributes()
-	attr.PutStr("cloud.provider", "aws")
+	sl := rl.ScopeLogs()
+	lr := sl.AppendEmpty().LogRecords()
+	lr.AppendEmpty()
 
-	// Add ScopeLogs
-	scopeLogs := plog.NewScopeLogs()
-	scopeLogs.Scope().SetName("test")
-	recordLog := plog.NewLogRecord()
-
-	// Add record attributes
-	recordLog.Attributes().PutStr("client.address", "0.0.0.0")
-	rScope := scopeLogs.LogRecords().AppendEmpty()
-	recordLog.MoveTo(rScope)
-
-	scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
-
-	// Set the observed timestamp
-	observedTimestamp := time.Date(2022, 1, 1, 12, 0, 0, 0, time.UTC)
-	setObservedTimestampForAllLogs(logs, observedTimestamp)
-
-	// Assert all LogRecords have the expected timestamp
+	observedTimestamp := time.UnixMilli(1765574662915)
 	expectedTimestamp := pcommon.NewTimestampFromTime(observedTimestamp)
 
+	s3Record := events.S3EventRecord{
+		AWSRegion: "us-east-1",
+		EventTime: observedTimestamp,
+		S3: events.S3Entity{
+			SchemaVersion: "",
+			Bucket: events.S3Bucket{
+				Name: "bucket-name",
+			},
+			Object: events.S3Object{
+				Key: "object-key",
+			},
+		},
+	}
+
+	// when
+	enrichS3Logs(logs, s3Record)
+
+	// then
 	for _, resource := range logs.ResourceLogs().All() {
+		resourceAttrs := resource.Resource().Attributes()
+
+		v, b := resourceAttrs.Get(string(conventions.CloudProviderKey))
+		require.True(t, b)
+		require.Equal(t, "aws", v.AsString())
+
+		v, b = resourceAttrs.Get(string(conventions.CloudRegionKey))
+		require.True(t, b)
+		require.Equal(t, "us-east-1", v.AsString())
+
+		v, b = resourceAttrs.Get(string(conventions.AWSS3BucketKey))
+		require.True(t, b)
+		require.Equal(t, "bucket-name", v.AsString())
+
+		v, b = resourceAttrs.Get(string(conventions.AWSS3KeyKey))
+		require.True(t, b)
+		require.Equal(t, "object-key", v.AsString())
+
 		for _, scope := range resource.ScopeLogs().All() {
 			for _, logRecord := range scope.LogRecords().All() {
 				require.Equal(t, expectedTimestamp, logRecord.ObservedTimestamp())
@@ -426,7 +448,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 			s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("object content"), nil).Times(1)
 
 			// Consumer that returns the test error
-			logsConsumer := func(_ context.Context, _ time.Time, _ plog.Logs) error {
+			logsConsumer := func(_ context.Context, _ events.S3EventRecord, _ plog.Logs) error {
 				return test.consumerErr
 			}
 
