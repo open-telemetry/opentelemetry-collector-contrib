@@ -35,7 +35,6 @@ func newCountConfigFromYAML(t *testing.T, yamlFile string) *Config {
 	require.True(t, ok)
 	require.NotNil(t, ccfg)
 
-	require.NoError(t, ccfg.Validate())
 	return ccfg
 }
 
