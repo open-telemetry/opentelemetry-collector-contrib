@@ -21,15 +21,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
+// Deprecated: [v0.142.0] use DefaultLogFunctionsNew.
 func DefaultLogFunctions() []ottl.Factory[ottllog.TransformContext] {
+	return slices.Collect(maps.Values(ottlfuncs.StandardConverters[ottllog.TransformContext]()))
+}
+
+func DefaultLogFunctionsNew() []ottl.Factory[*ottllog.TransformContext] {
 	return slices.Collect(maps.Values(defaultLogFunctionsMap()))
 }
 
+// Deprecated: [v0.142.0] use DefaultMetricFunctionsNew.
 func DefaultMetricFunctions() []ottl.Factory[ottlmetric.TransformContext] {
+	return slices.Collect(maps.Values(ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()))
+}
+
+func DefaultMetricFunctionsNew() []ottl.Factory[*ottlmetric.TransformContext] {
 	return slices.Collect(maps.Values(defaultMetricFunctionsMap()))
 }
 
+// Deprecated: [v0.142.0] use DefaultDataPointFunctionsNew.
 func DefaultDataPointFunctions() []ottl.Factory[ottldatapoint.TransformContext] {
+	return slices.Collect(maps.Values(ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()))
+}
+
+func DefaultDataPointFunctionsNew() []ottl.Factory[*ottldatapoint.TransformContext] {
 	return slices.Collect(maps.Values(defaultDataPointFunctionsMap()))
 }
 
@@ -51,7 +66,12 @@ func DefaultSpanFunctionsNew() []ottl.Factory[*ottlspan.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanFunctionsMap()))
 }
 
+// Deprecated: [v0.142.0] use DefaultSpanEventFunctionsNew.
 func DefaultSpanEventFunctions() []ottl.Factory[ottlspanevent.TransformContext] {
+	return slices.Collect(maps.Values(ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()))
+}
+
+func DefaultSpanEventFunctionsNew() []ottl.Factory[*ottlspanevent.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanEventFunctionsMap()))
 }
 
@@ -59,15 +79,15 @@ func DefaultProfileFunctions() []ottl.Factory[ottlprofile.TransformContext] {
 	return slices.Collect(maps.Values(defaultProfileFunctionsMap()))
 }
 
-func defaultLogFunctionsMap() map[string]ottl.Factory[ottllog.TransformContext] {
+func defaultLogFunctionsMap() map[string]ottl.Factory[*ottllog.TransformContext] {
 	return logs.LogFunctions()
 }
 
-func defaultMetricFunctionsMap() map[string]ottl.Factory[ottlmetric.TransformContext] {
+func defaultMetricFunctionsMap() map[string]ottl.Factory[*ottlmetric.TransformContext] {
 	return metrics.MetricFunctions()
 }
 
-func defaultDataPointFunctionsMap() map[string]ottl.Factory[ottldatapoint.TransformContext] {
+func defaultDataPointFunctionsMap() map[string]ottl.Factory[*ottldatapoint.TransformContext] {
 	return metrics.DataPointFunctions()
 }
 
@@ -75,7 +95,7 @@ func defaultSpanFunctionsMap() map[string]ottl.Factory[*ottlspan.TransformContex
 	return traces.SpanFunctions()
 }
 
-func defaultSpanEventFunctionsMap() map[string]ottl.Factory[ottlspanevent.TransformContext] {
+func defaultSpanEventFunctionsMap() map[string]ottl.Factory[*ottlspanevent.TransformContext] {
 	return traces.SpanEventFunctions()
 }
 

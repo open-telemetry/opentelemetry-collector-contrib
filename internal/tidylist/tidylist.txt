@@ -198,6 +198,7 @@ receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
 internal/k8sinventory
+internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools

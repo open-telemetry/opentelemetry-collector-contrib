@@ -150,6 +150,7 @@ body:
       - internal/healthcheck
       - internal/k8sconfig
       - internal/k8sinventory
+      - internal/k8sleaderelectortest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders

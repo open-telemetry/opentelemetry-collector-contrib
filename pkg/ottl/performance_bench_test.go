@@ -30,7 +30,7 @@ var (
 func BenchmarkParserParseStatements(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
 
-	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
@@ -40,7 +40,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 		b.Fatalf("failed to create span parser: %v", err)
 	}
 
-	metricParser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
+	metricParser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create metric parser: %v", err)
 	}
@@ -114,7 +114,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 
 func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
@@ -137,7 +137,7 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 		}
 		sequence := ottllog.NewStatementSequence(parsed, settings)
 
-		contexts := make([]ottllog.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkLogContext(len(scenario.statements))
 		}
@@ -151,6 +151,10 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 				}
 			}
 		})
+
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
@@ -201,7 +205,7 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 
 func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
+	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create metric parser: %v", err)
 	}
@@ -224,7 +228,7 @@ func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 		}
 		sequence := ottlmetric.NewStatementSequence(parsed, settings)
 
-		contexts := make([]ottlmetric.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottlmetric.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkMetricContext(len(scenario.statements))
 		}
@@ -238,12 +242,16 @@ func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 				}
 			}
 		})
+
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
 func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
@@ -266,7 +274,7 @@ func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 		}
 		sequence := ottllog.NewConditionSequence(parsed, settings)
 
-		contexts := make([]ottllog.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkLogContext(len(scenario.predicates))
 		}
@@ -282,12 +290,15 @@ func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 				conditionSequenceResult = result
 			}
 		})
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
 func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
+	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create metric parser: %v", err)
 	}
@@ -310,7 +321,7 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 		}
 		sequence := ottlmetric.NewConditionSequence(parsed, settings)
 
-		contexts := make([]ottlmetric.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottlmetric.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkMetricContext(len(scenario.predicates))
 		}
@@ -326,6 +337,9 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 				conditionSequenceResult = result
 			}
 		})
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
@@ -367,7 +381,7 @@ func buildMetricConditions(count int) []string {
 	return result
 }
 
-func newBenchmarkMetricContext(attributeCount int) ottlmetric.TransformContext {
+func newBenchmarkMetricContext(attributeCount int) *ottlmetric.TransformContext {
 	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 	resource := resourceMetrics.Resource()
@@ -408,7 +422,7 @@ func newBenchmarkMetricContext(attributeCount int) ottlmetric.TransformContext {
 		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
 	}
 
-	return ottlmetric.NewTransformContext(metric, scopeMetrics.Metrics(), scope, resource, scopeMetrics, resourceMetrics)
+	return ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
 }
 
 func buildLogStatements(count int) []string {
@@ -462,7 +476,7 @@ func buildLogConditions(count int) []string {
 	return result
 }
 
-func newBenchmarkLogContext(attributeCount int) ottllog.TransformContext {
+func newBenchmarkLogContext(attributeCount int) *ottllog.TransformContext {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resource := resourceLogs.Resource()
@@ -490,7 +504,7 @@ func newBenchmarkLogContext(attributeCount int) ottllog.TransformContext {
 
 	logRecord.Body().SetStr("benchmark log record")
 
-	return ottllog.NewTransformContext(logRecord, scope, resource, scopeLogs, resourceLogs)
+	return ottllog.NewTransformContextPtr(resourceLogs, scopeLogs, logRecord)
 }
 
 func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
@@ -520,12 +534,12 @@ func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
 		span.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("span_value_%d", i))
 	}
 
-	return ottlspan.NewTransformContextPtr(span, scope, resource, scopeSpans, resourceSpans)
+	return ottlspan.NewTransformContextPtr(resourceSpans, scopeSpans, span)
 }
 
 func BenchmarkSliceToMap(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
@@ -579,6 +593,7 @@ func BenchmarkSliceToMap(b *testing.B) {
 					b.Fatalf("execute failed: %v", err)
 				}
 			}
+			tc.Close()
 		})
 
 		// key_only: arr is slice of maps
@@ -593,6 +608,7 @@ func BenchmarkSliceToMap(b *testing.B) {
 					b.Fatalf("execute failed: %v", err)
 				}
 			}
+			tc.Close()
 		})
 
 		// key_and_value: arr is slice of maps
@@ -607,11 +623,12 @@ func BenchmarkSliceToMap(b *testing.B) {
 					b.Fatalf("execute failed: %v", err)
 				}
 			}
+			tc.Close()
 		})
 	}
 }
 
-func newSliceContextWithPrimitiveArr(arrSize int) ottllog.TransformContext {
+func newSliceContextWithPrimitiveArr(arrSize int) *ottllog.TransformContext {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -626,10 +643,10 @@ func newSliceContextWithPrimitiveArr(arrSize int) ottllog.TransformContext {
 		arr.AppendEmpty().SetStr("v_" + strconv.Itoa(i))
 	}
 
-	return ottllog.NewTransformContext(lr, sl.Scope(), rl.Resource(), sl, rl)
+	return ottllog.NewTransformContextPtr(rl, sl, lr)
 }
 
-func newSliceContextWithMapArr(arrSize int) ottllog.TransformContext {
+func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -649,5 +666,5 @@ func newSliceContextWithMapArr(arrSize int) ottllog.TransformContext {
 		nm.PutStr("k", "v_"+strconv.Itoa(i))
 	}
 
-	return ottllog.NewTransformContext(lr, sl.Scope(), rl.Resource(), sl, rl)
+	return ottllog.NewTransformContextPtr(rl, sl, lr)
 }

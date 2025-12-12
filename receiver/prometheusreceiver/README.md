@@ -104,6 +104,59 @@ receivers:
               - targets: ['0.0.0.0:8888']
 ```
 
+## Complete Configuration Example
+
+The following example demonstrates a complete end-to-end configuration showing how to use the Prometheus receiver with processors and exporters in a service pipeline:
+
+```yaml
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'my-service'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['localhost:9090']
+          # Filter metrics to keep only those matching the regex pattern
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: 'http_request_duration_seconds.*'
+              action: keep
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+  resource:
+    attributes:
+      # Note: service.name is automatically set by the prometheus receiver from job_name
+      - key: deployment.environment
+        value: production
+        action: upsert
+
+exporters:
+  otlp:
+    endpoint: otel-collector:4317
+    tls:
+      insecure: true
+  prometheusremotewrite:
+    endpoint: https://prometheus:9090/api/v1/write
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [resource, batch]
+      exporters: [otlp, prometheusremotewrite]
+```
+
+This configuration:
+- Scrapes metrics from a service running on `localhost:9090` every 5 seconds
+- Filters metrics to keep only those matching `http_request_duration_seconds.*` using `metric_relabel_configs`
+- Adds resource attributes (`deployment.environment`) to all metrics (note: `service.name` is automatically set from the job name)
+- Batches metrics before exporting to improve efficiency when multiple scrapes occur
+- Exports metrics to both an OTLP endpoint and Prometheus remote write endpoint
+
 ## Prometheus native histograms
 
 Native histograms are a data type in Prometheus, for more information see the [specification](https://prometheus.io/docs/specs/native_histograms/).
