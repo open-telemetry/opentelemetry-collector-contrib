@@ -56,6 +56,19 @@ resourceMetrics:
                     - key: http.status_class
                       value:
                         stringValue: 2xx
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 2xx
                     - key: http.status_code
                       value:
                         intValue: "200"
@@ -104,6 +117,19 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 4xx
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
                   attributes:
                     - key: http.method
                       value:

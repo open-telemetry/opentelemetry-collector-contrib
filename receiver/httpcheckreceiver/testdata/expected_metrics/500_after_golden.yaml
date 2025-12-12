@@ -30,7 +30,7 @@ resourceMetrics:
                         stringValue: http://127.0.0.1:8000
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "1"
+                - asInt: "0" # report error on preexisting dataPoint
                   attributes:
                     - key: http.method
                       value:
@@ -46,7 +46,7 @@ resourceMetrics:
                         stringValue: http://127.0.0.1:8000
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "1"
+                - asInt: "0" # report error on preexisting dataPoint
                   attributes:
                     - key: http.method
                       value:
@@ -85,7 +85,7 @@ resourceMetrics:
                         stringValue: http://127.0.0.1:8000
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "1"
                   attributes:
                     - key: http.method
                       value:
@@ -93,6 +93,22 @@ resourceMetrics:
                     - key: http.status_class
                       value:
                         stringValue: 5xx
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 5xx
+                    - key: http.status_code
+                      value:
+                        intValue: "500"
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
