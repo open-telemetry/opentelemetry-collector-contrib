@@ -1748,103 +1748,112 @@ func needContainerAttributes(rules ExtractionRules) bool {
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
-	switch rs := obj.(type) {
-	case *apps_v1.ReplicaSet:
-		c.addOrUpdateReplicaSetTyped(rs)
-	case *meta_v1.PartialObjectMetadata:
-		c.addOrUpdateReplicaSetMeta(rs)
-	case cache.DeletedFinalStateUnknown:
-		if rs.Obj != nil {
-			c.handleReplicaSetAdd(rs.Obj)
-		} else {
-			c.logger.Warn("DeletedFinalStateUnknown with nil Obj")
-		}
-	default:
-		c.logger.Warn("object received was not ReplicaSet", zap.Any("obj", obj))
+
+	rsView, ok := normalizeRS(obj)
+	if !ok {
+		c.logger.Warn("add received non-ReplicaSet", zap.Any("obj", obj))
+		return
 	}
+	if rsView.UID == "" {
+		c.logger.Warn("add RS missing UID", zap.String("name", rsView.Name), zap.String("ns", rsView.Namespace))
+		return
+	}
+	c.upsertReplicaSet(rsView)
 }
 
-func (c *WatchClient) handleReplicaSetUpdate(oldObj, newObj any) {
+func (c *WatchClient) handleReplicaSetUpdate(_, newObj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
-	switch v := newObj.(type) {
-	case *apps_v1.ReplicaSet:
-		if v == nil {
-			return
-		}
-		uid := string(v.GetUID())
-		if uid == "" {
-			c.logger.Warn("update RS missing UID")
-			return
-		}
-		c.m.Lock()
-		existing := c.ReplicaSets[uid]
-		c.m.Unlock()
-		if existing == nil {
-			// Fallback: treat as add
-			c.handleReplicaSetAdd(newObj)
-			return
-		}
-		// Update existing safely, or reuse add path to replace the entry:
-		c.addOrUpdateReplicaSetTyped(v)
-	case *meta_v1.PartialObjectMetadata:
-		if v == nil {
-			return
-		}
-		uid := string(v.GetUID())
-		if uid == "" {
-			c.logger.Warn("update POM RS missing UID")
-			return
-		}
-		c.m.Lock()
-		existing := c.ReplicaSets[uid]
-		c.m.Unlock()
-		if existing == nil {
-			c.handleReplicaSetAdd(newObj)
-			return
-		}
-		c.addOrUpdateReplicaSetMeta(v)
-	case cache.DeletedFinalStateUnknown:
-		if v.Obj == nil {
-			c.logger.Warn("update DFSU with nil Obj")
-			return
-		}
-		c.handleReplicaSetUpdate(oldObj, v.Obj)
-	default:
-		c.logger.Warn("an update received non-ReplicaSet object", zap.Any("obj", newObj))
+
+	rsView, ok := normalizeRS(newObj)
+	if !ok || rsView.UID == "" {
+		c.logger.Warn("update received invalid RS", zap.Any("obj", newObj))
+		return
 	}
+	c.upsertReplicaSet(rsView)
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
+
+	rsView, ok := normalizeRS(obj)
+	if !ok {
+		c.logger.Warn("delete received non-ReplicaSet", zap.Any("obj", obj))
+		return
+	}
+	if rsView.UID == "" {
+		c.logger.Warn("delete RS missing UID", zap.Any("obj", obj))
+		return
+	}
+	c.m.Lock()
+	delete(c.ReplicaSets, rsView.UID)
+	c.m.Unlock()
+}
+
+// normalizeRS returns a unified view of RS from various object types, without recursion.
+type replicasetView struct {
+	UID            string
+	Name           string
+	Namespace      string
+	DeploymentName string
+	DeploymentUID  string
+}
+
+func normalizeRS(obj any) (replicasetView, bool) {
 	switch v := obj.(type) {
 	case *apps_v1.ReplicaSet:
-		uid := string(v.GetUID())
-		if uid == "" {
-			c.logger.Warn("delete ReplicaSet missing UID", zap.Any("obj", obj))
-			return
+		rv := replicasetView{
+			UID:       string(v.GetUID()),
+			Name:      v.GetName(),
+			Namespace: v.GetNamespace(),
 		}
-		c.m.Lock()
-		delete(c.ReplicaSets, uid)
-		c.m.Unlock()
+		for _, owner := range v.GetOwnerReferences() {
+			if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+				rv.DeploymentName = owner.Name
+				rv.DeploymentUID = string(owner.UID)
+				break
+			}
+		}
+		return rv, true
 	case *meta_v1.PartialObjectMetadata:
-		uid := string(v.GetUID())
-		if uid == "" {
-			c.logger.Warn("delete PartialObjectMetadata missing UID", zap.Any("obj", obj))
-			return
+		rv := replicasetView{
+			UID:       string(v.GetUID()),
+			Name:      v.GetName(),
+			Namespace: v.GetNamespace(),
 		}
-		c.m.Lock()
-		delete(c.ReplicaSets, uid)
-		c.m.Unlock()
+		for _, owner := range v.GetOwnerReferences() {
+			if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+				rv.DeploymentName = owner.Name
+				rv.DeploymentUID = string(owner.UID)
+				break
+			}
+		}
+		return rv, true
 	case cache.DeletedFinalStateUnknown:
 		if v.Obj == nil {
-			c.logger.Warn("DeletedFinalStateUnknown with nil Obj")
-			return
+			return replicasetView{}, false
 		}
-		// Recurse for inner object
-		c.handleReplicaSetDelete(v.Obj)
+		// Do NOT recurse; just normalize the inner object once.
+		return normalizeRS(v.Obj)
 	default:
-		c.logger.Warn("delete received non-ReplicaSet object", zap.Any("obj", obj))
+		return replicasetView{}, false
 	}
+}
+
+func (c *WatchClient) upsertReplicaSet(rv replicasetView) {
+	newRS := &ReplicaSet{
+		Name:      rv.Name,
+		Namespace: rv.Namespace,
+		UID:       rv.UID,
+	}
+	if rv.DeploymentName != "" {
+		newRS.Deployment = Deployment{
+			Name: rv.DeploymentName,
+			UID:  rv.DeploymentUID,
+		}
+	}
+	c.m.Lock()
+	c.ReplicaSets[rv.UID] = newRS
+	c.m.Unlock()
 }
 
 func (c *WatchClient) addOrUpdateReplicaSetTyped(replicaset *apps_v1.ReplicaSet) {
