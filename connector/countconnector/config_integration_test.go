@@ -113,21 +113,23 @@ func TestCount_SpecificLogMetricWithCondition_Works(t *testing.T) {
 	ccfg, err := getValidatedCountConfigFromYAML(t, filepath.Join("testdata", "config-count-logs-specific.yaml"))
 	require.NoError(t, err)
 
+	metricName := "log.file.name"
+
 	// Build minimal input logs: 2 matching, 1 non-matching
 	ld := plog.NewLogs()
 	rls := ld.ResourceLogs().AppendEmpty()
 	sls := rls.ScopeLogs().AppendEmpty()
 	{
 		lr := sls.LogRecords().AppendEmpty()
-		lr.Attributes().PutStr("log.file.name", "test.in.log")
+		lr.Attributes().PutStr(metricName, "test.in.log")
 	}
 	{
 		lr := sls.LogRecords().AppendEmpty()
-		lr.Attributes().PutStr("log.file.name", "test.in.log")
+		lr.Attributes().PutStr(metricName, "test.in.log")
 	}
 	{
 		lr := sls.LogRecords().AppendEmpty()
-		lr.Attributes().PutStr("log.file.name", "other.log")
+		lr.Attributes().PutStr(metricName, "other.log")
 	}
 
 	got := runLogsToMetrics(t, ccfg, ld)
@@ -141,7 +143,7 @@ func TestCount_SpecificLogMetricWithCondition_Works(t *testing.T) {
 			ms := smSlice.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				if m.Name() != "log.file.name" {
+				if m.Name() != metricName {
 					continue
 				}
 				found = true
@@ -154,5 +156,5 @@ func TestCount_SpecificLogMetricWithCondition_Works(t *testing.T) {
 			}
 		}
 	}
-	require.True(t, found, "expected metric 'log.file.name' not found")
+	require.True(t, found, "expected metric %q not found", metricName)
 }
