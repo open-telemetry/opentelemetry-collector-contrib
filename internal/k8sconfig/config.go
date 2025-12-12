@@ -191,13 +191,13 @@ func MakeOpenShiftQuotaClient(apiConf APIConfig) (quotaclientset.Interface, erro
 func NewNodeSharedInformer(client k8s.Interface, nodeName string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
-			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
+			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 				if nodeName != "" {
 					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 				}
 				return client.CoreV1().Nodes().List(context.Background(), opts)
 			},
-			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 				if nodeName != "" {
 					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 				}
