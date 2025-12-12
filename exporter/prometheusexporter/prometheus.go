@@ -8,6 +8,8 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -25,6 +27,10 @@ type prometheusExporter struct {
 	collector    *collector
 	registry     *prometheus.Registry
 	settings     component.TelemetrySettings
+
+	// background metric cleanup
+	cleanupCancel context.CancelFunc
+	cleanupWG     sync.WaitGroup
 }
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
@@ -83,7 +89,29 @@ func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) er
 		_ = srv.Serve(ln)
 	}()
 
+	pe.startCleanup()
 	return nil
+}
+
+// startCleanup starts the background metric cleanup routine
+func (pe *prometheusExporter) startCleanup() {
+	interval := max(pe.config.MetricExpiration/2, time.Second*10)
+	cleanupCtx, cancel := context.WithCancel(context.Background())
+	pe.cleanupCancel = cancel
+	pe.cleanupWG.Add(1)
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer pe.cleanupWG.Done()
+		defer ticker.Stop()
+		for {
+			select {
+			case <-cleanupCtx.Done():
+				return
+			case <-ticker.C:
+				pe.collector.cleanupMetricFamilies()
+			}
+		}
+	}()
 }
 
 func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -97,5 +125,24 @@ func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 }
 
 func (pe *prometheusExporter) Shutdown(ctx context.Context) error {
+	pe.stopCleanup(ctx)
 	return pe.shutdownFunc(ctx)
+}
+
+// stopCleanup stops the background metric cleanup routine
+func (pe *prometheusExporter) stopCleanup(ctx context.Context) {
+	if pe.cleanupCancel != nil {
+		pe.cleanupCancel()
+		done := make(chan struct{})
+		go func() {
+			// wait for cleanup goroutine to finish
+			pe.cleanupWG.Wait()
+			close(done)
+		}()
+		select {
+		case <-done:
+		case <-ctx.Done():
+			// timeout exceeded
+		}
+	}
 }
