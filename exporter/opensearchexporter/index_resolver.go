@@ -25,6 +25,22 @@ func newIndexResolver() *indexResolver {
 	}
 }
 
+// extractPlaceholderKeys extracts unique placeholder keys from the index pattern
+func (r *indexResolver) extractPlaceholderKeys(template string) []string {
+	matches := r.placeholderPattern.FindAllStringSubmatch(template, -1)
+	keySet := make(map[string]bool)
+	for _, match := range matches {
+		if len(match) > 1 {
+			keySet[match[1]] = true
+		}
+	}
+	keys := make([]string, 0, len(keySet))
+	for key := range keySet {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
 // resolveIndexName handles the common logic for resolving index names with placeholders
 func (r *indexResolver) resolveIndexName(indexPattern, fallback, timeFormat string, attrs map[string]string, timestamp time.Time) string {
 	index := r.placeholderPattern.ReplaceAllStringFunc(indexPattern, func(match string) string {
@@ -56,7 +72,8 @@ func (r *indexResolver) ResolveSpanIndex(cfg *Config, resource pcommon.Resource,
 		return r.appendTimeFormat(indexName, cfg.TracesIndexTimeFormat, timestamp)
 	}
 
-	attrs := r.collectSpanAttributes(resource, scope, span)
+	keys := r.extractPlaceholderKeys(cfg.TracesIndex)
+	attrs := r.collectSpanAttributes(resource, scope, span, keys)
 	return r.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, cfg.TracesIndexTimeFormat, attrs, timestamp)
 }
 
@@ -67,67 +84,58 @@ func (r *indexResolver) ResolveLogRecordIndex(cfg *Config, resource pcommon.Reso
 		return r.appendTimeFormat(indexName, cfg.LogsIndexTimeFormat, timestamp)
 	}
 
-	attrs := r.collectLogRecordAttributes(resource, scope, logRecord)
+	keys := r.extractPlaceholderKeys(cfg.LogsIndex)
+	attrs := r.collectLogRecordAttributes(resource, scope, logRecord, keys)
 	return r.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, cfg.LogsIndexTimeFormat, attrs, timestamp)
 }
 
 // collectSpanAttributes extracts resource, scope, and span attributes into a flat map for placeholder resolution with precedence
-func (*indexResolver) collectSpanAttributes(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) map[string]string {
-	attrs := make(map[string]string)
-	// Resource attributes (lowest precedence)
-	resAttrs := resource.Attributes()
-	resAttrs.Range(func(k string, v pcommon.Value) bool {
-		attrs[k] = v.AsString()
-		return true
-	})
-	// Instrumentation scope attributes
-	if scope.Name() != "" {
-		attrs["scope.name"] = scope.Name()
+func (*indexResolver) collectSpanAttributes(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span, keys []string) map[string]string {
+	attrs := make(map[string]string, len(keys))
+	for _, key := range keys {
+		if key == "scope.name" {
+			if scope.Name() != "" {
+				attrs[key] = scope.Name()
+			}
+		} else if key == "scope.version" {
+			if scope.Version() != "" {
+				attrs[key] = scope.Version()
+			}
+		} else {
+			if v, ok := span.Attributes().Get(key); ok {
+				attrs[key] = v.AsString()
+			} else if v, ok := scope.Attributes().Get(key); ok {
+				attrs[key] = v.AsString()
+			} else if v, ok := resource.Attributes().Get(key); ok {
+				attrs[key] = v.AsString()
+			}
+		}
 	}
-	if scope.Version() != "" {
-		attrs["scope.version"] = scope.Version()
-	}
-	scopeAttrs := scope.Attributes()
-	scopeAttrs.Range(func(k string, v pcommon.Value) bool {
-		attrs[k] = v.AsString()
-		return true
-	})
-	// Span attributes (highest precedence, overwrites)
-	spanAttrs := span.Attributes()
-	spanAttrs.Range(func(k string, v pcommon.Value) bool {
-		attrs[k] = v.AsString()
-		return true
-	})
 	return attrs
 }
 
 // collectLogRecordAttributes extracts resource, scope, and log record attributes into a flat map for placeholder resolution with precedence
-func (*indexResolver) collectLogRecordAttributes(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord) map[string]string {
-	attrs := make(map[string]string)
-	// Resource attributes (lowest precedence)
-	resAttrs := resource.Attributes()
-	resAttrs.Range(func(k string, v pcommon.Value) bool {
-		attrs[k] = v.AsString()
-		return true
-	})
-	// Instrumentation scope attributes
-	if scope.Name() != "" {
-		attrs["scope.name"] = scope.Name()
+func (*indexResolver) collectLogRecordAttributes(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord, keys []string) map[string]string {
+	attrs := make(map[string]string, len(keys))
+	for _, key := range keys {
+		if key == "scope.name" {
+			if scope.Name() != "" {
+				attrs[key] = scope.Name()
+			}
+		} else if key == "scope.version" {
+			if scope.Version() != "" {
+				attrs[key] = scope.Version()
+			}
+		} else {
+			if v, ok := logRecord.Attributes().Get(key); ok {
+				attrs[key] = v.AsString()
+			} else if v, ok := scope.Attributes().Get(key); ok {
+				attrs[key] = v.AsString()
+			} else if v, ok := resource.Attributes().Get(key); ok {
+				attrs[key] = v.AsString()
+			}
+		}
 	}
-	if scope.Version() != "" {
-		attrs["scope.version"] = scope.Version()
-	}
-	scopeAttrs := scope.Attributes()
-	scopeAttrs.Range(func(k string, v pcommon.Value) bool {
-		attrs[k] = v.AsString()
-		return true
-	})
-	// Log record attributes (highest precedence, overwrites)
-	logAttrs := logRecord.Attributes()
-	logAttrs.Range(func(k string, v pcommon.Value) bool {
-		attrs[k] = v.AsString()
-		return true
-	})
 	return attrs
 }
 
