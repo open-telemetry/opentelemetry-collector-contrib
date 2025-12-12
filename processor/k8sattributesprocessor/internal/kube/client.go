@@ -246,31 +246,29 @@ func New(
 	}
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.kc)
-
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetMetaInformer(apiCfg)
 		}
-		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
+	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() || c.Rules.Node {
 		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
 	}
 
-	if c.extractDeploymentLabelsAnnotations() {
+	if c.extractDeploymentLabelsAnnotations() || c.Rules.DeploymentName || c.Rules.DeploymentUID {
 		c.deploymentInformer = newDeploymentSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractStatefulSetLabelsAnnotations() {
+	if c.extractStatefulSetLabelsAnnotations() || c.Rules.StatefulSetName || c.Rules.StatefulSetUID {
 		c.statefulsetInformer = newStatefulSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractDaemonSetLabelsAnnotations() {
+	if c.extractDaemonSetLabelsAnnotations() || c.Rules.DaemonSetName || c.Rules.DaemonSetUID {
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
+	if c.extractJobLabelsAnnotations() || c.Rules.JobName || c.Rules.JobUID || c.Rules.CronJobUID || c.Rules.CronJobName {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
@@ -1762,7 +1760,17 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	// Fallback fetch to get ownerRefs if missing (for meta informer)
 	if rsView.DeploymentUID == "" &&
 		(c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)) {
-		c.fillReplicaSetOwnerFromTyped(rsView.Namespace, rsView.Name, &rsView)
+		// Check cache first to avoid extra GETs
+		c.m.RLock()
+		cached := c.ReplicaSets[rsView.UID]
+		c.m.RUnlock()
+		if cached != nil && cached.Deployment.UID != "" {
+			rsView.DeploymentName = cached.Deployment.Name
+			rsView.DeploymentUID = cached.Deployment.UID
+		} else {
+			// Fallback typed GET (likely only once per UID)
+			c.fillReplicaSetOwnerFromTyped(rsView.Namespace, rsView.Name, &rsView)
+		}
 	}
 
 	c.upsertReplicaSet(rsView)
@@ -1863,7 +1871,6 @@ func normalizeRS(obj any) (replicasetView, bool) {
 		if v.Obj == nil {
 			return replicasetView{}, false
 		}
-		// Do NOT recurse; just normalize the inner object once.
 		return normalizeRS(v.Obj)
 	default:
 		return replicasetView{}, false
@@ -1884,56 +1891,6 @@ func (c *WatchClient) upsertReplicaSet(rv replicasetView) {
 	}
 	c.m.Lock()
 	c.ReplicaSets[rv.UID] = newRS
-	c.m.Unlock()
-}
-
-func (c *WatchClient) addOrUpdateReplicaSetTyped(replicaset *apps_v1.ReplicaSet) {
-	newReplicaSet := &ReplicaSet{
-		Name:      replicaset.Name,
-		Namespace: replicaset.Namespace,
-		UID:       string(replicaset.UID),
-	}
-
-	for _, ownerReference := range replicaset.OwnerReferences {
-		if ownerReference.Kind == "Deployment" && ownerReference.Controller != nil && *ownerReference.Controller {
-			newReplicaSet.Deployment = Deployment{
-				Name: ownerReference.Name,
-				UID:  string(ownerReference.UID),
-			}
-			break
-		}
-	}
-
-	c.m.Lock()
-	if replicaset.UID != "" {
-		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
-	}
-	c.m.Unlock()
-}
-
-func (c *WatchClient) addOrUpdateReplicaSetMeta(rs *meta_v1.PartialObjectMetadata) {
-	newRS := &ReplicaSet{
-		Name:      rs.GetName(),
-		Namespace: rs.GetNamespace(),
-		UID:       string(rs.GetUID()),
-	}
-	for _, owner := range rs.GetOwnerReferences() {
-		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
-			newRS.Deployment = Deployment{
-				Name: owner.Name,
-				UID:  string(owner.UID),
-			}
-			break
-		}
-	}
-	if len(rs.GetOwnerReferences()) == 0 {
-		c.logger.Debug("POM RS has no ownerReferences", zap.String("uid", string(rs.GetUID())))
-	}
-
-	c.m.Lock()
-	if uid := rs.GetUID(); uid != "" {
-		c.ReplicaSets[string(uid)] = newRS
-	}
 	c.m.Unlock()
 }
 

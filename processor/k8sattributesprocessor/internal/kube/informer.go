@@ -187,9 +187,6 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 	}
 }
 
-// NewReplicaSetMetaInformer returns a provider with the SAME signature
-// as your existing helpers, but emits metav1.PartialObjectMetadata.
-// It uses ListWithContextFunc and WatchFuncWithContext.
 func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(client kubernetes.Interface, namespace string) cache.SharedInformer {
 	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
 		if err := apiCfg.Validate(); err != nil {
