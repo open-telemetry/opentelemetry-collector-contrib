@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	expmaps "golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
@@ -97,9 +97,9 @@ var (
 	// identifyingAttributes is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
 	identifyingAttributes = map[string]struct{}{
-		string(semconv.ServiceNameKey):       {},
-		string(semconv.ServiceVersionKey):    {},
-		string(semconv.ServiceInstanceIDKey): {},
+		string(conventions.ServiceNameKey):       {},
+		string(conventions.ServiceVersionKey):    {},
+		string(conventions.ServiceInstanceIDKey): {},
 	}
 )
 
@@ -282,14 +282,14 @@ func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
 func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 	agentType := set.BuildInfo.Command
 
-	sn, ok := set.Resource.Attributes().Get(string(semconv.ServiceNameKey))
+	sn, ok := set.Resource.Attributes().Get(string(conventions.ServiceNameKey))
 	if ok {
 		agentType = sn.AsString()
 	}
 
 	agentVersion := set.BuildInfo.Version
 
-	sv, ok := set.Resource.Attributes().Get(string(semconv.ServiceVersionKey))
+	sv, ok := set.Resource.Attributes().Get(string(conventions.ServiceVersionKey))
 	if ok {
 		agentVersion = sv.AsString()
 	}
@@ -305,7 +305,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 			return nil, fmt.Errorf("could not parse configured instance id: %w", err)
 		}
 	} else {
-		sid, ok := set.Resource.Attributes().Get(string(semconv.ServiceInstanceIDKey))
+		sid, ok := set.Resource.Attributes().Get(string(conventions.ServiceInstanceIDKey))
 		if ok {
 			uid, err = uuid.Parse(sid.AsString())
 			if err != nil {
@@ -375,18 +375,18 @@ func (o *opampAgent) createAgentDescription() error {
 	description := getOSDescription(o.logger)
 
 	ident := []*protobufs.KeyValue{
-		stringKeyValue(string(semconv.ServiceInstanceIDKey), o.instanceID.String()),
-		stringKeyValue(string(semconv.ServiceNameKey), o.agentType),
-		stringKeyValue(string(semconv.ServiceVersionKey), o.agentVersion),
+		stringKeyValue(string(conventions.ServiceInstanceIDKey), o.instanceID.String()),
+		stringKeyValue(string(conventions.ServiceNameKey), o.agentType),
+		stringKeyValue(string(conventions.ServiceVersionKey), o.agentVersion),
 	}
 
 	// Initially construct using a map to properly deduplicate any keys that
 	// are both automatically determined and defined in the config
 	nonIdentifyingAttributeMap := map[string]string{}
-	nonIdentifyingAttributeMap[string(semconv.OSTypeKey)] = runtime.GOOS
-	nonIdentifyingAttributeMap[string(semconv.HostArchKey)] = runtime.GOARCH
-	nonIdentifyingAttributeMap[string(semconv.HostNameKey)] = hostname
-	nonIdentifyingAttributeMap[string(semconv.OSDescriptionKey)] = description
+	nonIdentifyingAttributeMap[string(conventions.OSTypeKey)] = runtime.GOOS
+	nonIdentifyingAttributeMap[string(conventions.HostArchKey)] = runtime.GOARCH
+	nonIdentifyingAttributeMap[string(conventions.HostNameKey)] = hostname
+	nonIdentifyingAttributeMap[string(conventions.OSDescriptionKey)] = description
 
 	maps.Copy(nonIdentifyingAttributeMap, o.cfg.AgentDescription.NonIdentifyingAttributes)
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
