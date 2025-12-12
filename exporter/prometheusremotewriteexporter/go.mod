@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.141.0
+	github.com/prometheus/client_golang/exp v0.0.0-20250914183048-a974e0d45e0a
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.308.0
 	github.com/stretchr/testify v1.11.1
@@ -99,7 +100,6 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
-	github.com/prometheus/client_golang/exp v0.0.0-20250914183048-a974e0d45e0a // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.4 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
