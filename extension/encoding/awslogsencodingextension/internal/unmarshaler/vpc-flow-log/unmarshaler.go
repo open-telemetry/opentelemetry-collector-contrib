@@ -65,7 +65,7 @@ func NewVPCFlowLogUnmarshaler(
 ) (unmarshaler.AWSUnmarshaler, error) {
 	cfg.parsedFormat = defaultFormat
 	if cfg.Format != "" {
-		cfg.parsedFormat = strings.Split(cfg.Format, " ")
+		cfg.parsedFormat = strings.Fields(cfg.Format)
 		logger.Debug("Using custom format for VPC flow log unmarshaling", zap.Strings("fields", cfg.parsedFormat))
 	}
 
