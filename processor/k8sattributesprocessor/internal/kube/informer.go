@@ -192,7 +192,6 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 // It uses ListWithContextFunc and WatchFuncWithContext.
 func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(client kubernetes.Interface, namespace string) cache.SharedInformer {
 	return func(client kubernetes.Interface, namespace string) cache.SharedInformer {
-		// Build metadata client from APIConfig (mirrors your MakeDynamicClient flow)
 		if err := apiCfg.Validate(); err != nil {
 			return cache.NewSharedIndexInformer(
 				&cache.ListWatch{
