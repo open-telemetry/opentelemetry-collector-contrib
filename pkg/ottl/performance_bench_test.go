@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -158,6 +160,54 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 	}
 }
 
+func BenchmarkStatementSequenceExecuteLogsWithTraceProvider(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	spanRecorder := tracetest.NewSpanRecorder()
+	settings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create log parser: %v", err)
+	}
+
+	scenarios := []struct {
+		name       string
+		statements []string
+	}{
+		{name: "small", statements: buildLogStatements(10)},
+		{name: "medium", statements: buildLogStatements(50)},
+		{name: "large", statements: buildLogStatements(200)},
+	}
+
+	ctx := b.Context()
+
+	for _, scenario := range scenarios {
+		parsed, err := parser.ParseStatements(scenario.statements)
+		if err != nil {
+			b.Fatalf("failed to parse log statements: %v", err)
+		}
+		sequence := ottllog.NewStatementSequence(parsed, settings)
+
+		contexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
+		for i := range contexts {
+			contexts[i] = newBenchmarkLogContext(len(scenario.statements))
+		}
+
+		b.Run(scenario.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
+					b.Fatalf("failed to execute log statements: %v", err)
+				}
+			}
+		})
+
+		for i := range contexts {
+			contexts[i].Close()
+		}
+	}
+}
+
 func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
@@ -203,8 +253,103 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 	}
 }
 
+func BenchmarkStatementSequenceExecuteSpansWithTraceProvider(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	spanRecorder := tracetest.NewSpanRecorder()
+	settings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create span parser: %v", err)
+	}
+
+	scenarios := []struct {
+		name       string
+		statements []string
+	}{
+		{name: "small", statements: buildSpanStatements(10)},
+		{name: "medium", statements: buildSpanStatements(50)},
+		{name: "large", statements: buildSpanStatements(200)},
+	}
+
+	ctx := b.Context()
+
+	for _, scenario := range scenarios {
+		parsed, err := parser.ParseStatements(scenario.statements)
+		if err != nil {
+			b.Fatalf("failed to parse span statements: %v", err)
+		}
+		sequence := ottlspan.NewStatementSequence(parsed, settings)
+
+		contexts := make([]*ottlspan.TransformContext, benchmarkContextPoolSize)
+		for i := range contexts {
+			contexts[i] = newBenchmarkSpanContext(len(scenario.statements))
+		}
+
+		b.Run(scenario.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
+					b.Fatalf("failed to execute span statements: %v", err)
+				}
+			}
+		})
+		for i := range contexts {
+			contexts[i].Close()
+		}
+	}
+}
+
 func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create metric parser: %v", err)
+	}
+
+	scenarios := []struct {
+		name       string
+		statements []string
+	}{
+		{name: "small", statements: buildMetricStatements(10)},
+		{name: "medium", statements: buildMetricStatements(50)},
+		{name: "large", statements: buildMetricStatements(200)},
+	}
+
+	ctx := b.Context()
+
+	for _, scenario := range scenarios {
+		parsed, err := parser.ParseStatements(scenario.statements)
+		if err != nil {
+			b.Fatalf("failed to parse metric statements: %v", err)
+		}
+		sequence := ottlmetric.NewStatementSequence(parsed, settings)
+
+		contexts := make([]*ottlmetric.TransformContext, benchmarkContextPoolSize)
+		for i := range contexts {
+			contexts[i] = newBenchmarkMetricContext(len(scenario.statements))
+		}
+
+		b.Run(scenario.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
+					b.Fatalf("failed to execute metric statements: %v", err)
+				}
+			}
+		})
+
+		for i := range contexts {
+			contexts[i].Close()
+		}
+	}
+}
+
+func BenchmarkStatementSequenceExecuteMetricsWithTraceProvider(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	spanRecorder := tracetest.NewSpanRecorder()
+	settings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
 	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create metric parser: %v", err)
