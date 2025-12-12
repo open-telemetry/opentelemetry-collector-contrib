@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
@@ -125,6 +126,7 @@ func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 		time:                         &timeWrapper{},
 		clientOptionsResolver:        newClientOptionsResolver(conf.Cloud),
 		storageAccountSpecificConfig: newStorageAccountSpecificConfig(conf.Services),
+		loader:                       &SubscriptionLoader{},
 	}
 }
 
@@ -144,6 +146,7 @@ type azureScraper struct {
 	time                         timeNowIface
 	clientOptionsResolver        ClientOptionsResolver
 	storageAccountSpecificConfig storageAccountSpecificConfig
+	loader                       *SubscriptionLoader
 }
 
 func (s *azureScraper) start(_ context.Context, host component.Host) (err error) {
@@ -153,6 +156,16 @@ func (s *azureScraper) start(_ context.Context, host component.Host) (err error)
 
 	s.subscriptions = map[string]*azureSubscription{}
 	s.resources = map[string]map[string]*azureResource{}
+
+	s.loader = newSubscriptionLoader(
+		s.cred,
+		s.clientOptionsResolver.GetArmSubscriptionsClientOptions(),
+		s.settings.Logger,
+		s.cfg.MetricsBuilderConfig.ResourceAttributes,
+		s.cfg.CacheResources,
+		s.cfg.DiscoverSubscriptions,
+		s.cfg.SubscriptionIDs,
+	)
 
 	return err
 }
@@ -212,71 +225,12 @@ func (s *azureScraper) getSubscriptions(ctx context.Context) {
 	if time.Since(s.subscriptionsUpdated).Seconds() < s.cfg.CacheResources {
 		return
 	}
-
-	// if subscriptions discovery is enabled, we'll need a client
-	armSubscriptionClient, clientErr := armsubscriptions.NewClient(s.cred, s.clientOptionsResolver.GetArmSubscriptionsClientOptions())
-	if clientErr != nil {
-		s.settings.Logger.Error("failed to initialize the client to get Azure Subscriptions", zap.Error(clientErr))
-		return
-	}
-
-	// Make a special case for when we only have subscription ids configured (discovery disabled)
-	if !s.cfg.DiscoverSubscriptions {
-		for _, subID := range s.cfg.SubscriptionIDs {
-			// we don't need additional info,
-			// => It simply load the subscription id
-			if !s.cfg.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled {
-				s.loadSubscription(azureSubscription{
-					SubscriptionID: subID,
-				})
-				continue
-			}
-
-			// We need additional info,
-			// => It makes some get requests
-			resp, err := armSubscriptionClient.Get(ctx, subID, &armsubscriptions.ClientGetOptions{})
-			if err != nil {
-				s.settings.Logger.Error("failed to get Azure Subscription", zap.String("subscription_id", subID), zap.Error(err))
-				return
-			}
-			s.loadSubscription(azureSubscription{
-				SubscriptionID: *resp.SubscriptionID,
-				DisplayName:    *resp.DisplayName,
-			})
-		}
-		s.subscriptionsUpdated = time.Now()
-		return
-	}
-
-	opts := &armsubscriptions.ClientListOptions{}
-	pager := armSubscriptionClient.NewListPager(opts)
-
-	existingSubscriptions := map[string]void{}
-	for id := range s.subscriptions {
-		existingSubscriptions[id] = void{}
-	}
-
-	for pager.More() {
-		nextResult, err := pager.NextPage(ctx)
-		if err != nil {
-			s.settings.Logger.Error("failed to get Azure Subscriptions", zap.Error(err))
-			return
-		}
-
-		for _, subscription := range nextResult.Value {
-			s.loadSubscription(azureSubscription{
-				SubscriptionID: *subscription.SubscriptionID,
-				DisplayName:    *subscription.DisplayName,
-			})
-			delete(existingSubscriptions, *subscription.SubscriptionID)
-		}
-	}
-	if len(existingSubscriptions) > 0 {
-		for idToDelete := range existingSubscriptions {
-			s.unloadSubscription(idToDelete)
-		}
-	}
-
+	s.subscriptions = s.loader.loadSubscriptions(
+		ctx,
+		s.subscriptions,
+		s.loadSubscription,
+		s.unloadSubscription,
+	)
 	s.subscriptionsUpdated = time.Now()
 }
 
@@ -670,4 +624,90 @@ func filterResourceTags(tagFilterList map[string]struct{}, resourceTags map[stri
 	}
 
 	return includedTags
+}
+
+type SubscriptionLoader struct {
+	cred                  azcore.TokenCredential
+	clientOptions         *arm.ClientOptions
+	logger                *zap.Logger
+	resourceAttributes    metadata.ResourceAttributesConfig
+	cacheResources        float64
+	discoverSubscriptions bool
+	subscriptionIDs       []string
+}
+
+func newSubscriptionLoader(cred azcore.TokenCredential, clientOptions *arm.ClientOptions, logger *zap.Logger, resourceAttributes metadata.ResourceAttributesConfig, cacheResources float64, discoverSubscriptions bool, subscriptionIDs []string) *SubscriptionLoader {
+	return &SubscriptionLoader{
+		cred:                  cred,
+		clientOptions:         clientOptions,
+		logger:                logger,
+		resourceAttributes:    resourceAttributes,
+		cacheResources:        cacheResources,
+		discoverSubscriptions: discoverSubscriptions,
+		subscriptionIDs:       subscriptionIDs,
+	}
+}
+
+func (l *SubscriptionLoader) loadSubscriptions(
+	ctx context.Context,
+	subscriptions map[string]*azureSubscription,
+	load func(azureSubscription),
+	unload func(string),
+) map[string]*azureSubscription {
+	armSubscriptionClient, clientErr := armsubscriptions.NewClient(l.cred, l.clientOptions)
+	if clientErr != nil {
+		l.logger.Error("failed to initialize the client to get Azure Subscriptions", zap.Error(clientErr))
+		return subscriptions
+	}
+
+	if !l.discoverSubscriptions {
+		for _, subID := range l.subscriptionIDs {
+			if !l.resourceAttributes.AzuremonitorSubscription.Enabled {
+				load(azureSubscription{
+					SubscriptionID: subID,
+				})
+				continue
+			}
+			resp, err := armSubscriptionClient.Get(ctx, subID, &armsubscriptions.ClientGetOptions{})
+			if err != nil {
+				l.logger.Error("failed to get Azure Subscription", zap.String("subscription_id", subID), zap.Error(err))
+				return subscriptions
+			}
+			load(azureSubscription{
+				SubscriptionID: *resp.SubscriptionID,
+				DisplayName:    *resp.DisplayName,
+			})
+		}
+		return subscriptions
+	}
+
+	opts := &armsubscriptions.ClientListOptions{}
+	pager := armSubscriptionClient.NewListPager(opts)
+
+	existingSubscriptions := map[string]void{}
+	for id := range subscriptions {
+		existingSubscriptions[id] = void{}
+	}
+
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		if err != nil {
+			l.logger.Error("failed to get Azure Subscriptions", zap.Error(err))
+			return subscriptions
+		}
+		for _, subscription := range nextResult.Value {
+			load(azureSubscription{
+				SubscriptionID: *subscription.SubscriptionID,
+				DisplayName:    *subscription.DisplayName,
+			})
+			delete(existingSubscriptions, *subscription.SubscriptionID)
+		}
+	}
+	if len(existingSubscriptions) > 0 {
+		for idToDelete := range existingSubscriptions {
+			unload(idToDelete)
+		}
+	}
+
+	return subscriptions
 }
