@@ -66,7 +66,7 @@ func newStefExporter(set component.TelemetrySettings, cfg *Config) *stefExporter
 func (s *stefExporter) Start(ctx context.Context, host component.Host) error {
 	// Prepare gRPC connection.
 	var err error
-	s.grpcConn, err = s.cfg.ToClientConn(ctx, host, s.set)
+	s.grpcConn, err = s.cfg.ToClientConn(ctx, host.GetExtensions(), s.set)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (s *stefExporter) Start(ctx context.Context, host component.Host) error {
 	s.connMan.Start()
 
 	// Wrap async implementation of sendMetricsAsync into a sync-callable API.
-	s.sync2Async = internal.NewSync2Async(s.set.Logger, s.cfg.QueueConfig.NumConsumers, s.sendMetricsAsync)
+	s.sync2Async = internal.NewSync2Async(s.set.Logger, s.cfg.QueueConfig.GetOrInsertDefault().NumConsumers, s.sendMetricsAsync)
 
 	// Begin connection attempt in a goroutine to avoid blocking Start().
 	go func() {
