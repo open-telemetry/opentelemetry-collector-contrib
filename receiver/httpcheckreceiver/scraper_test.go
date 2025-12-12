@@ -26,13 +26,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
 
-func newMockServer(t *testing.T, responseCode int) *httptest.Server {
+func newMockServer(t *testing.T, responseCode []int) *httptest.Server {
+	offset := 0
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		rw.WriteHeader(responseCode)
+		rw.WriteHeader(responseCode[offset])
 		// This could be expanded if the checks for the server include
 		// parsing the response content
 		_, err := rw.Write([]byte(``))
 		assert.NoError(t, err)
+		offset = (offset + 1) % len(responseCode)
 	}))
 }
 
@@ -97,16 +99,16 @@ func TestScraperStart(t *testing.T) {
 func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
-		expectedResponse  int
-		expectedMetricGen func(t *testing.T) pmetric.Metrics
+		expectedResponse  []int
+		expectedMetricGen func(t *testing.T, index int) pmetric.Metrics
 		expectedErr       error
 		endpoint          string
 		compareOptions    []pmetrictest.CompareMetricsOption
 	}{
 		{
 			desc:             "Successful Collection",
-			expectedResponse: 200,
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedResponse: []int{200},
+			expectedMetricGen: func(t *testing.T, _ int) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
@@ -123,8 +125,8 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc:             "Endpoint returning 404",
-			expectedResponse: 404,
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedResponse: []int{404},
+			expectedMetricGen: func(t *testing.T, _ int) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "endpoint_404.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
@@ -142,7 +144,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:     "Invalid endpoint",
 			endpoint: "http://invalid-endpoint",
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(t *testing.T, _ int) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "invalid_endpoint.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
@@ -152,6 +154,31 @@ func TestScraperScrape(t *testing.T) {
 			compareOptions: []pmetrictest.CompareMetricsOption{
 				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 				pmetrictest.IgnoreMetricAttributeValue("error.message"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
+			},
+		},
+		{
+			desc:             "Going into error",
+			expectedResponse: []int{200, 500},
+			expectedMetricGen: func(t *testing.T, index int) pmetric.Metrics {
+				if index == 0 {
+					path := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+					expectedMetrics, err := golden.ReadMetrics(path)
+					require.NoError(t, err)
+					return expectedMetrics
+				}
+
+				path := filepath.Join("testdata", "expected_metrics", "500_after_golden.yaml")
+				expectedMetrics, err := golden.ReadMetrics(path)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			expectedErr: nil,
+			compareOptions: []pmetrictest.CompareMetricsOption{
+				pmetrictest.IgnoreMetricAttributeValue("http.url"),
+				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreTimestamp(),
@@ -184,16 +211,18 @@ func TestScraperScrape(t *testing.T) {
 			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-			actualMetrics, err := scraper.scrape(t.Context())
-			if tc.expectedErr == nil {
-				require.NoError(t, err)
-			} else {
-				require.EqualError(t, err, tc.expectedErr.Error())
+			for index := 0; index < len(tc.expectedResponse); index++ {
+				actualMetrics, err := scraper.scrape(t.Context())
+				if tc.expectedErr == nil {
+					require.NoError(t, err)
+				} else {
+					require.EqualError(t, err, tc.expectedErr.Error())
+				}
+
+				expectedMetrics := tc.expectedMetricGen(t, index)
+
+				require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...), "index=%d", index)
 			}
-
-			expectedMetrics := tc.expectedMetricGen(t)
-
-			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
 		})
 	}
 }
@@ -339,114 +368,62 @@ func TestNilClient(t *testing.T) {
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 }
 
+func expectedStatusCodeConditionalInclusionCheck(t *testing.T, metrics pmetric.Metrics, expectedCode int64, expectedClass string) {
+	// Find status metrics
+	rm := metrics.ResourceMetrics().At(0)
+	ilm := rm.ScopeMetrics().At(0)
+
+	statusMetricsWithoutStatusCodeFound := 0
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		metric := ilm.Metrics().At(i)
+		if metric.Name() == "httpcheck.status" {
+			dps := metric.Sum().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				statusClass, _ := dp.Attributes().Get("http.status_class")
+				statusCode, ok := dp.Attributes().Get("http.status_code")
+				if ok { // when status_code is present, the value should be 1 (for first occurent!)
+					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, expectedCode, statusCode.Int())
+					assert.Equal(t, expectedClass, statusClass.Str())
+				} else {
+					statusMetricsWithoutStatusCodeFound++
+					if statusClass.AsString() == expectedClass {
+						assert.Equal(t, int64(1), dp.IntValue(), "status_code less metric of class should also be 1")
+					}
+				}
+			}
+		}
+	}
+	assert.Equal(t, 5, statusMetricsWithoutStatusCodeFound, "Should have 5 status data points (one for each class)")
+}
+
 func TestStatusCodeConditionalInclusion(t *testing.T) {
 	// Test that http.status_code is only included when the metric value is 1
 	testCases := []struct {
 		name           string
-		responseCode   int
+		responseCode   []int
 		expectedChecks func(t *testing.T, metrics pmetric.Metrics)
 	}{
 		{
 			name:         "200 OK response",
-			responseCode: 200,
+			responseCode: []int{200},
 			expectedChecks: func(t *testing.T, metrics pmetric.Metrics) {
-				// Find status metrics
-				rm := metrics.ResourceMetrics().At(0)
-				ilm := rm.ScopeMetrics().At(0)
-
-				statusMetricsFound := 0
-				for i := 0; i < ilm.Metrics().Len(); i++ {
-					metric := ilm.Metrics().At(i)
-					if metric.Name() == "httpcheck.status" {
-						dps := metric.Sum().DataPoints()
-						for j := 0; j < dps.Len(); j++ {
-							dp := dps.At(j)
-							statusClass, _ := dp.Attributes().Get("http.status_class")
-
-							if dp.IntValue() == 1 {
-								// When value is 1, status_code should be present and be 200
-								statusCode, ok := dp.Attributes().Get("http.status_code")
-								assert.True(t, ok, "http.status_code should be present when value is 1")
-								assert.Equal(t, int64(200), statusCode.Int())
-								assert.Equal(t, "2xx", statusClass.Str())
-							} else {
-								// When value is 0, status_code should NOT be present
-								_, ok := dp.Attributes().Get("http.status_code")
-								assert.False(t, ok, "http.status_code should NOT be present when value is 0 for class %s", statusClass.Str())
-							}
-							statusMetricsFound++
-						}
-					}
-				}
-				assert.Equal(t, 5, statusMetricsFound, "Should have 5 status data points (one for each class)")
+				expectedStatusCodeConditionalInclusionCheck(t, metrics, 200, "2xx")
 			},
 		},
 		{
 			name:         "404 Not Found response",
-			responseCode: 404,
+			responseCode: []int{404},
 			expectedChecks: func(t *testing.T, metrics pmetric.Metrics) {
-				rm := metrics.ResourceMetrics().At(0)
-				ilm := rm.ScopeMetrics().At(0)
-
-				statusMetricsFound := 0
-				for i := 0; i < ilm.Metrics().Len(); i++ {
-					metric := ilm.Metrics().At(i)
-					if metric.Name() == "httpcheck.status" {
-						dps := metric.Sum().DataPoints()
-						for j := 0; j < dps.Len(); j++ {
-							dp := dps.At(j)
-							statusClass, _ := dp.Attributes().Get("http.status_class")
-
-							if dp.IntValue() == 1 {
-								// When value is 1, status_code should be present and be 404
-								statusCode, ok := dp.Attributes().Get("http.status_code")
-								assert.True(t, ok, "http.status_code should be present when value is 1")
-								assert.Equal(t, int64(404), statusCode.Int())
-								assert.Equal(t, "4xx", statusClass.Str())
-							} else {
-								// When value is 0, status_code should NOT be present
-								_, ok := dp.Attributes().Get("http.status_code")
-								assert.False(t, ok, "http.status_code should NOT be present when value is 0 for class %s", statusClass.Str())
-							}
-							statusMetricsFound++
-						}
-					}
-				}
-				assert.Equal(t, 5, statusMetricsFound, "Should have 5 status data points (one for each class)")
+				expectedStatusCodeConditionalInclusionCheck(t, metrics, 404, "4xx")
 			},
 		},
 		{
 			name:         "500 Server Error response",
-			responseCode: 500,
+			responseCode: []int{500},
 			expectedChecks: func(t *testing.T, metrics pmetric.Metrics) {
-				rm := metrics.ResourceMetrics().At(0)
-				ilm := rm.ScopeMetrics().At(0)
-
-				statusMetricsFound := 0
-				for i := 0; i < ilm.Metrics().Len(); i++ {
-					metric := ilm.Metrics().At(i)
-					if metric.Name() == "httpcheck.status" {
-						dps := metric.Sum().DataPoints()
-						for j := 0; j < dps.Len(); j++ {
-							dp := dps.At(j)
-							statusClass, _ := dp.Attributes().Get("http.status_class")
-
-							if dp.IntValue() == 1 {
-								// When value is 1, status_code should be present and be 500
-								statusCode, ok := dp.Attributes().Get("http.status_code")
-								assert.True(t, ok, "http.status_code should be present when value is 1")
-								assert.Equal(t, int64(500), statusCode.Int())
-								assert.Equal(t, "5xx", statusClass.Str())
-							} else {
-								// When value is 0, status_code should NOT be present
-								_, ok := dp.Attributes().Get("http.status_code")
-								assert.False(t, ok, "http.status_code should NOT be present when value is 0 for class %s", statusClass.Str())
-							}
-							statusMetricsFound++
-						}
-					}
-				}
-				assert.Equal(t, 5, statusMetricsFound, "Should have 5 status data points (one for each class)")
+				expectedStatusCodeConditionalInclusionCheck(t, metrics, 500, "5xx")
 			},
 		},
 	}
@@ -478,9 +455,9 @@ func TestStatusCodeConditionalInclusion(t *testing.T) {
 
 func TestScraperMultipleTargets(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	ms1 := newMockServer(t, 200)
+	ms1 := newMockServer(t, []int{200})
 	defer ms1.Close()
-	ms2 := newMockServer(t, 404)
+	ms2 := newMockServer(t, []int{404})
 	defer ms2.Close()
 
 	cfg.Targets = append(cfg.Targets,
@@ -516,7 +493,7 @@ func TestScraperMultipleTargets(t *testing.T) {
 
 func TestTimingMetrics(t *testing.T) {
 	// Create a mock server
-	server := newMockServer(t, 200)
+	server := newMockServer(t, []int{200})
 	defer server.Close()
 
 	cfg := createDefaultConfig().(*Config)
