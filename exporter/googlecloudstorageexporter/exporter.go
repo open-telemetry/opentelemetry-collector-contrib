@@ -73,7 +73,7 @@ func newStorageExporter(
 	return &storageExporter{
 		cfg:             cfg,
 		logger:          logger,
-		partitionFormat: convertStrftimeToGo(cfg.Bucket.Partition),
+		partitionFormat: convertStrftimeToGo(cfg.Bucket.Partition.Format),
 	}, nil
 }
 
@@ -160,6 +160,38 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
+// generateFilename returns the name of the file to be uploaded.
+// It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
+func generateFilename(
+	uniqueID, filePrefix, partitionPrefix, partitionFormat string,
+	now func() time.Time,
+) string {
+	filename := uniqueID
+	if filePrefix != "" {
+		if strings.HasSuffix(filePrefix, "/") {
+			filename = filePrefix + uniqueID
+		} else {
+			filename = filePrefix + "_" + uniqueID
+		}
+	}
+
+	if partitionFormat != "" {
+		partition := now().UTC().Format(partitionFormat)
+		if !strings.HasSuffix(partition, "/") {
+			partition += "/"
+		}
+		filename = partition + filename
+	}
+
+	if partitionPrefix != "" {
+		if !strings.HasSuffix(partitionPrefix, "/") {
+			partitionPrefix += "/"
+		}
+		filename = partitionPrefix + filename
+	}
+	return filename
+}
+
 func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err error) {
 	if len(content) == 0 {
 		s.logger.Info("No content to upload")
@@ -168,19 +200,8 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 
 	// if we have multiple files coming, we need to make sure the name is unique so they do
 	// not overwrite each other
-	filename := uuid.New().String()
-
-	if s.cfg.Bucket.FilePrefix != "" {
-		filename = s.cfg.Bucket.FilePrefix + "_" + filename
-	}
-
-	if s.partitionFormat != "" {
-		partitionPrefix := time.Now().UTC().Format(s.partitionFormat)
-		if !strings.HasSuffix(partitionPrefix, "/") {
-			partitionPrefix += "/"
-		}
-		filename = partitionPrefix + filename
-	}
+	uniqueID := uuid.New().String()
+	filename := generateFilename(uniqueID, s.cfg.Bucket.FilePrefix, s.cfg.Bucket.Partition.Prefix, s.partitionFormat, time.Now)
 
 	writer := s.bucketHandle.Object(filename).NewWriter(ctx)
 	defer func() {

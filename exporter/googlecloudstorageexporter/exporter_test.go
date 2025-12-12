@@ -9,8 +9,8 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -99,7 +99,7 @@ func TestStart(t *testing.T) {
 	newBucketName := "new-bucket"
 	bucketExistsName := "bucket-exists"
 
-	newTestStorageEmulator(t, bucketExistsName, "", nil)
+	newTestStorageEmulator(t, bucketExistsName, "")
 
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
@@ -162,7 +162,7 @@ func TestStart(t *testing.T) {
 func TestUploadFile(t *testing.T) {
 	bucketExistsName := "bucket-exists"
 	uploadBucketName := "upload-bucket"
-	newTestStorageEmulator(t, bucketExistsName, uploadBucketName, nil)
+	newTestStorageEmulator(t, bucketExistsName, uploadBucketName)
 
 	encodingSucceedsID := "id_success"
 	mHost := &mockHost{
@@ -189,47 +189,6 @@ func TestUploadFile(t *testing.T) {
 		err := gcsExporter.uploadFile(t.Context(), []byte("test content"))
 		require.NoError(t, err)
 	})
-}
-
-func TestUploadFile_Partition(t *testing.T) {
-	uploadBucketName := "upload-bucket-partition"
-
-	// We'll use a channel to communicate the uploaded filename back to the test
-	filenameCh := make(chan string, 1)
-	newTestStorageEmulator(t, "", uploadBucketName, func(r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/upload/storage/v1/b/"+uploadBucketName+"/o" {
-			filenameCh <- r.URL.Query().Get("name")
-		}
-	})
-
-	encodingSucceedsID := "id_success"
-	mHost := &mockHost{
-		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
-		},
-	}
-	id := component.MustNewID(encodingSucceedsID)
-
-	partitionFormat := "year=%Y/month=%m"
-	gcsExporter := newTestGCSExporter(t, &Config{
-		Bucket: bucketConfig{
-			Name:      uploadBucketName,
-			Partition: partitionFormat,
-		},
-		Encoding: &id,
-	})
-
-	errStart := gcsExporter.Start(t.Context(), mHost)
-	require.NoError(t, errStart)
-
-	err := gcsExporter.uploadFile(t.Context(), []byte("test content"))
-	require.NoError(t, err)
-
-	filename := <-filenameCh
-	_, remaining, found := strings.Cut(filename, "year=")
-	require.True(t, found)
-	_, _, found = strings.Cut(remaining, "/month=")
-	require.True(t, found)
 }
 
 func TestConvertStrftimeToGo(t *testing.T) {
@@ -266,6 +225,77 @@ func TestConvertStrftimeToGo(t *testing.T) {
 	}
 }
 
+func TestGenerateFilename(t *testing.T) {
+	// Fixed time for testing: 2023-10-25 14:30:00 UTC
+	fixedTime := time.Date(2023, 10, 25, 14, 30, 0, 0, time.UTC)
+	nowFunc := func() time.Time {
+		return fixedTime
+	}
+
+	tests := []struct {
+		name             string
+		partitionFormat  string
+		partitionPrefix  string
+		filePrefix       string
+		uniqueID         string
+		expectedFilename string
+	}{
+		{
+			name:             "empty partition format and prefix",
+			uniqueID:         "uuid",
+			expectedFilename: "uuid",
+		},
+		{
+			name:             "file prefix set",
+			filePrefix:       "logs",
+			uniqueID:         "uuid",
+			expectedFilename: "logs_uuid",
+		},
+		{
+			name:             "file prefix with slash",
+			filePrefix:       "folder/",
+			uniqueID:         "uuid",
+			expectedFilename: "folder/uuid",
+		},
+		{
+			name:             "partition prefix set",
+			partitionPrefix:  "my-logs",
+			uniqueID:         "uuid",
+			expectedFilename: "my-logs/uuid",
+		},
+		{
+			name:             "partition format set",
+			partitionFormat:  "year=%Y",
+			uniqueID:         "uuid",
+			expectedFilename: "year=2023/uuid",
+		},
+		{
+			name:             "partition format and file prefix set",
+			partitionFormat:  "year=%Y",
+			filePrefix:       "logs",
+			uniqueID:         "uuid",
+			expectedFilename: "year=2023/logs_uuid",
+		},
+		{
+			name:             "partition format, partition prefix and file prefix set",
+			partitionFormat:  "year=%Y",
+			partitionPrefix:  "archive",
+			filePrefix:       "logs",
+			uniqueID:         "uuid",
+			expectedFilename: "archive/year=2023/logs_uuid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			partition := convertStrftimeToGo(tt.partitionFormat)
+			got := generateFilename(tt.uniqueID, tt.filePrefix, tt.partitionPrefix, partition, nowFunc)
+			require.Equal(t, tt.expectedFilename, got)
+		})
+	}
+}
+
 func TestShutdown(t *testing.T) {
 	gcsExporter := newTestGCSExporter(t, &Config{})
 	err := gcsExporter.Shutdown(t.Context())
@@ -279,7 +309,7 @@ func TestCapabilities(t *testing.T) {
 
 func TestConsumeLogs(t *testing.T) {
 	uploadBucketName := "upload-bucket"
-	newTestStorageEmulator(t, "", uploadBucketName, nil)
+	newTestStorageEmulator(t, "", uploadBucketName)
 
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
@@ -346,11 +376,8 @@ func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
 	return exp
 }
 
-func newTestStorageEmulator(t *testing.T, bucketExistsName, uploadBucketName string, f func(*http.Request)) {
+func newTestStorageEmulator(t *testing.T, bucketExistsName, uploadBucketName string) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if f != nil {
-			f(r)
-		}
 		switch r.Method + " " + r.URL.Path {
 		case "POST /storage/v1/b":
 			// Handle bucket creation
