@@ -250,28 +250,28 @@ func New(
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetMetaInformer(apiCfg)
 		}
+		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() || c.Rules.Node {
+	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
 		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
 	}
 
-	if c.extractDeploymentLabelsAnnotations() || c.Rules.DeploymentName || c.Rules.DeploymentUID {
+	if c.extractDeploymentLabelsAnnotations() {
 		c.deploymentInformer = newDeploymentSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractStatefulSetLabelsAnnotations() || c.Rules.StatefulSetName || c.Rules.StatefulSetUID {
+	if c.extractStatefulSetLabelsAnnotations() {
 		c.statefulsetInformer = newStatefulSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractDaemonSetLabelsAnnotations() || c.Rules.DaemonSetName || c.Rules.DaemonSetUID {
+	if c.extractDaemonSetLabelsAnnotations() {
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractJobLabelsAnnotations() || c.Rules.JobName || c.Rules.JobUID || c.Rules.CronJobUID || c.Rules.CronJobName {
+	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
-
 	return c, err
 }
 
@@ -810,39 +810,40 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
+				// Always OK to emit RS UID if requested
 				if c.Rules.ReplicaSetID {
 					tags[string(conventions.K8SReplicaSetUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.ReplicaSetName {
 					tags[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
-				if c.Rules.ServiceName {
-					tags[string(conventions.ServiceNameKey)] = ref.Name
-				}
+				// Deployment name
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
 					if c.Rules.DeploymentNameFromReplicaSet {
 						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
-					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						deploymentName = replicaset.Deployment.Name
+					} else if rs, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						deploymentName = rs.Deployment.Name
 					}
 					if deploymentName != "" {
 						if c.Rules.DeploymentName {
 							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
 						}
 						if c.Rules.ServiceName {
-							// deployment name wins over replicaset name
 							tags[string(conventions.ServiceNameKey)] = deploymentName
 						}
 					}
 				}
+				// Deployment UID
 				if c.Rules.DeploymentUID {
-					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						if replicaset.Deployment.UID != "" {
-							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
+					if rs, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						// rs.Deployment.UID non-empty only when controller=true
+						if rs.Deployment.UID != "" {
+							tags[string(conventions.K8SDeploymentUIDKey)] = rs.Deployment.UID
 						}
 					}
 				}
+
 			case "DaemonSet":
 				if c.Rules.DaemonSetUID {
 					tags[string(conventions.K8SDaemonSetUIDKey)] = string(ref.UID)
@@ -1760,7 +1761,7 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	// Fallback fetch to get ownerRefs if missing (for meta informer)
 	if rsView.DeploymentUID == "" &&
 		(c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)) {
-		// Check cache first to avoid extra GETs
+		// Reuse cached linkage to avoid repeated GETs
 		c.m.RLock()
 		cached := c.ReplicaSets[rsView.UID]
 		c.m.RUnlock()
@@ -1768,8 +1769,18 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 			rsView.DeploymentName = cached.Deployment.Name
 			rsView.DeploymentUID = cached.Deployment.UID
 		} else {
-			// Fallback typed GET (likely only once per UID)
-			c.fillReplicaSetOwnerFromTyped(rsView.Namespace, rsView.Name, &rsView)
+			// Perform typed GET and set deployment only when controller=true
+			rsFull, err := c.kc.AppsV1().ReplicaSets(rsView.Namespace).Get(context.Background(), rsView.Name, meta_v1.GetOptions{})
+			if err == nil {
+				for _, owner := range rsFull.GetOwnerReferences() {
+					if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+						rsView.DeploymentName = owner.Name
+						rsView.DeploymentUID = string(owner.UID)
+						break
+					}
+				}
+			}
+			// If no controller deployment was found, leave Deployment fields empty
 		}
 	}
 
