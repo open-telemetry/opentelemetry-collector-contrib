@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -168,6 +169,8 @@ type JobsMap struct {
 	gcInterval time.Duration
 	lastGC     time.Time
 	jobsMap    map[string]*timeseriesMap
+	// gcRunning prevents multiple gc goroutines from being spawned concurrently.
+	gcRunning atomic.Bool
 }
 
 // NewJobsMap creates a new (empty) JobsMap.
@@ -177,31 +180,38 @@ func NewJobsMap(gcInterval time.Duration) *JobsMap {
 
 // Remove jobs and timeseries that have aged out.
 func (jm *JobsMap) gc() {
+	// Reset gcRunning when done to allow future gc runs.
+	defer jm.gcRunning.Store(false)
+
 	jm.Lock()
 	defer jm.Unlock()
 	// once the structure is locked, confirm that gc() is still necessary
-	if time.Since(jm.lastGC) > jm.gcInterval {
-		for sig, tsm := range jm.jobsMap {
-			tsm.RLock()
-			tsmNotMarked := !tsm.mark
-			// take a read lock here, no need to get a full lock as we have a lock on the JobsMap
-			tsm.RUnlock()
-			if tsmNotMarked {
-				delete(jm.jobsMap, sig)
-			} else {
-				// a full lock will be obtained in here, if required.
-				tsm.gc()
-			}
-		}
-		jm.lastGC = time.Now()
+	if time.Since(jm.lastGC) <= jm.gcInterval {
+		return
 	}
+
+	for sig, tsm := range jm.jobsMap {
+		tsm.RLock()
+		tsmNotMarked := !tsm.mark
+		// take a read lock here, no need to get a full lock as we have a lock on the JobsMap
+		tsm.RUnlock()
+		if tsmNotMarked {
+			delete(jm.jobsMap, sig)
+		} else {
+			// a full lock will be obtained in here, if required.
+			tsm.gc()
+		}
+	}
+	jm.lastGC = time.Now()
 }
 
 func (jm *JobsMap) maybeGC() {
 	// speculatively check if gc() is necessary, recheck once the structure is locked
 	jm.RLock()
 	defer jm.RUnlock()
-	if time.Since(jm.lastGC) > jm.gcInterval {
+	// Use compare-and-swap to ensure only one gc goroutine runs at a time.
+	// This prevents goroutine accumulation under high concurrency.
+	if time.Since(jm.lastGC) > jm.gcInterval && jm.gcRunning.CompareAndSwap(false, true) {
 		go jm.gc()
 	}
 }
