@@ -21,15 +21,25 @@ const (
 )
 
 func TestNewBlobClientFromConnectionString(t *testing.T) {
-	blobClient, err := newBlobClientFromConnectionString(goodConnectionString, zaptest.NewLogger(t))
+	blobClient, err := newBlobClientFromConnectionString(goodConnectionString, true, zaptest.NewLogger(t))
 
 	require.NoError(t, err)
 	require.NotNil(t, blobClient)
 	assert.NotNil(t, blobClient.serviceClient)
+	assert.True(t, blobClient.deleteOnread)
+}
+
+func TestNewBlobClientFromConnectionStringNoDeleteOnRead(t *testing.T) {
+	blobClient, err := newBlobClientFromConnectionString(goodConnectionString, false, zaptest.NewLogger(t))
+
+	require.NoError(t, err)
+	require.NotNil(t, blobClient)
+	assert.NotNil(t, blobClient.serviceClient)
+	assert.False(t, blobClient.deleteOnread)
 }
 
 func TestNewBlobClientFromConnectionStringError(t *testing.T) {
-	blobClient, err := newBlobClientFromConnectionString(badConnectionString, zaptest.NewLogger(t))
+	blobClient, err := newBlobClientFromConnectionString(badConnectionString, true, zaptest.NewLogger(t))
 
 	assert.Error(t, err)
 	assert.Nil(t, blobClient)
@@ -37,7 +47,7 @@ func TestNewBlobClientFromConnectionStringError(t *testing.T) {
 
 func TestNewBlobClientFromCredentials(t *testing.T) {
 	var cred azcore.TokenCredential = (*azidentity.ClientSecretCredential)(nil)
-	blobClient, err := newBlobClientFromCredential(storageAccountURL, cred, zaptest.NewLogger(t))
+	blobClient, err := newBlobClientFromCredential(storageAccountURL, cred, true, zaptest.NewLogger(t))
 
 	require.NoError(t, err)
 	require.NotNil(t, blobClient)

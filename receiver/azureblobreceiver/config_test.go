@@ -21,7 +21,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
-	factory := NewFactory()
+	factory, nopComponent := NewFactory(), component.NewID(component.MustNewType("nop"))
 	factories.Receivers[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
@@ -32,14 +32,16 @@ func TestLoadConfig(t *testing.T) {
 
 	receiver := cfg.Receivers[component.NewID(metadata.Type)]
 	assert.NoError(t, componenttest.CheckConfigStruct(receiver))
+
 	assert.Equal(
 		t,
 		&Config{
 			Authentication:   ConnectionStringAuth,
 			ConnectionString: goodConnectionString,
-			Logs:             LogsConfig{ContainerName: logsContainerName},
+			Logs:             LogsConfig{ContainerName: logsContainerName, Encodings: nil},
 			Traces:           TracesConfig{ContainerName: tracesContainerName},
 			Cloud:            defaultCloud,
+			DeleteAfterRead:  true,
 		},
 		receiver)
 
@@ -55,9 +57,10 @@ func TestLoadConfig(t *testing.T) {
 				ClientSecret: "mock-client-secret",
 			},
 			StorageAccountURL: "https://accountName.blob.core.windows.net",
-			Logs:              LogsConfig{ContainerName: logsContainerName},
+			Logs:              LogsConfig{ContainerName: logsContainerName, Encodings: &nopComponent},
 			Traces:            TracesConfig{ContainerName: tracesContainerName},
 			Cloud:             defaultCloud,
+			DeleteAfterRead:   false,
 		},
 		receiver)
 }
