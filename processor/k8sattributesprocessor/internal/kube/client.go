@@ -1760,9 +1760,11 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	}
 
 	// Fallback fetch to get ownerRefs if missing (for meta informer)
-	if rsView.DeploymentUID == "" {
+	if rsView.DeploymentUID == "" &&
+		(c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)) {
 		c.fillReplicaSetOwnerFromTyped(rsView.Namespace, rsView.Name, &rsView)
 	}
+
 	c.upsertReplicaSet(rsView)
 }
 
