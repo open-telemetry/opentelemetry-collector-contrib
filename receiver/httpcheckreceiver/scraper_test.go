@@ -26,13 +26,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
 
-func newMockServer(t *testing.T, responseCode int) *httptest.Server {
+func newMockServer(t *testing.T, responseCode []int) *httptest.Server {
+	offset := 0
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		rw.WriteHeader(responseCode)
+		rw.WriteHeader(responseCode[offset])
 		// This could be expanded if the checks for the server include
 		// parsing the response content
 		_, err := rw.Write([]byte(``))
 		assert.NoError(t, err)
+		offset = (offset + 1) % len(responseCode)
 	}))
 }
 
@@ -97,16 +99,16 @@ func TestScraperStart(t *testing.T) {
 func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
-		expectedResponse  int
-		expectedMetricGen func(t *testing.T) pmetric.Metrics
+		expectedResponse  []int
+		expectedMetricGen func(t *testing.T, index int) pmetric.Metrics
 		expectedErr       error
 		endpoint          string
 		compareOptions    []pmetrictest.CompareMetricsOption
 	}{
 		{
 			desc:             "Successful Collection",
-			expectedResponse: 200,
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedResponse: []int{200},
+			expectedMetricGen: func(t *testing.T, _ int) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
@@ -123,8 +125,8 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc:             "Endpoint returning 404",
-			expectedResponse: 404,
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedResponse: []int{404},
+			expectedMetricGen: func(t *testing.T, _ int) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "endpoint_404.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
@@ -142,7 +144,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:     "Invalid endpoint",
 			endpoint: "http://invalid-endpoint",
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(t *testing.T, _ int) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "invalid_endpoint.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
@@ -152,6 +154,31 @@ func TestScraperScrape(t *testing.T) {
 			compareOptions: []pmetrictest.CompareMetricsOption{
 				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 				pmetrictest.IgnoreMetricAttributeValue("error.message"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
+			},
+		},
+		{
+			desc:	"Going into error",
+			expectedResponse: []int{200, 500},
+			expectedMetricGen: func(t *testing.T, index int) pmetric.Metrics {
+				if index == 0 {
+					path := filepath.Join("testdata", "expected_metrics", "golden.yaml")
+					expectedMetrics, err := golden.ReadMetrics(path)
+					require.NoError(t, err)
+					return expectedMetrics
+				} else {
+					path := filepath.Join("testdata", "expected_metrics", "500_after_golden.yaml")
+					expectedMetrics, err := golden.ReadMetrics(path)
+					require.NoError(t, err)
+					return expectedMetrics
+				}
+			},
+			expectedErr: nil,
+			compareOptions: []pmetrictest.CompareMetricsOption{
+				pmetrictest.IgnoreMetricAttributeValue("http.url"),
+				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreTimestamp(),
@@ -184,16 +211,18 @@ func TestScraperScrape(t *testing.T) {
 			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-			actualMetrics, err := scraper.scrape(t.Context())
-			if tc.expectedErr == nil {
-				require.NoError(t, err)
-			} else {
-				require.EqualError(t, err, tc.expectedErr.Error())
+			for index := 0; index < len(tc.expectedResponse); index++ {
+				actualMetrics, err := scraper.scrape(t.Context())
+				if tc.expectedErr == nil {
+					require.NoError(t, err)
+				} else {
+					require.EqualError(t, err, tc.expectedErr.Error())
+				}
+
+				expectedMetrics := tc.expectedMetricGen(t, index)
+
+				require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
 			}
-
-			expectedMetrics := tc.expectedMetricGen(t)
-
-			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
 		})
 	}
 }
