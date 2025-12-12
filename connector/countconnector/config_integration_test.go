@@ -64,48 +64,44 @@ func runLogsToMetrics(t *testing.T, ccfg *Config, logs plog.Logs) pmetric.Metric
 	return all[0]
 }
 
-// Test that `count:` with empty subconfig uses defaults.
-func TestCount_EmptyTopLevel_ProducesDefaultLogRecordCount(t *testing.T) {
-	ccfg, err := getValidatedCountConfigFromYAML(t, "config-count-empty.yaml")
-	require.NoError(t, err)
+// Test that empty subconfigs use defaults.
+func TestCount_EmptySubconfig_ProducesDefaultLogRecordCount(t *testing.T) {
+	tests := []struct {
+		name       string
+		configFile string
+	}{
+		{
+			name:       "empty top-level count config",
+			configFile: "config-count-empty.yaml",
+		},
+		{
+			name:       "empty logs section",
+			configFile: "config-count-logs-empty.yaml",
+		},
+	}
 
-	in, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ccfg, err := getValidatedCountConfigFromYAML(t, tt.configFile)
+			require.NoError(t, err)
 
-	got := runLogsToMetrics(t, ccfg, in)
-	want, err := golden.ReadMetrics(filepath.Join("testdata", "logs", "zero_conditions.yaml"))
-	require.NoError(t, err)
+			in, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
+			require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(
-		want, got,
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-	))
-}
+			got := runLogsToMetrics(t, ccfg, in)
+			want, err := golden.ReadMetrics(filepath.Join("testdata", "logs", "zero_conditions.yaml"))
+			require.NoError(t, err)
 
-// Test that `count::logs:` with empty subconfig uses defaults.
-func TestCount_EmptyLogsSection_ProducesDefaultLogRecordCount(t *testing.T) {
-	ccfg, err := getValidatedCountConfigFromYAML(t, "config-count-logs-empty.yaml")
-	require.NoError(t, err)
-
-	in, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
-	require.NoError(t, err)
-
-	got := runLogsToMetrics(t, ccfg, in)
-	want, err := golden.ReadMetrics(filepath.Join("testdata", "logs", "zero_conditions.yaml"))
-	require.NoError(t, err)
-
-	require.NoError(t, pmetrictest.CompareMetrics(
-		want, got,
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-	))
+			require.NoError(t, pmetrictest.CompareMetrics(
+				want, got,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+			))
+		})
+	}
 }
 
 // Test that `count::logs::<custom metric>` overrides default.
