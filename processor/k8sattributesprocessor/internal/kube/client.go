@@ -67,7 +67,7 @@ const (
 
 var AllowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.labelsAnnotationsSingular.allow",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
 	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
