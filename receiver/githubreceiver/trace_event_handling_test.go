@@ -866,3 +866,75 @@ func TestStepSpansHaveNoEvents(t *testing.T) {
 		}
 	}
 }
+
+func TestCorrectActionTimestamps(t *testing.T) {
+	tests := []struct {
+		name          string
+		start         time.Time
+		end           time.Time
+		expectedStart time.Time
+		expectedEnd   time.Time
+	}{
+		{
+			name:          "normal order - no change needed",
+			start:         time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "same timestamp - no change needed",
+			start:         time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+		},
+		{
+			name:          "inverted timestamps - end before start",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "end one second before start",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "large time difference - inverted",
+			start:         time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 0, 0, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+		},
+		{
+			name:          "nanosecond precision - inverted",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 55, 99, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+		},
+		{
+			name:          "zero times",
+			start:         time.Time{},
+			end:           time.Time{},
+			expectedStart: time.Time{},
+			expectedEnd:   time.Time{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStart, gotEnd := correctActionTimestamps(tt.start, tt.end)
+
+			require.Equal(t, tt.expectedStart, gotStart, "start timestamp mismatch")
+			require.Equal(t, tt.expectedEnd, gotEnd, "end timestamp mismatch")
+
+			// Verify the invariant: end is never before start
+			require.False(t, gotEnd.Before(gotStart), "end timestamp should not be before start timestamp")
+		})
+	}
+}

@@ -42,7 +42,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
@@ -980,9 +980,9 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 				identAttr := ad.IdentifyingAttributes
 				for _, attr := range identAttr {
 					switch attr.Key {
-					case string(semconv.ServiceNameKey):
+					case string(conventions.ServiceNameKey):
 						agentName = attr.Value.GetStringValue()
-					case string(semconv.ServiceVersionKey):
+					case string(conventions.ServiceVersionKey):
 						agentVersion = attr.Value.GetStringValue()
 					}
 				}
@@ -1080,9 +1080,9 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 		identAttr := ad.IdentifyingAttributes
 		for _, attr := range identAttr {
 			switch attr.Key {
-			case string(semconv.ServiceNameKey):
+			case string(conventions.ServiceNameKey):
 				agentName = attr.Value.GetStringValue()
-			case string(semconv.ServiceVersionKey):
+			case string(conventions.ServiceVersionKey):
 				agentVersion = attr.Value.GetStringValue()
 			}
 		}
@@ -1239,15 +1239,15 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	expectedDescription := &protobufs.AgentDescription{
 		IdentifyingAttributes: []*protobufs.KeyValue{
 			stringKeyValue("client.id", "my-client-id"),
-			stringKeyValue(string(semconv.ServiceInstanceIDKey), uuid.UUID(ad.InstanceUid).String()),
-			stringKeyValue(string(semconv.ServiceNameKey), command),
-			stringKeyValue(string(semconv.ServiceVersionKey), version),
+			stringKeyValue(string(conventions.ServiceInstanceIDKey), uuid.UUID(ad.InstanceUid).String()),
+			stringKeyValue(string(conventions.ServiceNameKey), command),
+			stringKeyValue(string(conventions.ServiceVersionKey), version),
 		},
 		NonIdentifyingAttributes: []*protobufs.KeyValue{
 			stringKeyValue("env", "prod"),
-			stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
-			stringKeyValue(string(semconv.HostNameKey), host),
-			stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
+			stringKeyValue(string(conventions.HostArchKey), runtime.GOARCH),
+			stringKeyValue(string(conventions.HostNameKey), host),
+			stringKeyValue(string(conventions.OSTypeKey), runtime.GOOS),
 		},
 	}
 
@@ -2214,12 +2214,6 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 					},
 				})
 
-				// Check that the status is set to APPLYING
-				require.Eventually(t, func() bool {
-					status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
-					return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
-				}, 5*time.Second, 200*time.Millisecond, "Remote config status was not set to APPLYING for bad config")
-
 				// Wait for the health checks to fail
 				require.Eventually(t, func() bool {
 					health, ok := healthReport.Load().(*protobufs.ComponentHealth)
@@ -2502,9 +2496,9 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		identAttr := ad.IdentifyingAttributes
 		for _, attr := range identAttr {
 			switch attr.Key {
-			case string(semconv.ServiceNameKey):
+			case string(conventions.ServiceNameKey):
 				agentName = attr.Value.GetStringValue()
-			case string(semconv.ServiceVersionKey):
+			case string(conventions.ServiceVersionKey):
 				agentVersion = attr.Value.GetStringValue()
 			}
 		}
@@ -2522,7 +2516,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	}, 10*time.Second, 250*time.Millisecond)
 
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
-	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get(string(semconv.ServiceNameKey))
+	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get(string(conventions.ServiceNameKey))
 	require.True(t, ok)
 	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
 

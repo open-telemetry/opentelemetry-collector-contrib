@@ -158,6 +158,8 @@ func (r *googleCloudSpannerReceiver) initializeMetricsBuilder(parsedMetadata []*
 		return err
 	}
 
+	filterfactory.StartAllCaches(itemFilterResolver)
+
 	r.metricsBuilder = metadata.NewMetricsFromDataPointBuilder(itemFilterResolver)
 
 	return nil

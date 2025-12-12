@@ -103,12 +103,8 @@ elasticsearch/metadata_keys:
     - x-test-2
 elasticsearch/sendingqueue_disabled:
   endpoint: https://elastic.example.com:9200
-  # Setting sending queue without `batch::sizer` can have unintended
-  # side effects. See https://github.com/open-telemetry/opentelemetry-collector/issues/13860
   sending_queue:
     enabled: false
-    batch:
-      sizer: bytes
 elasticsearch/sendingqueue_enabled:
   endpoint: https://elastic.example.com:9200
   sending_queue:
