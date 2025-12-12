@@ -140,7 +140,7 @@ func (v *vpcFlowLogUnmarshaler) fromS3(reader *bufio.Reader) (plog.Logs, error) 
 		return plog.Logs{}, fmt.Errorf("failed to read first line of VPC logs from S3: %w", err)
 	}
 
-	fields := strings.Split(strings.TrimSpace(line), " ")
+	fields := strings.Fields(line)
 	logs, resourceLogs, scopeLogs := v.createLogs()
 	for {
 		line, err = reader.ReadString('\n')
