@@ -14,9 +14,9 @@ import (
 )
 
 type DeleteArguments[K any] struct {
-	Target ottl.PSliceGetSetter[K]
-	Index  ottl.IntGetter[K]
-	Length ottl.Optional[ottl.IntGetter[K]]
+	Target     ottl.PSliceGetSetter[K]
+	StartIndex ottl.IntGetter[K]
+	EndIndex   ottl.Optional[ottl.IntGetter[K]]
 }
 
 func NewDeleteFactory[K any]() ottl.Factory[K] {
@@ -29,45 +29,49 @@ func createDeleteFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 		return nil, errors.New("DeleteFactory args must be of type *DeleteArguments[K]")
 	}
 
-	return deleteFrom(args.Target, args.Index, args.Length), nil
+	return deleteFrom(args.Target, args.StartIndex, args.EndIndex), nil
 }
 
-func deleteFrom[K any](target ottl.PSliceGetSetter[K], indexGetter ottl.IntGetter[K], lengthGetter ottl.Optional[ottl.IntGetter[K]]) ottl.ExprFunc[K] {
+func deleteFrom[K any](target ottl.PSliceGetSetter[K], startIndexGetter ottl.IntGetter[K], endIndexGetter ottl.Optional[ottl.IntGetter[K]]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		index, err := indexGetter.Get(ctx, tCtx)
+		startIndex, err := startIndexGetter.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		length := int64(1)
-		if !lengthGetter.IsEmpty() {
-			length, err = lengthGetter.Get().Get(ctx, tCtx)
+		sliceLen := int64(t.Len())
+		endIndex := startIndex + 1
+		if !endIndexGetter.IsEmpty() {
+			endIndex, err = endIndexGetter.Get().Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		sliceLen := int64(t.Len())
-		endIndex, err := validateBounds(index, length, sliceLen)
-		if err != nil {
-			return nil, err
-		}
-
-		if index == 0 && endIndex == sliceLen {
+		if startIndex == 0 && endIndex == sliceLen {
 			// If deleting all elements, return an empty slice without looping
 			return nil, target.Set(ctx, tCtx, pcommon.NewSlice())
 		}
 
-		// ToDo: This would be better with RemoveAt if it was supported.
-		resSlice := pcommon.NewSlice()
-		resSlice.EnsureCapacity(int(sliceLen - (endIndex - index)))
+		err = validateBounds(startIndex, endIndex, sliceLen)
+		if err != nil {
+			return nil, err
+		}
 
-		for i := int64(0); i < index; i++ {
+		if startIndex == endIndex {
+			// No elements to delete
+			return nil, target.Set(ctx, tCtx, t)
+		}
+
+		resSlice := pcommon.NewSlice()
+		resSlice.EnsureCapacity(int(sliceLen - (endIndex - startIndex)))
+
+		for i := range startIndex {
 			t.At(int(i)).MoveTo(resSlice.AppendEmpty())
 		}
 
@@ -79,18 +83,17 @@ func deleteFrom[K any](target ottl.PSliceGetSetter[K], indexGetter ottl.IntGette
 	}
 }
 
-func validateBounds(index, length, sliceLen int64) (endIndex int64, err error) {
-	if index < 0 || index >= sliceLen {
-		return 0, fmt.Errorf("index %d out of bounds for slice of length %d", index, sliceLen)
+func validateBounds(startIndex, endIndex, sliceLen int64) error {
+	if startIndex < 0 || startIndex >= sliceLen {
+		return fmt.Errorf("startIndex %d out of bounds for slice of length %d", startIndex, sliceLen)
 	}
 
-	if length <= 0 {
-		return 0, fmt.Errorf("length must be positive, got %d", length)
+	if endIndex < startIndex {
+		return fmt.Errorf("endIndex %d cannot be less than startIndex %d", endIndex, startIndex)
 	}
 
-	endIndex = index + length
 	if endIndex > sliceLen {
-		return 0, fmt.Errorf("deletion range [%d:%d] out of bounds for slice of length %d", index, endIndex, sliceLen)
+		return fmt.Errorf("deletion range [%d:%d] out of bounds for slice of length %d", startIndex, endIndex, sliceLen)
 	}
-	return endIndex, nil
+	return nil
 }

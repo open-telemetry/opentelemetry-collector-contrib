@@ -439,7 +439,7 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `delete(attributes["slice2"], 1, length=2)`,
+			statement: `delete(attributes["slice2"], 1, endIndex=3)`,
 			want: func(tCtx *ottllog.TransformContext) {
 				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
 				s := v.Slice()

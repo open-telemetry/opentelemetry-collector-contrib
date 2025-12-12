@@ -76,9 +76,9 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 
 ### delete
 
-`delete(target, index, Optional[length])`
+`delete(target, startIndex, Optional[endIndex])`
 
-The `delete` function deletes elements starting at `index` to `index + length` from target array/slice. If lengh is not provided, only element at `target[index]` will be deleted. If `index` is calculated using `Index(target, value)` and there's no match in the slice, `target` array won't be changed.
+The `delete` function removes elements from a slice. It deletes elements in the range `[startIndex, endIndex)` (startIndex inclusive, endIndex exclusive). If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target, following the behavior of Go's `slices.Delete(s, i, j)` function.
 
 Examples:
 
@@ -86,7 +86,7 @@ Examples:
 
 - `delete(attributes["tags"], Len(attributes["tags"]) - 1)` # delete last
 
-- `delete(attributes["tags"], 0, 3)` # delete indexes 0, 1 & 2
+- `delete(attributes["tags"], 0, 3)` # delete indices 0, 1, & 2
 
 - `delete(attributes["tags"], Index(attributes["tags"], "unparsed"))` # delete first occurrence of "unparsed"
 
