@@ -1810,7 +1810,7 @@ func (c *WatchClient) handleReplicaSetUpdate(oldObj, newObj any) {
 		}
 		c.handleReplicaSetUpdate(oldObj, v.Obj)
 	default:
-		c.logger.Warn("update received non-ReplicaSet object", zap.Any("obj", newObj))
+		c.logger.Warn("an update received non-ReplicaSet object", zap.Any("obj", newObj))
 	}
 }
 
@@ -1885,6 +1885,9 @@ func (c *WatchClient) addOrUpdateReplicaSetMeta(rs *meta_v1.PartialObjectMetadat
 			}
 			break
 		}
+	}
+	if len(rs.GetOwnerReferences()) == 0 {
+		c.logger.Debug("POM RS has no ownerReferences", zap.String("uid", string(rs.GetUID())))
 	}
 
 	c.m.Lock()
