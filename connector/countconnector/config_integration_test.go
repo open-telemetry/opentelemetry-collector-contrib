@@ -3,6 +3,7 @@
 package countconnector
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -21,21 +22,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func newCountConfigFromYAML(t *testing.T, yamlFile string) *Config {
+func getValidatedCountConfigFromYAML(t *testing.T, yamlFile string) (*Config, error) {
 	t.Helper()
 
 	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
+	if err != nil {
+		return nil, fmt.Errorf("create nop factories: %w", err)
+	}
 	factories.Connectors[metadata.Type] = NewFactory()
 
-	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", yamlFile), factories)
-	require.NoError(t, err)
+	configPath := filepath.Join("testdata", yamlFile)
+	cfg, err := otelcoltest.LoadConfigAndValidate(configPath, factories)
+	if err != nil {
+		return nil, fmt.Errorf("load and validate config %q: %w", configPath, err)
+	}
 
-	ccfg, ok := cfg.Connectors[component.NewID(metadata.Type)].(*Config)
-	require.True(t, ok)
-	require.NotNil(t, ccfg)
+	connectorID := component.NewID(metadata.Type)
+	ccfg, ok := cfg.Connectors[connectorID].(*Config)
+	if !ok {
+		return nil, fmt.Errorf("connector %q config is not of type *Config", connectorID)
+	}
+	if ccfg == nil {
+		return nil, fmt.Errorf("connector %q config is nil", connectorID)
+	}
 
-	return ccfg
+	return ccfg, nil
 }
 
 func runLogsToMetrics(t *testing.T, ccfg *Config, logs plog.Logs) pmetric.Metrics {
@@ -55,7 +66,8 @@ func runLogsToMetrics(t *testing.T, ccfg *Config, logs plog.Logs) pmetric.Metric
 
 // Test that `count:` with empty subconfig uses defaults.
 func TestCount_EmptyTopLevel_ProducesDefaultLogRecordCount(t *testing.T) {
-	ccfg := newCountConfigFromYAML(t, "config-count-empty.yaml")
+	ccfg, err := getValidatedCountConfigFromYAML(t, "config-count-empty.yaml")
+	require.NoError(t, err)
 
 	in, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 	require.NoError(t, err)
@@ -76,7 +88,8 @@ func TestCount_EmptyTopLevel_ProducesDefaultLogRecordCount(t *testing.T) {
 
 // Test that `count::logs:` with empty subconfig uses defaults.
 func TestCount_EmptyLogsSection_ProducesDefaultLogRecordCount(t *testing.T) {
-	ccfg := newCountConfigFromYAML(t, "config-count-logs-empty.yaml")
+	ccfg, err := getValidatedCountConfigFromYAML(t, "config-count-logs-empty.yaml")
+	require.NoError(t, err)
 
 	in, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 	require.NoError(t, err)
@@ -97,7 +110,8 @@ func TestCount_EmptyLogsSection_ProducesDefaultLogRecordCount(t *testing.T) {
 
 // Test that `count::logs::<custom metric>` overrides default.
 func TestCount_SpecificLogMetricWithCondition_Works(t *testing.T) {
-	ccfg := newCountConfigFromYAML(t, "config-count-logs-specific.yaml")
+	ccfg, err := getValidatedCountConfigFromYAML(t, "config-count-logs-specific.yaml")
+	require.NoError(t, err)
 
 	// Build minimal input logs: 2 matching, 1 non-matching
 	ld := plog.NewLogs()
