@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_traceID(t *testing.T) {
@@ -57,84 +58,58 @@ func BenchmarkTraceID(b *testing.B) {
 	traces := ptrace.NewTraces()
 	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 
-	// Scenario 1: Literal 16-byte slice with get and set
-	b.Run("literal_bytes_get_and_set", func(b *testing.B) {
-		literalBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
-		literalGetter, _ := ottl.NewTestingLiteralGetter(true, makeIDGetter(literalBytes))
+	testCases := []struct {
+		name      string
+		data      []byte
+		isLiteral bool
+	}{
+		{
+			name:      "literal_bytes_get_and_set",
+			data:      []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+			isLiteral: true,
+		},
+		{
+			name:      "literal_hex_string_get_and_set",
+			data:      []byte("0102030405060708090a0b0c0d0e0f10"),
+			isLiteral: true,
+		},
+		{
+			name:      "dynamic_bytes_get_and_set",
+			data:      []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+			isLiteral: false,
+		},
+		{
+			name:      "dynamic_hex_string_get_and_set",
+			data:      []byte("0102030405060708090a0b0c0d0e0f10"),
+			isLiteral: false,
+		},
+	}
 
-		expr, err := traceID(literalGetter)
-		if err != nil {
-			b.Fatal(err)
-		}
-		ctx := b.Context()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for b.Loop() {
-			result, err := expr(ctx, nil)
-			if err != nil {
-				b.Fatal(err)
-			}
-			span.SetTraceID(result.(pcommon.TraceID))
-		}
-	})
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			var getter ottl.ByteSliceLikeGetter[any]
+			var err error
 
-	// Scenario 2: Literal 32-char hex string with get and set
-	b.Run("literal_hex_string_get_and_set", func(b *testing.B) {
-		literalHexString := []byte("0102030405060708090a0b0c0d0e0f10")
-		literalGetter, _ := ottl.NewTestingLiteralGetter(true, makeIDGetter(literalHexString))
-		expr, err := traceID[any](literalGetter)
-		if err != nil {
-			b.Fatal(err)
-		}
-		ctx := b.Context()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for b.Loop() {
-			result, err := expr(ctx, nil)
-			if err != nil {
-				b.Fatal(err)
+			if tc.isLiteral {
+				getter, err = ottl.NewTestingLiteralGetter(true, makeIDGetter(tc.data))
+				require.NoError(b, err)
+			} else {
+				getter = makeIDGetter(tc.data)
 			}
-			span.SetTraceID(result.(pcommon.TraceID))
-		}
-	})
 
-	// Scenario 3: Dynamic 16-byte slice with get and set
-	b.Run("dynamic_bytes_get_and_set", func(b *testing.B) {
-		dynamicBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
-		dynamicGetter := makeIDGetter(dynamicBytes)
-		expr, err := traceID[any](dynamicGetter)
-		if err != nil {
-			b.Fatal(err)
-		}
-		ctx := b.Context()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for b.Loop() {
-			result, err := expr(ctx, nil)
-			if err != nil {
-				b.Fatal(err)
-			}
-			span.SetTraceID(result.(pcommon.TraceID))
-		}
-	})
+			expr, err := traceID[any](getter)
+			require.NoError(b, err)
 
-	// Scenario 4: Dynamic 32-char hex string with get and set (includes hex decode)
-	b.Run("dynamic_hex_string_get_and_set", func(b *testing.B) {
-		dynamicHexString := []byte("0102030405060708090a0b0c0d0e0f10")
-		dynamicGetter := makeIDGetter(dynamicHexString)
-		expr, err := traceID[any](dynamicGetter)
-		if err != nil {
-			b.Fatal(err)
-		}
-		ctx := b.Context()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for b.Loop() {
-			result, err := expr(ctx, nil)
-			if err != nil {
-				b.Fatal(err)
+			ctx := b.Context()
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				result, err := expr(ctx, nil)
+				if err != nil {
+					b.Fatal(err)
+				}
+				span.SetTraceID(result.(pcommon.TraceID))
 			}
-			span.SetTraceID(result.(pcommon.TraceID))
-		}
-	})
+		})
+	}
 }
