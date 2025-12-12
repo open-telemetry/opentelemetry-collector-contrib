@@ -5,7 +5,6 @@ package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -118,14 +117,8 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 	}
 
 	if b == '{' {
-		// Read all bytes and forward to fromCloudWatch
-		line, err := io.ReadAll(bufReader)
-		if err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to read cloudwatch bound VPC flow log: %w", err)
-		}
-
 		// Dealing with a JSON logs, so check for CW bound trigger
-		return v.fromCloudWatch(v.cfg.parsedFormat, line)
+		return v.fromCloudWatch(v.cfg.parsedFormat, bufReader)
 	}
 
 	// This is S3 bound data, so use fromS3
@@ -166,9 +159,9 @@ func (v *vpcFlowLogUnmarshaler) fromS3(reader *bufio.Reader) (plog.Logs, error) 
 }
 
 // fromCloudWatch expects VPC logs from CloudWatch Logs subscription filter trigger
-func (v *vpcFlowLogUnmarshaler) fromCloudWatch(fields []string, cwContent []byte) (plog.Logs, error) {
+func (v *vpcFlowLogUnmarshaler) fromCloudWatch(fields []string, reader *bufio.Reader) (plog.Logs, error) {
 	var cwLog events.CloudwatchLogsData
-	err := gojson.NewDecoder(bytes.NewReader(cwContent)).Decode(&cwLog)
+	err := gojson.NewDecoder(reader).Decode(&cwLog)
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal data as cloudwatch logs event: %w", err)
 	}
