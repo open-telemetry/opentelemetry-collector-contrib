@@ -7,7 +7,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: Total CPU time spent by this unit.
-            name: systemd.unit.cpu.time
+            name: systemd.service.cpu.time
             sum:
               aggregationTemporality: 2
               dataPoints:
