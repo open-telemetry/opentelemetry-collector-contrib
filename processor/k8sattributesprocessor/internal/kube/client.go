@@ -1776,9 +1776,11 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newObj any) {
 	}
 
 	// Fallback fetch on updates too
-	if rsView.DeploymentUID == "" {
+	if rsView.DeploymentUID == "" &&
+		(c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)) {
 		c.fillReplicaSetOwnerFromTyped(rsView.Namespace, rsView.Name, &rsView)
 	}
+
 	c.upsertReplicaSet(rsView)
 }
 
