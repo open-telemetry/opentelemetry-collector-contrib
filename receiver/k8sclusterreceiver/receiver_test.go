@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -217,7 +217,7 @@ func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 
 		for i := 0; i < latestMetrics.Len(); i++ {
 			resource := latestMetrics.At(i).Resource()
-			gotNamespace, ok := resource.Attributes().Get(string(semconv.K8SNamespaceNameKey))
+			gotNamespace, ok := resource.Attributes().Get(string(conventions.K8SNamespaceNameKey))
 			if ok {
 				gotNamespaces = append(gotNamespaces, gotNamespace.AsString())
 			}
