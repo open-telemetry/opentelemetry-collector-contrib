@@ -101,6 +101,13 @@ exporters:
     # default = false
     decompose_otlp_histograms: {true, false}
 
+    # Decompose OTLP Summaries into individual metrics (quantiles as gauges, count/sum as counters).
+    # The Sumo OTLP source doesn't properly support Summary metrics with quantile dimensions. This option produces
+    # metrics similar to when metric_format is set to prometheus, extracting quantile values as separate gauge
+    # datapoints with a 'quantile' attribute, and count/sum as cumulative counter metrics.
+    # default = false
+    decompose_otlp_summaries: {true, false}
+
     # timeout is the timeout for every attempt to send data to the backend,
     # maximum connection timeout is 55s, default = 30s
     timeout: <timeout>
