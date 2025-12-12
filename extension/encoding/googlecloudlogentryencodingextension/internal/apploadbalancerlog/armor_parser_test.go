@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 func TestHandleSecurityPolicyRequestData(t *testing.T) {
@@ -40,15 +40,15 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				TLSJa3Fingerprint: "ja3_fingerprint",
 			},
 			expected: map[string]any{
-				gcpArmorRecaptchaActionTokenScore:     float64(0.9),
-				gcpArmorRecaptchaSessionTokenScore:    float64(0),
-				gcpArmorUserIPInfoSource:              "X-Forwarded-For",
-				string(semconv.ClientAddressKey):      "192.168.1.1",
-				string(semconv.NetworkPeerAddressKey): "10.0.0.1",
-				string(semconv.GeoRegionISOCodeKey):   "US",
-				gcpArmorRemoteIPInfoAsn:               int64(12345),
-				gcpArmorTLSJa4Fingerprint:             "ja4_fingerprint",
-				string(semconv.TLSClientJa3Key):       "ja3_fingerprint",
+				gcpArmorRecaptchaActionTokenScore:         float64(0.9),
+				gcpArmorRecaptchaSessionTokenScore:        float64(0),
+				gcpArmorUserIPInfoSource:                  "X-Forwarded-For",
+				string(conventions.ClientAddressKey):      "192.168.1.1",
+				string(conventions.NetworkPeerAddressKey): "10.0.0.1",
+				string(conventions.GeoRegionISOCodeKey):   "US",
+				gcpArmorRemoteIPInfoAsn:                   int64(12345),
+				gcpArmorTLSJa4Fingerprint:                 "ja4_fingerprint",
+				string(conventions.TLSClientJa3Key):       "ja3_fingerprint",
 			},
 		},
 		{
@@ -58,8 +58,8 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				TLSJa3Fingerprint:    "ja3_only",
 			},
 			expected: map[string]any{
-				gcpArmorRecaptchaActionTokenScore: float64(0.5),
-				string(semconv.TLSClientJa3Key):   "ja3_only",
+				gcpArmorRecaptchaActionTokenScore:   float64(0.5),
+				string(conventions.TLSClientJa3Key): "ja3_only",
 			},
 		},
 		{
@@ -71,8 +71,8 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				gcpArmorUserIPInfoSource:         "X-Real-IP",
-				string(semconv.ClientAddressKey): "0.0.0.0",
+				gcpArmorUserIPInfoSource:             "X-Real-IP",
+				string(conventions.ClientAddressKey): "0.0.0.0",
 			},
 		},
 	}
@@ -660,9 +660,9 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 					gcpArmorSecurityPolicyOutcome:               "DENY",
 					gcpArmorAdaptiveProtectionAutoDeployAlertID: "alert-456",
 				},
-				gcpArmorRecaptchaActionTokenScore: float64(0.8),
-				gcpArmorUserIPInfoSource:          "X-Forwarded-For",
-				string(semconv.ClientAddressKey):  "1.2.3.4",
+				gcpArmorRecaptchaActionTokenScore:    float64(0.8),
+				gcpArmorUserIPInfoSource:             "X-Forwarded-For",
+				string(conventions.ClientAddressKey): "1.2.3.4",
 			},
 			wantErr: false,
 		},
@@ -705,8 +705,8 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 					gcpArmorThreatIntelligenceCategories:   []any{"botnet"},
 					gcpArmorAddressGroupNames:              []any{"addr-group-1"},
 				},
-				string(semconv.TLSClientJa3Key): "ja3-hash",
-				gcpArmorTLSJa4Fingerprint:       "ja4-hash",
+				string(conventions.TLSClientJa3Key): "ja3-hash",
+				gcpArmorTLSJa4Fingerprint:           "ja4-hash",
 			},
 			wantErr: false,
 		},
@@ -815,8 +815,8 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 					gcpArmorSecurityPolicyConfiguredAction: "ALLOW",
 					gcpArmorSecurityPolicyOutcome:          "ACCEPT",
 				},
-				gcpArmorRecaptchaActionTokenScore: float64(0.95),
-				string(semconv.TLSClientJa3Key):   "ja3-fingerprint",
+				gcpArmorRecaptchaActionTokenScore:   float64(0.95),
+				string(conventions.TLSClientJa3Key): "ja3-fingerprint",
 			},
 			wantErr: false,
 		},

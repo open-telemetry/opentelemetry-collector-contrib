@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 )
 
@@ -85,7 +85,7 @@ func simpleLogs(count int) plog.Logs {
 		r.SetSeverityNumber(plog.SeverityNumberError2)
 		r.SetSeverityText("error")
 		r.Body().SetStr("error message")
-		r.Attributes().PutStr(string(semconv.ServiceNamespaceKey), "default")
+		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
