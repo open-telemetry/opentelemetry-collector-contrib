@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func getValidatedCountConfigFromYAML(t *testing.T, yamlFile string) (*Config, error) {
+func getValidatedCountConfigFromYAML(t *testing.T, configPath string) (*Config, error) {
 	t.Helper()
 
 	factories, err := otelcoltest.NopFactories()
@@ -31,7 +31,6 @@ func getValidatedCountConfigFromYAML(t *testing.T, yamlFile string) (*Config, er
 	}
 	factories.Connectors[metadata.Type] = NewFactory()
 
-	configPath := filepath.Join("testdata", yamlFile)
 	cfg, err := otelcoltest.LoadConfigAndValidate(configPath, factories)
 	if err != nil {
 		return nil, fmt.Errorf("load and validate config %q: %w", configPath, err)
@@ -82,7 +81,7 @@ func TestCount_EmptySubconfig_ProducesDefaultLogRecordCount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ccfg, err := getValidatedCountConfigFromYAML(t, tt.configFile)
+			ccfg, err := getValidatedCountConfigFromYAML(t, filepath.Join("testdata", tt.configFile))
 			require.NoError(t, err)
 
 			in, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
@@ -106,7 +105,7 @@ func TestCount_EmptySubconfig_ProducesDefaultLogRecordCount(t *testing.T) {
 
 // Test that `count::logs::<custom metric>` overrides default.
 func TestCount_SpecificLogMetricWithCondition_Works(t *testing.T) {
-	ccfg, err := getValidatedCountConfigFromYAML(t, "config-count-logs-specific.yaml")
+	ccfg, err := getValidatedCountConfigFromYAML(t, filepath.Join("testdata", "config-count-logs-specific.yaml"))
 	require.NoError(t, err)
 
 	// Build minimal input logs: 2 matching, 1 non-matching
