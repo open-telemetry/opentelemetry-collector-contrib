@@ -7,7 +7,7 @@ change_type: bug_fix
 component: connector/count
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Basic count connector config should emit default metrics"
+note: "Basic config should emit default metrics"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [41769]
