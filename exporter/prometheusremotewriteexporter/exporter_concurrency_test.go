@@ -16,7 +16,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -112,7 +112,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 			Enabled: true,
 		},
 		BackOffConfig:       retrySettings,
-		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
 	}
 
 	assert.NotNil(t, cfg)
