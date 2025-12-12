@@ -317,7 +317,7 @@ func (*haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
 
 func (s *haproxyScraper) start(ctx context.Context, host component.Host) error {
 	var err error
-	s.httpClient, err = s.cfg.ToClient(ctx, host, s.telemetrySettings)
+	s.httpClient, err = s.cfg.ToClient(ctx, host.GetExtensions(), s.telemetrySettings)
 	return err
 }
 

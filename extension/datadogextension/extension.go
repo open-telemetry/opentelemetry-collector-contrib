@@ -28,7 +28,10 @@ import (
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
-const payloadSendingInterval = 30 * time.Minute
+const (
+	payloadSendingInterval = 5 * time.Minute
+	payloadTTL             = payloadSendingInterval * 3
+)
 
 // uuidProvider defines an interface for generating UUIDs, allowing for mocking in tests.
 type uuidProvider interface {
@@ -119,7 +122,9 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.info.build.Version, // This is the same version from buildInfo; it is possible we could want to set a different version here in the future
 		e.configs.extension.API.Site,
 		fullConfig,
+		e.configs.extension.DeploymentType,
 		buildInfo,
+		int64(payloadTTL),
 	)
 
 	// Populate resource attributes collected from TelemetrySettings.Resource

@@ -276,7 +276,7 @@ func TestReceiverLifecycle(t *testing.T) {
 		return nil, errors.New("some error")
 	}
 	// start the receiver
-	err := receiver.Start(t.Context(), nil)
+	err := receiver.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 	assertChannelClosed(t, dialCalled)
 	assertChannelClosed(t, receiveMessagesCalled)
@@ -344,7 +344,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 		}
 	}
 	// start the receiver
-	err := receiver.Start(t.Context(), nil)
+	err := receiver.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	// expect factory to be called twice
@@ -408,7 +408,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 		close(closeDone)
 	}
 	// start the receiver
-	err := receiver.Start(t.Context(), nil)
+	err := receiver.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	// expect dial to be called twice

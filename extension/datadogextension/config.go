@@ -24,6 +24,9 @@ type Config struct {
 	Hostname string `mapstructure:"hostname"`
 	// HTTPConfig is v2 config for the http metadata service.
 	HTTPConfig *httpserver.Config `mapstructure:"http"`
+	// DeploymentType indicates the type of deployment (gateway, daemonset, or unknown).
+	// Defaults to "unknown" if not set.
+	DeploymentType string `mapstructure:"deployment_type"`
 }
 
 // Validate ensures that the configuration is valid.
@@ -36,6 +39,14 @@ func (c *Config) Validate() error {
 	}
 	if c.HTTPConfig == nil {
 		return errors.New("http config is required")
+	}
+	// Validate deployment_type if set
+	if c.DeploymentType != "" && c.DeploymentType != "gateway" && c.DeploymentType != "daemonset" && c.DeploymentType != "unknown" {
+		return errors.New("deployment_type must be one of: gateway, daemonset, or unknown")
+	}
+	// Set default if not provided
+	if c.DeploymentType == "" {
+		c.DeploymentType = "unknown"
 	}
 	return nil
 }
