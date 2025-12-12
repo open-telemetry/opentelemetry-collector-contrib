@@ -72,6 +72,11 @@ linters:
         path: pagefile.go # This exclusion is required for Windows only
         text: cachedBytes
 
+      - linters:
+          - unused
+        path: receiver/macosunifiedloggingreceiver/config_common.go
+        text: resolvedArchivePaths
+
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
 
