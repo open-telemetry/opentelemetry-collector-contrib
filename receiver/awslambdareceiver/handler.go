@@ -34,7 +34,7 @@ type emits interface {
 
 type (
 	unmarshalFunc[T emits]       func([]byte) (T, error)
-	s3EventConsumerFunc[T emits] func(context.Context, time.Time, T) error
+	s3EventConsumerFunc[T emits] func(context.Context, events.S3EventRecord, T) error
 	handlerRegistry              map[eventType]func() lambdaEventHandler
 )
 
@@ -135,36 +135,13 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 		return err
 	}
 
-	var data T
-	if s.s3Unmarshaler == nil {
-		switch any(s.emitType).(type) {
-		case plog.Logs:
-			data = bytesToPlogs(body, parsedEvent).(T)
-		case pmetric.Metrics:
-			// this should not happen as Metrics unmarshaler is always provided
-			return errors.New("incorrect wiring: missing s3 unmarshaler for metrics")
-		}
-	} else {
-		data, err = s.s3Unmarshaler(body)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal logs: %w", err)
-		}
+	data, err := s.s3Unmarshaler(body)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal S3 data: %w", err)
 	}
 
-	if err := s.consumer(ctx, parsedEvent.EventTime, data); err != nil {
-		// If permanent, return as-is (don't retry)
-		if consumererror.IsPermanent(err) {
-			return err
-		}
-
-		// If already wrapped as a consumererror, return as-is
-		var consumerErr *consumererror.Error
-		if errors.As(err, &consumerErr) {
-			return err
-		}
-
-		// Plain error - wrap as retryable
-		return consumererror.NewRetryableError(err)
+	if err := s.consumer(ctx, parsedEvent, data); err != nil {
+		return checkConsumerErrorAndWrap(err)
 	}
 
 	return nil
@@ -186,18 +163,15 @@ func (*s3Handler[T]) parseEvent(raw json.RawMessage) (event events.S3EventRecord
 
 // cwLogsSubscriptionHandler is specialized in CloudWatch log stream subscription filter events
 type cwLogsSubscriptionHandler struct {
-	logger    *zap.Logger
 	unmarshal unmarshalFunc[plog.Logs]
 	consumer  func(context.Context, plog.Logs) error
 }
 
 func newCWLogsSubscriptionHandler(
-	baseLogger *zap.Logger,
 	unmarshal unmarshalFunc[plog.Logs],
 	consumer func(context.Context, plog.Logs) error,
 ) *cwLogsSubscriptionHandler {
 	return &cwLogsSubscriptionHandler{
-		logger:    baseLogger.Named("cw-logs-subscription"),
 		unmarshal: unmarshal,
 		consumer:  consumer,
 	}
@@ -226,44 +200,37 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 
 	defer reader.Close()
 
-	var data plog.Logs
-	if c.unmarshal == nil {
-		var cwLog events.CloudwatchLogsData
-		decoder := gojson.NewDecoder(reader)
-		err = decoder.Decode(&cwLog)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal data from cloudwatch logs event: %w", err)
-		}
-
-		data = cwLogsToPlogs(cwLog)
-	} else {
-		var decodedData bytes.Buffer
-		_, err = decodedData.ReadFrom(reader)
-		if err != nil {
-			return fmt.Errorf("failed to read decompressed data from cloudwatch subscription event: %w", err)
-		}
-		data, err = c.unmarshal(decodedData.Bytes())
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal logs: %w", err)
-		}
+	var decodedData bytes.Buffer
+	_, err = decodedData.ReadFrom(reader)
+	if err != nil {
+		return fmt.Errorf("failed to read decompressed data from cloudwatch subscription event: %w", err)
 	}
 
+	data, err := c.unmarshal(decodedData.Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal CloudWatch logs: %w", err)
+	}
 	if err := c.consumer(ctx, data); err != nil {
-		// consumer errors are marked for retrying
-		return consumererror.NewRetryableError(err)
+		return checkConsumerErrorAndWrap(err)
 	}
 
 	return nil
 }
 
-func cwLogsToPlogs(cwLog events.CloudwatchLogsData) plog.Logs {
+// cwLogsToPlogs implements unmarshalFunc for plog.Logs.
+// This defines the built-in behavior for CloudWatch subscription filter events when no encoding extension is provided.
+func cwLogsToPlogs(data []byte) (plog.Logs, error) {
+	var cwLog events.CloudwatchLogsData
+	err := gojson.Unmarshal(data, &cwLog)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal data from cloudwatch logs event: %w", err)
+	}
+
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
-	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
-	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
 	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
 	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
 
@@ -278,24 +245,18 @@ func cwLogsToPlogs(cwLog events.CloudwatchLogsData) plog.Logs {
 		logRecord.Body().SetStr(event.Message)
 	}
 
-	return logs
+	return logs, err
 }
 
-func bytesToPlogs(data []byte, event events.S3EventRecord) any {
+// bytesToPlogs implements unmarshalFunc for plog.Logs.
+// This defines the built-in behavior for S3 events when no encoding extension is provided.
+func bytesToPlogs(data []byte) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-
-	resourceAttrs := rl.Resource().Attributes()
-	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-	resourceAttrs.PutStr(string(conventions.CloudRegionKey), event.AWSRegion)
-	resourceAttrs.PutStr(string(conventions.AWSS3BucketKey), event.S3.Bucket.Arn)
-	resourceAttrs.PutStr(string(conventions.AWSS3KeyKey), event.S3.Object.Key)
-
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName(metadata.ScopeName)
 
 	lr := sl.LogRecords().AppendEmpty()
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(event.EventTime))
 	lr.Attributes().PutInt("content.length", int64(len(data)))
 
 	if utf8.Valid(data) {
@@ -304,16 +265,38 @@ func bytesToPlogs(data []byte, event events.S3EventRecord) any {
 		lr.Body().SetEmptyBytes().FromRaw(data)
 	}
 
-	return logs
+	return logs, nil
 }
 
-// setObservedTimestampForAllLogs adds observedTimestamp to all logs
-func setObservedTimestampForAllLogs(logs plog.Logs, observedTimestamp time.Time) {
+func enrichS3Logs(logs plog.Logs, event events.S3EventRecord) {
 	for _, resourceLogs := range logs.ResourceLogs().All() {
+		resourceAttrs := resourceLogs.Resource().Attributes()
+		resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		resourceAttrs.PutStr(string(conventions.CloudRegionKey), event.AWSRegion)
+		resourceAttrs.PutStr(string(conventions.AWSS3BucketKey), event.S3.Bucket.Name)
+		resourceAttrs.PutStr(string(conventions.AWSS3KeyKey), event.S3.Object.Key)
+
 		for _, scopeLogs := range resourceLogs.ScopeLogs().All() {
 			for _, logRecord := range scopeLogs.LogRecords().All() {
-				logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(observedTimestamp))
+				logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(event.EventTime))
 			}
 		}
 	}
+}
+
+// checkConsumerErrorAndWrap is a helper to process errors returned from consumer functions.
+func checkConsumerErrorAndWrap(err error) error {
+	// If permanent, return as-is (don't retry)
+	if consumererror.IsPermanent(err) {
+		return err
+	}
+
+	// If already wrapped as a consumererror, return as-is
+	var consumerErr *consumererror.Error
+	if errors.As(err, &consumerErr) {
+		return err
+	}
+
+	// Plain error - wrap as retryable
+	return consumererror.NewRetryableError(err)
 }

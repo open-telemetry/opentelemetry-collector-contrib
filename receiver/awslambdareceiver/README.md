@@ -38,16 +38,14 @@ The `awslambdareceiver` operates as follows:
 ## Event handling
 
 The receiver automatically detects the event source based on the Lambda invocation message format.
-Sections below describe various details about event handling by this component.
+Table below summarizes supported signals and their sources:
 
-### Supported event types
+| Signal  | Sources                          |
+|---------|----------------------------------|
+| Logs    | S3, CloudWatch Logs subscription |
+| Metrics | S3                               |
 
-- **Logs**: Supported through S3 and CloudWatch Logs Subscription Filters
-- **Metrics**: Supported through S3
-
-> [!IMPORTANT]  
-> Currently, metrics mode will always use `awscloudwatchmetricstreams_encoding` extension regardless of the `encoding` parameter set in the receiver configuration.
-> Please make sure ingesting metrics can be decoded using this extension.
+Sections below summarize how each event source is handled.
 
 ### S3 Event handling
 
@@ -58,8 +56,9 @@ S3 events are handled in the following manner:
 - Decode payload using the configured encoding extension
   - Default encoding: Preserve S3 object content as-is
   - Custom encoding: Use specified encoding extension (for example, `awslogs_encoding` for AWS log formats)
+  - Metrics use `awscloudwatchmetricstreams_encoding` extension by default
 
-### CloudWatch Logs Subscription Filters
+### CloudWatch Logs subscription
 
 CloudWatch Logs events are handled in the following manner:
 
@@ -69,7 +68,7 @@ CloudWatch Logs events are handled in the following manner:
   - Default encoding: Parse CloudWatch Logs messages to OpenTelemetry log records
   - Custom encoding: Use specified encoding extension (for example, `awslogs_encoding` for AWS log formats)
 
-## Configuration
+### Configurations
 
 The following receiver configuration parameters are supported.
 
@@ -78,7 +77,15 @@ The following receiver configuration parameters are supported.
 | `s3:encoding`         | Optional encoder to use for S3 event processing         | 
 | `cloudwatch:encoding` | Optional encoder to use for CloudWatch event processing | 
 
-### Example Configuration
+
+Consider following notes on default behaviors:
+
+- When `s3:encoding` is not specified, the receiver defaults to preserving the S3 object content as-is for logs.
+  - However, receiver attempts to detect `strings` vs `non-strings` where `Body` will be set to `string` or `byte ` accordingly.
+- When `cloudwatch:encoding` is not specified, the receiver defaults to parsing CloudWatch Logs messages to OpenTelemetry log records.
+- For metrics, the default behavior is to decode using `awscloudwatchmetricstreams_encoding` extension.
+
+Given below are example configurations for various use cases.
 
 ### Example 1: VPC Flow Logs from S3
 
@@ -181,7 +188,7 @@ service:
 For this deployment configuration, when receiver is triggered by an S3 event, 
 
 - Logs: Content of the S3 object will be added to an OpenTelemetry log record. If content is string, then it will be added as-is.
-- Metrics: Metrics are always decoded using `awscloudwatchmetricstreams_encoding` extension.
+- Metrics: Metrics will be decoded using `awscloudwatchmetricstreams_encoding` extension.
 
 ## AWS Permissions
 

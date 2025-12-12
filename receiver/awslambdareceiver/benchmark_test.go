@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/require"
@@ -41,8 +40,8 @@ func BenchmarkHandleS3Notification(b *testing.B) {
 
 	consumer := noOpLogsConsumer{}
 	// Wrap the consumer to match the new s3EventConsumerFunc signature
-	logsConsumer := func(ctx context.Context, time time.Time, logs plog.Logs) error {
-		setObservedTimestampForAllLogs(logs, time)
+	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+		enrichS3Logs(logs, event)
 		return consumer.ConsumeLogs(ctx, logs)
 	}
 	handler := newS3Handler(service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer, plog.Logs{})

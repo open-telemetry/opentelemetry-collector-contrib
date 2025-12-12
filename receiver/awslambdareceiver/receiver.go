@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -50,7 +50,7 @@ type awsLambdaReceiver struct {
 	buildInfo component.BuildInfo
 	// Note: handlerProvider deriving is deferred to Start method.
 	// This is because internal extension loading depends on component.Host.
-	deriveFunc func(context.Context, component.Host) (handlerProvider, error)
+	handlerProvider func(context.Context, component.Host) (handlerProvider, error)
 
 	// Derived handlerProvider once Start is called.
 	hp handlerProvider
@@ -61,7 +61,7 @@ func newLogsReceiver(cfg *Config, set receiver.Settings, next consumer.Logs) (re
 		cfg:       cfg,
 		logger:    set.Logger,
 		buildInfo: set.BuildInfo,
-		deriveFunc: func(
+		handlerProvider: func(
 			ctx context.Context,
 			host component.Host,
 		) (handlerProvider, error) {
@@ -77,7 +77,7 @@ func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metric
 		cfg:       cfg,
 		logger:    set.Logger,
 		buildInfo: set.BuildInfo,
-		deriveFunc: func(
+		handlerProvider: func(
 			ctx context.Context,
 			host component.Host,
 		) (handlerProvider, error) {
@@ -94,7 +94,7 @@ func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	var err error
-	a.hp, err = a.deriveFunc(ctx, host)
+	a.hp, err = a.handlerProvider(ctx, host)
 	if err != nil {
 		return err
 	}
@@ -156,8 +156,10 @@ func newLogsHandler(
 	next consumer.Logs,
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
-	var s3Unmarshaler unmarshalFunc[plog.Logs]
+	logger := set.Logger
+	var s3Unmarshaler unmarshalFunc[plog.Logs] = bytesToPlogs
 	if cfg.S3.Encoding != "" {
+		logger.Info("Using configured S3 encoding for logs", zap.String("encoding", cfg.S3.Encoding))
 		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.S3.Encoding, "logs")
 		if err != nil {
 			return nil, err
@@ -166,8 +168,9 @@ func newLogsHandler(
 		s3Unmarshaler = extension.UnmarshalLogs
 	}
 
-	var cwUnmarshaler unmarshalFunc[plog.Logs]
+	var cwUnmarshaler unmarshalFunc[plog.Logs] = cwLogsToPlogs
 	if cfg.CloudWatch.Encoding != "" {
+		logger.Info("Using configured CloudWatch encoding for logs", zap.String("encoding", cfg.CloudWatch.Encoding))
 		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.CloudWatch.Encoding, "logs")
 		if err != nil {
 			return nil, err
@@ -185,16 +188,16 @@ func newLogsHandler(
 	registry := make(handlerRegistry)
 	registry[s3Event] = func() lambdaEventHandler {
 		// Wrapper function that sets observed timestamp for S3 logs
-		logsConsumer := func(ctx context.Context, time time.Time, logs plog.Logs) error {
-			setObservedTimestampForAllLogs(logs, time)
+		logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+			enrichS3Logs(logs, event)
 			return next.ConsumeLogs(ctx, logs)
 		}
 
-		return newS3Handler(s3Service, set.Logger, s3Unmarshaler, logsConsumer, plog.Logs{})
+		return newS3Handler(s3Service, logger, s3Unmarshaler, logsConsumer, plog.Logs{})
 	}
 
 	registry[cwEvent] = func() lambdaEventHandler {
-		return newCWLogsSubscriptionHandler(set.Logger, cwUnmarshaler, next.ConsumeLogs)
+		return newCWLogsSubscriptionHandler(cwUnmarshaler, next.ConsumeLogs)
 	}
 
 	return newHandlerProvider(registry), nil
@@ -208,9 +211,11 @@ func newMetricsHandler(
 	next consumer.Metrics,
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
+	logger := set.Logger
 	extensionID := defaultMetricsEncodingExtension
-	// Note: for metrics, we currently support S3 as the only event source.
+	// Note: for metrics, we currently support S3 trigger only.
 	if cfg.S3.Encoding != "" {
+		logger.Info("Using configured S3 encoding for metrics", zap.String("encoding", cfg.S3.Encoding))
 		extensionID = cfg.S3.Encoding
 	}
 
@@ -227,7 +232,7 @@ func newMetricsHandler(
 	// Register handlers. Metrics supports S3 events.
 	registry := make(handlerRegistry)
 	registry[s3Event] = func() lambdaEventHandler {
-		metricConsumer := func(ctx context.Context, _ time.Time, metrics pmetric.Metrics) error {
+		metricConsumer := func(ctx context.Context, _ events.S3EventRecord, metrics pmetric.Metrics) error {
 			return next.ConsumeMetrics(ctx, metrics)
 		}
 
