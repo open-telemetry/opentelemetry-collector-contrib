@@ -33,7 +33,7 @@ type bucketConfig struct {
 	FilePrefix string `mapstructure:"file_prefix"`
 
 	// Partition configures the time-based partitionFormat and file prefix.
-	Partition PartitionConfig `mapstructure:"partitionFormat"`
+	Partition partitionConfig `mapstructure:"partitionFormat"`
 
 	// ReuseIfExists decides if the bucket should be used if it already
 	// exists. If it is set to false, an error will be thrown if the
@@ -47,7 +47,7 @@ type bucketConfig struct {
 	Region string `mapstructure:"region"`
 }
 
-type PartitionConfig struct {
+type partitionConfig struct {
 	// Format is a time format string used to create time-based partitions.
 	// If set, the current UTC time formatted with this string will be prepended to
 	// the filename. You can use standard strftime format parameters (e.g., %Y, %m, %d, %H, %M, %S).
