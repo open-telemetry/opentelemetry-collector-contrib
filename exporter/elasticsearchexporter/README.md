@@ -114,7 +114,7 @@ The resulting documents will contain the corresponding `data_stream.*` fields, s
    2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
 
       Note that while enabled by default, this behaviour is considered experimental. Some encoding extensions set this field (e.g. [awslogsencodingextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/awslogsencodingextension)), but it is not yet part of Semantic Conventions. There is the potential that the name of this routing field evolves as the [discussion progresses in SemConv](https://github.com/open-telemetry/semantic-conventions/issues/2854). 
-   3. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1
+   3. Otherwise, if scope name matches regex `/receiver/(\w*receiver)` or `/connector/(\w*connector)`, `data_stream.dataset` will be capture group #1
    4. Otherwise, `data_stream.dataset` falls back to `generic` and `data_stream.namespace` falls back to `default`. 
 
 [^3]: See additional handling in [Document routing exceptions for OTel data mode](#document-routing-exceptions-for-otel-data-mode)
@@ -430,46 +430,46 @@ The value of the last-mapped attribute will take precedence.
 
 ### Resource attribute mapping
 
-| Semantic Convention Name    | ECS Name                    | Preserve |
-|-----------------------------|-----------------------------|----------|
-| client.address              | client.ip                   | false    |
-| cloud.platform              | cloud.service.name          | false    |
-| container.image.tags        | container.image.tag         | false    |
-| deployment.environment      | service.environment         | false    |
-| deployment.environment.name | service.environment         | false    |
-| faas.instance               | faas.id                     | false    |
-| faas.trigger                | faas.trigger.type           | false    |
-| host.arch                   | host.architecture           | false    |
-| host.name                   | host.hostname               | true     |
-| k8s.cluster.name            | orchestrator.cluster.name   | false    |
-| k8s.container.name          | kubernetes.container.name   | false    |
-| k8s.cronjob.name            | kubernetes.cronjob.name     | false    |
-| k8s.daemonset.name          | kubernetes.daemonset.name   | false    |
-| k8s.deployment.name         | kubernetes.deployment.name  | false    |
-| k8s.job.name                | kubernetes.job.name         | false    |
-| k8s.namespace.name          | kubernetes.namespace        | false    |
-| k8s.node.name               | kubernetes.node.name        | false    |
-| k8s.pod.name                | kubernetes.pod.name         | false    |
-| k8s.pod.uid                 | kubernetes.pod.uid          | false    |
-| k8s.replicaset.name         | kubernetes.replicaset.name  | false    |
-| k8s.statefulset.name        | kubernetes.statefulset.name | false    |
-| os.description              | host.os.full                | false    |
-| os.name                     | host.os.name                | false    |
-| os.type                     | host.os.platform            | false    |
-| os.version                  | host.os.version             | false    |
-| process.command_line        | process.args                 | false    |
-| process.executable.name     | process.title                | false    |
-| process.executable.path     | process.executable          | false    |
-| process.parent.pid          | process.parent.pid          | false    |
-| process.runtime.name        | service.runtime.name        | false    |
-| process.runtime.version     | service.runtime.version     | false    |
-| service.instance.id         | service.node.name           | false    |
-| source.address              | source.ip                   | false    |
-| telemetry.distro.name       | ""                          | false    |
-| telemetry.distro.version    | ""                          | false    |
-| telemetry.sdk.language      | ""                          | false    |
-| telemetry.sdk.name          | ""                          | false    |
-| telemetry.sdk.version       | ""                          | false    |
+| Semantic Convention Name    | ECS Name                    | Preserve | Skip if exists |
+|-----------------------------|-----------------------------|----------|----------------|
+| client.address              | client.ip                   | false    | false          |
+| cloud.platform              | cloud.service.name          | false    | false          |
+| container.image.tags        | container.image.tag         | false    | false          |
+| deployment.environment      | service.environment         | false    | false          |
+| deployment.environment.name | service.environment         | false    | false          |
+| faas.instance               | faas.id                     | false    | false          |
+| faas.trigger                | faas.trigger.type           | false    | false          |
+| host.arch                   | host.architecture           | false    | false          |
+| host.hostname               | host.hostname               | true     | true           |
+| k8s.cluster.name            | orchestrator.cluster.name   | false    | false          |
+| k8s.container.name          | kubernetes.container.name   | false    | false          |
+| k8s.cronjob.name            | kubernetes.cronjob.name     | false    | false          |
+| k8s.daemonset.name          | kubernetes.daemonset.name   | false    | false          |
+| k8s.deployment.name         | kubernetes.deployment.name  | false    | false          |
+| k8s.job.name                | kubernetes.job.name         | false    | false          |
+| k8s.namespace.name          | kubernetes.namespace        | false    | false          |
+| k8s.node.name               | kubernetes.node.name        | false    | false          |
+| k8s.pod.name                | kubernetes.pod.name         | false    | false          |
+| k8s.pod.uid                 | kubernetes.pod.uid          | false    | false          |
+| k8s.replicaset.name         | kubernetes.replicaset.name  | false    | false          |
+| k8s.statefulset.name        | kubernetes.statefulset.name | false    | false          |
+| os.description              | host.os.full                | false    | false          |
+| os.name                     | host.os.name                | false    | false          |
+| os.type                     | host.os.platform            | false    | false          |
+| os.version                  | host.os.version             | false    | false          |
+| process.command_line        | process.args                | false    | false          |
+| process.executable.name     | process.title               | false    | false          |
+| process.executable.path     | process.executable          | false    | false          |
+| process.parent.pid          | process.parent.pid          | false    | false          |
+| process.runtime.name        | service.runtime.name        | false    | false          |
+| process.runtime.version     | service.runtime.version     | false    | false          |
+| service.instance.id         | service.node.name           | false    | false          |
+| source.address              | source.ip                   | false    | false          |
+| telemetry.distro.name       | ""                          | false    | false          |
+| telemetry.distro.version    | ""                          | false    | false          |
+| telemetry.sdk.language      | ""                          | false    | false          |
+| telemetry.sdk.name          | ""                          | false    | false          |
+| telemetry.sdk.version       | ""                          | false    | false          |
 
 ### Log record attribute mapping
 
@@ -517,6 +517,10 @@ These values are all valid:
 #### `agent.version`
 
 Takes the value of `telemetry.distro.version` or `telemetry.sdk.version`. If both telemetry.distro.version and telemetry.sdk.version are present, telemetry.distro.version takes precedence.
+
+#### `host.name` and `host.hostname`
+
+Maintains the SemConv Value `host.name` as ECS Value `host.name` and maps it to ECS Value `host.hostname`, if this does not already exist.
 
 #### `host.os.type`
 
