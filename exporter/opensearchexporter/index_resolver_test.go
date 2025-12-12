@@ -436,6 +436,50 @@ func TestIndexResolver_ResolveLogRecordIndex_UnknownPlaceholder(t *testing.T) {
 	}
 }
 
+func TestIndexResolver_ResolveLogRecordIndex_AttributePrecedence(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		LogsIndex:           "%{test.key}",
+		LogsIndexFallback:   "fallback",
+		LogsIndexTimeFormat: "",
+		Dataset:             "default",
+		Namespace:           "namespace",
+	}
+
+	ld := createTestLogDataWithPrecedenceAttributes()
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+	resource := ld.ResourceLogs().At(0).Resource()
+	scope := ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	index := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, ts)
+	expected := "log_value"
+	if index != expected {
+		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
+func TestIndexResolver_ResolveSpanIndex_AttributePrecedence(t *testing.T) {
+	resolver := newIndexResolver()
+	cfg := &Config{
+		TracesIndex:           "%{test.key}",
+		TracesIndexFallback:   "fallback",
+		TracesIndexTimeFormat: "",
+		Dataset:               "default",
+		Namespace:             "namespace",
+	}
+
+	td := createTestTraceDataWithPrecedenceAttributes()
+	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
+	resource := td.ResourceSpans().At(0).Resource()
+	scope := td.ResourceSpans().At(0).ScopeSpans().At(0).Scope()
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	index := resolver.ResolveSpanIndex(cfg, resource, scope, span, ts)
+	expected := "span_value"
+	if index != expected {
+		t.Errorf("expected %q, got %q", expected, index)
+	}
+}
+
 func TestConvertGoTimeFormat(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -569,5 +613,29 @@ func createTestTraceDataMultipleResources(serviceName1, serviceName2 string) ptr
 	span2 := ss2.Spans().AppendEmpty()
 	span2.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
+	return td
+}
+
+func createTestLogDataWithPrecedenceAttributes() plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("test.key", "resource_value")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().Attributes().PutStr("test.key", "scope_value")
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.Attributes().PutStr("test.key", "log_value")
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return ld
+}
+
+func createTestTraceDataWithPrecedenceAttributes() ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("test.key", "resource_value")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().Attributes().PutStr("test.key", "scope_value")
+	span := ss.Spans().AppendEmpty()
+	span.Attributes().PutStr("test.key", "span_value")
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return td
 }
