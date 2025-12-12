@@ -76,9 +76,11 @@ var (
 )
 
 const (
-	persistentStateFileName     = "persistent_state.yaml"
-	agentConfigFileName         = "effective.yaml"
-	AllowNoPipelinesFeatureGate = "service.AllowNoPipelines"
+	persistentStateFileName       = "persistent_state.yaml"
+	agentConfigFileName           = "effective.yaml"
+	agentLogFileName              = "agent.log"
+	collectorCrashLogSnippetBytes = 4 * 1024
+	AllowNoPipelinesFeatureGate   = "service.AllowNoPipelines"
 )
 
 const maxBufferedCustomMessages = 10
@@ -190,6 +192,10 @@ type Supervisor struct {
 	// heartbeatInterval is the interval the OpAMP client is configured to send heartbeats.
 	// Default is 30 seconds but can be overridden by the OpAMP server with an OpAMPConnectionSettings message.
 	heartbeatIntervalSeconds uint64
+
+	// passthroughLogBuffer keeps the latest Collector log lines when passthrough logging is enabled.
+	passthroughLogBuffer *logRingBuffer
+	passthroughLogMu     sync.Mutex
 }
 
 func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -374,6 +380,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	s.commander.SetPassthroughLogHook(s.appendPassthroughLogLine)
 
 	s.agentWG.Add(1)
 	go func() {
@@ -1590,7 +1597,7 @@ func (s *Supervisor) runAgentProcess() {
 				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
 				s.commander.Pid(), s.commander.ExitCode(),
 			)
-			if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg}); err != nil {
+			if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: s.appendCollectorCrashDetails(errMsg)}); err != nil {
 				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 			}
 
@@ -1609,8 +1616,8 @@ func (s *Supervisor) runAgentProcess() {
 				// Timer was running, which means we were waiting for config to be applied.
 				// Report FAILED status immediately.
 				s.telemetrySettings.Logger.Info("Agent crashed during config application, reporting FAILED status")
-				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
-					fmt.Sprintf("Agent exited unexpectedly with exit code %d while applying configuration", s.commander.ExitCode()))
+				failureMsg := fmt.Sprintf("Agent exited unexpectedly with exit code %d while applying configuration", s.commander.ExitCode())
+				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, s.appendCollectorCrashDetails(failureMsg))
 			}
 
 			// Wait 5 seconds before starting again.
