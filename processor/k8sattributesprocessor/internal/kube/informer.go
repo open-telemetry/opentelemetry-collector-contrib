@@ -187,17 +187,13 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 	}
 }
 
-// NewReplicaSetMetaInformer returns a provider with the SAME signature
-// as your existing helpers, but emits metav1.PartialObjectMetadata.
-// It uses ListWithContextFunc and WatchFuncWithContext.
 func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(client kubernetes.Interface, namespace string) cache.SharedInformer {
-	return func(client kubernetes.Interface, namespace string) cache.SharedInformer {
-		// Build metadata client from APIConfig (mirrors your MakeDynamicClient flow)
+	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
 		if err := apiCfg.Validate(); err != nil {
 			return cache.NewSharedIndexInformer(
 				&cache.ListWatch{
-					ListWithContextFunc:  func(ctx context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
-					WatchFuncWithContext: func(ctx context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
+					ListWithContextFunc:  func(_ context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
+					WatchFuncWithContext: func(_ context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
 				},
 				&metav1.PartialObjectMetadata{},
 				watchSyncPeriod,
@@ -209,8 +205,8 @@ func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(client kubernete
 		if err != nil {
 			return cache.NewSharedIndexInformer(
 				&cache.ListWatch{
-					ListWithContextFunc:  func(ctx context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
-					WatchFuncWithContext: func(ctx context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
+					ListWithContextFunc:  func(_ context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
+					WatchFuncWithContext: func(_ context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
 				},
 				&metav1.PartialObjectMetadata{},
 				watchSyncPeriod,
@@ -222,8 +218,8 @@ func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(client kubernete
 		if err != nil {
 			return cache.NewSharedIndexInformer(
 				&cache.ListWatch{
-					ListWithContextFunc:  func(ctx context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
-					WatchFuncWithContext: func(ctx context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
+					ListWithContextFunc:  func(_ context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
+					WatchFuncWithContext: func(_ context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
 				},
 				&metav1.PartialObjectMetadata{},
 				watchSyncPeriod,

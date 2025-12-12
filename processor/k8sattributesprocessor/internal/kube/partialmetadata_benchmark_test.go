@@ -72,8 +72,6 @@ func runPartialMetadata(b *testing.B, n int) {
 	metaOnly := genPOMReplicaSets(n)
 	for i := 0; i < b.N; i++ {
 		fc := fake.NewClientset()
-		// We still attach the typed reactors so the fake client satisfies list/watch,
-		// but the informer provider below will emit PartialObjectMetadata.
 		setReplicaSetListAndWatch(fc, metaOnly)
 
 		newClientSet := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) { return fc, nil }
