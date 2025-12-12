@@ -6,11 +6,11 @@ package ottlfuncs
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_traceID(t *testing.T) {
