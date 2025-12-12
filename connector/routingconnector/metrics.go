@@ -75,7 +75,8 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		case "", "resource":
 			pmetricutil.MoveResourcesIf(md, matched,
 				func(rs pmetric.ResourceMetrics) bool {
-					rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
+					rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
+					defer rtx.Close()
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 					// If error during statement evaluation consider it as not a match.
 					if err != nil {

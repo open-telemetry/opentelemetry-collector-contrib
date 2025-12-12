@@ -72,7 +72,7 @@ func newRouter[C any](
 type routingItem[C any] struct {
 	consumer           C
 	requestCondition   *requestCondition
-	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
+	resourceStatement  *ottl.Statement[*ottlresource.TransformContext]
 	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
 	metricStatement    *ottl.Statement[*ottlmetric.TransformContext]
 	dataPointStatement *ottl.Statement[*ottldatapoint.TransformContext]
@@ -109,7 +109,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 	// The one-time initialization cost is minimal compared to the complexity and fragility
 	// of trying to pre-determine which contexts are needed via statement inspection.
 	resourceParser, err := ottlresource.NewParser(
-		standardFunctions[ottlresource.TransformContext](),
+		standardFunctions[*ottlresource.TransformContext](),
 		settings,
 		ottlresource.EnablePathContextNames(),
 	)
@@ -155,7 +155,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		ottl.WithParserCollectionContext(
 			ottlresource.ContextName,
 			&resourceParser,
-			ottl.WithStatementConverter(singleStatementConverter[ottlresource.TransformContext]()),
+			ottl.WithStatementConverter(singleStatementConverter[*ottlresource.TransformContext]()),
 		),
 		ottl.WithParserCollectionContext(
 			ottlspan.ContextName,
@@ -281,7 +281,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 
 			// singleStatementConverter returns the single parsed *ottl.Statement[K]
 			switch s := result.(type) {
-			case *ottl.Statement[ottlresource.TransformContext]:
+			case *ottl.Statement[*ottlresource.TransformContext]:
 				route.resourceStatement = s
 				route.statementContext = "resource"
 			case *ottl.Statement[*ottlspan.TransformContext]:
