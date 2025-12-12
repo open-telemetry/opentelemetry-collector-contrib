@@ -72,7 +72,7 @@ linters:
           - unused
         path: pagefile.go # This exclusion is required for Windows only
         text: cachedBytes
-        
+
       - linters:
           - unused
         path: receiver/macosunifiedloggingreceiver/config_common.go
