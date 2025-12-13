@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -168,6 +169,9 @@ type JobsMap struct {
 	gcInterval time.Duration
 	lastGC     time.Time
 	jobsMap    map[string]*timeseriesMap
+	// gcRunning prevents multiple gc goroutines from being spawned concurrently.
+	// Uses atomic operations: 0 = not running, 1 = running.
+	gcRunning atomic.Int32
 }
 
 // NewJobsMap creates a new (empty) JobsMap.
@@ -177,6 +181,9 @@ func NewJobsMap(gcInterval time.Duration) *JobsMap {
 
 // Remove jobs and timeseries that have aged out.
 func (jm *JobsMap) gc() {
+	// Reset gcRunning when done to allow future gc runs.
+	defer jm.gcRunning.Store(0)
+
 	jm.Lock()
 	defer jm.Unlock()
 	// once the structure is locked, confirm that gc() is still necessary
@@ -202,7 +209,11 @@ func (jm *JobsMap) maybeGC() {
 	jm.RLock()
 	defer jm.RUnlock()
 	if time.Since(jm.lastGC) > jm.gcInterval {
-		go jm.gc()
+		// Use compare-and-swap to ensure only one gc goroutine runs at a time.
+		// This prevents goroutine accumulation under high concurrency.
+		if jm.gcRunning.CompareAndSwap(0, 1) {
+			go jm.gc()
+		}
 	}
 }
 
