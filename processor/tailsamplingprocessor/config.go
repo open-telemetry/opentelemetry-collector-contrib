@@ -288,6 +288,9 @@ type Config struct {
 	// DecisionWait is the desired wait time from the arrival of the first span of
 	// trace until the decision about sampling it or not is evaluated.
 	DecisionWait time.Duration `mapstructure:"decision_wait"`
+	// DecisionWaitAfterRootReceived is the desired wait time from the arrival of the root span of
+	// trace until the decision about sampling it or not is evaluated.
+	DecisionWaitAfterRootReceived time.Duration `mapstructure:"decision_wait_after_root_received"`
 	// NumTraces is the number of traces kept on memory. Typically most of the data
 	// of a trace is released after a sampling decision is taken.
 	NumTraces uint64 `mapstructure:"num_traces"`
