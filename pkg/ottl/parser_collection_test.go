@@ -121,7 +121,7 @@ func Test_ParseStatements_NoStatementConverter(t *testing.T) {
 	pw, exists := pc.contextParsers["testContext"]
 	assert.True(t, exists)
 	assert.NotNil(t, pw)
-	_, parseErr := pc.ParseStatementsWithContext("testContext", mockGetter{[]string{`set(testContext.attributes["foo"], "foo")`}}, true)
+	_, parseErr := pc.ParseStatementsWithContext("testContext", mockGetter{[]string{`set(testContext.attributes["foo"], "foo")`}})
 	assert.Error(t, parseErr)
 	assert.Contains(t, parseErr.Error(), "no configured converter for statements")
 }
@@ -136,7 +136,7 @@ func Test_ParseStatements_NoConditionConverter(t *testing.T) {
 	pw, exists := pc.contextParsers["testContext"]
 	assert.True(t, exists)
 	assert.NotNil(t, pw)
-	_, parseErr := pc.ParseConditionsWithContext("testContext", mockGetter{[]string{`foo.attributes["bar"] == "foo"`}}, true)
+	_, parseErr := pc.ParseConditionsWithContext("testContext", mockGetter{[]string{`foo.attributes["bar"] == "foo"`}})
 	assert.Error(t, parseErr)
 	assert.Contains(t, parseErr.Error(), "no configured converter for conditions")
 }
@@ -209,7 +209,7 @@ func Test_EnableParserCollectionModifiedPathsLogging_True(t *testing.T) {
 		`set(attributes["bar"], "bar")`,
 	}
 
-	_, err = pc.ParseStatementsWithContext("dummy", mockGetter{originalStatements}, true)
+	_, err = pc.ParseStatementsWithContext("dummy", mockGetter{originalStatements})
 	require.NoError(t, err)
 
 	logEntries := observedLogs.TakeAll()
@@ -243,7 +243,7 @@ func Test_EnableParserCollectionModifiedPathsLogging_False(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	_, err = pc.ParseStatementsWithContext("dummy", mockGetter{[]string{`set(attributes["foo"], "foo")`}}, true)
+	_, err = pc.ParseStatementsWithContext("dummy", mockGetter{[]string{`set(attributes["foo"], "foo")`}})
 	require.NoError(t, err)
 	require.Empty(t, observedLogs.TakeAll())
 }
@@ -455,7 +455,7 @@ func Test_ParseStatementsWithContext_UnknownContextError(t *testing.T) {
 	require.NoError(t, err)
 
 	statements := mockGetter{[]string{`set(attributes["bar"], "bar")`}}
-	_, err = pc.ParseStatementsWithContext("bar", statements, false)
+	_, err = pc.ParseStatementsWithContext("bar", statements)
 
 	assert.ErrorContains(t, err, `unknown context "bar"`)
 }
@@ -474,7 +474,6 @@ func Test_ParseStatementsWithContext_PrependPathContext(t *testing.T) {
 			`set(attributes["foo"], "foo")`,
 			`set(attributes["bar"], "bar")`,
 		}},
-		true,
 	)
 
 	require.NoError(t, err)
@@ -650,7 +649,7 @@ func Test_ParseConditionsWithContext_UnknownContextError(t *testing.T) {
 	require.NoError(t, err)
 
 	conditions := mockGetter{[]string{`attributes["bar"] == "bar"`}}
-	_, err = pc.ParseConditionsWithContext("bar", conditions, false)
+	_, err = pc.ParseConditionsWithContext("bar", conditions)
 
 	assert.ErrorContains(t, err, `unknown context "bar"`)
 }
@@ -669,7 +668,6 @@ func Test_ParseConditionsWithContext_PrependPathContext(t *testing.T) {
 			`attributes["foo"] == "foo"`,
 			`attributes["bar"] == "bar"`,
 		}},
-		true,
 	)
 
 	require.NoError(t, err)
@@ -874,7 +872,7 @@ func Test_ParseValueExpressionsWithContext_UnknownContextError(t *testing.T) {
 	require.NoError(t, err)
 
 	expressions := mockGetter{[]string{`attributes["bar"]`}}
-	_, err = pc.ParseValueExpressionsWithContext("bar", expressions, false)
+	_, err = pc.ParseValueExpressionsWithContext("bar", expressions)
 
 	assert.ErrorContains(t, err, `unknown context "bar"`)
 }
@@ -893,7 +891,6 @@ func Test_ParseValueExpressionsWithContext_PrependPathContext(t *testing.T) {
 			`attributes["foo"]`,
 			`attributes["bar"]`,
 		}},
-		true,
 	)
 
 	require.NoError(t, err)
