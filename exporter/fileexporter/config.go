@@ -114,9 +114,6 @@ func (cfg *Config) Validate() error {
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
 	}
-	if cfg.Append && cfg.Compression != "" {
-		return errors.New("append and compression enabled at the same time is not supported")
-	}
 	if cfg.Append && cfg.Rotation != nil {
 		return errors.New("append and rotation enabled at the same time is not supported")
 	}
