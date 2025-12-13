@@ -8,6 +8,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/metrics v0.73.0-rc.11
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0-rc.11
 	github.com/DataDog/datadog-agent/pkg/serializer v0.73.0-rc.11
+	github.com/DataDog/datadog-agent/pkg/tagset v0.73.0-rc.11
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.141.0
 	github.com/stretchr/testify v1.11.1
@@ -69,7 +70,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.73.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.73.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.73.0-rc.11 // indirect
-	github.com/DataDog/datadog-agent/pkg/tagset v0.73.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.73.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.73.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.73.0-rc.11 // indirect
@@ -135,11 +135,11 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
-	github.com/go-openapi/jsonreference v0.20.2 // indirect
+	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -147,6 +147,7 @@ require (
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-tpm v0.9.7 // indirect
+	github.com/google/pprof v0.0.0-20250607225305-033d6d78b36a // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -192,9 +193,10 @@ require (
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.11 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
+	github.com/shoenig/test v1.7.1 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
