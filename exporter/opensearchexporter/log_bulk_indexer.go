@@ -59,8 +59,8 @@ func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
 }
 
 func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, ir *indexResolver, cfg *Config, timestamp time.Time) {
-	forEachLog(ld, ir, cfg, timestamp, func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord) {
-		indexName := resolver.ResolveLogRecordIndex(cfg, resource, scope, logRecord, timestamp)
+	keys := ir.extractPlaceholderKeys(cfg.LogsIndex)
+	forEachLog(ld, ir, cfg, timestamp, keys, func(cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string) {
 		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, logRecord)
 		if err != nil {
 			lbi.appendPermanentError(err)
@@ -124,19 +124,22 @@ func newLogOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError fu
 	})
 }
 
-func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timestamp time.Time, visitor func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord)) {
+func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timestamp time.Time, keys []string, visitor func(cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string)) {
 	resourceLogs := ld.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		il := resourceLogs.At(i)
 		resource := il.Resource()
+		resourceAttrs := indexResolver.collectResourceAttributes(resource, keys)
 		scopeLogs := il.ScopeLogs()
 		for j := 0; j < scopeLogs.Len(); j++ {
 			scopeSpan := scopeLogs.At(j)
+			scopeAttrs := indexResolver.collectScopeAttributes(scopeSpan.Scope(), keys)
 			logs := scopeLogs.At(j).LogRecords()
 
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				visitor(indexResolver, cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log)
+				indexName := indexResolver.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, cfg.LogsIndexTimeFormat, log.Attributes(), keys, scopeAttrs, resourceAttrs, timestamp)
+				visitor(cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log, indexName)
 			}
 		}
 	}

@@ -61,8 +61,8 @@ func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Trace
 }
 
 func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces, ir *indexResolver, cfg *Config, timestamp time.Time) {
-	forEachSpan(td, ir, cfg, timestamp, func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) {
-		indexName := resolver.ResolveSpanIndex(cfg, resource, scope, span, timestamp)
+	keys := ir.extractPlaceholderKeys(cfg.TracesIndex)
+	forEachSpan(td, ir, cfg, timestamp, keys, func(cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string) {
 		payload, err := tbi.model.encodeTrace(resource, scope, scopeSchemaURL, span)
 		if err != nil {
 			tbi.appendPermanentError(err)
@@ -145,19 +145,22 @@ func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(
 	})
 }
 
-func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, visitor func(resolver *indexResolver, cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span)) {
+func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, keys []string, visitor func(cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string)) {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		il := resourceSpans.At(i)
 		resource := il.Resource()
+		resourceAttrs := indexResolver.collectResourceAttributes(resource, keys)
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
 			scopeSpan := scopeSpans.At(j)
+			scopeAttrs := indexResolver.collectScopeAttributes(scopeSpan.Scope(), keys)
 			spans := scopeSpans.At(j).Spans()
 
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				visitor(indexResolver, cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
+				indexName := indexResolver.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, cfg.TracesIndexTimeFormat, span.Attributes(), keys, scopeAttrs, resourceAttrs, timestamp)
+				visitor(cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span, indexName)
 			}
 		}
 	}

@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // indexResolver handles dynamic index name resolution for logs and traces
@@ -41,11 +39,55 @@ func (r *indexResolver) extractPlaceholderKeys(template string) []string {
 	return keys
 }
 
+// collectResourceAttributes collects resource attributes for the specified keys
+func (*indexResolver) collectResourceAttributes(resource pcommon.Resource, keys []string) map[string]string {
+	attrs := make(map[string]string)
+	for _, key := range keys {
+		if v, ok := resource.Attributes().Get(key); ok {
+			attrs[key] = v.AsString()
+		}
+	}
+	return attrs
+}
+
+// collectScopeAttributes collects scope attributes (including scope.name and scope.version) for the specified keys
+func (*indexResolver) collectScopeAttributes(scope pcommon.InstrumentationScope, keys []string) map[string]string {
+	attrs := make(map[string]string)
+	for _, key := range keys {
+		if key == "scope.name" {
+			if scope.Name() != "" {
+				attrs[key] = scope.Name()
+			}
+		} else if key == "scope.version" {
+			if scope.Version() != "" {
+				attrs[key] = scope.Version()
+			}
+		} else {
+			if v, ok := scope.Attributes().Get(key); ok {
+				attrs[key] = v.AsString()
+			}
+		}
+	}
+	return attrs
+}
+
 // resolveIndexName handles the common logic for resolving index names with placeholders
-func (r *indexResolver) resolveIndexName(indexPattern, fallback, timeFormat string, attrs map[string]string, timestamp time.Time) string {
-	index := r.placeholderPattern.ReplaceAllStringFunc(indexPattern, func(match string) string {
+func (r *indexResolver) resolveIndexName(indexPattern, fallback, timeFormat string, itemAttrs pcommon.Map, keys []string, scopeAttributes, resourceAttributes map[string]string, timestamp time.Time) string {
+	itemAttributes := make(map[string]string)
+	for _, key := range keys {
+		if v, ok := itemAttrs.Get(key); ok {
+			itemAttributes[key] = v.AsString()
+		}
+	}
+	indexName := r.placeholderPattern.ReplaceAllStringFunc(indexPattern, func(match string) string {
 		key := r.placeholderPattern.FindStringSubmatch(match)[1]
-		if val, ok := attrs[key]; ok && val != "" {
+		if val, ok := itemAttributes[key]; ok && val != "" {
+			return val
+		}
+		if val, ok := scopeAttributes[key]; ok && val != "" {
+			return val
+		}
+		if val, ok := resourceAttributes[key]; ok && val != "" {
 			return val
 		}
 		if fallback != "" {
@@ -54,7 +96,7 @@ func (r *indexResolver) resolveIndexName(indexPattern, fallback, timeFormat stri
 		return "unknown"
 	})
 
-	return r.appendTimeFormat(index, timeFormat, timestamp)
+	return r.appendTimeFormat(indexName, timeFormat, timestamp)
 }
 
 // appendTimeFormat appends time suffix if format is specified
@@ -63,80 +105,6 @@ func (*indexResolver) appendTimeFormat(index, timeFormat string, timestamp time.
 		return index + "-" + timestamp.Format(convertGoTimeFormat(timeFormat))
 	}
 	return index
-}
-
-// ResolveSpanIndex resolves the traces index name per span using placeholders, fallback, and time format
-func (r *indexResolver) ResolveSpanIndex(cfg *Config, resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span, timestamp time.Time) string {
-	if cfg.TracesIndex == "" {
-		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_traces")
-		return r.appendTimeFormat(indexName, cfg.TracesIndexTimeFormat, timestamp)
-	}
-
-	keys := r.extractPlaceholderKeys(cfg.TracesIndex)
-	attrs := r.collectSpanAttributes(resource, scope, span, keys)
-	return r.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, cfg.TracesIndexTimeFormat, attrs, timestamp)
-}
-
-// ResolveLogRecordIndex resolves the logs index name per log record using placeholders, fallback, and time format
-func (r *indexResolver) ResolveLogRecordIndex(cfg *Config, resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord, timestamp time.Time) string {
-	if cfg.LogsIndex == "" {
-		indexName := getIndexName(cfg.Dataset, cfg.Namespace, "ss4o_logs")
-		return r.appendTimeFormat(indexName, cfg.LogsIndexTimeFormat, timestamp)
-	}
-
-	keys := r.extractPlaceholderKeys(cfg.LogsIndex)
-	attrs := r.collectLogRecordAttributes(resource, scope, logRecord, keys)
-	return r.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, cfg.LogsIndexTimeFormat, attrs, timestamp)
-}
-
-// collectSpanAttributes extracts resource, scope, and span attributes into a flat map for placeholder resolution with precedence
-func (*indexResolver) collectSpanAttributes(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span, keys []string) map[string]string {
-	attrs := make(map[string]string, len(keys))
-	for _, key := range keys {
-		if key == "scope.name" {
-			if scope.Name() != "" {
-				attrs[key] = scope.Name()
-			}
-		} else if key == "scope.version" {
-			if scope.Version() != "" {
-				attrs[key] = scope.Version()
-			}
-		} else {
-			if v, ok := span.Attributes().Get(key); ok {
-				attrs[key] = v.AsString()
-			} else if v, ok := scope.Attributes().Get(key); ok {
-				attrs[key] = v.AsString()
-			} else if v, ok := resource.Attributes().Get(key); ok {
-				attrs[key] = v.AsString()
-			}
-		}
-	}
-	return attrs
-}
-
-// collectLogRecordAttributes extracts resource, scope, and log record attributes into a flat map for placeholder resolution with precedence
-func (*indexResolver) collectLogRecordAttributes(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord, keys []string) map[string]string {
-	attrs := make(map[string]string, len(keys))
-	for _, key := range keys {
-		if key == "scope.name" {
-			if scope.Name() != "" {
-				attrs[key] = scope.Name()
-			}
-		} else if key == "scope.version" {
-			if scope.Version() != "" {
-				attrs[key] = scope.Version()
-			}
-		} else {
-			if v, ok := logRecord.Attributes().Get(key); ok {
-				attrs[key] = v.AsString()
-			} else if v, ok := scope.Attributes().Get(key); ok {
-				attrs[key] = v.AsString()
-			} else if v, ok := resource.Attributes().Get(key); ok {
-				attrs[key] = v.AsString()
-			}
-		}
-	}
-	return attrs
 }
 
 // convertGoTimeFormat converts a Java-style date format to Go's time format
