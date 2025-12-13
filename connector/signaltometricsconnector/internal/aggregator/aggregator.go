@@ -163,6 +163,7 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 			destMetric.SetUnit(md.Key.Unit)
 			destMetric.SetDescription(md.Key.Description)
 			destCounter := destMetric.SetEmptySum()
+			destCounter.SetIsMonotonic(true)
 			destCounter.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			destCounter.DataPoints().EnsureCapacity(len(dpMap))
 			for _, dp := range dpMap {

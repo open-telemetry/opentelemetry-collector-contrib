@@ -15,6 +15,7 @@ resourceMetrics:
           - description: Count total number of log records
             name: total.logrecords.sum
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "4"
@@ -22,6 +23,7 @@ resourceMetrics:
           - description: Count total number of log records as per log.foo attribute
             name: log.foo.sum
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "2"
@@ -39,6 +41,7 @@ resourceMetrics:
           - description: Count total number of log records as per log.bar attribute
             name: log.bar.sum
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "1"
@@ -68,6 +71,7 @@ resourceMetrics:
           - description: Count total number of log records with resource attribute foo
             name: total.logrecords.resource.foo.sum
             sum:
+              isMonotonic: true
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "4"
