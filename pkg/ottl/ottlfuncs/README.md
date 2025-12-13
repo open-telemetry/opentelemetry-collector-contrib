@@ -46,6 +46,7 @@ Editors:
 Available Editors:
 
 - [append](#append)
+- [delete](#delete)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_matching_keys](#keep_matching_keys)
@@ -72,6 +73,22 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
+
+### delete
+
+`delete(target, startIndex, Optional[endIndex])`
+
+The `delete` function removes elements from a slice. It deletes elements in the range `[startIndex, endIndex)` (startIndex inclusive, endIndex exclusive). If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target, following the behavior of Go's `slices.Delete(s, i, j)` function.
+
+Examples:
+
+- `delete(attributes["tags"], 0)` # delete first
+
+- `delete(attributes["tags"], Len(attributes["tags"]) - 1)` # delete last
+
+- `delete(attributes["tags"], 0, 3)` # delete indices 0, 1, & 2
+
+- `delete(attributes["tags"], Index(attributes["tags"], "unparsed"))` # delete first occurrence of "unparsed"
 
 ### delete_key
 
