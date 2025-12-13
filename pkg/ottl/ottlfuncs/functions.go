@@ -84,6 +84,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewParseCSVFactory[K](),
 		NewParseJSONFactory[K](),
 		NewParseKeyValueFactory[K](),
+		NewParseLEEFFactory[K](),
 		NewParseSimplifiedXMLFactory[K](),
 		NewParseXMLFactory[K](),
 		NewRemoveXMLFactory[K](),

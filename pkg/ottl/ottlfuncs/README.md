@@ -505,6 +505,7 @@ Available Converters:
 - [ParseInt](#parseint)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseLEEF](#parseleef)
 - [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
@@ -1669,6 +1670,21 @@ Examples:
 - `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(log.attributes["pairs"])`
+
+### ParseLEEF
+
+`ParseLEEF(target)`
+
+The `ParseLEEF` Converter returns a `pcommon.Map` that is a result of parsing the target string as Log Event Extended Format (LEEF).
+
+`target` is a Getter that returns a string. If the returned string is empty, nil, or cannot be parsed as LEEF, an error will be returned.
+
+`ParseLEEF` can parse both LEEF 1.0 and LEEF 2.0.
+
+Examples:
+
+- `ParseLEEF("<30>Aug 19 12:33:31 ibm.guardium.test guard_sender[4486]: LEEF:1.0|IBM|Guardium|8.0|Login failures|ruleID=20026|ruleDesc=Login failures|severity=INFO|devTime=2013-8-19 6:34:41|serverType=DB2|classification=|category=|dbProtocolVersion=3.0|usrName=|sourceProgram=DB2JCC_APPLICATION|start=1376908481000|dbUser=user|dst=10.30.2.124|dstPort=50000|src=10.30.5.152|srcPort=38754|protocol=TCP|type=LOGIN_FAILED|violationID=15|sql=|error=08001-XXXX:30082-01")`
+- `ParseLEEF("<25>Jun 11 13:47:19 ibm.guardium.test guard_sender[3432]: LEEF:1.0|IBM|Guardium|8.0|Unauthorized  Users on Cardholder Objects - Alert|ruleID=159|ruleDesc=Unauthorized  Users on Cardholder Objects - Alert|severity=MED|devTime=2013-6-11 12:46:21|serverType=MS SQL SERVER|classification=Violation|category=PCI|dbProtocolVersion=8.0|usrName=|sourceProgram=ABCDEF.EXE|start=1370965581000|dbUser=SYSTEM|dst=172.16.107.92|dstPort=1433|src=172.16.107.92|srcPort=60621|protocol=TCP|type=SQL_LANG|violationID=0|sql=SELECT * FROM EPOAgentHandlerAssignment INNER JOIN EPOAgentHandlerAssignmentPriority ON (EPOAgentHandlerAssignment.AutoID = EPOAgentHandlerAssignmentPriority.AssignmentID) ORDER BY EPOAgentHandlerAssignmentPriority.Priority ASC|error=TDS_MS-")`
 
 ### ParseSeverity
 
