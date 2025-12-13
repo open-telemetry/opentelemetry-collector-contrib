@@ -11,7 +11,8 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	_ "github.com/microsoft/go-mssqldb"                     // register Db driver
+	_ "github.com/microsoft/go-mssqldb" // register Db driver
+	"github.com/microsoft/go-mssqldb/azuread"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
@@ -123,6 +124,9 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 	// TODO: Test if this needs to be re-defined for each scraper
 	// This should be tested when there is more than one query being made.
 	dbProviderFunc := func() (*sql.DB, error) {
+		if cfg.AzureDataSource != "" {
+			return sql.Open(azuread.DriverName, cfg.AzureDataSource)
+		}
 		return sql.Open("sqlserver", getDBConnectionString(cfg))
 	}
 
@@ -164,6 +168,9 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 	// TODO: Test if this needs to be re-defined for each scraper
 	// This should be tested when there is more than one query being made.
 	dbProviderFunc := func() (*sql.DB, error) {
+		if cfg.AzureDataSource != "" {
+			return sql.Open(azuread.DriverName, cfg.AzureDataSource)
+		}
 		return sql.Open("sqlserver", getDBConnectionString(cfg))
 	}
 
