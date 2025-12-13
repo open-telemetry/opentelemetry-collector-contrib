@@ -44,7 +44,7 @@ type Config struct {
 	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
-	// "ExcludeServiceInfo" - If set to `true`, the `service.name` and `service.instance.id` resource attributes,
+	// "ExcludeServiceAttributes" - If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes,
 	// which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
