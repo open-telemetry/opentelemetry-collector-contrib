@@ -246,25 +246,11 @@ func New(
 	}
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.kc)
-
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
-			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
+			informersFactory.newReplicaSetInformer = newReplicaSetMetaInformer(apiCfg)
 		}
 		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
-
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
@@ -286,7 +272,6 @@ func New(
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
-
 	return c, err
 }
 
@@ -825,39 +810,40 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
+				// Always OK to emit RS UID if requested
 				if c.Rules.ReplicaSetID {
 					tags[string(conventions.K8SReplicaSetUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.ReplicaSetName {
 					tags[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
-				if c.Rules.ServiceName {
-					tags[string(conventions.ServiceNameKey)] = ref.Name
-				}
+				// Deployment name
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
 					if c.Rules.DeploymentNameFromReplicaSet {
 						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
-					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						deploymentName = replicaset.Deployment.Name
+					} else if rs, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						deploymentName = rs.Deployment.Name
 					}
 					if deploymentName != "" {
 						if c.Rules.DeploymentName {
 							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
 						}
 						if c.Rules.ServiceName {
-							// deployment name wins over replicaset name
 							tags[string(conventions.ServiceNameKey)] = deploymentName
 						}
 					}
 				}
+				// Deployment UID
 				if c.Rules.DeploymentUID {
-					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						if replicaset.Deployment.UID != "" {
-							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
+					if rs, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						// rs.Deployment.UID non-empty only when controller=true
+						if rs.Deployment.UID != "" {
+							tags[string(conventions.K8SDeploymentUIDKey)] = rs.Deployment.UID
 						}
 					}
 				}
+
 			case "DaemonSet":
 				if c.Rules.DaemonSetUID {
 					tags[string(conventions.K8SDaemonSetUIDKey)] = string(ref.UID)
@@ -1761,69 +1747,162 @@ func needContainerAttributes(rules ExtractionRules) bool {
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
-	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+
+	rsView, ok := normalizeRS(obj)
+	if !ok {
+		c.logger.Warn("add received non-ReplicaSet", zap.Any("obj", obj))
+		return
 	}
+	if rsView.UID == "" {
+		c.logger.Warn("add RS missing UID", zap.String("name", rsView.Name), zap.String("ns", rsView.Namespace))
+		return
+	}
+
+	// Fallback fetch to get ownerRefs if missing (for meta informer)
+	if rsView.DeploymentUID == "" &&
+		(c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)) {
+		// Reuse cached linkage to avoid repeated GETs
+		c.m.RLock()
+		cached := c.ReplicaSets[rsView.UID]
+		c.m.RUnlock()
+		if cached != nil && cached.Deployment.UID != "" {
+			rsView.DeploymentName = cached.Deployment.Name
+			rsView.DeploymentUID = cached.Deployment.UID
+		} else {
+			// Perform typed GET and set deployment only when controller=true
+			rsFull, err := c.kc.AppsV1().ReplicaSets(rsView.Namespace).Get(context.Background(), rsView.Name, meta_v1.GetOptions{})
+			if err == nil {
+				for _, owner := range rsFull.GetOwnerReferences() {
+					if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+						rsView.DeploymentName = owner.Name
+						rsView.DeploymentUID = string(owner.UID)
+						break
+					}
+				}
+			}
+			// If no controller deployment was found, leave Deployment fields empty
+		}
+	}
+
+	c.upsertReplicaSet(rsView)
 }
 
-func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
+func (c *WatchClient) handleReplicaSetUpdate(_, newObj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
-	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
+
+	rsView, ok := normalizeRS(newObj)
+	if !ok || rsView.UID == "" {
+		c.logger.Warn("update received invalid RS", zap.Any("obj", newObj))
+		return
+	}
+
+	// Fallback fetch on updates too
+	if rsView.DeploymentUID == "" &&
+		(c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)) {
+		c.fillReplicaSetOwnerFromTyped(rsView.Namespace, rsView.Name, &rsView)
+	}
+
+	c.upsertReplicaSet(rsView)
+}
+
+// Helper: typed GET to enrich ownerRefs
+func (c *WatchClient) fillReplicaSetOwnerFromTyped(namespace, name string, rv *replicasetView) {
+	rsFull, err := c.kc.AppsV1().ReplicaSets(namespace).Get(context.Background(), name, meta_v1.GetOptions{})
+	if err != nil {
+		c.logger.Debug("failed to fetch full RS for ownerRefs",
+			zap.String("name", name), zap.String("ns", namespace), zap.Error(err))
+		return
+	}
+	for _, owner := range rsFull.GetOwnerReferences() {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+			rv.DeploymentName = owner.Name
+			rv.DeploymentUID = string(owner.UID)
+			break
+		}
 	}
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
-	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
-		c.m.Lock()
-		key := string(replicaset.UID)
-		delete(c.ReplicaSets, key)
-		c.m.Unlock()
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
-	}
-}
 
-func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
-	newReplicaSet := &ReplicaSet{
-		Name:      replicaset.Name,
-		Namespace: replicaset.Namespace,
-		UID:       string(replicaset.UID),
+	rsView, ok := normalizeRS(obj)
+	if !ok {
+		c.logger.Warn("delete received non-ReplicaSet", zap.Any("obj", obj))
+		return
 	}
-
-	for _, ownerReference := range replicaset.OwnerReferences {
-		if ownerReference.Kind == "Deployment" && ownerReference.Controller != nil && *ownerReference.Controller {
-			newReplicaSet.Deployment = Deployment{
-				Name: ownerReference.Name,
-				UID:  string(ownerReference.UID),
-			}
-			break
-		}
+	if rsView.UID == "" {
+		c.logger.Warn("delete RS missing UID", zap.Any("obj", obj))
+		return
 	}
-
 	c.m.Lock()
-	if replicaset.UID != "" {
-		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
-	}
+	delete(c.ReplicaSets, rsView.UID)
 	c.m.Unlock()
 }
 
-// This function removes all data from the ReplicaSet except what is required by extraction rules
-func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
-	transformedReplicaset := apps_v1.ReplicaSet{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      replicaset.GetName(),
-			Namespace: replicaset.GetNamespace(),
-			UID:       replicaset.GetUID(),
-		},
+// normalizeRS returns a unified view of RS from various object types, without recursion.
+type replicasetView struct {
+	UID            string
+	Name           string
+	Namespace      string
+	DeploymentName string
+	DeploymentUID  string
+}
+
+func normalizeRS(obj any) (replicasetView, bool) {
+	switch v := obj.(type) {
+	case *apps_v1.ReplicaSet:
+		rv := replicasetView{
+			UID:       string(v.GetUID()),
+			Name:      v.GetName(),
+			Namespace: v.GetNamespace(),
+		}
+		for _, owner := range v.GetOwnerReferences() {
+			if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+				rv.DeploymentName = owner.Name
+				rv.DeploymentUID = string(owner.UID)
+				break
+			}
+		}
+		return rv, true
+	case *meta_v1.PartialObjectMetadata:
+		rv := replicasetView{
+			UID:       string(v.GetUID()),
+			Name:      v.GetName(),
+			Namespace: v.GetNamespace(),
+		}
+		for _, owner := range v.GetOwnerReferences() {
+			if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+				rv.DeploymentName = owner.Name
+				rv.DeploymentUID = string(owner.UID)
+				break
+			}
+		}
+		return rv, true
+	case cache.DeletedFinalStateUnknown:
+		if v.Obj == nil {
+			return replicasetView{}, false
+		}
+		return normalizeRS(v.Obj)
+	default:
+		return replicasetView{}, false
 	}
-	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
-	return &transformedReplicaset
+}
+
+func (c *WatchClient) upsertReplicaSet(rv replicasetView) {
+	newRS := &ReplicaSet{
+		Name:      rv.Name,
+		Namespace: rv.Namespace,
+		UID:       rv.UID,
+	}
+	if rv.DeploymentName != "" {
+		newRS.Deployment = Deployment{
+			Name: rv.DeploymentName,
+			UID:  rv.DeploymentUID,
+		}
+	}
+	c.m.Lock()
+	c.ReplicaSets[rv.UID] = newRS
+	c.m.Unlock()
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
