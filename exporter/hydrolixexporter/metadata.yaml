@@ -1,0 +1,13 @@
+type: hydrolix
+
+status:
+  class: exporter
+  stability:
+    development: [logs, metrics, traces]
+  codeowners:
+    active: [murphpdx]
+
+tests:
+  config:
+    endpoint: https://example.com
+    table: test_table
