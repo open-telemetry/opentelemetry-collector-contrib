@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"fmt"
@@ -1669,4 +1670,60 @@ func TestArchive(t *testing.T) {
 	log4 := emit.Token{Body: []byte("testlog4"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
 
 	sink.ExpectCalls(t, log3, log4)
+}
+
+func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
+	t.Parallel()
+
+	line := string(bytes.Repeat([]byte("a"), 1024)) // identical 1024B lines
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.FingerprintSize = 1000 // identical prefix across rotations
+
+	// Manager #1 (manual polling, no background goroutine)
+	op1, sink1 := testManager(t, cfg)
+	op1.persister = testutil.NewUnscopedMockPersister()
+
+	// Create file and write 20 lines
+	log := filetest.OpenTemp(t, tempDir)
+	for range 20 {
+		filetest.WriteString(t, log, line+"\n")
+	}
+
+	// First poll: read the existing 20 lines
+	op1.poll(t.Context())
+	for range 20 {
+		sink1.ExpectToken(t, []byte(line))
+	}
+
+	// Simulate copytruncate
+	rotated := log.Name() + ".1"
+	origData, err := os.ReadFile(log.Name())
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(rotated, origData, 0o600))
+	require.NoError(t, log.Truncate(0))
+	_, err = log.Seek(0, 0)
+	require.NoError(t, err)
+	for range 10 {
+		filetest.WriteString(t, log, line+"\n")
+	}
+
+	// Persist metadata as if we were running; then stop op1.
+	// (poll() already saves checkpoints when persister is set.)
+	// Ensure any internal rotations are finalized.
+	op1.poll(t.Context())
+	require.NoError(t, op1.Stop())
+
+	// Manager #2 (manual polling) resumes from persisted metadata
+	op2, sink2 := testManager(t, cfg)
+	op2.persister = op1.persister
+
+	// On poll, offset > current size is detected and reset to 0.
+	op2.poll(t.Context())
+	for range 10 {
+		sink2.ExpectToken(t, []byte(line))
+	}
+	sink2.ExpectNoCalls(t)
 }
