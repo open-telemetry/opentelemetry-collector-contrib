@@ -64,7 +64,7 @@ receivers:
       - undesired-container
       - /.*undesired.*/
       - another-*-container
-    metrics: 
+    metrics:
       container.cpu.usage.percpu:
         enabled: true
       container.network.io.usage.tx_dropped:
@@ -73,6 +73,54 @@ receivers:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+## Docker Socket Permissions
+
+### Requirements
+
+This receiver requires access to the Docker daemon socket to query container statistics. The Docker socket requires specific permissions:
+
+- **Linux** (`/var/run/docker.sock`): Accessible by `root` user or members of the `docker` group
+- **Windows** (`npipe:////./pipe/docker_engine`): Requires appropriate named pipe permissions
+
+Since version 0.40.0, official OpenTelemetry Collector images run as a non-root user for security. This creates a permission conflict when accessing the Docker socket.
+
+### Permission Solutions
+
+#### Grant Docker Group Access
+
+On Linux, grant the collector process access to the `docker` group:
+
+```bash
+# Get the docker group ID on your host
+getent group docker
+
+# Linux example - Run with docker group (replace 999 with your docker group GID)
+docker run --group-add 999 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+#### Run as Root
+
+If running as root is acceptable for your environment:
+
+```bash
+# Linux example
+docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock \
+  otel/opentelemetry-collector-contrib:latest
+```
+
+**Note:** Running as root is not recommended for production environments.
+
+#### Alternative Approaches
+
+For enhanced security, consider:
+- Using a Docker API proxy that restricts access to only required endpoints
+- Running this receiver in an isolated collector instance with elevated privileges, forwarding metrics to your main collector via OTLP
+
+For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
+
 
 ## Deprecations
 
