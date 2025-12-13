@@ -26,6 +26,7 @@ The metrics generation processor (`metricsgeneration`) can be used to create new
 There are some specific behaviors of the `calculate` metric generation rule that users may want to be aware of:
 
 - The created metric will have the same type as the metric configured as `metric1`.
+- If the source metrics (`metric1` and `metric2`) have different resource scopes, the processor will be unable to match the metrics together and perform the calculation.  In this case, you will need to use the `groupbyattrs` processor before the `metricsgeneration` processor to merge the metrics into a single resource group  
 - If no valid data points are calculated for the metric being created, it will not be created.
   This ensures the processor is not emitting new metrics that are empty.
 - Users may want to have metric calculations done on data points whose overlapping attributes match. To enable this
@@ -88,4 +89,61 @@ rules:
       metric1: pod.memory.usage.megabytes
       operation: multiply
       scale_by: 1048576
+```
+
+### Create a new metric using two metrics with different resource scopes
+
+When the source metrics used in a `calculate` rule have different resource scopes  the `metricsgeneration` processor is unable to match the metrics together and perform the calculation.  One example of this is calculating a normalized CPU load metric using the `system.cpu.load_average.1m` and `system.cpu.logical.count` metrics from the `hostmetrics` receiver.
+
+```yaml
+rules:
+  - metric1: system.cpu.load_average.1m
+    metric2: system.cpu.logical.count
+    name: system.cpu.load_average.1m_norm
+    operation: divide
+    type: calculate
+```
+
+The problem is that the two source metrics are coming from different ResourceMetrics (they have different resource scopes). Looking at the output:
+
+- `system.cpu.load_average.1m` comes from `ResourceMetrics #0` (`loadscraper`)
+- `system.cpu.logical.count` comes from `ResourceMetrics #1` (`cpuscraper`)
+
+The metricsgeneration processor requires both metrics to be in the same ResourceMetrics group to perform the calculation. You can use the `groupbyattrs` processor to merge them into a single resource group before applying the `metricsgeneration` processor.  This will allow the `metricsgeneration` processor to match the metrics together and perform the calculation.  Below is an example collector configuration that demonstrates this approach:
+
+```yaml
+receivers:
+  hostmetrics:
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.logical.count:
+            enabled: true
+        load:
+          metrics:
+            system.cpu.load_average.1m:
+              enabled: true
+exporters:
+  debug/detailed:
+    verbosity: detailed
+processors:
+  groupbyattrs:
+    keys: []
+  metricsgeneration:
+    rules:
+      - metric1: system.cpu.load_average.1m
+        metric2: system.cpu.logical.count
+        name: system.cpu.load_average.1m_norm
+        operation: divide
+        type: calculate
+service:
+  pipelines:
+    metrics:
+      receivers:
+        - hostmetrics
+      exporters:
+        - debug/detailed
+      processors:
+        - groupbyattrs
+        - metricsgeneration
 ```
