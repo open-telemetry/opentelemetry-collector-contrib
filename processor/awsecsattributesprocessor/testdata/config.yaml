@@ -1,0 +1,54 @@
+receivers:
+  filelog:
+    start_at: beginning
+    include_file_name: true
+    include: 
+      - testdata/*.log
+    operators:
+      - type: move
+        from: attributes["log.file.name"]
+        to: resource["log.file.name"]
+
+
+processors:
+  awsecsattributes:
+    attributes:
+      - "^aws.ecs.*"
+      - "^image*"
+      - "^name"
+    container_id:
+      sources:
+        - "log.file.name"
+        - "container.id"
+
+
+exporters:
+  logging:
+    verbosity: detailed
+
+  coralogix:
+    logs:
+      endpoint: ingress.coralogix.com:443
+    private_key: "35f3d2ca-4a14-d4b5-4f05-dbd770a76c3b"
+    application_name: "OTel"
+    subsystem_name: "ECS"
+    application_name_attributes:
+    - "APP_NAME"
+    - "service.namespace"
+    subsystem_name_attributes:
+    - "SUB_SYS"
+    - "aws.ecs.task.family"
+    - "service.name"
+    timeout: 30s
+
+service:
+  pipelines:
+    logs:
+      receivers:
+      - filelog
+      processors:
+      - ecsattributes
+      exporters:
+      - logging
+      - coralogix
+
