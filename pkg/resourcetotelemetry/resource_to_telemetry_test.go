@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 func TestConvertResourceToAttributes(t *testing.T) {
@@ -20,7 +21,7 @@ func TestConvertResourceToAttributes(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
-	wme := &wrapperMetricsExporter{excludeServiceInfo: false}
+	wme := &wrapperMetricsExporter{excludeServiceAttributes: false}
 	md = wme.convertToMetricsAttributes(md)
 
 	// After converting resource to labels
@@ -42,7 +43,7 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(5).Summary().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).ExponentialHistogram().DataPoints().At(0).Attributes().Len())
 
-	wme := &wrapperMetricsExporter{excludeServiceInfo: false}
+	wme := &wrapperMetricsExporter{excludeServiceAttributes: false}
 	md = wme.convertToMetricsAttributes(md)
 
 	// After converting resource to labels
@@ -56,32 +57,35 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).ExponentialHistogram().DataPoints().At(0).Attributes().Len())
 }
 
-func TestConvertResourceToAttributesWithExcludeServiceInfo(t *testing.T) {
+func TestConvertResourceToAttributesWithExcludeServiceAttributes(t *testing.T) {
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
 	// Add service.name and service.instance.id to resource attributes
 	resource := md.ResourceMetrics().At(0).Resource()
-	resource.Attributes().PutStr("service.name", "test-service")
-	resource.Attributes().PutStr("service.instance.id", "test-instance-id")
+	resource.Attributes().PutStr(string(conventions.ServiceNameKey), "test-service")
+	resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), "test-instance-id")
+	resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "test-namespace")
 
 	// Before converting: 3 resource attrs (original + 2 service attrs), 1 datapoint attr
-	assert.Equal(t, 3, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 4, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
-	wme := &wrapperMetricsExporter{excludeServiceInfo: true}
+	wme := &wrapperMetricsExporter{excludeServiceAttributes: true}
 	md = wme.convertToMetricsAttributes(md)
 
-	// After converting: service.name and service.instance.id should NOT be added to datapoint attrs
+	// After converting: service.name, service.instance.id and service.namespace should NOT be added to datapoint attrs
 	// Original resource attrs remain unchanged
-	assert.Equal(t, 3, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 4, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	// Datapoint should have: 1 original + 1 (resource-name from testdata) = 2
 	dpAttrs := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes()
 	assert.Equal(t, 2, dpAttrs.Len())
-	_, hasServiceName := dpAttrs.Get("service.name")
-	_, hasServiceInstanceID := dpAttrs.Get("service.instance.id")
+	_, hasServiceName := dpAttrs.Get(string(conventions.ServiceNameKey))
+	_, hasServiceInstanceID := dpAttrs.Get(string(conventions.ServiceInstanceIDKey))
+	_, hasServiceNamespace := dpAttrs.Get(string(conventions.ServiceNamespaceKey))
 	assert.False(t, hasServiceName)
 	assert.False(t, hasServiceInstanceID)
+	assert.False(t, hasServiceNamespace)
 }
 
 func BenchmarkJoinAttributes(b *testing.B) {
