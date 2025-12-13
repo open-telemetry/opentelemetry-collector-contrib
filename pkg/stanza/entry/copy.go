@@ -4,8 +4,10 @@
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
 import (
+	"bytes"
 	"encoding/json"
 	"maps"
+	"slices"
 )
 
 // copyValue will deep copy a value based on its type.
@@ -14,61 +16,39 @@ func copyValue(v any) any {
 	case string, int, bool, byte, nil:
 		return value
 	case map[string]string:
-		return copyStringMap(value)
+		return maps.Clone(value)
 	case map[string]any:
-		return copyInterfaceMap(value)
+		return copyAnyMap(value)
 	case []string:
-		return copyStringArray(value)
+		return slices.Clone(value)
 	case []byte:
-		return copyByteArray(value)
+		return bytes.Clone(value)
 	case []int:
-		return copyIntArray(value)
+		return slices.Clone(value)
 	case []any:
-		return copyInterfaceArray(value)
+		return copyAnySlice(value)
 	default:
 		return copyUnknown(value)
 	}
 }
 
-// copyStringMap will deep copy a map of strings.
-func copyStringMap(m map[string]string) map[string]string {
-	mapCopy := make(map[string]string)
-	maps.Copy(mapCopy, m)
-	return mapCopy
-}
-
-// copyInterfaceMap will deep copy a map of interfaces.
-func copyInterfaceMap(m map[string]any) map[string]any {
-	mapCopy := make(map[string]any)
+// copyAnyMap will deep copy a map of interfaces.
+func copyAnyMap(m map[string]any) map[string]any {
+	if m == nil {
+		return nil
+	}
+	mapCopy := make(map[string]any, len(m))
 	for k, v := range m {
 		mapCopy[k] = copyValue(v)
 	}
 	return mapCopy
 }
 
-// copyStringArray will deep copy an array of strings.
-func copyStringArray(a []string) []string {
-	arrayCopy := make([]string, len(a))
-	copy(arrayCopy, a)
-	return arrayCopy
-}
-
-// copyByteArray will deep copy an array of bytes.
-func copyByteArray(a []byte) []byte {
-	arrayCopy := make([]byte, len(a))
-	copy(arrayCopy, a)
-	return arrayCopy
-}
-
-// copyIntArray will deep copy an array of ints.
-func copyIntArray(a []int) []int {
-	arrayCopy := make([]int, len(a))
-	copy(arrayCopy, a)
-	return arrayCopy
-}
-
-// copyInterfaceArray will deep copy an array of interfaces.
-func copyInterfaceArray(a []any) []any {
+// copyAnySlice will deep copy an array of interfaces.
+func copyAnySlice(a []any) []any {
+	if a == nil {
+		return nil
+	}
 	arrayCopy := make([]any, 0, len(a))
 	for _, v := range a {
 		arrayCopy = append(arrayCopy, copyValue(v))
