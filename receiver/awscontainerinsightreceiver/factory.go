@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/metadata"
 )
 
-// Factory for awscontainerinsightreceiver
+// Factory for awscontainerinsight
 const (
 	// Default collection interval. Every 60s the receiver will collect metrics
 	defaultCollectionInterval = 60 * time.Second
@@ -51,7 +51,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// CreateMetrics creates an AWS Container Insight receiver.
+// createMetricsReceiver creates an AWS Container Insight receiver.
 func createMetricsReceiver(
 	_ context.Context,
 	params receiver.Settings,
