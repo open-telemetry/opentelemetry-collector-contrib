@@ -174,7 +174,7 @@ func TestToLength_TruncationBehavior(t *testing.T) {
 
 	assert.NoError(t, scanner.Err())
 	// Should only get ONE token (truncated), not multiple
-	assert.Equal(t, 1, len(tokens), "Expected only one token for oversized line, got %d", len(tokens))
+	assert.Len(t, tokens, 1, "Expected only one token for oversized line, got %d", len(tokens))
 	assert.Equal(t, "1234567890", tokens[0], "Token should be truncated to maxLength")
 }
 
@@ -194,7 +194,7 @@ func TestToLength_SkipRemainder(t *testing.T) {
 
 	assert.NoError(t, scanner.Err())
 	// Should get truncated long line + short line, not the remainder of long line
-	assert.Equal(t, 2, len(tokens), "Expected two tokens (truncated long + short), got %d", len(tokens))
+	assert.Len(t, tokens, 2, "Expected two tokens (truncated long + short), got %d", len(tokens))
 	assert.Equal(t, "Very long ", tokens[0], "First token should be truncated")
 	assert.Equal(t, "Short.", tokens[1], "Second token should be the short line, not remainder of first")
 }
@@ -216,7 +216,7 @@ func TestToLength_MultipleOversizedLines(t *testing.T) {
 	assert.NoError(t, scanner.Err())
 	// Key assertion: each oversized line produces only ONE token (truncated), not multiple
 	// We should get 2 tokens (one per line), not 4+ (which would indicate splitting)
-	assert.Equal(t, 2, len(tokens), "Expected 2 tokens (one per oversized line), got %d: %v", len(tokens), tokens)
+	assert.Len(t, tokens, 2, "Expected 2 tokens (one per oversized line), got %d: %v", len(tokens), tokens)
 	if len(tokens) >= 1 {
 		assert.Equal(t, "First very", tokens[0], "First line should be truncated to 10 bytes")
 	}
@@ -240,8 +240,8 @@ func TestToLength_EmptyLineAfterOversized(t *testing.T) {
 
 	assert.NoError(t, scanner.Err())
 	// Should get truncated line, empty line, and short line
-	assert.Equal(t, 3, len(tokens), "Expected 3 tokens, got %d", len(tokens))
+	assert.Len(t, tokens, 3, "Expected 3 tokens, got %d", len(tokens))
 	assert.Equal(t, "Very long ", tokens[0], "First line should be truncated")
-	assert.Equal(t, "", tokens[1], "Empty line should be preserved")
+	assert.Empty(t, tokens[1], "Empty line should be preserved")
 	assert.Equal(t, "Short.", tokens[2], "Short line should pass through")
 }
