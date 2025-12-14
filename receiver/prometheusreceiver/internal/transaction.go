@@ -52,23 +52,22 @@ type metricFamilyKey struct {
 }
 
 type transaction struct {
-	isNew                  bool
-	trimSuffixes           bool
-	enableNativeHistograms bool
-	useMetadata            bool
-	addingNativeHistogram  bool // true if the last sample was a native histogram.
-	addingNHCB             bool // true if the last sample was a NHCB.
-	ctx                    context.Context
-	families               map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily
-	mc                     scrape.MetricMetadataStore
-	sink                   consumer.Metrics
-	externalLabels         labels.Labels
-	nodeResources          map[resourceKey]pcommon.Resource
-	scopeAttributes        map[resourceKey]map[scopeID]pcommon.Map
-	logger                 *zap.Logger
-	buildInfo              component.BuildInfo
-	metricAdjuster         MetricsAdjuster
-	obsrecv                *receiverhelper.ObsReport
+	isNew                 bool
+	trimSuffixes          bool
+	useMetadata           bool
+	addingNativeHistogram bool // true if the last sample was a native histogram.
+	addingNHCB            bool // true if the last sample was a NHCB.
+	ctx                   context.Context
+	families              map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily
+	mc                    scrape.MetricMetadataStore
+	sink                  consumer.Metrics
+	externalLabels        labels.Labels
+	nodeResources         map[resourceKey]pcommon.Resource
+	scopeAttributes       map[resourceKey]map[scopeID]pcommon.Map
+	logger                *zap.Logger
+	buildInfo             component.BuildInfo
+	metricAdjuster        MetricsAdjuster
+	obsrecv               *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
@@ -89,25 +88,23 @@ func newTransaction(
 	settings receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
-	enableNativeHistograms bool,
 	useMetadata bool,
 ) *transaction {
 	return &transaction{
-		ctx:                    ctx,
-		families:               make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
-		isNew:                  true,
-		trimSuffixes:           trimSuffixes,
-		enableNativeHistograms: enableNativeHistograms,
-		useMetadata:            useMetadata,
-		sink:                   sink,
-		metricAdjuster:         metricAdjuster,
-		externalLabels:         externalLabels,
-		logger:                 settings.Logger,
-		buildInfo:              settings.BuildInfo,
-		obsrecv:                obsrecv,
-		bufBytes:               make([]byte, 0, 1024),
-		scopeAttributes:        make(map[resourceKey]map[scopeID]pcommon.Map),
-		nodeResources:          map[resourceKey]pcommon.Resource{},
+		ctx:             ctx,
+		families:        make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
+		isNew:           true,
+		trimSuffixes:    trimSuffixes,
+		useMetadata:     useMetadata,
+		sink:            sink,
+		metricAdjuster:  metricAdjuster,
+		externalLabels:  externalLabels,
+		logger:          settings.Logger,
+		buildInfo:       settings.BuildInfo,
+		obsrecv:         obsrecv,
+		bufBytes:        make([]byte, 0, 1024),
+		scopeAttributes: make(map[resourceKey]map[scopeID]pcommon.Map),
+		nodeResources:   map[resourceKey]pcommon.Resource{},
 	}
 }
 
@@ -178,7 +175,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 
 	scope := getScopeID(ls)
 
-	if t.enableNativeHistograms && value.IsStaleNaN(val) {
+	if value.IsStaleNaN(val) {
 		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, scope, metricName, ls) {
 			return 0, nil
 		}
@@ -293,10 +290,6 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 }
 
 func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
-	if !t.enableNativeHistograms {
-		return 0, nil
-	}
-
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
