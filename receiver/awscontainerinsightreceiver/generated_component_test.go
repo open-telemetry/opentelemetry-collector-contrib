@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -18,6 +19,16 @@ import (
 var typ = component.MustNewType("awscontainerinsightreceiver")
 
 func TestComponentFactoryType(t *testing.T) {
+	// Disable the feature gate to ensure the factory returns the expected type
+	originalValue := useNewTypeNameGate.IsEnabled()
+	defer func() {
+		if originalValue {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), true))
+		} else {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
+		}
+	}()
+	require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
 	require.Equal(t, typ, NewFactory().Type())
 }
 
