@@ -17,14 +17,13 @@ import (
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
 type appendable struct {
-	sink                   consumer.Metrics
-	metricAdjuster         MetricsAdjuster
-	useStartTimeMetric     bool
-	enableNativeHistograms bool
-	useMetadata            bool
-	trimSuffixes           bool
-	startTimeMetricRegex   *regexp.Regexp
-	externalLabels         labels.Labels
+	sink                 consumer.Metrics
+	metricAdjuster       MetricsAdjuster
+	useStartTimeMetric   bool
+	useMetadata          bool
+	trimSuffixes         bool
+	startTimeMetricRegex *regexp.Regexp
+	externalLabels       labels.Labels
 
 	settings receiver.Settings
 	obsrecv  *receiverhelper.ObsReport
@@ -38,7 +37,6 @@ func NewAppendable(
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
 	useCreatedMetric bool,
-	enableNativeHistograms bool,
 	useMetadata bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
@@ -56,19 +54,18 @@ func NewAppendable(
 	}
 
 	return &appendable{
-		sink:                   sink,
-		settings:               set,
-		metricAdjuster:         metricAdjuster,
-		useStartTimeMetric:     useStartTimeMetric,
-		enableNativeHistograms: enableNativeHistograms,
-		useMetadata:            useMetadata,
-		startTimeMetricRegex:   startTimeMetricRegex,
-		externalLabels:         externalLabels,
-		obsrecv:                obsrecv,
-		trimSuffixes:           trimSuffixes,
+		sink:                 sink,
+		settings:             set,
+		metricAdjuster:       metricAdjuster,
+		useStartTimeMetric:   useStartTimeMetric,
+		useMetadata:          useMetadata,
+		startTimeMetricRegex: startTimeMetricRegex,
+		externalLabels:       externalLabels,
+		obsrecv:              obsrecv,
+		trimSuffixes:         trimSuffixes,
 	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.enableNativeHistograms, o.useMetadata)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.useMetadata)
 }
