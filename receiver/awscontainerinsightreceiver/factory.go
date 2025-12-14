@@ -9,9 +9,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/metadata"
+)
+
+var useNewTypeNameGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.awscontainerinsightreceiver.useNewTypeName",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, the receiver uses the new component type name 'awscontainerinsight' instead of 'awscontainerinsightreceiver'."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44052"),
 )
 
 // Factory for awscontainerinsight
@@ -34,8 +42,15 @@ const (
 
 // NewFactory creates a factory for AWS container insight receiver
 func NewFactory() receiver.Factory {
+	var componentType component.Type
+	if useNewTypeNameGate.IsEnabled() {
+		componentType = component.MustNewType("awscontainerinsight")
+	} else {
+		componentType = component.MustNewType("awscontainerinsightreceiver")
+	}
+
 	return receiver.NewFactory(
-		metadata.Type,
+		componentType,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }

@@ -1,5 +1,0 @@
-{
-    "Cluster": "cluster_name",
-    "ContainerInstanceArn": "arn:aws:ecs:region:aws_account_id:container-instance/cluster_name/container_instance_id",
-    "Version": "Amazon ECS Agent - v1.30.0 (02ff320c)"
-}

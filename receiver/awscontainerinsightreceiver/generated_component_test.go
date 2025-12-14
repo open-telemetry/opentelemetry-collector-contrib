@@ -11,13 +11,26 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-var typ = component.MustNewType("awscontainerinsight")
+var typ = component.MustNewType("awscontainerinsightreceiver")
 
 func TestComponentFactoryType(t *testing.T) {
+	// Ensure feature gate is disabled for this test to match the expected type
+	// The generated test expects the default behavior (old type name)
+	originalValue := useNewTypeNameGate.IsEnabled()
+	defer func() {
+		if originalValue {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), true))
+		} else {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
+		}
+	}()
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
 	require.Equal(t, typ, NewFactory().Type())
 }
 
@@ -26,6 +39,18 @@ func TestComponentConfigStruct(t *testing.T) {
 }
 
 func TestComponentLifecycle(t *testing.T) {
+	// Ensure feature gate is disabled for this test to match the expected type
+	originalValue := useNewTypeNameGate.IsEnabled()
+	defer func() {
+		if originalValue {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), true))
+		} else {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
+		}
+	}()
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
+
 	factory := NewFactory()
 
 	tests := []struct {
