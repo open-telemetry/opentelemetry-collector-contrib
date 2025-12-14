@@ -37,6 +37,17 @@ func TestComponentConfigStruct(t *testing.T) {
 }
 
 func TestComponentLifecycle(t *testing.T) {
+	// Disable the feature gate to ensure the factory returns the expected type
+	originalValue := useNewTypeNameGate.IsEnabled()
+	defer func() {
+		if originalValue {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), true))
+		} else {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
+		}
+	}()
+	require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
+
 	factory := NewFactory()
 
 	tests := []struct {
