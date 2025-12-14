@@ -67,14 +67,31 @@ func ToLength(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
 	if maxLength <= 0 {
 		return splitFunc
 	}
+	skipping := false
 	return func(data []byte, atEOF bool) (int, []byte, error) {
+		if skipping {
+			advance, token, err := splitFunc(data, atEOF)
+			if advance > 0 {
+				if advance > len(token) {
+					skipping = false
+				} else if len(token) == 0 && advance > 0 {
+					skipping = false
+				}
+				return advance, nil, nil
+			}
+			if err != nil {
+				return 0, nil, err
+			}
+			return len(data), nil, nil
+		}
+
 		advance, token, err := splitFunc(data, atEOF)
 		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLength {
-			// No token was found, but we have enough data to return a token of max length.
+			skipping = true
 			return maxLength, data[:maxLength], nil
 		}
 		if len(token) > maxLength {
-			// A token was found but it is longer than the max length.
+			skipping = true
 			return maxLength, token[:maxLength], nil
 		}
 		return advance, token, err

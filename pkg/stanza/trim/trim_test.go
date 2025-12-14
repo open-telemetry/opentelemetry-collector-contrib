@@ -5,6 +5,7 @@ package trim
 
 import (
 	"bufio"
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -116,6 +117,9 @@ func TestWithFunc(t *testing.T) {
 }
 
 func TestToLength(t *testing.T) {
+	// Note: For comprehensive tests of truncation behavior, see TestToLength_TruncationBehavior,
+	// TestToLength_SkipRemainder, TestToLength_MultipleOversizedLines, and TestToLength_EmptyLineAfterOversized.
+	// Those tests use bufio.Scanner directly and better validate the actual behavior.
 	testCases := []struct {
 		name      string
 		baseFunc  bufio.SplitFunc
@@ -145,32 +149,99 @@ func TestToLength(t *testing.T) {
 				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
 			},
 		},
-		{
-			name:      "LongButNoToken",
-			input:     []byte("This is a long but incomplete token."),
-			baseFunc:  splittest.ScanLinesStrict,
-			maxLength: 10,
-			steps: []splittest.Step{
-				splittest.ExpectToken("This is a "),
-				splittest.ExpectToken("long but i"),
-				splittest.ExpectToken("ncomplete "),
-			},
-		},
-		{
-			name:      "OneLongToken",
-			input:     []byte("This is a very long token."),
-			baseFunc:  bufio.ScanLines,
-			maxLength: 10,
-			steps: []splittest.Step{
-				splittest.ExpectToken("This is a "),
-				splittest.ExpectToken("very long "),
-				splittest.ExpectToken("token."),
-			},
-		},
 	}
 
 	for _, tc := range testCases {
 		splitFunc := ToLength(tc.baseFunc, tc.maxLength)
 		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
+}
+
+// TestToLength_TruncationBehavior tests the key behavior: oversized tokens are truncated
+// and the remainder is dropped, not split into multiple tokens.
+func TestToLength_TruncationBehavior(t *testing.T) {
+	splitFunc := ToLength(bufio.ScanLines, 10)
+
+	// Test with a single long line
+	input := []byte("12345678901234567890\n")
+	scanner := bufio.NewScanner(bufio.NewReader(bytes.NewReader(input)))
+	scanner.Split(splitFunc)
+
+	var tokens []string
+	for scanner.Scan() {
+		tokens = append(tokens, scanner.Text())
+	}
+
+	assert.NoError(t, scanner.Err())
+	// Should only get ONE token (truncated), not multiple
+	assert.Equal(t, 1, len(tokens), "Expected only one token for oversized line, got %d", len(tokens))
+	assert.Equal(t, "1234567890", tokens[0], "Token should be truncated to maxLength")
+}
+
+// TestToLength_SkipRemainder tests that the remainder of an oversized token is dropped.
+func TestToLength_SkipRemainder(t *testing.T) {
+	splitFunc := ToLength(bufio.ScanLines, 10)
+
+	// Test with long line followed by normal line
+	input := []byte("Very long line here that exceeds limit.\nShort.\n")
+	scanner := bufio.NewScanner(bufio.NewReader(bytes.NewReader(input)))
+	scanner.Split(splitFunc)
+
+	var tokens []string
+	for scanner.Scan() {
+		tokens = append(tokens, scanner.Text())
+	}
+
+	assert.NoError(t, scanner.Err())
+	// Should get truncated long line + short line, not the remainder of long line
+	assert.Equal(t, 2, len(tokens), "Expected two tokens (truncated long + short), got %d", len(tokens))
+	assert.Equal(t, "Very long ", tokens[0], "First token should be truncated")
+	assert.Equal(t, "Short.", tokens[1], "Second token should be the short line, not remainder of first")
+}
+
+// TestToLength_MultipleOversizedLines tests multiple oversized lines are each truncated.
+// Key behavior: each oversized line produces only ONE token (truncated), not multiple.
+func TestToLength_MultipleOversizedLines(t *testing.T) {
+	splitFunc := ToLength(bufio.ScanLines, 10)
+
+	input := []byte("First very long line here.\nSecond also very long line.\n")
+	scanner := bufio.NewScanner(bufio.NewReader(bytes.NewReader(input)))
+	scanner.Split(splitFunc)
+
+	var tokens []string
+	for scanner.Scan() {
+		tokens = append(tokens, scanner.Text())
+	}
+
+	assert.NoError(t, scanner.Err())
+	// Key assertion: each oversized line produces only ONE token (truncated), not multiple
+	// We should get 2 tokens (one per line), not 4+ (which would indicate splitting)
+	assert.Equal(t, 2, len(tokens), "Expected 2 tokens (one per oversized line), got %d: %v", len(tokens), tokens)
+	if len(tokens) >= 1 {
+		assert.Equal(t, "First very", tokens[0], "First line should be truncated to 10 bytes")
+	}
+	if len(tokens) >= 2 {
+		assert.Equal(t, "Second als", tokens[1], "Second line should be truncated to 10 bytes")
+	}
+}
+
+// TestToLength_EmptyLineAfterOversized tests that empty lines after oversized lines work correctly.
+func TestToLength_EmptyLineAfterOversized(t *testing.T) {
+	splitFunc := ToLength(bufio.ScanLines, 10)
+
+	input := []byte("Very long line here.\n\nShort.\n")
+	scanner := bufio.NewScanner(bufio.NewReader(bytes.NewReader(input)))
+	scanner.Split(splitFunc)
+
+	var tokens []string
+	for scanner.Scan() {
+		tokens = append(tokens, scanner.Text())
+	}
+
+	assert.NoError(t, scanner.Err())
+	// Should get truncated line, empty line, and short line
+	assert.Equal(t, 3, len(tokens), "Expected 3 tokens, got %d", len(tokens))
+	assert.Equal(t, "Very long ", tokens[0], "First line should be truncated")
+	assert.Equal(t, "", tokens[1], "Empty line should be preserved")
+	assert.Equal(t, "Short.", tokens[2], "Short line should pass through")
 }
