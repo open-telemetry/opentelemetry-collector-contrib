@@ -223,7 +223,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiverdeprecated
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver

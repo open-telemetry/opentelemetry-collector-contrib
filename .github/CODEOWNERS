@@ -238,7 +238,6 @@ receiver/apachereceiver/                                         @open-telemetry
 receiver/apachesparkreceiver/                                    @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @mrsillydog
 receiver/awscloudwatchreceiver/                                  @open-telemetry/collector-contrib-approvers @schmikei
 receiver/awscontainerinsightreceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
-receiver/awscontainerinsightreceiverdeprecated/                  @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsfirehosereceiver/                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @axw
 receiver/awslambdareceiver/                                      @open-telemetry/collector-contrib-approvers @MichaelKatsoulis @Kavindu-Dodan @axw @pjanotti
