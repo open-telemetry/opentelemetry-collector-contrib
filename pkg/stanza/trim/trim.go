@@ -72,16 +72,23 @@ func ToLength(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
 		if skipping {
 			advance, token, err := splitFunc(data, atEOF)
 			if advance > 0 {
+				// Check if we've reached the end of the line (newline found)
+				// For ScanLines, when a newline is found: advance = len(token) + 1, token = line content
+				// So if advance > len(token), we've found the newline and finished skipping
 				if advance > len(token) {
 					skipping = false
-				} else if len(token) == 0 && advance > 0 {
-					skipping = false
+					// Return advance with nil token to skip the remainder and newline
+					return advance, nil, nil
 				}
-				return advance, nil, nil
+				// Still skipping - we're in the middle of the remainder
+				// Return 0 to force scanner to read more data until we find the newline
+				// This prevents creating multiple tokens from chunks of the remainder
+				return 0, nil, nil
 			}
 			if err != nil {
 				return 0, nil, err
 			}
+			// No advance possible - skip all remaining data
 			return len(data), nil, nil
 		}
 

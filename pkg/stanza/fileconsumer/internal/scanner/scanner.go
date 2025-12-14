@@ -22,7 +22,20 @@ type Scanner struct {
 // New creates a new positional scanner
 func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc bufio.SplitFunc) *Scanner {
 	s := &Scanner{Scanner: bufio.NewScanner(r), pos: startOffset}
-	s.Buffer(buf, maxLogSize)
+	// Set buffer size larger than maxLogSize to allow reading enough data
+	// before hitting the limit, so truncation logic can work properly.
+	// Use maxLogSize * 2 with a reasonable cap (e.g., 10MB) to handle large entries
+	// while preventing excessive memory usage.
+	bufferSize := maxLogSize * 2
+	const maxBufferSize = 10 * 1024 * 1024 // 10MB cap
+	if bufferSize > maxBufferSize {
+		bufferSize = maxBufferSize
+	}
+	// Ensure buffer is at least maxLogSize + some margin
+	if bufferSize < maxLogSize+1024 {
+		bufferSize = maxLogSize + 1024
+	}
+	s.Buffer(buf, bufferSize)
 	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
 		s.pos += int64(advance)

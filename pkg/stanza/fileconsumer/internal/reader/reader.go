@@ -224,6 +224,7 @@ func (r *Reader) readContents(ctx context.Context) {
 
 	numTokensBatched := 0
 	tokenOffsets[0] = r.Offset
+	prevPos := r.Offset
 	// Iterate over the contents of the file.
 	for {
 		select {
@@ -245,20 +246,49 @@ func (r *Reader) readContents(ctx context.Context) {
 				if err != nil {
 					r.set.Logger.Error("failed to emit token", zap.Error(err))
 				}
-				r.Offset = s.Pos()
 			}
+			// Always update offset to scanner position, even if no tokens were batched
+			// This ensures we advance past skipped data (e.g., remainder of oversized log entries)
+			r.Offset = s.Pos()
 			return
 		}
 
+		// Check if this is a skipped token (nil token from split function)
+		// When we skip, the split function returns nil token, and s.Bytes() will be empty
+		// but the scanner position will have advanced significantly (more than just a newline)
+		// We need to distinguish between:
+		// 1. Empty token from skipping (advance > 1, should skip)
+		// 2. Legitimate empty line (advance == 1 for just newline, should process)
+		tokenBytes := s.Bytes()
+		currentPos := s.Pos()
+		advanceAmount := currentPos - prevPos
+
+		// If token is empty and we've advanced by more than just a newline (typically 1-2 bytes),
+		// this is likely a skipped token, not a legitimate empty line
+		// Empty lines typically advance by 1 byte (just '\n') or 2 bytes ('\r\n')
+		// Skipped tokens advance by the remainder of the oversized line (could be many bytes)
+		if len(tokenBytes) == 0 && advanceAmount > 2 {
+			// This is a skipped token, update offset and continue without processing
+			r.Offset = currentPos
+			prevPos = currentPos
+			continue
+		}
+
 		var err error
-		tokenBodies[numTokensBatched], err = r.decoder.Bytes(s.Bytes())
-		tokenOffsets[numTokensBatched+1] = s.Pos()
+		tokenBodies[numTokensBatched], err = r.decoder.Bytes(tokenBytes)
+		tokenOffsets[numTokensBatched+1] = currentPos
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
+			prevPos = s.Pos()
 			continue
 		}
 		numTokensBatched++
+		prevPos = currentPos
+
+		// Always update offset to current position to ensure we advance past processed tokens
+		// This is especially important when processing truncated tokens
+		r.Offset = currentPos
 
 		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
