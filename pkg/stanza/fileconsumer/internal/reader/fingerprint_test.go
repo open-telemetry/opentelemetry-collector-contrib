@@ -155,12 +155,12 @@ func TestReaderUpdateFingerprint(t *testing.T) {
 			expectFingerprint: []byte("foo\n12345\n"),
 		},
 		{
-			name:              "small_max_log_size_from_start",
-			fingerprintSize:   20,
-			maxLogSize:        4,
-			fromBeginning:     true,
-			initBytes:         []byte("foo"),
-			moreBytes:         []byte("1234567890\nbar\nhelloworld\n"),
+			name:            "small_max_log_size_from_start",
+			fingerprintSize: 20,
+			maxLogSize:      4,
+			fromBeginning:   true,
+			initBytes:       []byte("foo"),
+			moreBytes:       []byte("1234567890\nbar\nhelloworld\n"),
 			// With maxLogSize=4:
 			// - "foo1234567890" (13 bytes) -> truncate to "foo1" (4 bytes), drop remainder "234567890\n"
 			// - "bar" (3 bytes) -> passes through
@@ -170,11 +170,11 @@ func TestReaderUpdateFingerprint(t *testing.T) {
 			expectFingerprint: []byte("foo1234567890\nbar\nhe"),
 		},
 		{
-			name:              "small_max_log_size",
-			fingerprintSize:   20,
-			maxLogSize:        4,
-			initBytes:         []byte("foo"),
-			moreBytes:         []byte("1234567890\nbar\nhelloworld\n"),
+			name:            "small_max_log_size",
+			fingerprintSize: 20,
+			maxLogSize:      4,
+			initBytes:       []byte("foo"),
+			moreBytes:       []byte("1234567890\nbar\nhelloworld\n"),
 			// With maxLogSize=4, starting from end (offset at "foo"):
 			// - "1234567890" (10 bytes) -> truncate to "1234" (4 bytes), drop remainder "567890\n"
 			// - "bar" (3 bytes) -> passes through

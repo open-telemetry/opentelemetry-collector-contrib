@@ -165,7 +165,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	// - "2023-01-01aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 2023-01-01 2 2023-01-01" - one "line" that's too long
 	//   Should be truncated to 15 bytes: "2023-01-01aaaaa" and remainder dropped
 	expected := [][]byte{
-		[]byte("aaa"),              // First part before pattern match
+		[]byte("aaa"),             // First part before pattern match
 		[]byte("2023-01-01aaaaa"), // Second part truncated to maxLogSize
 	}
 
