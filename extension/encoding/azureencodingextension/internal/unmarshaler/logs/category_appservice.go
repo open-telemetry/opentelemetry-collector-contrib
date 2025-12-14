@@ -16,14 +16,14 @@ import (
 // Non-SemConv attributes that are used for common Azure Log Record fields
 const (
 	// OpenTelemetry attribute name for the name of the task being performed
-	attributeAzureTaskName = "azure.task.name"
+	attributeAzureTaskName = "azure.app_service.task.name"
 
 	// OpenTelemetry attribute name for original log level from Azure Log Record
 	// as it sent by App Service
-	attributeAzureOriginalLogLevel = "azure.log.severity.original"
+	attributeAzureOriginalLogLevel = "log.record.severity.original"
 
 	// OpenTelemetry attribute name for Web Instance Id the application running
-	attributeAzureWebInstanceID = "azure.web.instance.id"
+	attributeAzureWebInstanceID = "azure.app_service.instance.id"
 
 	// OpenTelemetry attribute name for the authentication event details
 	attributeAzureAuthEventDetails = "azure.auth.event.details"
@@ -32,7 +32,7 @@ const (
 	attributeAzureModuleRuntimeVersion = "azure.auth.module.runtime.version"
 
 	// OpenTelemetry attribute name for the runtime name of the application
-	attributeAzureSiteName = "azure.site.name"
+	attributeAzureSiteName = "azure.app_service.site.name"
 
 	// OpenTelemetry attribute name for HTTP sub-status code of the request,
 	// in Azure App Service logs it differs from standard HTTP sub-status code semantic convention
@@ -40,13 +40,13 @@ const (
 
 	// OpenTelemetry attribute name for the duration of the indicator of the access via
 	// Virtual Network Service Endpoint communication
-	attributeAzureIsServiceEndpoint = "azure.service.endpoint"
+	attributeAzureIsServiceEndpoint = "azure.app_service.endpoint"
 
 	// OpenTelemetry attribute name for the Deployment ID of the application deployment
 	attributeAzureDeploymentID = "azure.deployment.id"
 
 	// OpenTelemetry attribute name for Logger name
-	attributeLogLogger = "log.logger"
+	attributeLogLogger = "log.record.logger"
 
 	// OpenTelemetry attribute name for for "x-azure-fdid" HTTP Header value
 	attributeHTTPHeaderAzureFDID = "http.request.header.x-azure-fdid"
@@ -112,7 +112,7 @@ type azureAppServiceAuditLog struct {
 func (r *azureAppServiceAuditLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.UserIDKey), r.Properties.User)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.UserNameKey), r.Properties.UserDisplayName)
-	unmarshaler.AttrPutStrIf(attrs, string(conventions.ClientAddressKey), r.Properties.UserAddress)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.SourceAddressKey), r.Properties.UserAddress)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.NetworkProtocolNameKey), strings.ToLower(r.Properties.Protocol))
 
 	return nil
@@ -201,8 +201,8 @@ func (r *azureAppServiceHTTPLog) PutProperties(attrs pcommon.Map, body pcommon.V
 	// So we will skip "Cookie" field here
 
 	unmarshaler.AttrPutHostPortIf(attrs, string(conventions.ClientAddressKey), string(conventions.ClientPortKey), r.Properties.ClientIP)
-	unmarshaler.AttrPutStrIf(attrs, string(conventions.DestinationAddressKey), r.Properties.Host)
-	unmarshaler.AttrPutIntNumberIf(attrs, string(conventions.DestinationPortKey), r.Properties.ServerPort)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.ServerAddressKey), r.Properties.Host)
+	unmarshaler.AttrPutIntNumberIf(attrs, string(conventions.ServerPortKey), r.Properties.ServerPort)
 	unmarshaler.AttrPutIntNumberIf(attrs, string(conventions.HTTPRequestSizeKey), r.Properties.RequestBytes)
 	unmarshaler.AttrPutStrIf(attrs, attributeHTTPHeaderHost, r.Properties.HostHeader)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.HTTPRequestMethodKey), r.Properties.RequestMethod)
@@ -213,7 +213,7 @@ func (r *azureAppServiceHTTPLog) PutProperties(attrs pcommon.Map, body pcommon.V
 	unmarshaler.AttrPutIntNumberIf(attrs, string(conventions.HTTPResponseSizeKey), r.Properties.ResponseBytes)
 	unmarshaler.AttrPutIntNumberIf(attrs, string(conventions.HTTPResponseStatusCodeKey), r.Properties.HTTPStatusCode)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureSubStatusCode, r.Properties.HTTPSubStatus)
-	unmarshaler.AttrPutFloatNumberIf(attrs, attributeAzureDuration, r.Properties.TimeTaken)
+	unmarshaler.AttrPutFloatNumberIf(attrs, attributeAzureRequestDuration, r.Properties.TimeTaken)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.UserAgentOriginalKey), r.Properties.UserAgent)
 
 	body.SetStr(r.Properties.Result)
@@ -241,7 +241,7 @@ type azureAppServiceIPSecAuditLog struct {
 }
 
 func (r *azureAppServiceIPSecAuditLog) PutProperties(attrs pcommon.Map, body pcommon.Value) error {
-	unmarshaler.AttrPutHostPortIf(attrs, string(conventions.ClientAddressKey), string(conventions.ClientPortKey), r.Properties.ClientIP)
+	unmarshaler.AttrPutHostPortIf(attrs, string(conventions.SourceAddressKey), string(conventions.SourcePortKey), r.Properties.ClientIP)
 	unmarshaler.AttrPutStrIf(attrs, attributeHTTPHeaderHost, r.Properties.HostHeader)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAuthEventDetails, r.Properties.Details)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureIsServiceEndpoint, r.Properties.IsServiceEndpoint)

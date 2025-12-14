@@ -177,6 +177,15 @@ func TestAttrPutStrIf(t *testing.T) {
 			wantRaw: map[string]any{},
 		},
 		{
+			name:  "Dash string",
+			attrs: pcommon.NewMap(),
+			args: args{
+				key:   "attr1",
+				value: unknownField,
+			},
+			wantRaw: map[string]any{},
+		},
+		{
 			name:  "Value string",
 			attrs: pcommon.NewMap(),
 			args: args{
@@ -199,6 +208,7 @@ func TestAttrPutStrIf(t *testing.T) {
 
 func TestAttrPutStrPtrIf(t *testing.T) {
 	emptyStr := ""
+	dashStr := unknownField
 	valueStr := "value"
 
 	type args struct {
@@ -223,6 +233,14 @@ func TestAttrPutStrPtrIf(t *testing.T) {
 			args: args{
 				key:   "attr2",
 				value: &emptyStr,
+			},
+			wantRaw: map[string]any{},
+		},
+		{
+			name: "Dash string",
+			args: args{
+				key:   "attr2",
+				value: &dashStr,
 			},
 			wantRaw: map[string]any{},
 		},
@@ -530,7 +548,7 @@ func TestAttrPutMapIf(t *testing.T) {
 				},
 			},
 			wantRaw: map[string]any{
-				"map.original": "map[struct:{test}]",
+				"map_original": "map[struct:{test}]",
 			},
 		},
 	}
@@ -667,11 +685,11 @@ func TestAttrPutHostPortIf(t *testing.T) {
 		},
 		{
 			name:    "host with invalid port",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: string(conventions.ClientAddressKey),
+			portKey: string(conventions.ClientPortKey),
 			value:   "example.com:invalid",
 			wantRaw: map[string]any{
-				"network.peer.address.original": "example.com:invalid",
+				attributeClientAddressOriginal: "example.com:invalid",
 			},
 		},
 		{
@@ -708,7 +726,7 @@ func TestAttrPutHostPortIf(t *testing.T) {
 			portKey: string(conventions.NetworkPeerPortKey),
 			value:   "example.com:",
 			wantRaw: map[string]any{
-				"network.peer.address.original": "example.com:",
+				attributeNetworkPeerAddressOriginal: "example.com:",
 			},
 		},
 		{

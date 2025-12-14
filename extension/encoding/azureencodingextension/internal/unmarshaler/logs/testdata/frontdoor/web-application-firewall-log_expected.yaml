@@ -40,25 +40,25 @@ resourceLogs:
               - key: client.address
                 value:
                   stringValue: 2001:1c00:3280:6700:fbfa:bf04:1296:ebfc
-              - key: source.address
+              - key: network.peer.address
                 value:
                   stringValue: 2001:1c00:3280:6700:fbfa:bf04:1296:ebfc
-              - key: azure.ref
+              - key: azure.service.request.id
                 value:
                   stringValue: 20250424T153506Z-1756f49cc78nldhvhC1DUS3dhw000000080000000000d207
               - key: http.request.header.host
                 value:
                   stringValue: opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net
-              - key: azure.frontdoor.waf.policy.name
+              - key: security_rule.ruleset.name
                 value:
                   stringValue: policy
-              - key: azure.frontdoor.waf.policy.mode
+              - key: security_rule.ruleset.mode
                 value:
                   stringValue: prevention
-              - key: azure.frontdoor.waf.rule.name
+              - key: security_rule.name
                 value:
                   stringValue: Rule1
-              - key: azure.frontdoor.waf.action
+              - key: security_rule.action
                 value:
                   stringValue: Block
             body: {}

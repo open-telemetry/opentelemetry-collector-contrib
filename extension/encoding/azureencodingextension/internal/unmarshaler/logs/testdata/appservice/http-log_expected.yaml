@@ -19,10 +19,10 @@ resourceLogs:
               - key: client.address
                 value:
                   stringValue: 123.45.67.89
-              - key: destination.address
+              - key: server.address
                 value:
                   stringValue: 10-10-10-10
-              - key: destination.port
+              - key: server.port
                 value:
                   intValue: "80"
               - key: http.request.size
@@ -40,19 +40,13 @@ resourceLogs:
               - key: url.path
                 value:
                   stringValue: /api/site/wwwroot/
-              - key: user.name
-                value:
-                  stringValue: '-'
-              - key: http.request.header.referer
-                value:
-                  stringValue: '-'
               - key: http.response.size
                 value:
                   intValue: "494"
               - key: http.response.status_code
                 value:
                   intValue: "200"
-              - key: azure.duration
+              - key: azure.request.duration
                 value:
                   doubleValue: 19619
               - key: user_agent.original

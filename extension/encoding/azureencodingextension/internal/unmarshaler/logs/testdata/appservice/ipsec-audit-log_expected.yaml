@@ -19,10 +19,10 @@ resourceLogs:
               - key: azure.category
                 value:
                   stringValue: AppServiceIPSecAuditLogs
-              - key: client.address
+              - key: source.address
                 value:
                   stringValue: 42.42.42.42
-              - key: client.port
+              - key: source.port
                 value:
                   intValue: "12345"
               - key: http.request.header.host
@@ -31,7 +31,7 @@ resourceLogs:
               - key: azure.auth.event.details
                 value:
                   stringValue: Denied by 0.0.0.0/0 rule.
-              - key: azure.service.endpoint
+              - key: azure.app_service.endpoint
                 value:
                   stringValue: "False"
               - key: http.request.header.x-azure-fdid

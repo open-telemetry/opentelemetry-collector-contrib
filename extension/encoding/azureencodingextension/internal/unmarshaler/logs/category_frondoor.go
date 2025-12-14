@@ -13,17 +13,11 @@ import (
 )
 
 const (
-	// OpenTelemetry attribute name for the WAF rule that the request matched
-	attributeAzureFrontDoorWAFRuleName = "azure.frontdoor.waf.rule.name"
-
-	// OpenTelemetry attribute name for the name of the WAF policy that processed the request
-	attributeAzureFrontDoorWAFPolicyName = "azure.frontdoor.waf.policy.name"
-
 	// OpenTelemetry attribute name for the operations mode of the WAF policy
-	attributeAzureFrontDoorWAFPolicyMode = "azure.frontdoor.waf.policy.mode"
+	attributeSecurityRuleRulesetModeKey = "security_rule.ruleset.mode"
 
 	// OpenTelemetry attribute name for the action taken on the request
-	attributeAzureFrontDoorWAFAction = "azure.frontdoor.waf.action"
+	attributeSecurityRuleActionKey = "security_rule.action"
 
 	// OpenTelemetry attribute name for the unique ID to identify the health probe request
 	attributeAzureFrontDoorHealthProbeID = "azure.frontdoor.health_probe.id"
@@ -102,13 +96,13 @@ func (r *frontDoorWAFLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) erro
 	unmarshaler.AttrPutIntNumberIf(attrs, string(conventions.ClientPortKey), r.Properties.ClientPort)
 	unmarshaler.AttrPutURLParsed(attrs, r.Properties.RequestURI)
 	unmarshaler.AttrPutHostPortIf(attrs, string(conventions.ClientAddressKey), string(conventions.ClientPortKey), r.Properties.ClientIP)
-	unmarshaler.AttrPutStrIf(attrs, string(conventions.SourceAddressKey), r.Properties.SocketIP)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureRef, r.Properties.TrackingReference)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.NetworkPeerAddressKey), r.Properties.SocketIP)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.AzureServiceRequestIDKey), r.Properties.TrackingReference)
 	unmarshaler.AttrPutStrIf(attrs, attributeHTTPHeaderHost, r.Properties.Host)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureFrontDoorWAFPolicyName, r.Properties.Policy)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureFrontDoorWAFPolicyMode, r.Properties.PolicyMode)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureFrontDoorWAFRuleName, r.Properties.RuleName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureFrontDoorWAFAction, r.Properties.Action)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.SecurityRuleRulesetNameKey), r.Properties.Policy)
+	unmarshaler.AttrPutStrIf(attrs, attributeSecurityRuleRulesetModeKey, r.Properties.PolicyMode)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.SecurityRuleNameKey), r.Properties.RuleName)
+	unmarshaler.AttrPutStrIf(attrs, attributeSecurityRuleActionKey, r.Properties.Action)
 
 	return nil
 }

@@ -43,13 +43,39 @@ const (
 	// OpenTelemetry attribute name for Azure Resource Log Category,
 	// mostly used in "logs" telemetry, but also can be present in "metrics" and "traces"
 	AttributeAzureCategory = "azure.category"
+
 	// OpenTelemetry attribute name for Azure Resource Operation Name
 	AttributeAzureOperationName = "azure.operation.name"
 )
 
 const (
-	originalSuffix = ".original"
+	// OpenTelemetry attribute name for Destination original address,
+	// in case if the value could not be parsed into
+	// `destination.address` and `destination.port` attributes
+	attributeDestinationAddressOriginal = "destination.original_address"
+
+	// OpenTelemetry attribute name for Client original address,
+	// in case if the value could not be parsed into
+	// `client.address` and `client.port` attributes
+	attributeClientAddressOriginal = "client.original_address"
+
+	// OpenTelemetry attribute name for Client original address,
+	// in case if the value could not be parsed into
+	// `server.address` and `server.port` attributes
+	attributeServerAddressOriginal = "server.original_address"
+
+	// OpenTelemetry attribute name for Network Peer original address,
+	// in case if the value could not be parsed into
+	// `network.peer.address` and `network.peer.port` attributes
+	attributeNetworkPeerAddressOriginal = "network.peer.original_address"
+)
+
+const (
+	originalSuffix = "_original"
 	redactedStr    = "REDACTED"
+	// When field value is set to "-" it's indicate that the data was unknown
+	// or unavailable, or that the field was not applicable to this request
+	unknownField = "-"
 )
 
 // DetectWrapperFormat tries to detect format based on provided bytes input
@@ -133,7 +159,7 @@ func AsTimestamp(s string, formats ...string) (pcommon.Timestamp, error) {
 // AttrPutStrIf is a helper function to set a string attribute
 // only if the value is not empty
 func AttrPutStrIf(attrs pcommon.Map, attrKey, attrValue string) {
-	if attrValue != "" {
+	if attrValue != "" && attrValue != unknownField {
 		attrs.PutStr(attrKey, attrValue)
 	}
 }
@@ -141,7 +167,7 @@ func AttrPutStrIf(attrs pcommon.Map, attrKey, attrValue string) {
 // AttrPutStrPtrIf is a helper function to set a string attribute
 // only if the value exists and is not empty
 func AttrPutStrPtrIf(attrs pcommon.Map, attrKey string, attrValue *string) {
-	if attrValue != nil && *attrValue != "" {
+	if attrValue != nil && *attrValue != "" && *attrValue != unknownField {
 		attrs.PutStr(attrKey, *attrValue)
 	}
 }
@@ -240,7 +266,7 @@ func AttrPutURLParsed(attrs pcommon.Map, uri string) {
 // into respective `addrKey` for "host" and `portKey` for "port"
 // If no port was detected in `value` - only `addrKey` will be set
 // If value is not in "host:port" format or port is invalid - then
-// "addrKey.original" attribute will be set with the original value
+// `fallbackKey` attribute will be set with the original value
 // Puts at most 2 attributes
 func AttrPutHostPortIf(attrs pcommon.Map, addrKey, portKey, value string) {
 	if value == "" {
@@ -255,17 +281,32 @@ func AttrPutHostPortIf(attrs pcommon.Map, addrKey, portKey, value string) {
 		return
 	}
 
+	// Determine name of fallback attribute key
+	var fallbackKey string
+	switch addrKey {
+	case string(conventions.DestinationAddressKey):
+		fallbackKey = attributeDestinationAddressOriginal
+	case string(conventions.ClientAddressKey):
+		fallbackKey = attributeClientAddressOriginal
+	case string(conventions.ServerAddressKey):
+		fallbackKey = attributeServerAddressOriginal
+	case string(conventions.NetworkPeerAddressKey):
+		fallbackKey = attributeNetworkPeerAddressOriginal
+	default:
+		fallbackKey = addrKey + originalSuffix
+	}
+
 	// Try to parse host:port
 	host, port, err := net.SplitHostPort(value)
 	if err != nil {
-		attrs.PutStr(addrKey+originalSuffix, value)
+		attrs.PutStr(fallbackKey, value)
 		return
 	}
 	// net.SplitHostPort actually does not validates if port is a valid number,
 	// so will try to convert it and return error on failure
 	nPort, err := strconv.ParseInt(port, 10, 64)
 	if err != nil {
-		attrs.PutStr(addrKey+originalSuffix, value)
+		attrs.PutStr(fallbackKey, value)
 		return
 	}
 	attrs.PutStr(addrKey, host)

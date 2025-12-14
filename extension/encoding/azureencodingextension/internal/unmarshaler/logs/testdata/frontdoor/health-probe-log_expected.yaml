@@ -22,7 +22,7 @@ resourceLogs:
               - key: azure.frontdoor.health_probe.id
                 value:
                   stringValue: 9642AEA07BA64675A0A7AD214ACF746E
-              - key: azure.pop
+              - key: azure.cdn.edge.name
                 value:
                   stringValue: MAA
               - key: http.request.method

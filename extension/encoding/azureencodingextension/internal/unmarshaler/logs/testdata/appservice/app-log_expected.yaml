@@ -22,7 +22,7 @@ resourceLogs:
               - key: container.id
                 value:
                   stringValue: CONTAINER_ID
-              - key: azure.log.severity.original
+              - key: log.record.severity.original
                 value:
                   stringValue: CUSTOM_LEVEL
               - key: exception.type
@@ -31,7 +31,7 @@ resourceLogs:
               - key: host.name
                 value:
                   stringValue: HOST
-              - key: log.logger
+              - key: log.record.logger
                 value:
                   stringValue: LOGGER
               - key: code.function.name
@@ -43,7 +43,7 @@ resourceLogs:
               - key: exception.stacktrace
                 value:
                   stringValue: STACKTRACE
-              - key: azure.web.instance.id
+              - key: azure.app_service.instance.id
                 value:
                   stringValue: WEBSITE_INSTANCE_ID
             body:

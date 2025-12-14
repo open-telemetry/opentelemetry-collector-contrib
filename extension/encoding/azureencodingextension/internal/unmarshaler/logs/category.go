@@ -44,9 +44,9 @@ const (
 	// from `operationVersion` field in Azure Log Record
 	attributeAzureOperationVersion = "azure.operation.version"
 
-	// OpenTelemetry attribute name for Azure Duration,
+	// OpenTelemetry attribute name for generic Azure Operation Duration,
 	// from `durationMs` field in Azure Log Record
-	attributeAzureDuration = "azure.duration"
+	attributeAzureOperationDuration = "azure.operation.duration"
 
 	// OpenTelemetry attribute name for Azure Identity,
 	// from `identity` field in Azure Log Record
@@ -76,8 +76,13 @@ const (
 const (
 	// OpenTelemetry attribute name for "Host" HTTP Header value
 	attributeHTTPHeaderHost = "http.request.header.host"
+
 	// OpenTelemetry attribute name for "Referer" HTTP Header value
 	attributeHTTPHeaderReferer = "http.request.header.referer"
+
+	// OpenTelemetry attribute name for Azure HTTP Request Duration,
+	// from `durationMs` field in Azure Log Record
+	attributeAzureRequestDuration = "azure.request.duration"
 )
 
 var errNoTimestamp = errors.New("no valid time fields are set on Log record ('time' or 'timestamp')")
@@ -169,7 +174,7 @@ func (r *azureLogRecordBase) PutCommonAttributes(attrs pcommon.Map, _ pcommon.Va
 	unmarshaler.AttrPutStrPtrIf(attrs, attributesAzureResultDescription, r.ResultDescription)
 	unmarshaler.AttrPutStrPtrIf(attrs, string(conventions.NetworkPeerAddressKey), r.CallerIPAddress)
 	unmarshaler.AttrPutStrPtrIf(attrs, attributeAzureCorrelationID, r.CorrelationID)
-	unmarshaler.AttrPutIntNumberPtrIf(attrs, attributeAzureDuration, r.DurationMs)
+	unmarshaler.AttrPutIntNumberPtrIf(attrs, attributeAzureOperationDuration, r.DurationMs)
 	if r.Identity != nil {
 		unmarshaler.AttrPutMapIf(attrs, attributeAzureIdentity, *r.Identity)
 	}
@@ -222,7 +227,7 @@ func (r *azureLogRecordGeneric) PutProperties(attrs pcommon.Map, body pcommon.Va
 				value.SetStr(fmt.Sprintf("%v", v))
 			}
 		case "duration":
-			value := attrs.PutEmpty(attributeAzureDuration)
+			value := attrs.PutEmpty(attributeAzureOperationDuration)
 			if err := value.FromRaw(v); err != nil {
 				value.SetStr(fmt.Sprintf("%v", v))
 			}

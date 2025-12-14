@@ -22,10 +22,10 @@ resourceLogs:
               - key: azure.category
                 value:
                   stringValue: AppServiceAuthenticationLogs
-              - key: azure.site.name
+              - key: azure.app_service.site.name
                 value:
                   stringValue: azmon-test2
-              - key: azure.task.name
+              - key: azure.app_service.task.name
                 value:
                   stringValue: MiddlewareWarning
             body:

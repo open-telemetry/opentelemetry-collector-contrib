@@ -40,7 +40,7 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 91e76397-5361-49bc-b814-a346a1761bb3
-              - key: azure.duration
+              - key: azure.operation.duration
                 value:
                   intValue: "10"
               - key: azure.identity

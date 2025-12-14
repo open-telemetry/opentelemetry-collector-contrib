@@ -85,31 +85,3 @@ func attrPutTLSProtoIf(attrs pcommon.Map, securityProtocol string) {
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.TLSProtocolNameKey), name)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.TLSProtocolVersionKey), version)
 }
-
-// attrPutDestination puts the value for the backend host name and endpoint
-// in the expected field names. If backend hostname is empty, then the
-// destination address and port depend only on the endpoint. If backend
-// hostname is filled, then the destination address and port are based on
-// it. If both are filled but different, then the endpoint will cover the
-// network address and port.
-// Puts at most 4 attributes
-func attrPutDestination(attrs pcommon.Map, backendHostname, endpoint string) {
-	if backendHostname == "" && endpoint == "" {
-		// Nothing to do here
-		return
-	}
-
-	// Only `endpoint` provided
-	if backendHostname == "" {
-		unmarshaler.AttrPutHostPortIf(attrs, string(conventions.DestinationAddressKey), string(conventions.DestinationPortKey), endpoint)
-		return
-	}
-
-	// If both `endpoint` and `backendHostname` are provided - following rules are applied:
-	// `backendHostname` will be parsed into `destination.address` and `destination.port`
-	// `endpoint` will be parsed into `network.peer.address` and `network.peer.port` if it's value doesn't match `backendHostname` value
-	unmarshaler.AttrPutHostPortIf(attrs, string(conventions.DestinationAddressKey), string(conventions.DestinationPortKey), backendHostname)
-	if endpoint != backendHostname && endpoint != "" {
-		unmarshaler.AttrPutHostPortIf(attrs, string(conventions.NetworkPeerAddressKey), string(conventions.NetworkPeerPortKey), endpoint)
-	}
-}
