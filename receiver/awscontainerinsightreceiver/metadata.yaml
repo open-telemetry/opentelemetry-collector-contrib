@@ -9,7 +9,8 @@ status:
   codeowners:
     active: [Aneurysm9, pxaws]
 
-# TODO: Update the receiver to pass the tests
 tests:
   skip_lifecycle: true
+  goleak:
+    setup: "setupTestMain(m)"
 
