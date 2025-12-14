@@ -161,10 +161,6 @@ func TestReaderUpdateFingerprint(t *testing.T) {
 			fromBeginning:   true,
 			initBytes:       []byte("foo"),
 			moreBytes:       []byte("1234567890\nbar\nhelloworld\n"),
-			// With maxLogSize=4:
-			// - "foo1234567890" (13 bytes) -> truncate to "foo1" (4 bytes), drop remainder "234567890\n"
-			// - "bar" (3 bytes) -> passes through
-			// - "helloworld" (10 bytes) -> truncate to "hell" (4 bytes), drop remainder "oworld\n"
 			expectTokens:      [][]byte{[]byte("foo1"), []byte("bar"), []byte("hell")},
 			expectOffset:      29,
 			expectFingerprint: []byte("foo1234567890\nbar\nhe"),
@@ -175,10 +171,6 @@ func TestReaderUpdateFingerprint(t *testing.T) {
 			maxLogSize:      4,
 			initBytes:       []byte("foo"),
 			moreBytes:       []byte("1234567890\nbar\nhelloworld\n"),
-			// With maxLogSize=4, starting from end (offset at "foo"):
-			// - "1234567890" (10 bytes) -> truncate to "1234" (4 bytes), drop remainder "567890\n"
-			// - "bar" (3 bytes) -> passes through
-			// - "helloworld" (10 bytes) -> truncate to "hell" (4 bytes), drop remainder "oworld\n"
 			expectTokens:      [][]byte{[]byte("1234"), []byte("bar"), []byte("hell")},
 			expectOffset:      29,
 			expectFingerprint: []byte("foo1234567890\nbar\nhe"),

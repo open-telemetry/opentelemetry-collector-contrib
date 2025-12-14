@@ -117,9 +117,6 @@ func TestWithFunc(t *testing.T) {
 }
 
 func TestToLength(t *testing.T) {
-	// Note: For comprehensive tests of truncation behavior, see TestToLength_TruncationBehavior,
-	// TestToLength_SkipRemainder, TestToLength_MultipleOversizedLines, and TestToLength_EmptyLineAfterOversized.
-	// Those tests use bufio.Scanner directly and better validate the actual behavior.
 	testCases := []struct {
 		name      string
 		baseFunc  bufio.SplitFunc
@@ -157,8 +154,6 @@ func TestToLength(t *testing.T) {
 	}
 }
 
-// TestToLength_TruncationBehavior tests the key behavior: oversized tokens are truncated
-// and the remainder is dropped, not split into multiple tokens.
 func TestToLength_TruncationBehavior(t *testing.T) {
 	splitFunc := ToLength(bufio.ScanLines, 10)
 
@@ -178,7 +173,6 @@ func TestToLength_TruncationBehavior(t *testing.T) {
 	assert.Equal(t, "1234567890", tokens[0], "Token should be truncated to maxLength")
 }
 
-// TestToLength_SkipRemainder tests that the remainder of an oversized token is dropped.
 func TestToLength_SkipRemainder(t *testing.T) {
 	splitFunc := ToLength(bufio.ScanLines, 10)
 
@@ -199,8 +193,6 @@ func TestToLength_SkipRemainder(t *testing.T) {
 	assert.Equal(t, "Short.", tokens[1], "Second token should be the short line, not remainder of first")
 }
 
-// TestToLength_MultipleOversizedLines tests multiple oversized lines are each truncated.
-// Key behavior: each oversized line produces only ONE token (truncated), not multiple.
 func TestToLength_MultipleOversizedLines(t *testing.T) {
 	splitFunc := ToLength(bufio.ScanLines, 10)
 
@@ -225,7 +217,6 @@ func TestToLength_MultipleOversizedLines(t *testing.T) {
 	}
 }
 
-// TestToLength_EmptyLineAfterOversized tests that empty lines after oversized lines work correctly.
 func TestToLength_EmptyLineAfterOversized(t *testing.T) {
 	splitFunc := ToLength(bufio.ScanLines, 10)
 

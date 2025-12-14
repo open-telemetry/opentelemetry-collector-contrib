@@ -160,10 +160,6 @@ func TestTokenizationTooLong(t *testing.T) {
 
 func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	fileContent := []byte("aaa2023-01-01aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 2023-01-01 2 2023-01-01")
-	// With maxLogSize=15 and LineStartPattern `\d+-\d+-\d+`:
-	// - "aaa" (3 bytes) - part before first pattern match, passes through
-	// - "2023-01-01aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 2023-01-01 2 2023-01-01" - one "line" that's too long
-	//   Should be truncated to 15 bytes: "2023-01-01aaaaa" and remainder dropped
 	expected := [][]byte{
 		[]byte("aaa"),             // First part before pattern match
 		[]byte("2023-01-01aaaaa"), // Second part truncated to maxLogSize
