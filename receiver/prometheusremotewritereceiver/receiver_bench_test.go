@@ -19,7 +19,7 @@ func makeLabels(total int) labels.Labels {
 	m := make(map[string]string, total)
 	m["job"] = "job"
 	m["instance"] = "instance"
-	m[labels.MetricName] = "metric"
+	m["__name__"] = "metric"
 	for i := 0; i < total-3; i++ {
 		m[fmt.Sprintf("k%d", i)] = fmt.Sprintf("v%d", i)
 	}
@@ -27,7 +27,7 @@ func makeLabels(total int) labels.Labels {
 }
 
 func BenchmarkExtractAttributes(b *testing.B) {
-	sizes := []int{5, 20, 100, 500}
+	sizes := []int{5, 20, 100, 500, 1000, 2000}
 	for _, sz := range sizes {
 		ls := makeLabels(sz)
 		b.Run(fmt.Sprintf("%d", sz), func(b *testing.B) {
