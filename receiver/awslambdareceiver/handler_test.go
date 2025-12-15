@@ -170,7 +170,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				return test.eventConsumer.ConsumeLogs(ctx, logs)
 			}
 
-			handler := newS3Handler(s3Service, zap.NewNop(), test.unmarshaler, logsConsumer, plog.Logs{})
+			handler := newS3Handler(s3Service, zap.NewNop(), test.unmarshaler, logsConsumer)
 
 			var event json.RawMessage
 			event, err := json.Marshal(test.s3Event)
@@ -262,7 +262,7 @@ func TestS3HandlerParseEvent(t *testing.T) {
 		enrichS3Logs(logs, event)
 		return consumer.ConsumeLogs(ctx, logs)
 	}
-	handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer, plog.Logs{})
+	handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -452,7 +452,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 				return test.consumerErr
 			}
 
-			handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer, plog.Logs{})
+			handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer)
 
 			event, err := json.Marshal(mockEvent)
 			require.NoError(t, err)

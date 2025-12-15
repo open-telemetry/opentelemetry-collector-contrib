@@ -90,7 +90,6 @@ type s3Handler[T emits] struct {
 	logger        *zap.Logger
 	s3Unmarshaler unmarshalFunc[T]
 	consumer      s3EventConsumerFunc[T]
-	emitType      T
 }
 
 func newS3Handler[T emits](
@@ -98,14 +97,12 @@ func newS3Handler[T emits](
 	baseLogger *zap.Logger,
 	unmarshal unmarshalFunc[T],
 	consumer s3EventConsumerFunc[T],
-	emitType T,
 ) *s3Handler[T] {
 	return &s3Handler[T]{
 		s3Service:     service,
 		logger:        baseLogger.Named("s3"),
 		s3Unmarshaler: unmarshal,
 		consumer:      consumer,
-		emitType:      emitType,
 	}
 }
 
@@ -257,8 +254,6 @@ func bytesToPlogs(data []byte) (plog.Logs, error) {
 	sl.Scope().SetName(metadata.ScopeName)
 
 	lr := sl.LogRecords().AppendEmpty()
-	lr.Attributes().PutInt("content.length", int64(len(data)))
-
 	if utf8.Valid(data) {
 		lr.Body().SetStr(string(data))
 	} else {

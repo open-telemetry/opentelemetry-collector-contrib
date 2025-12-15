@@ -193,7 +193,7 @@ func newLogsHandler(
 			return next.ConsumeLogs(ctx, logs)
 		}
 
-		return newS3Handler(s3Service, logger, s3Unmarshaler, logsConsumer, plog.Logs{})
+		return newS3Handler(s3Service, logger, s3Unmarshaler, logsConsumer)
 	}
 
 	registry[cwEvent] = func() lambdaEventHandler {
@@ -236,7 +236,7 @@ func newMetricsHandler(
 			return next.ConsumeMetrics(ctx, metrics)
 		}
 
-		return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricConsumer, pmetric.Metrics{})
+		return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricConsumer)
 	}
 
 	return newHandlerProvider(registry), nil

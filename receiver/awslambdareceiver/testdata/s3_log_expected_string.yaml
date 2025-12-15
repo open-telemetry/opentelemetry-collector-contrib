@@ -16,9 +16,6 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
-              - key: content.length
-                value:
-                  intValue: "21"
             body:
               stringValue: Some log in S3 object
             observedTimeUnixNano: "1764625361000000000"

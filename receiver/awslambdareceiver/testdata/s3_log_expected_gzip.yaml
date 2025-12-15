@@ -16,9 +16,6 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
-              - key: content.length
-                value:
-                  intValue: "56"
             body:
               stringValue: H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA=
             observedTimeUnixNano: "1764625361000000000"
