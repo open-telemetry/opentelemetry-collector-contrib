@@ -24,12 +24,12 @@ const (
 	internalLoadBalancerLogType = "type.googleapis.com/google.cloud.loadbalancing.type.InternalNetworkLoadBalancerLogEntry"
 
 	gcpPassthroughNLBPacketsStartTime = "gcp.load_balancing.passthrough_nlb.packets.start_time" // #nosec G101
-	gcpPassthroughNLBPacketsEndTime   = "gcp.load_balancing.passthrough_nlb.packets.end_time"
-	gcpPassthroughNLBBytesReceived    = "gcp.load_balancing.passthrough_nlb.bytes_received"
-	gcpPassthroughNLBBytesSent        = "gcp.load_balancing.passthrough_nlb.bytes_sent"
-	gcpPassthroughNLBPacketsReceived  = "gcp.load_balancing.passthrough_nlb.packets_received"
-	gcpPassthroughNLBPacketsSent      = "gcp.load_balancing.passthrough_nlb.packets_sent"
-	gcpPassthroughNLBRTT              = "gcp.load_balancing.passthrough_nlb.rtt"
+	gcpPassthroughNLBPacketsEndTime   = "gcp.load_balancing.passthrough_nlb.packets.end_time"   // #nosec G101
+	gcpPassthroughNLBBytesReceived    = "gcp.load_balancing.passthrough_nlb.bytes_received"     // #nosec G101
+	gcpPassthroughNLBBytesSent        = "gcp.load_balancing.passthrough_nlb.bytes_sent"         // #nosec G101
+	gcpPassthroughNLBPacketsReceived  = "gcp.load_balancing.passthrough_nlb.packets_received"   // #nosec G101
+	gcpPassthroughNLBPacketsSent      = "gcp.load_balancing.passthrough_nlb.packets_sent"       // #nosec G101
+	gcpPassthroughNLBRTT              = "gcp.load_balancing.passthrough_nlb.rtt"                // #nosec G101
 )
 
 var (
