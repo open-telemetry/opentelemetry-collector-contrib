@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
@@ -53,8 +52,8 @@ func TestDetect(t *testing.T) {
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		string(conventions.K8SNodeNameKey): "mainNode",
-		string(conventions.K8SNodeUIDKey):  "4b15c589-1a33-42cc-927a-b78ba9947095",
+		"k8s.node.name": "mainNode",
+		"k8s.node.uid":  "4b15c589-1a33-42cc-927a-b78ba9947095",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())

@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -31,7 +30,7 @@ var minimumLogRecord = func() plog.LogRecord {
 	lr.SetTimestamp(ts)
 	lr.Attributes().PutStr(azureOperationName, "SecretGet")
 	lr.Attributes().PutStr(azureCategory, "AuditEvent")
-	lr.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+	lr.Attributes().PutStr("cloud.provider", "azure")
 	return lr
 }()
 
@@ -53,9 +52,9 @@ var maximumLogRecord1 = func() plog.LogRecord {
 	lr.Attributes().PutStr(azureResultSignature, "Signature")
 	lr.Attributes().PutStr(azureResultDescription, "Description")
 	lr.Attributes().PutInt(azureDuration, 1234)
-	lr.Attributes().PutStr(string(conventions.NetSockPeerAddrKey), "127.0.0.1")
-	lr.Attributes().PutStr(string(conventions.CloudRegionKey), "ukso")
-	lr.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+	lr.Attributes().PutStr("net.sock.peer.addr", "127.0.0.1")
+	lr.Attributes().PutStr("cloud.region", "ukso")
+	lr.Attributes().PutStr("cloud.provider", "azure")
 
 	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
 	m := lr.Attributes().PutEmptyMap(azureProperties)
@@ -87,9 +86,9 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	lr.Attributes().PutStr(azureResultSignature, "Signature")
 	lr.Attributes().PutStr(azureResultDescription, "Description")
 	lr.Attributes().PutInt(azureDuration, 4321)
-	lr.Attributes().PutStr(string(conventions.NetSockPeerAddrKey), "127.0.0.1")
-	lr.Attributes().PutStr(string(conventions.CloudRegionKey), "ukso")
-	lr.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+	lr.Attributes().PutStr("net.sock.peer.addr", "127.0.0.1")
+	lr.Attributes().PutStr("cloud.region", "ukso")
+	lr.Attributes().PutStr("cloud.provider", "azure")
 
 	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
 	m := lr.Attributes().PutEmptyMap(azureProperties)
@@ -113,9 +112,9 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	lr2.Attributes().PutStr(azureResultSignature, "Signature")
 	lr2.Attributes().PutStr(azureResultDescription, "Description")
 	lr2.Attributes().PutInt(azureDuration, 321)
-	lr2.Attributes().PutStr(string(conventions.NetSockPeerAddrKey), "127.0.0.1")
-	lr2.Attributes().PutStr(string(conventions.CloudRegionKey), "ukso")
-	lr2.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+	lr2.Attributes().PutStr("net.sock.peer.addr", "127.0.0.1")
+	lr2.Attributes().PutStr("cloud.region", "ukso")
+	lr2.Attributes().PutStr("cloud.provider", "azure")
 
 	lr2.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
 	m = lr2.Attributes().PutEmptyMap(azureProperties)
@@ -142,9 +141,9 @@ var badLevelLogRecord = func() plog.LogRecord {
 	lr.Attributes().PutStr(azureCorrelationID, guid)
 	lr.Attributes().PutStr(azureResultType, "Succeeded")
 	lr.Attributes().PutInt(azureDuration, 243)
-	lr.Attributes().PutStr(string(conventions.NetSockPeerAddrKey), "13.14.15.16")
-	lr.Attributes().PutStr(string(conventions.CloudRegionKey), "West US")
-	lr.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+	lr.Attributes().PutStr("net.sock.peer.addr", "13.14.15.16")
+	lr.Attributes().PutStr("cloud.region", "West US")
+	lr.Attributes().PutStr("cloud.provider", "azure")
 
 	m := lr.Attributes().PutEmptyMap(azureProperties)
 	m.PutStr("method", http.MethodGet)
@@ -176,7 +175,7 @@ var badTimeLogRecord = func() plog.LogRecord {
 
 	lr.Attributes().PutStr(azureOperationName, "ApplicationGatewayAccess")
 	lr.Attributes().PutStr(azureCategory, "ApplicationGatewayAccessLog")
-	lr.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+	lr.Attributes().PutStr("cloud.provider", "azure")
 
 	m := lr.Attributes().PutEmptyMap(azureProperties)
 	m.PutStr("instanceId", "appgw_2")
@@ -317,7 +316,7 @@ func TestExtractRawAttributes(t *testing.T) {
 			expected: map[string]any{
 				azureOperationName:                   "operation.name",
 				azureCategory:                        "category",
-				string(conventions.CloudProviderKey): conventions.CloudProviderAzure.Value.AsString(),
+				"cloud.provider": "azure",
 			},
 		},
 		{
@@ -332,7 +331,7 @@ func TestExtractRawAttributes(t *testing.T) {
 			expected: map[string]any{
 				azureOperationName:                   "operation.name",
 				azureCategory:                        "category",
-				string(conventions.CloudProviderKey): conventions.CloudProviderAzure.Value.AsString(),
+				"cloud.provider": "azure",
 			},
 		},
 		{
@@ -365,10 +364,10 @@ func TestExtractRawAttributes(t *testing.T) {
 				azureResultSignature:                   "result.signature",
 				azureResultDescription:                 "result.description",
 				azureDuration:                          int64(1234),
-				string(conventions.NetSockPeerAddrKey): "127.0.0.1",
+				"net.sock.peer.addr": "127.0.0.1",
 				azureIdentity:                          "someone",
-				string(conventions.CloudRegionKey):     "location",
-				string(conventions.CloudProviderKey):   conventions.CloudProviderAzure.Value.AsString(),
+				"cloud.region":     "location",
+				"cloud.provider":   "azure",
 				azureProperties:                        properties,
 			},
 		},

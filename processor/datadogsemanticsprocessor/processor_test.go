@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 )
@@ -142,7 +141,7 @@ func TestBasicTranslation(t *testing.T) {
 							Kind:     ptrace.SpanKindServer,
 							Attributes: map[string]any{
 								"operation.name":                      "test-operation",
-								string(conventions.HTTPStatusCodeKey): 200,
+								"http.status_code": 200,
 							},
 						},
 					},
@@ -196,9 +195,9 @@ func TestBasicTranslation(t *testing.T) {
 									Timestamp: 66,
 									Name:      "exception",
 									Attributes: map[string]any{
-										string(conventions.ExceptionMessageKey):    "overridden-msg",
-										string(conventions.ExceptionTypeKey):       "overridden-type",
-										string(conventions.ExceptionStacktraceKey): "overridden-stack",
+										"exception.message":    "overridden-msg",
+										"exception.type":       "overridden-type",
+										"exception.stacktrace": "overridden-stack",
 									},
 									Dropped: 4,
 								},
@@ -223,7 +222,7 @@ func TestBasicTranslation(t *testing.T) {
 								"datadog.error.type":                  "specified-error-type",
 								"datadog.error.stack":                 "specified-error-stack",
 								"operation.name":                      "test-operation",
-								string(conventions.HTTPStatusCodeKey): 200,
+								"http.status_code": 200,
 							},
 						},
 					},
@@ -275,9 +274,9 @@ func TestBasicTranslation(t *testing.T) {
 									Timestamp: 66,
 									Name:      "exception",
 									Attributes: map[string]any{
-										string(conventions.ExceptionMessageKey):    "",
-										string(conventions.ExceptionTypeKey):       "",
-										string(conventions.ExceptionStacktraceKey): "",
+										"exception.message":    "",
+										"exception.type":       "",
+										"exception.stacktrace": "",
 									},
 									Dropped: 4,
 								},
@@ -301,7 +300,7 @@ func TestBasicTranslation(t *testing.T) {
 								"datadog.error.msg":                   "specified-error-msg",
 								"datadog.error.type":                  "specified-error-type",
 								"datadog.error.stack":                 "specified-error-stack",
-								string(conventions.HTTPStatusCodeKey): 200,
+								"http.status_code": 200,
 							},
 						},
 					},
@@ -353,9 +352,9 @@ func TestBasicTranslation(t *testing.T) {
 									Timestamp: 66,
 									Name:      "exception",
 									Attributes: map[string]any{
-										string(conventions.ExceptionMessageKey):    "overridden-msg",
-										string(conventions.ExceptionTypeKey):       "overridden-type",
-										string(conventions.ExceptionStacktraceKey): "overridden-stack",
+										"exception.message":    "overridden-msg",
+										"exception.type":       "overridden-type",
+										"exception.stacktrace": "overridden-stack",
 									},
 									Dropped: 4,
 								},
@@ -377,7 +376,7 @@ func TestBasicTranslation(t *testing.T) {
 								"datadog.error.type":                  "specified-error-type",
 								"datadog.error.stack":                 "specified-error-stack",
 								"operation.name":                      "test-operation",
-								string(conventions.HTTPStatusCodeKey): 200,
+								"http.status_code": 200,
 							},
 						},
 					},

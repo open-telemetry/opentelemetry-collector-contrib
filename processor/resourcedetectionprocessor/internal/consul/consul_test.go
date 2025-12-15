@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
@@ -51,9 +50,9 @@ func TestDetect(t *testing.T) {
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		string(conventions.HostNameKey):    "hostname",
-		string(conventions.CloudRegionKey): "dc1",
-		string(conventions.HostIDKey):      "00000000-0000-0000-0000-000000000000",
+		"host.name":    "hostname",
+		"cloud.region": "dc1",
+		"host.id":      "00000000-0000-0000-0000-000000000000",
 		"test":                             "test",
 	}
 

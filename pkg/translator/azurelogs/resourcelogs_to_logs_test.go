@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -191,9 +190,9 @@ func TestExtractRawAttributes(t *testing.T) {
 				azureResultSignature:                      "result.signature",
 				azureResultDescription:                    "result.description",
 				azureDuration:                             int64(1234),
-				string(conventions.NetworkPeerAddressKey): "127.0.0.1",
+				"network.peer.address": "127.0.0.1",
 				azureIdentity:                             "someone",
-				string(conventions.CloudRegionKey):        "location",
+				"cloud.region":        "location",
 				azureProperties:                           properties,
 			},
 		},

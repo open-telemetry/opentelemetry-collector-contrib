@@ -33,8 +33,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -144,7 +142,7 @@ func TestNewExporter_Serializer(t *testing.T) {
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	attrs := map[string]string{
-		string(conventions.DeploymentEnvironmentKey): "dev",
+		"deployment.environment": "dev",
 		"custom_attribute":                           "custom_value",
 	}
 	tests := []struct {
@@ -237,7 +235,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		},
 		{
 			metrics: createTestMetrics(map[string]string{
-				string(conventions127.DeploymentEnvironmentNameKey): "new_env",
+				"deployment.environment.name": "new_env",
 				"custom_attribute": "custom_value",
 			}),
 			source: source.Source{

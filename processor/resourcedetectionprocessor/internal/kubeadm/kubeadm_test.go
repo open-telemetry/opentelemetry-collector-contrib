@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/kubeadm"
@@ -52,7 +51,7 @@ func TestDetect(t *testing.T) {
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		string(conventions.K8SClusterNameKey): "cluster-1",
+		"k8s.cluster.name": "cluster-1",
 		"k8s.cluster.uid":                     "uid-1",
 	}
 

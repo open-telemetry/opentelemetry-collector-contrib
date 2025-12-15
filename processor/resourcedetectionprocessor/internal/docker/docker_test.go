@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 )
@@ -46,8 +45,8 @@ func TestDetect(t *testing.T) {
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		string(conventions.HostNameKey): "hostname",
-		string(conventions.OSTypeKey):   "darwin",
+		"host.name": "hostname",
+		"os.type":   "darwin",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
