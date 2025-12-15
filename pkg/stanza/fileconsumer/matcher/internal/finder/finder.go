@@ -9,7 +9,16 @@ import (
 	"slices"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
+)
+
+var WindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.windows.caseInsensitive",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("On Windows, make matching patterns in include/exclude case insensitive."),
+	featuregate.WithRegisterFromVersion("v0.142.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777"),
 )
 
 func Validate(globs []string) error {
@@ -28,19 +37,23 @@ func FindFiles(includes, excludes []string) ([]string, error) {
 
 	allSet := make(map[string]struct{}, len(includes))
 	for _, include := range includes {
-		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())
+		defaultDoublestarOpts := getDefaultDoublestarOptions()
+		matches, err := doublestar.FilepathGlob(
+			include,
+			append(defaultDoublestarOpts, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())...,
+		)
 		if err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("find files with '%s' pattern: %w", include, err))
 			// the same pattern could cause an IO error due to one file or directory,
 			// but also could still find files without `doublestar.WithFailOnIOErrors()`.
-			matches, _ = doublestar.FilepathGlob(include, doublestar.WithFilesOnly())
+			matches, _ = doublestar.FilepathGlob(
+				include,
+				append(defaultDoublestarOpts, doublestar.WithFilesOnly())...,
+			)
 		}
-	INCLUDE:
 		for _, match := range matches {
-			for _, exclude := range excludes {
-				if itMatches, _ := doublestar.PathMatch(exclude, match); itMatches {
-					continue INCLUDE
-				}
+			if pathExcluded(excludes, match) {
+				continue
 			}
 
 			allSet[match] = struct{}{}
