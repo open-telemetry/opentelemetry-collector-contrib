@@ -7,13 +7,13 @@ require (
 	github.com/tg123/go-htpasswd v1.2.4
 	go.opentelemetry.io/collector/client v1.48.0
 	go.opentelemetry.io/collector/component v1.48.0
-	go.opentelemetry.io/collector/component/componenttest v0.141.1-0.20251212165103-b31ddb938298
+	go.opentelemetry.io/collector/component/componenttest v0.142.0
 	go.opentelemetry.io/collector/config/configopaque v1.48.0
 	go.opentelemetry.io/collector/confmap v1.48.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.141.1-0.20251212165103-b31ddb938298
+	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0
 	go.opentelemetry.io/collector/extension v1.48.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.48.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.141.1-0.20251212165103-b31ddb938298
+	go.opentelemetry.io/collector/extension/extensiontest v0.142.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.77.0
 )
