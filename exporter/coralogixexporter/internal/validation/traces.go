@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package validation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/validation"
+package validation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/validation"
 
 import (
 	"regexp"

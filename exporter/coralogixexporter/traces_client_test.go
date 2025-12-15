@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/validation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/validation"
 )
 
 func TestNewTracesExporter(t *testing.T) {

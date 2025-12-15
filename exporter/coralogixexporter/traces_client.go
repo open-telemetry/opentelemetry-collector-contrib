@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/validation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/validation"
 )
 
 func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExporter, error) {
