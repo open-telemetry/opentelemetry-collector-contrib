@@ -25,12 +25,11 @@ import (
 
 func ptr[T any](v T) *T { return &v }
 
-// Optimized: PartialObjectMetadata (ObjectMeta + OwnerRefs only)
-func genPOMReplicaSets(n int) []runtime.Object {
-	objs := make([]runtime.Object, 0, n)
+func genTypedRS(n int) []*apps_v1.ReplicaSet {
+	out := make([]*apps_v1.ReplicaSet, n)
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("deploy-%d-abc123defg", i)
-		pom := &meta_v1.PartialObjectMetadata{
+		out[i] = &apps_v1.ReplicaSet{
 			TypeMeta: meta_v1.TypeMeta{APIVersion: "apps/v1", Kind: "ReplicaSet"},
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:      name,
@@ -39,72 +38,77 @@ func genPOMReplicaSets(n int) []runtime.Object {
 				OwnerReferences: []meta_v1.OwnerReference{
 					{APIVersion: "apps/v1", Kind: "Deployment", Name: fmt.Sprintf("deploy-%d", i), UID: types.UID(fmt.Sprintf("depuid-%d", i)), Controller: ptr(true)},
 				},
-				Labels: map[string]string{"app": "example"},
 			},
 		}
-		objs = append(objs, pom)
 	}
-	return objs
+	return out
 }
 
-func setReplicaSetListAndWatch(fc *fake.Clientset, initial []runtime.Object) {
+func prebuiltRSList(rs []*apps_v1.ReplicaSet) *apps_v1.ReplicaSetList {
+	list := &apps_v1.ReplicaSetList{Items: make([]apps_v1.ReplicaSet, len(rs))}
+	for i := range rs {
+		list.Items[i] = *rs[i]
+	}
+	return list
+}
+
+func typedClientWithList(list *apps_v1.ReplicaSetList) *fake.Clientset {
+	fc := fake.NewClientset()
 	fc.PrependReactor("list", "replicasets", func(_ ktesting.Action) (bool, runtime.Object, error) {
-		list := &apps_v1.ReplicaSetList{}
-		for _, obj := range initial {
-			list.Items = append(list.Items, *(obj.(*apps_v1.ReplicaSet)).DeepCopy())
-		}
 		return true, list, nil
 	})
 	fc.PrependWatchReactor("replicasets", func(_ ktesting.Action) (bool, watch.Interface, error) {
 		return true, watch.NewFake(), nil
 	})
+	return fc
 }
 
-func startAndSync(b *testing.B, c Client) {
-	if err := c.Start(); err != nil {
-		b.Fatalf("start: %v", err)
-	}
-	_ = wait.PollUntilContextTimeout(b.Context(), time.Millisecond, 50*time.Millisecond, true, func(context.Context) (bool, error) { return true, nil })
-}
-
-// Partial metadata for a parameterized N
-func runPartialMetadata(b *testing.B, n int) {
-	metaOnly := genPOMReplicaSets(n)
-	for i := 0; i < b.N; i++ {
-		fc := fake.NewClientset()
-		setReplicaSetListAndWatch(fc, metaOnly)
-
-		newClientSet := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) { return fc, nil }
-		rules := ExtractionRules{DeploymentName: true}
-		filters := Filters{}
-
-		factory := InformersFactoryList{
-			newInformer:           newSharedInformer,
-			newNamespaceInformer:  NewNoOpInformer,
-			newReplicaSetInformer: newReplicaSetMetaInformer(k8sconfig.APIConfig{}),
-		}
-
-		set := componenttest.NewNopTelemetrySettings()
-		c, err := New(set, k8sconfig.APIConfig{}, rules, filters, []Association{}, Excludes{}, newClientSet, factory, false, 0)
-		if err != nil {
-			b.Fatalf("New: %v", err)
-		}
-
-		b.ReportAllocs()
-		startAndSync(b, c)
-	}
-}
-
-// Benchmark suite to check increasing amount of replicasets
-// gather results using
-// go test -run ^$ -bench RS_ResourceSweep_InProcess -benchmem -count=6 -benchtime=1x > sweep.txt
-// benchstat sweep.txt
 func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
-	ns := []int{5000, 10000, 20000, 200000}
+	ns := []int{10000, 200000}
 
 	for _, n := range ns {
-		b.Run(fmt.Sprintf("Partial_Metadata_N=%d", n), func(b *testing.B) {
-			runPartialMetadata(b, n)
+		b.Run(fmt.Sprintf("Typed_RS_N=%d", n), func(b *testing.B) {
+			rs := genTypedRS(n)
+			list := prebuiltRSList(rs)
+
+			rules := ExtractionRules{
+				DeploymentName: true,
+				// Optional: avoid starting pod/node/namespace informers
+				PodName: false, Namespace: false, Node: false,
+			}
+			filters := Filters{}
+			set := componenttest.NewNopTelemetrySettings()
+
+			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+
+				fc := typedClientWithList(list)
+				factory := InformersFactoryList{
+					newInformer:           NewFakeInformer,
+					newNamespaceInformer:  NewNoOpInformer,
+					newReplicaSetInformer: newReplicaSetMetaInformer(k8sconfig.APIConfig{}), // typed path
+				}
+				newClientSet := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) { return fc, nil }
+
+				c, err := New(set, k8sconfig.APIConfig{}, rules, filters, nil, Excludes{}, newClientSet, factory, false, 0)
+				if err != nil {
+					b.Fatalf("New: %v", err)
+				}
+
+				b.StartTimer()
+
+				if err := c.Start(); err != nil {
+					b.Fatalf("start: %v", err)
+				}
+				_ = wait.PollUntilContextTimeout(
+					b.Context(), time.Millisecond, 5*time.Second, true,
+					func(context.Context) (bool, error) { return true, nil },
+				)
+
+				b.StopTimer()
+				c.Stop()
+				b.StartTimer()
+			}
 		})
 	}
 }
