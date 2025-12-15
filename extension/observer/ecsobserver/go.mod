@@ -10,12 +10,12 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.47.1-0.20251212165103-b31ddb938298
-	go.opentelemetry.io/collector/component/componentstatus v0.141.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/component/componenttest v0.141.1-0.20251211181959-97fcd3d13b4a
+	go.opentelemetry.io/collector/component/componentstatus v0.141.1-0.20251212165103-b31ddb938298
+	go.opentelemetry.io/collector/component/componenttest v0.141.1-0.20251212165103-b31ddb938298
 	go.opentelemetry.io/collector/confmap v1.47.1-0.20251212165103-b31ddb938298
-	go.opentelemetry.io/collector/confmap/xconfmap v0.141.1-0.20251211181959-97fcd3d13b4a
+	go.opentelemetry.io/collector/confmap/xconfmap v0.141.1-0.20251212165103-b31ddb938298
 	go.opentelemetry.io/collector/extension v1.47.1-0.20251212165103-b31ddb938298
-	go.opentelemetry.io/collector/extension/extensiontest v0.141.1-0.20251211181959-97fcd3d13b4a
+	go.opentelemetry.io/collector/extension/extensiontest v0.141.1-0.20251212165103-b31ddb938298
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
