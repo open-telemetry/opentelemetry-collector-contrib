@@ -68,18 +68,13 @@ func deleteFrom[K any](target ottl.PSliceGetSetter[K], startIndexGetter ottl.Int
 			return nil, target.Set(ctx, tCtx, t)
 		}
 
-		resSlice := pcommon.NewSlice()
-		resSlice.EnsureCapacity(int(sliceLen - (endIndex - startIndex)))
-
-		for i := range startIndex {
-			t.At(int(i)).MoveTo(resSlice.AppendEmpty())
-		}
-
-		for i := endIndex; i < sliceLen; i++ {
-			t.At(int(i)).MoveTo(resSlice.AppendEmpty())
-		}
-
-		return nil, target.Set(ctx, tCtx, resSlice)
+		var i int64
+		t.RemoveIf(func(_ pcommon.Value) bool {
+			remove := i >= startIndex && i < endIndex
+			i++
+			return remove
+		})
+		return nil, target.Set(ctx, tCtx, t)
 	}
 }
 
