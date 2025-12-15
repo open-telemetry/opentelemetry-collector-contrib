@@ -115,9 +115,7 @@ func getQueryParamsFromEndpoint(config *Config) (queryParams map[string][]string
 		parsedURL, _ := url.Parse(endpoints[0])
 
 		rawQuery := parsedURL.RawQuery
-		if rawQuery != "" {
-			queryParams, _ = url.ParseQuery(rawQuery)
-		}
+		queryParams, _ = url.ParseQuery(rawQuery)
 		return queryParams
 	}
 	return nil
