@@ -119,7 +119,7 @@ docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock \
 
 For enhanced security, consider:
 - Using a Docker API proxy (e.g. [docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy)) that restricts access to only required endpoints
-- Running this receiver in an isolated collector instance with elevated privileges, forwarding metrics to your main collector via OTLP
+- Running this receiver in an isolated collector instance with elevated privileges that only exports data (does not expose receiver ports like OTLP or Zipkin), forwarding metrics to your main collector via OTLP. This reduces the attack surface and RCE risk on the privileged container.
 
 For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
 
