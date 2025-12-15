@@ -28,5 +28,3 @@ subtext: |
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
 change_logs: [user]
-
-
