@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/bmatcuk/doublestar/v4 v4.8.1

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/aerospike/aerospike-client-go/v7 v7.9.0

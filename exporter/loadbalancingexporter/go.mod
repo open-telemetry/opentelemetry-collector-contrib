@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.29.13

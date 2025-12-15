@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/klauspost/compress v1.18.0

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0

@@ -33,7 +33,7 @@ jobs:
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24.9"
+          go-version: "1.24.11"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -73,7 +73,7 @@ jobs:
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24.9"
+          go-version: "1.24.11"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -119,7 +119,7 @@ jobs:
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24.9"
+          go-version: "1.24.11"
           cache: false
       - name: Cache Go
         id: go-cache

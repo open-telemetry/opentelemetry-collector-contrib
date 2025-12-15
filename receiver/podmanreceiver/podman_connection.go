@@ -153,7 +153,6 @@ func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphra
 			HostKeyCallback: callback,
 			HostKeyAlgorithms: []string{
 				ssh.KeyAlgoRSA,
-				ssh.KeyAlgoDSA,
 				ssh.KeyAlgoECDSA256,
 				ssh.KeyAlgoECDSA384,
 				ssh.KeyAlgoECDSA521,

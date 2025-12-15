@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.1

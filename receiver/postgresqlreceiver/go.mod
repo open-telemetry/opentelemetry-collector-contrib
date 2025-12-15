@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2

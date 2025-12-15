@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/go-redis/redismock/v9 v9.2.0

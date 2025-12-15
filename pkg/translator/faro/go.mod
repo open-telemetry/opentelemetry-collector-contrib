@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/go-logfmt/logfmt v0.6.0

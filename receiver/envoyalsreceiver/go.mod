@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver
 
-go 1.24.9
+go 1.24.11
 
 require (
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4
