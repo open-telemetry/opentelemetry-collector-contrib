@@ -35,8 +35,7 @@ jobs:
         run: make install-tools
       - name: Generate collector code
         run: |
-          ./internal/buildscripts/ocb-add-replaces.sh otel-collector
-          ./.tools/builder --skip-compilation --config cmd/otel-collector/builder-config-replaced.yaml
+          ./.tools/builder --skip-compilation --config cmd/otel-collector/builder-config.yaml
       - name: Build binary
         run: |
           cd ./cmd/otel-collector && \
@@ -99,8 +98,7 @@ jobs:
         run: make install-tools
       - name: Generate collector code
         run: |
-          ./internal/buildscripts/ocb-add-replaces.sh otel-exporter
-          ./.tools/builder --skip-compilation --config cmd/otel-exporter/builder-config-replaced.yaml
+          ./.tools/builder --skip-compilation --config cmd/otel-exporter/builder-config.yaml
       - name: Build binary
         run: |
           cd ./cmd/otel-exporter && \
