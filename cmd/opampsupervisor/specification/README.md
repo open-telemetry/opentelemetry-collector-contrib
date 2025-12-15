@@ -632,3 +632,5 @@ on opamp extension to report the health when it changes?*
     [https://github.com/open-telemetry/opamp-go](https://github.com/open-telemetry/opamp-go)
 - Example Supervisor implementation:
     [https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor](https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor)
+- OpAMP Milestone in the Collector:
+    [https://github.com/open-telemetry/opentelemetry-collector/milestone/29](https://github.com/open-telemetry/opentelemetry-collector/milestone/29)
