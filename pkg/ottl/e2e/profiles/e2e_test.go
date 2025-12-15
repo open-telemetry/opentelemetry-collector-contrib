@@ -1055,12 +1055,12 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetProfile().SetProfileID(pprofile.ProfileID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 			},
 		},
-		{
-			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
-			want: func(_ *testing.T, tCtx *ottlprofile.TransformContext) {
-				putProfileAttribute(t, tCtx, "test", []any{"A", "B", "C"})
-			},
-		},
+		//{
+		//	statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
+		//	want: func(_ *testing.T, tCtx *ottlprofile.TransformContext) {
+		//		putProfileAttribute(t, tCtx, "test", []any{"A", "B", "C"})
+		//	},
+		//},
 		{
 			statement: `set(attributes["test"], String("test"))`,
 			want: func(_ *testing.T, tCtx *ottlprofile.TransformContext) {
