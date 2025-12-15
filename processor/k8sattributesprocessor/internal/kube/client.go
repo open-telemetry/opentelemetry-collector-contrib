@@ -1760,11 +1760,11 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newObj any) {
 // If no controller Deployment is found, rsView.Deployment* remain empty.
 func (c *WatchClient) resolveReplicaSetDeploymentLinkage(rsView *replicasetView) {
 	// Only needed if deployment attrs are requested (and not name-from-RS)
-	if !(c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)) {
+	needsDeployment := c.Rules.DeploymentUID ||
+		(c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)
+	if !needsDeployment {
 		return
 	}
-
-	// Already resolved by meta/typed event?
 	if rsView.DeploymentUID != "" {
 		return
 	}
