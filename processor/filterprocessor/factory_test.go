@@ -156,8 +156,8 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions(DefaultResourceFunctions()),
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew(DefaultResourceFunctions()),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -169,7 +169,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "TestResourceFunc"`,
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions(DefaultResourceFunctions()),
+				WithResourceFunctionsNew(DefaultResourceFunctions()),
 			},
 		},
 		{
@@ -180,7 +180,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -192,7 +192,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "IsBool"`,
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -329,8 +329,8 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions(DefaultResourceFunctions()),
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew(DefaultResourceFunctions()),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -342,7 +342,7 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "TestResourceFunc"`,
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions(DefaultResourceFunctions()),
+				WithResourceFunctionsNew(DefaultResourceFunctions()),
 			},
 		},
 		{
@@ -353,7 +353,7 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -365,7 +365,7 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "IsBool"`,
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -452,8 +452,8 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions(DefaultResourceFunctions()),
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew(DefaultResourceFunctions()),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -465,7 +465,7 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "TestResourceFunc"`,
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions(DefaultResourceFunctions()),
+				WithResourceFunctionsNew(DefaultResourceFunctions()),
 			},
 		},
 		{
@@ -476,7 +476,7 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -488,7 +488,7 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "IsBool"`,
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -625,8 +625,8 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions(DefaultResourceFunctions()),
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew(DefaultResourceFunctions()),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -638,7 +638,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "TestResourceFunc"`,
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions(DefaultResourceFunctions()),
+				WithResourceFunctionsNew(DefaultResourceFunctions()),
 			},
 		},
 		{
@@ -649,7 +649,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{
@@ -661,7 +661,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "IsBool"`,
 			factoryOptions: []FactoryOption{
-				WithResourceFunctions([]ottl.Factory[ottlresource.TransformContext]{createTestFuncFactory[ottlresource.TransformContext]("TestResourceFunc")}),
+				WithResourceFunctionsNew([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
 			},
 		},
 		{

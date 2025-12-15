@@ -21,7 +21,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -69,14 +69,14 @@ var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	if ddTracerVersion := req.Header.Get(header.TracerVersion); ddTracerVersion != "" {
-		attrs.PutStr(string(semconv.TelemetrySDKVersionKey), "Datadog-"+ddTracerVersion)
+		attrs.PutStr(string(conventions.TelemetrySDKVersionKey), "Datadog-"+ddTracerVersion)
 	}
 	if ddTracerLang := req.Header.Get(header.Lang); ddTracerLang != "" {
 		otelLang := ddTracerLang
 		if ddTracerLang == ".NET" {
 			otelLang = "dotnet"
 		}
-		attrs.PutStr(string(semconv.TelemetrySDKLanguageKey), otelLang)
+		attrs.PutStr(string(conventions.TelemetrySDKLanguageKey), otelLang)
 	}
 }
 
@@ -155,8 +155,8 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// ddSpan.Attributes["grpc.status.code"] contains the gRPC status code name (eg "OK")
 	// not the numeric value (eg "0")
 	// it's ddSpan.error that indicates holds the gRPC status code numeric value
-	newSpan.Attributes().PutStr(string(semconv.RPCSystemKey), semconv.RPCSystemGRPC.Value.AsString())
-	newSpan.Attributes().PutInt(string(semconv.RPCGRPCStatusCodeKey), int64(span.GetError()))
+	newSpan.Attributes().PutStr(string(conventions.RPCSystemKey), conventions.RPCSystemGRPC.Value.AsString())
+	newSpan.Attributes().PutInt(string(conventions.RPCGRPCStatusCodeKey), int64(span.GetError()))
 
 	method := ""
 	service := ""
@@ -197,11 +197,11 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 
 	spanName := ""
 	if method != "" {
-		newSpan.Attributes().PutStr(string(semconv.RPCMethodKey), method)
-		newSpan.Attributes().PutStr(string(semconv.RPCServiceKey), service)
+		newSpan.Attributes().PutStr(string(conventions.RPCMethodKey), method)
+		newSpan.Attributes().PutStr(string(conventions.RPCServiceKey), service)
 		spanName = service + "/" + method
 	} else if service != "" {
-		newSpan.Attributes().PutStr(string(semconv.RPCServiceKey), service)
+		newSpan.Attributes().PutStr(string(conventions.RPCServiceKey), service)
 		spanName = service
 	}
 	if spanName != "" {
@@ -211,7 +211,7 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 
 func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
-	newSpan.Attributes().PutStr(string(semconv.RPCSystemKey), "aws-api")
+	newSpan.Attributes().PutStr(string(conventions.RPCSystemKey), "aws-api")
 	if service, ok := span.Meta[("aws.service")]; ok {
 		if operation, ok := span.Meta[("aws.operation")]; ok {
 			newSpan.SetName(service + "/" + operation)
@@ -234,14 +234,14 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	}
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
-		string(semconv.ContainerIDKey):               payload.ContainerID,
-		string(semconv.TelemetrySDKLanguageKey):      payload.LanguageName,
-		string(semconv.ProcessRuntimeVersionKey):     payload.LanguageVersion,
-		string(semconv.DeploymentEnvironmentNameKey): payload.Env,
-		string(semconv.HostNameKey):                  payload.Hostname,
-		string(semconv.ServiceVersionKey):            payload.AppVersion,
-		string(semconv.TelemetrySDKNameKey):          "Datadog",
-		string(semconv.TelemetrySDKVersionKey):       payload.TracerVersion,
+		string(conventions.ContainerIDKey):               payload.ContainerID,
+		string(conventions.TelemetrySDKLanguageKey):      payload.LanguageName,
+		string(conventions.ProcessRuntimeVersionKey):     payload.LanguageVersion,
+		string(conventions.DeploymentEnvironmentNameKey): payload.Env,
+		string(conventions.HostNameKey):                  payload.Hostname,
+		string(conventions.ServiceVersionKey):            payload.AppVersion,
+		string(conventions.TelemetrySDKNameKey):          "Datadog",
+		string(conventions.TelemetrySDKVersionKey):       payload.TracerVersion,
 	} {
 		if v != "" {
 			sharedAttributes.PutStr(k, v)
@@ -358,9 +358,9 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	results := ptrace.NewTraces()
 	for service, spans := range groupByService {
 		rs := results.ResourceSpans().AppendEmpty()
-		rs.SetSchemaUrl(semconv.SchemaURL)
+		rs.SetSchemaUrl(conventions.SchemaURL)
 		sharedAttributes.CopyTo(rs.Resource().Attributes())
-		rs.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), service)
+		rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), service)
 
 		in := rs.ScopeSpans().AppendEmpty()
 		in.Scope().SetName("Datadog")
