@@ -45,8 +45,8 @@ jobs:
       - name: Get version and image info
         id: get_info
         run: |
-          # Extract version without 'v' prefix
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,./\(.\),\1,' | sed -e 's/^v//')
+          # Extract version without 'refs/tags/' prefix and 'v' prefix
+          VERSION=$(echo "${{ github.ref }}" | sed 's|refs/tags/||' | sed 's/^v//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # Get owner/organization name in lowercase for Docker image
@@ -110,8 +110,8 @@ jobs:
       - name: Get version and image info
         id: get_info
         run: |
-          # Extract version without 'v' prefix
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,./\(.\),\1,' | sed -e 's/^v//')
+          # Extract version without 'refs/tags/' prefix and 'v' prefix
+          VERSION=$(echo "${{ github.ref }}" | sed 's|refs/tags/||' | sed 's/^v//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # Get owner/organization name in lowercase for Docker image
