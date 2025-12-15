@@ -52,7 +52,7 @@ if [ -n "$FAKE_LOG_OUTPUT_PATH" ] && [ -f "$FAKE_LOG_OUTPUT_PATH" ]; then
   cat "$FAKE_LOG_OUTPUT_PATH"
 fi
 `
-	require.NoError(t, os.WriteFile(scriptPath, []byte(script), 0o755))
+	require.NoError(t, os.WriteFile(scriptPath, []byte(script), 0o755)) //nolint:gosec // script needs to be executable
 	t.Setenv("PATH", dir+":"+os.Getenv("PATH"))
 }
 
@@ -60,7 +60,7 @@ func writeFakeLogOutput(t *testing.T, lines ...string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "log_output.txt")
 	content := strings.Join(lines, "\n") + "\n"
-	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 	return path
 }
 
@@ -146,7 +146,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		rawLine := []byte("2024-01-01 12:00:00.123456-0700  localhost kernel[0]: (AppleACPIPlatform) AppleACPICPU: ProcessorId=0 LocalApicId=0 Enabled")
-		err := receiver.processLogLine(context.Background(), rawLine)
+		err := receiver.processLogLine(t.Context(), rawLine)
 		require.NoError(t, err)
 
 		// Verify the log was consumed
@@ -163,7 +163,7 @@ func TestProcessLogLine(t *testing.T) {
 		require.Zero(t, logRecord.Timestamp())
 
 		// In default format, severity should not be set
-		require.Equal(t, "", logRecord.SeverityText())
+		require.Empty(t, logRecord.SeverityText())
 		require.Equal(t, plog.SeverityNumberUnspecified, logRecord.SeverityNumber())
 	})
 
@@ -178,7 +178,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		jsonLine := []byte(`{"timestamp":"2024-01-01 12:00:00.123456-0700","eventMessage":"Test message","messageType":"Error","subsystem":"com.test"}`)
-		err := receiver.processLogLine(context.Background(), jsonLine)
+		err := receiver.processLogLine(t.Context(), jsonLine)
 		require.NoError(t, err)
 
 		// Verify the log was consumed
@@ -211,7 +211,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		invalidJSON := []byte(`{invalid json}`)
-		err := receiver.processLogLine(context.Background(), invalidJSON)
+		err := receiver.processLogLine(t.Context(), invalidJSON)
 		require.NoError(t, err)
 
 		// Verify the log was still consumed (with just the body)
@@ -239,7 +239,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		jsonLine := []byte(`{"timestamp":"2024-01-01 12:00:00.123456-0700","eventMessage":"Test message","messageType":"Debug","subsystem":"com.test"}`)
-		err := receiver.processLogLine(context.Background(), jsonLine)
+		err := receiver.processLogLine(t.Context(), jsonLine)
 		require.NoError(t, err)
 
 		// Verify the log was consumed
@@ -270,7 +270,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		jsonLine := []byte(`{"eventMessage":"Test message","subsystem":"com.test"}`)
-		err := receiver.processLogLine(context.Background(), jsonLine)
+		err := receiver.processLogLine(t.Context(), jsonLine)
 		require.NoError(t, err)
 
 		// Verify the log was consumed
@@ -287,7 +287,7 @@ func TestProcessLogLine(t *testing.T) {
 		require.Zero(t, logRecord.Timestamp())
 
 		// Severity should not be set (no messageType in JSON)
-		require.Equal(t, "", logRecord.SeverityText())
+		require.Empty(t, logRecord.SeverityText())
 		require.Equal(t, plog.SeverityNumberUnspecified, logRecord.SeverityNumber())
 	})
 }
@@ -448,7 +448,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		sink := &consumertest.LogsSink{}
 		receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
 		require.NotNil(t, receiver)
-		require.Equal(t, 2, len(receiver.config.resolvedArchivePaths))
+		require.Len(t, receiver.config.resolvedArchivePaths, 2)
 	})
 
 	t.Run("receiver processes multiple archives with doublestar glob pattern", func(t *testing.T) {
@@ -473,7 +473,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		sink := &consumertest.LogsSink{}
 		receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
 		require.NotNil(t, receiver)
-		require.Equal(t, 3, len(receiver.config.resolvedArchivePaths))
+		require.Len(t, receiver.config.resolvedArchivePaths, 3)
 	})
 
 	t.Run("receiver handles single archive path", func(t *testing.T) {
@@ -496,7 +496,7 @@ func TestReadFromMultipleArchives(t *testing.T) {
 		sink := &consumertest.LogsSink{}
 		receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
 		require.NotNil(t, receiver)
-		require.Equal(t, 1, len(receiver.config.resolvedArchivePaths))
+		require.Len(t, receiver.config.resolvedArchivePaths, 1)
 	})
 }
 
@@ -512,7 +512,7 @@ func TestRunLogCommandSkipsHeaderAndCompletionLines(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	receiver := newUnifiedLoggingReceiver(&Config{Format: "default"}, zap.NewNop(), sink)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 
 	count, err := receiver.runLogCommand(ctx, "")
@@ -564,7 +564,7 @@ func TestReadFromArchiveProcessesAllResolvedPaths(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
 
-	receiver.readFromArchive(context.Background())
+	receiver.readFromArchive(t.Context())
 
 	calls := readRecordedCalls(t, callsFile)
 	require.Len(t, calls, 2)
@@ -601,7 +601,7 @@ func TestReadFromLiveUsesBackoffLoop(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	receiver := newUnifiedLoggingReceiver(cfg, zap.NewNop(), sink)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	done := make(chan struct{})

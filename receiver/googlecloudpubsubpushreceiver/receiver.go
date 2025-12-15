@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -95,7 +95,7 @@ func addHandlerFunc[T any](
 			tb.HTTPServerRequestActiveCount.Add(handlerCtx, -1)
 			elapsed := time.Since(start)
 			tb.HTTPServerRequestDuration.Record(handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(attribute.Int(string(semconv.HTTPResponseStatusCodeKey), code))),
+				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code))),
 			)
 		}()
 
