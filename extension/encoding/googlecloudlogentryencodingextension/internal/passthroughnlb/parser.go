@@ -11,7 +11,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -114,17 +114,17 @@ func handleConnection(conn *connection, attr pcommon.Map) error {
 		return nil
 	}
 
-	shared.PutStr(string(semconv.ClientAddressKey), conn.ClientIP, attr)
-	shared.PutInt(string(semconv.ClientPortKey), conn.ClientPort, attr)
-	shared.PutInt(string(semconv.ServerPortKey), conn.ServerPort, attr)
+	shared.PutStr(string(conventions.ClientAddressKey), conn.ClientIP, attr)
+	shared.PutInt(string(conventions.ClientPortKey), conn.ClientPort, attr)
+	shared.PutInt(string(conventions.ServerPortKey), conn.ServerPort, attr)
 
 	if conn.Protocol != nil {
 		if protoName, ok := shared.ProtocolName(uint32(*conn.Protocol)); ok {
-			attr.PutStr(string(semconv.NetworkTransportKey), protoName)
+			attr.PutStr(string(conventions.NetworkTransportKey), protoName)
 		}
 	}
 
-	if _, err := shared.PutStrIfNotPresent(string(semconv.ServerAddressKey), conn.ServerIP, attr); err != nil {
+	if _, err := shared.PutStrIfNotPresent(string(conventions.ServerAddressKey), conn.ServerIP, attr); err != nil {
 		return fmt.Errorf("%w: %w", errServerAddress, err)
 	}
 
