@@ -80,7 +80,7 @@ The following receiver configuration parameters are supported.
 Consider following notes on default behaviors:
 
 - When `s3::encoding` is not specified, the receiver defaults to preserving the S3 object content as-is for logs.
-  - However, receiver attempts to detect `strings` vs `non-strings` where `Body` will be set to `string` or `byte ` accordingly.
+  - The log record's `Body` field will be a string type where the S3 object content is valid UTF-8, and otherwise will be a byte array.
 - When `cloudwatch::encoding` is not specified, the receiver defaults to parsing CloudWatch Logs messages to OpenTelemetry log records.
 - For metrics, the default behavior is to decode using `awscloudwatchmetricstreams_encoding` extension.
 
