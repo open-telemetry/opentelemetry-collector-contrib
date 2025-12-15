@@ -1,5 +1,5 @@
 change_type: breaking
-component: receiver/dockerstats
+component: receiver/docker_stats
 note: "Upgrades default Docker API version to 1.44 to be compatible with recent Docker Engine versions."
 issues: [44279]
 subtext: "Users requiring an older Docker API version can set the `api_version` in the docker stats receiver config. The minimum supported API level is not changed, only default."
