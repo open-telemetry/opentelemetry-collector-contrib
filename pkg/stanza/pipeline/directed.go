@@ -21,8 +21,8 @@ import (
 var _ Pipeline = (*DirectedPipeline)(nil)
 
 var (
-	alreadyStarted = stanzaerrors.NewError("pipeline already started", "")
-	alreadyStopped = stanzaerrors.NewError("pipeline already stopped", "")
+	alreadyStarted = errors.New("pipeline already started")
+	alreadyStopped = errors.New("pipeline already stopped")
 )
 
 // DirectedPipeline is a pipeline backed by a directed graph
