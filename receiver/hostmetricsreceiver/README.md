@@ -219,6 +219,7 @@ export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service
 ### Benchmark Tests
 
 This component includes comprehensive benchmark tests for all stable signals. The benchmarks measure the performance of the receiver under different scraper configurations:
+
 - **CPU**: `Benchmark_ScrapeCpuMetrics`
 - **Disk**: `Benchmark_ScrapeDiskMetrics` 
 - **FileSystem**: `Benchmark_ScrapeFileSystemMetrics`
