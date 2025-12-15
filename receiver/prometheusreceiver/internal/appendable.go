@@ -6,7 +6,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"regexp"
-	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -18,7 +17,6 @@ import (
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
 type appendable struct {
 	sink                 consumer.Metrics
-	metricAdjuster       MetricsAdjuster
 	useStartTimeMetric   bool
 	useMetadata          bool
 	trimSuffixes         bool
@@ -33,21 +31,12 @@ type appendable struct {
 func NewAppendable(
 	sink consumer.Metrics,
 	set receiver.Settings,
-	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
-	useCreatedMetric bool,
 	useMetadata bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
 ) (storage.Appendable, error) {
-	var metricAdjuster MetricsAdjuster
-	if !useStartTimeMetric {
-		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)
-	} else {
-		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex, gcInterval)
-	}
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})
 	if err != nil {
 		return nil, err
@@ -56,7 +45,6 @@ func NewAppendable(
 	return &appendable{
 		sink:                 sink,
 		settings:             set,
-		metricAdjuster:       metricAdjuster,
 		useStartTimeMetric:   useStartTimeMetric,
 		useMetadata:          useMetadata,
 		startTimeMetricRegex: startTimeMetricRegex,
@@ -67,5 +55,5 @@ func NewAppendable(
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.useMetadata)
+	return newTransaction(ctx, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.useMetadata)
 }

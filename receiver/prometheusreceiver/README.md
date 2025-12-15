@@ -282,8 +282,3 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 ```
 - `receiver.prometheusreceiver.EnableNativeHistograms` (Stable, enabled by default): Converts scraped native histogram metrics into OpenTelemetry exponential histograms. **Note:** You still need to configure `scrape_native_histograms: true` in your Prometheus scrape config to actually scrape native histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
 
-- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
-```

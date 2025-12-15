@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -183,7 +182,6 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 
 	sink := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopSettings(metadata.Type)
-	adjuster := &noOpAdjuster{}
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.MustNewID("prometheus"),
 		Transport:              "http",
@@ -195,7 +193,6 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 
 	tx := newTransaction(
 		benchCtx,
-		adjuster,
 		sink,
 		labels.EmptyLabels(), // no external labels
 		settings,
@@ -266,14 +263,6 @@ func createScopeInfoLabels() labels.Labels {
 		prometheus.ScopeVersionLabelKey: "1.0.0",
 		"scope_attribute":               "test_value",
 	})
-}
-
-// noOpAdjuster is a MetricsAdjuster that doesn't modify metrics.
-// This isolates the transaction performance from adjustment overhead.
-type noOpAdjuster struct{}
-
-func (*noOpAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
-	return nil
 }
 
 // mockMetadataStore is a minimal implementation of scrape.MetricMetadataStore for testing
