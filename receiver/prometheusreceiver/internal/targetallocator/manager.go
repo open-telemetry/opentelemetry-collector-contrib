@@ -228,6 +228,7 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -237,10 +238,6 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 	jobToScrapeConfig := map[string]*promconfig.ScrapeConfig{}
 	envReplacedBody := instantiateShard(body, os.LookupEnv)
 	err = yaml.Unmarshal(envReplacedBody, &jobToScrapeConfig)
-	if err != nil {
-		return nil, err
-	}
-	err = resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
