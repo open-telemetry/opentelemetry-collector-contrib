@@ -1,0 +1,145 @@
+name: build-custom-docker-images
+
+on:
+  push:
+    tags:
+      - 'v*'   # Trigger on version tags
+      - 'v*-test'  # Also trigger on test version tags
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GOARCH: amd64
+  GOOS: linux
+
+jobs:
+  build-collector:
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Generate collector code
+        run: |
+          ./internal/buildscripts/ocb-add-replaces.sh otel-collector
+          ./.tools/builder --skip-compilation --config cmd/otel-collector/builder-config-replaced.yaml
+      - name: Build binary
+        run: |
+          cd ./cmd/otel-collector && \
+          GO111MODULE=on CGO_ENABLED=0 go build -trimpath \
+            -o ../../bin/otel-collector_${GOOS}_${GOARCH} \
+            -tags "" .
+      - name: Get version and image info
+        id: get_info
+        run: |
+          # Extract version without 'v' prefix
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,./\(.\),\1,' | sed -e 's/^v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Get owner/organization name in lowercase for Docker image
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=$OWNER" >> $GITHUB_OUTPUT
+          
+          # Only set latest tag for non-test builds from default branch
+          if [[ ! "$VERSION" == *-test ]]; then
+            echo "set_latest=true" >> $GITHUB_OUTPUT
+          else
+            echo "set_latest=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Prepare Docker context
+        run: |
+          cp ./bin/otel-collector_${GOOS}_${GOARCH} ./cmd/otel-collector/otel-collector
+      - name: Build and push otel-collector
+        uses: docker/build-push-action@v5
+        with:
+          context: ./cmd/otel-collector
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.get_info.outputs.set_latest == 'true' && format('ghcr.io/{0}/otel-collector:{1},ghcr.io/{0}/otel-collector:latest', steps.get_info.outputs.owner, steps.get_info.outputs.version) || format('ghcr.io/{0}/otel-collector:{1}', steps.get_info.outputs.owner, steps.get_info.outputs.version) }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Cleanup
+        run: |
+          rm ./cmd/otel-collector/otel-collector
+      - name: Validate Docker image
+        run: |
+          docker run --rm ghcr.io/${{ steps.get_info.outputs.owner }}/otel-collector:${{ steps.get_info.outputs.version }} --version || true
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  build-exporter:
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Generate collector code
+        run: |
+          ./internal/buildscripts/ocb-add-replaces.sh otel-exporter
+          ./.tools/builder --skip-compilation --config cmd/otel-exporter/builder-config-replaced.yaml
+      - name: Build binary
+        run: |
+          cd ./cmd/otel-exporter && \
+          GO111MODULE=on CGO_ENABLED=0 go build -trimpath \
+            -o ../../bin/otel-exporter_${GOOS}_${GOARCH} \
+            -tags "" .
+      - name: Get version and image info
+        id: get_info
+        run: |
+          # Extract version without 'v' prefix
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,./\(.\),\1,' | sed -e 's/^v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Get owner/organization name in lowercase for Docker image
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=$OWNER" >> $GITHUB_OUTPUT
+          
+          # Only set latest tag for non-test builds from default branch
+          if [[ ! "$VERSION" == *-test ]]; then
+            echo "set_latest=true" >> $GITHUB_OUTPUT
+          else
+            echo "set_latest=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Prepare Docker context
+        run: |
+          cp ./bin/otel-exporter_${GOOS}_${GOARCH} ./cmd/otel-exporter/otel-exporter
+      - name: Build and push otel-exporter
+        uses: docker/build-push-action@v5
+        with:
+          context: ./cmd/otel-exporter
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.get_info.outputs.set_latest == 'true' && format('ghcr.io/{0}/otel-exporter:{1},ghcr.io/{0}/otel-exporter:latest', steps.get_info.outputs.owner, steps.get_info.outputs.version) || format('ghcr.io/{0}/otel-exporter:{1}', steps.get_info.outputs.owner, steps.get_info.outputs.version) }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Cleanup
+        run: |
+          rm ./cmd/otel-exporter/otel-exporter
+      - name: Validate Docker image
+        run: |
+          docker run --rm ghcr.io/${{ steps.get_info.outputs.owner }}/otel-exporter:${{ steps.get_info.outputs.version }} --version || true
+      - run: ./.github/workflows/scripts/check-disk-space.sh
