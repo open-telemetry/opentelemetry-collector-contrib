@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 func TestConvertResourceToAttributes(t *testing.T) {
