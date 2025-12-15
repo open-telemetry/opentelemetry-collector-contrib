@@ -739,7 +739,10 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 // extractAttributes return all attributes different from job, instance, metric name and scope name/version
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	for labelName, labelValue := range ls.Map() {
+	labelMap := ls.Map()
+	// job, instance and metric name will always become labels
+	attrs.EnsureCapacity(len(labelMap) - 3)
+	for labelName, labelValue := range labelMap {
 		if labelName == "instance" || labelName == "job" || // Become resource attributes
 			labelName == string(model.MetricNameLabel) || // Becomes metric name
 			labelName == "otel_scope_name" || labelName == "otel_scope_version" { // Becomes scope name and version
