@@ -89,17 +89,19 @@ Since version 0.40.0, official OpenTelemetry Collector images run as a non-root 
 
 #### Grant Docker Group Access
 
-On Linux, grant the collector process access to the `docker` group:
+On Linux, grant the collector process access to the `docker` group by adding the host's docker group ID as a supplementary group to the container process:
 
 ```bash
 # Get the docker group ID on your host
 getent group docker
 
-# Linux example - Run with docker group (replace 999 with your docker group GID)
+# Linux example - Run with docker group (replace 999 with your docker group GID from above)
 docker run --group-add 999 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   otel/opentelemetry-collector-contrib:latest
 ```
+
+**Note:** The `--group-add` flag adds the host's group ID as a supplementary group to the container process. This works because the mounted socket retains the host's group ownership. If you have user namespaces enabled in Docker, additional configuration may be required.
 
 #### Run as Root
 
@@ -116,7 +118,7 @@ docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock \
 #### Alternative Approaches
 
 For enhanced security, consider:
-- Using a Docker API proxy that restricts access to only required endpoints
+- Using a Docker API proxy (e.g. [docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy)) that restricts access to only required endpoints
 - Running this receiver in an isolated collector instance with elevated privileges, forwarding metrics to your main collector via OTLP
 
 For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
