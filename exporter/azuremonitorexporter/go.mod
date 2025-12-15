@@ -4,8 +4,8 @@ go 1.24.0
 
 require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.142.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.48.0
 	go.opentelemetry.io/collector/component/componenttest v0.142.0
