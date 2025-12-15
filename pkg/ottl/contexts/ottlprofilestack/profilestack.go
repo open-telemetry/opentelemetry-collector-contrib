@@ -6,6 +6,7 @@ package ottlprofilestack // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,6 +24,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logprofile"
 )
+
+var tcPool = sync.Pool{
+	New: func() any {
+		return &TransformContext{cache: pcommon.NewMap()}
+	},
+}
 
 // ContextName is the name of the context for profiles.
 // Experimental: *NOTE* this constant is subject to change or removal in the future.
@@ -63,6 +70,8 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 type TransformContextOption func(*TransformContext)
 
 // NewTransformContext creates a new TransformContext with the provided parameters.
+//
+// Deprecated: Use NewTransformContextPtr.
 func NewTransformContext(stack pprofile.Stack, sample pprofile.Sample, profile pprofile.Profile, dictionary pprofile.ProfilesDictionary, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeProfiles pprofile.ScopeProfiles, resourceProfiles pprofile.ResourceProfiles, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		stack:                stack,
@@ -79,6 +88,39 @@ func NewTransformContext(stack pprofile.Stack, sample pprofile.Sample, profile p
 		opt(&tc)
 	}
 	return tc
+}
+
+// NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
+// Caller must call TransformContext.Close on the returned TransformContext.
+func NewTransformContextPtr(resourceProfiles pprofile.ResourceProfiles, scopeProfiles pprofile.ScopeProfiles, stack pprofile.Stack, sample pprofile.Sample, profile pprofile.Profile, dictionary pprofile.ProfilesDictionary, options ...TransformContextOption) *TransformContext {
+	tCtx := tcPool.Get().(*TransformContext)
+	tCtx.stack = stack
+	tCtx.sample = sample
+	tCtx.profile = profile
+	tCtx.dictionary = dictionary
+	tCtx.instrumentationScope = scopeProfiles.Scope()
+	tCtx.resource = resourceProfiles.Resource()
+	tCtx.scopeProfiles = scopeProfiles
+	tCtx.resourceProfiles = resourceProfiles
+	for _, opt := range options {
+		opt(tCtx)
+	}
+	return tCtx
+}
+
+// Close the current TransformContext.
+// After this function returns this instance cannot be used.
+func (tCtx *TransformContext) Close() {
+	tCtx.stack = pprofile.NewStack()
+	tCtx.sample = pprofile.NewSample()
+	tCtx.profile = pprofile.NewProfile()
+	tCtx.dictionary = pprofile.NewProfilesDictionary()
+	tCtx.instrumentationScope = pcommon.InstrumentationScope{}
+	tCtx.resource = pcommon.Resource{}
+	tCtx.cache.Clear()
+	tCtx.scopeProfiles = pprofile.ScopeProfiles{}
+	tCtx.resourceProfiles = pprofile.ResourceProfiles{}
+	tcPool.Put(tCtx)
 }
 
 // GetProfile returns the profile from the TransformContext.
