@@ -1,18 +1,18 @@
 dist:
   module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otel-collector
   name: otel-collector
-  description: OpenTelemetry Collector Contrib - Stage 2: OTLP Receiver with Basic Auth Extension and Batch Processor
-  version: 0.140.1-dev
+  description: "OpenTelemetry Collector Contrib - Stage 2: OTLP Receiver with Basic Auth Extension and Batch Processor"
+  version: 0.141.0
   output_path: ./cmd/otel-collector
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.140.1-0.20251127085441-73f090cd0d59
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.141.0
 
 extensions:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.140.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.141.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.140.1-0.20251127085441-73f090cd0d59
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.141.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.140.1-0.20251127085441-73f090cd0d59
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.141.0
