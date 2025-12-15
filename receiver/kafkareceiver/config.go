@@ -213,6 +213,13 @@ func validateExcludeTopic(signalType string, topics, excludeTopics []string) err
 	}
 
 	for _, excludeTopic := range excludeTopics {
+		// Validate that exclude_topic is not empty
+		if excludeTopic == "" {
+			return fmt.Errorf(
+				"%s.exclude_topics contains empty string, which would match all topics",
+				signalType,
+			)
+		}
 		// Validate that exclude_topic is a valid regex pattern
 		if _, err := regexp.Compile(excludeTopic); err != nil {
 			return fmt.Errorf(

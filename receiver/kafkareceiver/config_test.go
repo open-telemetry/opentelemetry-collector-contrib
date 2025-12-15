@@ -397,6 +397,50 @@ func TestConfigValidate(t *testing.T) {
 			},
 			expectedErr: "logs.exclude_topic contains invalid regex pattern",
 		},
+		{
+			name: "invalid config with empty string in exclude_topics for logs",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topics:        []string{"^logs-.*"},
+					ExcludeTopics: []string{""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "logs.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for metrics",
+			config: &Config{
+				Metrics: TopicEncodingConfig{
+					Topics:        []string{"^metrics-.*"},
+					ExcludeTopics: []string{"", "^metrics-test$"},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "metrics.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for traces",
+			config: &Config{
+				Traces: TopicEncodingConfig{
+					Topics:        []string{"^traces-.*"},
+					ExcludeTopics: []string{"^traces-test$", ""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "traces.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for profiles",
+			config: &Config{
+				Profiles: TopicEncodingConfig{
+					Topics:        []string{"^profiles-.*"},
+					ExcludeTopics: []string{""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "profiles.exclude_topics contains empty string",
+		},
 	}
 
 	for _, tt := range tests {
