@@ -817,13 +817,15 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.ReplicaSetName {
 					tags[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
-				// Deployment name
+				if c.Rules.ServiceName {
+					tags[string(conventions.ServiceNameKey)] = ref.Name
+				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
 					if c.Rules.DeploymentNameFromReplicaSet {
 						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
-					} else if rs, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						deploymentName = rs.Deployment.Name
+					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						deploymentName = replicaset.Deployment.Name
 					}
 					if deploymentName != "" {
 						if c.Rules.DeploymentName {
@@ -836,10 +838,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				}
 				// Deployment UID
 				if c.Rules.DeploymentUID {
-					if rs, ok := c.GetReplicaSet(string(ref.UID)); ok {
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						// rs.Deployment.UID non-empty only when controller=true
-						if rs.Deployment.UID != "" {
-							tags[string(conventions.K8SDeploymentUIDKey)] = rs.Deployment.UID
+						if replicaset.Deployment.UID != "" {
+							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
 					}
 				}
@@ -1743,7 +1745,6 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerID ||
 		rules.ServiceVersion ||
 		rules.ServiceInstanceID
-
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
