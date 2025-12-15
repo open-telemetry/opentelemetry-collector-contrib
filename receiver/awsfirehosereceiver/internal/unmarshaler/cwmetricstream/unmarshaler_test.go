@@ -156,7 +156,7 @@ func TestSetDataPointAttributes(t *testing.T) {
 	}
 	want := map[string]any{
 		"service.instance.id": testInstanceID,
-		"CustomDimension":                        "whatever",
+		"CustomDimension":     "whatever",
 	}
 
 	dp := pmetric.NewSummaryDataPoint()
@@ -172,22 +172,22 @@ func TestSetResourceAttributes(t *testing.T) {
 		"WithAWSNamespace": {
 			namespace: "AWS/EC2",
 			want: map[string]any{
-				attributeAWSCloudWatchMetricStreamName:  testStreamName,
-				"cloud.account.id":   testAccountID,
-				"cloud.region":      testRegion,
-				"cloud.provider":    "aws",
-				"service.name":      "EC2",
-				"service.namespace": "AWS",
+				attributeAWSCloudWatchMetricStreamName: testStreamName,
+				"cloud.account.id":                     testAccountID,
+				"cloud.region":                         testRegion,
+				"cloud.provider":                       "aws",
+				"service.name":                         "EC2",
+				"service.namespace":                    "AWS",
 			},
 		},
 		"WithCustomNamespace": {
 			namespace: "CustomNamespace",
 			want: map[string]any{
 				attributeAWSCloudWatchMetricStreamName: testStreamName,
-				"cloud.account.id":  testAccountID,
-				"cloud.region":     testRegion,
-				"cloud.provider":   "aws",
-				"service.name":     "CustomNamespace",
+				"cloud.account.id":                     testAccountID,
+				"cloud.region":                         testRegion,
+				"cloud.provider":                       "aws",
+				"service.name":                         "CustomNamespace",
 			},
 		},
 	}

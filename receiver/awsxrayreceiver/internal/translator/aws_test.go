@@ -55,10 +55,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				"cloud.provider":         "aws",
+				"cloud.provider":          "aws",
 				"cloud.availability_zone": "<ec2-az>",
-				"host.id":                "<instance-id>",
-				"host.type":              "<instance-size>",
+				"host.id":                 "<instance-id>",
+				"host.type":               "<instance-size>",
 				"host.image.id":           "<ami>",
 			},
 		},
@@ -71,10 +71,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				"cloud.provider":         "aws",
+				"cloud.provider":          "aws",
 				"cloud.availability_zone": "<ecs-az>",
-				"container.name":         "<container-name>",
-				"container.id":           "<ecs-container-id>",
+				"container.name":          "<container-name>",
+				"container.id":            "<ecs-container-id>",
 			},
 		},
 		"WithEKS": {
@@ -86,10 +86,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				"cloud.provider":  "aws",
+				"cloud.provider":   "aws",
 				"k8s.pod.name":     "<pod>",
 				"k8s.cluster.name": "<cluster-name>",
-				"container.id":    "<eks-container-id>",
+				"container.id":     "<eks-container-id>",
 			},
 		},
 		"WithBeanstalk": {
@@ -101,10 +101,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				"cloud.provider":     "aws",
-				"service.namespace":  "<environment>",
+				"cloud.provider":      "aws",
+				"service.namespace":   "<environment>",
 				"service.instance.id": "1",
-				"service.version":    "<version-label>",
+				"service.version":     "<version-label>",
 			},
 		},
 	}

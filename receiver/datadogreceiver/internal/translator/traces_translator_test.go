@@ -371,7 +371,7 @@ func TestToTraces(t *testing.T) {
 				"db.query.text":      "select * from customers",
 				"db.operation.name":  "select",
 				"db.collection.name": "customers",
-				"db.namespace":      "pg_customers",
+				"db.namespace":       "pg_customers",
 			},
 		},
 		{
@@ -474,7 +474,7 @@ func TestToTraces(t *testing.T) {
 			"POST /api/order",
 			map[string]string{
 				"http.request.method": "POST",
-				"http.route":         "/api/order",
+				"http.route":          "/api/order",
 			},
 		},
 		{
@@ -515,7 +515,7 @@ func TestToTraces(t *testing.T) {
 			"POST /route",
 			map[string]string{
 				"http.request.method": "POST",
-				"http.route":         "/route",
+				"http.route":          "/route",
 			},
 		},
 		{
@@ -531,8 +531,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":        "mydomain.MyDomainService",
-				"rpc.method":         "MyMethod",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
 				"rpc.grpc.status_code": "0",
 			},
 		},
@@ -548,10 +548,10 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":        "mydomain.MyDomainService",
-				"rpc.method":         "MyMethod",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
 				"rpc.grpc.status_code": "0",
-				"rpc.system":         conventions.RPCSystemGRPC.Value.AsString(),
+				"rpc.system":           "grpc",
 			},
 		},
 		{
@@ -567,8 +567,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":        "mydomain.MyDomainService",
-				"rpc.method":         "MyMethod",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
 				"rpc.grpc.status_code": "2",
 			},
 		},
@@ -585,7 +585,7 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService",
 			map[string]string{
-				"rpc.service":        "mydomain.MyDomainService",
+				"rpc.service":          "mydomain.MyDomainService",
 				"rpc.grpc.status_code": "0",
 			},
 		},
@@ -602,8 +602,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":        "mydomain.MyDomainService",
-				"rpc.method":         "MyMethod",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
 				"rpc.grpc.status_code": "0",
 			},
 		},
@@ -620,8 +620,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":        "mydomain.MyDomainService",
-				"rpc.method":         "MyMethod",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
 				"rpc.grpc.status_code": "0",
 			},
 		},
@@ -638,9 +638,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"S3/headObject",
 			map[string]string{
-				"rpc.system":    "aws-api",
-				"rpc.service":   "S3",
-				"rpc.method":    "headObject",
+				"rpc.system":     "aws-api",
+				"rpc.service":    "S3",
+				"rpc.method":     "headObject",
 				"aws.s3.bucket":  "my-bucket",
 				"aws.request_id": "1234567890",
 			},

@@ -44,10 +44,10 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "service:my-service", "version:1.0"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				"host.name":                  "host",
+				"host.name":                   "host",
 				"deployment.environment.name": "prod",
-				"service.name":               "my-service",
-				"service.version":            "1.0",
+				"service.name":                "my-service",
+				"service.version":             "1.0",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -57,7 +57,7 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "foo"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				"host.name":                  "host",
+				"host.name":                   "host",
 				"deployment.environment.name": "prod",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),

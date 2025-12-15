@@ -49,12 +49,12 @@ func TestTranslation(t *testing.T) {
 	defaultServerSpanAttrs := func(seg *awsxray.Segment) pcommon.Map {
 		m := pcommon.NewMap()
 		assert.NoError(t, m.FromRaw(map[string]any{
-			"http.method":     *seg.HTTP.Request.Method,
-			"http.client_ip":   *seg.HTTP.Request.ClientIP,
-			"http.user_agent":  *seg.HTTP.Request.UserAgent,
+			"http.method":                         *seg.HTTP.Request.Method,
+			"http.client_ip":                      *seg.HTTP.Request.ClientIP,
+			"http.user_agent":                     *seg.HTTP.Request.UserAgent,
 			awsxray.AWSXRayXForwardedForAttribute: *seg.HTTP.Request.XForwardedFor,
-			"http.status_code": *seg.HTTP.Response.Status,
-			"http.url":        *seg.HTTP.Request.URL,
+			"http.status_code":                    *seg.HTTP.Response.Status,
+			"http.url":                            *seg.HTTP.Request.URL,
 		}))
 		return m
 	}
@@ -77,14 +77,14 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "serverSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					"service.name":          *seg.Name,
-					"cloud.provider":        "aws",
+					"service.name":           *seg.Name,
+					"cloud.provider":         "aws",
 					"telemetry.sdk.version":  *seg.AWS.XRay.SDKVersion,
 					"telemetry.sdk.name":     *seg.AWS.XRay.SDK,
 					"telemetry.sdk.language": "Go",
 					"k8s.cluster.name":       *seg.AWS.EKS.ClusterName,
 					"k8s.pod.name":           *seg.AWS.EKS.Pod,
-					"container.id":          *seg.AWS.EKS.ContainerID,
+					"container.id":           *seg.AWS.EKS.ContainerID,
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -124,8 +124,8 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "ddbSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					"service.name":          *seg.Name,
-					"cloud.provider":        "aws",
+					"service.name":           *seg.Name,
+					"cloud.provider":         "aws",
 					"telemetry.sdk.version":  *seg.AWS.XRay.SDKVersion,
 					"telemetry.sdk.name":     *seg.AWS.XRay.SDK,
 					"telemetry.sdk.language": "java",
@@ -188,14 +188,14 @@ func TestTranslation(t *testing.T) {
 				subseg7318 := seg.Subsegments[0].Subsegments[0]
 				childSpan7318Attrs := pcommon.NewMap()
 				assert.NoError(t, childSpan7318Attrs.FromRaw(map[string]any{
-					awsxray.AWSServiceAttribute:                      *subseg7318.Name,
-					"http.response_content_length": int64(subseg7318.HTTP.Response.ContentLength.(float64)),
-					"http.status_code":            *subseg7318.HTTP.Response.Status,
-					awsxray.AWSOperationAttribute:                    *subseg7318.AWS.Operation,
-					awsxray.AWSRegionAttribute:                       *subseg7318.AWS.RemoteRegion,
-					awsxray.AWSRequestIDAttribute:                    *subseg7318.AWS.RequestID,
-					awsxray.AWSTableNameAttribute:                    *subseg7318.AWS.TableName,
-					awsxray.AWSXrayRetriesAttribute:                  *subseg7318.AWS.Retries,
+					awsxray.AWSServiceAttribute:     *subseg7318.Name,
+					"http.response_content_length":  int64(subseg7318.HTTP.Response.ContentLength.(float64)),
+					"http.status_code":              *subseg7318.HTTP.Response.Status,
+					awsxray.AWSOperationAttribute:   *subseg7318.AWS.Operation,
+					awsxray.AWSRegionAttribute:      *subseg7318.AWS.RemoteRegion,
+					awsxray.AWSRequestIDAttribute:   *subseg7318.AWS.RequestID,
+					awsxray.AWSTableNameAttribute:   *subseg7318.AWS.TableName,
+					awsxray.AWSXrayRetriesAttribute: *subseg7318.AWS.Retries,
 				}))
 
 				childSpan7318 := perSpanProperties{
@@ -384,14 +384,14 @@ func TestTranslation(t *testing.T) {
 				subseg7163 := seg.Subsegments[0].Subsegments[1]
 				childSpan7163Attrs := pcommon.NewMap()
 				assert.NoError(t, childSpan7163Attrs.FromRaw(map[string]any{
-					awsxray.AWSServiceAttribute:                      *subseg7163.Name,
-					"http.status_code":            *subseg7163.HTTP.Response.Status,
-					"http.response_content_length": int64(subseg7163.HTTP.Response.ContentLength.(float64)),
-					awsxray.AWSOperationAttribute:                    *subseg7163.AWS.Operation,
-					awsxray.AWSRegionAttribute:                       *subseg7163.AWS.RemoteRegion,
-					awsxray.AWSRequestIDAttribute:                    *subseg7163.AWS.RequestID,
-					awsxray.AWSTableNameAttribute:                    *subseg7163.AWS.TableName,
-					awsxray.AWSXrayRetriesAttribute:                  *subseg7163.AWS.Retries,
+					awsxray.AWSServiceAttribute:     *subseg7163.Name,
+					"http.status_code":              *subseg7163.HTTP.Response.Status,
+					"http.response_content_length":  int64(subseg7163.HTTP.Response.ContentLength.(float64)),
+					awsxray.AWSOperationAttribute:   *subseg7163.AWS.Operation,
+					awsxray.AWSRegionAttribute:      *subseg7163.AWS.RemoteRegion,
+					awsxray.AWSRequestIDAttribute:   *subseg7163.AWS.RequestID,
+					awsxray.AWSTableNameAttribute:   *subseg7163.AWS.TableName,
+					awsxray.AWSXrayRetriesAttribute: *subseg7163.AWS.Retries,
 				}))
 
 				childSpan7163Evts := initExceptionEvents(&subseg7163)
@@ -574,18 +574,18 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "awsValidAwsFields.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					"service.name":           *seg.Name,
-					"cloud.provider":         "aws",
+					"service.name":            *seg.Name,
+					"cloud.provider":          "aws",
 					"cloud.account.id":        *seg.AWS.AccountID,
 					"cloud.availability_zone": *seg.AWS.EC2.AvailabilityZone,
-					"host.id":                *seg.AWS.EC2.InstanceID,
-					"host.type":              *seg.AWS.EC2.InstanceSize,
+					"host.id":                 *seg.AWS.EC2.InstanceID,
+					"host.type":               *seg.AWS.EC2.InstanceSize,
 					"host.image.id":           *seg.AWS.EC2.AmiID,
-					"container.name":         *seg.AWS.ECS.ContainerName,
-					"container.id":           *seg.AWS.ECS.ContainerID,
-					"service.namespace":      *seg.AWS.Beanstalk.Environment,
+					"container.name":          *seg.AWS.ECS.ContainerName,
+					"container.id":            *seg.AWS.ECS.ContainerID,
+					"service.namespace":       *seg.AWS.Beanstalk.Environment,
 					"service.instance.id":     "32",
-					"service.version":        *seg.AWS.Beanstalk.VersionLabel,
+					"service.version":         *seg.AWS.Beanstalk.VersionLabel,
 					"telemetry.sdk.version":   *seg.AWS.XRay.SDKVersion,
 					"telemetry.sdk.name":      *seg.AWS.XRay.SDK,
 					"telemetry.sdk.language":  "Go",
@@ -703,11 +703,11 @@ func TestTranslation(t *testing.T) {
 			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
 				assert.NoError(t, attrs.FromRaw(map[string]any{
-					"http.method":                *seg.HTTP.Request.Method,
-					"http.status_code":            *seg.HTTP.Response.Status,
-					"http.url":                   *seg.HTTP.Request.URL,
+					"http.method":                  *seg.HTTP.Request.Method,
+					"http.status_code":             *seg.HTTP.Response.Status,
+					"http.url":                     *seg.HTTP.Request.URL,
 					"http.response_content_length": int64(seg.HTTP.Response.ContentLength.(float64)),
-					awsxray.AWSXRayTracedAttribute:                   true,
+					awsxray.AWSXRayTracedAttribute: true,
 				}))
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -752,11 +752,11 @@ func TestTranslation(t *testing.T) {
 			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
 				assert.NoError(t, attrs.FromRaw(map[string]any{
-					"http.method":                *seg.HTTP.Request.Method,
-					"http.status_code":            *seg.HTTP.Response.Status,
-					"http.url":                   *seg.HTTP.Request.URL,
+					"http.method":                  *seg.HTTP.Request.Method,
+					"http.status_code":             *seg.HTTP.Response.Status,
+					"http.url":                     *seg.HTTP.Request.URL,
 					"http.response_content_length": seg.HTTP.Response.ContentLength.(string),
-					awsxray.AWSXRayTracedAttribute:                   true,
+					awsxray.AWSXRayTracedAttribute: true,
 				}))
 
 				res := perSpanProperties{
