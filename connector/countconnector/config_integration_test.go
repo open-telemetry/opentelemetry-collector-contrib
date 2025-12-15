@@ -87,6 +87,7 @@ func TestCount_EmptySubconfig_ProducesDefaultLogRecordCount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ccfg, err := getValidatedCountConfigFromYAML(t, filepath.Join("testdata", tt.configFile))
 			require.NoError(t, err)
+			require.NotNil(t, ccfg)
 
 			in, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 			require.NoError(t, err)
@@ -111,6 +112,7 @@ func TestCount_EmptySubconfig_ProducesDefaultLogRecordCount(t *testing.T) {
 func TestCount_SpecificLogMetricWithCondition_Works(t *testing.T) {
 	ccfg, err := getValidatedCountConfigFromYAML(t, filepath.Join("testdata", "config-count-logs-specific.yaml"))
 	require.NoError(t, err)
+	require.NotNil(t, ccfg)
 
 	metricName := "log.file.name"
 
