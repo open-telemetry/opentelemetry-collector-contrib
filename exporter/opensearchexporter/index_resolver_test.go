@@ -146,14 +146,16 @@ func TestIndexResolver_ResolveIndex(t *testing.T) {
 			if tt.indexPattern == "" {
 				// Handle empty index case
 				indexName := getIndexName("default", "namespace", "ss4o_logs")
-				index = resolver.appendTimeFormat(indexName, tt.timeFormat, ts)
+				timeSuffix := resolver.calculateTimeSuffix(tt.timeFormat, ts)
+				index = indexName + timeSuffix
 			} else {
 				keys := resolver.extractPlaceholderKeys(tt.indexPattern)
 				itemMap := pcommon.NewMap()
 				for k, v := range tt.itemAttrs {
 					itemMap.PutStr(k, v)
 				}
-				index = resolver.resolveIndexName(tt.indexPattern, tt.fallback, tt.timeFormat, itemMap, keys, tt.scopeAttrs, tt.resourceAttrs, ts)
+				timeSuffix := resolver.calculateTimeSuffix(tt.timeFormat, ts)
+				index = resolver.resolveIndexName(tt.indexPattern, tt.fallback, itemMap, keys, tt.scopeAttrs, tt.resourceAttrs, timeSuffix)
 			}
 			if index != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, index)

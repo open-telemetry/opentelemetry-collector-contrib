@@ -72,7 +72,7 @@ func (*indexResolver) collectScopeAttributes(scope pcommon.InstrumentationScope,
 }
 
 // resolveIndexName handles the common logic for resolving index names with placeholders
-func (r *indexResolver) resolveIndexName(indexPattern, fallback, timeFormat string, itemAttrs pcommon.Map, keys []string, scopeAttributes, resourceAttributes map[string]string, timestamp time.Time) string {
+func (r *indexResolver) resolveIndexName(indexPattern, fallback string, itemAttrs pcommon.Map, keys []string, scopeAttributes, resourceAttributes map[string]string, timeSuffix string) string {
 	itemAttributes := make(map[string]string)
 	for _, key := range keys {
 		if v, ok := itemAttrs.Get(key); ok {
@@ -96,15 +96,15 @@ func (r *indexResolver) resolveIndexName(indexPattern, fallback, timeFormat stri
 		return "unknown"
 	})
 
-	return r.appendTimeFormat(indexName, timeFormat, timestamp)
+	return indexName + timeSuffix
 }
 
-// appendTimeFormat appends time suffix if format is specified
-func (*indexResolver) appendTimeFormat(index, timeFormat string, timestamp time.Time) string {
+// calculateTimeSuffix calculates the time suffix string for the given format and timestamp
+func (*indexResolver) calculateTimeSuffix(timeFormat string, timestamp time.Time) string {
 	if timeFormat != "" {
-		return index + "-" + timestamp.Format(convertGoTimeFormat(timeFormat))
+		return "-" + timestamp.Format(convertGoTimeFormat(timeFormat))
 	}
-	return index
+	return ""
 }
 
 // convertGoTimeFormat converts a Java-style date format to Go's time format

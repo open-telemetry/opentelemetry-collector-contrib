@@ -125,6 +125,7 @@ func newLogOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError fu
 }
 
 func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timestamp time.Time, keys []string, visitor func(cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string)) {
+	timeSuffix := indexResolver.calculateTimeSuffix(cfg.LogsIndexTimeFormat, timestamp)
 	resourceLogs := ld.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		il := resourceLogs.At(i)
@@ -138,7 +139,7 @@ func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timesta
 
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				indexName := indexResolver.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, cfg.LogsIndexTimeFormat, log.Attributes(), keys, scopeAttrs, resourceAttrs, timestamp)
+				indexName := indexResolver.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, log.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
 				visitor(cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log, indexName)
 			}
 		}

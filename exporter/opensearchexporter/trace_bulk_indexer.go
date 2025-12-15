@@ -146,6 +146,7 @@ func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(
 }
 
 func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, keys []string, visitor func(cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string)) {
+	timeSuffix := indexResolver.calculateTimeSuffix(cfg.TracesIndexTimeFormat, timestamp)
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		il := resourceSpans.At(i)
@@ -159,7 +160,7 @@ func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, ti
 
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				indexName := indexResolver.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, cfg.TracesIndexTimeFormat, span.Attributes(), keys, scopeAttrs, resourceAttrs, timestamp)
+				indexName := indexResolver.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, span.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
 				visitor(cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span, indexName)
 			}
 		}
