@@ -11,3 +11,4 @@ The following configuration options can be modified:
 
 - `resource_to_telemetry_conversion`
     - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+    - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
