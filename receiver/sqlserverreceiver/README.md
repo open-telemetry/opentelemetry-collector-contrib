@@ -52,7 +52,8 @@ sqlserver:
   username: myusername
   password: mypassword
   server: sqlserver.address
-  azure_datasource: sqlserver://yourserver.database.windows.net?database=yourdb&fedauth=ActiveDirectoryMSI
+  datasource: sqlserver://yourserver.database.windows.net?database=yourdb&fedauth=ActiveDirectoryMSI
+  use_azure_ad: true
   port: 1433
   events:
     db.server.query_sample:
@@ -82,7 +83,7 @@ Direct connection options (optional, but all must be specified to enable):
 
 
 For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
-For azure environments `azure_datasource` can be used to connect using a connection string, including federated auth
+For azure environments `use_azure_ad` can be used to connect using a connection string, including federated auth
 Note: these can't be used in conjunction with the `username`, `password`, `server`, `port` options and each other.
 
 Windows-specific options:
