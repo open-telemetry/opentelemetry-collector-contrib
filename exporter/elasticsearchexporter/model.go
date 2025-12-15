@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv22 "go.opentelemetry.io/otel/semconv/v1.22.0"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -25,58 +25,58 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
+type conversionEntry struct {
+	to               string
+	preserveOriginal bool
+	skip             bool
+	skipIfExists     bool
+}
+
 // resourceAttrsConversionMap contains conversions for resource-level attributes
 // from their Semantic Conventions (SemConv) names to equivalent Elastic Common
 // Schema (ECS) names.
 // If the ECS field name is specified as an empty string (""), the converter will
 // neither convert the SemConv key to the equivalent ECS name nor pass-through the
 // SemConv key as-is to become the ECS name.
-var resourceAttrsConversionMap = map[string]string{
-	string(semconv.ServiceInstanceIDKey):         "service.node.name",
-	string(semconv22.DeploymentEnvironmentKey):   "service.environment",
-	string(semconv.DeploymentEnvironmentNameKey): "service.environment",
-	string(semconv.TelemetrySDKNameKey):          "",
-	string(semconv.TelemetrySDKLanguageKey):      "",
-	string(semconv.TelemetrySDKVersionKey):       "",
-	string(semconv.TelemetryDistroNameKey):       "",
-	string(semconv.TelemetryDistroVersionKey):    "",
-	string(semconv.CloudPlatformKey):             "cloud.service.name",
-	string(semconv.ContainerImageTagsKey):        "container.image.tag",
-	string(semconv.HostNameKey):                  "host.hostname",
-	string(semconv.HostArchKey):                  "host.architecture",
-	string(semconv.ProcessParentPIDKey):          "process.parent.pid",
-	string(semconv.ProcessExecutableNameKey):     "process.title",
-	string(semconv.ProcessExecutablePathKey):     "process.executable",
-	string(semconv.ProcessCommandLineKey):        "process.args",
-	string(semconv.ProcessRuntimeNameKey):        "service.runtime.name",
-	string(semconv.ProcessRuntimeVersionKey):     "service.runtime.version",
-	string(semconv.OSNameKey):                    "host.os.name",
-	string(semconv.OSTypeKey):                    "host.os.platform",
-	string(semconv.OSDescriptionKey):             "host.os.full",
-	string(semconv.OSVersionKey):                 "host.os.version",
-	string(semconv.ClientAddressKey):             "client.ip",
-	string(semconv.SourceAddressKey):             "source.ip",
-	string(semconv.K8SDeploymentNameKey):         "kubernetes.deployment.name",
-	string(semconv.K8SNamespaceNameKey):          "kubernetes.namespace",
-	string(semconv.K8SNodeNameKey):               "kubernetes.node.name",
-	string(semconv.K8SPodNameKey):                "kubernetes.pod.name",
-	string(semconv.K8SPodUIDKey):                 "kubernetes.pod.uid",
-	string(semconv.K8SJobNameKey):                "kubernetes.job.name",
-	string(semconv.K8SCronJobNameKey):            "kubernetes.cronjob.name",
-	string(semconv.K8SStatefulSetNameKey):        "kubernetes.statefulset.name",
-	string(semconv.K8SReplicaSetNameKey):         "kubernetes.replicaset.name",
-	string(semconv.K8SDaemonSetNameKey):          "kubernetes.daemonset.name",
-	string(semconv.K8SContainerNameKey):          "kubernetes.container.name",
-	string(semconv.K8SClusterNameKey):            "orchestrator.cluster.name",
-	string(semconv.FaaSInstanceKey):              "faas.id",
-	string(semconv.FaaSTriggerKey):               "faas.trigger.type",
-}
-
-// resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
-// This can happen when an attribute needs to be mapped to an ECS equivalent but
-// at the same time be preserved to its original form.
-var resourceAttrsToPreserve = map[string]bool{
-	string(semconv.HostNameKey): true,
+var resourceAttrsConversionMap = map[string]conversionEntry{
+	string(conventions.ServiceInstanceIDKey):         {to: "service.node.name"},
+	string(semconv22.DeploymentEnvironmentKey):       {to: "service.environment"},
+	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
+	string(conventions.TelemetrySDKNameKey):          {skip: true},
+	string(conventions.TelemetrySDKLanguageKey):      {skip: true},
+	string(conventions.TelemetrySDKVersionKey):       {skip: true},
+	string(conventions.TelemetryDistroNameKey):       {skip: true},
+	string(conventions.TelemetryDistroVersionKey):    {skip: true},
+	string(conventions.CloudPlatformKey):             {to: "cloud.service.name"},
+	string(conventions.ContainerImageTagsKey):        {to: "container.image.tag"},
+	string(conventions.HostNameKey):                  {to: "host.hostname", preserveOriginal: true, skipIfExists: true},
+	string(conventions.HostArchKey):                  {to: "host.architecture"},
+	string(conventions.ProcessParentPIDKey):          {to: "process.parent.pid"},
+	string(conventions.ProcessExecutableNameKey):     {to: "process.title"},
+	string(conventions.ProcessExecutablePathKey):     {to: "process.executable"},
+	string(conventions.ProcessCommandLineKey):        {to: "process.args"},
+	string(conventions.ProcessRuntimeNameKey):        {to: "service.runtime.name"},
+	string(conventions.ProcessRuntimeVersionKey):     {to: "service.runtime.version"},
+	string(conventions.OSNameKey):                    {to: "host.os.name"},
+	string(conventions.OSTypeKey):                    {to: "host.os.platform"},
+	string(conventions.OSDescriptionKey):             {to: "host.os.full"},
+	string(conventions.OSVersionKey):                 {to: "host.os.version"},
+	string(conventions.ClientAddressKey):             {to: "client.ip"},
+	string(conventions.SourceAddressKey):             {to: "source.ip"},
+	string(conventions.K8SDeploymentNameKey):         {to: "kubernetes.deployment.name"},
+	string(conventions.K8SNamespaceNameKey):          {to: "kubernetes.namespace"},
+	string(conventions.K8SNodeNameKey):               {to: "kubernetes.node.name"},
+	string(conventions.K8SPodNameKey):                {to: "kubernetes.pod.name"},
+	string(conventions.K8SPodUIDKey):                 {to: "kubernetes.pod.uid"},
+	string(conventions.K8SJobNameKey):                {to: "kubernetes.job.name"},
+	string(conventions.K8SCronJobNameKey):            {to: "kubernetes.cronjob.name"},
+	string(conventions.K8SStatefulSetNameKey):        {to: "kubernetes.statefulset.name"},
+	string(conventions.K8SReplicaSetNameKey):         {to: "kubernetes.replicaset.name"},
+	string(conventions.K8SDaemonSetNameKey):          {to: "kubernetes.daemonset.name"},
+	string(conventions.K8SContainerNameKey):          {to: "kubernetes.container.name"},
+	string(conventions.K8SClusterNameKey):            {to: "orchestrator.cluster.name"},
+	string(conventions.FaaSInstanceKey):              {to: "faas.id"},
+	string(conventions.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
 
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
@@ -198,24 +198,24 @@ func (ecsModeEncoder) encodeLog(
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]string{
+	scopeAttrsConversionMap := map[string]conversionEntry{
 		// None at the moment
 	}
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 
 	// Finally, try to map record-level attributes to ECS fields.
-	recordAttrsConversionMap := map[string]string{
-		"event.name":                            "event.action",
-		string(semconv.ExceptionMessageKey):     "error.message",
-		string(semconv.ExceptionStacktraceKey):  "error.stacktrace",
-		string(semconv.ExceptionTypeKey):        "error.type",
-		string(semconv22.ExceptionEscapedKey):   "event.error.exception.handled",
-		string(semconv.HTTPResponseBodySizeKey): "http.response.encoded_body_size",
+	recordAttrsConversionMap := map[string]conversionEntry{
+		"event.name":                                {to: "event.action"},
+		string(conventions.ExceptionMessageKey):     {to: "error.message"},
+		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+		string(conventions.ExceptionTypeKey):        {to: "error.type"},
+		string(semconv22.ExceptionEscapedKey):       {to: "event.error.exception.handled"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -247,13 +247,13 @@ func (ecsModeEncoder) encodeSpan(
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]string{
+	scopeAttrsConversionMap := map[string]conversionEntry{
 		// None at the moment
 	}
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 
 	// Finally, try to map record-level attributes to ECS fields.
 
@@ -264,17 +264,17 @@ func (ecsModeEncoder) encodeSpan(
 		messageQueueName = "transaction.message.queue.name"
 	}
 
-	spanAttrsConversionMap := map[string]string{
-		string(semconv.MessagingDestinationNameKey): messageQueueName,
-		string(semconv.MessagingOperationNameKey):   "span.action",
-		string(semconv22.DBSystemKey):               "span.db.type",
-		string(semconv.DBNamespaceKey):              "span.db.instance",
-		string(semconv.DBQueryTextKey):              "span.db.statement",
-		string(semconv.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
+	spanAttrsConversionMap := map[string]conversionEntry{
+		string(conventions.MessagingDestinationNameKey): {to: messageQueueName},
+		string(conventions.MessagingOperationNameKey):   {to: "span.action"},
+		string(semconv22.DBSystemKey):                   {to: "span.db.type"},
+		string(conventions.DBNamespaceKey):              {to: "span.db.instance"},
+		string(conventions.DBQueryTextKey):              {to: "span.db.statement"},
+		string(conventions.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
 	}
 
 	// Handle special cases.
-	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -467,7 +467,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 ) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
@@ -541,7 +541,7 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string, preserveMap map[string]bool) {
+func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry) {
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
 		// document.
@@ -551,14 +551,18 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 
 	for k, v := range attrs.All() {
 		// If ECS key is found for current k in conversion map, use it.
-		if ecsKey, exists := conversionMap[k]; exists {
-			if ecsKey == "" {
+		if c, exists := conversionMap[k]; exists {
+			if c.skip {
 				// Skip the conversion for this k.
 				continue
 			}
+			if !c.skipIfExists {
+				document.AddAttribute(c.to, v)
+			} else if _, exists := attrs.Get(c.to); !exists {
+				document.AddAttribute(c.to, v)
+			}
 
-			document.AddAttribute(ecsKey, v)
-			if preserve := preserveMap[k]; preserve {
+			if c.preserveOriginal {
 				document.AddAttribute(k, v)
 			}
 			continue
@@ -576,13 +580,13 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 	var telemetrySdkLanguage, telemetryDistroName string
 
 	attrs := resource.Attributes()
-	if v, exists := attrs.Get(string(semconv.TelemetrySDKNameKey)); exists {
+	if v, exists := attrs.Get(string(conventions.TelemetrySDKNameKey)); exists {
 		telemetrySdkName = v.Str()
 	}
-	if v, exists := attrs.Get(string(semconv.TelemetrySDKLanguageKey)); exists {
+	if v, exists := attrs.Get(string(conventions.TelemetrySDKLanguageKey)); exists {
 		telemetrySdkLanguage = v.Str()
 	}
-	if v, exists := attrs.Get(string(semconv.TelemetryDistroNameKey)); exists {
+	if v, exists := attrs.Get(string(conventions.TelemetryDistroNameKey)); exists {
 		telemetryDistroName = v.Str()
 		if telemetrySdkLanguage == "" {
 			telemetrySdkLanguage = "unknown"
@@ -604,12 +608,12 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 
-	if telemetryDistroVersion, exists := attrs.Get(string(semconv.TelemetryDistroVersionKey)); exists {
+	if telemetryDistroVersion, exists := attrs.Get(string(conventions.TelemetryDistroVersionKey)); exists {
 		document.AddString("agent.version", telemetryDistroVersion.Str())
 		return
 	}
 
-	if telemetrySdkVersion, exists := attrs.Get(string(semconv.TelemetrySDKVersionKey)); exists {
+	if telemetrySdkVersion, exists := attrs.Get(string(conventions.TelemetrySDKVersionKey)); exists {
 		document.AddString("agent.version", telemetrySdkVersion.Str())
 		return
 	}
@@ -622,7 +626,7 @@ func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resou
 	// If the OS you’re dealing with is not in the list, the field should not be populated."
 
 	var ecsHostOsType string
-	if semConvOsType, exists := resource.Attributes().Get(string(semconv.OSTypeKey)); exists {
+	if semConvOsType, exists := resource.Attributes().Get(string(conventions.OSTypeKey)); exists {
 		switch semConvOsType.Str() {
 		case "windows", "linux":
 			ecsHostOsType = semConvOsType.Str()
@@ -633,7 +637,7 @@ func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resou
 		}
 	}
 
-	if semConvOsName, exists := resource.Attributes().Get(string(semconv.OSNameKey)); exists {
+	if semConvOsName, exists := resource.Attributes().Get(string(conventions.OSNameKey)); exists {
 		switch semConvOsName.Str() {
 		case "Android":
 			ecsHostOsType = "android"
