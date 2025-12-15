@@ -46,6 +46,8 @@ func TestFactory_Create(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	// The API key is required for the config to be valid, but create doesn't validate.
 	cfg.(*Config).API.Key = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	// Disable API key validation for tests since we're using a fake key
+	cfg.(*Config).API.FailOnInvalidKey = false
 	set := extensiontest.NewNopSettings(component.MustNewType("datadog"))
 
 	t.Run("success", func(t *testing.T) {
