@@ -359,6 +359,10 @@ func TestAutodiscoverAccountIdentifiers(t *testing.T) {
 		"DescribeLogGroups",
 		mock.Anything,
 		mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+			// Ensure the request includes the expected account ID and that IncludeLinkedAccounts is enabled.
+			if input.IncludeLinkedAccounts == nil || !*input.IncludeLinkedAccounts {
+				return false
+			}
 			for _, accountID := range input.AccountIdentifiers {
 				if accountID == testAccountID {
 					return true
@@ -388,8 +392,9 @@ func TestAutodiscoverAccountIdentifiers(t *testing.T) {
 	cfg.Region = "us-west-1"
 	cfg.Logs.Groups = GroupConfig{
 		AutodiscoverConfig: &AutodiscoverConfig{
-			Limit:              1,
-			AccountIdentifiers: []string{testAccountID},
+			Limit:                 1,
+			AccountIdentifiers:    []string{testAccountID},
+			IncludeLinkedAccounts: aws.Bool(true),
 		},
 	}
 
