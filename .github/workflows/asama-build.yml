@@ -59,6 +59,8 @@ jobs:
           else
             echo "set_latest=false" >> $GITHUB_OUTPUT
           fi
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Prepare Docker context
         run: |
           cp ./bin/otel-collector_${GOOS}_${GOARCH} ./cmd/otel-collector/otel-collector
@@ -122,6 +124,8 @@ jobs:
           else
             echo "set_latest=false" >> $GITHUB_OUTPUT
           fi
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Prepare Docker context
         run: |
           cp ./bin/otel-exporter_${GOOS}_${GOARCH} ./cmd/otel-exporter/otel-exporter
