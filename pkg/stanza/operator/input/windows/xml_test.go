@@ -96,6 +96,7 @@ func TestParseBody(t *testing.T) {
 				map[string]any{"2nd_name": "another_value"},
 			},
 		},
+		"version": uint64(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -171,6 +172,7 @@ func TestParseBodySecurityExecution(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
+		"version": uint64(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -262,6 +264,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
+		"version": uint64(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -319,6 +322,7 @@ func TestParseNoRendered(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
+		"version": uint64(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -380,6 +384,7 @@ func TestParseBodySecurity(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
+		"version": uint64(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -432,6 +437,8 @@ func TestUnmarshalWithEventData(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
+	emptyString := ""
+
 	xml := &EventXML{
 		EventID: EventID{
 			ID:         16384,
@@ -462,6 +469,10 @@ func TestUnmarshalWithEventData(t *testing.T) {
 		},
 		Keywords: []string{"0x80000000000000"},
 		Original: string(data),
+		Correlation: &Correlation{
+			ActivityID:        &emptyString,
+			RelatedActivityID: &emptyString,
+		},
 	}
 
 	require.Equal(t, xml, event)
@@ -496,10 +507,12 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 			Data:   []Data{{Name: "", Value: "1st_value"}, {Name: "", Value: "2nd_value"}},
 			Binary: "2D20",
 		},
-		Keywords:  []string{"0x80000000000000"},
-		Security:  &Security{},
-		Execution: &Execution{},
-		Original:  string(data),
+		Keywords:    []string{"0x80000000000000"},
+		Security:    &Security{},
+		Execution:   &Execution{},
+		Original:    string(data),
+		Correlation: &Correlation{},
+		Version:     0,
 	}
 
 	require.Equal(t, xml, event)
@@ -538,7 +551,9 @@ func TestUnmarshalWithUserData(t *testing.T) {
 			ProcessID: 1472,
 			ThreadID:  7784,
 		},
-		Original: string(data),
+		Original:    string(data),
+		Correlation: &Correlation{},
+		Version:     1,
 	}
 
 	require.Equal(t, xml, event)
