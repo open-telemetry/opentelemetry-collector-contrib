@@ -49,8 +49,8 @@ type Config struct {
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
 
-	DataSource      string `mapstructure:"datasource"`
-	AzureDataSource string `mapstructure:"azure_datasource"`
+	DataSource string `mapstructure:"datasource"`
+	UseAzureAd bool   `mapstructure:"use_azure_ad"`
 
 	Password configopaque.String `mapstructure:"password"`
 	Port     uint                `mapstructure:"port"`
@@ -91,17 +91,17 @@ func (cfg *Config) Validate() error {
 
 func directDBConnectionEnabled(config *Config) (bool, error) {
 	noneOfServerUserPasswordPortSet := config.Server == "" && config.Username == "" && string(config.Password) == "" && config.Port == 0
-	if config.DataSource == "" && config.AzureDataSource == "" && noneOfServerUserPasswordPortSet {
+	if config.DataSource == "" && noneOfServerUserPasswordPortSet {
 		// If no connection information is provided, we can't connect directly and this is a valid config.
 		return false, nil
 	}
 
 	anyOfServerUserPasswordPortSet := config.Server != "" || config.Username != "" || string(config.Password) != "" || config.Port != 0
-	if (config.DataSource != "" || config.AzureDataSource != "") && anyOfServerUserPasswordPortSet {
+	if config.DataSource != "" && anyOfServerUserPasswordPortSet {
 		return false, errors.New("wrong config: when specifying 'datasource' no other connection parameters ('server', 'username', 'password', or 'port') should be set")
 	}
 
-	if config.DataSource == "" && config.AzureDataSource == "" && (config.Server == "" || config.Username == "" || string(config.Password) == "" || config.Port == 0) {
+	if config.DataSource == "" && (config.Server == "" || config.Username == "" || string(config.Password) == "" || config.Port == 0) {
 		return false, errors.New("wrong config: when specifying either 'server', 'username', 'password', or 'port' all of them need to be specified")
 	}
 
