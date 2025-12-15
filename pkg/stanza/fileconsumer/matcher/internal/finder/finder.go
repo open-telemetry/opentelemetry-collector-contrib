@@ -17,7 +17,7 @@ var WindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegiste
 	"filelog.windows.caseInsensitive",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("On Windows, make matching patterns in include/exclude case insensitive."),
-	featuregate.WithRegisterFromVersion("v0.140.0"),
+	featuregate.WithRegisterFromVersion("v0.142.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777"),
 )
 
