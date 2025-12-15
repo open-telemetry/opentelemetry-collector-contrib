@@ -24,14 +24,14 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[TransformContext]
+		path     ottl.Path[*TransformContext]
 		orig     any
 		newVal   any
 		modified func(stack pprofile.Stack, cache pcommon.Map)
 	}{
 		{
 			name: "location_indices",
-			path: &pathtest.Path[TransformContext]{
+			path: &pathtest.Path[*TransformContext]{
 				N: "location_indices",
 			},
 			orig:   []int64{42},
@@ -42,7 +42,7 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 		},
 		{
 			name: "cache",
-			path: &pathtest.Path[TransformContext]{
+			path: &pathtest.Path[*TransformContext]{
 				N: "cache",
 			},
 			orig:   pcommon.NewMap(),
@@ -53,10 +53,10 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: &pathtest.Path[TransformContext]{
+			path: &pathtest.Path[*TransformContext]{
 				N: "cache",
-				KeySlice: []ottl.Key[TransformContext]{
-					&pathtest.Key[TransformContext]{
+				KeySlice: []ottl.Key[*TransformContext]{
+					&pathtest.Key[*TransformContext]{
 						S: ottltest.Strp("temp"),
 					},
 				},
@@ -73,16 +73,16 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 	for _, tt := range slices.Clone(tests) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
-		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
+		pathWithContext := *tt.path.(*pathtest.Path[*TransformContext])
 		pathWithContext.C = ctxprofilestack.Name
-		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
+		testWithContext.path = ottl.Path[*TransformContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testCache := pcommon.NewMap()
-			cacheGetter := func(_ TransformContext) pcommon.Map {
+			cacheGetter := func(_ *TransformContext) pcommon.Map {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
@@ -90,12 +90,12 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 			profileStack, profile := createProfileStackTelemetry()
 
-			tCtx := NewTransformContext(profileStack, pprofile.NewSample(), profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+			tCtx := NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profileStack, pprofile.NewSample(), profile, pprofile.NewProfilesDictionary())
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			tCtx = NewTransformContext(profileStack, pprofile.NewSample(), pprofile.NewProfile(), pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+			tCtx = NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profileStack, pprofile.NewSample(), profile, pprofile.NewProfilesDictionary())
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			require.NoError(t, err)
 
@@ -111,28 +111,28 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 }
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
-	resource := pcommon.NewResource()
-	resource.Attributes().PutStr("foo", "bar")
+	resourceProfile := pprofile.NewResourceProfiles()
+	resourceProfile.Resource().Attributes().PutStr("foo", "bar")
 
-	instrumentationScope := pcommon.NewInstrumentationScope()
-	instrumentationScope.SetName("instrumentation_scope")
+	scopeProfile := pprofile.NewScopeProfiles()
+	scopeProfile.Scope().SetName("instrumentation_scope")
 
 	profile := pprofile.NewProfile()
 	profile.SetDroppedAttributesCount(42)
 
-	ctx := NewTransformContext(pprofile.NewStack(), pprofile.NewSample(), profile, pprofile.NewProfilesDictionary(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+	ctx := NewTransformContextPtr(resourceProfile, scopeProfile, pprofile.NewStack(), pprofile.NewSample(), profile, pprofile.NewProfilesDictionary())
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[TransformContext]
+		path     ottl.Path[*TransformContext]
 		expected any
 	}{
 		{
 			name: "resource",
-			path: &pathtest.Path[TransformContext]{N: "resource", NextPath: &pathtest.Path[TransformContext]{
+			path: &pathtest.Path[*TransformContext]{N: "resource", NextPath: &pathtest.Path[*TransformContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[TransformContext]{
-					&pathtest.Key[TransformContext]{
+				KeySlice: []ottl.Key[*TransformContext]{
+					&pathtest.Key[*TransformContext]{
 						S: ottltest.Strp("foo"),
 					},
 				},
@@ -141,8 +141,8 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 		{
 			name: "resource with context",
-			path: &pathtest.Path[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
-				&pathtest.Key[TransformContext]{
+			path: &pathtest.Path[*TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[*TransformContext]{
+				&pathtest.Key[*TransformContext]{
 					S: ottltest.Strp("foo"),
 				},
 			}},
@@ -150,28 +150,28 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 		{
 			name:     "instrumentation_scope",
-			path:     &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			path:     &pathtest.Path[*TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[*TransformContext]{N: "name"}},
+			expected: scopeProfile.Scope().Name(),
 		},
 		{
 			name:     "instrumentation_scope with context",
-			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			path:     &pathtest.Path[*TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected: scopeProfile.Scope().Name(),
 		},
 		{
 			name:     "scope",
-			path:     &pathtest.Path[TransformContext]{N: "scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			path:     &pathtest.Path[*TransformContext]{N: "scope", NextPath: &pathtest.Path[*TransformContext]{N: "name"}},
+			expected: scopeProfile.Scope().Name(),
 		},
 		{
 			name:     "scope with context",
-			path:     &pathtest.Path[TransformContext]{C: "scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			path:     &pathtest.Path[*TransformContext]{C: "scope", N: "name"},
+			expected: scopeProfile.Scope().Name(),
 		},
 	}
 
 	testCache := pcommon.NewMap()
-	cacheGetter := func(_ TransformContext) pcommon.Map {
+	cacheGetter := func(_ *TransformContext) pcommon.Map {
 		return testCache
 	}
 	for _, tt := range tests {
