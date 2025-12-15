@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/github
 
 # A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add merged_pr_lookback_days configuration to limit historical PR queries and reduce API usage
+note: Add `merged_pr_lookback_days` configuration to limit historical PR queries and reduce API usage
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43388]
@@ -17,7 +17,7 @@ issues: [43388]
 # Use pipe (|) for multiline entries.
 subtext: |
   The `merged_pr_lookback_days` configuration option limits the timeframe for
-  which mergeed pull requests are queried. Set to 0 to fetch all merged PRs.
+  which merged pull requests are queried. Set to 0 to fetch all merged PRs.
   Open PRs are always fetched regardless of this setting.
 
 # If your change doesn't affect end users or the exported elements of any package,
