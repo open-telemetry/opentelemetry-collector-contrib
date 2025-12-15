@@ -20,7 +20,8 @@ import (
 // This file implements config for Prometheus receiver.
 var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.UseCreatedMetric",
-	featuregate.StageAlpha,
+	featuregate.StageDeprecated,
+	featuregate.WithRegisterToVersion("v0.141.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
 )
