@@ -83,7 +83,7 @@ func TestDigitalOceanDetector_Detect_OK_JSON(t *testing.T) {
 
 	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 
 	attrs := res.Attributes().AsRaw()
 	want := map[string]any{

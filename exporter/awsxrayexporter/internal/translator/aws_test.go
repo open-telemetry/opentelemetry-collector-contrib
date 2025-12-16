@@ -293,8 +293,8 @@ func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
 	tableName := "MyTable"
 	attributes := make(map[string]pcommon.Value)
-	attributes[string(conventionsv112.AWSDynamoDBTableNamesKey)] = pcommon.NewValueSlice()
-	attributes[string(conventionsv112.AWSDynamoDBTableNamesKey)].Slice().AppendEmpty().SetStr(tableName)
+	attributes["aws.dynamodb.table_names"] = pcommon.NewValueSlice()
+	attributes["aws.dynamodb.table_names"].Slice().AppendEmpty().SetStr(tableName)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
@@ -306,7 +306,7 @@ func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
 func TestAwsWithDynamoDbSemConvAttributesString(t *testing.T) {
 	tableName := "MyTable"
 	attributes := make(map[string]pcommon.Value)
-	attributes[string(conventionsv112.AWSDynamoDBTableNamesKey)] = pcommon.NewValueStr(tableName)
+	attributes["aws.dynamodb.table_names"] = pcommon.NewValueStr(tableName)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
@@ -348,7 +348,7 @@ func TestJavaAutoInstrumentation(t *testing.T) {
 	resource.Attributes().PutStr("telemetry.sdk.name", "opentelemetry")
 	resource.Attributes().PutStr("telemetry.sdk.language", "java")
 	resource.Attributes().PutStr("telemetry.sdk.version", "1.2.3")
-	resource.Attributes().PutStr(string(conventionsv112.TelemetryAutoVersionKey), "3.4.5")
+	resource.Attributes().PutStr("telemetry.auto.version", "3.4.5")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 

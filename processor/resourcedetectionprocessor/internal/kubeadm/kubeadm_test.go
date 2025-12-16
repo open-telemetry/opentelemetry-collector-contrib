@@ -47,12 +47,12 @@ func TestDetect(t *testing.T) {
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
 		"k8s.cluster.name": "cluster-1",
-		"k8s.cluster.uid":                     "uid-1",
+		"k8s.cluster.uid":  "uid-1",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -73,7 +73,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	md.AssertExpectations(t)
 
 	expected := map[string]any{}

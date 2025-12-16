@@ -49,13 +49,13 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 
 	want := map[string]any{
-		"cloud.provider":         TypeStr,
-		"host.id":                "987654321",
-		"host.name":              "srv-123",
-		"cloud.region":           "nbg1",
+		"cloud.provider":          TypeStr,
+		"host.id":                 "987654321",
+		"host.name":               "srv-123",
+		"cloud.region":            "nbg1",
 		"cloud.availability_zone": "nbg1-dc3",
 	}
 	assert.Equal(t, want, res.Attributes().AsRaw())

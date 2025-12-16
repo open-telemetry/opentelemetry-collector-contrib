@@ -197,12 +197,12 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		},
 		{
 			attrs: map[string]any{
-				"cloud.provider":      conventions.CloudProviderAWS.Value.AsString(),
-				"cloud.platform":      conventions.CloudPlatformAWSECS.Value.AsString(),
+				"cloud.provider":        "aws",
+				"cloud.platform":        "aws_ecs",
 				"aws.ecs.task.arn":      "example-task-ARN",
 				"aws.ecs.task.family":   "example-task-family",
 				"aws.ecs.task.revision": "example-task-revision",
-				"aws.ecs.launchtype":   conventions.AWSECSLaunchtypeFargate.Value.AsString(),
+				"aws.ecs.launchtype":    "fargate",
 			},
 			host: "",
 			tags: []string{"version:latest", "command:otelcol", "task_arn:example-task-ARN"},

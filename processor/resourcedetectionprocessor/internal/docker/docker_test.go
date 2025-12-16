@@ -41,7 +41,7 @@ func TestDetect(t *testing.T) {
 	detector.(*Detector).provider = md
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	md.AssertExpectations(t)
 
 	expected := map[string]any{

@@ -78,9 +78,9 @@ var (
 	// Required attribute for any HTTP Span
 	requiredHTTPAttributes = map[string]any{
 		"http.request.method": defaultHTTPMethod,
-		"server.address":     defaultServerAddress,
-		"server.port":        defaultHTTPServerPort,
-		"url.full":           defaultURLFull,
+		"server.address":      defaultServerAddress,
+		"server.port":         defaultHTTPServerPort,
+		"url.full":            defaultURLFull,
 	}
 
 	// Required attribute for any RPC Span
@@ -95,7 +95,7 @@ var (
 
 	requiredMessagingAttributes = map[string]any{
 		"messaging.operation.name": defaultMessagingOperationName,
-		"messaging.system":        defaultMessagingSystem,
+		"messaging.system":         defaultMessagingSystem,
 	}
 
 	defaultResource               = getResource()

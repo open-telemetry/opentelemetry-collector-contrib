@@ -60,21 +60,21 @@ func TestDetectAzureAvailable(t *testing.T) {
 	}
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1", schemaURL)
 	mp.AssertExpectations(t)
 
 	expected := map[string]any{
-		"cloud.provider":  "azure",
-		"cloud.platform":  "azure_vm",
-		"host.name":       "computerName",
-		"cloud.region":    "location",
-		"host.id":         "vmID",
-		"cloud.account.id": "subscriptionID",
-		"azure.vm.name":                       "name",
-		"azure.vm.size":                       "vmSize",
-		"azure.resourcegroup.name":            "resourceGroup",
-		"azure.vm.scaleset.name":              "myScaleset",
-		"azure.tag.tag1key":                   "value1",
+		"cloud.provider":           "azure",
+		"cloud.platform":           "azure_vm",
+		"host.name":                "computerName",
+		"cloud.region":             "location",
+		"host.id":                  "vmID",
+		"cloud.account.id":         "subscriptionID",
+		"azure.vm.name":            "name",
+		"azure.vm.size":            "vmSize",
+		"azure.resourcegroup.name": "resourceGroup",
+		"azure.vm.scaleset.name":   "myScaleset",
+		"azure.tag.tag1key":        "value1",
 	}
 
 	notExpected := map[string]any{

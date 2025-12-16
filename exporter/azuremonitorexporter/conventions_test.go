@@ -15,18 +15,18 @@ import (
 func testHTTPAttributeMapping(t *testing.T, variant string) {
 	httpAttributeValues := map[string]any{
 		"http.request.method": "http.request.method",
-		"url.full":           "url.full",
-		"url.path":           "url.path",
-		"url.query":          "url.query",
-		"url.scheme":         "url.scheme",
+		"url.full":            "url.full",
+		"url.path":            "url.path",
+		"url.query":           "url.query",
+		"url.scheme":          "url.scheme",
 
-		"http.response.status_code":                "200",
-		"network.protocol.name":                   "network.protocol.name",
-		"user_agent.original":                     "user_agent.original",
-		"http.request.header.content-length":      "1",
-		"http.request.body.size":                   2,
-		"http.response.header.content-length":     "3",
-		"http.response.body.size":                  4,
+		"http.response.status_code":           "200",
+		"network.protocol.name":               "network.protocol.name",
+		"user_agent.original":                 "user_agent.original",
+		"http.request.header.content-length":  "1",
+		"http.request.body.size":              2,
+		"http.response.header.content-length": "3",
+		"http.response.body.size":             4,
 
 		"http.route": "http.route",
 	}
@@ -142,15 +142,15 @@ func TestRPCPAttributeMapping(t *testing.T) {
 
 func testDatabaseAttributeMapping(t *testing.T, variant string) {
 	databaseAttributeValues := map[string]any{
-		"db.collection.name":      "db.collection.name",
-		"db.namespace":           "db.namespace",
+		"db.collection.name":       "db.collection.name",
+		"db.namespace":             "db.namespace",
 		"db.operation.batch.size":  0,
-		"db.operation.name":       "db.operation.name",
-		"db.query.summary":        "db.query.summary",
-		"db.query.text":           "db.query.text",
+		"db.operation.name":        "db.operation.name",
+		"db.query.summary":         "db.query.summary",
+		"db.query.text":            "db.query.text",
 		"db.response.status_code":  "db.response.status_code",
 		"db.stored_procedure.name": "db.stored_procedure.name",
-		"db.system.name":          "db.system.name",
+		"db.system.name":           "db.system.name",
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -200,21 +200,21 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 func testMessagingAttributeMapping(t *testing.T, variant string) {
 	messagingAttributeValues := map[string]any{
 		"messaging.batch.message_count":           0,
-		"messaging.client_id":                    "messaging.client_id",
+		"messaging.client_id":                     "messaging.client_id",
 		"messaging.consumer.group.name":           "messaging.consumer.group.name",
-		"messaging.destination.anonymous":        true,
-		"messaging.destination.name":             "messaging.destination.name",
+		"messaging.destination.anonymous":         true,
+		"messaging.destination.name":              "messaging.destination.name",
 		"messaging.destination.partition.id":      "messaging.destination.partition.id",
 		"messaging.destination.subscription.name": "messaging.destination.subscription.name",
-		"messaging.destination.template":         "messaging.destination.template",
-		"messaging.destination.temporary":        false,
+		"messaging.destination.template":          "messaging.destination.template",
+		"messaging.destination.temporary":         false,
 		"messaging.message.body.size":             1,
 		"messaging.message.conversation_id":       "messaging.message.conversation_id",
 		"messaging.message.envelope.size":         2,
-		"messaging.message_id":                   "messaging.message_id",
-		"messaging.operation.name":               "messaging.operation.name",
-		"messaging.operation.type":               "messaging.operation.type",
-		"messaging.system":                      "messaging.system",
+		"messaging.message_id":                    "messaging.message_id",
+		"messaging.operation.name":                "messaging.operation.name",
+		"messaging.operation.type":                "messaging.operation.type",
+		"messaging.system":                        "messaging.system",
 	}
 
 	attributeMap := pcommon.NewMap()

@@ -1111,9 +1111,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:                         "1.0.1",
+				containerImageTag:      "1.0.1",
 				"service.instance.id":  "instance-1",
-				"service.version":     "1.0.1",
+				"service.version":      "1.0.1",
 			},
 		},
 		{
@@ -1147,10 +1147,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 			wantAttrs: map[string]any{
 				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				"container.id":        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
+				"container.id":         "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:                         "1.0.1",
+				containerImageTag:      "1.0.1",
 			},
 		},
 		{
@@ -1169,9 +1169,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
 					Attributes: map[string]string{
 						"service.instance.id": "explicit-instance",
-						"service.version":    "explicit-version",
-						"service.name":       "explicit-name",
-						"service.namespace":  "explicit-ns",
+						"service.version":     "explicit-version",
+						"service.name":        "explicit-name",
+						"service.namespace":   "explicit-ns",
 					},
 					Containers: kube.PodContainers{
 						ByID: map[string]*kube.Container{
@@ -1192,14 +1192,14 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 			wantAttrs: map[string]any{
 				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				"container.id":        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
+				"container.id":         "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:                         "1.0.1",
+				containerImageTag:      "1.0.1",
 				"service.instance.id":  "explicit-instance",
-				"service.version":     "explicit-version",
-				"service.name":        "explicit-name",
-				"service.namespace":   "explicit-ns",
+				"service.version":      "explicit-version",
+				"service.name":         "explicit-name",
+				"service.namespace":    "explicit-ns",
 			},
 		},
 		{
@@ -1234,7 +1234,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:                         "1.0.1",
+				containerImageTag:      "1.0.1",
 			},
 		},
 		{
@@ -1260,10 +1260,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                             "1.1.1.1",
-				"k8s.container.name":         "app",
+				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.container.name":          "app",
 				"k8s.container.restart_count": "1",
-				"container.id":              "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
+				"container.id":                "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
 			},
 		},
 		{
@@ -1288,9 +1288,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                     "1.1.1.1",
+				kube.K8sIPLabelName:  "1.1.1.1",
 				"k8s.container.name": "app",
-				"container.id":      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
+				"container.id":       "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
 			},
 		},
 		{
@@ -1313,8 +1313,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                              "1.1.1.1",
-				"k8s.container.name":          "app",
+				kube.K8sIPLabelName:            "1.1.1.1",
+				"k8s.container.name":           "app",
 				"container.image.repo_digests": []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
 		},
@@ -1341,8 +1341,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("0"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                             "1.1.1.1",
-				"k8s.container.name":         "new-app",
+				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.container.name":          "new-app",
 				"k8s.container.restart_count": "0",
 			},
 		},
@@ -1368,10 +1368,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                             "1.1.1.1",
-				"k8s.container.name":         "app",
+				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.container.name":          "app",
 				"k8s.container.restart_count": "1",
-				"container.image.name":       "test/app",
+				"container.image.name":        "test/app",
 			},
 		},
 		{
@@ -1406,7 +1406,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				"k8s.container.name":   "app",
 				"container.image.name": "test/app",
-				containerImageTag:                         "1.0.1",
+				containerImageTag:      "1.0.1",
 			},
 		},
 		{
@@ -1582,9 +1582,9 @@ func TestMetricsProcessorHostname(t *testing.T) {
 			name:     "valid IP in hostname",
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
-				"host.name": "3.3.3.3",
-				kube.K8sIPLabelName:             "3.3.3.3",
-				"kk":                            "vv",
+				"host.name":         "3.3.3.3",
+				kube.K8sIPLabelName: "3.3.3.3",
+				"kk":                "vv",
 			},
 		},
 	}
@@ -1663,7 +1663,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
 				"host.name": "3.3.3.3",
-				"kk":                            "vv",
+				"kk":        "vv",
 			},
 		},
 	}

@@ -60,20 +60,20 @@ func TestDetect(t *testing.T) {
 
 		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, conventions.SchemaURL, schemaURL)
+		assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 
 		// Per Otel semantic conventions, these are the attribute keys for K8s clusters:
 		// https://opentelemetry.io/docs/specs/semconv/resource/k8s/#cluster
 		// We hardcode them here because no Go constant exists in semconv as of this writing.
 		expected := map[string]any{
-			"cloud.provider":         "oracle_cloud",
-			"cloud.platform":         "oci_compute",
-			"cloud.region":           "us-ashburn-1",
+			"cloud.provider":          "oracle_cloud",
+			"cloud.platform":          "oci_compute",
+			"cloud.region":            "us-ashburn-1",
 			"cloud.availability_zone": "AD-1",
-			"host.id":                "ocid1.instance.oc1..aaaaaaa",
-			"host.name":              "my-instance",
-			"host.type":              "VM.Standard.E4.Flex",
-			"k8s.cluster.name":                           "my-oke-cluster",
+			"host.id":                 "ocid1.instance.oc1..aaaaaaa",
+			"host.name":               "my-instance",
+			"host.type":               "VM.Standard.E4.Flex",
+			"k8s.cluster.name":        "my-oke-cluster",
 		}
 		assert.Equal(t, expected, res.Attributes().AsRaw())
 	})
@@ -139,16 +139,16 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 
 		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, conventions.SchemaURL, schemaURL)
+		assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 
 		expected := map[string]any{
-			"cloud.provider":         "oracle_cloud",
-			"cloud.platform":         "oci_compute",
-			"cloud.region":           "us-ashburn-1",
+			"cloud.provider":          "oracle_cloud",
+			"cloud.platform":          "oci_compute",
+			"cloud.region":            "us-ashburn-1",
 			"cloud.availability_zone": "AD-1",
-			"host.id":                "ocid1.instance.oc1..aaaaaaa",
-			"host.name":              "my-instance",
-			"host.type":              "VM.Standard.E4.Flex",
+			"host.id":                 "ocid1.instance.oc1..aaaaaaa",
+			"host.name":               "my-instance",
+			"host.type":               "VM.Standard.E4.Flex",
 			// K8S attributes omitted as they are disabled
 		}
 		assert.Equal(t, expected, res.Attributes().AsRaw())

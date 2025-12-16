@@ -410,7 +410,7 @@ func TestHandleExceptionDataWithDetails(t *testing.T) {
 			stackTrace:       "at Object.method (/path/file.js:10)\nat Object.method2 (/path/file2.js:20)",
 			resourceAttrs: map[string]any{
 				"service.name": "testService",
-				"custom.attr":                      "value",
+				"custom.attr":  "value",
 			},
 		},
 		{

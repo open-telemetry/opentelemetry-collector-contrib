@@ -28,7 +28,7 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	detector := &Detector{provider: mockProvider(), resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1", schemaURL)
 	assert.Equal(t, map[string]any{
 		"cloud.provider": "azure",
 		"cloud.platform": "azure_aks",

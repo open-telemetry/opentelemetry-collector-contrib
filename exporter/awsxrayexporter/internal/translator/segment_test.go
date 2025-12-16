@@ -105,7 +105,7 @@ func TestClientSpanWithPeerService(t *testing.T) {
 	attributes["http.scheme"] = "https"
 	attributes["http.host"] = "dynamodb.us-east-1.amazonaws.com"
 	attributes["http.target"] = "/"
-	attributes[string(conventionsv112.PeerServiceKey)] = "cats-table"
+	attributes["peer.service"] = "cats-table"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
@@ -260,7 +260,7 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.scheme"] = "https"
-	attributes[string(conventionsv112.NetPeerIPKey)] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
 	attributes["net.peer.port"] = "9443"
 	attributes["http.target"] = "/"
 	attributes["http.host"] = "foo.com"
@@ -280,7 +280,7 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.scheme"] = "https"
-	attributes[string(conventionsv112.NetPeerIPKey)] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
 	attributes["net.peer.port"] = "9443"
 	attributes["http.target"] = "/"
 	attributes["net.peer.name"] = "bar.com"
@@ -299,7 +299,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.scheme"] = "https"
-	attributes[string(conventionsv112.NetPeerIPKey)] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
 	attributes["net.peer.port"] = "9443"
 	attributes["http.target"] = "/com.foo.AnimalService/GetCats"
 	attributes["rpc.service"] = "com.foo.AnimalService"
@@ -318,7 +318,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.scheme"] = "ipv6"
-	attributes[string(conventionsv112.NetPeerIPKey)] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
 	attributes["net.peer.port"] = "9443"
 	attributes["http.target"] = spanName
 	resource := constructDefaultResource()
@@ -907,7 +907,7 @@ func TestOriginAppRunner(t *testing.T) {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr("cloud.provider", "aws")
-	attrs.PutStr("cloud.platform", conventionsv112.CloudPlatformAWSAppRunner.Value.AsString())
+	attrs.PutStr("cloud.platform", "aws_app_runner")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -994,7 +994,7 @@ func TestSpanWithSingleDynamoDBTableHasTableName(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[string(conventionsv112.AWSDynamoDBTableNamesKey)] = []string{"table1"}
+	attributes["aws.dynamodb.table_names"] = []string{"table1"}
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
@@ -1003,14 +1003,14 @@ func TestSpanWithSingleDynamoDBTableHasTableName(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Equal(t, "table1", *segment.AWS.TableName)
 	assert.Nil(t, segment.AWS.TableNames)
-	assert.Equal(t, []any{"table1"}, segment.Metadata["default"][string(conventionsv112.AWSDynamoDBTableNamesKey)])
+	assert.Equal(t, []any{"table1"}, segment.Metadata["default"]["aws.dynamodb.table_names"])
 }
 
 func TestSpanWithMultipleDynamoDBTablesHasTableNames(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[string(conventionsv112.AWSDynamoDBTableNamesKey)] = []string{"table1", "table2"}
+	attributes["aws.dynamodb.table_names"] = []string{"table1", "table2"}
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
@@ -1019,7 +1019,7 @@ func TestSpanWithMultipleDynamoDBTablesHasTableNames(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Nil(t, segment.AWS.TableName)
 	assert.Equal(t, []string{"table1", "table2"}, segment.AWS.TableNames)
-	assert.Equal(t, []any{"table1", "table2"}, segment.Metadata["default"][string(conventionsv112.AWSDynamoDBTableNamesKey)])
+	assert.Equal(t, []any{"table1", "table2"}, segment.Metadata["default"]["aws.dynamodb.table_names"])
 }
 
 func TestSegmentWithLogGroupsFromConfig(t *testing.T) {
@@ -1179,7 +1179,7 @@ func TestProducerSpanNonAwsRemoteServiceName(t *testing.T) {
 	spanName := "my-topic send"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[string(conventionsv112.PeerServiceKey)] = "ProducerService"
+	attributes["peer.service"] = "ProducerService"
 	resource := constructDefaultResource()
 	span := constructProducerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -1403,7 +1403,7 @@ func getBasicResource() pcommon.Resource {
 
 	resource.Attributes().PutStr("telemetry.sdk.name", "MySDK")
 	resource.Attributes().PutStr("telemetry.sdk.version", "1.20.0")
-	resource.Attributes().PutStr(string(conventionsv112.TelemetryAutoVersionKey), "1.2.3")
+	resource.Attributes().PutStr("telemetry.auto.version", "1.2.3")
 
 	return resource
 }
@@ -2023,8 +2023,8 @@ func constructTimedEventsWithReceivedMessageEvent(tm pcommon.Timestamp) ptrace.S
 	eventAttr := event.Attributes()
 	eventAttr.PutStr("message.type", "RECEIVED")
 	eventAttr.PutInt("messaging.message_id", 1)
-	eventAttr.PutInt(string(conventionsv112.MessagingMessagePayloadCompressedSizeBytesKey), 6478)
-	eventAttr.PutInt(string(conventionsv112.MessagingMessagePayloadSizeBytesKey), 12452)
+	eventAttr.PutInt("messaging.message_payload_compressed_size_bytes", 6478)
+	eventAttr.PutInt("messaging.message_payload_size_bytes", 12452)
 
 	event.SetTimestamp(tm)
 	event.SetDroppedAttributesCount(0)
@@ -2039,7 +2039,7 @@ func constructTimedEventsWithSentMessageEvent(tm pcommon.Timestamp) ptrace.SpanE
 	eventAttr := event.Attributes()
 	eventAttr.PutStr("message.type", "SENT")
 	eventAttr.PutInt("messaging.message_id", 1)
-	eventAttr.PutInt(string(conventionsv112.MessagingMessagePayloadSizeBytesKey), 7480)
+	eventAttr.PutInt("messaging.message_payload_size_bytes", 7480)
 
 	event.SetTimestamp(tm)
 	event.SetDroppedAttributesCount(0)

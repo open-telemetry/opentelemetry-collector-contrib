@@ -76,7 +76,7 @@ func TestUpcloudDetector_Detect_OK(t *testing.T) {
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 
 	got := res.Attributes().AsRaw()
 	want := map[string]any{

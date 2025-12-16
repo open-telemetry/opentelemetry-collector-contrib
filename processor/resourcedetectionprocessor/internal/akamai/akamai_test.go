@@ -85,17 +85,17 @@ func TestAkamaiDetector_Detect_OK(t *testing.T) {
 
 	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Equal(t, "https://opentelemetry.io/schemas/1.6.1", schemaURL)
 
 	got := res.Attributes().AsRaw()
 	want := map[string]any{
-		"cloud.platform":  cloudPlatform,
-		"cloud.provider":  cloudProvider,
-		"cloud.region":    region,
+		"cloud.platform":   cloudPlatform,
+		"cloud.provider":   cloudProvider,
+		"cloud.region":     region,
 		"cloud.account.id": acct,
-		"host.id":         strconv.Itoa(id),
-		"host.name":       label,
-		"host.type":       instanceType,
+		"host.id":          strconv.Itoa(id),
+		"host.name":        label,
+		"host.type":        instanceType,
 		"host.image.id":    imageID,
 		"host.image.name":  imageLabel,
 	}

@@ -207,7 +207,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	detector := newTestDetector(md, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	md.AssertExpectations(t)
 	md.AssertNotCalled(t, "CPUInfo")
 
@@ -218,9 +218,9 @@ func TestDetectFQDNAvailable(t *testing.T) {
 		"os.version":     "22.04.2 LTS (Jammy Jellyfish)",
 		"host.id":        "2",
 		"host.arch":      "amd64",
-		"host.ip":                            testIPsAttribute,
-		"host.mac":                           testMACsAttribute,
-		"host.interface":                     testInterfacesAttribute,
+		"host.ip":        testIPsAttribute,
+		"host.mac":       testMACsAttribute,
+		"host.interface": testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -238,7 +238,7 @@ func TestFallbackHostname(t *testing.T) {
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, metadata.DefaultResourceAttributesConfig())
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	mdHostname.AssertExpectations(t)
 	mdHostname.AssertNotCalled(t, "HostID")
 	mdHostname.AssertNotCalled(t, "HostIPs")
@@ -267,7 +267,7 @@ func TestEnableHostID(t *testing.T) {
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	mdHostname.AssertExpectations(t)
 
 	expected := map[string]any{
@@ -277,9 +277,9 @@ func TestEnableHostID(t *testing.T) {
 		"os.version":     "22.04.2 LTS (Jammy Jellyfish)",
 		"host.id":        "3",
 		"host.arch":      "amd64",
-		"host.ip":                            testIPsAttribute,
-		"host.mac":                           testMACsAttribute,
-		"host.interface":                     testInterfacesAttribute,
+		"host.ip":        testIPsAttribute,
+		"host.mac":       testMACsAttribute,
+		"host.interface": testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -300,7 +300,7 @@ func TestUseHostname(t *testing.T) {
 	detector := newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	mdHostname.AssertExpectations(t)
 
 	expected := map[string]any{
@@ -310,9 +310,9 @@ func TestUseHostname(t *testing.T) {
 		"os.version":     "22.04.2 LTS (Jammy Jellyfish)",
 		"host.id":        "1",
 		"host.arch":      "amd64",
-		"host.ip":                            testIPsAttribute,
-		"host.mac":                           testMACsAttribute,
-		"host.interface":                     testInterfacesAttribute,
+		"host.ip":        testIPsAttribute,
+		"host.mac":       testMACsAttribute,
+		"host.interface": testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -405,16 +405,16 @@ func TestDetectError(t *testing.T) {
 	detector = newTestDetector(mdHostID, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(t.Context())
 	assert.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	assert.Equal(t, map[string]any{
 		"host.name":      "hostname",
 		"os.description": "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
 		"os.type":        "linux",
 		"os.version":     "22.04.2 LTS (Jammy Jellyfish)",
 		"host.arch":      "arm64",
-		"host.ip":                            testIPsAttribute,
-		"host.mac":                           testMACsAttribute,
-		"host.interface":                     testInterfacesAttribute,
+		"host.ip":        testIPsAttribute,
+		"host.mac":       testMACsAttribute,
+		"host.interface": testInterfacesAttribute,
 	}, res.Attributes().AsRaw())
 }
 
@@ -436,20 +436,20 @@ func TestDetectCPUInfo(t *testing.T) {
 	detector := newTestDetector(md, []string{"dns"}, cfg)
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		"host.name":      "fqdn",
-		"os.description": "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
-		"os.type":        "darwin",
-		"os.version":     "22.04.2 LTS (Jammy Jellyfish)",
-		"host.id":        "2",
-		"host.arch":      "amd64",
-		"host.ip":                            testIPsAttribute,
-		"host.mac":                           testMACsAttribute,
-		"host.cpu.family":                    "some",
-		"host.interface":                     testInterfacesAttribute,
+		"host.name":       "fqdn",
+		"os.description":  "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
+		"os.type":         "darwin",
+		"os.version":      "22.04.2 LTS (Jammy Jellyfish)",
+		"host.id":         "2",
+		"host.arch":       "amd64",
+		"host.ip":         testIPsAttribute,
+		"host.mac":        testMACsAttribute,
+		"host.cpu.family": "some",
+		"host.interface":  testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -493,14 +493,14 @@ func TestHostInterfaces(t *testing.T) {
 	detector := newTestDetector(mdInterfaces, []string{"os"}, cfg)
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	mdInterfaces.AssertExpectations(t)
 
 	fmt.Println("res.Attributes().AsRaw()", res.Attributes().AsRaw())
 	expected := map[string]any{
-		"host.name": "hostname",
-		"os.type":   "linux",
-		"host.interface":                testInterfacesAttribute,
+		"host.name":      "hostname",
+		"os.type":        "linux",
+		"host.interface": testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())

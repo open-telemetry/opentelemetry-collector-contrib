@@ -100,7 +100,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes["http.scheme"] = "http"
 	attributes["net.peer.name"] = "kb234.example.com"
 	attributes["net.peer.port"] = 8080
-	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
+	attributes["net.peer.ip"] = "10.8.17.36"
 	attributes["http.target"] = "/users/junit"
 	attributes["http.status_code"] = 200
 	span := constructHTTPClientSpan(attributes)
@@ -126,7 +126,7 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	attributes["url.scheme"] = "http"
 	attributes["net.peer.name"] = "kb234.example.com"
 	attributes["net.peer.port"] = 8080
-	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
+	attributes["net.peer.ip"] = "10.8.17.36"
 	attributes["url.query"] = "users=junit"
 	attributes["http.response.status_code"] = 200
 	span := constructHTTPClientSpan(attributes)
@@ -148,7 +148,7 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.client_ip"] = "1.2.3.4"
-	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
+	attributes["net.peer.ip"] = "10.8.17.36"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -178,7 +178,7 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.scheme"] = "http"
-	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
+	attributes["net.peer.ip"] = "10.8.17.36"
 	attributes["net.peer.port"] = "8080"
 	attributes["http.target"] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
@@ -197,7 +197,7 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.scheme"] = "https"
-	attributes[string(conventionsv112.NetPeerIPKey)] = "2001:db8:85a3::8a2e:370:7334"
+	attributes["net.peer.ip"] = "2001:db8:85a3::8a2e:370:7334"
 	attributes["net.peer.port"] = "443"
 	attributes["http.target"] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
@@ -320,7 +320,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.method"] = http.MethodGet
 	attributes["http.scheme"] = "https"
-	attributes[string(conventionsv112.HTTPServerNameKey)] = "api.example.com"
+	attributes["http.server_name"] = "api.example.com"
 	attributes["net.host.port"] = 443
 	attributes["http.target"] = "/users/junit"
 	attributes["http.client_ip"] = "192.168.15.32"
