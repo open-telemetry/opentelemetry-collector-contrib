@@ -255,7 +255,7 @@ jobs:
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Cache Test Build
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
         with:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
@@ -279,12 +279,12 @@ jobs:
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
@@ -321,7 +321,7 @@ jobs:
     needs: [unittest]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           merge-multiple: true
           pattern: coverage-artifacts-*
@@ -531,7 +531,7 @@ jobs:
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: ./bin/*
@@ -546,7 +546,7 @@ jobs:
           sparse-checkout: |
             .github/workflows/scripts/verify-dist-files-exist.sh
       - name: Download Binaries
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           merge-multiple: true
           path: ./bin/
@@ -702,7 +702,7 @@ jobs:
       - name: Install Tools
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
-      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           merge-multiple: true
           pattern: test-results-*
