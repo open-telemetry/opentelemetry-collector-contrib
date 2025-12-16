@@ -72,6 +72,11 @@ linters:
         path: pagefile.go # This exclusion is required for Windows only
         text: cachedBytes
 
+      - linters:
+          - unused
+        path: receiver/macosunifiedloggingreceiver/config_common.go
+        text: resolvedArchivePaths
+
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
 
@@ -118,7 +123,6 @@ linters:
             - go.opentelemetry.io/otel/semconv/v1.22.0
             - go.opentelemetry.io/otel/semconv/v1.25.0
             - go.opentelemetry.io/otel/semconv/v1.27.0
-            - go.opentelemetry.io/otel/semconv/v1.30.0
             - go.opentelemetry.io/otel/semconv/v1.37.0
             - go.opentelemetry.io/otel/semconv/v1.38.0
 
