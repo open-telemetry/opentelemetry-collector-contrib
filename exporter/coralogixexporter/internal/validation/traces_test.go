@@ -327,7 +327,7 @@ func TestBuildPartialSuccessLogFieldsForTraces_AllErrorTypes(t *testing.T) {
 				span.SetTraceID(getTraceID("trace----------"))
 				span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 				// Set start time far in the future
-				span.SetStartTimestamp(pcommon.Timestamp(time.Now().UnixNano() + maxFutureNanos + 1000000))
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()) + pcommon.Timestamp(maxFutureNanos) + 1000000)
 				return traces
 			},
 			expectType:  ErrorTypeInvalidStartTime,
