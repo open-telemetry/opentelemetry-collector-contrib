@@ -35,6 +35,8 @@ type Config struct {
 	// the process started. It should not be used in "exporters" which export counters that may have
 	// started before the process itself. Use only if you know what you are doing, as this may result
 	// in incorrect rate calculations.
+	//
+	// Deprecated: use the metricstarttime processor instead.
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
@@ -50,8 +52,6 @@ type Config struct {
 	// the config, service discovery, and targets for debugging purposes.
 	APIServer APIServer `mapstructure:"api_server"`
 
-	// From feature gate.
-	enableNativeHistograms bool
 	// For testing only.
 	ignoreMetadata bool
 }
@@ -191,7 +191,7 @@ func reloadPromConfig(dst *PromConfig, src any) error {
 	yamlOut, err := yaml.MarshalWithOptions(
 		src,
 		yaml.CustomMarshaler(func(s commonconfig.Secret) ([]byte, error) {
-			return []byte(s), nil
+			return yaml.Marshal(string(s))
 		}),
 	)
 	if err != nil {

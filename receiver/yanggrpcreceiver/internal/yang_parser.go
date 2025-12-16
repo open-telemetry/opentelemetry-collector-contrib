@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -374,13 +375,7 @@ func (dt *YANGDataType) IsNumericType() bool {
 		"decimal64",
 	}
 
-	for _, numType := range numericTypes {
-		if dt.Type == numType {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(numericTypes, dt.Type)
 }
 
 // IsCounterType checks if this is a counter-type metric (monotonically increasing)
@@ -398,11 +393,8 @@ func (dt *YANGDataType) IsCounterType() bool {
 	// But NOT rate units (which are handled as gauges)
 	if strings.HasPrefix(dt.Type, "uint") {
 		counterUnits := []string{"bytes", "packets", "count", "errors", "discards"}
-		for _, unit := range counterUnits {
-			// Exact match for unit to avoid matching "packets-per-second" as "packets"
-			if dt.Units == unit {
-				return true
-			}
+		if slices.Contains(counterUnits, dt.Units) {
+			return true
 		}
 	}
 
