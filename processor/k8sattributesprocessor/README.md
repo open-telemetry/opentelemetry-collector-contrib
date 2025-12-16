@@ -679,6 +679,267 @@ Agents will not make any k8s API calls, do any discovery of pods or extract any 
 No special configuration changes are needed to be made on the collector. It'll automatically detect
 the IP address of spans, logs and metrics sent by the agents as well as directly by other services/pods.
 
+## Complete Configuration Options
+
+Below is a comprehensive configuration example with all available options:
+
+```yaml
+k8sattributes:
+  # Authentication type for Kubernetes API access
+  # Options: "none", "serviceAccount", "kubeConfig"
+  # Default: "serviceAccount"
+  auth_type: "serviceAccount"
+  
+  # Path to kubeconfig file (only used when auth_type is "kubeConfig")
+  # Default: ""
+  kube_config_path: "~/.kube/config"
+  
+  # Kubernetes API server context (only used when auth_type is "kubeConfig")
+  # Default: ""
+  context: ""
+  
+  # Passthrough mode - only annotates resources with pod IP without extracting metadata
+  # Useful for agents that don't need K8s API access
+  # Default: false
+  passthrough: false
+  
+  # Wait for metadata to be synced before marking processor as ready
+  # When true, collector startup will block until metadata is available
+  # Default: false
+  wait_for_metadata: false
+  
+  # Maximum time to wait for metadata sync during startup
+  # Only applies when wait_for_metadata is true
+  # Default: 10s
+  wait_for_metadata_timeout: 10s
+  
+  # Extract configuration - defines what metadata to extract
+  extract:
+    # Metadata fields to extract as resource attributes
+    # Default: [k8s.namespace.name, k8s.pod.name, k8s.pod.uid, k8s.pod.start_time, k8s.deployment.name, k8s.node.name]
+    metadata:
+      - k8s.namespace.name
+      - k8s.pod.name
+      - k8s.pod.uid
+      - k8s.pod.hostname
+      - k8s.pod.start_time
+      - k8s.pod.ip
+      - k8s.deployment.name
+      - k8s.deployment.uid
+      - k8s.replicaset.name
+      - k8s.replicaset.uid
+      - k8s.daemonset.name
+      - k8s.daemonset.uid
+      - k8s.statefulset.name
+      - k8s.statefulset.uid
+      - k8s.job.name
+      - k8s.job.uid
+      - k8s.cronjob.name
+      - k8s.cronjob.uid
+      - k8s.node.name
+      - k8s.node.uid
+      - k8s.cluster.uid
+      - k8s.container.name
+      - container.id
+      - container.image.name
+      - container.image.tag
+      - container.image.repo_digests
+      - service.namespace
+      - service.name
+      - service.version
+      - service.instance.id
+    
+    # Extract pod annotations as resource attributes
+    annotations:
+      - tag_name: annotation_value  # Resource attribute name
+        key: my-annotation           # Annotation key to extract
+        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, or node
+      - tag_name: deployment_annotation
+        key: app.version
+        from: deployment
+      # Extract multiple annotations matching a regex pattern
+      - tag_name: $1                 # Use regex capture group
+        key_regex: custom\.(.*)      # Extract all annotations matching pattern
+        from: pod
+    
+    # Extract pod labels as resource attributes
+    labels:
+      - tag_name: label_value        # Resource attribute name
+        key: my-label                # Label key to extract
+        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, or node
+      - tag_name: namespace_label
+        key: environment
+        from: namespace
+      # Extract multiple labels matching a regex pattern
+      - tag_name: $1                 # Use regex capture group
+        key_regex: app\.(.*)         # Extract all labels matching pattern
+        from: pod
+    
+    # Extract OpenTelemetry resource attributes from pod annotations
+    # Annotations with prefix "resource.opentelemetry.io/" become resource attributes
+    # Example: "resource.opentelemetry.io/service.version" → "service.version"
+    # Default: false
+    otel_annotations: true
+    
+    # Extract deployment name from replicaset name (disables replicaset watching)
+    # Reduces memory usage and RBAC requirements
+    # Default: false
+    deployment_name_from_replicaset: false
+  
+  # Filter configuration - restrict which pods to monitor
+  filter:
+    # Filter by node name (static)
+    node: "node-1"
+    
+    # Filter by node name from environment variable (dynamic)
+    # Use with Kubernetes downward API to automatically filter by current node
+    node_from_env_var: "KUBE_NODE_NAME"
+    
+    # Filter by namespace
+    namespace: "my-namespace"
+    
+    # Filter by field selectors
+    fields:
+      - key: spec.nodeName
+        value: "node-1"
+        op: equals              # Options: equals, not-equals
+      - key: status.phase
+        value: "Running"
+        op: equals
+    
+    # Filter by label selectors
+    labels:
+      - key: app
+        value: "my-app"
+        op: equals              # Options: equals, not-equals, exists, does-not-exist
+      - key: environment
+        value: "production"
+        op: equals
+      - key: monitoring
+        op: exists
+  
+  # Pod association rules - define how to match telemetry data to pods
+  # Rules are evaluated in order; first match wins
+  # Maximum 4 sources per rule
+  pod_association:
+    # Rule 1: Match by pod IP from resource attribute
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.ip
+    
+    # Rule 2: Match by pod UID from resource attribute
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
+    
+    # Rule 3: Match by pod name AND namespace (both must match)
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.name
+        - from: resource_attribute
+          name: k8s.namespace.name
+    
+    # Rule 4: Match by connection IP (default if no rules specified)
+    - sources:
+        - from: connection
+  
+  # Exclude configuration - ignore specific pods
+  exclude:
+    pods:
+      - name: "jaeger-agent"        # Exact pod name to exclude
+      - name: "jaeger-collector"
+```
+
+### Configuration Options Reference
+
+#### Top-Level Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `auth_type` | string | `serviceAccount` | Authentication method for K8s API: `none`, `serviceAccount`, or `kubeConfig` |
+| `kube_config_path` | string | `""` | Path to kubeconfig file (only when `auth_type: kubeConfig`) |
+| `context` | string | `""` | K8s context to use (only when `auth_type: kubeConfig`) |
+| `passthrough` | bool | `false` | Only add pod IP without extracting metadata (no K8s API calls) |
+| `wait_for_metadata` | bool | `false` | Block collector startup until metadata is synced |
+| `wait_for_metadata_timeout` | duration | `10s` | Max wait time for metadata sync on startup |
+
+#### Extract Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `metadata` | []string | See below | List of metadata fields to extract as resource attributes |
+| `annotations` | []FieldExtractConfig | `[]` | Pod/namespace/node annotations to extract |
+| `labels` | []FieldExtractConfig | `[]` | Pod/namespace/node labels to extract |
+| `otel_annotations` | bool | `false` | Extract OpenTelemetry resource attributes from pod annotations with prefix `resource.opentelemetry.io/` |
+| `deployment_name_from_replicaset` | bool | `false` | Extract deployment name from replicaset name (disables replicaset watching) |
+
+**Default metadata fields:**
+- `k8s.namespace.name`
+- `k8s.pod.name`
+- `k8s.pod.uid`
+- `k8s.pod.start_time`
+- `k8s.deployment.name`
+- `k8s.node.name`
+
+**Available metadata fields:**
+All fields listed in the "Complete Configuration Options" section above under `extract.metadata`.
+
+#### FieldExtractConfig Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `tag_name` | string | Auto-generated | Resource attribute name (supports regex backreferences with `key_regex`) |
+| `key` | string | `""` | Exact annotation/label key to extract (mutually exclusive with `key_regex`) |
+| `key_regex` | string | `""` | Regex pattern to match annotation/label keys (mutually exclusive with `key`) |
+| `from` | string | `pod` | Source to extract from: `pod`, `namespace`, `deployment`, `statefulset`, `daemonset`, `job`, or `node` |
+
+#### Filter Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `node` | string | `""` | Filter pods by specific node name |
+| `node_from_env_var` | string | `""` | Environment variable containing node name to filter by |
+| `namespace` | string | `""` | Filter pods by specific namespace |
+| `fields` | []FieldFilterConfig | `[]` | Filter by K8s field selectors |
+| `labels` | []FieldFilterConfig | `[]` | Filter by K8s label selectors |
+
+#### FieldFilterConfig Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `key` | string | Required | Field or label key |
+| `value` | string | `""` | Field or label value |
+| `op` | string | `equals` | Operation: `equals`, `not-equals` (fields); `equals`, `not-equals`, `exists`, `does-not-exist` (labels) |
+
+#### PodAssociationConfig Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sources` | []AssociationSource | Required | List of sources to match (maximum 4, all must match) |
+
+#### AssociationSource Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `from` | string | Required | Source type: `connection` or `resource_attribute` |
+| `name` | string | Conditional | Resource attribute name (required when `from: resource_attribute`) |
+
+#### Exclude Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `pods` | []ExcludePodConfig | Default excludes | List of pods to exclude from processing |
+
+#### ExcludePodConfig Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `name` | string | Required | Pod name pattern (regex) to exclude |
+
+**Default excluded pods:**
+- `jaeger-agent`
+- `jaeger-collector`
+
 ## Caveats
 
 There are some edge-cases and scenarios where k8sattributes will not work properly.
