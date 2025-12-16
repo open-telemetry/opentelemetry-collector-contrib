@@ -54,15 +54,16 @@ func (*indexResolver) collectResourceAttributes(resource pcommon.Resource, keys 
 func (*indexResolver) collectScopeAttributes(scope pcommon.InstrumentationScope, keys []string) map[string]string {
 	attrs := make(map[string]string)
 	for _, key := range keys {
-		if key == "scope.name" {
+		switch key {
+		case "scope.name":
 			if scope.Name() != "" {
 				attrs[key] = scope.Name()
 			}
-		} else if key == "scope.version" {
+		case "scope.version":
 			if scope.Version() != "" {
 				attrs[key] = scope.Version()
 			}
-		} else {
+		default:
 			if v, ok := scope.Attributes().Get(key); ok {
 				attrs[key] = v.AsString()
 			}
