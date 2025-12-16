@@ -11,6 +11,4 @@ status:
 
 tests:
   skip_lifecycle: true
-  goleak:
-    setup: "setupTestMain(m)"
 

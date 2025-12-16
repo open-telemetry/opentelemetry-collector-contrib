@@ -17,7 +17,7 @@ import (
 
 var useNewTypeNameGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.awscontainerinsightreceiver.useNewTypeName",
-	featuregate.StageBeta,
+	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver uses the new component type name 'awscontainerinsight' instead of 'awscontainerinsightreceiver'."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44052"),
 )
@@ -73,6 +73,13 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	if !useNewTypeNameGate.IsEnabled() {
+		params.Logger.Warn(
+			"The component type name 'awscontainerinsightreceiver' is deprecated and will be changed to 'awscontainerinsight' in a future release. " +
+				"Please enable the feature gate 'receiver.awscontainerinsightreceiver.useNewTypeName' to use the new component type name. " +
+				"See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44052",
+		)
+	}
 	rCfg := baseCfg.(*Config)
 	return newAWSContainerInsightReceiver(params.TelemetrySettings, rCfg, consumer)
 }

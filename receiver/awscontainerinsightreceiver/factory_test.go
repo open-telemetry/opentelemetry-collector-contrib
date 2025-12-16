@@ -17,36 +17,16 @@ import (
 )
 
 func TestNewFactory(t *testing.T) {
-	// TestNewFactory checks the default behavior (feature gate disabled)
+	// TestNewFactory checks the default behavior (feature gate disabled by default at StageAlpha)
 	// which should use the old type name for backward compatibility
 	originalValue := useNewTypeNameGate.IsEnabled()
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), originalValue))
 	}()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
-
 	c := NewFactory()
 	assert.NotNil(t, c)
 	// By default (feature gate disabled), should use old type name for backward compatibility
-	assert.Equal(t, component.MustNewType("awscontainerinsightreceiver"), c.Type())
-}
-
-func TestNewFactory_FeatureGateDisabled(t *testing.T) {
-	// Disable the feature gate
-	originalValue := useNewTypeNameGate.IsEnabled()
-	defer func() {
-		if originalValue {
-			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), true))
-		} else {
-			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
-		}
-	}()
-
-	require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
-
-	c := NewFactory()
-	assert.NotNil(t, c)
 	assert.Equal(t, component.MustNewType("awscontainerinsightreceiver"), c.Type())
 }
 
