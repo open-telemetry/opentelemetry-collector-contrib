@@ -23,6 +23,10 @@ type Config struct {
 	ConcurrencyLimit int `mapstructure:"concurrency_limit"`
 	// GitHubOrg is the name of the GitHub organization to scrape (github scraper only)
 	GitHubOrg string `mapstructure:"github_org"`
+	// MergedPRLookbackDays limits how far back to query for merged pull requests in days.
+	// Default is 30 days. Set to 0 to fetch all merged PRs (no time filtering).
+	// Open PRs are always fetched regardless of this setting.
+	MergedPRLookbackDays int `mapstructure:"merged_pr_lookback_days"`
 	// SearchQuery is the query to use when defining a custom search for repository data
 	SearchQuery string `mapstructure:"search_query"`
 }
@@ -31,6 +35,9 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	if cfg.ConcurrencyLimit < 0 {
 		return errors.New("concurrency_limit must be non-negative")
+	}
+	if cfg.MergedPRLookbackDays < 0 {
+		return errors.New("merged_pr_lookback_days must be non-negative")
 	}
 	return nil
 }

@@ -99,6 +99,18 @@ func TestScrape(t *testing.T) {
 								{
 									Merged: false,
 								},
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+				mergedPRResponse: mergedPRResponse{
+					prs: []getMergedPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						{
+							PageInfo: getMergedPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasPreviousPage: false,
+							},
+							Nodes: []MergedPullRequestNode{
 								{
 									Merged: true,
 								},
