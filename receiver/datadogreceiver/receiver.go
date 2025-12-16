@@ -362,7 +362,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
 			continue
 		}
-		spanCount = otelTraces.SpanCount()
+		spanCount += otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
 			errorutil.HTTPError(w, err)
