@@ -1,6 +1,6 @@
 type: github
 
-sem_conv_version: 1.37.0
+sem_conv_version: 1.38.0
 
 status:
   class: receiver
