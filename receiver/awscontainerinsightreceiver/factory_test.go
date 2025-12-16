@@ -21,11 +21,7 @@ func TestNewFactory(t *testing.T) {
 	// which should use the old type name for backward compatibility
 	originalValue := useNewTypeNameGate.IsEnabled()
 	defer func() {
-		if originalValue {
-			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), true))
-		} else {
-			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
-		}
+		require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), originalValue))
 	}()
 
 	require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
