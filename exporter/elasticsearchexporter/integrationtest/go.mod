@@ -52,7 +52,7 @@ require (
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.8.0 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.19.0 // indirect
+	github.com/elastic/go-elasticsearch/v8 v8.19.1 // indirect
 	github.com/elastic/go-freelru v0.16.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/go-structform v0.0.12 // indirect
