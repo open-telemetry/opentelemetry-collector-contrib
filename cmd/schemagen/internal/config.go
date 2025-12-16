@@ -15,7 +15,7 @@ type Config = struct {
 	FilePath       string
 	DirPath        string
 	SchemaPath     string
-	SchemaIdPrefix string
+	SchemaIDPrefix string
 	RootTypeName   string
 	FileType       string
 }
@@ -80,7 +80,7 @@ func ReadConfig() (*Config, error) {
 		FilePath:       filePath,
 		DirPath:        dirPath,
 		SchemaPath:     filepath.Join(dirPath, *output+ext),
-		SchemaIdPrefix: *id,
+		SchemaIDPrefix: *id,
 		RootTypeName:   *rootType,
 		FileType:       *fileType,
 	}, nil
@@ -89,7 +89,7 @@ func ReadConfig() (*Config, error) {
 func toPascalCase(s string) string {
 	parts := strings.Split(s, "_")
 	for i, part := range parts {
-		if len(part) > 0 {
+		if part != "" {
 			parts[i] = strings.ToUpper(part[:1]) + part[1:]
 		}
 	}

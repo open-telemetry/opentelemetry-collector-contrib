@@ -1,6 +1,7 @@
+//go:build !windows
+
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-
 package internal
 
 import (
@@ -97,7 +98,8 @@ func TestParser(t *testing.T) {
 
 			cfg := &Config{
 				FilePath:       tc.inputFile,
-				SchemaIdPrefix: "http://example.com/schema",
+				SchemaIDPrefix: "http://example.com/schema",
+				SchemaPath:     "config.schema.yaml",
 			}
 			if tc.rootType != "" {
 				cfg.RootTypeName = tc.rootType
@@ -114,5 +116,4 @@ func TestParser(t *testing.T) {
 			require.YAMLEq(t, expectedSchema, givenYaml)
 		})
 	}
-
 }

@@ -15,7 +15,7 @@ import (
 func TestReadConfig_FileInput(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "service.go")
-	require.NoError(t, os.WriteFile(file, []byte("package test"), 0o644))
+	require.NoError(t, os.WriteFile(file, []byte("package test"), 0o600))
 
 	cfg, err := readConfigForTest(t, file)
 	require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestReadConfig_Errors(t *testing.T) {
 func TestReadConfig_DefaultRootTypeDerivedFromPath(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "my_config.go")
-	require.NoError(t, os.WriteFile(target, []byte("package test"), 0o644))
+	require.NoError(t, os.WriteFile(target, []byte("package test"), 0o600))
 
 	cfg, err := readConfigForTest(t, target)
 	require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestReadConfig_CustomSchemaIdPrefix(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := "https://example.com/prefix"
-	require.Equal(t, expected, cfg.SchemaIdPrefix)
+	require.Equal(t, expected, cfg.SchemaIDPrefix)
 }
 
 func readConfigForTest(t *testing.T, args ...string) (*Config, error) {

@@ -29,7 +29,6 @@ func run() error {
 	}
 
 	err = internal.WriteSchemaToFile(schema, config)
-
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,5 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-id: http://example.com/schema/cmd/schemagen/internal
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
 title: SimpleConfig
 type: object
 properties:
@@ -7,7 +7,9 @@ properties:
     description: Enabled indicates if the server is enabled
     type: boolean
   env_vars:
-    additionalProperties: { }
+    additionalProperties: {
+      x-customType: any
+    }
     description: EnvVars is a map of environment variables
     type: object
   host:

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.25.1
+go 1.24.4
 
 require (
 	github.com/Khan/genqlient v0.8.1
@@ -10,8 +10,8 @@ require (
 	github.com/google/addlicense v1.2.0
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen v0.142.0
 	github.com/rhysd/actionlint v1.7.9
 	go.opentelemetry.io/build-tools/checkapi v0.29.0
 	go.opentelemetry.io/build-tools/checkfile v0.29.0

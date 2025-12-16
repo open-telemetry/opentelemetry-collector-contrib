@@ -76,7 +76,7 @@ func (d DefsSchemaElement) AddDef(name string, property SchemaElement) {
 
 type Schema struct {
 	Schema              string            `json:"$schema" yaml:"$schema"`
-	Id                  string            `json:"id" yaml:"id"`
+	ID                  string            `json:"id" yaml:"id"`
 	Title               string            `json:"title" yaml:"title"`
 	Defs                DefsSchemaElement `json:"$defs,omitempty" yaml:"$defs,omitempty"`
 	ObjectSchemaElement `json:",inline" yaml:",inline"`
@@ -93,7 +93,7 @@ func (s *Schema) ToYAML() ([]byte, error) {
 func CreateSchema(id, title, description string) *Schema {
 	return &Schema{
 		Schema: Version,
-		Id:     id,
+		ID:     id,
 		Title:  title,
 		Defs:   DefsSchemaElement{},
 		ObjectSchemaElement: ObjectSchemaElement{
@@ -129,7 +129,7 @@ func CreateArrayField(itemType SchemaElement, description string) *ArraySchemaEl
 	}
 }
 
-func CreateRefField(ref string, description string) *RefSchemaElement {
+func CreateRefField(ref, description string) *RefSchemaElement {
 	return &RefSchemaElement{
 		BaseSchemaElement: BaseSchemaElement{
 			Description: description,

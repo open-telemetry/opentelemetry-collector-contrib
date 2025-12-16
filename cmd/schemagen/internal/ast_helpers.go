@@ -97,19 +97,25 @@ func GetSchemaID(file *ast.File, cfg *Config) (string, error) {
 	basePath, err := getBasePath(absolutePath)
 	relPath := ""
 	if err == nil {
-		relPath, _ = filepath.Rel(strings.TrimSpace(basePath), absolutePath)
+		relPath, _ = filepath.Rel(basePath, absolutePath)
 	}
 
-	if cfg.SchemaIdPrefix != "" {
-		id, err := url.JoinPath(cfg.SchemaIdPrefix, relPath, cfg.SchemaPath)
-		return id, err
+	if cfg.SchemaIDPrefix != "" {
+		id, e := url.JoinPath(cfg.SchemaIDPrefix, relPath, filepath.Base(cfg.SchemaPath))
+		if e != nil {
+			return "", e
+		}
+		return filepath.ToSlash(id), nil
 	}
 
 	packageImportPath, err := getPackageImportPath(file)
 	if err == nil {
-		rootUrl := strings.TrimSuffix(packageImportPath, filepath.ToSlash(relPath))
-		id, err := url.JoinPath("https://", rootUrl, "blob/main", relPath, filepath.Base(cfg.SchemaPath))
-		return id, err
+		rootURL := strings.TrimSuffix(packageImportPath, filepath.ToSlash(relPath))
+		id, e := url.JoinPath("https://", rootURL, "blob/main", relPath, filepath.Base(cfg.SchemaPath))
+		if e != nil {
+			return "", e
+		}
+		return filepath.ToSlash(id), nil
 	}
 
 	return "", err
@@ -121,7 +127,7 @@ func getBasePath(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(output), nil
+	return strings.Trim(filepath.ToSlash(string(output)), "\n"), nil
 }
 
 func getPackageImportPath(file *ast.File) (string, error) {
@@ -133,5 +139,5 @@ func getPackageImportPath(file *ast.File) (string, error) {
 			}
 		}
 	}
-	return "", errors.New("could not find import path")
+	return "", errors.New("could not find import path, please provide SchemaIDPrefix with the flag")
 }

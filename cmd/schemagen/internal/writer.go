@@ -29,5 +29,5 @@ func WriteSchemaToFile(schema *Schema, config *Config) error {
 }
 
 func writeFile(path string, data []byte) error {
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, 0o600)
 }

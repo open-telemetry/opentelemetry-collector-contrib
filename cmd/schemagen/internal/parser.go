@@ -47,10 +47,10 @@ func (p *Parser) Parse() (*Schema, error) {
 func (p *Parser) initializeSchema(file *ast.File) error {
 	id, err := GetSchemaID(file, p.config)
 	if err != nil {
-		if p.config.SchemaIdPrefix == "" {
+		if p.config.SchemaIDPrefix == "" {
 			return fmt.Errorf("could not determine schema ID: %w", err)
 		}
-		id = p.config.SchemaIdPrefix
+		id = p.config.SchemaIDPrefix
 	}
 	p.schema = CreateSchema(id, p.config.RootTypeName, "")
 	return nil
@@ -92,7 +92,7 @@ func (p *Parser) isRootType(name string) bool {
 }
 
 func (p *Parser) parseType(name string, typeSpec *ast.TypeSpec) error {
-	schemaElement, err := p.parseExpr(typeSpec.Type.(ast.Expr))
+	schemaElement, err := p.parseExpr(typeSpec.Type)
 	if err != nil {
 		return err
 	}
@@ -126,9 +126,7 @@ func (p *Parser) parseExpr(expr ast.Expr) (SchemaElement, error) {
 }
 
 func (p *Parser) parseStruct(structType *ast.StructType) (SchemaElement, error) {
-	var (
-		schemaObject SchemaObject = CreateObjectField("")
-	)
+	var schemaObject SchemaObject = CreateObjectField("")
 	for _, field := range structType.Fields.List {
 		if len(field.Names) == 0 {
 			if err := p.addEmbeddedField(field, schemaObject); err != nil {
@@ -235,7 +233,7 @@ func (p *Parser) parsePointer(pointer *ast.StarExpr) (SchemaElement, error) {
 	return element, nil
 }
 
-func (p *Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error) {
+func (*Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error) {
 	pkgIdent, ok := selector.X.(*ast.Ident)
 	if !ok {
 		return nil, errors.New("unrecognized SelectorExpr structure")

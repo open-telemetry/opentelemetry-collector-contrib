@@ -163,20 +163,14 @@ func TestGetSchemaIDWithPrefix(t *testing.T) {
 	cfg := &Config{
 		DirPath:        repoDir,
 		SchemaPath:     filepath.Join(repoDir, "schemas/config.schema.yaml"),
-		SchemaIdPrefix: "https://example.com/root",
+		SchemaIDPrefix: "https://example.com/root",
 	}
 	file := parseTestFile(t, "package test")
 
 	id, err := GetSchemaID(file, cfg)
-	require.NoError(t, err)
 
-	basePath, err := getBasePath(repoDir)
 	require.NoError(t, err)
-	relPath, err := filepath.Rel(strings.TrimSpace(basePath), repoDir)
-	require.NoError(t, err)
-	expected, err := url.JoinPath(cfg.SchemaIdPrefix, relPath, cfg.SchemaPath)
-	require.NoError(t, err)
-	require.Equal(t, expected, id)
+	require.Equal(t, "https://example.com/root/config.schema.yaml", id)
 }
 
 func TestGetSchemaIDWithImportComment(t *testing.T) {
@@ -195,7 +189,8 @@ func TestGetSchemaIDWithImportComment(t *testing.T) {
 	require.NoError(t, err)
 	relPath, err := filepath.Rel(strings.TrimSpace(basePath), repoDir)
 	require.NoError(t, err)
-	rootURL := strings.TrimSuffix("github.com/example/repo", filepath.ToSlash(relPath))
+	repo := "github.com/example/repo"
+	rootURL := strings.TrimSuffix(repo, filepath.ToSlash(relPath))
 	expected, err := url.JoinPath("https://", rootURL, "blob/main", relPath, "config.schema.yaml")
 	require.NoError(t, err)
 	require.Equal(t, expected, id)
