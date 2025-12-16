@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
@@ -376,19 +375,19 @@ func TestEnrichS3Logs(t *testing.T) {
 	for _, resource := range logs.ResourceLogs().All() {
 		resourceAttrs := resource.Resource().Attributes()
 
-		v, b := resourceAttrs.Get(string(conventions.CloudProviderKey))
+		v, b := resourceAttrs.Get("cloud.provider")
 		require.True(t, b)
 		require.Equal(t, "aws", v.AsString())
 
-		v, b = resourceAttrs.Get(string(conventions.CloudRegionKey))
+		v, b = resourceAttrs.Get("cloud.region")
 		require.True(t, b)
 		require.Equal(t, "us-east-1", v.AsString())
 
-		v, b = resourceAttrs.Get(string(conventions.AWSS3BucketKey))
+		v, b = resourceAttrs.Get("aws.s3.bucket")
 		require.True(t, b)
 		require.Equal(t, "bucket-name", v.AsString())
 
-		v, b = resourceAttrs.Get(string(conventions.AWSS3KeyKey))
+		v, b = resourceAttrs.Get("aws.s3.key")
 		require.True(t, b)
 		require.Equal(t, "object-key", v.AsString())
 
