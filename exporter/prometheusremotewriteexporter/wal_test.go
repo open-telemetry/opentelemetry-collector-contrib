@@ -16,7 +16,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -181,7 +181,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 		WAL: configoptional.Some(WALConfig{
 			Directory: t.TempDir(),
 		}),
-		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -245,7 +245,7 @@ func TestWALWrite_Telemetry(t *testing.T) {
 		WAL: configoptional.Some(WALConfig{
 			Directory: t.TempDir(),
 		}),
-		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
+		RemoteWriteProtoMsg: remoteapi.WriteV2MessageType,
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
@@ -316,7 +316,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 			BufferSize: 1,
 			Directory:  tempDir,
 		}),
-		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
+		RemoteWriteProtoMsg: remoteapi.WriteV2MessageType,
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
@@ -393,7 +393,7 @@ func TestWALLag_Telemetry(t *testing.T) {
 			BufferSize:         1,
 			LagRecordFrequency: 10 * time.Millisecond, // Very short interval for testing
 		}),
-		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
+		RemoteWriteProtoMsg: remoteapi.WriteV2MessageType,
 	}
 
 	// Create a server that will be slow to process requests (to create lag)

