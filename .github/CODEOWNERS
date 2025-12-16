@@ -36,7 +36,7 @@ connector/grafanacloudconnector/                                 @open-telemetry
 connector/metricsaslogsconnector/                                @open-telemetry/collector-contrib-approvers @atoulme
 connector/otlpjsonconnector/                                     @open-telemetry/collector-contrib-approvers @ChrsMark
 connector/roundrobinconnector/                                   @open-telemetry/collector-contrib-approvers @bogdandrutu
-connector/routingconnector/                                      @open-telemetry/collector-contrib-approvers @mwear @TylerHelmuth @evan-bradley @edmocosta
+connector/routingconnector/                                      @open-telemetry/collector-contrib-approvers @mwear @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 connector/servicegraphconnector/                                 @open-telemetry/collector-contrib-approvers @mapno @JaredTan95
 connector/signaltometricsconnector/                              @open-telemetry/collector-contrib-approvers @ChrsMark @lahsivjar
 connector/slowsqlconnector/                                      @open-telemetry/collector-contrib-approvers @JaredTan95 @Frapschen @atoulme
@@ -169,7 +169,7 @@ pkg/experimentalmetricmetadata/                                  @open-telemetry
 pkg/golden/                                                      @open-telemetry/collector-contrib-approvers @atoulme
 pkg/kafka/configkafka/                                           @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @axw @paulojmdias
 pkg/kafka/topic/                                                 @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
-pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
+pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers @fatsheep9146
 pkg/pdatautil/                                                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                         @open-telemetry/collector-contrib-approvers @mx-psi
@@ -199,7 +199,7 @@ processor/datadogsemanticsprocessor/                             @open-telemetry
 processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @RichieSams
 processor/deltatorateprocessor/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/dnslookupprocessor/                                    @open-telemetry/collector-contrib-approvers @andrzej-stencel @kaisecheng @edmocosta
-processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken @evan-bradley @edmocosta
+processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken @evan-bradley @edmocosta @bogdandrutu
 processor/geoipprocessor/                                        @open-telemetry/collector-contrib-approvers @andrzej-stencel @michalpristas @rogercoll
 processor/groupbyattrsprocessor/                                 @open-telemetry/collector-contrib-approvers @rnishtala-sumo @amdprophet
 processor/groupbytraceprocessor/                                 @open-telemetry/collector-contrib-approvers @iblancasa
@@ -230,7 +230,7 @@ processor/schemaprocessor/                                       @open-telemetry
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo @amdprophet
 processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech @Logiraptor
-processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
+processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @axw @schmikei @rnishtala-sumo
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
