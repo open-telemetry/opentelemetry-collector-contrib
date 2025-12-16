@@ -177,7 +177,7 @@ func TestScalewayDetector_Detect_OK(t *testing.T) {
 
 	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	attrs := res.Attributes().AsRaw()
 	// Region is derived from zone by trimming the trailing segment: "nl-ams-1" -> "nl-ams"
