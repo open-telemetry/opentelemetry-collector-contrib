@@ -62,7 +62,7 @@ func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Trace
 
 func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces, ir *indexResolver, cfg *Config, timestamp time.Time) {
 	keys := ir.extractPlaceholderKeys(cfg.TracesIndex)
-	forEachSpan(td, ir, cfg, timestamp, keys, func(cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string) {
+	forEachSpan(td, ir, cfg, timestamp, keys, func(timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string) {
 		payload, err := tbi.model.encodeTrace(resource, scope, scopeSchemaURL, span)
 		if err != nil {
 			tbi.appendPermanentError(err)
@@ -145,7 +145,7 @@ func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(
 	})
 }
 
-func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, keys []string, visitor func(cfg *Config, timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string)) {
+func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, keys []string, visitor func(timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string)) {
 	timeSuffix := indexResolver.calculateTimeSuffix(cfg.TracesIndexTimeFormat, timestamp)
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -161,7 +161,7 @@ func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, ti
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				indexName := indexResolver.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, span.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
-				visitor(cfg, timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span, indexName)
+				visitor(timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span, indexName)
 			}
 		}
 	}

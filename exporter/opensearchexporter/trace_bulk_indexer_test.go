@@ -120,7 +120,7 @@ func TestForEachSpan(t *testing.T) {
 	keys := resolver.extractPlaceholderKeys(cfg.TracesIndex)
 
 	var results []string
-	forEachSpan(td, resolver, cfg, ts, keys, func(cfg *Config, ts time.Time, res pcommon.Resource, rschema string, scope pcommon.InstrumentationScope, sschema string, span ptrace.Span, indexName string) {
+	forEachSpan(td, resolver, cfg, ts, keys, func(ts time.Time, res pcommon.Resource, rschema string, scope pcommon.InstrumentationScope, sschema string, span ptrace.Span, indexName string) {
 		results = append(results, indexName)
 	})
 

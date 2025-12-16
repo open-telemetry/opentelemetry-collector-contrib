@@ -120,7 +120,7 @@ func TestForEachLog(t *testing.T) {
 	keys := resolver.extractPlaceholderKeys(cfg.LogsIndex)
 
 	var results []string
-	forEachLog(ld, resolver, cfg, ts, keys, func(cfg *Config, ts time.Time, res pcommon.Resource, rschema string, scope pcommon.InstrumentationScope, sschema string, log plog.LogRecord, indexName string) {
+	forEachLog(ld, resolver, cfg, ts, keys, func(ts time.Time, res pcommon.Resource, rschema string, scope pcommon.InstrumentationScope, sschema string, log plog.LogRecord, indexName string) {
 		results = append(results, indexName)
 	})
 
