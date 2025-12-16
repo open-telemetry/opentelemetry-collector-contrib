@@ -16,7 +16,7 @@ with qstats as (
 		SUM(qs.total_rows) AS total_rows,
 		SUM(qs.total_grant_kb) as total_grant_kb
 	FROM sys.dm_exec_query_stats AS qs
-	WHERE DATEADD(ms, last_elapsed_time / 1000, last_execution_time) BETWEEN DATEADD(SECOND, @lookbackTime, GETDATE()) AND GETDATE()
+	WHERE DATEADD(ms, last_elapsed_time / 1000, last_execution_time) > DATEADD(SECOND, @lookbackTime, GETDATE())
 	GROUP BY
 		qs.query_hash,
 		qs.query_plan_hash
