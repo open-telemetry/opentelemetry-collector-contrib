@@ -24,6 +24,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -193,7 +194,7 @@ func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
 
-	bi := bulkIndexerConfig(client, cfg, true)
+	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
 	require.Equal(t, map[string][]string{
 		"pipeline": {"test-pipeline"},
 	}, bi.QueryParams)
