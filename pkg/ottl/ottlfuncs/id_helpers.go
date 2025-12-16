@@ -76,7 +76,7 @@ func bytesToID[R idByteArray](funcName string, b []byte, idLen, idHexLen int, he
 
 // copyToFixedLenID copies the bytes from the source slice to the destination fixed length array.
 func copyToFixedLenID[R idByteArray](dst *R, src []byte) {
-	for i := 0; i < len(src); i++ {
+	for i := range src {
 		(*dst)[i] = src[i]
 	}
 }
