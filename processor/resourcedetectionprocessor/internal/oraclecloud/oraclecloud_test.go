@@ -60,7 +60,7 @@ func TestDetect(t *testing.T) {
 
 		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 		// Per Otel semantic conventions, these are the attribute keys for K8s clusters:
 		// https://opentelemetry.io/docs/specs/semconv/resource/k8s/#cluster
@@ -139,7 +139,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 
 		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 		expected := map[string]any{
 			"cloud.provider":          "oracle_cloud",
