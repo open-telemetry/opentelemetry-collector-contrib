@@ -25,6 +25,146 @@ running in a cluster, keeps a record of their IP addresses, pod UIDs and interes
 The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
 It represents a list of associations that are executed in the specified order until the first one is able to do the match.
 
+## Common Use Cases
+
+### Example 1: Basic Agent Deployment (DaemonSet)
+
+Minimal configuration for an agent collecting telemetry from pods on the same node:
+
+```yaml
+processors:
+  k8sattributes:
+    # Use downward API to automatically filter by current node
+    filter:
+      node_from_env_var: KUBE_NODE_NAME
+    # Extract common metadata
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.node.name
+    # Default connection-based pod association
+    pod_association:
+      - sources:
+          - from: connection
+```
+
+Required environment variable in your collector DaemonSet:
+```yaml
+env:
+  - name: KUBE_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+```
+
+### Example 2: Gateway Deployment with Resource Attribute Association
+
+Gateway configuration that receives telemetry from agents that have already added pod IP:
+
+```yaml
+processors:
+  k8sattributes:
+    # Extract comprehensive metadata
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.statefulset.name
+        - k8s.daemonset.name
+        - k8s.node.name
+      # Extract custom labels
+      labels:
+        - tag_name: app
+          key: app.kubernetes.io/name
+          from: pod
+        - tag_name: version
+          key: app.kubernetes.io/version
+          from: pod
+    # Associate by resource attributes set by agents
+    pod_association:
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+```
+
+### Example 3: Production Deployment with Namespace Filtering
+
+Configuration for monitoring a specific namespace with comprehensive metadata:
+
+```yaml
+processors:
+  k8sattributes:
+    filter:
+      namespace: production
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.node.name
+        - service.name
+        - service.version
+      labels:
+        - tag_name: team
+          key: team
+          from: namespace
+        - tag_name: environment
+          key: environment
+          from: pod
+      annotations:
+        - tag_name: commit_sha
+          key: git-commit
+          from: pod
+      otel_annotations: true
+```
+
+### Example 4: Memory-Optimized Configuration
+
+Minimal memory footprint configuration for large clusters:
+
+```yaml
+processors:
+  k8sattributes:
+    filter:
+      node_from_env_var: KUBE_NODE_NAME
+    extract:
+      # Only extract essential fields
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+      # Use deployment name extraction without watching replicasets
+      deployment_name_from_replicaset: true
+```
+
+### Example 5: Multi-Container Pod Support
+
+Configuration for extracting container-level metadata:
+
+```yaml
+processors:
+  k8sattributes:
+    filter:
+      node_from_env_var: KUBE_NODE_NAME
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.container.name
+        - container.id
+        - container.image.name
+        - container.image.tag
+```
 
 ## Configuration
 
