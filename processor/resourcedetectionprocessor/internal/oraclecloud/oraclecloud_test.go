@@ -67,7 +67,7 @@ func TestDetect(t *testing.T) {
 		// We hardcode them here because no Go constant exists in semconv as of this writing.
 		expected := map[string]any{
 			"cloud.provider":          "oracle_cloud",
-			"cloud.platform":          "oci_compute",
+			"cloud.platform":          "oracle_cloud_oke",
 			"cloud.region":            "us-ashburn-1",
 			"cloud.availability_zone": "AD-1",
 			"host.id":                 "ocid1.instance.oc1..aaaaaaa",
@@ -143,7 +143,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 
 		expected := map[string]any{
 			"cloud.provider":          "oracle_cloud",
-			"cloud.platform":          "oci_compute",
+			"cloud.platform":          "oracle_cloud_oke",
 			"cloud.region":            "us-ashburn-1",
 			"cloud.availability_zone": "AD-1",
 			"host.id":                 "ocid1.instance.oc1..aaaaaaa",

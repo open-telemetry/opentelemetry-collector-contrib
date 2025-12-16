@@ -44,7 +44,7 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				gcpArmorUserIPInfoSource:           "X-Forwarded-For",
 				"client.address":                   "192.168.1.1",
 				"network.peer.address":             "10.0.0.1",
-				"geo.region_iso_code":              "US",
+				"geo.region.iso_code":              "US",
 				gcpArmorRemoteIPInfoAsn:            int64(12345),
 				gcpArmorTLSJa4Fingerprint:          "ja4_fingerprint",
 				"tls.client.ja3":                   "ja3_fingerprint",
