@@ -78,7 +78,7 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 
 `delete(target, startIndex, Optional[endIndex])`
 
-The `delete` function removes elements from a slice. It deletes elements in the range `[startIndex, endIndex)` (startIndex inclusive, endIndex exclusive). If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target, following the behavior of Go's `slices.Delete(s, i, j)` function.
+The `delete` function removes elements from a slice. It deletes elements from `startIndex` up to, but not including, `endIndex`. If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target.
 
 Examples:
 
