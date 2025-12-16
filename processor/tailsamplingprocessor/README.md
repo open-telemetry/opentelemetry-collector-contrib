@@ -65,6 +65,7 @@ The following configuration options can also be modified:
 - `sample_on_first_match`: Make decision as soon as a policy matches
 - `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
   already ingested.
+- `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:

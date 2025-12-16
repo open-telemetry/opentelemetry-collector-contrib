@@ -50,6 +50,7 @@ type traceData struct {
 
 	arrivalTime   time.Time
 	decisionTime  time.Time
+	bytes         uint64
 	finalDecision samplingpolicy.Decision
 	policyName    string
 	deleteElement *list.Element
@@ -792,6 +793,18 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	}
 
 	finalDecision := actualData.finalDecision
+
+	marshaler := &ptrace.ProtoMarshaler{}
+	actualData.bytes += uint64(marshaler.ResourceSpansSize(rss))
+
+	if finalDecision == samplingpolicy.Unspecified &&
+		tsp.cfg.MaximumTraceSizeBytes > 0 &&
+		actualData.bytes > tsp.cfg.MaximumTraceSizeBytes {
+		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
+		actualData.finalDecision = samplingpolicy.NotSampled
+		tsp.releaseNotSampledTrace(id, "")
+		return
+	}
 
 	if finalDecision == samplingpolicy.Unspecified {
 		// If the final decision hasn't been made, add the new spans to the
