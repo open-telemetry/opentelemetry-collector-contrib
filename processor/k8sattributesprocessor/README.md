@@ -225,6 +225,36 @@ wait_for_metadata: true
 wait_for_metadata_timeout: 10s
 ```
 
+## Resource Attributes
+
+The processor adds Kubernetes metadata as resource attributes to telemetry data (traces, metrics, logs, profiles). The specific attributes added depend on the `extract.metadata` configuration.
+
+For a complete reference of all available resource attributes, see the [Resource Attributes documentation](./documentation.md#resource-attributes).
+
+### Custom Attributes from Labels and Annotations
+
+Custom resource attributes can be extracted from pod, namespace, deployment, statefulset, daemonset, job, or node labels and annotations using the `extract.labels` and `extract.annotations` configuration.
+
+**Example label extraction:**
+- Pod label `app.kubernetes.io/component: frontend` → `app.label.component: frontend`
+- Namespace label `team: platform` → `team: platform`
+
+**Example annotation extraction:**
+- Pod annotation `git-commit: abc123` → `commit_sha: abc123`
+- Deployment annotation `version: 1.2.3` → `version: 1.2.3`
+
+### Attribute Naming Conventions
+
+By default, extracted labels and annotations follow these patterns:
+- Pod labels: `k8s.pod.labels.<label-key>` (or `k8s.pod.label.<label-key>` with feature gate)
+- Pod annotations: `k8s.pod.annotations.<annotation-key>` (or `k8s.pod.annotation.<annotation-key>` with feature gate)
+- Namespace labels: `k8s.namespace.labels.<label-key>`
+- Namespace annotations: `k8s.namespace.annotations.<annotation-key>`
+- Node labels: `k8s.node.labels.<label-key>`
+- Node annotations: `k8s.node.annotations.<annotation-key>`
+
+Custom attribute names can be specified using the `tag_name` field in extraction rules.
+
 ## Extracting attributes from pod labels and annotations
 
 The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, statefulsets, daemonsets, jobs and nodes.
