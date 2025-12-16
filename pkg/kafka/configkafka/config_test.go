@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -207,67 +206,55 @@ func TestProducerConfig(t *testing.T) {
 			expected: NewDefaultProducerConfig(),
 		},
 		"full": {
-			expected: ProducerConfig{
-				MaxMessageBytes: 1,
-				RequiredAcks:    0,
-				Compression:     "gzip",
-				CompressionParams: configcompression.CompressionParams{
-					Level: 1,
-				},
-				FlushMaxMessages:       2,
-				AllowAutoTopicCreation: true,
-				Linger:                 10 * time.Millisecond,
-			},
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.MaxMessageBytes = 1
+				cfg.RequiredAcks = 0
+				cfg.Compression = "gzip"
+				cfg.CompressionParams.Level = 1
+				cfg.FlushMaxMessages = 2
+				return cfg
+			}(),
 		},
 		"default_compression_level": {
-			expected: ProducerConfig{
-				MaxMessageBytes: 1,
-				RequiredAcks:    0,
-				Compression:     "zstd",
-				CompressionParams: configcompression.CompressionParams{
-					// zero is treated as the codec-specific default
-					Level: 0,
-				},
-				FlushMaxMessages:       2,
-				AllowAutoTopicCreation: true,
-				Linger:                 10 * time.Millisecond,
-			},
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.MaxMessageBytes = 1
+				cfg.RequiredAcks = 0
+				cfg.Compression = "zstd"
+				// zero is treated as the codec-specific default
+				cfg.CompressionParams.Level = 0
+				cfg.FlushMaxMessages = 2
+				return cfg
+			}(),
 		},
 		"snappy_compression": {
-			expected: ProducerConfig{
-				MaxMessageBytes:        1000000,
-				RequiredAcks:           1,
-				Compression:            "snappy",
-				AllowAutoTopicCreation: true,
-				Linger:                 10 * time.Millisecond,
-			},
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.Compression = "snappy"
+				return cfg
+			}(),
 		},
 		"disable_auto_topic_creation": {
-			expected: ProducerConfig{
-				MaxMessageBytes:        1000000,
-				RequiredAcks:           1,
-				Compression:            "none",
-				AllowAutoTopicCreation: false,
-				Linger:                 10 * time.Millisecond,
-			},
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.AllowAutoTopicCreation = false
+				return cfg
+			}(),
 		},
 		"producer_linger": {
-			expected: ProducerConfig{
-				MaxMessageBytes:        1000000,
-				RequiredAcks:           1,
-				Compression:            "none",
-				AllowAutoTopicCreation: true,
-				Linger:                 100 * time.Millisecond,
-			},
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.Linger = 100 * time.Millisecond
+				return cfg
+			}(),
 		},
 		"producer_linger_1s": {
-			expected: ProducerConfig{
-				MaxMessageBytes:        1000000,
-				RequiredAcks:           1,
-				Compression:            "none",
-				AllowAutoTopicCreation: true,
-				Linger:                 1 * time.Second,
-			},
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.Linger = 1 * time.Second
+				return cfg
+			}(),
 		},
 		"invalid_compression_level": {
 			expectedErr: `unsupported parameters {Level:-123} for compression type "gzip"`,
@@ -279,6 +266,13 @@ func TestProducerConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"custom_flush_max_messages": {
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.FlushMaxMessages = 5000
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"invalid_compression": {
@@ -286,6 +280,15 @@ func TestProducerConfig(t *testing.T) {
 		},
 		"invalid_required_acks": {
 			expectedErr: "required_acks: expected 'all' (-1), 0, or 1; configured value is 3",
+		},
+		"flush_max_messages_zero": {
+			expectedErr: "flush_max_messages (0) must be at least 1",
+		},
+		"flush_max_messages_negative": {
+			expectedErr: "flush_max_messages (-1) must be at least 1",
+		},
+		"max_message_bytes_negative": {
+			expectedErr: "max_message_bytes (-1000) must be non-negative",
 		},
 	})
 }
