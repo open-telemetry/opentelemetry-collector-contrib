@@ -357,10 +357,12 @@ func Test_e2e_editors(t *testing.T) {
 
 			for _, statement := range statements {
 				validator, tCtx := newDictionaryValidator(constructProfileTransformContextEditors())
+				defer tCtx.Close()
 				_, _, _ = statement.Execute(t.Context(), tCtx)
 				require.NoError(t, validator.validate())
 
 				exValidator, exTCtx := newDictionaryValidator(constructProfileTransformContextEditors())
+				defer exTCtx.Close()
 				tt.want(t, exTCtx)
 				require.NoError(t, exValidator.validate())
 
@@ -1272,9 +1274,11 @@ func Test_e2e_converters(t *testing.T) {
 				} else if err != nil {
 					assert.ErrorContains(t, err, tt.errMsg)
 				}
+				defer tCtx.Close()
 
 				exTCtx := constructProfileTransformContext()
 				tt.want(t, exTCtx)
+				defer exTCtx.Close()
 
 				require.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 			}
@@ -1370,9 +1374,11 @@ func Test_e2e_ottl_features(t *testing.T) {
 
 			for _, statement := range statements {
 				tCtx := constructProfileTransformContext()
+				defer tCtx.Close()
 				_, _, _ = statement.Execute(t.Context(), tCtx)
 
 				exTCtx := constructProfileTransformContext()
+				defer exTCtx.Close()
 				tt.want(t, exTCtx)
 
 				require.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
@@ -1432,6 +1438,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tCtx := constructProfileTransformContext()
+			defer tCtx.Close()
 
 			for _, statement := range tt.statements {
 				statements, err := parseStatementWithAndWithoutPathContext(statement)
@@ -1443,6 +1450,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			}
 
 			exTCtx := constructProfileTransformContext()
+			defer exTCtx.Close()
 			tt.want(t, exTCtx)
 
 			require.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
@@ -1552,6 +1560,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			require.NoError(t, err)
 
 			tCtx := constructProfileTransformContextValueExpressions()
+			defer tCtx.Close()
 			val, err := valueExpr.Eval(t.Context(), tCtx)
 			require.NoError(t, err)
 

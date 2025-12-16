@@ -94,10 +94,12 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
+			tCtx.Close()
 
 			tCtx = NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profileSample, profile, pprofile.NewProfilesDictionary())
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			require.NoError(t, err)
+			tCtx.Close()
 
 			exProfileSample, exProfile := createProfileSampleTelemetry()
 			exCache := pcommon.NewMap()
@@ -121,6 +123,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	scopeProfile.Scope().SetName("instrumentation_scope")
 
 	ctx := NewTransformContextPtr(resourceProfile, scopeProfile, pprofile.NewSample(), profile, pprofile.NewProfilesDictionary())
+	defer ctx.Close()
 
 	tests := []struct {
 		name     string

@@ -287,17 +287,21 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
+							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
 						}
 						if !match {
 							sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
+							tCtx.Close()
 							continue
 						}
 					}
 					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
 					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredProfileAttrs, 1); err != nil {
+						tCtx.Close()
 						return err
 					}
+					tCtx.Close()
 				}
 			}
 		}

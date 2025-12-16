@@ -124,10 +124,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
+			tCtx.Close()
 
 			tCtx = NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profile, pprofile.NewProfilesDictionary())
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			require.NoError(t, err)
+			tCtx.Close()
 
 			exProfile := createProfileTelemetry()
 			exCache := pcommon.NewMap()
