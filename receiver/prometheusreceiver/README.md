@@ -161,13 +161,30 @@ This configuration:
 
 Native histograms are a data type in Prometheus, for more information see the [specification](https://prometheus.io/docs/specs/native_histograms/).
 
-To start scraping native histograms, set `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
-in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+The Prometheus receiver automatically converts native histograms to OpenTelemetry exponential histograms. To enable scraping and ingestion of native histograms, you need to configure two things in your Prometheus scrape config:
 
-To enable converting native histograms to OpenTelemetry exponential histograms, enable the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
-The feature is considered experimental.
+1. **Enable native histogram scraping**: Set `scrape_native_histograms: true` (globally or per-job)
+2. **Use the protobuf scrape protocol**: Include `PrometheusProto` in `scrape_protocols` (required until Prometheus supports native histograms over text formats)
 
-This feature applies to the most common integer counter histograms, gauge histograms are dropped.
+```yaml
+receivers:
+  prometheus:
+    config:
+      global:
+        # Required: Include PrometheusProto to scrape native histograms
+        scrape_protocols: [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]
+        # Enable native histogram scraping globally
+        scrape_native_histograms: true
+      scrape_configs:
+        - job_name: 'my-app'
+          # Per-job setting takes precedence over global
+          # scrape_native_histograms: true
+          static_configs:
+            - targets: ['localhost:8080']
+```
+
+
+This feature applies to the most common integer counter histograms; gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
 [scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `always_scrape_classic_histograms`.
@@ -263,14 +280,5 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 ```shell
 "--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
 ```
-- `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
+- `receiver.prometheusreceiver.EnableNativeHistograms` (Stable, enabled by default): Converts scraped native histogram metrics into OpenTelemetry exponential histograms. **Note:** You still need to configure `scrape_native_histograms: true` in your Prometheus scrape config to actually scrape native histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
 
-```shell
-"--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
-```
-
-- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
-```
