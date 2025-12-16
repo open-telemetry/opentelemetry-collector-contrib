@@ -14,7 +14,7 @@ import (
 	"github.com/google/pprof/profile"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 var (
@@ -97,10 +97,10 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 	// Add envelope messages
 	rp := dst.ResourceProfiles().AppendEmpty()
-	rp.SetSchemaUrl(semconv.SchemaURL)
+	rp.SetSchemaUrl(conventions.SchemaURL)
 
 	sp := rp.ScopeProfiles().AppendEmpty()
-	sp.SetSchemaUrl(semconv.SchemaURL)
+	sp.SetSchemaUrl(conventions.SchemaURL)
 
 	// Use a dedicated pprofile.Profile for each sample type.
 	for stIdx, st := range src.SampleType {
@@ -301,7 +301,7 @@ func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
 	// pprof.Mapping.build_id
 	// Assume all build_ids are GNU build IDs
 	buildIDIdx := lts.getIdxForAttribute(
-		string(semconv.ProcessExecutableBuildIDGNUKey), m.BuildID)
+		string(conventions.ProcessExecutableBuildIDGNUKey), m.BuildID)
 	ids = append(ids, buildIDIdx)
 
 	// pprof.Mapping.has_*

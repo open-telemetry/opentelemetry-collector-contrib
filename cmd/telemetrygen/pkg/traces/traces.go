@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -84,7 +84,7 @@ func Start(cfg *Config) error {
 	attributes = append(attributes, cfg.GetAttributes()...)
 
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
+		sdktrace.WithResource(resource.NewWithAttributes(conventions.SchemaURL, attributes...)),
 	)
 
 	if cfg.Batch {

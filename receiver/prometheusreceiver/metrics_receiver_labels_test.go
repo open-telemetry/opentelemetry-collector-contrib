@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const targetExternalLabels = `
@@ -632,7 +632,7 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	var scrapeConfigResourceMetrics pmetric.ResourceMetrics
 	gotScrapeConfigMetrics, gotResourceMetrics := false, false
 	for _, rm := range rms {
-		serviceInstance, ok := rm.Resource().Attributes().Get(string(semconv.ServiceInstanceIDKey))
+		serviceInstance, ok := rm.Resource().Attributes().Get(string(conventions.ServiceInstanceIDKey))
 		require.True(t, ok)
 		if serviceInstance.AsString() == "hostname:8080" {
 			resourceMetric = rm

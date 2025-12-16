@@ -111,7 +111,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.ToServer(ctx, host, er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ToServer(ctx, host.GetExtensions(), er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}

@@ -34,7 +34,7 @@ func (exporter *azureMonitorExporter) Start(ctx context.Context, host component.
 	exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
 	exporter.config.ClientConfig.Endpoint = connectionVars.IngestionURL
 	telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
-	telemetryConfiguration.Client, err = exporter.config.ClientConfig.ToClient(ctx, host, exporter.settings)
+	telemetryConfiguration.Client, err = exporter.config.ClientConfig.ToClient(ctx, host.GetExtensions(), exporter.settings)
 	if err != nil {
 		return err
 	}

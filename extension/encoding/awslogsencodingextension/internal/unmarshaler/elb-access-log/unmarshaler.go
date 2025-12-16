@@ -356,10 +356,55 @@ func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttri
 	recordLog.Attributes().PutInt(string(conventions.HTTPRequestSizeKey), nlbRecord.ReceivedBytes)
 	recordLog.Attributes().PutInt(string(conventions.HTTPResponseSizeKey), nlbRecord.SentBytes)
 	recordLog.Attributes().PutStr(AttributeTLSListenerResourceID, nlbRecord.Listener)
-	recordLog.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), nlbRecord.TLSProtocolVersion)
-	recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), nlbRecord.TLSCipher)
+	recordLog.Attributes().PutInt(AttributeELBConnectionTime, nlbRecord.ConnectionTime)
+	recordLog.Attributes().PutInt(AttributeELBTLSHandshakeTime, nlbRecord.TLSHandshakeTime)
+	recordLog.Attributes().PutStr(AttributeELBTLSConnectionCreationTime, nlbRecord.TLSConnectionCreationTime)
+
+	// Attributes below may be unset (set to "-") in logs
+
+	if nlbRecord.IncomingTLSAlert != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBIncomingTLSAlert, nlbRecord.IncomingTLSAlert)
+	}
+
+	if nlbRecord.ChosenCertARN != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBChosenCertARN, nlbRecord.ChosenCertARN)
+	}
+
+	if nlbRecord.ChosenCertSerial != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBChosenCertSerial, nlbRecord.ChosenCertSerial)
+	}
+
+	if nlbRecord.TLSCipher != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), nlbRecord.TLSCipher)
+	}
+
+	if nlbRecord.TLSProtocolVersion != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), nlbRecord.TLSProtocolVersion)
+	}
+
+	if nlbRecord.TLSNamedGroup != unknownField {
+		recordLog.Attributes().PutStr(AttributeELBTLSNamedGroup, nlbRecord.TLSNamedGroup)
+	}
+
 	if nlbRecord.DomainName != unknownField {
 		recordLog.Attributes().PutStr(string(conventions.URLDomainKey), nlbRecord.DomainName)
+	}
+
+	if nlbRecord.ALPNFeProtocol != unknownField {
+		recordLog.Attributes().PutStr(AttributeALPNFeProtocol, nlbRecord.ALPNFeProtocol)
+	}
+
+	if nlbRecord.ALPNBeProtocol != unknownField {
+		recordLog.Attributes().PutStr(AttributeALPNBeProtocol, nlbRecord.ALPNBeProtocol)
+	}
+
+	if nlbRecord.ALPNClientPreferenceList != unknownField {
+		splits := strings.Split(nlbRecord.ALPNClientPreferenceList, ",")
+		slice := recordLog.Attributes().PutEmptySlice(AttributeALPNClientPreferenceList)
+
+		for _, split := range splits {
+			slice.AppendEmpty().SetStr(split)
+		}
 	}
 
 	// Set timestamp

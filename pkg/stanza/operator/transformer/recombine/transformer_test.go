@@ -470,6 +470,29 @@ func TestTransformer(t *testing.T) {
 			},
 		},
 		{
+			"TestMaxBatchSizeUnlimited",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'end'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxBatchSize = 0 // unlimited
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "event1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "event2", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "event3", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "event4", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "event5", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "end", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+			[]*entry.Entry{
+				// All entries combined into one because MaxBatchSize=0 means unlimited
+				entryWithBodyAttr(t1, "event1\nevent2\nevent3\nevent4\nevent5\nend", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+		},
+		{
 			"TestMaxLogSizeForLastEntry",
 			func() *Config {
 				cfg := NewConfig()

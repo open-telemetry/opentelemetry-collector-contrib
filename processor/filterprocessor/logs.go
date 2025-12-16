@@ -23,8 +23,8 @@ import (
 )
 
 type filterLogProcessor struct {
-	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
-	skipLogRecordExpr expr.BoolExpr[ottllog.TransformContext]
+	skipResourceExpr  expr.BoolExpr[*ottlresource.TransformContext]
+	skipLogRecordExpr expr.BoolExpr[*ottllog.TransformContext]
 	telemetry         *filterTelemetry
 	logger            *zap.Logger
 }
@@ -84,9 +84,10 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (p
 
 	var errors error
 	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
-		resource := rl.Resource()
 		if flp.skipResourceExpr != nil {
-			skip, err := flp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource, rl))
+			tCtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
+			skip, err := flp.skipResourceExpr.Eval(ctx, tCtx)
+			tCtx.Close()
 			if err != nil {
 				errors = multierr.Append(errors, err)
 				return false
@@ -99,10 +100,11 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (p
 			return rl.ScopeLogs().Len() == 0
 		}
 		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
-			scope := sl.Scope()
 			lrs := sl.LogRecords()
 			lrs.RemoveIf(func(lr plog.LogRecord) bool {
-				skip, err := flp.skipLogRecordExpr.Eval(ctx, ottllog.NewTransformContext(lr, scope, resource, sl, rl))
+				tCtx := ottllog.NewTransformContextPtr(rl, sl, lr)
+				skip, err := flp.skipLogRecordExpr.Eval(ctx, tCtx)
+				tCtx.Close()
 				if err != nil {
 					errors = multierr.Append(errors, err)
 					return false

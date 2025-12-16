@@ -47,6 +47,11 @@ extensions:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
       file_format: plain-text 
+      # Optional: format of the VPC flow log. Used when processing VPC flow logs arriving through CloudWatch Logs subscription filters. 
+      # Ignored when decoding VPC flow logs sent to S3, which include the format as a file header.
+      # Accepts a space delimited list of fields in the VPC flow log.
+      # When unset, built-in default is used matching fields of Version 2 VPC flow logs format.
+      format: version interface-id srcaddr dstaddr
 ```
 
 Example for S3 access logs:
@@ -403,30 +408,30 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest//network/load-balancer-access-logs.html#access-log-entry-format).
 
-| **AWS Field**                | **OpenTelemetry Field(s)**                                  |
-|------------------------------|-------------------------------------------------------------|
-| type                         | `network.protocol.name`                                     |
-| version                      | `network.protocol.version`                                  |
-| time                         | Log timestamp                                               |
-| elb                          | `cloud.resource_id`                                         |
-| listener                     | `aws.elb.tls.listener.resource_id`                          |
-| client:port                  | `client.address`, `client.port`                             |
-| destination:port             | `destination.address`, `destination.port`                   |
-| received_bytes               | `http.request.size`                                         |
-| sent_bytes                   | `http.response.size`                                        |
-| tls_cipher                   | `tls.cipher`                                                |
-| tls_protocol_version         | `tls.protocol.version`                                      |
-| domain_name                  | `url.domain`                                                |
-| connection_time              | _Currently not supported_                                   |
-| tls_handshake_time           | _Currently not supported_                                   |
-| incoming_tls_alert           | _Currently not supported_                                   |
-| chosen_cert_arn              | _Currently not supported_                                   |
-| chosen_cert_serial           | _Currently not supported_                                   |
-| tls_named_group              | _Currently not supported_                                   |
-| alpn_fe_protocol             | _Currently not supported_                                   |
-| alpn_be_protocol             | _Currently not supported_                                   |
-| alpn_client_preference_list  | _Currently not supported_                                   |
-| tls_connection_creation_time | _Currently not supported_                                   |
+| **AWS Field**                | **OpenTelemetry Field(s)**                |
+|------------------------------|-------------------------------------------|
+| type                         | `network.protocol.name`                   |
+| version                      | `network.protocol.version`                |
+| time                         | Log timestamp                             |
+| elb                          | `cloud.resource_id`                       |
+| listener                     | `aws.elb.tls.listener.resource_id`        |
+| client:port                  | `client.address`, `client.port`           |
+| destination:port             | `destination.address`, `destination.port` |
+| received_bytes               | `http.request.size`                       |
+| sent_bytes                   | `http.response.size`                      |
+| tls_cipher                   | `tls.cipher`                              |
+| tls_protocol_version         | `tls.protocol.version`                    |
+| domain_name                  | `url.domain`                              |
+| connection_time              | `aws.elb.connection_time`                 |
+| tls_handshake_time           | `aws.elb.tls_handshake_time`              |
+| incoming_tls_alert           | `aws.elb.incoming_tls_alert`              |
+| chosen_cert_arn              | `aws.elb.chosen_cert_arn`                 |
+| chosen_cert_serial           | `aws.elb.chosen_cert_serial`              |
+| tls_named_group              | `aws.elb.tls_named_group`                 |
+| alpn_fe_protocol             | `aws.elb.alpn_fe_protocol`                |
+| alpn_be_protocol             | `aws.elb.alpn_be_protocol`                |
+| alpn_client_preference_list  | `aws.elb.alpn_client_preference_list`     |
+| tls_connection_creation_time | `aws.elb.tls_connection_creation_time`    |
 
 #### Classic Load Balancer (CLB)
 

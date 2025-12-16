@@ -77,7 +77,7 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 	router.HandleFunc("/ping", r.handlePing)
 
 	r.wg.Add(1)
-	r.server, err = r.httpServerSettings.ToServer(ctx, host, r.settings, router)
+	r.server, err = r.httpServerSettings.ToServer(ctx, host.GetExtensions(), r.settings, router)
 	if err != nil {
 		return err
 	}

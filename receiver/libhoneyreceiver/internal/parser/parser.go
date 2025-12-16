@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 	trc "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -148,8 +148,8 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	for scopeName, ss := range foundScopes.Scope {
 		if ss.ScopeLogs.Len() > 0 {
 			lr := resultLogs.ResourceLogs().AppendEmpty()
-			lr.SetSchemaUrl(semconv.SchemaURL)
-			lr.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), ss.ServiceName)
+			lr.SetSchemaUrl(conventions.SchemaURL)
+			lr.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), ss.ServiceName)
 
 			ls := lr.ScopeLogs().AppendEmpty()
 			ls.Scope().SetName(ss.LibraryName)
@@ -158,8 +158,8 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 		}
 		if ss.ScopeSpans.Len() > 0 {
 			tr := resultTraces.ResourceSpans().AppendEmpty()
-			tr.SetSchemaUrl(semconv.SchemaURL)
-			tr.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), ss.ServiceName)
+			tr.SetSchemaUrl(conventions.SchemaURL)
+			tr.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), ss.ServiceName)
 
 			ts := tr.ScopeSpans().AppendEmpty()
 			ts.Scope().SetName(ss.LibraryName)

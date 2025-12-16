@@ -41,6 +41,18 @@ type policy struct {
 	attribute metric.MeasurementOption
 }
 
+// traceData is a wrapper around the publically used samplingpolicy.TraceData
+// that tracks information related to the decision making process but not
+// needed by any sampler implementations.
+type traceData struct {
+	samplingpolicy.TraceData
+
+	arrivalTime   time.Time
+	decisionTime  time.Time
+	finalDecision samplingpolicy.Decision
+	deleteElement *list.Element
+}
+
 type tailSamplingSpanProcessor struct {
 	ctx context.Context
 
@@ -51,7 +63,7 @@ type tailSamplingSpanProcessor struct {
 	deleteTraceQueue   *list.List
 	nextConsumer       consumer.Traces
 	policies           []*policy
-	idToTrace          map[pcommon.TraceID]*samplingpolicy.TraceData
+	idToTrace          map[pcommon.TraceID]*traceData
 	tickerFrequency    time.Duration
 	decisionBatcher    idbatcher.Batcher
 	sampledIDCache     cache.Cache[bool]
@@ -103,7 +115,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		sampledIDCache:     sampledDecisions,
 		nonSampledIDCache:  nonSampledDecisions,
 		logger:             set.Logger,
-		idToTrace:          make(map[pcommon.TraceID]*samplingpolicy.TraceData),
+		idToTrace:          make(map[pcommon.TraceID]*traceData),
 		deleteTraceQueue:   list.New(),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
@@ -514,8 +526,11 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 		tsp.logger.Error("deleteTraceQueue is empty, but we're waiting for space. This is a bug!")
 		return
 	}
-	tsp.dropTrace(front.Value.(pcommon.TraceID), time.Now())
-	tsp.deleteTraceQueue.Remove(front)
+	if !tsp.dropTrace(front.Value.(pcommon.TraceID), time.Now()) {
+		// Somehow the trace was already removed from idToTrace, but not the
+		// queue. Drop the element to avoid an infinite loop.
+		tsp.deleteTraceQueue.Remove(front)
+	}
 }
 
 // samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
@@ -536,14 +551,14 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
-		trace.DecisionTime = time.Now()
+		trace.decisionTime = time.Now()
 
-		decision := tsp.makeDecision(id, trace, metrics)
+		decision := tsp.makeDecision(id, &trace.TraceData, metrics)
 		globalTracesSampledByDecision[decision]++
 
 		// Sampled or not, remove the batches
 		allSpans := trace.ReceivedBatches
-		trace.FinalDecision = decision
+		trace.finalDecision = decision
 		trace.ReceivedBatches = ptrace.NewTraces()
 
 		if decision == samplingpolicy.Sampled {
@@ -691,10 +706,12 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 
 	actualData, ok := tsp.idToTrace[id]
 	if !ok {
-		actualData = &samplingpolicy.TraceData{
-			ArrivalTime:     currTime,
-			SpanCount:       spanCount,
-			ReceivedBatches: ptrace.NewTraces(),
+		actualData = &traceData{
+			arrivalTime: currTime,
+			TraceData: samplingpolicy.TraceData{
+				SpanCount:       spanCount,
+				ReceivedBatches: ptrace.NewTraces(),
+			},
 		}
 
 		tsp.idToTrace[id] = actualData
@@ -703,13 +720,13 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.decisionBatcher.AddToCurrentBatch(id)
 
 		if !tsp.blockOnOverflow {
-			tsp.deleteTraceQueue.PushBack(id)
+			actualData.deleteElement = tsp.deleteTraceQueue.PushBack(id)
 		}
 	} else {
 		actualData.SpanCount += spanCount
 	}
 
-	finalDecision := actualData.FinalDecision
+	finalDecision := actualData.finalDecision
 
 	if finalDecision == samplingpolicy.Unspecified {
 		// If the final decision hasn't been made, add the new spans to the
@@ -729,8 +746,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
 	}
 
-	if !actualData.DecisionTime.IsZero() {
-		tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
+	if !actualData.decisionTime.IsZero() {
+		tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.decisionTime)/time.Second))
 	}
 }
 
@@ -759,15 +776,21 @@ func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletionTime time.Time) {
+// dropTrace removes the trace from all memory locations. Returns true if it was removed and false if not found.
+func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletionTime time.Time) bool {
 	trace, ok := tsp.idToTrace[traceID]
 	if !ok {
 		tsp.logger.Debug("Attempt to delete trace ID not on table", zap.Stringer("id", traceID))
-		return
+		return false
 	}
 
 	delete(tsp.idToTrace, traceID)
-	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
+	if trace.deleteElement != nil {
+		tsp.deleteTraceQueue.Remove(trace.deleteElement)
+	}
+
+	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.arrivalTime)/time.Second))
+	return true
 }
 
 // forwardSpans sends the trace data to the next consumer. it is different from

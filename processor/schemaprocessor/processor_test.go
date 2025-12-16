@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -55,7 +56,7 @@ func TestSchemaProcessorStart(t *testing.T) {
 	t.Parallel()
 
 	trans := newTestSchemaProcessor(t, "", "1.9.0")
-	assert.NoError(t, trans.start(t.Context(), nil))
+	assert.NoError(t, trans.start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestSchemaProcessorProcessing(t *testing.T) {

@@ -15,6 +15,7 @@ import (
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
 	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
 	"github.com/DataDog/datadog-agent/pkg/config/viperconfig"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/serializer"
 	zlib "github.com/DataDog/datadog-agent/pkg/util/compression/impl-zlib"
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +35,8 @@ type SerializerWithForwarder interface {
 	Start() error
 	State() uint32
 	Stop()
+	// SendSeriesWithMetadata sends a metrics series to Datadog
+	SendSeriesWithMetadata(series metrics.Series) error
 }
 
 // forwarderWithLifecycle extends the defaultforwarder.Forwarder interface
@@ -71,6 +74,45 @@ func (ds *datadogSerializer) State() uint32 {
 // Stop delegates to the underlying forwarder's Stop method
 func (ds *datadogSerializer) Stop() {
 	ds.forwarder.Stop()
+}
+
+// seriesSource wraps a metrics.Series to implement the metrics.SerieSource interface
+type seriesSource struct {
+	series metrics.Series
+	index  int
+}
+
+// MoveNext moves to the next serie in the collection
+func (s *seriesSource) MoveNext() bool {
+	s.index++
+	return s.index < len(s.series)
+}
+
+// Current returns the current serie
+func (s *seriesSource) Current() *metrics.Serie {
+	if s.index < 0 || s.index >= len(s.series) {
+		return nil
+	}
+	return s.series[s.index]
+}
+
+// Count returns the total number of series
+func (s *seriesSource) Count() uint64 {
+	return uint64(len(s.series))
+}
+
+// SendSeriesWithMetadata sends a metrics series to Datadog
+// This method wraps the series in a SerieSource and uses the serializer's SendIterableSeries
+func (ds *datadogSerializer) SendSeriesWithMetadata(series metrics.Series) error {
+	if len(series) == 0 {
+		return nil
+	}
+	// Wrap the series in a SerieSource
+	source := &seriesSource{
+		series: series,
+		index:  -1, // Start before the first element
+	}
+	return ds.SendIterableSeries(source)
 }
 
 // NewLogComponent creates a new log component for collector that uses the provided telemetry settings.

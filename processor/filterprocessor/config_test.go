@@ -23,19 +23,19 @@ import (
 
 func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	t.Helper()
-	for _, f := range DefaultLogFunctions() {
+	for _, f := range DefaultLogFunctionsNew() {
 		assert.Contains(t, config.logFunctions, f.Name(), "missing log function %v", f.Name())
 	}
-	for _, f := range DefaultDataPointFunctions() {
+	for _, f := range DefaultDataPointFunctionsNew() {
 		assert.Contains(t, config.dataPointFunctions, f.Name(), "missing data point function %v", f.Name())
 	}
-	for _, f := range DefaultMetricFunctions() {
+	for _, f := range DefaultMetricFunctionsNew() {
 		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
 	}
-	for _, f := range DefaultSpanFunctions() {
+	for _, f := range DefaultSpanFunctionsNew() {
 		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
 	}
-	for _, f := range DefaultSpanEventFunctions() {
+	for _, f := range DefaultSpanEventFunctionsNew() {
 		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
 	}
 	for _, f := range DefaultProfileFunctions() {

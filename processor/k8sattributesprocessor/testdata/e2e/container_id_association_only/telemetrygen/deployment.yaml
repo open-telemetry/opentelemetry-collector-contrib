@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetrygen-{{ .TestID }}-{{ .DataType }}-deployment
+  namespace: e2ek8sattribute-container-id-association-only
+  annotations:
+    workload: deployment
+  labels:
+    app: telemetrygen-{{ .TestID }}-{{ .DataType }}-deployment
+spec:
+  selector:
+    matchLabels:
+      app: telemetrygen-{{ .TestID }}-{{ .DataType }}-deployment
+  template:
+    metadata:
+      labels:
+        app: telemetrygen-{{ .TestID }}-{{ .DataType }}-deployment
+      annotations:
+        workload: deployment
+    spec:
+      # Use host network to disable IP-based pod association fallback
+      # This forces the test to rely purely on container.id association
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      # Use collector's service account with permissions to read pod information  
+      serviceAccountName: otelcol-{{ .TestID }}
+      containers:
+      - image: telemetrygen-e2e:latest
+        imagePullPolicy: IfNotPresent
+        name: telemetrygen
+        env:
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          
+          echo "Getting container ID from Kubernetes API..."
+          
+          TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+          APISERVER=https://kubernetes.default.svc
+          
+          CONTAINER_ID=""
+          for i in $(seq 1 10); do
+            pod_json=$(curl -sSk -H "Authorization: Bearer $TOKEN" \
+              "$APISERVER/api/v1/namespaces/$MY_POD_NAMESPACE/pods/$MY_POD_NAME" 2>/dev/null || true)
+            
+            if echo "$pod_json" | grep -q '"kind": "Pod"'; then
+              CONTAINER_ID=$(echo "$pod_json" | grep '"containerID":' | head -1 | cut -d'"' -f4 | sed 's/containerd:\/\///')
+              
+              if [ -n "$CONTAINER_ID" ]; then
+                echo "Found container ID: $CONTAINER_ID"
+                break
+              fi
+            fi
+            
+            echo "Waiting for container creation... (attempt $i/10)"
+            sleep 2
+          done
+          
+          if [ -z "$CONTAINER_ID" ]; then
+            echo "Failed to get container ID after 10 attempts"
+            exit 1
+          fi
+          
+          echo "Starting telemetrygen with container.id=$CONTAINER_ID"
+          exec /telemetrygen {{ .DataType }} \
+            --otlp-insecure \
+            --otlp-endpoint={{ .OTLPEndpoint }} \
+            --duration=36000s \
+            --rate=1 \
+            --otlp-attributes service.name=\"test-{{ .DataType }}-deployment\" \
+            --otlp-attributes container.id=\"$CONTAINER_ID\"{{- if eq .DataType "traces" }} \
+            --status-code={{- end }}

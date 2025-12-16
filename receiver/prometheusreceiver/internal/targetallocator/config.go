@@ -47,12 +47,10 @@ func (cfg *Config) Validate() error {
 var _ confmap.Unmarshaler = (*PromHTTPSDConfig)(nil)
 
 func (cfg *PromHTTPSDConfig) Unmarshal(componentParser *confmap.Conf) error {
-	cfgMap := componentParser.ToStringMap()
-	if len(cfgMap) == 0 {
-		return nil
-	}
-	cfgMap["url"] = "http://placeholder" // we have to set it as else marshaling will fail
-	return unmarshalYAML(cfgMap, (*promHTTP.SDConfig)(cfg))
+	return unmarshalConf(componentParser, func(m map[string]any) {
+		// we have to set it as else marshaling will fail
+		m["url"] = "http://placeholder"
+	}, (*promHTTP.SDConfig)(cfg))
 }
 
 type PromHTTPClientConfig commonconfig.HTTPClientConfig
@@ -60,11 +58,7 @@ type PromHTTPClientConfig commonconfig.HTTPClientConfig
 var _ confmap.Unmarshaler = (*PromHTTPClientConfig)(nil)
 
 func (cfg *PromHTTPClientConfig) Unmarshal(componentParser *confmap.Conf) error {
-	cfgMap := componentParser.ToStringMap()
-	if len(cfgMap) == 0 {
-		return nil
-	}
-	return unmarshalYAML(cfgMap, (*commonconfig.HTTPClientConfig)(cfg))
+	return unmarshalConf(componentParser, nil, (*commonconfig.HTTPClientConfig)(cfg))
 }
 
 func (cfg *PromHTTPClientConfig) Validate() error {
@@ -109,13 +103,21 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	return nil
 }
 
-func unmarshalYAML(in map[string]any, out any) error {
-	yamlOut, err := yaml.MarshalWithOptions(
-		in,
-		yaml.CustomMarshaler[commonconfig.Secret](func(s commonconfig.Secret) ([]byte, error) {
-			return []byte(s), nil
-		}),
-	)
+// unmarshalConf unmarshals conf to out.
+// YAML is used as an intermediary format, because confmap.Conf.Unmarshal is incompatible with Prometheus types,
+// as the former uses mapstructure tags .
+// If cb is not nil, it's called to mutate the map representation of conf.
+func unmarshalConf(conf *confmap.Conf, cb func(map[string]any), out any) error {
+	in := conf.ToStringMap()
+	if len(in) == 0 {
+		return nil
+	}
+
+	if cb != nil {
+		cb(in)
+	}
+
+	yamlOut, err := yaml.Marshal(in)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
 	}

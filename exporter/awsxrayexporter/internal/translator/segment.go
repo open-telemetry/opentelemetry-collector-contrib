@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"net/url"
@@ -576,6 +577,11 @@ func convertToAmazonTraceID(traceID pcommon.TraceID, skipTimestampValidation boo
 
 	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
 
+	// Build the X-Ray trace ID format: 1-{hex(epoch)}-{identifier}
+	// Ensure we have enough space in the content array
+	if len(content) < traceIDLength {
+		return "", errors.New("content array too small")
+	}
 	content[0] = '1'
 	content[1] = '-'
 	hex.Encode(content[2:10], b[0:4])

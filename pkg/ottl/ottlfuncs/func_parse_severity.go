@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -145,10 +146,8 @@ type valueRange struct {
 func (c *criteria) evaluate(value any) (bool, error) {
 	switch v := value.(type) {
 	case string:
-		for _, eq := range c.Equals {
-			if v == eq {
-				return true, nil
-			}
+		if slices.Contains(c.Equals, v) {
+			return true, nil
 		}
 		return false, nil
 	case int64:

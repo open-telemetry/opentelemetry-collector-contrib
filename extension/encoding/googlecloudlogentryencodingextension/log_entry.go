@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package googlecloudlogentryencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension"
+
 import (
 	"encoding/hex"
 	"errors"
@@ -15,12 +16,13 @@ import (
 	"github.com/iancoleman/strcase"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/armorlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/apploadbalancerlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 )
@@ -75,8 +77,11 @@ func getEncodingFormat(logType string) string {
 	case vpcflowlog.NetworkManagementNameSuffix,
 		vpcflowlog.ComputeNameSuffix:
 		return constants.GCPFormatVPCFlowLog
-	case armorlog.LoadBalancerLogSuffix:
+	case apploadbalancerlog.GlobalAppLoadBalancerLogSuffix,
+		apploadbalancerlog.RegionalAppLoadBalancerLogSuffix:
 		return constants.GCPFormatLoadBalancerLog
+	case proxynlb.ConnectionsLogNameSuffix:
+		return constants.GCPFormatProxyNLBLog
 	default:
 		return ""
 	}
@@ -183,11 +188,11 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 		return nil
 	}
 
-	if err := shared.AddStrAsInt(string(semconv.HTTPResponseSizeKey), req.ResponseSize, attributes); err != nil {
+	if err := shared.AddStrAsInt(string(conventions.HTTPResponseSizeKey), req.ResponseSize, attributes); err != nil {
 		return fmt.Errorf("failed to add response size: %w", err)
 	}
 
-	if err := shared.AddStrAsInt(string(semconv.HTTPRequestSizeKey), req.RequestSize, attributes); err != nil {
+	if err := shared.AddStrAsInt(string(conventions.HTTPRequestSizeKey), req.RequestSize, attributes); err != nil {
 		return fmt.Errorf("failed to add request size: %w", err)
 	}
 
@@ -211,14 +216,14 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	}
 
 	if req.RequestURL != "" {
-		attributes.PutStr(string(semconv.URLFullKey), req.RequestURL)
+		attributes.PutStr(string(conventions.URLFullKey), req.RequestURL)
 		u, err := url.Parse(req.RequestURL)
 		if err != nil {
 			return fmt.Errorf("failed to parse request url %q: %w", req.RequestURL, err)
 		}
-		shared.PutStr(string(semconv.URLPathKey), u.Path, attributes)
-		shared.PutStr(string(semconv.URLQueryKey), u.RawQuery, attributes)
-		shared.PutStr(string(semconv.URLDomainKey), u.Host, attributes)
+		shared.PutStr(string(conventions.URLPathKey), u.Path, attributes)
+		shared.PutStr(string(conventions.URLQueryKey), u.RawQuery, attributes)
+		shared.PutStr(string(conventions.URLDomainKey), u.Host, attributes)
 	}
 
 	if req.Protocol != "" {
@@ -235,15 +240,15 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 				req.Protocol,
 			)
 		}
-		attributes.PutStr(string(semconv.NetworkProtocolNameKey), strings.ToLower(name))
-		attributes.PutStr(string(semconv.NetworkProtocolVersionKey), version)
+		attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(name))
+		attributes.PutStr(string(conventions.NetworkProtocolVersionKey), version)
 	}
 
-	shared.PutInt(string(semconv.HTTPResponseStatusCodeKey), req.Status, attributes)
-	shared.PutStr(string(semconv.HTTPRequestMethodKey), req.RequestMethod, attributes)
-	shared.PutStr(string(semconv.UserAgentOriginalKey), req.UserAgent, attributes)
-	shared.PutStr(string(semconv.NetworkPeerAddressKey), req.RemoteIP, attributes)
-	shared.PutStr(string(semconv.ServerAddressKey), req.ServerIP, attributes)
+	shared.PutInt(string(conventions.HTTPResponseStatusCodeKey), req.Status, attributes)
+	shared.PutStr(string(conventions.HTTPRequestMethodKey), req.RequestMethod, attributes)
+	shared.PutStr(string(conventions.UserAgentOriginalKey), req.UserAgent, attributes)
+	shared.PutStr(string(conventions.NetworkPeerAddressKey), req.RemoteIP, attributes)
+	shared.PutStr(string(conventions.ServerAddressKey), req.ServerIP, attributes)
 	shared.PutStr(refererHeaderField, req.Referer, attributes)
 	shared.PutBool(gcpCacheLookupField, req.CacheLookup, attributes)
 	shared.PutBool(gcpCacheHitField, req.CacheHit, attributes)
@@ -269,11 +274,11 @@ func handleSourceLocationField(attributes pcommon.Map, sourceLoc *sourceLocation
 		return nil
 	}
 
-	if err := shared.AddStrAsInt(string(semconv.CodeLineNumberKey), sourceLoc.Line, attributes); err != nil {
+	if err := shared.AddStrAsInt(string(conventions.CodeLineNumberKey), sourceLoc.Line, attributes); err != nil {
 		return fmt.Errorf("expected source location line %q to be a number: %w", sourceLoc.Line, err)
 	}
-	shared.PutStr(string(semconv.CodeFilePathKey), sourceLoc.File, attributes)
-	shared.PutStr(string(semconv.CodeFunctionNameKey), sourceLoc.Function, attributes)
+	shared.PutStr(string(conventions.CodeFilePathKey), sourceLoc.File, attributes)
+	shared.PutStr(string(conventions.CodeFunctionNameKey), sourceLoc.Function, attributes)
 	return nil
 }
 
@@ -459,7 +464,7 @@ func handleLogNameField(logName string, resourceAttr pcommon.Map) (string, error
 			)
 		}
 		resourceAttr.PutStr(field, id)
-		resourceAttr.PutStr(string(semconv.CloudResourceIDKey), logType)
+		resourceAttr.PutStr(string(conventions.CloudResourceIDKey), logType)
 		return logType, nil
 	}
 
@@ -496,15 +501,17 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 	case constants.GCPFormatLoadBalancerLog:
 		// Add encoding.format to scope attributes for Load balancer logs
 		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
-		// Quick check to avoid unmarshaling non-armor load balancer logs
-		if armorlog.ContainsSecurityPolicyFields(log.JSONPayload) {
-			if err := armorlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
-				return fmt.Errorf("failed to parse Armor log JSON payload: %w", err)
-			}
-			return nil
+		if err := apploadbalancerlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse Load Balancer log JSON payload: %w", err)
 		}
-		// Fall through to default payload handling for non-armor load balancer logs
+		return nil
 		// TODO Add support for more log types
+	case constants.GCPFormatProxyNLBLog:
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
+		if err := proxynlb.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse Proxy NLB log JSON payload: %w", err)
+		}
+		return nil
 	}
 
 	// if the log type was not recognized, add the payload to the log record body
@@ -541,7 +548,7 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(*receivedTs))
 	}
 
-	shared.PutStr(string(semconv.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
+	shared.PutStr(string(conventions.LogRecordUIDKey), log.InsertID, logRecord.Attributes())
 
 	// Handle log name, get type and encoding format
 	logType, errLogName := handleLogNameField(log.LogName, resourceAttributes)

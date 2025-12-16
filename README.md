@@ -33,7 +33,6 @@
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/observability.md">Observability</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md">Security</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
   </strong>
 </p>
 
@@ -111,6 +110,7 @@ For more information about the approver role, see the [community repository](htt
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
+- [Paulo Dias](https://github.com/paulojmdias), Five9
 - [Roger Coll](https://github.com/rogercoll), Elastic
 - Actively seeking contributors to triage issues
 

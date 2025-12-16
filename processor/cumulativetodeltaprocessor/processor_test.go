@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -68,6 +69,7 @@ type testHistogramMetric struct {
 	metricMins    [][]float64
 	metricMaxes   [][]float64
 	metricBuckets [][][]uint64
+	metricBounds  [][][]float64
 	isCumulative  []bool
 	flags         [][]pmetric.DataPointFlags
 }
@@ -103,6 +105,12 @@ func (tm testHistogramMetric) addToMetrics(ms pmetric.MetricSlice, now time.Time
 				maxes := tm.metricMaxes[i]
 				if len(maxes) > 0 {
 					dp.SetMax(maxes[index])
+				}
+			}
+			if tm.metricBounds != nil {
+				bounds := tm.metricBounds[i]
+				if len(bounds) > 0 {
+					dp.ExplicitBounds().FromRaw(bounds[index])
 				}
 			}
 			dp.BucketCounts().FromRaw(tm.metricBuckets[i][index])
@@ -386,6 +394,36 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_histogram_change_bounds",
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1"},
+				metricCounts: [][]uint64{{0, 100, 200, 500}},
+				metricSums:   [][]float64{{0, 100, 200, 500}},
+				metricBuckets: [][][]uint64{{
+					{0, 0, 0},
+					{50, 25, 25},
+					{100, 50, 50},
+					{250, 125, 125},
+				}},
+				metricBounds: [][][]float64{{
+					{1.0, 2.0},
+					{1.0, 2.0},
+					{1.5, 3.0},
+					{1.5, 3.0}, // Change of bucket bounds: first data point will be ignored
+				}},
+				isCumulative: []bool{true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1"},
+				metricCounts: [][]uint64{{100, 300}},
+				metricSums:   [][]float64{{100, 300}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {150, 75, 75}},
+				},
+				isCumulative: []bool{false},
 			}),
 		},
 		{
@@ -788,16 +826,16 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						cumulative: true,
 						points: []testExponentialHistogramPoint{
 							{
-								// 10 points with value 1
+								// 10 points with value 1 and 5 points with value 2
 								startTs:         1,
 								ts:              2,
-								count:           10,
-								sum:             ptr(10.0),
+								count:           15,
+								sum:             ptr(20.0),
 								min:             ptr(1.0),
-								max:             ptr(1.0),
+								max:             ptr(2.0),
 								scale:           0, // base == 2
 								positiveOffset:  -1,
-								positiveBuckets: []uint64{10}, // ]0.5, 1]
+								positiveBuckets: []uint64{10, 5}, // ]0.5, 1], ]1, 2]
 							},
 							{
 								// additionally, 10 points with value 0.5, 10 points with value 2, and 10 with value -4
@@ -805,15 +843,15 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								// scale is decreased to -1
 								startTs:         1,
 								ts:              3,
-								count:           40,
-								sum:             ptr(-5.0),
+								count:           45,
+								sum:             ptr(5.0),
 								min:             ptr(-4.0),
 								max:             ptr(2.0),
 								zeroThreshold:   1.0,
 								zeroCount:       20,
 								scale:           -1,
 								positiveOffset:  0,
-								positiveBuckets: []uint64{10}, // ]1, 4]
+								positiveBuckets: []uint64{15}, // ]1, 4]
 								negativeOffset:  0,
 								negativeBuckets: []uint64{10}, // [-4, -1[
 							},
@@ -830,11 +868,11 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 							{
 								startTs:         1,
 								ts:              2,
-								count:           10,
-								sum:             ptr(10.0),
+								count:           15,
+								sum:             ptr(20.0),
 								scale:           0,
 								positiveOffset:  -1,
-								positiveBuckets: []uint64{10},
+								positiveBuckets: []uint64{10, 5},
 							},
 							{
 								startTs:         2,
@@ -883,7 +921,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
 			ctx := t.Context()
-			require.NoError(t, mgp.Start(ctx, nil))
+			require.NoError(t, mgp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)

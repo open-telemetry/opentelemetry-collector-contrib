@@ -453,9 +453,9 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isResourceString := `IsString(attributes["resourceName"]) == true`
-	require.Contains(t, standardFunctions[ottlresource.TransformContext](), "IsString")
+	require.Contains(t, standardFunctions[*ottlresource.TransformContext](), "IsString")
 	isAttributesMap := `IsMap(attributes) == true`
-	require.Contains(t, standardFunctions[ottlresource.TransformContext](), "IsMap")
+	require.Contains(t, standardFunctions[*ottlresource.TransformContext](), "IsMap")
 
 	isMetricE := `name == "metricE"`
 	isMetricF := `name == "metricF"`

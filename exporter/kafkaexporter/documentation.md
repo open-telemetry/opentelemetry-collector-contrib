@@ -21,6 +21,7 @@ Only produced when franz-go is enabled.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 
 ### otelcol_kafka_broker_connects
 
@@ -37,6 +38,7 @@ Only produced when franz-go is enabled.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
 
 ### otelcol_kafka_broker_throttling_duration
@@ -54,6 +56,7 @@ Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_thro
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 
 ### otelcol_kafka_broker_throttling_latency
 
@@ -70,6 +73,7 @@ Only produced when franz-go is enabled.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 
 ### otelcol_kafka_exporter_bytes
 
@@ -86,6 +90,7 @@ Only produced when franz-go is enabled.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
@@ -103,6 +108,7 @@ The uncompressed size in bytes of exported messages seen by the client. [Develop
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
@@ -122,6 +128,7 @@ Deprecated in favor of kafka_exporter_write_latency.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
@@ -141,6 +148,7 @@ Deprecated in favor of kafka_exporter_records.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
@@ -158,6 +166,7 @@ The number of exported records. [Development]
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
@@ -175,6 +184,7 @@ The time it took in seconds to export a batch of records. [Development]
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |

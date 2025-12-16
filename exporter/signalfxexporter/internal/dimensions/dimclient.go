@@ -56,6 +56,8 @@ type DimensionClient struct {
 	logUpdates       bool
 	logger           *zap.Logger
 	metricsConverter translation.MetricsConverter
+	// DefaultProperties will set property key/values unless set explicitly
+	DefaultProperties map[string]string
 	// ExcludeProperties will filter DimensionUpdate content to not submit undesired metadata.
 	ExcludeProperties []dpfilters.PropertyFilter
 	// dropTags specifies whether tags should be omitted or not. Default value is false.
@@ -78,6 +80,7 @@ type DimensionClientOptions struct {
 	// buffer a fixed number of updates.
 	MaxBuffered         int
 	MetricsConverter    translation.MetricsConverter
+	DefaultProperties   map[string]string
 	ExcludeProperties   []dpfilters.PropertyFilter
 	MaxConnsPerHost     int
 	MaxIdleConns        int
@@ -120,6 +123,7 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 		logger:            options.Logger,
 		logUpdates:        options.LogUpdates,
 		metricsConverter:  options.MetricsConverter,
+		DefaultProperties: options.DefaultProperties,
 		ExcludeProperties: options.ExcludeProperties,
 		dropTags:          options.DropTags,
 	}

@@ -140,7 +140,7 @@ func TestOTLPProtoUnmarshal(t *testing.T) {
 func createAndExtension0(t *testing.T, c *Config) *otlpExtension {
 	ex, err := newExtension(c)
 	require.NoError(t, err)
-	err = ex.Start(t.Context(), nil)
+	err = ex.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	return ex
 }

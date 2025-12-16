@@ -57,7 +57,7 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 }
 
 func (l *logExporter) Start(ctx context.Context, host component.Host) error {
-	httpClient, err := l.httpSettings.ToClient(ctx, host, l.telemetry)
+	httpClient, err := l.httpSettings.ToClient(ctx, host.GetExtensions(), l.telemetry)
 	if err != nil {
 		return err
 	}

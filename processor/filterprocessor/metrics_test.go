@@ -345,7 +345,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			caps := fmp.Capabilities()
 			assert.True(t, caps.MutatesData)
 			ctx := t.Context()
-			assert.NoError(t, fmp.Start(ctx, nil))
+			assert.NoError(t, fmp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := fmp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
@@ -1076,7 +1076,8 @@ func Test_ResourceSkipExpr_With_Bridge(t *testing.T) {
 			resource := pcommon.NewResource()
 			resource.Attributes().PutStr("test", "test")
 
-			tCtx := ottlresource.NewTransformContext(resource, pmetric.NewResourceMetrics())
+			tCtx := ottlresource.NewTransformContextPtr(resource, pmetric.NewResourceMetrics())
+			defer tCtx.Close()
 
 			includeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(tt.condition.Include)
 			assert.NoError(t, err)

@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 // TranslateToTraces converts faro.Payload into Traces pipeline data
@@ -30,12 +30,12 @@ func TranslateToTraces(ctx context.Context, payload faroTypes.Payload) (ptrace.T
 		rs := traces.ResourceSpans().AppendEmpty()
 		frs := ptrace.NewResourceSpans()
 		payload.Traces.Traces.ResourceSpans().At(i).CopyTo(frs)
-		frs.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), payload.Meta.App.Name)
-		frs.Resource().Attributes().PutStr(string(semconv.ServiceVersionKey), payload.Meta.App.Version)
-		frs.Resource().Attributes().PutStr(string(semconv.DeploymentEnvironmentKey), payload.Meta.App.Environment)
+		frs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), payload.Meta.App.Name)
+		frs.Resource().Attributes().PutStr(string(conventions.ServiceVersionKey), payload.Meta.App.Version)
+		frs.Resource().Attributes().PutStr(string(conventions.DeploymentEnvironmentKey), payload.Meta.App.Environment)
 
 		if payload.Meta.App.Namespace != "" {
-			frs.Resource().Attributes().PutStr(string(semconv.ServiceNamespaceKey), payload.Meta.App.Namespace)
+			frs.Resource().Attributes().PutStr(string(conventions.ServiceNamespaceKey), payload.Meta.App.Namespace)
 		}
 		frs.CopyTo(rs)
 	}
