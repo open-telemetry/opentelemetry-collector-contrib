@@ -402,7 +402,9 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			req.LogGroupNamePrefix = &auto.Prefix
 		}
 
-		req.IncludeLinkedAccounts = auto.IncludeLinkedAccounts
+		if auto.IncludeLinkedAccounts != nil {
+			req.IncludeLinkedAccounts = auto.IncludeLinkedAccounts
+		}
 
 		if len(auto.AccountIdentifiers) > 0 {
 			req.AccountIdentifiers = auto.AccountIdentifiers
