@@ -30,7 +30,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.9.5
 	github.com/sijms/go-ora/v2 v2.9.0
-	github.com/snowflakedb/gosnowflake v1.18.0
+	github.com/snowflakedb/gosnowflake v1.18.1
 	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component/componenttest v0.142.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0
@@ -89,7 +89,7 @@ require (
 	github.com/dvsekhvalnov/jose2go v1.7.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/elastic/lunes v0.2.0 // indirect
-	github.com/expr-lang/expr v1.17.6 // indirect
+	github.com/expr-lang/expr v1.17.7 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.7 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect

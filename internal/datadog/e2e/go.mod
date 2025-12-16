@@ -199,7 +199,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.35.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
-	github.com/expr-lang/expr v1.17.6 // indirect
+	github.com/expr-lang/expr v1.17.7 // indirect
 	github.com/facette/natsort v0.0.0-20181210072756-2cd4dd1e2dcb // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -220,7 +220,7 @@ require (
 	github.com/go-openapi/strfmt v0.24.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-openapi/validate v0.24.0 // indirect
-	github.com/go-resty/resty/v2 v2.16.5 // indirect
+	github.com/go-resty/resty/v2 v2.17.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/go-zookeeper/zk v1.0.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
@@ -280,7 +280,7 @@ require (
 	github.com/leodido/go-syslog/v4 v4.3.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b // indirect
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
-	github.com/linode/go-metadata v0.2.2 // indirect
+	github.com/linode/go-metadata v0.2.3 // indirect
 	github.com/linode/linodego v1.60.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
@@ -494,9 +494,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/api v0.34.2 // indirect
+	k8s.io/api v0.34.3 // indirect
 	k8s.io/apimachinery v0.35.0-alpha.0 // indirect
-	k8s.io/client-go v0.34.2 // indirect
+	k8s.io/client-go v0.34.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
