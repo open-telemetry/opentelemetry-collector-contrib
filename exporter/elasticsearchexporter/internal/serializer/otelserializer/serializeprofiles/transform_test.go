@@ -806,10 +806,10 @@ func TestStackTraceEvent(t *testing.T) {
 				rp := pprofile.NewResourceProfiles()
 				_ = rp.Resource().Attributes().FromRaw(map[string]any{
 					"k8s.pod.name":       "my_pod",
-					"container.name":    "my_container",
-					"container.id":      "my_container_id",
+					"container.name":     "my_container",
+					"container.id":       "my_container_id",
 					"k8s.namespace.name": "my_k8s_namespace_name",
-					"host.name":         "my_host_name",
+					"host.name":          "my_host_name",
 				})
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()

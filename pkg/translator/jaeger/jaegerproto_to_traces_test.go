@@ -431,7 +431,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code, status.message and error tags are set",
 			attrs: map[string]any{
-				tracetranslator.TagError:                     true,
+				tracetranslator.TagError:  true,
 				"otel.status_code":        statusError,
 				"otel.status_description": "Error: Invalid argument",
 			},
@@ -449,9 +449,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "http.status_code, http.status_message and error tags are set",
 			attrs: map[string]any{
-				tracetranslator.TagError:              true,
-				"http.status_code": 404,
-				tracetranslator.TagHTTPStatusMsg:      "HTTP 404: Not Found",
+				tracetranslator.TagError:         true,
+				"http.status_code":               404,
+				tracetranslator.TagHTTPStatusMsg: "HTTP 404: Not Found",
 			},
 			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
@@ -459,9 +459,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code has precedence over http.status_code.",
 			attrs: map[string]any{
-				"otel.status_code": statusOk,
-				"http.status_code": 500,
-				tracetranslator.TagHTTPStatusMsg:      "Server Error",
+				"otel.status_code":               statusOk,
+				"http.status_code":               500,
+				tracetranslator.TagHTTPStatusMsg: "Server Error",
 			},
 			status:           okStatus,
 			attrsModifiedLen: 2,
@@ -469,8 +469,8 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
 			attrs: map[string]any{
-				tracetranslator.TagError:              true,
-				"http.status_code": http.StatusOK,
+				tracetranslator.TagError: true,
+				"http.status_code":       http.StatusOK,
 			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
@@ -479,8 +479,8 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			name: "the 4xx range span status MUST be left unset in case of SpanKind.SERVER",
 			kind: ptrace.SpanKindServer,
 			attrs: map[string]any{
-				tracetranslator.TagError:              false,
-				"http.status_code": 404,
+				tracetranslator.TagError: false,
+				"http.status_code":       404,
 			},
 			status:           emptyStatus,
 			attrsModifiedLen: 2,
@@ -936,7 +936,7 @@ func generateTracesTwoSpansWithFollower() ptrace.Traces {
 	link.SetSpanID(spans.At(0).SpanID())
 	link.Attributes().PutStr(
 		"opentracing.ref_type",
-		conventions.OpentracingRefTypeFollowsFrom.Value.AsString(),
+		"follows_from",
 	)
 	return td
 }
@@ -1000,7 +1000,7 @@ func generateTracesSpanWithTwoParents() ptrace.Traces {
 	link.SetSpanID(parent2.SpanID())
 	link.Attributes().PutStr(
 		"opentracing.ref_type",
-		conventions.OpentracingRefTypeChildOf.Value.AsString(),
+		"child_of",
 	)
 	return td
 }

@@ -616,8 +616,8 @@ func Test_getPromExemplarsV2(t *testing.T) {
 
 func TestAddResourceTargetInfo(t *testing.T) {
 	resourceAttrMap := map[string]any{
-		"service.name":       "service-name",
-		"service.namespace":  "service-namespace",
+		"service.name":        "service-name",
+		"service.namespace":   "service-namespace",
 		"service.instance.id": "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()

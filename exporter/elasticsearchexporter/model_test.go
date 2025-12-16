@@ -451,19 +451,19 @@ func TestEncodeSpanECSMode(t *testing.T) {
 
 	resource := pcommon.NewResource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		"cloud.provider":             "aws",
-		"cloud.platform":             "aws_elastic_beanstalk",
-		"deployment.environment":       "BETA",
+		"cloud.provider":              "aws",
+		"cloud.platform":              "aws_elastic_beanstalk",
+		"deployment.environment":      "BETA",
 		"deployment.environment.name": "BETA",
 		"service.instance.id":         "23",
-		"service.name":               "some-service",
-		"service.version":            "env-version-1234",
+		"service.name":                "some-service",
+		"service.version":             "env-version-1234",
 		"process.parent_pid":          "42",
 		"process.executable.name":     "node",
-		"client.address":             "12.53.12.1",
-		"source.address":             "12.53.12.1",
-		"faas.instance":              "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
-		"faas.trigger":               "api-gateway",
+		"client.address":              "12.53.12.1",
+		"source.address":              "12.53.12.1",
+		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"faas.trigger":                "api-gateway",
 	})
 	require.NoError(t, err)
 
@@ -483,11 +483,11 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	span := scopeSpans.Spans().AppendEmpty()
 	err = span.Attributes().FromRaw(map[string]any{
 		"messaging.destination.name": "users_queue",
-		"messaging.operation.name":                      "receive",
-		"db.system":                   "sql",
-		"db.namespace":                                  "users",
-		"db.query.text":                                 "SELECT * FROM users WHERE user_id=?",
-		"http.response.body.size":     "http.response.encoded_body_size",
+		"messaging.operation.name":   "receive",
+		"db.system":                  "sql",
+		"db.namespace":               "users",
+		"db.query.text":              "SELECT * FROM users WHERE user_id=?",
+		"http.response.body.size":    "http.response.encoded_body_size",
 	})
 	require.NoError(t, err)
 
@@ -624,7 +624,7 @@ func TestEncodeSpanECSModeMessageQueueName(t *testing.T) {
 			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 			span := scopeSpans.Spans().AppendEmpty()
 			err := span.Attributes().FromRaw(map[string]any{
-				"processor.event": test.processorEvent,
+				"processor.event":            test.processorEvent,
 				"messaging.destination.name": "orders_queue",
 			})
 			require.NoError(t, err)
@@ -659,46 +659,46 @@ func TestEncodeLogECSMode(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		"service.name":               "foo.bar",
-		"deployment.environment":       "BETA",
+		"service.name":                "foo.bar",
+		"deployment.environment":      "BETA",
 		"deployment.environment.name": "BETA",
-		"service.version":            "1.1.0",
+		"service.version":             "1.1.0",
 		"service.instance.id":         "i-103de39e0a",
 		"telemetry.sdk.name":          "opentelemetry",
 		"telemetry.sdk.version":       "7.9.12",
 		"telemetry.sdk.language":      "perl",
-		"cloud.provider":             "gcp",
+		"cloud.provider":              "gcp",
 		"cloud.account.id":            "19347013",
-		"cloud.region":               "us-west-1",
+		"cloud.region":                "us-west-1",
 		"cloud.availability_zone":     "us-west-1b",
-		"cloud.platform":             "gke",
-		"container.name":             "happy-seger",
-		"container.id":               "e69cc5d3dda",
+		"cloud.platform":              "gke",
+		"container.name":              "happy-seger",
+		"container.id":                "e69cc5d3dda",
 		"container.image.name":        "my-app",
-		"container.runtime":            "docker",
-		"host.name":                  "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		"host.hostname":                                  "hostname.example.com",
-		"host.id":                    "i-103de39e0a",
-		"host.type":                  "t2.medium",
-		"host.arch":                  "x86_64",
-		"process.pid":                9833,
+		"container.runtime":           "docker",
+		"host.name":                   "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.hostname":               "hostname.example.com",
+		"host.id":                     "i-103de39e0a",
+		"host.type":                   "t2.medium",
+		"host.arch":                   "x86_64",
+		"process.pid":                 9833,
 		"process.command_line":        "/usr/bin/ssh -l user 10.0.0.16",
 		"process.executable.path":     "/usr/bin/ssh",
 		"process.runtime.name":        "OpenJDK Runtime Environment",
 		"process.runtime.version":     "14.0.2",
-		"os.type":                    "darwin",
-		"os.description":             "Mac OS Mojave",
-		"os.name":                    "Mac OS X",
-		"os.version":                 "10.14.1",
-		"device.id":                  "00000000-54b3-e7c7-0000-000046bffd97",
+		"os.type":                     "darwin",
+		"os.description":              "Mac OS Mojave",
+		"os.name":                     "Mac OS X",
+		"os.version":                  "10.14.1",
+		"device.id":                   "00000000-54b3-e7c7-0000-000046bffd97",
 		"device.model.identifier":     "SM-G920F",
 		"device.model.name":           "Samsung Galaxy S6",
-		"device.manufacturer":        "Samsung",
-		"k8s.namespace.name":                             "default",
-		"k8s.node.name":                                  "node-1",
-		"k8s.pod.name":                                   "opentelemetry-pod-autoconf",
-		"k8s.pod.uid":                                    "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"k8s.deployment.name":                            "coredns",
+		"device.manufacturer":         "Samsung",
+		"k8s.namespace.name":          "default",
+		"k8s.node.name":               "node-1",
+		"k8s.pod.name":                "opentelemetry-pod-autoconf",
+		"k8s.pod.uid":                 "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"k8s.deployment.name":         "coredns",
 		"k8s.job.name":                "job.name",
 		"k8s.cronjob.name":            "cronjob.name",
 		"k8s.statefulset.name":        "statefulset.name",
@@ -708,10 +708,10 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"k8s.cluster.name":            "cluster.name",
 		"process.parent_pid":          "42",
 		"process.executable.name":     "node",
-		"client.address":             "12.53.12.1",
-		"source.address":             "12.53.12.1",
-		"faas.instance":              "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
-		"faas.trigger":               "api-gateway",
+		"client.address":              "12.53.12.1",
+		"source.address":              "12.53.12.1",
+		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"faas.trigger":                "api-gateway",
 	})
 	require.NoError(t, err)
 
@@ -723,7 +723,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	record := plog.NewLogRecord()
 	err = record.Attributes().FromRaw(map[string]any{
-		"event.name": "user-password-change",
+		"event.name":              "user-password-change",
 		"http.response.body.size": 1024,
 	})
 	require.NoError(t, err)

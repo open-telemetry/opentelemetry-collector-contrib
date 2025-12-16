@@ -96,11 +96,11 @@ func TestTagsMetrics(t *testing.T) {
 
 	rm := rms.AppendEmpty()
 	baseAttrs := testutil.NewAttributeMap(map[string]string{
-		"cloud.provider":      "aws",
-		"cloud.platform":      "aws_ecs",
+		"cloud.provider":        "aws",
+		"cloud.platform":        "aws_ecs",
 		"aws.ecs.task.family":   "example-task-family",
 		"aws.ecs.task.revision": "example-task-revision",
-		"aws.ecs.launchtype":   "fargate",
+		"aws.ecs.launchtype":    "fargate",
 	})
 	baseAttrs.CopyTo(rm.Resource().Attributes())
 	rm.Resource().Attributes().PutStr("aws.ecs.task.arn", "task-arn-1")

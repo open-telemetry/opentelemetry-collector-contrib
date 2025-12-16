@@ -101,7 +101,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			name: "Extra attributes specified",
 			cfg: func(c *Config) {
 				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
-					"env":                             "prod",
+					"env":          "prod",
 					"k8s.pod.name": "my-very-cool-pod",
 				}
 			},

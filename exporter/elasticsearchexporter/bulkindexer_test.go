@@ -126,7 +126,7 @@ func TestSyncBulkIndexer(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"), // bulk request itself is successful
 						attribute.StringSlice("x-test", []string{"test"}),
-						conventions.HTTPResponseStatusCode(http.StatusOK),
+						attribute.Key("http.response.status_code").Int(http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())

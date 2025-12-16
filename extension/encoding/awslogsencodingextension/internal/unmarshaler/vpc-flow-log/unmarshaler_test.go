@@ -133,8 +133,8 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				"source.address":       "10.20.33.164",
-				"destination.address":  "10.40.2.236",
+				"source.address":        "10.20.33.164",
+				"destination.address":   "10.40.2.236",
 				"network.local.address": "10.40.1.175",
 			},
 		},
@@ -146,8 +146,8 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.20.33.164",
 			},
 			expected: map[string]string{
-				"source.address":       "10.40.2.236",
-				"destination.address":  "10.20.33.164",
+				"source.address":        "10.40.2.236",
+				"destination.address":   "10.20.33.164",
 				"network.local.address": "10.40.2.31",
 			},
 		},

@@ -102,8 +102,8 @@ func TestMetadataFromAttributes(t *testing.T) {
 				"cloud.provider": "aws",
 				"host.id":        "host-id",
 				"host.name":      "ec2amaz-host-name",
-				"ec2.tag.tag1":                       "val1",
-				"ec2.tag.tag2":                       "val2",
+				"ec2.tag.tag1":   "val1",
+				"ec2.tag.tag2":   "val2",
 			}),
 			expected: &payload.HostMetadata{
 				InternalHostname: "host-id",
@@ -118,11 +118,11 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "GCP",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				"cloud.provider":         "gcp",
-				"host.id":                "host-id",
+				"cloud.provider":          "gcp",
+				"host.id":                 "host-id",
 				"cloud.account.id":        "project-id",
-				"host.name":              "host-name",
-				"host.type":              "host-type",
+				"host.name":               "host-name",
+				"host.type":               "host-type",
 				"cloud.availability_zone": "cloud-zone",
 			}),
 			expected: &payload.HostMetadata{
@@ -138,12 +138,12 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "Azure",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				"cloud.provider":  "azure",
-				"host.name":       "azure-host-name",
-				"cloud.region":    "location",
-				"host.id":         "azure-vm-id",
-				"cloud.account.id": "subscriptionID",
-				azure.AttributeResourceGroupName:      "resourceGroup",
+				"cloud.provider":                 "azure",
+				"host.name":                      "azure-host-name",
+				"cloud.region":                   "location",
+				"host.id":                        "azure-vm-id",
+				"cloud.account.id":               "subscriptionID",
+				azure.AttributeResourceGroupName: "resourceGroup",
 			}),
 			expected: &payload.HostMetadata{
 				InternalHostname: "azure-vm-id",

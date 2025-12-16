@@ -123,7 +123,7 @@ func TestInferResourceType(t *testing.T) {
 				"k8s.cluster.name":        "cluster1",
 				"k8s.pod.name":            "pod1",
 				"k8s.namespace.name":      "namespace1",
-				"container.name":         "container-name1",
+				"container.name":          "container-name1",
 				"cloud.account.id":        "proj1",
 				"cloud.availability_zone": "zone1",
 			},
@@ -146,7 +146,7 @@ func TestInferResourceType(t *testing.T) {
 			labels: map[string]string{
 				"k8s.cluster.name":        "cluster1",
 				"cloud.availability_zone": "zone1",
-				"host.name":              "node1",
+				"host.name":               "node1",
 			},
 			wantResourceType: resourcekeys.HostType,
 			wantOk:           true,
@@ -154,8 +154,8 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "gce",
 			labels: map[string]string{
-				"cloud.provider":         "gcp",
-				"host.id":                "inst1",
+				"cloud.provider":          "gcp",
+				"host.id":                 "inst1",
 				"cloud.availability_zone": "zone1",
 			},
 			wantResourceType: resourcekeys.CloudType,

@@ -189,9 +189,9 @@ func TestSyncMetadata(t *testing.T) {
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
 			metricsData: generateSampleMetricsData(map[string]string{
-				"cloud.provider":  "gcp",
+				"cloud.provider":   "gcp",
 				"cloud.account.id": "1234",
-				"host.id":         "i-abc",
+				"host.id":          "i-abc",
 			}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{

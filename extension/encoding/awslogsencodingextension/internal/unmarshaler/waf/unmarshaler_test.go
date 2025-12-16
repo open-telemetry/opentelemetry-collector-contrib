@@ -96,7 +96,7 @@ func TestSetKeyAttributes(t *testing.T) {
 		"valid": {
 			webACLID: "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
 			expectsMap: map[string]any{
-				"cloud.region":     "us-east-1",
+				"cloud.region":      "us-east-1",
 				"cloud.account.id":  "1234",
 				"cloud.resource_id": "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
 			},

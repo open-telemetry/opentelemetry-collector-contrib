@@ -143,7 +143,7 @@ func TestNewExporter_Serializer(t *testing.T) {
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	attrs := map[string]string{
 		"deployment.environment": "dev",
-		"custom_attribute":                           "custom_value",
+		"custom_attribute":       "custom_value",
 	}
 	tests := []struct {
 		metrics               pmetric.Metrics
@@ -236,7 +236,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		{
 			metrics: createTestMetrics(map[string]string{
 				"deployment.environment.name": "new_env",
-				"custom_attribute": "custom_value",
+				"custom_attribute":            "custom_value",
 			}),
 			source: source.Source{
 				Kind:       source.HostnameKind,
