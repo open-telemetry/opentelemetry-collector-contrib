@@ -101,7 +101,7 @@ service:
 
 `concurrency_limit` (optional): Maximum number of concurrent repository processing goroutines. Defaults to `50` to stay under GitHub's 100 concurrent request limit. Set to `0` for unlimited concurrency (not recommended for >100 repositories).
 
-`merged_pr_lookback_days` (optional):  Number of days to query back in time when fetching merged pull requests. Defaults to 30.
+`merged_pr_lookback_days` (optional):  Number of days to query back in time when fetching merged pull requests. Defaults to 30. Set to `0` to fetch all merged PRs.
 
 `metrics` (optional): Enable or disable metrics scraping. See the [metrics documentation](./documentation.md) for details.
 
