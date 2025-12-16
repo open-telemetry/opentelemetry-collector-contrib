@@ -12,9 +12,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
 )
 
 const DefaultSize = 1000 // bytes
