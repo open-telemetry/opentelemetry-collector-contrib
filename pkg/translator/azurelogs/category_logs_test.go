@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 func TestPutInt(t *testing.T) {
@@ -178,7 +177,7 @@ func TestHandleDestination(t *testing.T) {
 			endpoint: "opentelemetry-cdn-endpoint.azureedge.net",
 			result: func() pcommon.Map {
 				m := pcommon.NewMap()
-				m.PutStr(string(conventions.DestinationAddressKey), "opentelemetry-cdn-endpoint.azureedge.net")
+				m.PutStr("destination.address", "opentelemetry-cdn-endpoint.azureedge.net")
 				return m
 			}(),
 		},
@@ -189,8 +188,8 @@ func TestHandleDestination(t *testing.T) {
 			backendHostname: "example.com:443",
 			result: func() pcommon.Map {
 				m := pcommon.NewMap()
-				m.PutInt(string(conventions.DestinationPortKey), 443)
-				m.PutStr(string(conventions.DestinationAddressKey), "example.com")
+				m.PutInt("destination.port", 443)
+				m.PutStr("destination.address", "example.com")
 				return m
 			}(),
 		},
@@ -199,7 +198,7 @@ func TestHandleDestination(t *testing.T) {
 			endpoint:        "opentelemetry-cdn-endpoint.azureedge.net",
 			result: func() pcommon.Map {
 				m := pcommon.NewMap()
-				m.PutStr(string(conventions.DestinationAddressKey), "opentelemetry-cdn-endpoint.azureedge.net")
+				m.PutStr("destination.address", "opentelemetry-cdn-endpoint.azureedge.net")
 				return m
 			}(),
 		},
@@ -208,10 +207,10 @@ func TestHandleDestination(t *testing.T) {
 			endpoint:        "opentelemetry-cdn-endpoint.azureedge.net:443",
 			result: func() pcommon.Map {
 				m := pcommon.NewMap()
-				m.PutInt(string(conventions.DestinationPortKey), 443)
-				m.PutStr(string(conventions.DestinationAddressKey), "example.com")
-				m.PutStr(string(conventions.NetworkPeerAddressKey), "opentelemetry-cdn-endpoint.azureedge.net")
-				m.PutInt(string(conventions.NetworkPeerPortKey), 443)
+				m.PutInt("destination.port", 443)
+				m.PutStr("destination.address", "example.com")
+				m.PutStr("network.peer.address", "opentelemetry-cdn-endpoint.azureedge.net")
+				m.PutInt("network.peer.port", 443)
 				return m
 			}(),
 		},

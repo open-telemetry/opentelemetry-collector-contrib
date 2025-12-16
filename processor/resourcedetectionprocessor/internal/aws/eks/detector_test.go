@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -243,7 +242,7 @@ func TestDetectFromIMDS(t *testing.T) {
 			} else {
 				assert.Equal(t, 0, res.Attributes().Len())
 			}
-			assert.Equal(t, conventions.SchemaURL, schema)
+			assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schema)
 		})
 	}
 }
@@ -336,7 +335,7 @@ func TestDetectFromAPI(t *testing.T) {
 				}),
 			}
 			res, schema, err := d.detectFromAPI(t.Context())
-			assert.Equal(t, conventions.SchemaURL, schema)
+			assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schema)
 			if tt.expectedError {
 				assert.Error(t, err)
 			}
@@ -451,7 +450,7 @@ func TestDetect(t *testing.T) {
 			}
 			res, schema, err := det.Detect(t.Context())
 			assert.NoError(t, err)
-			assert.Equal(t, conventions.SchemaURL, schema)
+			assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schema)
 			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
 		})
 	}

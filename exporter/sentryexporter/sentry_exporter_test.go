@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -370,7 +369,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				string(conventions.HTTPMethodKey): http.MethodGet,
+				"http.method": http.MethodGet,
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "http.client",
@@ -380,7 +379,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				string(conventions.HTTPMethodKey): http.MethodPost,
+				"http.method": http.MethodPost,
 			},
 			spanKind:    ptrace.SpanKindServer,
 			op:          "http.server",
@@ -390,7 +389,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
 			attrs: map[string]any{
-				string(conventions.DBSystemKey): "redis",
+				"db.system": "redis",
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
@@ -400,8 +399,8 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "db-call-with-statement",
 			name:     "mysql call",
 			attrs: map[string]any{
-				string(conventions.DBSystemKey):    "sqlite",
-				string(conventions.DBStatementKey): "SELECT * FROM table",
+				"db.system":    "sqlite",
+				"db.statement": "SELECT * FROM table",
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
@@ -411,7 +410,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
 			attrs: map[string]any{
-				string(conventions.RPCServiceKey): "EchoService",
+				"rpc.service": "EchoService",
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "rpc",

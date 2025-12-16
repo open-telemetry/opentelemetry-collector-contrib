@@ -10,7 +10,6 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
@@ -204,7 +203,7 @@ func generateTraceSingleSpanMinmalResource() ptrace.Traces {
 	td := generateTraceSingleSpanNoResourceOrInstrLibrary()
 	rs := td.ResourceSpans().At(0)
 	rsc := rs.Resource()
-	rsc.Attributes().PutStr(string(conventions.ServiceNameKey), "SoleAttr")
+	rsc.Attributes().PutStr("service.name", "SoleAttr")
 	return td
 }
 

@@ -11,7 +11,6 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -605,11 +604,11 @@ func generateOCTestMetricDoubleSummary() *ocmetrics.Metric {
 func generateResourceWithOcNodeAndResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
-	resource.Attributes().PutStr(string(conventions.HostNameKey), "host1")
-	resource.Attributes().PutInt(string(conventions.ProcessPIDKey), 123)
-	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), "v2.0.1")
+	resource.Attributes().PutStr("host.name", "host1")
+	resource.Attributes().PutInt("process.pid", 123)
+	resource.Attributes().PutStr("telemetry.sdk.version", "v2.0.1")
 	resource.Attributes().PutStr(occonventions.AttributeExporterVersion, "v1.2.0")
-	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), "cpp")
+	resource.Attributes().PutStr("telemetry.sdk.language", "cpp")
 	resource.Attributes().PutStr(occonventions.AttributeResourceType, "good-resource")
 	resource.Attributes().PutStr("node-str-attr", "node-str-attr-val")
 	resource.Attributes().PutStr("resource-str-attr", "resource-str-attr-val")

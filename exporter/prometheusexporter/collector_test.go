@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
@@ -596,9 +595,9 @@ func TestCollectMetrics(t *testing.T) {
 			}
 
 			rAttrs := pcommon.NewMap()
-			rAttrs.PutStr(string(conventions.ServiceInstanceIDKey), "localhost:9090")
-			rAttrs.PutStr(string(conventions.ServiceNameKey), "testapp")
-			rAttrs.PutStr(string(conventions.ServiceNamespaceKey), "prod")
+			rAttrs.PutStr("service.instance.id", "localhost:9090")
+			rAttrs.PutStr("service.name", "testapp")
+			rAttrs.PutStr("service.namespace", "prod")
 
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()

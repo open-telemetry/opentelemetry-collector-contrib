@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -3147,7 +3146,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.K8SPodUIDKey),
+							Name: "k8s.pod.uid",
 						},
 					},
 				},
@@ -3176,7 +3175,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
+							Name: "container.id",
 						},
 					},
 				},
@@ -3221,7 +3220,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
+							Name: "container.id",
 						},
 						{
 							From: ConnectionSource,
@@ -3748,11 +3747,11 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 
 			// Check the result
 			if tt.expectedDeploymentName != "" {
-				deploymentName, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				deploymentName, exists := attributes["k8s.deployment.name"]
 				assert.True(t, exists, "Expected deployment name to be extracted")
 				assert.Equal(t, tt.expectedDeploymentName, deploymentName)
 			} else {
-				_, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				_, exists := attributes["k8s.deployment.name"]
 				assert.False(t, exists, "Expected no deployment name to be extracted")
 			}
 		})

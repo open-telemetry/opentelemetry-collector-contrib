@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -208,7 +207,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req1.Header.Set(header.TracerVersion, "1.2.3")
 	attrs1 := pcommon.NewMap()
 	upsertHeadersAttributes(req1, attrs1)
-	val, ok := attrs1.Get(string(conventions.TelemetrySDKVersionKey))
+	val, ok := attrs1.Get("telemetry.sdk.version")
 	assert.True(t, ok)
 	assert.Equal(t, "Datadog-1.2.3", val.Str())
 
@@ -217,7 +216,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req2.Header.Set(header.Lang, ".NET")
 	attrs2 := pcommon.NewMap()
 	upsertHeadersAttributes(req2, attrs2)
-	val, ok = attrs2.Get(string(conventions.TelemetrySDKLanguageKey))
+	val, ok = attrs2.Get("telemetry.sdk.language")
 	assert.True(t, ok)
 	assert.Equal(t, "dotnet", val.Str())
 }
@@ -333,7 +332,7 @@ func TestToTracesServiceName(t *testing.T) {
 
 			traces, _ := ToTraces(zap.NewNop(), payload, req, nil)
 			for _, rs := range traces.ResourceSpans().All() {
-				actualServiceName, _ := rs.Resource().Attributes().Get(string(conventions.ServiceNameKey))
+				actualServiceName, _ := rs.Resource().Attributes().Get("service.name")
 				assert.Equal(t, tt.expectedServiceName, actualServiceName.AsString())
 				for _, ss := range rs.ScopeSpans().All() {
 					for _, span := range ss.Spans().All() {
@@ -368,11 +367,11 @@ func TestToTraces(t *testing.T) {
 			},
 			"select customers",
 			map[string]string{
-				string(conventions.DBQuerySummaryKey):   "select customers",
-				string(conventions.DBQueryTextKey):      "select * from customers",
-				string(conventions.DBOperationNameKey):  "select",
-				string(conventions.DBCollectionNameKey): "customers",
-				string(conventions.DBNamespaceKey):      "pg_customers",
+				"db.query.summary":   "select customers",
+				"db.query.text":      "select * from customers",
+				"db.operation.name":  "select",
+				"db.collection.name": "customers",
+				"db.namespace":       "pg_customers",
 			},
 		},
 		{
@@ -474,8 +473,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"POST /api/order",
 			map[string]string{
-				string(conventions.HTTPRequestMethodKey): "POST",
-				string(conventions.HTTPRouteKey):         "/api/order",
+				"http.request.method": "POST",
+				"http.route":          "/api/order",
 			},
 		},
 		{
@@ -488,7 +487,7 @@ func TestToTraces(t *testing.T) {
 			},
 			"POST",
 			map[string]string{
-				string(conventions.HTTPRequestMethodKey): "POST",
+				"http.request.method": "POST",
 			},
 		},
 		{
@@ -501,7 +500,7 @@ func TestToTraces(t *testing.T) {
 			},
 			"POST",
 			map[string]string{
-				string(conventions.HTTPRequestMethodKey): "POST",
+				"http.request.method": "POST",
 			},
 		},
 		{
@@ -515,8 +514,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"POST /route",
 			map[string]string{
-				string(conventions.HTTPRequestMethodKey): "POST",
-				string(conventions.HTTPRouteKey):         "/route",
+				"http.request.method": "POST",
+				"http.route":          "/route",
 			},
 		},
 		{
@@ -532,9 +531,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(conventions.RPCServiceKey):        "mydomain.MyDomainService",
-				string(conventions.RPCMethodKey):         "MyMethod",
-				string(conventions.RPCGRPCStatusCodeKey): "0",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
 			},
 		},
 		{
@@ -549,10 +548,10 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(conventions.RPCServiceKey):        "mydomain.MyDomainService",
-				string(conventions.RPCMethodKey):         "MyMethod",
-				string(conventions.RPCGRPCStatusCodeKey): "0",
-				string(conventions.RPCSystemKey):         conventions.RPCSystemGRPC.Value.AsString(),
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
+				"rpc.system":           "grpc",
 			},
 		},
 		{
@@ -568,9 +567,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(conventions.RPCServiceKey):        "mydomain.MyDomainService",
-				string(conventions.RPCMethodKey):         "MyMethod",
-				string(conventions.RPCGRPCStatusCodeKey): "2",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "2",
 			},
 		},
 		{
@@ -586,8 +585,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService",
 			map[string]string{
-				string(conventions.RPCServiceKey):        "mydomain.MyDomainService",
-				string(conventions.RPCGRPCStatusCodeKey): "0",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.grpc.status_code": "0",
 			},
 		},
 		{
@@ -603,9 +602,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(conventions.RPCServiceKey):        "mydomain.MyDomainService",
-				string(conventions.RPCMethodKey):         "MyMethod",
-				string(conventions.RPCGRPCStatusCodeKey): "0",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
 			},
 		},
 		{
@@ -621,9 +620,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(conventions.RPCServiceKey):        "mydomain.MyDomainService",
-				string(conventions.RPCMethodKey):         "MyMethod",
-				string(conventions.RPCGRPCStatusCodeKey): "0",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
 			},
 		},
 		{
@@ -639,11 +638,11 @@ func TestToTraces(t *testing.T) {
 			},
 			"S3/headObject",
 			map[string]string{
-				string(conventions.RPCSystemKey):    "aws-api",
-				string(conventions.RPCServiceKey):   "S3",
-				string(conventions.RPCMethodKey):    "headObject",
-				string(conventions.AWSS3BucketKey):  "my-bucket",
-				string(conventions.AWSRequestIDKey): "1234567890",
+				"rpc.system":     "aws-api",
+				"rpc.service":    "S3",
+				"rpc.method":     "headObject",
+				"aws.s3.bucket":  "my-bucket",
+				"aws.request_id": "1234567890",
 			},
 		},
 	}
