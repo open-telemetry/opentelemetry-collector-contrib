@@ -224,21 +224,12 @@ func (ghs *githubScraper) getMergedPullRequests(
 	var cursor *string
 	var pullRequests []MergedPullRequestNode
 
-	// Calculate cutoff time if lookback is enabled (non-zero)
-	var cutoffTime time.Time
-	if lookbackDays > 0 {
-		cutoffTime = time.Now().AddDate(0, 0, -lookbackDays)
-		ghs.logger.Sugar().Debugf(
-			"Fetching merged PRs for repo %s with lookback %d days (cutoff: %s)",
-			repoName,
-			lookbackDays,
-			cutoffTime.Format(time.RFC3339),
-		)
-	} else {
-		ghs.logger.Sugar().Debugf(
-			"Fetching all merged PRs for repo %s (no time filtering)",
-			repoName,
-		)
+	limit := lookbackDays > 0
+
+	// Calculate cutoff time if lookback is enabled
+	var cutoff time.Time
+	if limit {
+		cutoff = time.Now().AddDate(0, 0, -lookbackDays)
 	}
 
 	for hasPreviousPage := true; hasPreviousPage; {
@@ -259,19 +250,17 @@ func (ghs *githubScraper) getMergedPullRequests(
 		for i := range prs.Repository.PullRequests.Nodes {
 			pr := &prs.Repository.PullRequests.Nodes[i]
 
-			// Check if this PR is older than our cutoff date
-			// If lookbackDays is 0, cutoffTime will be zero value and this check always fails
-			if lookbackDays > 0 && pr.MergedAt.Before(cutoffTime) {
+			// Check if this PR is older than our cutoff date using the Before
+			// method, meaning; earlier in time which is older than our cutoff.
+			if limit && pr.MergedAt.Before(cutoff) {
 				ghs.logger.Sugar().Debugf(
-					"Reached PR merged before cutoff date, stopping pagination (PR merged: %s, cutoff: %s)",
+					"reached pull request that is older than the cutoff date, stopping pagination (PR merged: %s, cutoff: %s)",
 					pr.MergedAt.Format(time.RFC3339),
-					cutoffTime.Format(time.RFC3339),
+					cutoff.Format(time.RFC3339),
 				)
-				// Return what we've collected so far
 				return pullRequests, nil
 			}
 
-			// This PR is within our lookback window, add it
 			pullRequests = append(pullRequests, *pr)
 		}
 
