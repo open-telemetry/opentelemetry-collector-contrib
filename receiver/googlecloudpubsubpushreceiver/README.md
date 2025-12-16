@@ -34,13 +34,13 @@ extensions:
 
 ## Difference to the current google pub sub receiver
 
-The main difference between the current [`googlecloudpubsub` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/googlecloudpubsubreceiver) and the proposed new receiver lies in how they receive messages from Google Pub/Sub: pull vs. push subscriptions. The table below summarizes their differences:
+The main difference between the current [`googlecloudpubsub` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/googlecloudpubsubreceiver)
+and the proposed new receiver lies in how they receive messages from Google Pub/Sub: pull vs. push subscriptions. The table below summarizes their differences:
 
 |    Component     |                  `googlecloudpubsub`                  |        `googlecloudpubsubpush`  (this receiver)         |
 |:----------------:|:-----------------------------------------------------:|:-------------------------------------------------------:|
 | **Subscription** |                         Pull                          |                          Push                           |
 |  **Data Flow**   | The receiver _polls_ Pub/Sub to ask for new messages. | Pub/Sub actively *pushes* new messages to the receiver. |
 |  **Initiator**   |                       Receiver                        |                         Pub/Sub                         |
-|    **Result**    | Potential latency between publication and collection. |         Near real-time, event-driven ingestion.         |
 
 You can read more about Pull/Push subscriptions in the [official documentation](https://cloud.google.com/pubsub/docs/subscriber#subscription_type_comparison).

@@ -151,34 +151,41 @@ func (i *MetricInfo) validateAttributes() error {
 
 var _ confmap.Unmarshaler = (*Config)(nil)
 
-// Unmarshal with custom logic to set default values.
-// This is necessary to ensure that default metrics are
-// not configured if the user has specified any custom metrics.
+// Unmarshal with custom logic to override default values if user has specified any custom metrics.
 func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil
 	}
-	if err := componentParser.Unmarshal(c, confmap.WithIgnoreUnused()); err != nil {
+	// Start from defaults provided by createDefaultConfig.
+	// Unmarshal into a temporary struct and override only sections that are provided and non-empty.
+	var userCfg Config
+	if err := componentParser.Unmarshal(&userCfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
-	if !componentParser.IsSet("spans") {
-		c.Spans = defaultSpansConfig()
+	// Spans
+	if componentParser.IsSet("spans") && len(userCfg.Spans) > 0 {
+		c.Spans = userCfg.Spans
 	}
-	if !componentParser.IsSet("spanevents") {
-		c.SpanEvents = defaultSpanEventsConfig()
+	// Span events
+	if componentParser.IsSet("spanevents") && len(userCfg.SpanEvents) > 0 {
+		c.SpanEvents = userCfg.SpanEvents
 	}
-	if !componentParser.IsSet("metrics") {
-		c.Metrics = defaultMetricsConfig()
+	// Metrics
+	if componentParser.IsSet("metrics") && len(userCfg.Metrics) > 0 {
+		c.Metrics = userCfg.Metrics
 	}
-	if !componentParser.IsSet("datapoints") {
-		c.DataPoints = defaultDataPointsConfig()
+	// Data points
+	if componentParser.IsSet("datapoints") && len(userCfg.DataPoints) > 0 {
+		c.DataPoints = userCfg.DataPoints
 	}
-	if !componentParser.IsSet("logs") {
-		c.Logs = defaultLogsConfig()
+	// Logs
+	if componentParser.IsSet("logs") && len(userCfg.Logs) > 0 {
+		c.Logs = userCfg.Logs
 	}
-	if !componentParser.IsSet("profiles") {
-		c.Profiles = defaultProfilesConfig()
+	// Profiles
+	if componentParser.IsSet("profiles") && len(userCfg.Profiles) > 0 {
+		c.Profiles = userCfg.Profiles
 	}
 	return nil
 }
