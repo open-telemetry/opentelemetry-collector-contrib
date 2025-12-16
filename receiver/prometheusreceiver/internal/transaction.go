@@ -30,9 +30,11 @@ import (
 	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
-var removeStartTimeAdjustment = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
-	featuregate.StageBeta,
+	featuregate.StageStable,
+	featuregate.WithRegisterFromVersion("v0.121.0"),
+	featuregate.WithRegisterToVersion("v0.142.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" leave the start time unset. Use the new metricstarttime processor instead."),
 )
@@ -66,7 +68,6 @@ type transaction struct {
 	scopeAttributes       map[resourceKey]map[scopeID]pcommon.Map
 	logger                *zap.Logger
 	buildInfo             component.BuildInfo
-	metricAdjuster        MetricsAdjuster
 	obsrecv               *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
@@ -82,7 +83,6 @@ type scopeID struct {
 
 func newTransaction(
 	ctx context.Context,
-	metricAdjuster MetricsAdjuster,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings receiver.Settings,
@@ -97,7 +97,6 @@ func newTransaction(
 		trimSuffixes:    trimSuffixes,
 		useMetadata:     useMetadata,
 		sink:            sink,
-		metricAdjuster:  metricAdjuster,
 		externalLabels:  externalLabels,
 		logger:          settings.Logger,
 		buildInfo:       settings.BuildInfo,
@@ -581,13 +580,6 @@ func (t *transaction) Commit() error {
 	numPoints := md.DataPointCount()
 	if numPoints == 0 {
 		return nil
-	}
-
-	if !removeStartTimeAdjustment.IsEnabled() {
-		if err = t.metricAdjuster.AdjustMetrics(md); err != nil {
-			t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
-			return err
-		}
 	}
 
 	err = t.sink.ConsumeMetrics(ctx, md)
