@@ -15,9 +15,6 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: category
-                    value:
-                      stringValue: AuditEvent
                   - key: operation.name
                     value:
                       stringValue: SecretGet
@@ -30,7 +27,10 @@ resourceLogs:
                               "operationName": "SecretGet",
                               "category": "AuditEvent"
                         }
-            observedTimeUnixNano: "1765520010768711000"
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+            observedTimeUnixNano: "1765868294580411000"
             timeUnixNano: "1668142107676714500"
           - body:
               kvlistValue:
@@ -50,7 +50,7 @@ resourceLogs:
                               "operationName": "SecretGet",
                               "category": "AuditEvent"
                         }
-            observedTimeUnixNano: "1765520010768711000"
+            observedTimeUnixNano: "1765868294580411000"
             timeUnixNano: "1668142107676714500"
         scope:
           name: otelcol/azureresourcelogs

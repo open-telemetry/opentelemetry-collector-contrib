@@ -46,7 +46,7 @@ resourceLogs:
                                     }
                               }
                         }
-            observedTimeUnixNano: "1765520010760162000"
+            observedTimeUnixNano: "1765868294581460000"
             timeUnixNano: "1668142107676714500"
         scope:
           name: otelcol/azureresourcelogs

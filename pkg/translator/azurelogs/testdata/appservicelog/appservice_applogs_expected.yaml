@@ -15,9 +15,9 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: operation.name
+                  - key: container.id
                     value:
-                      stringValue: AppLog
+                      stringValue: CONTAINER_ID
                   - key: exception.type
                     value:
                       stringValue: EXCEPTION_CLASS
@@ -33,13 +33,13 @@ resourceLogs:
                   - key: exception.stacktrace
                     value:
                       stringValue: STACKTRACE
-                  - key: container.id
-                    value:
-                      stringValue: CONTAINER_ID
                   - key: category
                     value:
                       stringValue: AppServiceAppLogs
-            observedTimeUnixNano: "1765520010762258000"
+                  - key: operation.name
+                    value:
+                      stringValue: AppLog
+            observedTimeUnixNano: "1765868294574971000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

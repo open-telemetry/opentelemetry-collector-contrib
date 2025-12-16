@@ -318,9 +318,9 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 	return attrs
 }
 
-func copyPropertiesAndApplySemanticConventions(category string, properties []byte, attrs map[string]any) bool {
+func copyPropertiesAndApplySemanticConventions(category string, properties []byte, attrs map[string]any) {
 	if len(properties) == 0 {
-		return false
+		return
 	}
 
 	// TODO @constanca-m: This is a temporary workaround to
@@ -332,10 +332,9 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 		if err = json.Unmarshal(properties, &val); err == nil {
 			// Try primitive value
 			attrs[azureProperties] = val
-			return true
 		}
-		// Parsing failed completely
-		return false
+		// Parsing failed completely - just return without setting properties
+		return
 	}
 
 	var handleFunc func(string, any, map[string]any, map[string]any)
@@ -371,7 +370,6 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 	if len(attrsProps) > 0 {
 		attrs[azureProperties] = attrsProps
 	}
-	return true
 }
 
 func setIf(attrs map[string]any, key string, value *string) {

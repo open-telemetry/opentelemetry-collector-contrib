@@ -15,9 +15,6 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: category
-                    value:
-                      stringValue: AppServicePlatformLogs
                   - key: operation.name
                     value:
                       stringValue: ContainerLogs
@@ -34,7 +31,10 @@ resourceLogs:
                           - key: message
                             value:
                               stringValue: Initiating warmup request to container fbehtestapp_1_b8a27b37 for site fbehtestapp
-            observedTimeUnixNano: "1765520010768003000"
+                  - key: category
+                    value:
+                      stringValue: AppServicePlatformLogs
+            observedTimeUnixNano: "1765868294577852000"
             severityNumber: 9
             severityText: Informational
             timeUnixNano: "1713960235630000000"

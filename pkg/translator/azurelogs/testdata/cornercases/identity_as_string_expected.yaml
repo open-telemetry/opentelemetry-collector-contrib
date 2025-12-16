@@ -34,7 +34,7 @@ resourceLogs:
                               "category": "NonExistentCategory",
                               "identity": "John Doe"
                         }
-            observedTimeUnixNano: "1765520010769077000"
+            observedTimeUnixNano: "1765868294580920000"
             timeUnixNano: "1668142107676714500"
         scope:
           name: otelcol/azureresourcelogs

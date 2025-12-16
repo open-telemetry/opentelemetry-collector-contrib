@@ -15,15 +15,18 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: category
+                    value:
+                      stringValue: FrontDoorHealthProbeLog
                   - key: operation.name
                     value:
                       stringValue: WAF/FirewallLog
-                  - key: url.full
+                  - key: http.request.method
                     value:
-                      stringValue: https://probe.net/health
-                  - key: http.request.duration
+                      stringValue: GET
+                  - key: http.response.status_code
                     value:
-                      doubleValue: 0.042
+                      intValue: "200"
                   - key: dns.lookup.duration
                     value:
                       doubleValue: 0.00023
@@ -43,19 +46,16 @@ resourceLogs:
                           - key: healthProbeId
                             value:
                               stringValue: AAAA
-                  - key: category
+                  - key: url.full
                     value:
-                      stringValue: FrontDoorHealthProbeLog
-                  - key: http.request.method
-                    value:
-                      stringValue: GET
-                  - key: http.response.status_code
-                    value:
-                      intValue: "200"
+                      stringValue: https://probe.net/health
                   - key: server.address
                     value:
                       stringValue: 42.42.42.42
-            observedTimeUnixNano: "1765520010764893000"
+                  - key: http.request.duration
+                    value:
+                      doubleValue: 0.042
+            observedTimeUnixNano: "1765868294583516000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs
