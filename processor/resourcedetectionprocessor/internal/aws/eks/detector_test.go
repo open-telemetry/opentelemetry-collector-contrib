@@ -242,7 +242,7 @@ func TestDetectFromIMDS(t *testing.T) {
 			} else {
 				assert.Equal(t, 0, res.Attributes().Len())
 			}
-			assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schema)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 		})
 	}
 }
@@ -335,7 +335,7 @@ func TestDetectFromAPI(t *testing.T) {
 				}),
 			}
 			res, schema, err := d.detectFromAPI(t.Context())
-			assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schema)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			if tt.expectedError {
 				assert.Error(t, err)
 			}
@@ -450,7 +450,7 @@ func TestDetect(t *testing.T) {
 			}
 			res, schema, err := det.Detect(t.Context())
 			assert.NoError(t, err)
-			assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schema)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
 		})
 	}

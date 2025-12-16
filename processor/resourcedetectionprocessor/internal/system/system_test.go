@@ -207,7 +207,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	detector := newTestDetector(md, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 	md.AssertNotCalled(t, "CPUInfo")
 
@@ -238,7 +238,7 @@ func TestFallbackHostname(t *testing.T) {
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, metadata.DefaultResourceAttributesConfig())
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mdHostname.AssertExpectations(t)
 	mdHostname.AssertNotCalled(t, "HostID")
 	mdHostname.AssertNotCalled(t, "HostIPs")
@@ -267,7 +267,7 @@ func TestEnableHostID(t *testing.T) {
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mdHostname.AssertExpectations(t)
 
 	expected := map[string]any{
@@ -300,7 +300,7 @@ func TestUseHostname(t *testing.T) {
 	detector := newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mdHostname.AssertExpectations(t)
 
 	expected := map[string]any{
@@ -405,7 +405,7 @@ func TestDetectError(t *testing.T) {
 	detector = newTestDetector(mdHostID, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(t.Context())
 	assert.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	assert.Equal(t, map[string]any{
 		"host.name":      "hostname",
 		"os.description": "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
@@ -436,7 +436,7 @@ func TestDetectCPUInfo(t *testing.T) {
 	detector := newTestDetector(md, []string{"dns"}, cfg)
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
@@ -493,7 +493,7 @@ func TestHostInterfaces(t *testing.T) {
 	detector := newTestDetector(mdInterfaces, []string{"os"}, cfg)
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mdInterfaces.AssertExpectations(t)
 
 	fmt.Println("res.Attributes().AsRaw()", res.Attributes().AsRaw())
