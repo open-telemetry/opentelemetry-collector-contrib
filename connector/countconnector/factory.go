@@ -38,7 +38,14 @@ func NewFactory() connector.Factory {
 
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Spans:      defaultSpansConfig(),
+		SpanEvents: defaultSpanEventsConfig(),
+		Metrics:    defaultMetricsConfig(),
+		DataPoints: defaultDataPointsConfig(),
+		Logs:       defaultLogsConfig(),
+		Profiles:   defaultProfilesConfig(),
+	}
 }
 
 // createTracesToMetrics creates a traces to metrics connector based on provided config.
