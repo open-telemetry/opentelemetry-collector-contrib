@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 const (
@@ -83,19 +84,11 @@ func createDefaultConfig() component.Config {
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
 		MaxEventSize:            defaultMaxEventSize,
-		OtelAttrsToHec: splunk.HecToOtelAttrs{
-			Source:     splunk.DefaultSourceLabel,
-			SourceType: splunk.DefaultSourceTypeLabel,
-			Index:      splunk.DefaultIndexLabel,
-			Host:       string(conventions.HostNameKey),
-		},
-		HecFields: OtelToHecFields{
-			SeverityText:   splunk.DefaultSeverityTextLabel,
-			SeverityNumber: splunk.DefaultSeverityNumberLabel,
-		},
-		HealthPath:            splunk.DefaultHealthPath,
-		HecHealthCheckEnabled: false,
-		ExportRaw:             false,
+		OtelAttrsToHec:          translator.DefaultHecToOtelAttrs(),
+		HecFields:               translator.DefaultOtelToHecFields(),
+		HealthPath:              splunk.DefaultHealthPath,
+		HecHealthCheckEnabled:   false,
+		ExportRaw:               false,
 		Telemetry: HecTelemetry{
 			Enabled:              false,
 			OverrideMetricsNames: map[string]string{},

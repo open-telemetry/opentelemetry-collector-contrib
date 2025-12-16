@@ -277,6 +277,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.142.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.142.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.142.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.142.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.142.0 // indirect
 	github.com/open-telemetry/otel-arrow/go v0.45.0 // indirect
@@ -538,3 +539,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver => ../receiver/otelarrowreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter => ../exporter/otelarrowexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk => ../pkg/translator/splunk
