@@ -163,7 +163,6 @@ func BenchmarkFileInput(b *testing.B) {
 
 	for _, bench := range cases {
 		b.Run(bench.name, func(b *testing.B) {
-			b.ReportAllocs()
 			rootDir := b.TempDir()
 
 			var files []*os.File
@@ -200,7 +199,9 @@ func BenchmarkFileInput(b *testing.B) {
 			op, err := cfg.Build(set, callback)
 			require.NoError(b, err)
 
+			b.ReportAllocs()
 			b.ResetTimer()
+
 			require.NoError(b, op.Start(testutil.NewUnscopedMockPersister()))
 			defer func() {
 				require.NoError(b, op.Stop())
@@ -295,7 +296,7 @@ func BenchmarkConsumeFiles(b *testing.B) {
 				// Initialize the file to ensure a unique fingerprint
 				_, err := f.WriteString(f.Name() + "\n")
 				require.NoError(b, err)
-				for b.Loop() {
+				for i := 0; i < b.N; i++ {
 					_, err := f.WriteString(severalLines.String())
 					require.NoError(b, err)
 				}
@@ -309,6 +310,7 @@ func BenchmarkConsumeFiles(b *testing.B) {
 			cfg.StartAt = "beginning"
 			// Use a long poll so that we don't trigger it.
 			cfg.PollInterval = 1 * time.Hour
+			cfg.Compression = "auto"
 
 			doneChan := make(chan bool, len(files))
 			numTokens := &atomic.Int64{}

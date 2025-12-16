@@ -33,10 +33,16 @@ func TestIsGzipFile(t *testing.T) {
 	})
 
 	t.Run("file is NOT gzip compressed", func(t *testing.T) {
-		tempFileName := filepath.Join(t.TempDir(), "test.log")
-		tempFile, err := os.Create(tempFileName)
+		tempFile, err := os.Create(filepath.Join(t.TempDir(), "test1.log"))
 		require.NoError(t, err)
-		err = os.WriteFile(tempFileName, []byte("this is test data and the header should prove this is not gzip compressed"), 0o600)
+		defer tempFile.Close()
+
+		_, err = tempFile.Write([]byte(
+			"this is test data and the header should prove this is not gzip compressed",
+		))
+		require.NoError(t, err)
+
+		_, err = tempFile.Seek(0, io.SeekStart)
 		require.NoError(t, err)
 
 		require.False(t, IsGzipFile(tempFile, zap.NewNop()), "expected file to not be detected as gzip compressed")
