@@ -90,11 +90,6 @@ linters:
 
       - linters:
           - revive
-        path: cmd/telemetrygen/internal/common/
-        text: "var-naming: avoid meaningless package names"
-
-      - linters:
-          - revive
         path: cmd/telemetrygen/pkg/
         text: "var-naming: avoid meaningless package names"
 
