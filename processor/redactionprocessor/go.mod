@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redac
 go 1.24.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0-rc.11
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0
 	github.com/grafana/clusterurl v0.2.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.48.0
