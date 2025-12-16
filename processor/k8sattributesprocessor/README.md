@@ -1085,11 +1085,101 @@ Key metrics to monitor:
 - **`otelcol_otelsvc_k8s_pod_table_size`**: Current size of pod metadata cache
   - Use to monitor memory consumption trends
 
-## Warnings
+## Known Limitations and Warnings
 
-- **Memory consumption**: Since the processor fetches and caches the K8s metadata for the resources
-   of the node it is on, it consumes more memory than other processors. That consumption is compounded
-   if users don't filter down to only the metadata for the node the processor is running on.
+### ⚠️ Memory Consumption
+
+- **Issue**: Since the processor fetches and caches K8s metadata for monitored resources, it consumes significant memory
+- **Impact**: Memory usage scales linearly with the number of pods monitored
+- **Mitigation**: 
+  - Use `filter.node_from_env_var` in agent deployments to limit scope to single node
+  - Filter by namespace when monitoring specific applications
+  - Enable `deployment_name_from_replicaset: true` to reduce memory by ~20%
+  - Limit metadata extraction to only required fields
+
+### ⚠️ Host Network Mode Pods
+
+- **Issue**: Pods running in host network mode (`hostNetwork: true`) cannot be correctly identified
+- **Impact**: Telemetry from host network pods will not be enriched with K8s metadata
+- **Mitigation**: Use resource attribute-based association instead of connection-based (requires application instrumentation)
+- **Workaround**: Use K8s downward API to inject pod metadata as environment variables
+
+### ⚠️ Sidecar Deployments
+
+- **Issue**: When running as a sidecar, the processor cannot detect containers from the same pod
+- **Impact**: No automatic K8s metadata enrichment for same-pod containers
+- **Recommended approach**: Use K8s downward API to inject metadata as environment variables instead
+
+### ⚠️ Batching and Tail Sampling
+
+- **Issue**: Connection-based association (`from: connection`) requires connection context
+- **Impact**: Batch and tail sampling processors remove connection context, breaking association
+- **Mitigation**: Place k8sattributes processor **before** batch and tail sampling processors in pipeline
+- **Alternative**: Use resource attribute-based association
+
+### ⚠️ Proxy and Load Balancer
+
+- **Issue**: When telemetry passes through proxy/load balancer, connection IP differs from pod IP
+- **Impact**: Connection-based association fails
+- **Solution**: 
+  - Use agent in passthrough mode to add pod IP as resource attribute
+  - Use resource attribute-based association in gateway
+  - Configure application to set `k8s.pod.ip` resource attribute
+
+### ⚠️ API Server Load
+
+- **Issue**: Each processor instance watches K8s API for pod updates
+- **Impact**: Large deployments can create significant API server load
+- **Mitigation**:
+  - Use node filtering to limit scope
+  - Adjust watch synchronization intervals if needed
+  - Monitor API server metrics for rate limiting
+
+### ⚠️ Startup Delay
+
+- **Issue**: When `wait_for_metadata: true`, collector startup blocks until metadata syncs
+- **Impact**: Delayed collector readiness, potential service disruption
+- **Risk**: If metadata sync fails, collector fails to start
+- **Recommendation**: Use default `wait_for_metadata: false` and accept brief period of non-enriched data
+
+### ⚠️ Deployment Name Extraction Edge Cases
+
+When using `deployment_name_from_replicaset: true`:
+
+1. **ReplicaSet without Deployment**: If pod is managed by bare ReplicaSet, deployment name will be incorrectly extracted
+2. **Long deployment names**: K8s truncates names in ReplicaSet to fit DNS limits (253 chars), so extracted name may be truncated
+
+### ⚠️ Container ID Requirements
+
+- **Issue**: Container-level attributes require `container.id` or `k8s.container.name` in incoming data
+- **Impact**: Without these attributes, container-level metadata cannot be extracted
+- **Solution**: Ensure application instrumentation includes container identifiers
+
+### Misuse Patterns to Avoid
+
+1. **❌ Don't use without filtering in large clusters**
+   - Always use `filter.node_from_env_var` in agent mode
+   - Risk: Excessive memory consumption
+
+2. **❌ Don't extract all available metadata fields**
+   - Only extract fields you actually need
+   - Risk: Increased memory and processing overhead
+
+3. **❌ Don't place after batch processor when using connection association**
+   - Connection context is lost after batching
+   - Risk: No pod association, missing metadata
+
+4. **❌ Don't use `wait_for_metadata: true` without understanding risks**
+   - Can prevent collector from starting
+   - Risk: Service disruption if K8s API is unavailable
+
+5. **❌ Don't extract workload metadata without necessity**
+   - Deployment/StatefulSet/DaemonSet/Job metadata increases memory usage
+   - Risk: Higher resource consumption
+
+6. **❌ Don't rely on it for host network pods**
+   - Host network mode pods cannot be identified by IP
+   - Risk: Missing metadata enrichment
 
 ## Feature Gates
 
