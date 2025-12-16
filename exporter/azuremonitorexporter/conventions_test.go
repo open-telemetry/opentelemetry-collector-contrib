@@ -200,7 +200,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 func testMessagingAttributeMapping(t *testing.T, variant string) {
 	messagingAttributeValues := map[string]any{
 		"messaging.batch.message_count":           0,
-		"messaging.client_id":                     "messaging.client_id",
+		"messaging.client.id":                     "messaging.client.id",
 		"messaging.consumer.group.name":           "messaging.consumer.group.name",
 		"messaging.destination.anonymous":         true,
 		"messaging.destination.name":              "messaging.destination.name",
@@ -211,7 +211,7 @@ func testMessagingAttributeMapping(t *testing.T, variant string) {
 		"messaging.message.body.size":             1,
 		"messaging.message.conversation_id":       "messaging.message.conversation_id",
 		"messaging.message.envelope.size":         2,
-		"messaging.message_id":                    "messaging.message_id",
+		"messaging.message.id":                    "messaging.message.id",
 		"messaging.operation.name":                "messaging.operation.name",
 		"messaging.operation.type":                "messaging.operation.type",
 		"messaging.system":                        "messaging.system",
@@ -235,7 +235,7 @@ func testMessagingAttributeMapping(t *testing.T, variant string) {
 	attributeMap.Range(messagingAttributes.MapAttribute)
 
 	assert.Equal(t, int64(0), messagingAttributes.MessagingBatchMessageCount)
-	assert.Equal(t, "messaging.client_id", messagingAttributes.MessagingClientID)
+	assert.Equal(t, "messaging.client.id", messagingAttributes.MessagingClientID)
 	assert.Equal(t, "messaging.consumer.group.name", messagingAttributes.MessagingConsumerGroup)
 	assert.True(t, messagingAttributes.MessagingDestinationAnonymous)
 	assert.Equal(t, "messaging.destination.name", messagingAttributes.MessagingDestination)
@@ -246,7 +246,7 @@ func testMessagingAttributeMapping(t *testing.T, variant string) {
 	assert.Equal(t, int64(1), messagingAttributes.MessagingMessageBodySize)
 	assert.Equal(t, "messaging.message.conversation_id", messagingAttributes.MessagingMessageConversationID)
 	assert.Equal(t, int64(2), messagingAttributes.MessagingMessageEnvelopeSize)
-	assert.Equal(t, "messaging.message_id", messagingAttributes.MessagingMessageID)
+	assert.Equal(t, "messaging.message.id", messagingAttributes.MessagingMessageID)
 	assert.Equal(t, "messaging.operation.name", messagingAttributes.MessagingOperation)
 	assert.Equal(t, "messaging.operation.type", messagingAttributes.MessagingOperationType)
 	assert.Equal(t, "messaging.system", messagingAttributes.MessagingSystem)
