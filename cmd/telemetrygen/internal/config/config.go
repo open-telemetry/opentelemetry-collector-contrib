@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
@@ -193,7 +193,7 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 	var attributes []attribute.KeyValue
 
 	// may be overridden by `--otlp-attributes service.name="foo"`
-	attributes = append(attributes, semconv.ServiceNameKey.String(c.ServiceName))
+	attributes = append(attributes, conventions.ServiceNameKey.String(c.ServiceName))
 	if len(c.ResourceAttributes) > 0 {
 		for k, t := range c.ResourceAttributes {
 			switch v := t.(type) {

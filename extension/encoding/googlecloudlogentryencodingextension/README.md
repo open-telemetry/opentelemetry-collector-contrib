@@ -49,13 +49,13 @@ The [log entry](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEn
 | `spanId`                                     | Log record field: `spanId`                                                                                                                                                         |
 | `traceSampled`                               | Log record field: `flags`                                                                                                                                                          |
 | `labels`                                     | Log record attribute: `gcp.label.<label_key>`                                                                                                                                      |
-| `httpRequest.requestMethod`                  | Log record attribute: `http_request.request_method`                                                                                                                                |
+| `httpRequest.requestMethod`                  | Log record attribute: `http.request.method`                                                                                                                                        |
 | `httpRequest.requestUrl`                     | Log record attribute: `url.full`<br>Parse it, and place it in the log record attributes:<br>1.`url.path`<br>2.`url.query`<br>3.`url.domain`                                        |
 | `httpRequest.requestSize`                    | Log record attribute: `http.request.size`                                                                                                                                          |
 | `httpRequest.status`                         | Log record attribute: `http.response.status_code`                                                                                                                                  |
 | `httpRequest.responseSize`                   | Log record attribute: `http.response.size`                                                                                                                                         |
 | `httpRequest.userAgent`                      | Log record attribute: `user_agent.original`                                                                                                                                        |
-| `httpRequest.remoteIp`                       | Log record attribute: `client.address`                                                                                                                                             |
+| `httpRequest.remoteIp`                       | Log record attribute: `network.peer.address`                                                                                                                                       |
 | `httpRequest.serverIp`                       | Log record attribute: `server.address`                                                                                                                                             |
 | `httpRequest.referer`                        | Log record attribute: `http.request.header.referer`                                                                                                                                |
 | `httpRequest.latency`                        | Log record attribute: `http.request.server.duration`                                                                                                                               |
@@ -274,27 +274,26 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.flow.destination.gke.pod.workload.type` | not yet supported |
 | `dest_gke_details.service.service_name` | `gcp.vpc.flow.destination.gke.service.name` | not yet supported |
 | `dest_gke_details.service.service_namespace` | `gcp.vpc.flow.destination.gke.service.namespace` | not yet supported |
-| `src_google_service.type` | `gcp.vpc.flow.source.google_service.type` | not yet supported |
-| `src_google_service.service_name` | `gcp.vpc.flow.source.google_service.name` | not yet supported |
-| `src_google_service.connectivity` | `gcp.vpc.flow.source.google_service.connectivity` | not yet supported |
+| `src_google_service.type` | `gcp.vpc.flow.source.google_service.type` | supported |
+| `src_google_service.service_name` | `gcp.vpc.flow.source.google_service.name` | supported |
+| `src_google_service.connectivity` | `gcp.vpc.flow.source.google_service.connectivity` | supported |
 | `src_google_service.private_domain` | `gcp.vpc.flow.source.google_service.domain.private` | not yet supported |
-| `dest_google_service.type` | `gcp.vpc.flow.destination.google_service.type` | not yet supported |
-| `dest_google_service.service_name` | `gcp.vpc.flow.destination.google_service.name` | not yet supported |
-| `dest_google_service.connectivity` | `gcp.vpc.flow.destination.google_service.connectivity` | not yet supported |
-| `dest_google_service.private_domain` | `gcp.vpc.flow.destination.google_service.domain.private` | not yet supported |
+| `dest_google_service.type` | `gcp.vpc.flow.destination.google_service.type` | supported |
+| `dest_google_service.service_name` | `gcp.vpc.flow.destination.google_service.name` | supported |
+| `dest_google_service.connectivity` | `gcp.vpc.flow.destination.google_service.connectivity` | supported |
 | `src_instance.project_id` | `gcp.vpc.flow.source.instance.project.id` | supported |
 | `src_instance.region` | `gcp.vpc.flow.source.instance.vm.region` | supported |
 | `src_instance.vm_name` | `gcp.vpc.flow.source.instance.vm.name` | supported |
 | `src_instance.zone` | `gcp.vpc.flow.source.instance.vm.zone` | supported |
 | `src_instance.managed_instance_group.name` | `gcp.vpc.flow.source.instance.managed_instance_group.name` | supported |
-| `src_instance.managed_instance_group.region` | `gcp.vpc.flow.source.instance.managed_instance_group.region` | not yet supported |
+| `src_instance.managed_instance_group.region` | `gcp.vpc.flow.source.instance.managed_instance_group.region` | supported |
 | `src_instance.managed_instance_group.zone` | `gcp.vpc.flow.source.instance.managed_instance_group.zone` | supported |
 | `dest_instance.project_id` | `gcp.vpc.flow.destination.instance.project.id` | supported |
 | `dest_instance.region` | `gcp.vpc.flow.destination.instance.vm.region` | supported |
 | `dest_instance.vm_name` | `gcp.vpc.flow.destination.instance.vm.name` | supported |
 | `dest_instance.zone` | `gcp.vpc.flow.destination.instance.vm.zone` | supported |
 | `dest_instance.managed_instance_group.name` | `gcp.vpc.flow.destination.instance.managed_instance_group.name` | supported |
-| `dest_instance.managed_instance_group.region` | `gcp.vpc.flow.destination.instance.managed_instance_group.region` | not yet supported |
+| `dest_instance.managed_instance_group.region` | `gcp.vpc.flow.destination.instance.managed_instance_group.region` | supported |
 | `dest_instance.managed_instance_group.zone` | `gcp.vpc.flow.destination.instance.managed_instance_group.zone` | supported |
 | `src_location.asn` | `gcp.vpc.flow.source.asn` | supported |
 | `src_location.city` | `gcp.vpc.flow.source.geo.city` | supported |
