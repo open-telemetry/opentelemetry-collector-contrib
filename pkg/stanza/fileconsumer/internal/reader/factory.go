@@ -18,9 +18,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
@@ -64,7 +64,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	}
 	var filetype string
 
-	if f.Compression != "" && util.IsGzipFile(file, f.Logger) {
+	if f.Compression != "" && compression.IsGzipFile(file, f.Logger) {
 		filetype = gzipExtension
 	}
 
