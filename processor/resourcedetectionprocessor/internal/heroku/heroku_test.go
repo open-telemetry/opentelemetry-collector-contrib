@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -25,7 +24,7 @@ func TestDetectTrue(t *testing.T) {
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(t.Context())
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"heroku.app.id":                     "appid",
@@ -48,7 +47,7 @@ func TestDetectTruePartial(t *testing.T) {
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(t.Context())
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"heroku.app.id":       "appid",
@@ -68,7 +67,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(t.Context())
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.37.0", schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"heroku.app.id":   "appid",

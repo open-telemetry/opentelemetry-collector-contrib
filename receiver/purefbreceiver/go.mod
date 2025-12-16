@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.142.0
 	github.com/prometheus/common v0.67.4
-	github.com/prometheus/prometheus v0.308.0
+	github.com/prometheus/prometheus v0.308.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.48.0
 	go.opentelemetry.io/collector/component/componenttest v0.142.0
@@ -169,7 +169,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/alertmanager v0.28.1 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
-	github.com/prometheus/client_golang/exp v0.0.0-20250914183048-a974e0d45e0a // indirect
+	github.com/prometheus/client_golang/exp v0.0.0-20251212205219-7ba246a648ca // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
 	github.com/prometheus/exporter-toolkit v0.15.0 // indirect
