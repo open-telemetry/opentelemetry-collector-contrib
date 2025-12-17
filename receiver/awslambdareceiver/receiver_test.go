@@ -430,6 +430,100 @@ func TestDetectTriggerType(t *testing.T) {
 	}
 }
 
+func TestHandleCustomTrigger(t *testing.T) {
+	commonCfg := Config{FailureBucketARN: "aws:s3:::my-bucket"}
+
+	commonLogger := zap.NewNop()
+	goMock := gomock.NewController(t)
+
+	s3Provider := internal.NewMockS3Provider(goMock)
+
+	tests := []struct {
+		name              string
+		handlerFunc       func() internal.CustomTriggerHandler
+		expectHandleCount int
+		expectError       string
+	}{
+		{
+			name: "Successful event handling - two events",
+			handlerFunc: func() internal.CustomTriggerHandler {
+				handler := internal.NewMockCustomTriggerHandler(goMock)
+				handler.EXPECT().HasNext(t.Context()).Times(2).Return(true)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
+				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
+				handler.EXPECT().IsDryRun().AnyTimes().Return(false)
+
+				handler.EXPECT().
+					GetNext(gomock.Any()).Times(2).
+					Return([]byte(`{"Records": "S3 event content"}`), nil)
+
+				return handler
+			},
+			expectHandleCount: 2,
+		},
+		{
+			name: "Event handling is skipped for dry-run mode",
+			handlerFunc: func() internal.CustomTriggerHandler {
+				handler := internal.NewMockCustomTriggerHandler(goMock)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(true)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
+				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
+
+				// set dry-run mode to true
+				handler.EXPECT().IsDryRun().AnyTimes().Return(true)
+
+				handler.EXPECT().
+					GetNext(gomock.Any()).Times(1).
+					Return([]byte(`{"Records": "S3 event content"}`), nil)
+
+				return handler
+			},
+			expectHandleCount: 0,
+		},
+		{
+			name: "Event handling fails for unknown event type",
+			handlerFunc: func() internal.CustomTriggerHandler {
+				handler := internal.NewMockCustomTriggerHandler(goMock)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(true)
+				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
+				handler.EXPECT().IsDryRun().AnyTimes().Return(false)
+
+				handler.EXPECT().
+					GetNext(gomock.Any()).Times(1).
+					Return([]byte(`{"test": "unknown trigger"}`), nil)
+
+				return handler
+			},
+			expectHandleCount: 0,
+			expectError:       "unknown event type with key: test",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := tt.handlerFunc()
+
+			mockHandler := mockPlogEventHandler{event: s3Event}
+			hp := mockHandlerProvider{&mockHandler}
+
+			receiver := awsLambdaReceiver{
+				cfg:        &commonCfg,
+				logger:     commonLogger,
+				hp:         &hp,
+				s3Provider: s3Provider,
+			}
+
+			err := receiver.handleCustomTriggers(t.Context(), handler)
+
+			if tt.expectError != "" {
+				require.ErrorContains(t, err, tt.expectError)
+			}
+
+			require.Equal(t, tt.expectHandleCount, mockHandler.handleCount)
+		})
+	}
+}
+
 type mockExtensionWithPLogUnmarshaler struct {
 	mockExtension    // Embed the base mock implementation.
 	plog.Unmarshaler // Add the unmarshaler interface when needed.
