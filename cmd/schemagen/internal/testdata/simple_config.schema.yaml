@@ -1,0 +1,23 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
+title: SimpleConfig
+type: object
+properties:
+  enabled:
+    description: Enabled indicates if the server is enabled
+    type: boolean
+  env_vars:
+    additionalProperties: {
+      x-customType: any
+    }
+    description: EnvVars is a map of environment variables
+    type: object
+  host:
+    description: Host is the server host
+    type: string
+  port:
+    description: Port is the server port
+    type: integer
+  timeout:
+    description: Timeout in seconds
+    type: number
