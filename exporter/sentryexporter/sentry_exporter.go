@@ -61,9 +61,9 @@ type endpointState struct {
 	telemetrySettings component.TelemetrySettings
 
 	client       *http.Client
-	sentryClient SentryAPIClient
+	sentryClient sentryAPIClient
 
-	projectToEndpoint map[string]*OTLPEndpoints
+	projectToEndpoint map[string]*otlpEndpoints
 	projectMapMu      sync.RWMutex
 
 	attributeKey    string
@@ -96,8 +96,8 @@ func newEndpointState(config *Config, set exporter.Settings) (*endpointState, er
 		return nil, err
 	}
 
-	if config.ClientConfig.Timeout == 0 {
-		config.ClientConfig.Timeout = 30 * time.Second
+	if config.Timeout == 0 {
+		config.Timeout = 30 * time.Second
 	}
 
 	workerCtx, workerCancel := context.WithCancel(context.Background())
@@ -105,7 +105,7 @@ func newEndpointState(config *Config, set exporter.Settings) (*endpointState, er
 	state := &endpointState{
 		config:               config,
 		telemetrySettings:    set.TelemetrySettings,
-		projectToEndpoint:    make(map[string]*OTLPEndpoints),
+		projectToEndpoint:    make(map[string]*otlpEndpoints),
 		projectCreationQueue: make(chan projectCreationRequest, projectCreationQueueSize),
 		workerCtx:            workerCtx,
 		workerCancel:         workerCancel,
@@ -118,7 +118,7 @@ func newEndpointState(config *Config, set exporter.Settings) (*endpointState, er
 	}
 
 	state.projectMapping = config.Routing.AttributeToProjectMapping
-	set.TelemetrySettings.Logger.Info("Configured sentryexporter",
+	set.Logger.Info("Configured sentryexporter",
 		zap.String("org", config.OrgSlug),
 		zap.String("routing_attribute", state.attributeKey),
 		zap.Bool("auto_create_projects", config.AutoCreateProjects))
@@ -247,7 +247,7 @@ func (s *endpointState) routeTracesByProject(ctx context.Context, logger *zap.Lo
 }
 
 // sendTracesToEndpoint sends traces to a specific endpoint
-func (s *endpointState) sendTracesToEndpoint(ctx context.Context, logger *zap.Logger, td ptrace.Traces, endpoint *OTLPEndpoints) error {
+func (s *endpointState) sendTracesToEndpoint(ctx context.Context, logger *zap.Logger, td ptrace.Traces, endpoint *otlpEndpoints) error {
 	request := ptraceotlp.NewExportRequestFromTraces(td)
 	data, err := request.MarshalProto()
 	if err != nil {
@@ -301,7 +301,7 @@ func (s *endpointState) projectCreationWorker() {
 			cancel()
 
 			if err != nil {
-				var apiErr *SentryAPIError
+				var apiErr *sentryAPIError
 				if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusTooManyRequests {
 					retryAfter := defaultRetryAfter
 					if apiErr.Headers != nil {
@@ -335,7 +335,7 @@ func (s *endpointState) projectCreationWorker() {
 			endpointCancel()
 
 			if err != nil {
-				var apiErr *SentryAPIError
+				var apiErr *sentryAPIError
 				if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusTooManyRequests {
 					retryAfter := defaultRetryAfter
 					if apiErr.Headers != nil {
@@ -405,13 +405,22 @@ func (s *endpointState) Start(ctx context.Context, host component.Host) error {
 			return
 		}
 
+		if s.defaultTeamSlug == "" {
+			for _, project := range projects {
+				if len(project.Teams) > 0 {
+					s.defaultTeamSlug = project.Teams[0].Slug
+					break
+				}
+			}
+		}
+
 		s.preloadEndpointsFromOrgKeys(ctx, projects)
 	})
 
 	return s.startErr
 }
 
-func (s *endpointState) preloadEndpointsFromOrgKeys(ctx context.Context, projects []ProjectInfo) {
+func (s *endpointState) preloadEndpointsFromOrgKeys(ctx context.Context, projects []projectInfo) {
 	keys, err := s.sentryClient.GetOrgProjectKeys(ctx, s.config.OrgSlug)
 	if err != nil {
 		s.telemetrySettings.Logger.Warn("Failed to preload project endpoints from org project keys",
@@ -419,7 +428,7 @@ func (s *endpointState) preloadEndpointsFromOrgKeys(ctx context.Context, project
 		return
 	}
 
-	projectKeyByID := make(map[int]ProjectKey)
+	projectKeyByID := make(map[int]projectKey)
 	for _, key := range keys {
 		if !key.IsActive {
 			continue
@@ -437,6 +446,10 @@ func (s *endpointState) preloadEndpointsFromOrgKeys(ctx context.Context, project
 	defer s.projectMapMu.Unlock()
 
 	for _, project := range projects {
+		if s.defaultTeamSlug == "" && len(project.Teams) > 0 {
+			s.defaultTeamSlug = project.Teams[0].Slug
+		}
+
 		if _, ok := s.projectToEndpoint[project.Slug]; ok {
 			continue
 		}
@@ -461,7 +474,7 @@ func (s *endpointState) preloadEndpointsFromOrgKeys(ctx context.Context, project
 			continue
 		}
 
-		s.projectToEndpoint[project.Slug] = &OTLPEndpoints{
+		s.projectToEndpoint[project.Slug] = &otlpEndpoints{
 			TracesURL: fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/traces/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
 			LogsURL:   fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/logs/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
 			PublicKey: key.Public,
@@ -601,7 +614,7 @@ func (s *endpointState) routeLogsByProject(ctx context.Context, logger *zap.Logg
 	return nil
 }
 
-func (s *endpointState) sendLogsToEndpoint(ctx context.Context, logger *zap.Logger, ld plog.Logs, endpoint *OTLPEndpoints) error {
+func (s *endpointState) sendLogsToEndpoint(ctx context.Context, logger *zap.Logger, ld plog.Logs, endpoint *otlpEndpoints) error {
 	request := plogotlp.NewExportRequestFromLogs(ld)
 	data, err := request.MarshalProto()
 	if err != nil {
@@ -694,13 +707,13 @@ func (s *endpointState) extractProjectSlug(attrs pcommon.Map) string {
 	return serviceName
 }
 
-func (*endpointState) extractPlatform(attrs pcommon.Map) string {
+func (*endpointState) extractPlatform(_ pcommon.Map) string {
 	// for correctly mapping `telemetry.sdk.language` to the Sentry platform we need to keep track of all supported platforms.
 	// defaulting to `other` for now to avoid validation issues.
 	return "other"
 }
 
-func (s *endpointState) getOrCreateProjectEndpoint(ctx context.Context, logger *zap.Logger, projectSlug, platform string) (*OTLPEndpoints, error) {
+func (s *endpointState) getOrCreateProjectEndpoint(ctx context.Context, logger *zap.Logger, projectSlug, platform string) (*otlpEndpoints, error) {
 	s.projectMapMu.RLock()
 	if cached, ok := s.projectToEndpoint[projectSlug]; ok {
 		s.projectMapMu.RUnlock()
@@ -758,5 +771,5 @@ func (s *endpointState) getOrCreateProjectEndpoint(ctx context.Context, logger *
 	if err != nil {
 		return nil, err
 	}
-	return result.(*OTLPEndpoints), nil
+	return result.(*otlpEndpoints), nil
 }

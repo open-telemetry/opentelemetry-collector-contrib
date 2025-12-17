@@ -7,7 +7,7 @@ package sentryexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -100,7 +100,7 @@ func getOrCreateEndpointState(cfg component.Config, set exporter.Settings) (*sha
 
 	unwrapped := sc.Unwrap()
 	if unwrapped == nil {
-		return nil, nil, fmt.Errorf("failed to create sentry exporter")
+		return nil, nil, errors.New("failed to create sentry exporter")
 	}
 	return sc, unwrapped.(*endpointState), nil
 }

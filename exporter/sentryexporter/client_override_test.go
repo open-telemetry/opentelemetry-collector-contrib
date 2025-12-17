@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sentryexporter
 
 import (
@@ -14,7 +17,7 @@ import (
 var testHTTPClient *http.Client
 
 func init() {
-	newHTTPClient = func(ctx context.Context, cfg confighttp.ClientConfig, host component.Host, ts component.TelemetrySettings) (*http.Client, error) {
+	newHTTPClient = func(_ context.Context, _ confighttp.ClientConfig, _ component.Host, _ component.TelemetrySettings) (*http.Client, error) {
 		if testHTTPClient != nil {
 			return testHTTPClient, nil
 		}
@@ -31,24 +34,24 @@ func (stubRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	path := req.URL.Path
 	switch {
 	case req.Method == http.MethodGet && strings.Contains(path, "/api/0/organizations/"):
-		return jsonResp(http.StatusOK, []ProjectInfo{{
+		return jsonResp(http.StatusOK, []projectInfo{{
 			ID:    "1",
 			Slug:  "proj",
-			Team:  TeamInfo{Slug: "team"},
-			Teams: []TeamInfo{{Slug: "team"}},
+			Team:  teamInfo{Slug: "team"},
+			Teams: []teamInfo{{Slug: "team"}},
 		}})
 	case req.Method == http.MethodGet && strings.Contains(path, "/keys/"):
-		return jsonResp(http.StatusOK, []ProjectKey{{
+		return jsonResp(http.StatusOK, []projectKey{{
 			ID:       "1",
 			Public:   "pubkey",
 			IsActive: true,
-			DSN:      DSNField{Public: "https://pub@example.ingest.sentry.io/1"},
+			DSN:      dsnField{Public: "https://pub@example.ingest.sentry.io/1"},
 		}})
 	case req.Method == http.MethodPost && strings.Contains(path, "/projects/"):
-		return jsonResp(http.StatusCreated, ProjectInfo{
+		return jsonResp(http.StatusCreated, projectInfo{
 			ID:   "created",
 			Slug: "proj",
-			Team: TeamInfo{Slug: "team"},
+			Team: teamInfo{Slug: "team"},
 		})
 	case req.Method == http.MethodPost && strings.Contains(path, "/integration/otlp/v1/"):
 		return jsonResp(http.StatusOK, map[string]any{})

@@ -63,8 +63,8 @@ func TestLoadConfig(t *testing.T) {
 				cfg.URL = "https://sentry.example.com"
 				cfg.OrgSlug = "example-org"
 				cfg.AuthToken = configopaque.String("full-test-token")
-				cfg.ClientConfig.Timeout = 20 * time.Second
-				cfg.ClientConfig.TLS.Insecure = true
+				cfg.Timeout = 20 * time.Second
+				cfg.TLS.Insecure = true
 				cfg.TimeoutConfig.Timeout = 45 * time.Second
 				cfg.AutoCreateProjects = true
 				cfg.Routing = RoutingConfig{

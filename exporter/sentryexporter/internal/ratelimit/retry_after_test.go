@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package ratelimit
 
 import (
@@ -40,7 +43,6 @@ func TestParseRetryAfter(t *testing.T) {
 		},
 	}
 	for name, tt := range tests {
-		tt := tt
 		t.Run(name, func(t *testing.T) {
 			got, err := parseRetryAfter(tt.input, now)
 			want := tt.want

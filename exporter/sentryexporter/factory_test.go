@@ -4,7 +4,6 @@
 package sentryexporter
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -37,7 +36,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(factory.Type())
-	exp, err := createTracesExporter(context.Background(), set, cfg)
+	exp, err := createTracesExporter(t.Context(), set, cfg)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -52,7 +51,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(factory.Type())
-	exp, err := createLogsExporter(context.Background(), set, cfg)
+	exp, err := createLogsExporter(t.Context(), set, cfg)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -63,7 +62,7 @@ func TestCreateExporterWithInvalidConfig(t *testing.T) {
 	cfg := &Config{} // Invalid: no dynamic config
 
 	set := exportertest.NewNopSettings(factory.Type())
-	_, err := createTracesExporter(context.Background(), set, cfg)
+	_, err := createTracesExporter(t.Context(), set, cfg)
 
 	assert.Error(t, err)
 }
@@ -75,19 +74,19 @@ func TestSharedComponentSingleton(t *testing.T) {
 	dsn := dsnForServer("pubkey", ts)
 	ts.queue(http.MethodGet, "/api/0/organizations/test-org/projects/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectInfo{
+		Body: mustJSON([]projectInfo{
 			{
 				ID:    "1",
 				Slug:  "proj",
-				Team:  TeamInfo{Slug: "team"},
-				Teams: []TeamInfo{{Slug: "team"}},
+				Team:  teamInfo{Slug: "team"},
+				Teams: []teamInfo{{Slug: "team"}},
 			},
 		}),
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/test-org/proj/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "1", Public: "pubkey", IsActive: true, DSN: DSNField{Public: dsn}},
+		Body: mustJSON([]projectKey{
+			{ID: "1", Public: "pubkey", IsActive: true, DSN: dsnField{Public: dsn}},
 		}),
 	})
 
@@ -96,16 +95,16 @@ func TestSharedComponentSingleton(t *testing.T) {
 		OrgSlug:   "test-org",
 		AuthToken: "test-token",
 	}
-	cfg.ClientConfig.ForceAttemptHTTP2 = false
+	cfg.ForceAttemptHTTP2 = false
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(factory.Type())
 
-	tracesExp, err := factory.CreateTraces(context.Background(), set, cfg)
+	tracesExp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, tracesExp)
 
-	logsExp, err := factory.CreateLogs(context.Background(), set, cfg)
+	logsExp, err := factory.CreateLogs(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, logsExp)
 
@@ -117,13 +116,13 @@ func TestSharedComponentSingleton(t *testing.T) {
 	assert.Same(t, sc1, sc2, "SharedComponents should be the same instance")
 	assert.Same(t, st1, st2, "Unwrapped states should be the same instance")
 
-	err = tracesExp.Start(context.Background(), componenttest.NewNopHost())
+	err = tracesExp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	err = logsExp.Start(context.Background(), componenttest.NewNopHost())
+	err = logsExp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	err = tracesExp.Shutdown(context.Background())
+	err = tracesExp.Shutdown(t.Context())
 	require.NoError(t, err)
-	err = logsExp.Shutdown(context.Background())
+	err = logsExp.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -143,10 +142,10 @@ func TestSharedComponentDifferentConfigs(t *testing.T) {
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(factory.Type())
 
-	exp1, err := factory.CreateTraces(context.Background(), set, cfg1)
+	exp1, err := factory.CreateTraces(t.Context(), set, cfg1)
 	require.NoError(t, err)
 
-	exp2, err := factory.CreateTraces(context.Background(), set, cfg2)
+	exp2, err := factory.CreateTraces(t.Context(), set, cfg2)
 	require.NoError(t, err)
 
 	_, st1, err := getOrCreateEndpointState(cfg1, set)
@@ -156,9 +155,9 @@ func TestSharedComponentDifferentConfigs(t *testing.T) {
 
 	assert.NotSame(t, st1, st2, "Different configs should create different states")
 
-	err = exp1.Shutdown(context.Background())
+	err = exp1.Shutdown(t.Context())
 	require.NoError(t, err)
 
-	err = exp2.Shutdown(context.Background())
+	err = exp2.Shutdown(t.Context())
 	require.NoError(t, err)
 }

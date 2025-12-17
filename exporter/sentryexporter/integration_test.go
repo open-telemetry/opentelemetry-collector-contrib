@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sentryexporter
 
 import (
@@ -33,7 +36,7 @@ func proxiedClient(serverURL string) *http.Client {
 	hostPort := u.Host
 	return &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
 				return (&net.Dialer{}).DialContext(ctx, network, hostPort)
 			},
 		},
@@ -66,12 +69,12 @@ func TestIntegration_OTLPRetryAfter429(t *testing.T) {
 
 	ts.queue(http.MethodGet, "/api/0/organizations/org/projects/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectInfo{
+		Body: mustJSON([]projectInfo{
 			{
 				ID:   "seed",
 				Slug: "seed",
-				Team: TeamInfo{Slug: "team"},
-				Teams: []TeamInfo{
+				Team: teamInfo{Slug: "team"},
+				Teams: []teamInfo{
 					{Slug: "team"},
 				},
 			},
@@ -79,12 +82,12 @@ func TestIntegration_OTLPRetryAfter429(t *testing.T) {
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/proj/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
+		Body: mustJSON([]projectKey{
 			{
 				ID:       "1",
 				Public:   "pubkey",
 				IsActive: true,
-				DSN:      DSNField{Public: dsn},
+				DSN:      dsnField{Public: dsn},
 			},
 		}),
 	})
@@ -105,12 +108,12 @@ func TestIntegration_OTLPRetryAfter429(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	state, err := newEndpointState(cfg, set)
 	require.NoError(t, err)
-	require.NoError(t, state.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { _ = state.Shutdown(context.Background()) })
+	require.NoError(t, state.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = state.Shutdown(t.Context()) })
 
 	td := tracesForProject("proj")
 
-	err = state.pushTraceData(context.Background(), zap.NewNop(), td)
+	err = state.pushTraceData(t.Context(), zap.NewNop(), td)
 	require.Error(t, err)
 
 	recs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
@@ -128,19 +131,19 @@ func TestIntegration_ProjectAutoCreateAndSend(t *testing.T) {
 
 	ts.queue(http.MethodGet, "/api/0/organizations/org/projects/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectInfo{
+		Body: mustJSON([]projectInfo{
 			{
 				ID:    "seed",
 				Slug:  "seed",
-				Team:  TeamInfo{Slug: "team"},
-				Teams: []TeamInfo{{Slug: "team"}},
+				Team:  teamInfo{Slug: "team"},
+				Teams: []teamInfo{{Slug: "team"}},
 			},
 		}),
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/seed/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "1", Public: "seed", IsActive: true, DSN: DSNField{Public: seedDSN}},
+		Body: mustJSON([]projectKey{
+			{ID: "1", Public: "seed", IsActive: true, DSN: dsnField{Public: seedDSN}},
 		}),
 	})
 
@@ -154,8 +157,8 @@ func TestIntegration_ProjectAutoCreateAndSend(t *testing.T) {
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/newproj/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "2", Public: "pubkey", IsActive: true, DSN: DSNField{Public: newProjDSN}},
+		Body: mustJSON([]projectKey{
+			{ID: "2", Public: "pubkey", IsActive: true, DSN: dsnField{Public: newProjDSN}},
 		}),
 	})
 	ts.queue(http.MethodPost, "/api/2/integration/otlp/v1/traces/", testServerResponse{
@@ -167,18 +170,18 @@ func TestIntegration_ProjectAutoCreateAndSend(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	state, err := newEndpointState(cfg, set)
 	require.NoError(t, err)
-	require.NoError(t, state.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { _ = state.Shutdown(context.Background()) })
+	require.NoError(t, state.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = state.Shutdown(t.Context()) })
 
 	td := tracesForProject("newproj")
 
-	require.NoError(t, state.pushTraceData(context.Background(), zap.NewNop(), td))
+	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
 		return len(ts.recorded(http.MethodGet, "/api/0/projects/org/newproj/keys/")) >= 2
 	}, 3*time.Second, 50*time.Millisecond)
 
-	require.NoError(t, state.pushTraceData(context.Background(), zap.NewNop(), td))
+	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
@@ -194,19 +197,19 @@ func TestIntegration_ForbiddenWithProjectIDRejectedEvictsCacheAndRetries(t *test
 
 	ts.queue(http.MethodGet, "/api/0/organizations/org/projects/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectInfo{
+		Body: mustJSON([]projectInfo{
 			{
 				ID:    "1",
 				Slug:  "proj",
-				Team:  TeamInfo{Slug: "team"},
-				Teams: []TeamInfo{{Slug: "team"}},
+				Team:  teamInfo{Slug: "team"},
+				Teams: []teamInfo{{Slug: "team"}},
 			},
 		}),
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/proj/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "1", Public: "pubkey", IsActive: true, DSN: DSNField{Public: dsn}},
+		Body: mustJSON([]projectKey{
+			{ID: "1", Public: "pubkey", IsActive: true, DSN: dsnField{Public: dsn}},
 		}),
 	})
 
@@ -216,8 +219,8 @@ func TestIntegration_ForbiddenWithProjectIDRejectedEvictsCacheAndRetries(t *test
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/proj/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "1", Public: "pubkey", IsActive: true, DSN: DSNField{Public: dsn}},
+		Body: mustJSON([]projectKey{
+			{ID: "1", Public: "pubkey", IsActive: true, DSN: dsnField{Public: dsn}},
 		}),
 	})
 	ts.queue(http.MethodPost, "/api/1/integration/otlp/v1/traces/", testServerResponse{
@@ -229,12 +232,12 @@ func TestIntegration_ForbiddenWithProjectIDRejectedEvictsCacheAndRetries(t *test
 	set := exportertest.NewNopSettings(metadata.Type)
 	state, err := newEndpointState(cfg, set)
 	require.NoError(t, err)
-	require.NoError(t, state.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { _ = state.Shutdown(context.Background()) })
+	require.NoError(t, state.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = state.Shutdown(t.Context()) })
 
 	td := tracesForProject("proj")
 
-	require.NoError(t, state.pushTraceData(context.Background(), zap.NewNop(), td))
+	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	recs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
 	require.Len(t, recs, 2)
@@ -250,19 +253,19 @@ func TestIntegration_ExistingProjectSend(t *testing.T) {
 
 	ts.queue(http.MethodGet, "/api/0/organizations/org/projects/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectInfo{
+		Body: mustJSON([]projectInfo{
 			{
 				ID:    "1",
 				Slug:  "proj",
-				Team:  TeamInfo{Slug: "team"},
-				Teams: []TeamInfo{{Slug: "team"}},
+				Team:  teamInfo{Slug: "team"},
+				Teams: []teamInfo{{Slug: "team"}},
 			},
 		}),
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/proj/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "1", Public: "pubkey", IsActive: true, DSN: DSNField{Public: dsn}},
+		Body: mustJSON([]projectKey{
+			{ID: "1", Public: "pubkey", IsActive: true, DSN: dsnField{Public: dsn}},
 		}),
 	})
 	ts.queue(http.MethodPost, "/api/1/integration/otlp/v1/traces/", testServerResponse{
@@ -278,14 +281,14 @@ func TestIntegration_ExistingProjectSend(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	state, err := newEndpointState(cfg, set)
 	require.NoError(t, err)
-	require.NoError(t, state.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { _ = state.Shutdown(context.Background()) })
+	require.NoError(t, state.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = state.Shutdown(t.Context()) })
 
 	td := tracesForProject("proj")
-	require.NoError(t, state.pushTraceData(context.Background(), zap.NewNop(), td))
+	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	ld := logsForProject("proj")
-	require.NoError(t, state.pushLogData(context.Background(), zap.NewNop(), ld))
+	require.NoError(t, state.pushLogData(t.Context(), zap.NewNop(), ld))
 
 	traceRecs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
 	logRecs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/logs/")
@@ -309,19 +312,19 @@ func TestIntegration_ProjectCreateRateLimitedThenSucceeds(t *testing.T) {
 
 	ts.queue(http.MethodGet, "/api/0/organizations/org/projects/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectInfo{
+		Body: mustJSON([]projectInfo{
 			{
 				ID:    "seed",
 				Slug:  "seed",
-				Team:  TeamInfo{Slug: "team"},
-				Teams: []TeamInfo{{Slug: "team"}},
+				Team:  teamInfo{Slug: "team"},
+				Teams: []teamInfo{{Slug: "team"}},
 			},
 		}),
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/seed/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "1", Public: "seed", IsActive: true, DSN: DSNField{Public: seedDSN}},
+		Body: mustJSON([]projectKey{
+			{ID: "1", Public: "seed", IsActive: true, DSN: dsnField{Public: seedDSN}},
 		}),
 	})
 
@@ -336,8 +339,8 @@ func TestIntegration_ProjectCreateRateLimitedThenSucceeds(t *testing.T) {
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/newproj/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "2", Public: "pubkey", IsActive: true, DSN: DSNField{Public: newDSN}},
+		Body: mustJSON([]projectKey{
+			{ID: "2", Public: "pubkey", IsActive: true, DSN: dsnField{Public: newDSN}},
 		}),
 	})
 	ts.queue(http.MethodPost, "/api/2/integration/otlp/v1/traces/", testServerResponse{
@@ -349,18 +352,18 @@ func TestIntegration_ProjectCreateRateLimitedThenSucceeds(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	state, err := newEndpointState(cfg, set)
 	require.NoError(t, err)
-	require.NoError(t, state.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { _ = state.Shutdown(context.Background()) })
+	require.NoError(t, state.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = state.Shutdown(t.Context()) })
 
 	td := tracesForProject("newproj")
 
-	require.NoError(t, state.pushTraceData(context.Background(), zap.NewNop(), td))
+	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
 		return len(ts.recorded(http.MethodPost, "/api/0/teams/org/team/projects/")) >= 2
 	}, 2*time.Second, 50*time.Millisecond)
 
-	require.NoError(t, state.pushTraceData(context.Background(), zap.NewNop(), td))
+	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
@@ -382,19 +385,19 @@ func TestIntegration_EndpointFetchRateLimitedThenSucceeds(t *testing.T) {
 
 	ts.queue(http.MethodGet, "/api/0/organizations/org/projects/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectInfo{
+		Body: mustJSON([]projectInfo{
 			{
 				ID:    "seed",
 				Slug:  "seed",
-				Team:  TeamInfo{Slug: "team"},
-				Teams: []TeamInfo{{Slug: "team"}},
+				Team:  teamInfo{Slug: "team"},
+				Teams: []teamInfo{{Slug: "team"}},
 			},
 		}),
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/seed/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "1", Public: "seed", IsActive: true, DSN: DSNField{Public: seedDSN}},
+		Body: mustJSON([]projectKey{
+			{ID: "1", Public: "seed", IsActive: true, DSN: dsnField{Public: seedDSN}},
 		}),
 	})
 
@@ -409,8 +412,8 @@ func TestIntegration_EndpointFetchRateLimitedThenSucceeds(t *testing.T) {
 	})
 	ts.queue(http.MethodGet, "/api/0/projects/org/newproj/keys/", testServerResponse{
 		Status: http.StatusOK,
-		Body: mustJSON([]ProjectKey{
-			{ID: "2", Public: "pubkey", IsActive: true, DSN: DSNField{Public: newDSN}},
+		Body: mustJSON([]projectKey{
+			{ID: "2", Public: "pubkey", IsActive: true, DSN: dsnField{Public: newDSN}},
 		}),
 	})
 	ts.queue(http.MethodPost, "/api/2/integration/otlp/v1/traces/", testServerResponse{
@@ -422,18 +425,18 @@ func TestIntegration_EndpointFetchRateLimitedThenSucceeds(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	state, err := newEndpointState(cfg, set)
 	require.NoError(t, err)
-	require.NoError(t, state.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { _ = state.Shutdown(context.Background()) })
+	require.NoError(t, state.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = state.Shutdown(t.Context()) })
 
 	td := tracesForProject("newproj")
 
-	require.NoError(t, state.pushTraceData(context.Background(), zap.NewNop(), td))
+	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
 		return len(ts.recorded(http.MethodGet, "/api/0/projects/org/newproj/keys/")) >= 2
 	}, 2*time.Second, 50*time.Millisecond)
 
-	require.NoError(t, state.pushTraceData(context.Background(), zap.NewNop(), td))
+	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
