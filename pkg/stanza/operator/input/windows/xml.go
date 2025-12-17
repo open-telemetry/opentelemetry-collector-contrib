@@ -257,9 +257,10 @@ func (e Execution) asMap() map[string]any {
 	return result
 }
 
-// Correlation contains info pertaining to the process that triggered the event.
+// Correlation contains the activity identifiers that consumers can use to group related events together.
 type Correlation struct {
-	// ActivityID and RelatedActivityID are optional fields on correlation info
+	// ActivityID and RelatedActivityID are optional fields
+	// https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-correlation-systempropertiestype-element
 	ActivityID        *string `xml:"ActivityID,attr"`
 	RelatedActivityID *string `xml:"RelatedActivityID,attr"`
 }
@@ -268,7 +269,7 @@ func (e Correlation) asMap() map[string]any {
 	result := map[string]any{}
 
 	if e.ActivityID != nil {
-		result["activity_id"] = *&e.ActivityID
+		result["activity_id"] = *e.ActivityID
 	}
 
 	if e.RelatedActivityID != nil {

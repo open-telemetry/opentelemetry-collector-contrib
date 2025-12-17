@@ -9,7 +9,7 @@
         <Keywords>0x80000000000000</Keywords> 
         <TimeCreated SystemTime="2022-04-22T10:20:52.3778625Z" /> 
         <EventRecordID>23401</EventRecordID> 
-        <Correlation ActivityID="" RelatedActivityID="" /> 
+        <Correlation /> 
         <Execution ProcessID="0" ThreadID="0" /> 
         <Channel>Application</Channel> 
         <Computer>computer</Computer> 
