@@ -335,7 +335,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 	s.resources["subscriptionId1"] = map[string]*azureResource{}
 	s.subscriptions["subscriptionId1"] = &azureSubscription{}
 	s.cfg.CacheResources = 0
-	s.getResources(t.Context(), "subscriptionId1")
+	s.loadResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Len(t, s.resources["subscriptionId1"], 3)
 
@@ -353,7 +353,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 		getMetricsValuesMockData(),
 		nil,
 	)
-	s.getResources(t.Context(), "subscriptionId1")
+	s.loadResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Empty(t, s.resources["subscriptionId1"])
 }
