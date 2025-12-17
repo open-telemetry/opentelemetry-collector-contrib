@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 func int64Ptr(v int64) *int64 {
@@ -36,11 +35,11 @@ func TestHandleConnection(t *testing.T) {
 				ServerPort: int64Ptr(80),
 			},
 			expectedAttr: map[string]any{
-				string(conventions.ClientAddressKey):    "68.168.189.182",
-				string(conventions.ClientPortKey):       int64(52900),
-				string(conventions.ServerAddressKey):    "35.209.164.189",
-				string(conventions.ServerPortKey):       int64(80),
-				string(conventions.NetworkTransportKey): "tcp",
+				"client.address":    "68.168.189.182",
+				"client.port":       int64(52900),
+				"server.address":    "35.209.164.189",
+				"server.port":       int64(80),
+				"network.transport": "tcp",
 			},
 		},
 		"nil connection": {
@@ -78,11 +77,11 @@ func TestHandleConnectionServerAddressAlreadySet(t *testing.T) {
 			},
 			expectedErr: errServerAddress,
 			expectedAttr: map[string]any{
-				string(conventions.ClientAddressKey):    "68.168.189.182",
-				string(conventions.ClientPortKey):       int64(52900),
-				string(conventions.ServerAddressKey):    "10.0.0.1",
-				string(conventions.ServerPortKey):       int64(80),
-				string(conventions.NetworkTransportKey): "tcp",
+				"client.address":    "68.168.189.182",
+				"client.port":       int64(52900),
+				"server.address":    "10.0.0.1",
+				"server.port":       int64(80),
+				"network.transport": "tcp",
 			},
 		},
 	}
@@ -91,7 +90,7 @@ func TestHandleConnectionServerAddressAlreadySet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
-			attr.PutStr(string(conventions.ServerAddressKey), "10.0.0.1")
+			attr.PutStr("server.address", "10.0.0.1")
 			err := handleConnection(tt.conn, attr)
 			require.ErrorIs(t, err, tt.expectedErr)
 			require.Equal(t, tt.expectedAttr, attr.AsRaw())
@@ -153,18 +152,18 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"rtt":"0.063198476s"
 			}`),
 			expectedAttr: map[string]any{
-				string(conventions.ClientAddressKey):    "68.168.189.182",
-				string(conventions.ClientPortKey):       int64(52900),
-				string(conventions.ServerAddressKey):    "35.209.164.189",
-				string(conventions.ServerPortKey):       int64(80),
-				string(conventions.NetworkTransportKey): "tcp",
-				gcpPassthroughNLBPacketsStartTime:       "2025-11-17T22:21:57.480419Z",
-				gcpPassthroughNLBPacketsEndTime:         "2025-11-17T22:21:57.500505Z",
-				gcpPassthroughNLBBytesReceived:          int64(83),
-				gcpPassthroughNLBBytesSent:              int64(853),
-				gcpPassthroughNLBPacketsReceived:        int64(12),
-				gcpPassthroughNLBPacketsSent:            int64(12),
-				gcpPassthroughNLBRTT:                    float64(0.063198476),
+				"client.address":                  "68.168.189.182",
+				"client.port":                     int64(52900),
+				"server.address":                  "35.209.164.189",
+				"server.port":                     int64(80),
+				"network.transport":               "tcp",
+				gcpPassthroughNLBPacketsStartTime: "2025-11-17T22:21:57.480419Z",
+				gcpPassthroughNLBPacketsEndTime:   "2025-11-17T22:21:57.500505Z",
+				gcpPassthroughNLBBytesReceived:    int64(83),
+				gcpPassthroughNLBBytesSent:        int64(853),
+				gcpPassthroughNLBPacketsReceived:  int64(12),
+				gcpPassthroughNLBPacketsSent:      int64(12),
+				gcpPassthroughNLBRTT:              float64(0.063198476),
 			},
 		},
 		"success - internal NLB": {
@@ -186,18 +185,18 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"rtt":"0.005s"
 			}`),
 			expectedAttr: map[string]any{
-				string(conventions.ClientAddressKey):    "10.0.0.5",
-				string(conventions.ClientPortKey):       int64(45678),
-				string(conventions.ServerAddressKey):    "10.0.0.10",
-				string(conventions.ServerPortKey):       int64(443),
-				string(conventions.NetworkTransportKey): "tcp",
-				gcpPassthroughNLBPacketsStartTime:       "2025-11-17T22:21:57.480419Z",
-				gcpPassthroughNLBPacketsEndTime:         "2025-11-17T22:21:57.500505Z",
-				gcpPassthroughNLBBytesReceived:          int64(100),
-				gcpPassthroughNLBBytesSent:              int64(500),
-				gcpPassthroughNLBPacketsReceived:        int64(5),
-				gcpPassthroughNLBPacketsSent:            int64(8),
-				gcpPassthroughNLBRTT:                    float64(0.005),
+				"client.address":                  "10.0.0.5",
+				"client.port":                     int64(45678),
+				"server.address":                  "10.0.0.10",
+				"server.port":                     int64(443),
+				"network.transport":               "tcp",
+				gcpPassthroughNLBPacketsStartTime: "2025-11-17T22:21:57.480419Z",
+				gcpPassthroughNLBPacketsEndTime:   "2025-11-17T22:21:57.500505Z",
+				gcpPassthroughNLBBytesReceived:    int64(100),
+				gcpPassthroughNLBBytesSent:        int64(500),
+				gcpPassthroughNLBPacketsReceived:  int64(5),
+				gcpPassthroughNLBPacketsSent:      int64(8),
+				gcpPassthroughNLBRTT:              float64(0.005),
 			},
 		},
 	}
