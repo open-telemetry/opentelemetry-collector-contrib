@@ -117,10 +117,10 @@ linters:
             - go.opentelemetry.io/otel/semconv/v1.9.0
             - go.opentelemetry.io/otel/semconv/v1.12.0
             - go.opentelemetry.io/otel/semconv/v1.15.0
-            - go.opentelemetry.io/otel/semconv/v1.16.0
             - go.opentelemetry.io/otel/semconv/v1.18.0
             - go.opentelemetry.io/otel/semconv/v1.21.0
             - go.opentelemetry.io/otel/semconv/v1.22.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45036
             - go.opentelemetry.io/otel/semconv/v1.25.0
             - go.opentelemetry.io/otel/semconv/v1.27.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45030
