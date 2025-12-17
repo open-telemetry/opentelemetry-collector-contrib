@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -27,12 +28,12 @@ import (
 type eventType string
 
 const (
-	s3Event           eventType = "S3Event"
-	cwEvent           eventType = "CloudWatchEvent"
-	customReplayEvent eventType = "replayFailedEvents"
+	s3Event eventType = "S3Event"
+	cwEvent eventType = "CloudWatchEvent"
 
-	// logDeployedTrigger define the string key to convey the deployed trigger type in logs
-	logDeployedTrigger = "deployedTrigger"
+	// defaultMetricsEncodingExtension defines the default encoding extension ID for metrics when none is specified
+	defaultMetricsEncodingExtension = "awscloudwatchmetricstreams_encoding"
+
 	// logInvokedTrigger define the string key to convey the invoked trigger(derived by event content) type in logs
 	logInvokedTrigger = "invokedTrigger"
 )
@@ -44,66 +45,59 @@ var (
 )
 
 type awsLambdaReceiver struct {
-	cfg        *Config
-	logger     *zap.Logger
-	buildInfo  component.BuildInfo
-	s3Provider internal.S3Provider
-	newHandler func(context.Context, component.Host, internal.S3Provider) (lambdaEventHandler, error)
+	cfg       *Config
+	logger    *zap.Logger
+	buildInfo component.BuildInfo
+	// Note: handlerProvider deriving is deferred to Start method.
+	// This is because internal extension loading depends on component.Host.
+	handlerProvider func(context.Context, component.Host) (handlerProvider, error)
 
-	handler lambdaEventHandler
+	// Derived handlerProvider once Start is called.
+	hp handlerProvider
 }
 
 func newLogsReceiver(cfg *Config, set receiver.Settings, next consumer.Logs) (receiver.Logs, error) {
 	return &awsLambdaReceiver{
-		cfg:        cfg,
-		logger:     set.Logger,
-		buildInfo:  set.BuildInfo,
-		s3Provider: &internal.S3ServiceProvider{},
-		newHandler: func(
+		cfg:       cfg,
+		logger:    set.Logger,
+		buildInfo: set.BuildInfo,
+		handlerProvider: func(
 			ctx context.Context,
 			host component.Host,
-			s3Provider internal.S3Provider,
-		) (lambdaEventHandler, error) {
+		) (handlerProvider, error) {
 			return newLogsHandler(
-				ctx, cfg, set, host, next,
-				s3Provider,
+				ctx, cfg, set, host, next, &internal.S3ServiceProvider{},
 			)
 		},
 	}, nil
 }
 
 func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metrics) (receiver.Metrics, error) {
-	if cfg.S3Encoding == "" {
-		return nil, errors.New("s3_encoding is required for metrics")
-	}
 	return &awsLambdaReceiver{
-		cfg:        cfg,
-		logger:     set.Logger,
-		buildInfo:  set.BuildInfo,
-		s3Provider: &internal.S3ServiceProvider{},
-		newHandler: func(
+		cfg:       cfg,
+		logger:    set.Logger,
+		buildInfo: set.BuildInfo,
+		handlerProvider: func(
 			ctx context.Context,
 			host component.Host,
-			s3Provider internal.S3Provider,
-		) (lambdaEventHandler, error) {
-			return newMetricsHandler(ctx, cfg, set, host, next, s3Provider)
+		) (handlerProvider, error) {
+			return newMetricsHandler(ctx, cfg, set, host, next, &internal.S3ServiceProvider{})
 		},
 	}, nil
 }
 
-// Start registers the main handler function for
-// when lambda is triggered
+// Start registers the main handler function that get executed when lambda is triggered
 func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) error {
 	// Verify we're running in a Lambda environment
-	if os.Getenv("_LAMBDA_SERVER_PORT") == "" || os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
-		return errors.New("receiver must be used in an AWS Lambda environment: required environment variables _LAMBDA_SERVER_PORT and AWS_LAMBDA_RUNTIME_API are not set")
+	if os.Getenv("AWS_EXECUTION_ENV") == "" || !strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") {
+		return errors.New("awslambdareceiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
 	}
 
-	handler, err := a.newHandler(ctx, host, a.s3Provider)
+	var err error
+	a.hp, err = a.handlerProvider(ctx, host)
 	if err != nil {
-		return fmt.Errorf("failed to create the lambda event handler: %w", err)
+		return err
 	}
-	a.handler = handler
 
 	go lambda.Start(a.processLambdaEvent)
 	return nil
@@ -114,7 +108,7 @@ func (a *awsLambdaReceiver) processLambdaEvent(ctx context.Context, event json.R
 	triggerType, err := detectTriggerType(event)
 	if err != nil {
 		// Unknown or invalid event triggers are suppressed so that they do not get replayed by the lambda framework.
-		a.logger.Error("Received an event with invalid OR unsupported trigger type", zap.String(logDeployedTrigger, string(a.handler.handlerType())), zap.Error(err))
+		a.logger.Error("Received an event with invalid or unsupported trigger type", zap.Error(err))
 		return nil
 	}
 
@@ -123,19 +117,17 @@ func (a *awsLambdaReceiver) processLambdaEvent(ctx context.Context, event json.R
 
 // handleEvent is specialized for processing events and extracting signals.
 // Handling of the event is done using provided eventKey.
-// See payload types content,
-//   - For S3: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#S3Event
-//   - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent (TODO)
 func (a *awsLambdaReceiver) handleEvent(ctx context.Context, event json.RawMessage, et eventType) error {
 	a.logger.Info("Lambda triggered", zap.String(logInvokedTrigger, string(et)))
 
-	if et != a.handler.handlerType() {
-		// fail fast: if handler does not support the event type, log and return an error without parsing the event
-		a.logger.Error("Cannot handle event type", zap.String(logInvokedTrigger, string(et)), zap.String(logDeployedTrigger, string(a.handler.handlerType())))
-		return fmt.Errorf("cannot handle event type %s, deployment configured to handler %s", et, a.handler.handlerType())
+	handler, err := a.hp.getHandler(et)
+	if err != nil {
+		// fail fast: if there is no handler for invoked trigger, skip processing, log and return an error.
+		a.logger.Error("Cannot handle event type", zap.String(logInvokedTrigger, string(et)), zap.Error(err))
+		return fmt.Errorf("cannot handle event type %s: %w", et, err)
 	}
 
-	err := a.handler.handle(ctx, event)
+	err = handler.handle(ctx, event)
 	if err != nil {
 		a.logger.Error("Failed to process event", zap.Error(err))
 
@@ -163,28 +155,52 @@ func newLogsHandler(
 	host component.Host,
 	next consumer.Logs,
 	s3Provider internal.S3Provider,
-) (lambdaEventHandler, error) {
-	// If S3Encoding is not set, return an error
-	if cfg.S3Encoding == "" {
-		return nil, errors.New("s3_encoding is required for logs stored in S3")
+) (handlerProvider, error) {
+	logger := set.Logger
+	var s3Unmarshaler unmarshalFunc[plog.Logs] = bytesToPlogs
+	if cfg.S3.Encoding != "" {
+		logger.Info("Using configured S3 encoding for logs", zap.String("encoding", cfg.S3.Encoding))
+		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.S3.Encoding, "logs")
+		if err != nil {
+			return nil, err
+		}
+
+		s3Unmarshaler = extension.UnmarshalLogs
 	}
 
-	encodingExtension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.S3Encoding, "logs")
-	if err != nil {
-		return nil, err
+	var cwUnmarshaler unmarshalFunc[plog.Logs] = cwLogsToPlogs
+	if cfg.CloudWatch.Encoding != "" {
+		logger.Info("Using configured CloudWatch encoding for logs", zap.String("encoding", cfg.CloudWatch.Encoding))
+		extension, err := loadEncodingExtension[plog.Unmarshaler](host, cfg.CloudWatch.Encoding, "logs")
+		if err != nil {
+			return nil, err
+		}
+
+		cwUnmarshaler = extension.UnmarshalLogs
 	}
+
 	s3Service, err := s3Provider.GetService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
 
-	// Wrapper function that sets observed timestamp for logs
-	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
-		setObservedTimestampForAllLogs(logs, event.EventTime)
-		return next.ConsumeLogs(ctx, logs)
+	// Register handlers. Logs supports S3 and CloudWatch Logs subscription events.
+	registry := make(handlerRegistry)
+	registry[s3Event] = func() lambdaEventHandler {
+		// Wrapper function that sets observed timestamp for S3 logs
+		logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
+			enrichS3Logs(logs, event)
+			return next.ConsumeLogs(ctx, logs)
+		}
+
+		return newS3Handler(s3Service, logger, s3Unmarshaler, logsConsumer)
 	}
 
-	return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalLogs, logsConsumer), nil
+	registry[cwEvent] = func() lambdaEventHandler {
+		return newCWLogsSubscriptionHandler(cwUnmarshaler, next.ConsumeLogs)
+	}
+
+	return newHandlerProvider(registry), nil
 }
 
 func newMetricsHandler(
@@ -194,25 +210,39 @@ func newMetricsHandler(
 	host component.Host,
 	next consumer.Metrics,
 	s3Provider internal.S3Provider,
-) (lambdaEventHandler, error) {
-	encodingExtension, err := loadEncodingExtension[pmetric.Unmarshaler](host, cfg.S3Encoding, "metrics")
+) (handlerProvider, error) {
+	logger := set.Logger
+	extensionID := defaultMetricsEncodingExtension
+	// Note: for metrics, we currently support S3 trigger only.
+	if cfg.S3.Encoding != "" {
+		logger.Info("Using configured S3 encoding for metrics", zap.String("encoding", cfg.S3.Encoding))
+		extensionID = cfg.S3.Encoding
+	}
+
+	encodingExtension, err := loadEncodingExtension[pmetric.Unmarshaler](host, extensionID, "metrics")
 	if err != nil {
 		return nil, err
 	}
+
 	s3Service, err := s3Provider.GetService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
 
-	// Create a wrapper function for metrics (no special processing needed)
-	metricsConsumer := func(ctx context.Context, _ events.S3EventRecord, metrics pmetric.Metrics) error {
-		return next.ConsumeMetrics(ctx, metrics)
+	// Register handlers. Metrics supports S3 events.
+	registry := make(handlerRegistry)
+	registry[s3Event] = func() lambdaEventHandler {
+		metricConsumer := func(ctx context.Context, _ events.S3EventRecord, metrics pmetric.Metrics) error {
+			return next.ConsumeMetrics(ctx, metrics)
+		}
+
+		return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricConsumer)
 	}
 
-	return newS3Handler(s3Service, set.Logger, encodingExtension.UnmarshalMetrics, metricsConsumer), nil
+	return newHandlerProvider(registry), nil
 }
 
-// loadEncodingExtension tries to load an available extension for the given encoding.
+// loadEncodingExtension attempts to load an available extension for the given name.
 func loadEncodingExtension[T any](host component.Host, encoding, signalType string) (T, error) {
 	var zero T
 	var extensionID component.ID
@@ -234,9 +264,16 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 // detectTriggerType is a helper to derive the eventType based on the payload content.
 // Supported trigger types are:
 // - S3Event
+// - CloudWatchEvent
+// See payload content at official documentation,
+//   - For S3: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#S3Event
+//   - For CloudWatch: https://pkg.go.dev/github.com/aws/aws-lambda-go/events#CloudwatchLogsEvent
 func detectTriggerType(data []byte) (eventType, error) {
-	if bytes.HasPrefix(data, []byte(`{"Records"`)) {
+	switch {
+	case bytes.HasPrefix(data, []byte(`{"Records"`)):
 		return s3Event, nil
+	case bytes.HasPrefix(data, []byte(`{"awslogs"`)):
+		return cwEvent, nil
 	}
 
 	// fallback for possible manual trigger cases
@@ -245,6 +282,7 @@ func detectTriggerType(data []byte) (eventType, error) {
 		return "", err
 	}
 
+	// todo : use trigger key for custom event handling
 	return "", fmt.Errorf("unknown event type with key: %s", key)
 }
 
