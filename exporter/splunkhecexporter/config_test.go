@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
-
 	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
