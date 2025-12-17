@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -127,7 +126,7 @@ func TestSyncBulkIndexer(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"), // bulk request itself is successful
 						attribute.StringSlice("x-test", []string{"test"}),
-						semconv.HTTPResponseStatusCode(http.StatusOK),
+						attribute.Key("http.response.status_code").Int(http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
