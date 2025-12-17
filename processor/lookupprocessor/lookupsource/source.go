@@ -30,7 +30,6 @@ type Source interface {
 	Type() string
 	Start(ctx context.Context, host component.Host) error
 	Shutdown(ctx context.Context) error
-	private()
 }
 
 type SourceOption interface {
@@ -109,5 +108,3 @@ func (s *sourceImpl) Shutdown(ctx context.Context) error {
 	}
 	return s.shutdownFn(ctx)
 }
-
-func (*sourceImpl) private() {}

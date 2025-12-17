@@ -24,19 +24,16 @@ type CreateDefaultConfigFunc func() SourceConfig
 
 // SourceFactory creates Source instances from configuration.
 //
-// This interface is SEALED - use [NewSourceFactory] to create implementations.
+// Use [NewSourceFactory] to create implementations.
 type SourceFactory interface {
 	Type() string
 
 	CreateDefaultConfig() SourceConfig
 
 	CreateSource(ctx context.Context, settings CreateSettings, cfg SourceConfig) (Source, error)
-
-	private()
 }
 
 // NewSourceFactory creates a new SourceFactory.
-// This is the ONLY way to create a SourceFactory - the interface is sealed.
 //
 // Parameters:
 //   - typ: The source type identifier (e.g., "yaml", "http", "dns").
@@ -87,5 +84,3 @@ func (f *sourceFactoryImpl) CreateSource(ctx context.Context, settings CreateSet
 	}
 	return f.createSource(ctx, settings, cfg)
 }
-
-func (*sourceFactoryImpl) private() {}
