@@ -3,17 +3,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 go 1.24.0
 
 require (
-	github.com/expr-lang/expr v1.17.6
+	github.com/expr-lang/expr v1.17.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.142.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.47.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/component/componenttest v0.141.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/confmap v1.47.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/featuregate v1.47.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/pdata v1.47.1-0.20251211181959-97fcd3d13b4a
+	go.opentelemetry.io/collector/component v1.48.0
+	go.opentelemetry.io/collector/component/componenttest v0.142.0
+	go.opentelemetry.io/collector/confmap v1.48.0
+	go.opentelemetry.io/collector/featuregate v1.48.0
+	go.opentelemetry.io/collector/pdata v1.48.0
 	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
@@ -52,7 +52,7 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.141.1-0.20251211181959-97fcd3d13b4a // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.142.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
