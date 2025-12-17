@@ -9,8 +9,31 @@ status:
     active: [andrzej-stencel]
     emeritus: [djaglowski]
 
+attributes:
+  file_path:
+    description: The path of the file being monitored
+    type: string
+
 telemetry:
   metrics:
+    fileconsumer_file_offset_bytes:
+      description: Current read offset in files being monitored. This value may reset when files are rotated.
+      unit: "By"
+      enabled: true
+      stability:
+        level: development
+      gauge:
+        value_type: int
+      attributes: [file_path]
+    fileconsumer_file_size_bytes:
+      description: Current size of files being monitored. This value may reset when files are rotated.
+      unit: "By"
+      enabled: true
+      stability:
+        level: development
+      gauge:
+        value_type: int
+      attributes: [file_path]
     fileconsumer_open_files:
       description: Number of open files
       unit: "1"

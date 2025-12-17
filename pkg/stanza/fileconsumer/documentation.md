@@ -6,6 +6,34 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_fileconsumer_file_offset_bytes
+
+Current read offset in files being monitored. This value may reset when files are rotated. [Development]
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| file_path | The path of the file being monitored | Any Str |
+
+### otelcol_fileconsumer_file_size_bytes
+
+Current size of files being monitored. This value may reset when files are rotated. [Development]
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| file_path | The path of the file being monitored | Any Str |
+
 ### otelcol_fileconsumer_open_files
 
 Number of open files [Development]

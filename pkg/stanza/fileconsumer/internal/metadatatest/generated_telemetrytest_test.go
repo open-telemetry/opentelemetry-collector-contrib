@@ -20,8 +20,16 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.FileconsumerFileOffsetBytes.Record(context.Background(), 1)
+	tb.FileconsumerFileSizeBytes.Record(context.Background(), 1)
 	tb.FileconsumerOpenFiles.Add(context.Background(), 1)
 	tb.FileconsumerReadingFiles.Add(context.Background(), 1)
+	AssertEqualFileconsumerFileOffsetBytes(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualFileconsumerFileSizeBytes(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualFileconsumerOpenFiles(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

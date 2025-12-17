@@ -23,11 +23,13 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                    metric.Meter
-	mu                       sync.Mutex
-	registrations            []metric.Registration
-	FileconsumerOpenFiles    metric.Int64UpDownCounter
-	FileconsumerReadingFiles metric.Int64UpDownCounter
+	meter                       metric.Meter
+	mu                          sync.Mutex
+	registrations               []metric.Registration
+	FileconsumerFileOffsetBytes metric.Int64Gauge
+	FileconsumerFileSizeBytes   metric.Int64Gauge
+	FileconsumerOpenFiles       metric.Int64UpDownCounter
+	FileconsumerReadingFiles    metric.Int64UpDownCounter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -59,6 +61,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.FileconsumerFileOffsetBytes, err = builder.meter.Int64Gauge(
+		"otelcol_fileconsumer_file_offset_bytes",
+		metric.WithDescription("Current read offset in files being monitored. This value may reset when files are rotated. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.FileconsumerFileSizeBytes, err = builder.meter.Int64Gauge(
+		"otelcol_fileconsumer_file_size_bytes",
+		metric.WithDescription("Current size of files being monitored. This value may reset when files are rotated. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.FileconsumerOpenFiles, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fileconsumer_open_files",
 		metric.WithDescription("Number of open files [Development]"),

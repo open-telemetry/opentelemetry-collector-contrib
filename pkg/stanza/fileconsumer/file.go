@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
@@ -149,6 +151,10 @@ func (m *Manager) poll(ctx context.Context) {
 			}
 		}
 	}
+
+	// Report file size and offset metrics for all tracked files at end of poll
+	m.reportFileMetrics(ctx)
+
 	// rotate at end of every poll()
 	m.tracker.EndPoll(ctx)
 }
@@ -304,6 +310,25 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 
 	// If no previously known files are matched, readers will be created after matching against the archive.
 	return nil, nil
+}
+
+func (m *Manager) reportFileMetrics(ctx context.Context) {
+	// Report file size and offset metrics for all currently tracked files
+	allReaders := append(m.tracker.CurrentPollFiles(), m.tracker.PreviousPollFiles()...)
+	for _, r := range allReaders {
+		filePath := r.GetFileName()
+		offset := r.GetOffset()
+
+		fileSize, err := r.GetFileSize()
+		if err != nil {
+			m.set.Logger.Debug("Failed to get file size for metrics", zap.String("path", filePath), zap.Error(err))
+			continue
+		}
+
+		// Record metrics with file_path attribute
+		m.telemetryBuilder.FileconsumerFileOffsetBytes.Record(ctx, offset, metric.WithAttributes(attribute.String("file_path", filePath)))
+		m.telemetryBuilder.FileconsumerFileSizeBytes.Record(ctx, fileSize, metric.WithAttributes(attribute.String("file_path", filePath)))
+	}
 }
 
 func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {
