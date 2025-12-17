@@ -69,6 +69,7 @@ func TestParseBody(t *testing.T) {
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
 	}
 
 	expected := map[string]any{
@@ -138,6 +139,7 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
 	}
 
 	expected := map[string]any{
@@ -225,6 +227,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
 	}
 
 	expected := map[string]any{
@@ -367,6 +370,7 @@ func TestParseNoRendered(t *testing.T) {
 		EventData: EventData{
 			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
+		Version: 0,
 	}
 
 	expected := map[string]any{
@@ -429,6 +433,7 @@ func TestParseBodySecurity(t *testing.T) {
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
 	}
 
 	expected := map[string]any{
