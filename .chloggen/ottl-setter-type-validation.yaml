@@ -7,4 +7,8 @@ subtext: |
   descriptive errors when type mismatches occur, improving debugging experience.
   This is the continuation of work done in \#43505, addressing remaining context such
   as datapoint, profile, resource, span, and span event.
+
+  **Note:** Users may see new errors from OTTL statements that were previously silently failing
+  due to type mismatches. These errors indicate pre-existing issues in OTTL configurations that
+  were not being applied as expected.
 change_logs: [api, user]
