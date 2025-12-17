@@ -52,8 +52,6 @@ sqlserver:
   username: myusername
   password: mypassword
   server: sqlserver.address
-  datasource: sqlserver://yourserver.database.windows.net?database=yourdb&fedauth=ActiveDirectoryMSI
-  use_azure_ad: true
   port: 1433
   events:
     db.server.query_sample:
@@ -81,10 +79,9 @@ Direct connection options (optional, but all must be specified to enable):
 - `server`: IP Address or hostname of SQL Server instance to connect to.
 - `port`: Port of the SQL Server instance to connect to.
 
-
-For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
-For azure environments `use_azure_ad` can be used to connect using a connection string, including federated auth
-Note: these can't be used in conjunction with the `username`, `password`, `server`, `port` options and each other.
+Alternative direct connection options:
+- `datasource`: A full "connection string" for finer control over the direct connection. When using this option, do not specify `username`, `password`, `server`, or `port`.
+- `use_azure_ad` (default = `false`): A boolean that enables Azure Active Directory (Entra ID) authentication. This must be used together with `datasource` and supports federated authentication scenarios. When set to `true`, the connection string in `datasource` can be used for Azure AD authentication.
 
 Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
