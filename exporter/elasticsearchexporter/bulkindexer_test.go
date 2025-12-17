@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -184,6 +185,18 @@ func TestSyncBulkIndexer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQueryParamsParsedFromEndpoints(t *testing.T) {
+	client, err := elasticsearch.NewDefaultClient()
+	require.NoError(t, err)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
+
+	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
+	require.Equal(t, map[string][]string{
+		"pipeline": {"test-pipeline"},
+	}, bi.QueryParams)
 }
 
 func TestNewBulkIndexer(t *testing.T) {
