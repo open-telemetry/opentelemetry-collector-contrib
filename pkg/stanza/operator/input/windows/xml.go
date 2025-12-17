@@ -33,7 +33,7 @@ type EventXML struct {
 	Execution        *Execution   `xml:"System>Execution"`
 	EventData        EventData    `xml:"EventData"`
 	Correlation      *Correlation `xml:"System>Correlation"`
-	Version          uint64       `xml:"System>Version"`
+	Version          uint8        `xml:"System>Version"`
 }
 
 // parseTimestamp will parse the timestamp of the event.

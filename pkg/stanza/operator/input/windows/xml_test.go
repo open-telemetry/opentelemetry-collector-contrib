@@ -96,7 +96,7 @@ func TestParseBody(t *testing.T) {
 				map[string]any{"2nd_name": "another_value"},
 			},
 		},
-		"version": uint64(0),
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -172,7 +172,7 @@ func TestParseBodySecurityExecution(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
-		"version": uint64(0),
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -264,7 +264,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
-		"version": uint64(0),
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -336,7 +336,7 @@ func TestParseBodyCorrelation(t *testing.T) {
 			"activity_id":         "{11111111-1111-1111-1111-111111111111}",
 			"related_activity_id": "{11111111-1111-1111-1111-111111111111}",
 		},
-		"version": uint64(1),
+		"version": uint8(1),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -394,7 +394,7 @@ func TestParseNoRendered(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
-		"version": uint64(0),
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -456,7 +456,7 @@ func TestParseBodySecurity(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
-		"version": uint64(0),
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
