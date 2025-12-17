@@ -160,6 +160,16 @@ Example label comment:
 /label receiver/prometheus help-wanted -exporter/prometheus
 ```
 
+### Rerunning Failed Workflows
+
+PR authors can rerun failed GitHub Actions workflows by commenting `/rerun` on the pull request. This will automatically rerun all failed workflow runs for the PR's latest commit.
+
+Example rerun comment:
+
+```
+/rerun
+```
+
 ## Portable Code
 
 In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
