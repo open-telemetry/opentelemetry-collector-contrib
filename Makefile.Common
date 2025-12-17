@@ -272,9 +272,11 @@ generate: generate-tools
 ifeq ($(CURDIR),$(SRC_ROOT))
 	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
+	$(MAKE) gogci
 else
 	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(GOCMD) generate ./...
 	$(MAKE) fmt
+	$(MAKE) gci
 endif
 
 .PHONY: lint
