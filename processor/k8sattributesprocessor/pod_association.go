@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -47,7 +47,7 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 				// If association configured by resource_attribute
 				// In k8s environment, host.name label set to a pod IP address.
 				// If the value doesn't represent an IP address, we skip it.
-				if asso.Name == string(conventions.HostNameKey) && net.ParseIP(attributeValue) == nil {
+				if source.Name == string(conventions.HostNameKey) && net.ParseIP(attributeValue) == nil {
 					skip = true
 					break
 				}

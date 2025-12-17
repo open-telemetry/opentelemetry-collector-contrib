@@ -31,7 +31,7 @@ func Benchmark_SampleLoad(b *testing.B) {
 	s, _ := newSampler(zap.NewNop())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		s.sampleLoad()
 	}
 }

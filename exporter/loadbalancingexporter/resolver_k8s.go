@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -34,7 +34,8 @@ import (
 var _ resolver = (*k8sResolver)(nil)
 
 var (
-	errNoSvc = errors.New("no service specified to resolve the backends")
+	errNoSvc          = errors.New("no service specified to resolve the backends")
+	errInvalidSvcFQDN = errors.New("invalid Kubernetes service FQDN")
 
 	k8sResolverAttr           = attribute.String("resolver", "k8s")
 	k8sResolverAttrSet        = attribute.NewSet(k8sResolverAttr)
@@ -87,11 +88,18 @@ func newK8sResolver(clt kubernetes.Interface,
 		timeout = defaultListWatchTimeout
 	}
 
-	nAddr := strings.SplitN(service, ".", 2)
-	name, namespace := nAddr[0], "default"
-	if len(nAddr) > 1 {
-		namespace = nAddr[1]
-	} else {
+	parts := strings.Split(service, ".")
+	if len(parts) == 0 || parts[0] == "" {
+		return nil, errNoSvc
+	}
+
+	name, namespace := parts[0], "default"
+	switch {
+	case len(parts) > 1 && parts[1] != "":
+		namespace = parts[1]
+	case len(parts) > 2:
+		return nil, fmt.Errorf("%w: namespace segment missing in %q", errInvalidSvcFQDN, service)
+	default:
 		logger.Info("the namespace for the Kubernetes service wasn't provided, trying to determine the current namespace", zap.String("name", name))
 		if ns, err := getInClusterNamespace(); err == nil {
 			namespace = ns
@@ -101,17 +109,26 @@ func newK8sResolver(clt kubernetes.Interface,
 		}
 	}
 
-	epsSelector := fmt.Sprintf("metadata.name=%s", name)
+	if len(parts) > 2 {
+		if parts[2] != "svc" {
+			return nil, fmt.Errorf("%w: expected third DNS label to be 'svc' in %q", errInvalidSvcFQDN, service)
+		}
+		if len(parts) == 3 {
+			return nil, fmt.Errorf("%w: missing cluster domain in %q", errInvalidSvcFQDN, service)
+		}
+	}
+
+	epsSelector := fmt.Sprintf("kubernetes.io/service-name=%s", name)
 	epsListWatcher := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			options.FieldSelector = epsSelector
+			options.LabelSelector = epsSelector
 			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.CoreV1().Endpoints(namespace).List(context.Background(), options)
+			return clt.DiscoveryV1().EndpointSlices(namespace).List(context.Background(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.FieldSelector = epsSelector
+			options.LabelSelector = epsSelector
 			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.CoreV1().Endpoints(namespace).Watch(context.Background(), options)
+			return clt.DiscoveryV1().EndpointSlices(namespace).Watch(context.Background(), options)
 		},
 	}
 
@@ -146,8 +163,7 @@ func (r *k8sResolver) start(_ context.Context) error {
 	r.once.Do(func() {
 		if r.epsListWatcher != nil {
 			r.logger.Debug("creating and starting endpoints informer")
-			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-			epsInformer := cache.NewSharedInformer(r.epsListWatcher, &corev1.Endpoints{}, 0)
+			epsInformer := cache.NewSharedInformer(r.epsListWatcher, &discoveryv1.EndpointSlice{}, 0)
 			if _, err := epsInformer.AddEventHandler(r.handler); err != nil {
 				r.logger.Error("unable to start watching for changes to the specified service names", zap.Error(err))
 			}

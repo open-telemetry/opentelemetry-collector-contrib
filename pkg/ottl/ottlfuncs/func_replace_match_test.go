@@ -105,9 +105,9 @@ func Test_replaceMatch(t *testing.T) {
 			}
 
 			exprFunc, err := replaceMatch(tt.target, pattern, tt.replacement, tt.function, tt.replacementFormat)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, scenarioValue)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
@@ -144,10 +144,10 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := replaceMatch[any](target, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
@@ -179,7 +179,7 @@ func Test_replaceMatch_bad_function_input(t *testing.T) {
 	}
 
 	exprFunc, err := replaceMatch[any](target, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
@@ -219,7 +219,7 @@ func Test_replaceMatch_bad_function_result(t *testing.T) {
 	}
 
 	exprFunc, err := replaceMatch[any](target, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
@@ -252,9 +252,9 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := replaceMatch[any](target, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }

@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 )
@@ -49,7 +50,7 @@ type S3UploaderConfig struct {
 	StorageClass string `mapstructure:"storage_class"`
 	// Compression sets the algorithm used to process the payload
 	// before uploading to S3.
-	// Valid values are: `gzip` or no value set.
+	// Valid values are: `gzip`, `zstd`, or no value set.
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// RetryMode specifies the retry mode for S3 client, default is "standard".
@@ -90,10 +91,10 @@ type ResourceAttrsToS3 struct {
 
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
-	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	S3Uploader      S3UploaderConfig                `mapstructure:"s3uploader"`
-	MarshalerName   MarshalerType                   `mapstructure:"marshaler"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	S3Uploader      S3UploaderConfig                                         `mapstructure:"s3uploader"`
+	MarshalerName   MarshalerType                                            `mapstructure:"marshaler"`
 
 	// Encoding to apply. If present, overrides the marshaler configuration option.
 	Encoding              *component.ID     `mapstructure:"encoding"`
@@ -143,7 +144,7 @@ func (c *Config) Validate() error {
 
 	compression := c.S3Uploader.Compression
 	if compression.IsCompressed() {
-		if compression != configcompression.TypeGzip {
+		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
 			errs = multierr.Append(errs, errors.New("unknown compression type"))
 		}
 	}

@@ -5,10 +5,12 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"golang.org/x/exp/maps"
@@ -29,7 +31,7 @@ type V1Compatibility struct {
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Org is the InfluxDB organization name of the destination bucket.
@@ -110,14 +112,7 @@ func (cfg *Config) Validate() error {
 
 	// Validate precision
 	validPrecisions := []string{"ns", "ms", "s", "us"}
-	validPrecision := false
-	for _, p := range validPrecisions {
-		if cfg.Precision == p {
-			validPrecision = true
-			break
-		}
-	}
-	if !validPrecision {
+	if !slices.Contains(validPrecisions, cfg.Precision) {
 		return fmt.Errorf("invalid precision %q, must be one of: %s",
 			cfg.Precision, strings.Join(validPrecisions, ", "))
 	}

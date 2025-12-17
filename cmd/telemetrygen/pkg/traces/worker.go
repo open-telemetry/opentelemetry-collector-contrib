@@ -16,12 +16,12 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -112,8 +112,8 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		parentLinks := w.generateSpanLinks()
 
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
-			semconv.NetworkPeerAddress(fakeIP),
-			semconv.PeerService("telemetrygen-server"),
+			conventions.NetworkPeerAddress(fakeIP),
+			conventions.PeerService("telemetrygen-server"),
 		),
 			trace.WithSpanKind(trace.SpanKindClient),
 			trace.WithTimestamp(spanStart),
@@ -121,7 +121,7 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		)
 		sp.SetAttributes(telemetryAttributes...)
 		for j := 0; j < w.loadSize; j++ {
-			sp.SetAttributes(common.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
+			sp.SetAttributes(config.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
 		}
 
 		// Store the parent span context for potential future linking
@@ -147,8 +147,8 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 			childLinks := w.generateSpanLinks()
 
 			_, child := tracer.Start(childCtx, "okey-dokey-"+strconv.Itoa(j), trace.WithAttributes(
-				semconv.NetworkPeerAddress(fakeIP),
-				semconv.PeerService("telemetrygen-client"),
+				conventions.NetworkPeerAddress(fakeIP),
+				conventions.PeerService("telemetrygen-client"),
 			),
 				trace.WithSpanKind(trace.SpanKindServer),
 				trace.WithTimestamp(spanStart),

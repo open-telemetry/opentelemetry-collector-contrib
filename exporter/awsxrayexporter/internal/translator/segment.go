@@ -8,7 +8,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"regexp"
 	"strings"
@@ -334,8 +336,8 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	attributes := span.Attributes()
 
 	var (
-		startTime                                          = timestampToFloatSeconds(span.StartTimestamp())
-		endTime                                            = timestampToFloatSeconds(span.EndTimestamp())
+		startTimePtr                                       = awsP.Float64(timestampToFloatSeconds(span.StartTimestamp()))
+		endTimePtr, inProgress                             = makeEndTimeAndInProgress(span, attributes)
 		httpfiltered, http                                 = makeHTTP(span)
 		isError, isFault, isThrottle, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                             = determineAwsOrigin(resource)
@@ -456,8 +458,9 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		ID:          awsxray.String(traceutil.SpanIDToHexOrEmptyString(span.SpanID())),
 		TraceID:     awsxray.String(traceID),
 		Name:        awsxray.String(name),
-		StartTime:   awsP.Float64(startTime),
-		EndTime:     awsP.Float64(endTime),
+		StartTime:   startTimePtr,
+		EndTime:     endTimePtr,
+		InProgress:  inProgress,
 		ParentID:    awsxray.String(traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
@@ -574,6 +577,11 @@ func convertToAmazonTraceID(traceID pcommon.TraceID, skipTimestampValidation boo
 
 	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
 
+	// Build the X-Ray trace ID format: 1-{hex(epoch)}-{identifier}
+	// Ensure we have enough space in the content array
+	if len(content) < traceIDLength {
+		return "", errors.New("content array too small")
+	}
 	content[0] = '1'
 	content[1] = '-'
 	hex.Encode(content[2:10], b[0:4])
@@ -684,9 +692,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 					// if unable to unmarshal, keep the original key/value
 					defaultMetadata[key] = value.Str()
 				case strings.EqualFold(namespace, defaultMetadataNamespace):
-					for k, v := range metaVal {
-						defaultMetadata[k] = v
-					}
+					maps.Copy(defaultMetadata, metaVal)
 				default:
 					metadata[namespace] = metaVal
 				}
@@ -756,12 +762,23 @@ func fixAnnotationKey(key string) string {
 	}, key)
 }
 
+func makeEndTimeAndInProgress(span ptrace.Span, attributes pcommon.Map) (*float64, *bool) {
+	if inProgressAttr, ok := attributes.Get(awsxray.AWSXRayInProgressAttribute); ok && inProgressAttr.Type() == pcommon.ValueTypeBool {
+		inProgressVal := inProgressAttr.Bool()
+		attributes.Remove(awsxray.AWSXRayInProgressAttribute)
+		if inProgressVal {
+			return nil, &inProgressVal
+		}
+	}
+	return awsP.Float64(timestampToFloatSeconds(span.EndTimestamp())), nil
+}
+
 func trimAwsSdkPrefix(name string, span ptrace.Span) string {
 	if isAwsSdkSpan(span) {
-		if strings.HasPrefix(name, "AWS.SDK.") {
-			return strings.TrimPrefix(name, "AWS.SDK.")
-		} else if strings.HasPrefix(name, "AWS::") {
-			return strings.TrimPrefix(name, "AWS::")
+		if after, ok := strings.CutPrefix(name, "AWS.SDK."); ok {
+			return after
+		} else if after, ok := strings.CutPrefix(name, "AWS::"); ok {
+			return after
 		}
 	}
 	return name

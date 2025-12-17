@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -83,12 +83,13 @@ func Test_convertSumToGauge(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			defer ctx.Close()
 
 			exprFunc, _ := convertSumToGauge()
 
-			_, err := exprFunc(nil, ctx)
-			assert.NoError(t, err)
+			_, err := exprFunc(t.Context(), ctx)
+			require.NoError(t, err)
 
 			expected := pmetric.NewMetric()
 			tt.want(expected)
