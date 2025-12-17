@@ -59,6 +59,8 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
 		kgo.ProducerLinger(cfg.Linger),
+		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
+		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
 	)...)
 	if err != nil {
 		return nil, err
@@ -75,16 +77,6 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.LeaderAck()))
 	}
 
-	// Configure max message size
-	if cfg.MaxMessageBytes > 0 {
-		opts = append(opts, kgo.ProducerBatchMaxBytes(
-			int32(cfg.MaxMessageBytes),
-		))
-	}
-	// Configure batch size
-	if cfg.FlushMaxMessages > 0 {
-		opts = append(opts, kgo.MaxBufferedRecords(cfg.FlushMaxMessages))
-	}
 	// Configure auto topic creation
 	if cfg.AllowAutoTopicCreation {
 		opts = append(opts, kgo.AllowAutoTopicCreation())
@@ -97,50 +89,39 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConfig,
 	consumerCfg configkafka.ConsumerConfig,
 	topics []string,
+	excludeTopics []string,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
 	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
+		kgo.SessionTimeout(consumerCfg.SessionTimeout),
+		kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval),
+		kgo.FetchMinBytes(consumerCfg.MinFetchSize),
+		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
+		kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize),
+		kgo.FetchMaxWait(consumerCfg.MaxFetchWait),
 	}, opts...)...)
 	if err != nil {
 		return nil, err
 	}
 
+	// Check if any topic uses regex pattern
+	isRegex := false
 	for _, t := range topics {
 		// Similar to librdkafka, if the topic starts with `^`, it is a regex topic:
 		// https://github.com/confluentinc/librdkafka/blob/b871fdabab84b2ea1be3866a2ded4def7e31b006/src/rdkafka.h#L3899-L3938
 		if strings.HasPrefix(t, "^") {
+			isRegex = true
 			opts = append(opts, kgo.ConsumeRegex())
 			break
 		}
 	}
 
-	// Configure session timeout
-	if consumerCfg.SessionTimeout > 0 {
-		opts = append(opts, kgo.SessionTimeout(consumerCfg.SessionTimeout))
-	}
-
-	// Configure heartbeat interval
-	if consumerCfg.HeartbeatInterval > 0 {
-		opts = append(opts, kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval))
-	}
-
-	// Configure fetch sizes
-	if consumerCfg.MinFetchSize > 0 {
-		opts = append(opts, kgo.FetchMinBytes(consumerCfg.MinFetchSize))
-	}
-	if consumerCfg.DefaultFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxBytes(consumerCfg.DefaultFetchSize))
-	}
-	if consumerCfg.MaxPartitionFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize))
-	}
-
-	// Configure max fetch wait
-	if consumerCfg.MaxFetchWait > 0 {
-		opts = append(opts, kgo.FetchMaxWait(consumerCfg.MaxFetchWait))
+	// Add exclude topics only when regex consumption is enabled
+	if len(excludeTopics) > 0 && isRegex {
+		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
 	}
 
 	interval := consumerCfg.AutoCommit.Interval

@@ -6,6 +6,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -187,7 +188,7 @@ func (p *ParserOperator) ParseWith(entry *entry.Entry, parse ParseFunction) erro
 	}
 
 	if err := entry.Set(p.ParseTo, newValue); err != nil {
-		return stanza_errors.Wrap(err, "set parse_to")
+		return fmt.Errorf("set parse_to: %w", err)
 	}
 
 	if p.BodyField != nil {
@@ -218,16 +219,16 @@ func (p *ParserOperator) ParseWith(entry *entry.Entry, parse ParseFunction) erro
 
 	// Handle parsing errors after attempting to parse all
 	if timeParseErr != nil {
-		return stanza_errors.Wrap(timeParseErr, "time parser")
+		return fmt.Errorf("time parser: %w", timeParseErr)
 	}
 	if severityParseErr != nil {
-		return stanza_errors.Wrap(severityParseErr, "severity parser")
+		return fmt.Errorf("severity parser: %w", severityParseErr)
 	}
 	if traceParseErr != nil {
-		return stanza_errors.Wrap(traceParseErr, "trace parser")
+		return fmt.Errorf("trace parser: %w", traceParseErr)
 	}
 	if scopeNameParserErr != nil {
-		return stanza_errors.Wrap(scopeNameParserErr, "scope_name parser")
+		return fmt.Errorf("scope_name parser: %w", scopeNameParserErr)
 	}
 	return nil
 }

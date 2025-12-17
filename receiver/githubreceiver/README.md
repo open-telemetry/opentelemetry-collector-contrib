@@ -77,6 +77,8 @@ receivers:
                         enabled: true
                 github_org: <myfancyorg> 
                 search_query: "org:<myfancyorg> topic:<o11yalltheway>" # Recommended optional query override, defaults to "{org,user}:<github_org>"
+                concurrency_limit: 50  # Optional: (default: 50)
+                merged_pr_lookback_days: 30 # Optional: (default: 30)
                 endpoint: "https://selfmanagedenterpriseserver.com" # Optional
                 auth:
                     authenticator: bearertokenauth/github
@@ -96,6 +98,10 @@ service:
 `endpoint` (optional): Set this only when using a self-managed GitHub instance (e.g., `https://selfmanagedenterpriseserver.com` -- SHOULD NOT include `api` subdomain or `/graphql` context path).
 
 `search_query` (optional): A filter to narrow down repositories. Defaults to `org:<github_org>` (or `user:<username>`). For example, use `repo:<org>/<repo>` to target a specific repository. Any valid GitHub search syntax is allowed.
+
+`concurrency_limit` (optional): Maximum number of concurrent repository processing goroutines. Defaults to `50` to stay under GitHub's 100 concurrent request limit. Set to `0` for unlimited concurrency (not recommended for >100 repositories).
+
+`merged_pr_lookback_days` (optional):  Number of days to query back in time when fetching merged pull requests. Defaults to 30. Set to `0` to fetch all merged PRs.
 
 `metrics` (optional): Enable or disable metrics scraping. See the [metrics documentation](./documentation.md) for details.
 

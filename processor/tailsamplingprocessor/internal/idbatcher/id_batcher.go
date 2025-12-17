@@ -111,7 +111,7 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 	if readBatch, ok := <-b.batches; ok {
 		b.stopLock.RLock()
 		if !b.stopped {
-			nextBatch := make(Batch, 0, b.newBatchesInitialCapacity)
+			nextBatch := make(Batch, 0, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
 			b.cbMutex.Lock()
 			b.batches <- b.currentBatch
 			b.currentBatch = nextBatch

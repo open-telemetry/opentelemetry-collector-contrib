@@ -143,8 +143,8 @@ agent:
   # Optional user name to drop the privileges to when running the
   # Collector process.
   run_as: myuser
-  # List of configuration files to be merged to built the Collector's effective
-  # configuratio. It includes a few "special" files. Read the "Config Files" section
+  # List of configuration files to be merged to build the Collector's effective
+  # configuration. It includes a few "special" files. Read the "Config Files" section
   # below for more details.
   config_files:
     - $OPAMP_EXTENSION_CONFIG
@@ -279,7 +279,8 @@ agent:
     - './custom-config.yaml'
     - './another-custom-config.yaml'
   args:
-    - '--feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient'
+    - '--feature-gates'
+    - 'service.AllowNoPipelines'
   env:
     HOME: '/dev/home'
     GO_HOME: '~/go'
@@ -288,7 +289,7 @@ agent:
 This results in the following Collector process invocation:
 
 ```shell
-./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
+./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates service.AllowNoPipelines
 ```
 
 ### Operation When OpAMP Server is Unavailable

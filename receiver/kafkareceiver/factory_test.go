@@ -58,7 +58,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
+	cfg.Brokers = []string{"localhost:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createTracesReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
@@ -110,7 +110,7 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
+	cfg.Brokers = []string{"localhost:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createMetricsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
@@ -162,7 +162,7 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 
 func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
+	cfg.Brokers = []string{"localhost:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
@@ -214,7 +214,7 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 
 func TestCreateProfiles(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
+	cfg.Brokers = []string{"localhost:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createProfilesReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
