@@ -113,6 +113,7 @@ linters:
             # TODO: Remove older semconv versions after v1.38.0 migration is complete.
             # If for any reason an individual package needs to use an older semconv version,
             # add a nolint directive on the import line.
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35325
             - go.opentelemetry.io/otel/semconv/v1.9.0
             - go.opentelemetry.io/otel/semconv/v1.12.0
             - go.opentelemetry.io/otel/semconv/v1.15.0
