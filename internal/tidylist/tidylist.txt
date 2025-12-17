@@ -50,6 +50,7 @@ pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
+pkg/translator/splunk
 exporter/splunkhecexporter
 extension/ackextension
 receiver/splunkhecreceiver

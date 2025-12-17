@@ -8,6 +8,7 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"

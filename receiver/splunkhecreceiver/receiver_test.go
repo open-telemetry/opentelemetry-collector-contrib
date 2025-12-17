@@ -2046,7 +2046,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
-	config.HecToOtelAttrs = splunk.HecToOtelAttrs{
+	config.HecToOtelAttrs = translator.HecToOtelAttrs{
 		Source:     "com.source.foo",
 		SourceType: "com.sourcetype.foo",
 		Index:      "com.index.foo",

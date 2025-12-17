@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
@@ -169,7 +168,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return metrics
 			}(),
 			hecConfig: &Config{
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
+				HecToOtelAttrs: translator.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",

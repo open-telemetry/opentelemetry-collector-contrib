@@ -20,7 +20,7 @@ import (
 )
 
 var defaultTestingHecConfig = &Config{
-	HecToOtelAttrs: splunk.HecToOtelAttrs{
+	HecToOtelAttrs: translator.HecToOtelAttrs{
 		Source:     splunk.DefaultSourceLabel,
 		SourceType: splunk.DefaultSourceTypeLabel,
 		Index:      splunk.DefaultIndexLabel,
@@ -177,7 +177,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			hecConfig: &Config{
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
+				HecToOtelAttrs: translator.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
@@ -345,7 +345,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 		testTimestampVal = 1695146885
 	)
 	hecConfig := &Config{
-		HecToOtelAttrs: splunk.HecToOtelAttrs{
+		HecToOtelAttrs: translator.HecToOtelAttrs{
 			Source:     "mysource",
 			SourceType: "mysourcetype",
 			Index:      "myindex",
