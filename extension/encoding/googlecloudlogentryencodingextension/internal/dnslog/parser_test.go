@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 func TestHandleQueryAttributes(t *testing.T) {
@@ -25,8 +25,8 @@ func TestHandleQueryAttributes(t *testing.T) {
 				QueryType: "A",
 			},
 			expected: map[string]any{
-				string(semconv.DNSQuestionNameKey): "example.com.",
-				gcpDNSQueryType:                    "A",
+				string(conventions.DNSQuestionNameKey): "example.com.",
+				gcpDNSQueryType:                        "A",
 			},
 		},
 		{
@@ -44,8 +44,8 @@ func TestHandleQueryAttributes(t *testing.T) {
 				QueryType: "AAAA",
 			},
 			expected: map[string]any{
-				string(semconv.DNSQuestionNameKey): "ipv6.example.com.",
-				gcpDNSQueryType:                    "AAAA",
+				string(conventions.DNSQuestionNameKey): "ipv6.example.com.",
+				gcpDNSQueryType:                        "AAAA",
 			},
 		},
 	}
@@ -146,12 +146,12 @@ func TestHandleNetworkAttributes(t *testing.T) {
 				Location:      "us-central1",
 			},
 			expected: map[string]any{
-				string(semconv.ServerAddressKey):    "8.8.8.8",
-				gcpDNSClientVPCNetwork:              "vpc-network",
-				gcpDNSClientType:                    "VM",
-				string(semconv.ClientAddressKey):    "10.0.0.1",
-				string(semconv.NetworkTransportKey): "udp",
-				string(semconv.CloudRegionKey):      "us-central1",
+				string(conventions.ServerAddressKey):    "8.8.8.8",
+				gcpDNSClientVPCNetwork:                  "vpc-network",
+				gcpDNSClientType:                        "VM",
+				string(conventions.ClientAddressKey):    "10.0.0.1",
+				string(conventions.NetworkTransportKey): "udp",
+				string(conventions.CloudRegionKey):      "us-central1",
 			},
 		},
 		{
@@ -162,9 +162,9 @@ func TestHandleNetworkAttributes(t *testing.T) {
 				Location: "europe-west1",
 			},
 			expected: map[string]any{
-				string(semconv.ClientAddressKey):    "192.168.1.1",
-				string(semconv.NetworkTransportKey): "tcp",
-				string(semconv.CloudRegionKey):      "europe-west1",
+				string(conventions.ClientAddressKey):    "192.168.1.1",
+				string(conventions.NetworkTransportKey): "tcp",
+				string(conventions.CloudRegionKey):      "europe-west1",
 			},
 		},
 		{
@@ -370,10 +370,10 @@ func TestHandleVMInstanceAttributes(t *testing.T) {
 				VMZoneName:     "us-central1-a",
 			},
 			expected: map[string]any{
-				string(semconv.HostIDKey):                int64(123456789),
-				string(semconv.HostNameKey):              "test-instance",
-				gcpProjectID:                             "test-project",
-				string(semconv.CloudAvailabilityZoneKey): "us-central1-a",
+				string(conventions.HostIDKey):                int64(123456789),
+				string(conventions.HostNameKey):              "test-instance",
+				gcpProjectID:                                 "test-project",
+				string(conventions.CloudAvailabilityZoneKey): "us-central1-a",
 			},
 		},
 		{
@@ -383,8 +383,8 @@ func TestHandleVMInstanceAttributes(t *testing.T) {
 				VMInstanceName: "instance-0",
 			},
 			expected: map[string]any{
-				string(semconv.HostIDKey):   int64(0),
-				string(semconv.HostNameKey): "instance-0",
+				string(conventions.HostIDKey):   int64(0),
+				string(conventions.HostNameKey): "instance-0",
 			},
 		},
 		{
@@ -395,8 +395,8 @@ func TestHandleVMInstanceAttributes(t *testing.T) {
 				VMProjectID:    "test-project",
 			},
 			expected: map[string]any{
-				string(semconv.HostNameKey): "test-instance",
-				gcpProjectID:                "test-project",
+				string(conventions.HostNameKey): "test-instance",
+				gcpProjectID:                    "test-project",
 			},
 		},
 		{
@@ -448,20 +448,20 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"queryName": "logging.googleapis.com."
 			}`),
 			expected: map[string]any{
-				string(semconv.DNSQuestionNameKey):       "logging.googleapis.com.",
-				gcpDNSQueryType:                          "A",
-				gcpDNSResponseCode:                       "NOERROR",
-				gcpDNSAuthAnswer:                         false,
-				gcpDNSAnswerData:                         "logging.googleapis.com.\t300\tIN\ta\t173.194.76.95",
-				gcpDNSClientVPCNetwork:                   "default",
-				string(semconv.ClientAddressKey):         "10.132.0.43",
-				string(semconv.NetworkTransportKey):      "udp",
-				gcpDNSServerLatency:                      5.0,
-				gcpDNSDNS64Translated:                    false,
-				string(semconv.HostIDKey):                int64(2838092002611613700),
-				string(semconv.HostNameKey):              "228025391384.instance-20251126-211431",
-				gcpProjectID:                             "elastic-logstash",
-				string(semconv.CloudAvailabilityZoneKey): "europe-west1-c",
+				string(conventions.DNSQuestionNameKey):       "logging.googleapis.com.",
+				gcpDNSQueryType:                              "A",
+				gcpDNSResponseCode:                           "NOERROR",
+				gcpDNSAuthAnswer:                             false,
+				gcpDNSAnswerData:                             "logging.googleapis.com.\t300\tIN\ta\t173.194.76.95",
+				gcpDNSClientVPCNetwork:                       "default",
+				string(conventions.ClientAddressKey):         "10.132.0.43",
+				string(conventions.NetworkTransportKey):      "udp",
+				gcpDNSServerLatency:                          5.0,
+				gcpDNSDNS64Translated:                        false,
+				string(conventions.HostIDKey):                int64(2838092002611613700),
+				string(conventions.HostNameKey):              "228025391384.instance-20251126-211431",
+				gcpProjectID:                                 "elastic-logstash",
+				string(conventions.CloudAvailabilityZoneKey): "europe-west1-c",
 			},
 		},
 		{
@@ -472,9 +472,9 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"responseCode": "NXDOMAIN"
 			}`),
 			expected: map[string]any{
-				string(semconv.DNSQuestionNameKey): "example.com.",
-				gcpDNSQueryType:                    "AAAA",
-				gcpDNSResponseCode:                 "NXDOMAIN",
+				string(conventions.DNSQuestionNameKey): "example.com.",
+				gcpDNSQueryType:                        "AAAA",
+				gcpDNSResponseCode:                     "NXDOMAIN",
 			},
 		},
 		{
@@ -492,16 +492,16 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"location": "us-central1"
 			}`),
 			expected: map[string]any{
-				string(semconv.DNSQuestionNameKey): "test.example.com.",
-				gcpDNSQueryType:                    "A",
-				gcpDNSResponseCode:                 "NOERROR",
-				string(semconv.ClientAddressKey):   "192.168.1.100",
-				string(semconv.ServerAddressKey):   "8.8.8.8",
-				gcpDNSClientVPCNetwork:             "vpc-network",
-				gcpDNSClientType:                   "VM",
-				gcpDNSServerName:                   "dns-target",
-				gcpDNServerType:                    "forwarding-zone",
-				string(semconv.CloudRegionKey):     "us-central1",
+				string(conventions.DNSQuestionNameKey): "test.example.com.",
+				gcpDNSQueryType:                        "A",
+				gcpDNSResponseCode:                     "NOERROR",
+				string(conventions.ClientAddressKey):   "192.168.1.100",
+				string(conventions.ServerAddressKey):   "8.8.8.8",
+				gcpDNSClientVPCNetwork:                 "vpc-network",
+				gcpDNSClientType:                       "VM",
+				gcpDNSServerName:                       "dns-target",
+				gcpDNServerType:                        "forwarding-zone",
+				string(conventions.CloudRegionKey):     "us-central1",
 			},
 		},
 		{
@@ -516,13 +516,13 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"unhealthyIps": "10.0.0.3"
 			}`),
 			expected: map[string]any{
-				string(semconv.DNSQuestionNameKey): "error.example.com.",
-				gcpDNSQueryType:                    "A",
-				gcpDNSResponseCode:                 "SERVFAIL",
-				gcpDNSServerLatency:                2.5,
-				gcpDNSEgressError:                  "connection timeout",
-				gcpDNSHealthyIPs:                   "10.0.0.1,10.0.0.2",
-				gcpDNSUnhealthyIPs:                 "10.0.0.3",
+				string(conventions.DNSQuestionNameKey): "error.example.com.",
+				gcpDNSQueryType:                        "A",
+				gcpDNSResponseCode:                     "SERVFAIL",
+				gcpDNSServerLatency:                    2.5,
+				gcpDNSEgressError:                      "connection timeout",
+				gcpDNSHealthyIPs:                       "10.0.0.1,10.0.0.2",
+				gcpDNSUnhealthyIPs:                     "10.0.0.3",
 			},
 		},
 		{
@@ -535,11 +535,11 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"rdata": "alias.example.com.\t300\tIN\tcname\ttarget.example.com."
 			}`),
 			expected: map[string]any{
-				string(semconv.DNSQuestionNameKey): "alias.example.com.",
-				gcpDNSQueryType:                    "CNAME",
-				gcpDNSResponseCode:                 "NOERROR",
-				gcpDNSAliasQueryResponseCode:       "NOERROR",
-				gcpDNSAnswerData:                   "alias.example.com.\t300\tIN\tcname\ttarget.example.com.",
+				string(conventions.DNSQuestionNameKey): "alias.example.com.",
+				gcpDNSQueryType:                        "CNAME",
+				gcpDNSResponseCode:                     "NOERROR",
+				gcpDNSAliasQueryResponseCode:           "NOERROR",
+				gcpDNSAnswerData:                       "alias.example.com.\t300\tIN\tcname\ttarget.example.com.",
 			},
 		},
 		{
@@ -552,11 +552,11 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"protocol": "TCP"
 			}`),
 			expected: map[string]any{
-				string(semconv.DNSQuestionNameKey):  "ipv6.example.com.",
-				gcpDNSQueryType:                     "AAAA",
-				gcpDNSResponseCode:                  "NOERROR",
-				gcpDNSDNS64Translated:               true,
-				string(semconv.NetworkTransportKey): "tcp",
+				string(conventions.DNSQuestionNameKey):  "ipv6.example.com.",
+				gcpDNSQueryType:                         "AAAA",
+				gcpDNSResponseCode:                      "NOERROR",
+				gcpDNSDNS64Translated:                   true,
+				string(conventions.NetworkTransportKey): "tcp",
 			},
 		},
 		{

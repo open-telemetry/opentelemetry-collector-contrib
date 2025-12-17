@@ -12,7 +12,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -93,7 +93,7 @@ type dnslog struct {
 }
 
 func handleQueryAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutStr(string(semconv.DNSQuestionNameKey), log.QueryName, attr)
+	shared.PutStr(string(conventions.DNSQuestionNameKey), log.QueryName, attr)
 	shared.PutStr(gcpDNSQueryType, log.QueryType, attr) // TBD in SemConv
 }
 
@@ -105,12 +105,12 @@ func handleResponseAttributes(log *dnslog, attr pcommon.Map) {
 }
 
 func handleNetworkAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutStr(string(semconv.ServerAddressKey), log.DestinationIP, attr)
+	shared.PutStr(string(conventions.ServerAddressKey), log.DestinationIP, attr)
 	shared.PutStr(gcpDNSClientVPCNetwork, log.SourceNetwork, attr)
 	shared.PutStr(gcpDNSClientType, log.SourceType, attr)
-	shared.PutStr(string(semconv.ClientAddressKey), log.SourceIP, attr)
-	shared.PutStr(string(semconv.NetworkTransportKey), strings.ToLower(log.Protocol), attr)
-	shared.PutStr(string(semconv.CloudRegionKey), log.Location, attr)
+	shared.PutStr(string(conventions.ClientAddressKey), log.SourceIP, attr)
+	shared.PutStr(string(conventions.NetworkTransportKey), strings.ToLower(log.Protocol), attr)
+	shared.PutStr(string(conventions.CloudRegionKey), log.Location, attr)
 }
 
 func handleTargetAttributes(log *dnslog, attr pcommon.Map) {
@@ -130,10 +130,10 @@ func handleDNSFeatureAttributes(log *dnslog, attr pcommon.Map) {
 }
 
 func handleVMInstanceAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutInt(string(semconv.HostIDKey), log.VMInstanceID, attr)
-	shared.PutStr(string(semconv.HostNameKey), log.VMInstanceName, attr)
+	shared.PutInt(string(conventions.HostIDKey), log.VMInstanceID, attr)
+	shared.PutStr(string(conventions.HostNameKey), log.VMInstanceName, attr)
 	shared.PutStr(gcpProjectID, log.VMProjectID, attr)
-	shared.PutStr(string(semconv.CloudAvailabilityZoneKey), log.VMZoneName, attr)
+	shared.PutStr(string(conventions.CloudAvailabilityZoneKey), log.VMZoneName, attr)
 }
 
 func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
