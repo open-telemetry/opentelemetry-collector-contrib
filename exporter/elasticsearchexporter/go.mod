@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elastic/go-docappender/v2 v2.12.0
-	github.com/elastic/go-elasticsearch/v8 v8.19.0
+	github.com/elastic/go-elasticsearch/v8 v8.19.1
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.18.2
@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.48.0
 	go.opentelemetry.io/collector/pdata v1.48.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.142.0
-	go.opentelemetry.io/ebpf-profiler v0.0.202547
+	go.opentelemetry.io/ebpf-profiler v0.0.202549
 	go.opentelemetry.io/otel v1.39.0
 	go.opentelemetry.io/otel/metric v1.39.0
 	go.opentelemetry.io/otel/sdk/metric v1.39.0

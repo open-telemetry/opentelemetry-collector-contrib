@@ -72,7 +72,19 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/valyala/fastjson v1.6.4 // indirect
+	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/prometheus/client_golang v1.23.2 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
+	github.com/prometheus/common v0.67.1 // indirect
+	github.com/prometheus/otlptranslator v0.0.2 // indirect
+	github.com/prometheus/procfs v0.17.0 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.11 // indirect
+	github.com/spf13/cobra v1.10.2 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
+	github.com/valyala/fastjson v1.6.7 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.142.0 // indirect

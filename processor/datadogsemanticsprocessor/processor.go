@@ -15,7 +15,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/transform"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 func (tp *tracesProcessor) insertAttrIfMissingOrShouldOverride(sattr pcommon.Map, key string, value any) (err error) {
