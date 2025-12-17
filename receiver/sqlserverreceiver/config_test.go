@@ -85,10 +85,19 @@ func TestValidate(t *testing.T) {
 			desc: "invalid config with azure_datasource and direct connect settings",
 			cfg: &Config{
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				DataSource:       "sqlserver://myserver.database.windows.net?database=mydb&fedauth=ActiveDirectoryDefault",
 				UseAzureAd:       true,
 				Username:         "sa",
+				Server:           "myserver.database.windows.net",
+				Password:         "password",
 				Port:             1433,
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "invalid config with only use_azure_ad set",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				UseAzureAd:       true,
 			},
 			expectedSuccess: false,
 		},

@@ -107,6 +107,7 @@ func getDBConnectionString(config *Config) string {
 	}
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
+
 func getDriverName(cfg *Config) string {
 	if cfg.UseAzureAd {
 		return azuread.DriverName
@@ -130,9 +131,7 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 	// TODO: Test if this needs to be re-defined for each scraper
 	// This should be tested when there is more than one query being made.
 	dbProviderFunc := func() (*sql.DB, error) {
-		connString := getDBConnectionString(cfg)
-		driverName := getDriverName(cfg)
-		return sql.Open(driverName, connString)
+		return sql.Open(getDriverName(cfg), getDBConnectionString(cfg))
 	}
 
 	var scrapers []*sqlServerScraperHelper
@@ -173,9 +172,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 	// TODO: Test if this needs to be re-defined for each scraper
 	// This should be tested when there is more than one query being made.
 	dbProviderFunc := func() (*sql.DB, error) {
-		connString := getDBConnectionString(cfg)
-		driverName := getDriverName(cfg)
-		return sql.Open(driverName, connString)
+		return sql.Open(getDriverName(cfg), getDBConnectionString(cfg))
 	}
 
 	var scrapers []*sqlServerScraperHelper

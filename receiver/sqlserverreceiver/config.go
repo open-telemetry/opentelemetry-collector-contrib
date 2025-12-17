@@ -91,7 +91,7 @@ func (cfg *Config) Validate() error {
 
 func directDBConnectionEnabled(config *Config) (bool, error) {
 	noneOfServerUserPasswordPortSet := config.Server == "" && config.Username == "" && string(config.Password) == "" && config.Port == 0
-	if config.DataSource == "" && noneOfServerUserPasswordPortSet {
+	if config.DataSource == "" && noneOfServerUserPasswordPortSet && !config.UseAzureAd {
 		// If no connection information is provided, we can't connect directly and this is a valid config.
 		return false, nil
 	}
@@ -103,6 +103,10 @@ func directDBConnectionEnabled(config *Config) (bool, error) {
 
 	if config.DataSource == "" && (config.Server == "" || config.Username == "" || string(config.Password) == "" || config.Port == 0) {
 		return false, errors.New("wrong config: when specifying either 'server', 'username', 'password', or 'port' all of them need to be specified")
+	}
+
+	if config.UseAzureAd && config.DataSource == "" {
+		return false, errors.New("wrong config: when specifying 'use_azure_ad' 'datasource' must be specified")
 	}
 
 	// It is a valid direct connection configuration
