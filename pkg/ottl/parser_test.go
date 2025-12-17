@@ -2766,7 +2766,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			telemetrySettings := componenttest.NewNopTelemetrySettings()
 			statements := []*Statement[any]{
 				{
-					condition:         BoolExpr[any]{tt.condition},
+					condition:         tt.condition,
 					function:          Expr[any]{exprFunc: tt.function},
 					telemetrySettings: telemetrySettings,
 				},
@@ -2792,16 +2792,14 @@ type expectedSpan struct {
 func Test_Statements_Execute_Error_With_Tracing(t *testing.T) {
 	tests := []struct {
 		name          string
-		condition     boolExpressionEvaluator[any]
+		condition     BoolExpr[any]
 		function      ExprFunc[any]
 		errorMode     ErrorMode
 		expectedSpans []expectedSpan
 	}{
 		{
-			name: "IgnoreError error from condition",
-			condition: func(context.Context, any) (bool, error) {
-				return false, errors.New("test error")
-			},
+			name:      "IgnoreError error from condition",
+			condition: newErrExpr[any](errors.New("test error")),
 			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
@@ -2833,10 +2831,8 @@ func Test_Statements_Execute_Error_With_Tracing(t *testing.T) {
 			},
 		},
 		{
-			name: "PropagateError error from condition",
-			condition: func(context.Context, any) (bool, error) {
-				return false, errors.New("test error")
-			},
+			name:      "PropagateError error from condition",
+			condition: newErrExpr[any](errors.New("test error")),
 			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
@@ -2869,10 +2865,8 @@ func Test_Statements_Execute_Error_With_Tracing(t *testing.T) {
 			},
 		},
 		{
-			name: "IgnoreError error from function",
-			condition: func(context.Context, any) (bool, error) {
-				return true, nil
-			},
+			name:      "IgnoreError error from function",
+			condition: newAlwaysTrue[any](),
 			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test error")
 			},
@@ -2904,10 +2898,8 @@ func Test_Statements_Execute_Error_With_Tracing(t *testing.T) {
 			},
 		},
 		{
-			name: "PropagateError error from function",
-			condition: func(context.Context, any) (bool, error) {
-				return true, nil
-			},
+			name:      "PropagateError error from function",
+			condition: newAlwaysTrue[any](),
 			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test error")
 			},
@@ -2940,10 +2932,8 @@ func Test_Statements_Execute_Error_With_Tracing(t *testing.T) {
 			},
 		},
 		{
-			name: "SilentError error from condition",
-			condition: func(context.Context, any) (bool, error) {
-				return false, errors.New("test error")
-			},
+			name:      "SilentError error from condition",
+			condition: newErrExpr[any](errors.New("test error")),
 			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
@@ -2975,10 +2965,8 @@ func Test_Statements_Execute_Error_With_Tracing(t *testing.T) {
 			},
 		},
 		{
-			name: "SilentError error from function",
-			condition: func(context.Context, any) (bool, error) {
-				return true, nil
-			},
+			name:      "SilentError error from function",
+			condition: newAlwaysTrue[any](),
 			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test error")
 			},
@@ -3021,7 +3009,7 @@ func Test_Statements_Execute_Error_With_Tracing(t *testing.T) {
 				telemetrySettings: telemetrySettings,
 				tracer:            tracer,
 				statements: []*Statement[any]{{
-					condition:         BoolExpr[any]{tt.condition},
+					condition:         tt.condition,
 					function:          Expr[any]{exprFunc: tt.function},
 					telemetrySettings: telemetrySettings,
 					origText:          "test statement",
