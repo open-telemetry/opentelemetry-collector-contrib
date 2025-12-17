@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 func TestDetectWrapperFormat(t *testing.T) {
@@ -580,47 +579,47 @@ func TestAttrPutURLParsed(t *testing.T) {
 			name: "invalid url",
 			uri:  "://bad-url",
 			wantAttrs: map[string]any{
-				string(conventions.URLOriginalKey): "://bad-url",
+				"url.original": "://bad-url",
 			},
 		},
 		{
 			name: "url with invalid port",
 			uri:  "http://example.com:abc/path",
 			wantAttrs: map[string]any{
-				string(conventions.URLOriginalKey): "http://example.com:abc/path",
+				"url.original": "http://example.com:abc/path",
 			},
 		},
 		{
 			name: "simple http url",
 			uri:  "http://example.com/path?query=1#frag",
 			wantAttrs: map[string]any{
-				string(conventions.URLFullKey):     "http://example.com/path?query=1#frag",
-				string(conventions.URLSchemeKey):   "http",
-				string(conventions.URLDomainKey):   "example.com",
-				string(conventions.URLPathKey):     "/path",
-				string(conventions.URLQueryKey):    "query=1",
-				string(conventions.URLFragmentKey): "frag",
+				"url.full":     "http://example.com/path?query=1#frag",
+				"url.scheme":   "http",
+				"url.domain":   "example.com",
+				"url.path":     "/path",
+				"url.query":    "query=1",
+				"url.fragment": "frag",
 			},
 		},
 		{
 			name: "url with port",
 			uri:  "https://example.com:8080/path",
 			wantAttrs: map[string]any{
-				string(conventions.URLFullKey):   "https://example.com:8080/path",
-				string(conventions.URLSchemeKey): "https",
-				string(conventions.URLDomainKey): "example.com",
-				string(conventions.URLPathKey):   "/path",
-				string(conventions.URLPortKey):   int64(8080),
+				"url.full":   "https://example.com:8080/path",
+				"url.scheme": "https",
+				"url.domain": "example.com",
+				"url.path":   "/path",
+				"url.port":   int64(8080),
 			},
 		},
 		{
 			name: "url with credentials",
 			uri:  "ftp://user:pass@example.com/resource",
 			wantAttrs: map[string]any{
-				string(conventions.URLFullKey):   "ftp://REDACTED:REDACTED@example.com/resource",
-				string(conventions.URLSchemeKey): "ftp",
-				string(conventions.URLDomainKey): "example.com",
-				string(conventions.URLPathKey):   "/resource",
+				"url.full":   "ftp://REDACTED:REDACTED@example.com/resource",
+				"url.scheme": "ftp",
+				"url.domain": "example.com",
+				"url.path":   "/resource",
 			},
 		},
 	}
@@ -649,28 +648,28 @@ func TestAttrPutHostPortIf(t *testing.T) {
 	}{
 		{
 			name:    "empty value",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
 			value:   "",
 			wantRaw: map[string]any{},
 		},
 		{
 			name:    "host only",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
 			value:   "example.com",
 			wantRaw: map[string]any{
-				string(conventions.NetworkPeerAddressKey): "example.com",
+				"network.peer.address": "example.com",
 			},
 		},
 		{
 			name:    "host with valid port",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: "destination.address",
+			portKey: "destination.port",
 			value:   "example.com:443",
 			wantRaw: map[string]any{
-				string(conventions.NetworkPeerAddressKey): "example.com",
-				string(conventions.NetworkPeerPortKey):    int64(443),
+				"destination.address": "example.com",
+				"destination.port":    int64(443),
 			},
 		},
 		{
@@ -685,8 +684,8 @@ func TestAttrPutHostPortIf(t *testing.T) {
 		},
 		{
 			name:    "host with invalid port",
-			addrKey: string(conventions.ClientAddressKey),
-			portKey: string(conventions.ClientPortKey),
+			addrKey: "client.address",
+			portKey: "client.port",
 			value:   "example.com:invalid",
 			wantRaw: map[string]any{
 				attributeClientAddressOriginal: "example.com:invalid",
@@ -694,36 +693,36 @@ func TestAttrPutHostPortIf(t *testing.T) {
 		},
 		{
 			name:    "IPv6 with port",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: "server.address",
+			portKey: "server.port",
 			value:   "[2001:db8::1]:8080",
 			wantRaw: map[string]any{
-				string(conventions.NetworkPeerAddressKey): "2001:db8::1",
-				string(conventions.NetworkPeerPortKey):    int64(8080),
+				"server.address": "2001:db8::1",
+				"server.port":    int64(8080),
 			},
 		},
 		{
 			name:    "IPv6 without port",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: "network.local.address",
+			portKey: "network.local.port",
 			value:   "[2001:db8::1]",
 			wantRaw: map[string]any{
-				string(conventions.NetworkPeerAddressKey): "[2001:db8::1]",
+				"network.local.address": "[2001:db8::1]",
 			},
 		},
 		{
 			name:    "IPv6 without port and brackets",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
 			value:   "2001:1c00:3280:6700:fbfa:bf04:1296:ebfc",
 			wantRaw: map[string]any{
-				string(conventions.NetworkPeerAddressKey): "2001:1c00:3280:6700:fbfa:bf04:1296:ebfc",
+				"network.peer.address": "2001:1c00:3280:6700:fbfa:bf04:1296:ebfc",
 			},
 		},
 		{
 			name:    "host with empty port",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
 			value:   "example.com:",
 			wantRaw: map[string]any{
 				attributeNetworkPeerAddressOriginal: "example.com:",
@@ -731,12 +730,12 @@ func TestAttrPutHostPortIf(t *testing.T) {
 		},
 		{
 			name:    "host with negative port",
-			addrKey: string(conventions.NetworkPeerAddressKey),
-			portKey: string(conventions.NetworkPeerPortKey),
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
 			value:   "example.com:-1",
 			wantRaw: map[string]any{
-				string(conventions.NetworkPeerAddressKey): "example.com",
-				string(conventions.NetworkPeerPortKey):    int64(-1),
+				"network.peer.address": "example.com",
+				"network.peer.port":    int64(-1),
 			},
 		},
 	}

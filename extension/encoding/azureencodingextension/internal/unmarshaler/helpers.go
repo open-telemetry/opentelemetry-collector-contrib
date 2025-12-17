@@ -68,6 +68,11 @@ const (
 	// in case if the value could not be parsed into
 	// `network.peer.address` and `network.peer.port` attributes
 	attributeNetworkPeerAddressOriginal = "network.peer.original_address"
+
+	// OpenTelemetry attribute name for Network Local original address,
+	// in case if the value could not be parsed into
+	// `network.local.address` and `network.local.port` attributes
+	attributeNetworkLocalAddressOriginal = "network.local.original_address"
 )
 
 const (
@@ -292,6 +297,8 @@ func AttrPutHostPortIf(attrs pcommon.Map, addrKey, portKey, value string) {
 		fallbackKey = attributeServerAddressOriginal
 	case string(conventions.NetworkPeerAddressKey):
 		fallbackKey = attributeNetworkPeerAddressOriginal
+	case string(conventions.NetworkLocalAddressKey):
+		fallbackKey = attributeNetworkLocalAddressOriginal
 	default:
 		fallbackKey = addrKey + originalSuffix
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 func TestAsSeverity(t *testing.T) {
@@ -44,40 +43,40 @@ func TestAttrPutTLSProtoIf(t *testing.T) {
 			name:             "valid SSLv3 proto",
 			securityProtocol: tlsVersionSSLv3,
 			wantRaw: map[string]any{
-				string(conventions.TLSProtocolNameKey):    "SSL",
-				string(conventions.TLSProtocolVersionKey): "3",
+				"tls.protocol.name":    "SSL",
+				"tls.protocol.version": "3",
 			},
 		},
 		{
 			name:             "valid TLS 1.0 proto",
 			securityProtocol: tlsVersionTLS10,
 			wantRaw: map[string]any{
-				string(conventions.TLSProtocolNameKey):    "TLS",
-				string(conventions.TLSProtocolVersionKey): "1.0",
+				"tls.protocol.name":    "TLS",
+				"tls.protocol.version": "1.0",
 			},
 		},
 		{
 			name:             "valid TLS 1.1 proto",
 			securityProtocol: tlsVersionTLS11,
 			wantRaw: map[string]any{
-				string(conventions.TLSProtocolNameKey):    "TLS",
-				string(conventions.TLSProtocolVersionKey): "1.1",
+				"tls.protocol.name":    "TLS",
+				"tls.protocol.version": "1.1",
 			},
 		},
 		{
 			name:             "valid TLS 1.2 proto",
 			securityProtocol: tlsVersionTLS12,
 			wantRaw: map[string]any{
-				string(conventions.TLSProtocolNameKey):    "TLS",
-				string(conventions.TLSProtocolVersionKey): "1.2",
+				"tls.protocol.name":    "TLS",
+				"tls.protocol.version": "1.2",
 			},
 		},
 		{
 			name:             "valid TLS 1.3 proto",
 			securityProtocol: tlsVersionTLS13,
 			wantRaw: map[string]any{
-				string(conventions.TLSProtocolNameKey):    "TLS",
-				string(conventions.TLSProtocolVersionKey): "1.3",
+				"tls.protocol.name":    "TLS",
+				"tls.protocol.version": "1.3",
 			},
 		},
 		{
