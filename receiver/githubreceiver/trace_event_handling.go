@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v80/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -222,7 +222,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	span.SetParentSpanID(parentSpanID)
 	span.SetSpanID(jobSpanID)
 	span.SetName(event.GetWorkflowJob().GetName())
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 
 	startTime, endTime := correctActionTimestamps(event.GetWorkflowJob().GetCreatedAt().Time, event.GetWorkflowJob().GetCompletedAt().Time)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
@@ -335,7 +335,7 @@ func (*githubTracesReceiver) createStepSpan(
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetName(name)
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
@@ -352,7 +352,7 @@ func (*githubTracesReceiver) createStepSpan(
 	span.SetSpanID(spanID)
 
 	attrs := span.Attributes()
-	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), name)
+	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), name)
 	attrs.PutStr(AttributeCICDPipelineTaskRunStatus, step.GetStatus())
 	startTime, endTime := correctActionTimestamps(step.GetStartedAt().Time, step.GetCompletedAt().Time)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
@@ -410,7 +410,7 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	spanName := fmt.Sprintf("queue-%s", jobName)
 
 	span.SetName(spanName)
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
