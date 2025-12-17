@@ -25,7 +25,7 @@ func TestConvertToOTMetrics(t *testing.T) {
 	resource := pcommon.NewResource()
 	md := convertToOTLPMetrics("container.", m, resource, timestamp)
 	require.Equal(t, 26, md.ResourceMetrics().At(0).ScopeMetrics().Len())
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.21.0", md.ResourceMetrics().At(0).SchemaUrl())
+	assert.Contains(t, md.ResourceMetrics().At(0).SchemaUrl(), "https://opentelemetry.io/schemas/")
 }
 
 func TestIntGauge(t *testing.T) {

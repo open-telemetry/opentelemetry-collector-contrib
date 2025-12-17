@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
@@ -365,9 +365,9 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 	case "flow-direction":
 		switch value {
 		case "ingress":
-			record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "receive")
+			record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "receive")
 		case "egress":
-			record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "transmit")
+			record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "transmit")
 		default:
 			return true, fmt.Errorf("value %s not valid for field %s", value, field)
 		}
