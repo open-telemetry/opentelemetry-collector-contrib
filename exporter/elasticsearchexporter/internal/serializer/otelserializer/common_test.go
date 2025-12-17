@@ -35,7 +35,7 @@ func TestWriteAttributes_Deduplication(t *testing.T) {
 	unmarshaler := &plog.JSONUnmarshaler{}
 	logs, err := unmarshaler.UnmarshalLogs([]byte(otlpJSON))
 	require.NoError(t, err)
-	
+
 	attributes := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
 
 	// Verify the parsed attributes contain duplicates (3 entries including duplicate)
