@@ -22,6 +22,7 @@ const (
 	operatorType              = "container"
 	recombineSourceIdentifier = attrs.LogFilePath
 	recombineIsLastEntry      = "attributes.logtag == 'F'"
+	defaultMaxLogSize         = 10 * 1024 * 1024
 )
 
 func init() {
@@ -39,7 +40,9 @@ func NewConfigWithID(operatorID string) *Config {
 		ParserConfig:            helper.NewParserConfig(operatorID, operatorType),
 		Format:                  "",
 		AddMetadataFromFilePath: true,
-		MaxLogSize:              0,
+		MaxLogSize:              defaultMaxLogSize,
+		MaxBatchSize:            0,
+		MaxUnmatchedBatchSize:   0,
 	}
 }
 
@@ -50,6 +53,8 @@ type Config struct {
 	Format                  string          `mapstructure:"format"`
 	AddMetadataFromFilePath bool            `mapstructure:"add_metadata_from_filepath"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	MaxBatchSize            int             `mapstructure:"max_batch_size,omitempty"`
+	MaxUnmatchedBatchSize   int             `mapstructure:"max_unmatched_batch_size,omitempty"`
 }
 
 // Build will build a Container parser operator.
@@ -124,5 +129,9 @@ func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg.CombineWith = ""
 	recombineParserCfg.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
 	recombineParserCfg.MaxLogSize = c.MaxLogSize
+
+	recombineParserCfg.MaxBatchSize = c.MaxBatchSize
+	recombineParserCfg.MaxUnmatchedBatchSize = c.MaxUnmatchedBatchSize
+
 	return recombineParserCfg
 }

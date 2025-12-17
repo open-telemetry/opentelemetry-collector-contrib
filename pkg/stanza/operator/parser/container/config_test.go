@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -87,6 +89,31 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "max_batch_size",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.MaxBatchSize = 5000
+					return cfg
+				}(),
+			},
+			{
+				Name: "max_unmatched_batch_size",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.MaxUnmatchedBatchSize = 500
+					return cfg
+				}(),
+			},
+			{
+				Name: "max_batch_size_and_max_unmatched_batch_size",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.MaxBatchSize = 10000
+					cfg.MaxUnmatchedBatchSize = 1000
+					return cfg
+				}(),
+			},
+			{
 				Name: "parse_to_attributes",
 				Expect: func() *Config {
 					p := NewConfig()
@@ -112,4 +139,11 @@ func TestConfig(t *testing.T) {
 			},
 		},
 	}.Run(t)
+}
+
+func TestDefaultValues(t *testing.T) {
+	cfg := NewConfig()
+	assert.Equal(t, helper.ByteSize(10*1024*1024), cfg.MaxLogSize)
+	assert.Equal(t, 0, cfg.MaxBatchSize)
+	assert.Equal(t, 0, cfg.MaxUnmatchedBatchSize)
 }
