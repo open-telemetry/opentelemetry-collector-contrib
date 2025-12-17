@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 func int64Ptr(v int64) *int64 {
@@ -36,11 +35,11 @@ func TestHandleConnection(t *testing.T) {
 				ServerPort: int64Ptr(80),
 			},
 			expectedAttr: map[string]any{
-				string(conventions.ClientAddressKey):    "68.168.189.182",
-				string(conventions.ClientPortKey):       int64(52900),
-				string(conventions.ServerAddressKey):    "35.209.164.189",
-				string(conventions.ServerPortKey):       int64(80),
-				string(conventions.NetworkTransportKey): "tcp",
+				"client.address":    "68.168.189.182",
+				"client.port":       int64(52900),
+				"server.address":    "35.209.164.189",
+				"server.port":       int64(80),
+				"network.transport": "tcp",
 			},
 		},
 		"nil connection": {
@@ -110,15 +109,15 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"serverBytesSent":"853"
 			}`),
 			expectedAttr: map[string]any{
-				string(conventions.ClientAddressKey):    "68.168.189.182",
-				string(conventions.ClientPortKey):       int64(52900),
-				string(conventions.ServerAddressKey):    "35.209.164.189",
-				string(conventions.ServerPortKey):       int64(80),
-				string(conventions.NetworkTransportKey): "tcp",
-				gcpProxyNLBConnectionStartTime:          "2025-11-17T22:21:57.480419Z",
-				gcpProxyNLBConnectionEndTime:            "2025-11-17T22:21:57.500505Z",
-				gcpProxyNLBServerBytesReceived:          int64(83),
-				gcpProxyNLBServerBytesSent:              int64(853),
+				"client.address":               "68.168.189.182",
+				"client.port":                  int64(52900),
+				"server.address":               "35.209.164.189",
+				"server.port":                  int64(80),
+				"network.transport":            "tcp",
+				gcpProxyNLBConnectionStartTime: "2025-11-17T22:21:57.480419Z",
+				gcpProxyNLBConnectionEndTime:   "2025-11-17T22:21:57.500505Z",
+				gcpProxyNLBServerBytesReceived: int64(83),
+				gcpProxyNLBServerBytesSent:     int64(853),
 			},
 		},
 	}

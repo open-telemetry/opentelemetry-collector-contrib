@@ -1,0 +1,17 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+connectors:
+  count:
+
+service:
+  pipelines:
+    logs/in:
+      receivers: [nop]
+      exporters: [count]
+    metrics/out:
+      receivers: [count]
+      exporters: [nop]
