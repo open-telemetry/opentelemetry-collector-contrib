@@ -22,13 +22,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -1132,4 +1138,132 @@ func (e *mockMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Met
 		return e.consumeErr
 	}
 	return e.ConsumeMetricsFn(ctx, md)
+}
+
+func TestRetryPartialFailuresMetrics(t *testing.T) {
+	ts, _ := getTelemetryAssets(t)
+
+	metrics1 := pmetric.NewMetrics()
+	rm1 := metrics1.ResourceMetrics().AppendEmpty()
+	rm1.Resource().Attributes().PutStr("service.name", "service-fail")
+	rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("metric1")
+
+	metrics2 := pmetric.NewMetrics()
+	rm2 := metrics2.ResourceMetrics().AppendEmpty()
+	rm2.Resource().Attributes().PutStr("service.name", "service-success")
+	rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("metric2")
+
+	metrics3 := pmetric.NewMetrics()
+	rm3 := metrics3.ResourceMetrics().AppendEmpty()
+	rm3.Resource().Attributes().PutStr("service.name", "service-fail")
+	rm3.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("metric3")
+
+	endpoint1Calls := atomic.Int32{}
+	endpoint2Calls := atomic.Int32{}
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		var exp exporter.Metrics
+		switch endpoint {
+		case "endpoint-1:4317":
+			exp = newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+				endpoint1Calls.Add(1)
+				return errors.New("endpoint-1 failure")
+			})
+		case "endpoint-2:4317":
+			exp = newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+				endpoint2Calls.Add(1)
+				return nil
+			})
+		default:
+			return nil, fmt.Errorf("unexpected endpoint: %s", endpoint)
+		}
+		return exp, nil
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
+		},
+		RoutingKey: svcRoutingStr,
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 10 * time.Millisecond,
+			MaxInterval:     50 * time.Millisecond,
+			MaxElapsedTime:  200 * time.Millisecond,
+		},
+	}
+
+	parentParams := exportertest.NewNopSettings(metadata.Type)
+	parentParams.TelemetrySettings = ts.TelemetrySettings
+
+	exp, err := newMetricsExporter(parentParams, config)
+	require.NoError(t, err)
+
+	exp.loadBalancer.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1", "endpoint-2"}, nil
+		},
+	}
+
+	exp.loadBalancer.componentFactory = func(ctx context.Context, endpoint string) (component.Component, error) {
+		childCfg := buildExporterConfig(config, endpoint)
+		childParams := buildExporterSettings(otlpexporter.NewFactory().Type(), parentParams, endpoint)
+		childExp, err2 := componentFactory(ctx, endpoint)
+		if err2 != nil {
+			return nil, err2
+		}
+		return exporterhelper.NewMetrics(ctx, childParams, &childCfg, childExp.(exporter.Metrics).ConsumeMetrics)
+	}
+
+	wrappedExporter, err := exporterhelper.NewMetrics(
+		t.Context(),
+		parentParams,
+		config,
+		exp.ConsumeMetrics,
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithCapabilities(exp.Capabilities()),
+		exporterhelper.WithRetry(config.BackOffConfig),
+	)
+	require.NoError(t, err)
+
+	err = wrappedExporter.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, wrappedExporter.Shutdown(t.Context()))
+	}()
+
+	require.Eventually(t, func() bool {
+		return len(exp.loadBalancer.exporters) == 2 && exp.loadBalancer.ring != nil
+	}, 1*time.Second, 10*time.Millisecond, "exporters and ring should be initialized")
+
+	err1 := wrappedExporter.ConsumeMetrics(t.Context(), metrics1)
+	err2 := wrappedExporter.ConsumeMetrics(t.Context(), metrics2)
+	err3 := wrappedExporter.ConsumeMetrics(t.Context(), metrics3)
+
+	endpoint1CallsCount := endpoint1Calls.Load()
+	endpoint2CallsCount := endpoint2Calls.Load()
+
+	hasFailure := err1 != nil || err3 != nil
+	hasSuccess := err2 == nil && endpoint2CallsCount > 0
+
+	if hasFailure && hasSuccess {
+		var metricsErr consumererror.Metrics
+		if err1 != nil {
+			require.ErrorAs(t, err1, &metricsErr, "error should be wrapped as consumererror.Metrics")
+		} else if err3 != nil {
+			require.ErrorAs(t, err3, &metricsErr, "error should be wrapped as consumererror.Metrics")
+		}
+
+		initialEndpoint2Calls := endpoint2CallsCount
+
+		require.Eventually(t, func() bool {
+			currentCalls := endpoint1Calls.Load()
+			return currentCalls > endpoint1CallsCount
+		}, 500*time.Millisecond, 10*time.Millisecond, "endpoint-1 should be retried")
+
+		finalEndpoint2Calls := endpoint2Calls.Load()
+		assert.Equal(t, initialEndpoint2Calls, finalEndpoint2Calls, "endpoint-2 should not be retried (successful data)")
+	}
 }

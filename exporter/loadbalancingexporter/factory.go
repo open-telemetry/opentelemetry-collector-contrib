@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	metricnoop "go.opentelemetry.io/otel/metric/noop"
-	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -65,8 +63,6 @@ func buildExporterSettings(typ component.Type, params exporter.Settings, endpoin
 		params.ID = component.NewID(typ)
 	}
 	telemetry := params.TelemetrySettings
-	telemetry.MeterProvider = metricnoop.NewMeterProvider()
-	telemetry.TracerProvider = tracenoop.NewTracerProvider()
 	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
 	telemetry.Logger = params.Logger
 	params.TelemetrySettings = telemetry
