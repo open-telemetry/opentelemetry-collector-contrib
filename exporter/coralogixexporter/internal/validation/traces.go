@@ -90,69 +90,38 @@ type BaseSpanDetail struct {
 
 // InvalidSpanDetail contains debugging information for spans with invalid durations
 type InvalidSpanDetail struct {
-	TraceID                     string            `json:"trace_id"`
-	SpanID                      string            `json:"span_id"`
-	SpanName                    string            `json:"span_name"`
-	ResourceAttributes          map[string]string `json:"resource_attributes,omitempty"`
-	InstrumentationScopeName    string            `json:"instrumentation_scope_name,omitempty"`
-	InstrumentationScopeVersion string            `json:"instrumentation_scope_version,omitempty"`
-	StartTimeUnixNano           uint64            `json:"start_time_unix_nano"`
-	EndTimeUnixNano             uint64            `json:"end_time_unix_nano"`
-	DurationNano                int64             `json:"duration_nano,omitempty"`
+	SpanDetails       BaseSpanDetail `json:"span_details"`
+	StartTimeUnixNano uint64         `json:"start_time_unix_nano"`
+	EndTimeUnixNano   uint64         `json:"end_time_unix_nano"`
+	DurationNano      int64          `json:"duration_nano,omitempty"`
 }
 
 // InvalidTraceIDDetail contains debugging information for invalid trace IDs
 type InvalidTraceIDDetail struct {
-	TraceID                     string            `json:"trace_id"`
-	SpanID                      string            `json:"span_id"`
-	SpanName                    string            `json:"span_name"`
-	ResourceAttributes          map[string]string `json:"resource_attributes,omitempty"`
-	InstrumentationScopeName    string            `json:"instrumentation_scope_name,omitempty"`
-	InstrumentationScopeVersion string            `json:"instrumentation_scope_version,omitempty"`
+	SpanDetails BaseSpanDetail `json:"span_details"`
 }
 
 // InvalidSpanIDDetail contains debugging information for invalid span IDs
 type InvalidSpanIDDetail struct {
-	TraceID                     string            `json:"trace_id"`
-	SpanID                      string            `json:"span_id"`
-	SpanName                    string            `json:"span_name"`
-	ResourceAttributes          map[string]string `json:"resource_attributes,omitempty"`
-	InstrumentationScopeName    string            `json:"instrumentation_scope_name,omitempty"`
-	InstrumentationScopeVersion string            `json:"instrumentation_scope_version,omitempty"`
+	SpanDetails BaseSpanDetail `json:"span_details"`
 }
 
 // InvalidStartTimeDetail contains debugging information for invalid start times
 type InvalidStartTimeDetail struct {
-	TraceID                     string            `json:"trace_id"`
-	SpanID                      string            `json:"span_id"`
-	SpanName                    string            `json:"span_name"`
-	ResourceAttributes          map[string]string `json:"resource_attributes,omitempty"`
-	InstrumentationScopeName    string            `json:"instrumentation_scope_name,omitempty"`
-	InstrumentationScopeVersion string            `json:"instrumentation_scope_version,omitempty"`
-	StartTimeUnixNano           uint64            `json:"start_time_unix_nano"`
+	SpanDetails       BaseSpanDetail `json:"span_details"`
+	StartTimeUnixNano uint64         `json:"start_time_unix_nano"`
 }
 
 // MissingAttributeDetail contains debugging information for missing required attributes
-// Note: BaseSpanDetail provides a sample span from the resource for debugging
 type MissingAttributeDetail struct {
-	TraceID                     string            `json:"trace_id"`
-	SpanID                      string            `json:"span_id"`
-	SpanName                    string            `json:"span_name"`
-	ResourceAttributes          map[string]string `json:"resource_attributes,omitempty"`
-	InstrumentationScopeName    string            `json:"instrumentation_scope_name,omitempty"`
-	InstrumentationScopeVersion string            `json:"instrumentation_scope_version,omitempty"`
-	MissingAttribute            string            `json:"missing_attribute"`
+	SpanDetails      BaseSpanDetail `json:"span_details"`
+	MissingAttribute string         `json:"missing_attribute"`
 }
 
 // TooBigSpanDetail contains debugging information for spans that exceed size limits
 type TooBigSpanDetail struct {
-	TraceID                     string            `json:"trace_id"`
-	SpanID                      string            `json:"span_id"`
-	SpanName                    string            `json:"span_name"`
-	ResourceAttributes          map[string]string `json:"resource_attributes,omitempty"`
-	InstrumentationScopeName    string            `json:"instrumentation_scope_name,omitempty"`
-	InstrumentationScopeVersion string            `json:"instrumentation_scope_version,omitempty"`
-	SerializedSizeBytes         int               `json:"serialized_size_bytes"`
+	SpanDetails         BaseSpanDetail `json:"span_details"`
+	SerializedSizeBytes int            `json:"serialized_size_bytes"`
 }
 
 // BuildPartialSuccessLogFieldsForTraces creates log fields for partial success responses
@@ -226,15 +195,10 @@ func collectInvalidDurationSpans(td ptrace.Traces) []InvalidSpanDetail {
 
 		base := createBaseSpanDetail(span, scope, resourceAttrs)
 		return InvalidSpanDetail{
-			TraceID:                     base.TraceID,
-			SpanID:                      base.SpanID,
-			SpanName:                    base.SpanName,
-			ResourceAttributes:          base.ResourceAttributes,
-			InstrumentationScopeName:    base.InstrumentationScopeName,
-			InstrumentationScopeVersion: base.InstrumentationScopeVersion,
-			StartTimeUnixNano:           uint64(span.StartTimestamp()),
-			EndTimeUnixNano:             uint64(span.EndTimestamp()),
-			DurationNano:                int64(span.EndTimestamp()) - int64(span.StartTimestamp()),
+			SpanDetails:       base,
+			StartTimeUnixNano: uint64(span.StartTimestamp()),
+			EndTimeUnixNano:   uint64(span.EndTimestamp()),
+			DurationNano:      int64(span.EndTimestamp()) - int64(span.StartTimestamp()),
 		}, true
 	})
 }
@@ -246,7 +210,9 @@ func collectInvalidTraceIDs(td ptrace.Traces) []InvalidTraceIDDetail {
 			return InvalidTraceIDDetail{}, false
 		}
 		base := createBaseSpanDetail(span, scope, resourceAttrs)
-		return InvalidTraceIDDetail(base), true
+		return InvalidTraceIDDetail{
+			SpanDetails: base,
+		}, true
 	})
 }
 
@@ -257,7 +223,9 @@ func collectInvalidSpanIDs(td ptrace.Traces) []InvalidSpanIDDetail {
 			return InvalidSpanIDDetail{}, false
 		}
 		base := createBaseSpanDetail(span, scope, resourceAttrs)
-		return InvalidSpanIDDetail(base), true
+		return InvalidSpanIDDetail{
+			SpanDetails: base,
+		}, true
 	})
 }
 
@@ -276,13 +244,8 @@ func collectInvalidStartTimes(td ptrace.Traces, now time.Time) []InvalidStartTim
 
 		base := createBaseSpanDetail(span, scope, resourceAttrs)
 		return InvalidStartTimeDetail{
-			TraceID:                     base.TraceID,
-			SpanID:                      base.SpanID,
-			SpanName:                    base.SpanName,
-			ResourceAttributes:          base.ResourceAttributes,
-			InstrumentationScopeName:    base.InstrumentationScopeName,
-			InstrumentationScopeVersion: base.InstrumentationScopeVersion,
-			StartTimeUnixNano:           startTime,
+			SpanDetails:       base,
+			StartTimeUnixNano: startTime,
 		}, true
 	})
 }
@@ -314,13 +277,8 @@ func collectMissingAttributes(td ptrace.Traces, attributeKey string) []MissingAt
 
 			if len(samples) < InvalidSpanSampleLimit {
 				samples = append(samples, MissingAttributeDetail{
-					TraceID:                     baseDetail.TraceID,
-					SpanID:                      baseDetail.SpanID,
-					SpanName:                    baseDetail.SpanName,
-					ResourceAttributes:          baseDetail.ResourceAttributes,
-					InstrumentationScopeName:    baseDetail.InstrumentationScopeName,
-					InstrumentationScopeVersion: baseDetail.InstrumentationScopeVersion,
-					MissingAttribute:            attributeKey,
+					SpanDetails:      baseDetail,
+					MissingAttribute: attributeKey,
 				})
 			}
 		}
@@ -352,13 +310,8 @@ func collectSpansByID(td ptrace.Traces, spanIDHex string) []TooBigSpanDetail {
 					size := marshaler.SpanSize(span)
 					base := createBaseSpanDetail(span, scope, resourceSummary)
 					detail := TooBigSpanDetail{
-						TraceID:                     base.TraceID,
-						SpanID:                      base.SpanID,
-						SpanName:                    base.SpanName,
-						ResourceAttributes:          base.ResourceAttributes,
-						InstrumentationScopeName:    base.InstrumentationScopeName,
-						InstrumentationScopeVersion: base.InstrumentationScopeVersion,
-						SerializedSizeBytes:         size,
+						SpanDetails:         base,
+						SerializedSizeBytes: size,
 					}
 					samples = append(samples, detail)
 

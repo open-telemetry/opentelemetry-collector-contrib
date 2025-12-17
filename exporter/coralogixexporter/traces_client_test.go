@@ -431,11 +431,11 @@ func TestTracesExporter_PushTraces_PartialSuccess_InvalidDurationDetails(t *test
 		samples := getLoggedInvalidSpanSamples(t, entry)
 		require.Len(t, samples, 1)
 		sample := samples[0]
-		assert.Equal(t, "invalid-span", sample.SpanName)
-		assert.Equal(t, "test-scope", sample.InstrumentationScopeName)
+		assert.Equal(t, "invalid-span", sample.SpanDetails.SpanName)
+		assert.Equal(t, "test-scope", sample.SpanDetails.InstrumentationScopeName)
 		assert.Equal(t, int64(-100), sample.DurationNano) // Duration is negative
-		assert.Equal(t, "broken-service", sample.ResourceAttributes["service.name"])
-		assert.Equal(t, "pod-1", sample.ResourceAttributes["k8s.pod.name"])
+		assert.Equal(t, "broken-service", sample.SpanDetails.ResourceAttributes["service.name"])
+		assert.Equal(t, "pod-1", sample.SpanDetails.ResourceAttributes["k8s.pod.name"])
 	}
 	assert.True(t, foundError, "Expected partial success log containing invalid span details")
 }

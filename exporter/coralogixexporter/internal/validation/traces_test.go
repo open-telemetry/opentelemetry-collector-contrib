@@ -57,20 +57,20 @@ func TestCollectInvalidDurationSpans(t *testing.T) {
 	samples := collectInvalidDurationSpans(traces)
 	require.Len(t, samples, 2) // Both invalid spans collected
 	sample := samples[0]
-	assert.Equal(t, "invalid-one", sample.SpanName)
-	assert.Equal(t, "scope", sample.InstrumentationScopeName)
-	assert.Equal(t, "1.0.0", sample.InstrumentationScopeVersion)
+	assert.Equal(t, "invalid-one", sample.SpanDetails.SpanName)
+	assert.Equal(t, "scope", sample.SpanDetails.InstrumentationScopeName)
+	assert.Equal(t, "1.0.0", sample.SpanDetails.InstrumentationScopeVersion)
 	assert.Equal(t, uint64(200), sample.StartTimeUnixNano)
 	assert.Equal(t, uint64(100), sample.EndTimeUnixNano)
 	assert.Equal(t, int64(-100), sample.DurationNano)
-	assert.Equal(t, "broken-service", sample.ResourceAttributes["service.name"])
-	assert.Equal(t, "pod-1", sample.ResourceAttributes["k8s.pod.name"])
+	assert.Equal(t, "broken-service", sample.SpanDetails.ResourceAttributes["service.name"])
+	assert.Equal(t, "pod-1", sample.SpanDetails.ResourceAttributes["k8s.pod.name"])
 
 	traceID := getTraceID("trace-invalid-1")
 	expectedTraceID := hex.EncodeToString(traceID[:])
-	assert.Equal(t, expectedTraceID, sample.TraceID)
+	assert.Equal(t, expectedTraceID, sample.SpanDetails.TraceID)
 	expectedSpanID := hex.EncodeToString([]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	assert.Equal(t, expectedSpanID, sample.SpanID)
+	assert.Equal(t, expectedSpanID, sample.SpanDetails.SpanID)
 }
 
 func TestCollectInvalidDurationSpans_SkipsZeroTimestamps(t *testing.T) {
@@ -114,11 +114,11 @@ func TestCollectInvalidTraceIDs(t *testing.T) {
 	samples := collectInvalidTraceIDs(traces)
 	require.Len(t, samples, 1)
 	sample := samples[0]
-	assert.Equal(t, "span-with-invalid-trace-id", sample.SpanName)
-	assert.Empty(t, sample.TraceID) // Empty trace IDs return empty string
+	assert.Equal(t, "span-with-invalid-trace-id", sample.SpanDetails.SpanName)
+	assert.Empty(t, sample.SpanDetails.TraceID) // Empty trace IDs return empty string
 	expectedSpanID := hex.EncodeToString([]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	assert.Equal(t, expectedSpanID, sample.SpanID)
-	assert.Equal(t, "test-service", sample.ResourceAttributes["service.name"])
+	assert.Equal(t, expectedSpanID, sample.SpanDetails.SpanID)
+	assert.Equal(t, "test-service", sample.SpanDetails.ResourceAttributes["service.name"])
 }
 
 func TestCollectInvalidSpanIDs(t *testing.T) {
@@ -143,9 +143,9 @@ func TestCollectInvalidSpanIDs(t *testing.T) {
 	samples := collectInvalidSpanIDs(traces)
 	require.Len(t, samples, 1)
 	sample := samples[0]
-	assert.Equal(t, "span-with-invalid-span-id", sample.SpanName)
-	assert.Empty(t, sample.SpanID) // Empty span IDs return empty string
-	assert.Equal(t, "test-service", sample.ResourceAttributes["service.name"])
+	assert.Equal(t, "span-with-invalid-span-id", sample.SpanDetails.SpanName)
+	assert.Empty(t, sample.SpanDetails.SpanID) // Empty span IDs return empty string
+	assert.Equal(t, "test-service", sample.SpanDetails.ResourceAttributes["service.name"])
 }
 
 func TestCollectInvalidStartTimes(t *testing.T) {
@@ -184,11 +184,11 @@ func TestCollectInvalidStartTimes(t *testing.T) {
 	require.Len(t, samples, 2)
 
 	// Check first invalid span
-	assert.Equal(t, "span-too-far-future", samples[0].SpanName)
-	assert.Equal(t, "test-scope", samples[0].InstrumentationScopeName)
+	assert.Equal(t, "span-too-far-future", samples[0].SpanDetails.SpanName)
+	assert.Equal(t, "test-scope", samples[0].SpanDetails.InstrumentationScopeName)
 
 	// Check second invalid span
-	assert.Equal(t, "span-too-far-past", samples[1].SpanName)
+	assert.Equal(t, "span-too-far-past", samples[1].SpanDetails.SpanName)
 }
 
 func TestCollectMissingAttributes(t *testing.T) {
@@ -220,8 +220,8 @@ func TestCollectMissingAttributes(t *testing.T) {
 	require.Len(t, samples, 1)
 	sample := samples[0]
 	assert.Equal(t, "cx.application.name", sample.MissingAttribute)
-	assert.Equal(t, "service-1", sample.ResourceAttributes["service.name"])
-	assert.Equal(t, "span-a", sample.SpanName)
+	assert.Equal(t, "service-1", sample.SpanDetails.ResourceAttributes["service.name"])
+	assert.Equal(t, "span-a", sample.SpanDetails.SpanName)
 }
 
 func TestCollectInvalidDurationSpans_Limit(t *testing.T) {
@@ -431,7 +431,7 @@ func TestCollectMissingAttributes_ResourceWithNoSpans(t *testing.T) {
 	samples := collectMissingAttributes(traces, "cx.application.name")
 	require.Len(t, samples, 1)
 	// baseDetail should be empty since there are no spans
-	assert.Empty(t, samples[0].SpanName)
+	assert.Empty(t, samples[0].SpanDetails.SpanName)
 }
 
 func TestCollectSpansByID(t *testing.T) {
@@ -464,8 +464,8 @@ func TestCollectSpansByID(t *testing.T) {
 	samples := collectSpansByID(traces, spanIDHex)
 
 	require.Len(t, samples, 1)
-	assert.Equal(t, "target-span", samples[0].SpanName)
-	assert.Equal(t, spanIDHex, samples[0].SpanID)
+	assert.Equal(t, "target-span", samples[0].SpanDetails.SpanName)
+	assert.Equal(t, spanIDHex, samples[0].SpanDetails.SpanID)
 	assert.Positive(t, samples[0].SerializedSizeBytes)
 }
 
