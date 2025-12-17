@@ -6,10 +6,12 @@ package sentryexporter
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -27,15 +29,53 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(metadata.Type, ""),
-			expected: createDefaultConfig(),
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.URL = "https://sentry.io"
+				cfg.OrgSlug = "my-org"
+				cfg.AuthToken = configopaque.String("test-auth-token-12345")
+				return cfg
+			}(),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "2"),
-			expected: &Config{
-				DSN:         "https://key@host/path/42",
-				Environment: "prod",
-			},
+			id: component.NewIDWithName(metadata.Type, "with_routing"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.URL = "https://sentry.io"
+				cfg.OrgSlug = "my-org"
+				cfg.AuthToken = configopaque.String("test-auth-token-12345")
+				cfg.AutoCreateProjects = true
+				cfg.Routing = RoutingConfig{
+					ProjectFromAttribute: "service.name",
+					AttributeToProjectMapping: map[string]string{
+						"api-service": "backend-api",
+						"web-service": "frontend-web",
+					},
+				}
+				return cfg
+			}(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "full"),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.URL = "https://sentry.example.com"
+				cfg.OrgSlug = "example-org"
+				cfg.AuthToken = configopaque.String("full-test-token")
+				cfg.ClientConfig.Timeout = 20 * time.Second
+				cfg.ClientConfig.TLS.Insecure = true
+				cfg.TimeoutConfig.Timeout = 45 * time.Second
+				cfg.AutoCreateProjects = true
+				cfg.Routing = RoutingConfig{
+					ProjectFromAttribute: "deployment.environment.name",
+					AttributeToProjectMapping: map[string]string{
+						"production": "prod-project",
+						"staging":    "stage-project",
+					},
+				}
+				return cfg
+			}(),
 		},
 	}
 
