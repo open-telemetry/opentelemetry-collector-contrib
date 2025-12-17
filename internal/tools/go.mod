@@ -11,6 +11,7 @@ require (
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen v0.142.0
 	github.com/rhysd/actionlint v1.7.9
 	go.opentelemetry.io/build-tools/checkapi v0.29.0
 	go.opentelemetry.io/build-tools/checkfile v0.29.0
@@ -294,6 +295,8 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen => ../../cmd/codecovgen
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen => ../../cmd/schemagen
 
 replace github.com/tdakkota/asciicheck v0.4.1 => github.com/golangci/asciicheck v0.5.0
 

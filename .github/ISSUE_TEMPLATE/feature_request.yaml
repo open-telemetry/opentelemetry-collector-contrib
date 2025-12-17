@@ -17,6 +17,7 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
+      - cmd/schemagen
       - cmd/telemetrygen
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider

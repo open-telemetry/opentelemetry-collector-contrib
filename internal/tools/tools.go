@@ -35,4 +35,5 @@ import (
 	_ "mvdan.cc/gofumpt"
 
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen"
 )

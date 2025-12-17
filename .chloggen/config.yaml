@@ -13,6 +13,7 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
+    - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog

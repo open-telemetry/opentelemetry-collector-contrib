@@ -89,6 +89,7 @@ GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
 MODERNIZE           := $(TOOLS_BIN_DIR)/modernize
+SCHEMAGEN           := $(TOOLS_BIN_DIR)/schemagen
 
 # Tools used by go generate commands
 MDATAGEN := $(TOOLS_BIN_DIR)/mdatagen
@@ -358,3 +359,11 @@ run-changed-tests:
 			done \
 		fi \
 	fi
+
+SRC ?= $(CURDIR)
+FLAGS ?=
+
+.PHONY: schemagen
+schemagen: $(SCHEMAGEN)
+	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
+	$(SCHEMAGEN) $(FLAGS) $(SRC)
