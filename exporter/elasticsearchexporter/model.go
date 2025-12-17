@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv22 "go.opentelemetry.io/otel/semconv/v1.22.0"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -39,44 +39,44 @@ type conversionEntry struct {
 // neither convert the SemConv key to the equivalent ECS name nor pass-through the
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]conversionEntry{
-	string(semconv.ServiceInstanceIDKey):         {to: "service.node.name"},
-	string(semconv22.DeploymentEnvironmentKey):   {to: "service.environment"},
-	string(semconv.DeploymentEnvironmentNameKey): {to: "service.environment"},
-	string(semconv.TelemetrySDKNameKey):          {skip: true},
-	string(semconv.TelemetrySDKLanguageKey):      {skip: true},
-	string(semconv.TelemetrySDKVersionKey):       {skip: true},
-	string(semconv.TelemetryDistroNameKey):       {skip: true},
-	string(semconv.TelemetryDistroVersionKey):    {skip: true},
-	string(semconv.CloudPlatformKey):             {to: "cloud.service.name"},
-	string(semconv.ContainerImageTagsKey):        {to: "container.image.tag"},
-	string(semconv.HostNameKey):                  {to: "host.hostname", preserveOriginal: true, skipIfExists: true},
-	string(semconv.HostArchKey):                  {to: "host.architecture"},
-	string(semconv.ProcessParentPIDKey):          {to: "process.parent.pid"},
-	string(semconv.ProcessExecutableNameKey):     {to: "process.title"},
-	string(semconv.ProcessExecutablePathKey):     {to: "process.executable"},
-	string(semconv.ProcessCommandLineKey):        {to: "process.args"},
-	string(semconv.ProcessRuntimeNameKey):        {to: "service.runtime.name"},
-	string(semconv.ProcessRuntimeVersionKey):     {to: "service.runtime.version"},
-	string(semconv.OSNameKey):                    {to: "host.os.name"},
-	string(semconv.OSTypeKey):                    {to: "host.os.platform"},
-	string(semconv.OSDescriptionKey):             {to: "host.os.full"},
-	string(semconv.OSVersionKey):                 {to: "host.os.version"},
-	string(semconv.ClientAddressKey):             {to: "client.ip"},
-	string(semconv.SourceAddressKey):             {to: "source.ip"},
-	string(semconv.K8SDeploymentNameKey):         {to: "kubernetes.deployment.name"},
-	string(semconv.K8SNamespaceNameKey):          {to: "kubernetes.namespace"},
-	string(semconv.K8SNodeNameKey):               {to: "kubernetes.node.name"},
-	string(semconv.K8SPodNameKey):                {to: "kubernetes.pod.name"},
-	string(semconv.K8SPodUIDKey):                 {to: "kubernetes.pod.uid"},
-	string(semconv.K8SJobNameKey):                {to: "kubernetes.job.name"},
-	string(semconv.K8SCronJobNameKey):            {to: "kubernetes.cronjob.name"},
-	string(semconv.K8SStatefulSetNameKey):        {to: "kubernetes.statefulset.name"},
-	string(semconv.K8SReplicaSetNameKey):         {to: "kubernetes.replicaset.name"},
-	string(semconv.K8SDaemonSetNameKey):          {to: "kubernetes.daemonset.name"},
-	string(semconv.K8SContainerNameKey):          {to: "kubernetes.container.name"},
-	string(semconv.K8SClusterNameKey):            {to: "orchestrator.cluster.name"},
-	string(semconv.FaaSInstanceKey):              {to: "faas.id"},
-	string(semconv.FaaSTriggerKey):               {to: "faas.trigger.type"},
+	string(conventions.ServiceInstanceIDKey):         {to: "service.node.name"},
+	string(semconv22.DeploymentEnvironmentKey):       {to: "service.environment"},
+	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
+	string(conventions.TelemetrySDKNameKey):          {skip: true},
+	string(conventions.TelemetrySDKLanguageKey):      {skip: true},
+	string(conventions.TelemetrySDKVersionKey):       {skip: true},
+	string(conventions.TelemetryDistroNameKey):       {skip: true},
+	string(conventions.TelemetryDistroVersionKey):    {skip: true},
+	string(conventions.CloudPlatformKey):             {to: "cloud.service.name"},
+	string(conventions.ContainerImageTagsKey):        {to: "container.image.tag"},
+	string(conventions.HostNameKey):                  {to: "host.hostname", preserveOriginal: true, skipIfExists: true},
+	string(conventions.HostArchKey):                  {to: "host.architecture"},
+	string(conventions.ProcessParentPIDKey):          {to: "process.parent.pid"},
+	string(conventions.ProcessExecutableNameKey):     {to: "process.title"},
+	string(conventions.ProcessExecutablePathKey):     {to: "process.executable"},
+	string(conventions.ProcessCommandLineKey):        {to: "process.args"},
+	string(conventions.ProcessRuntimeNameKey):        {to: "service.runtime.name"},
+	string(conventions.ProcessRuntimeVersionKey):     {to: "service.runtime.version"},
+	string(conventions.OSNameKey):                    {to: "host.os.name"},
+	string(conventions.OSTypeKey):                    {to: "host.os.platform"},
+	string(conventions.OSDescriptionKey):             {to: "host.os.full"},
+	string(conventions.OSVersionKey):                 {to: "host.os.version"},
+	string(conventions.ClientAddressKey):             {to: "client.ip"},
+	string(conventions.SourceAddressKey):             {to: "source.ip"},
+	string(conventions.K8SDeploymentNameKey):         {to: "kubernetes.deployment.name"},
+	string(conventions.K8SNamespaceNameKey):          {to: "kubernetes.namespace"},
+	string(conventions.K8SNodeNameKey):               {to: "kubernetes.node.name"},
+	string(conventions.K8SPodNameKey):                {to: "kubernetes.pod.name"},
+	string(conventions.K8SPodUIDKey):                 {to: "kubernetes.pod.uid"},
+	string(conventions.K8SJobNameKey):                {to: "kubernetes.job.name"},
+	string(conventions.K8SCronJobNameKey):            {to: "kubernetes.cronjob.name"},
+	string(conventions.K8SStatefulSetNameKey):        {to: "kubernetes.statefulset.name"},
+	string(conventions.K8SReplicaSetNameKey):         {to: "kubernetes.replicaset.name"},
+	string(conventions.K8SDaemonSetNameKey):          {to: "kubernetes.daemonset.name"},
+	string(conventions.K8SContainerNameKey):          {to: "kubernetes.container.name"},
+	string(conventions.K8SClusterNameKey):            {to: "orchestrator.cluster.name"},
+	string(conventions.FaaSInstanceKey):              {to: "faas.id"},
+	string(conventions.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
 
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
@@ -208,12 +208,12 @@ func (ecsModeEncoder) encodeLog(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]conversionEntry{
-		"event.name":                            {to: "event.action"},
-		string(semconv.ExceptionMessageKey):     {to: "error.message"},
-		string(semconv.ExceptionStacktraceKey):  {to: "error.stacktrace"},
-		string(semconv.ExceptionTypeKey):        {to: "error.type"},
-		string(semconv22.ExceptionEscapedKey):   {to: "event.error.exception.handled"},
-		string(semconv.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+		"event.name":                                {to: "event.action"},
+		string(conventions.ExceptionMessageKey):     {to: "error.message"},
+		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+		string(conventions.ExceptionTypeKey):        {to: "error.type"},
+		string(semconv22.ExceptionEscapedKey):       {to: "event.error.exception.handled"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
@@ -265,12 +265,12 @@ func (ecsModeEncoder) encodeSpan(
 	}
 
 	spanAttrsConversionMap := map[string]conversionEntry{
-		string(semconv.MessagingDestinationNameKey): {to: messageQueueName},
-		string(semconv.MessagingOperationNameKey):   {to: "span.action"},
-		string(semconv22.DBSystemKey):               {to: "span.db.type"},
-		string(semconv.DBNamespaceKey):              {to: "span.db.instance"},
-		string(semconv.DBQueryTextKey):              {to: "span.db.statement"},
-		string(semconv.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
+		string(conventions.MessagingDestinationNameKey): {to: messageQueueName},
+		string(conventions.MessagingOperationNameKey):   {to: "span.action"},
+		string(semconv22.DBSystemKey):                   {to: "span.db.type"},
+		string(conventions.DBNamespaceKey):              {to: "span.db.instance"},
+		string(conventions.DBQueryTextKey):              {to: "span.db.statement"},
+		string(conventions.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
 	}
 
 	// Handle special cases.
@@ -580,13 +580,13 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 	var telemetrySdkLanguage, telemetryDistroName string
 
 	attrs := resource.Attributes()
-	if v, exists := attrs.Get(string(semconv.TelemetrySDKNameKey)); exists {
+	if v, exists := attrs.Get(string(conventions.TelemetrySDKNameKey)); exists {
 		telemetrySdkName = v.Str()
 	}
-	if v, exists := attrs.Get(string(semconv.TelemetrySDKLanguageKey)); exists {
+	if v, exists := attrs.Get(string(conventions.TelemetrySDKLanguageKey)); exists {
 		telemetrySdkLanguage = v.Str()
 	}
-	if v, exists := attrs.Get(string(semconv.TelemetryDistroNameKey)); exists {
+	if v, exists := attrs.Get(string(conventions.TelemetryDistroNameKey)); exists {
 		telemetryDistroName = v.Str()
 		if telemetrySdkLanguage == "" {
 			telemetrySdkLanguage = "unknown"
@@ -608,12 +608,12 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 
-	if telemetryDistroVersion, exists := attrs.Get(string(semconv.TelemetryDistroVersionKey)); exists {
+	if telemetryDistroVersion, exists := attrs.Get(string(conventions.TelemetryDistroVersionKey)); exists {
 		document.AddString("agent.version", telemetryDistroVersion.Str())
 		return
 	}
 
-	if telemetrySdkVersion, exists := attrs.Get(string(semconv.TelemetrySDKVersionKey)); exists {
+	if telemetrySdkVersion, exists := attrs.Get(string(conventions.TelemetrySDKVersionKey)); exists {
 		document.AddString("agent.version", telemetrySdkVersion.Str())
 		return
 	}
@@ -626,7 +626,7 @@ func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resou
 	// If the OS you’re dealing with is not in the list, the field should not be populated."
 
 	var ecsHostOsType string
-	if semConvOsType, exists := resource.Attributes().Get(string(semconv.OSTypeKey)); exists {
+	if semConvOsType, exists := resource.Attributes().Get(string(conventions.OSTypeKey)); exists {
 		switch semConvOsType.Str() {
 		case "windows", "linux":
 			ecsHostOsType = semConvOsType.Str()
@@ -637,7 +637,7 @@ func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resou
 		}
 	}
 
-	if semConvOsName, exists := resource.Attributes().Get(string(semconv.OSNameKey)); exists {
+	if semConvOsName, exists := resource.Attributes().Get(string(conventions.OSNameKey)); exists {
 		switch semConvOsName.Str() {
 		case "Android":
 			ecsHostOsType = "android"
