@@ -232,7 +232,7 @@ type ProducerConfig struct {
 	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
 	// The maximum number of messages the producer will send in a single
-	// broker request. Defaults to 0 for unlimited. Similar to
+	// broker request. Defaults to 10000 (franz-go default). Similar to
 	// `queue.buffering.max.messages` in the JVM producer.
 	FlushMaxMessages int `mapstructure:"flush_max_messages"`
 
@@ -250,7 +250,7 @@ func NewDefaultProducerConfig() ProducerConfig {
 		MaxMessageBytes:        1000000,
 		RequiredAcks:           WaitForLocal,
 		Compression:            "none",
-		FlushMaxMessages:       0,
+		FlushMaxMessages:       10000,
 		AllowAutoTopicCreation: true,
 		Linger:                 10 * time.Millisecond,
 	}
@@ -260,17 +260,22 @@ func (c ProducerConfig) Validate() error {
 	switch c.Compression {
 	case "none", "gzip", "snappy", "lz4", "zstd":
 		ct := configcompression.Type(c.Compression)
-		if !ct.IsCompressed() {
-			return nil
-		}
-		if err := ct.ValidateParams(c.CompressionParams); err != nil {
-			return err
+		if ct.IsCompressed() {
+			if err := ct.ValidateParams(c.CompressionParams); err != nil {
+				return err
+			}
 		}
 	default:
 		return fmt.Errorf(
 			"compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value is %q",
 			c.Compression,
 		)
+	}
+	if c.MaxMessageBytes < 0 {
+		return fmt.Errorf("max_message_bytes (%d) must be non-negative", c.MaxMessageBytes)
+	}
+	if c.FlushMaxMessages < 1 {
+		return fmt.Errorf("flush_max_messages (%d) must be at least 1", c.FlushMaxMessages)
 	}
 	return nil
 }

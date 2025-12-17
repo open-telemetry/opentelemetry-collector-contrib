@@ -187,6 +187,9 @@ func TestInputStart_RemoteSessionWithDomain(t *testing.T) {
 
 	err := input.Start(persister)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, input.Stop())
+	})
 
 	require.False(t, domainWasNil)
 	require.Equal(t, "remote-domain", capturedDomain)
