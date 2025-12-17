@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -129,7 +128,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 
 	// Make this a FaaS span, which will trigger an error, because conversion
 	// of them is currently not supported.
-	span.Attributes().PutStr(string(conventions.FaaSTriggerKey), "http")
+	span.Attributes().PutStr("faas.trigger", "http")
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

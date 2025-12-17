@@ -8,7 +8,7 @@ status:
   distributions: [contrib, k8s]
   warnings: [Memory consumption, Other]
   codeowners:
-    active: [dmitryax, fatsheep9146, TylerHelmuth, ChrsMark]
+    active: [dmitryax, fatsheep9146, TylerHelmuth, ChrsMark, odubajDT]
     emeritus: [rmfitzpatrick]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:

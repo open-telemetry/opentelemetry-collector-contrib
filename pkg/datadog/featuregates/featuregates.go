@@ -28,3 +28,12 @@ var MetricRemappingDisabledFeatureGate = featuregate.GlobalRegistry().MustRegist
 	featuregate.WithRegisterDescription("When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use."),
 	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
 )
+
+// AttributeSliceMultiTagExporterFeatureGate is a feature gate that enables the exporter to convert attribute slices into individual tags
+var AttributeSliceMultiTagExportingFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.EnableAttributeSliceMultiTagExporting",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, attributes with slice values will have their elements turned into individual `key:value` Datadog tags."),
+	featuregate.WithRegisterFromVersion("v0.142.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44859"),
+)
