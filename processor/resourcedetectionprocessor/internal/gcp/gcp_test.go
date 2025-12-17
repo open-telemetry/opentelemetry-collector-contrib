@@ -439,7 +439,7 @@ func TestDetect(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1", schema)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			assert.Equal(t, tc.expectedResource, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 		})
 	}

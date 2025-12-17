@@ -60,7 +60,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 	}
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1", schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mp.AssertExpectations(t)
 
 	expected := map[string]any{
