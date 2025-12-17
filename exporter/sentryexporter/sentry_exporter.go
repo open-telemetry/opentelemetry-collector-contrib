@@ -405,25 +405,68 @@ func (s *endpointState) Start(ctx context.Context, host component.Host) error {
 			return
 		}
 
-		s.projectMapMu.Lock()
-		for _, project := range projects {
-			if s.defaultTeamSlug == "" && len(project.Teams) > 0 {
-				s.defaultTeamSlug = project.Teams[0].Slug
-			}
-
-			endpoint, err := s.sentryClient.GetOTLPEndpoints(ctx, s.config.OrgSlug, project.Slug)
-			if err != nil {
-				s.telemetrySettings.Logger.Warn("Failed to fetch endpoint for project",
-					zap.String("project", project.Slug),
-					zap.Error(err))
-				continue
-			}
-			s.projectToEndpoint[project.Slug] = endpoint
-		}
-		s.projectMapMu.Unlock()
+		s.preloadEndpointsFromOrgKeys(ctx, projects)
 	})
 
 	return s.startErr
+}
+
+func (s *endpointState) preloadEndpointsFromOrgKeys(ctx context.Context, projects []ProjectInfo) {
+	keys, err := s.sentryClient.GetOrgProjectKeys(ctx, s.config.OrgSlug)
+	if err != nil {
+		s.telemetrySettings.Logger.Warn("Failed to preload project endpoints from org project keys",
+			zap.Error(err))
+		return
+	}
+
+	projectKeyByID := make(map[int]ProjectKey)
+	for _, key := range keys {
+		if !key.IsActive {
+			continue
+		}
+		if _, exists := projectKeyByID[key.ProjectID]; !exists {
+			projectKeyByID[key.ProjectID] = key
+		}
+	}
+
+	if len(projectKeyByID) == 0 {
+		return
+	}
+
+	s.projectMapMu.Lock()
+	defer s.projectMapMu.Unlock()
+
+	for _, project := range projects {
+		if _, ok := s.projectToEndpoint[project.Slug]; ok {
+			continue
+		}
+
+		projectID := parseProjectID(project.ID)
+		if projectID <= 0 {
+			s.telemetrySettings.Logger.Warn("Skipping project due to invalid project ID",
+				zap.String("project", project.Slug))
+			continue
+		}
+
+		key, ok := projectKeyByID[projectID]
+		if !ok {
+			continue
+		}
+
+		dsn, err := key.DSN.ParsePublicDSN()
+		if err != nil {
+			s.telemetrySettings.Logger.Warn("Failed to parse DSN for project",
+				zap.String("project", project.Slug),
+				zap.Error(err))
+			continue
+		}
+
+		s.projectToEndpoint[project.Slug] = &OTLPEndpoints{
+			TracesURL: fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/traces/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
+			LogsURL:   fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/logs/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
+			PublicKey: key.Public,
+		}
+	}
 }
 
 // Shutdown stops the exporter

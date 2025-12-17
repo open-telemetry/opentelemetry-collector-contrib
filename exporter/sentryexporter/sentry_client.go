@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/getsentry/sentry-go"
@@ -18,6 +19,7 @@ import (
 type SentryAPIClient interface {
 	GetAllProjects(ctx context.Context, orgSlug string) ([]ProjectInfo, error)
 	GetProjectKeys(ctx context.Context, orgSlug, projectSlug string) ([]ProjectKey, error)
+	GetOrgProjectKeys(ctx context.Context, orgSlug string) ([]ProjectKey, error)
 	GetOTLPEndpoints(ctx context.Context, orgSlug, projectSlug string) (*OTLPEndpoints, error)
 	CreateProject(ctx context.Context, orgSlug, teamSlug, projectSlug, projectName, platform string) (*ProjectInfo, error)
 }
@@ -90,6 +92,14 @@ func (e *SentryAPIError) Error() string {
 	return fmt.Sprintf("request failed with status %d: %s", e.StatusCode, e.Body)
 }
 
+func parseProjectID(id string) int {
+	projectID, err := strconv.Atoi(id)
+	if err != nil {
+		return -1
+	}
+	return projectID
+}
+
 // NewSentryClient creates a new Sentry API client
 func NewSentryClient(baseURL, authToken string, httpClient *http.Client) *SentryClient {
 	if httpClient == nil {
@@ -141,6 +151,42 @@ func (c *SentryClient) GetAllProjects(ctx context.Context, orgSlug string) ([]Pr
 // GetProjectKeys fetches the project keys for a given organization and project
 func (c *SentryClient) GetProjectKeys(ctx context.Context, orgSlug, projectSlug string) ([]ProjectKey, error) {
 	url := fmt.Sprintf("%s/api/0/projects/%s/%s/keys/", c.baseURL, orgSlug, projectSlug)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.authToken))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer c.closeIdleConnections()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, &SentryAPIError{
+			StatusCode: resp.StatusCode,
+			Body:       string(body),
+			Headers:    resp.Header,
+		}
+	}
+
+	var keys []ProjectKey
+	if err := json.NewDecoder(resp.Body).Decode(&keys); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return keys, nil
+}
+
+// GetOrgProjectKeys fetches all project keys for an organization
+func (c *SentryClient) GetOrgProjectKeys(ctx context.Context, orgSlug string) ([]ProjectKey, error) {
+	url := fmt.Sprintf("%s/api/0/organizations/%s/project-keys/", c.baseURL, orgSlug)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
