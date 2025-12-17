@@ -240,8 +240,14 @@ to set the value of the `poll_interval` setting to something lower than the syml
 ### Telemetry metrics
 Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics)
 will also provide telemetry metrics for the state of the receiver's file consumption.
-Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
-are provided.
+The following metrics are provided:
+
+- `otelcol_fileconsumer_open_files` - Number of files currently being tracked
+- `otelcol_fileconsumer_reading_files` - Number of files currently being read
+- `otelcol_fileconsumer_file_offset_bytes` - Current read offset in bytes for each monitored file (labeled by `file_path`)
+- `otelcol_fileconsumer_file_size_bytes` - Current size in bytes of each monitored file (labeled by `file_path`)
+
+The file-specific metrics (`file_offset_bytes` and `file_size_bytes`) include a `file_path` label to identify individual files, allowing you to monitor consumption progress and detect lag on a per-file basis. Note that these values may reset when files are rotated.
 
 ## Feature Gates
 
