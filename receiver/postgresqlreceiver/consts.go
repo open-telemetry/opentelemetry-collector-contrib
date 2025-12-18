@@ -19,6 +19,28 @@ const (
 )
 
 const (
-	QueryTextAttributeName = "db.query.text"
-	DatabaseAttributeName  = "db.namespace"
+	querySampleColumnDatname              = "datname"
+	querySampleColumnUsename              = "usename"
+	querySampleColumnClientAddr           = "client_addr"
+	querySampleColumnClientHostname       = "client_hostname"
+	querySampleColumnClientPort           = "client_port"
+	querySampleColumnQueryStart           = "query_start"
+	querySampleColumnWaitEventType        = "wait_event_type"
+	querySampleColumnWaitEvent            = "wait_event"
+	querySampleColumnQueryID              = "query_id"
+	querySampleColumnPID                  = "pid"
+	querySampleColumnApplicationName      = "application_name"
+	querySampleColumnQueryStartTimestamp  = "_query_start_timestamp"
+	querySampleColumnState                = "state"
+	querySampleColumnQuery                = "query"
+	querySampleColumnDurationMilliseconds = "duration_ms"
+)
+
+const (
+	traceparentCarrierKey                = "traceparent"
+	insufficientPrivilegeQuerySampleText = "<insufficient privilege>"
+)
+
+const (
+	postgresqlTotalExecTimeAttributeName = dbAttributePrefix + totalExecTimeColumnName
 )
