@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"runtime"
 	"slices"
@@ -564,9 +565,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		if batch == nil {
 			batch = rootBatch
 		} else {
-			for id := range rootBatch {
-				batch[id] = struct{}{}
-			}
+			maps.Copy(batch, rootBatch)
 		}
 	}
 	batchLen := len(batch)
