@@ -259,7 +259,7 @@ The table below explains supported options,
 
 > [!NOTE]  
 > It is recommended to use "dryrun" mode to validate the number of replayable errors in the error destination bucket.
-> If there are many errors, Lambda innovation may time out before processing all error entries.
+> If there are many errors, the Lambda invocation may time out before processing all error entries.
 > If a timeout occur, you will need to run the custom event multiple times to fully process all error events from the bucket.
 
 ### Running with AWS CLI
