@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -63,9 +62,9 @@ func TestConvertResourceToAttributesWithExcludeServiceAttributes(t *testing.T) {
 
 	// Add service.name and service.instance.id to resource attributes
 	resource := md.ResourceMetrics().At(0).Resource()
-	resource.Attributes().PutStr(string(conventions.ServiceNameKey), "test-service")
-	resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), "test-instance-id")
-	resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "test-namespace")
+	resource.Attributes().PutStr("service.name", "test-service")
+	resource.Attributes().PutStr("service.instance.id", "test-instance-id")
+	resource.Attributes().PutStr("service.namespace", "test-namespace")
 
 	// Before converting: 3 resource attrs (original + 2 service attrs), 1 datapoint attr
 	assert.Equal(t, 4, md.ResourceMetrics().At(0).Resource().Attributes().Len())
@@ -80,9 +79,9 @@ func TestConvertResourceToAttributesWithExcludeServiceAttributes(t *testing.T) {
 	// Datapoint should have: 1 original + 1 (resource-name from testdata) = 2
 	dpAttrs := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes()
 	assert.Equal(t, 2, dpAttrs.Len())
-	_, hasServiceName := dpAttrs.Get(string(conventions.ServiceNameKey))
-	_, hasServiceInstanceID := dpAttrs.Get(string(conventions.ServiceInstanceIDKey))
-	_, hasServiceNamespace := dpAttrs.Get(string(conventions.ServiceNamespaceKey))
+	_, hasServiceName := dpAttrs.Get("service.name")
+	_, hasServiceInstanceID := dpAttrs.Get("service.instance.id")
+	_, hasServiceNamespace := dpAttrs.Get("service.namespace")
 	assert.False(t, hasServiceName)
 	assert.False(t, hasServiceInstanceID)
 	assert.False(t, hasServiceNamespace)
