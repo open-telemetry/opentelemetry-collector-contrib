@@ -31,6 +31,7 @@ const (
 	attributeAzureResultType        = "azure.result.type"
 	attributeAzureResultSignature   = "azure.result.signature"
 	attributeAzureResultDescription = "azure.result.description"
+	attributeEventOriginal          = "event.original"
 
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
@@ -296,15 +297,14 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
 	}
 
-	// If properties field doesn't exist, capture the raw log message
-	// This preserves the original log for logs that don't have a properties field
+	// The original log needs to be preserved for logs that don't have a properties field
 	if len(log.Properties) == 0 && len(rawRecord) > 0 {
 		// Format the JSON with proper indentation to match expected output
 		var formattedJSON bytes.Buffer
-		if err := json.Indent(&formattedJSON, rawRecord, "", "      "); err == nil {
-			attrs["event.original"] = formattedJSON.String()
+		if err := json.Indent(&formattedJSON, rawRecord, "", "\t"); err == nil {
+			attrs[attributeEventOriginal] = formattedJSON.String()
 		} else {
-			attrs["event.original"] = string(rawRecord)
+			attrs[attributeEventOriginal] = string(rawRecord)
 		}
 	}
 
