@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add stored procedure information (object_id, object_owner, object_name, object_type) to Oracle DB receiver logs for top queries and query samples.
+note: Add stored procedure information (procedure_id, procedure_name, procedure_type) to Oracle DB receiver logs for top queries and query samples.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44764]
@@ -16,8 +16,8 @@ issues: [44764]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The db.server.top_query event now includes oracledb.object_id, oracledb.object_owner, oracledb.object_name, and oracledb.object_type attributes.
-  The db.server.query_sample event now includes oracledb.object_id, oracledb.object_name, and oracledb.object_type attributes.
+  The db.server.top_query event now includes oracledb.procedure_id, oracledb.procedure_name, and oracledb.procedure_type attributes.
+  The db.server.query_sample event now includes oracledb.procedure_id, oracledb.procedure_name, and oracledb.procedure_type attributes.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
