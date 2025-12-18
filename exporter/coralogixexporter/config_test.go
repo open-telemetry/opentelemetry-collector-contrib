@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				Protocol:      "grpc",
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 						TLS: configtls.ClientConfig{
 							Config:             configtls.Config{},
@@ -91,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				Protocol:      "grpc",
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -106,20 +106,20 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Metrics: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression:     configcompression.TypeGzip,
 						WriteBufferSize: 512 * 1024,
 					},
 				},
 				Logs: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 					},
 				},
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 						TLS: configtls.ClientConfig{
 							Config:             configtls.Config{},
@@ -397,8 +397,8 @@ func TestGetDomainGrpcSettings(t *testing.T) {
 				},
 			}
 
-			settings := cfg.getDomainGrpcSettings()
-			assert.Equal(t, tt.expectedEndpoint, settings.Endpoint)
+			endpoint := setDomainGrpcSettings(cfg)
+			assert.Equal(t, tt.expectedEndpoint, endpoint)
 		})
 	}
 }
@@ -409,8 +409,8 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	cfg.Domain = "localhost"
 	cfg.PrivateKey = "test-key"
 	cfg.AppName = "test-app"
-	cfg.QueueSettings.Enabled = true
-	cfg.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
+	cfg.QueueSettings.GetOrInsertDefault()
+	cfg.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: 1 * time.Second,
 		MinSize:      100,
 	})

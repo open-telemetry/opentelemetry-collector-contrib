@@ -15,7 +15,8 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 )
 
@@ -23,10 +24,13 @@ const (
 	// Constants for OpenTelemetry Specs
 	scopeName = "otelcol/azureresourcelogs"
 
-	attributeAzureCategory         = "azure.category"
-	attributeAzureCorrelationID    = "azure.correlation_id"
-	attributeAzureOperationName    = "azure.operation.name"
-	attributeAzureOperationVersion = "azure.operation.version"
+	attributeAzureCategory          = "azure.category"
+	attributeAzureCorrelationID     = "azure.correlation_id"
+	attributeAzureOperationName     = "azure.operation.name"
+	attributeAzureOperationVersion  = "azure.operation.version"
+	attributeAzureResultType        = "azure.result.type"
+	attributeAzureResultSignature   = "azure.result.signature"
+	attributeAzureResultDescription = "azure.result.description"
 
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
@@ -40,6 +44,9 @@ const (
 	azureResultSignature   = "result.signature"
 	azureResultDescription = "result.description"
 	azureTenantID          = "tenant.id"
+
+	// Identity claims
+	identityClaimEmail = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
 )
 
 var errMissingTimestamp = errors.New("missing timestamp")
@@ -47,6 +54,15 @@ var errMissingTimestamp = errors.New("missing timestamp")
 // as exported via an Azure Event Hub
 type azureRecords struct {
 	Records []azureLogRecord `json:"records"`
+}
+
+// identity describes the identity of the user or application that performed the operation
+// described by the log event.
+type identity struct {
+	// Claims usually contains the JWT token used by Active Directory
+	// to authenticate the user or application to perform this
+	// operation in Resource Manager.
+	Claims map[string]string `json:"claims"`
 }
 
 // azureLogRecord represents a single Azure log following
@@ -66,7 +82,7 @@ type azureLogRecord struct {
 	DurationMs        *json.Number    `json:"durationMs"`
 	CallerIPAddress   *string         `json:"callerIpAddress"`
 	CorrelationID     *string         `json:"correlationId"`
-	Identity          *any            `json:"identity"`
+	Identity          json.RawMessage `json:"identity"`
 	Level             *json.Number    `json:"Level"`
 	Location          *string         `json:"location"`
 	Properties        json.RawMessage `json:"properties"`
@@ -91,6 +107,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
+	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
+
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
 	for i := range azureLogs.Records {
 		log := &azureLogs.Records[i]
@@ -110,6 +128,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.SetTimestamp(nanos)
+		lr.SetObservedTimestamp(observedTimestamp)
 
 		if log.Level != nil {
 			severity := asSeverity(*log.Level)
@@ -151,7 +170,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
-		rl.Resource().Attributes().PutStr(string(conventions.EventNameKey), "az.resource.log")
+		rl.Resource().Attributes().PutStr(string(conventions128.EventNameKey), "az.resource.log")
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 
@@ -223,7 +242,13 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	putStrPtr(attributeAzureCorrelationID, log.CorrelationID, record)
 	record.Attributes().PutStr(attributeAzureOperationName, log.OperationName)
 	putStrPtr(attributeAzureOperationVersion, log.OperationVersion, record)
-	// TODO Keep adding other common fields, like tenant ID
+	putStrPtr(string(conventions.CloudAccountIDKey), log.TenantID, record)
+	putStrPtr(attributeAzureResultType, log.ResultType, record)
+	putStrPtr(attributeAzureResultSignature, log.ResultSignature, record)
+	putStrPtr(attributeAzureResultDescription, log.ResultDescription, record)
+	putStrPtr(string(conventions.NetworkPeerAddressKey), log.CallerIPAddress, record)
+
+	addIdentityAttributes(log.Identity, record)
 }
 
 func extractRawAttributes(log *azureLogRecord) map[string]any {
@@ -237,8 +262,11 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 			attrs[azureDuration] = duration
 		}
 	}
-	if log.Identity != nil {
-		attrs[azureIdentity] = *log.Identity
+	if len(log.Identity) > 0 {
+		var identity any
+		if err := gojson.Unmarshal(log.Identity, &identity); err == nil {
+			attrs[azureIdentity] = identity
+		}
 	}
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
@@ -316,5 +344,27 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 func setIf(attrs map[string]any, key string, value *string) {
 	if value != nil && *value != "" {
 		attrs[key] = *value
+	}
+}
+
+// addIdentityAttributes extracts identity details
+//
+// The `identity` field is part of the Top-level common schema for
+// resource logs and it's also in use in the activity logs.
+//
+// We're applying the strategy to only pick the identity elements
+// that we know are useful. This approach also minimizes the risk
+// of accidentally including sensitive data.
+func addIdentityAttributes(identityJSON json.RawMessage, record plog.LogRecord) {
+	var id identity
+	if err := gojson.Unmarshal(identityJSON, &id); err != nil {
+		return
+	}
+
+	// Extract known claims details we want to include in the
+	// log record.
+	// Extract common claim fields
+	if email := id.Claims[identityClaimEmail]; email != "" {
+		record.Attributes().PutStr(string(conventions.UserEmailKey), email)
 	}
 }

@@ -7,6 +7,54 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.142.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: It's recommended to change the field type in your component configuration to be `configoptional.Optional[exporterhelper.QueueBatchConfig]` to keep the `enabled` subfield. Use configoptional.Some(exporterhelper.NewDefaultQueueConfig()) to enable by default. Use configoptional.Default(exporterhelper.NewDefaultQueueConfig()) to disable by default. (#44320)
+- `pkg/pdatatest`: apply recent breaking changes to pprofiletest (#44758)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/ottl`: Use pointer when passing TransformContext around or calling into. (#44541)
+  Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
+  TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
+  pattern and reuse objects between calls. Deprecated funcs are:
+  - `ottldatapoint.NewTransformContext` in favor of `ottldatapoint.NewTransformContextPtr`;
+  - `ottllog.NewTransformContext` in favor of `ottllog.NewTransformContextPtr`;
+  - `ottlmetric.NewTransformContext` in favor of `ottlmetric.NewTransformContextPtr`;
+  - `ottlspan.NewTransformContext` in favor of `ottlspan.NewTransformContextPtr`;
+  - `ottlspanevent.NewTransformContext` in favor of `ottlspanevent.NewTransformContextPtr`;
+  - `filterprocessor.WithResourceFunctions` in favor of `filterprocessor.WithResourceFunctionsNew`
+  - `filterprocessor.DefaultDataPointFunctions` in favor of `filtermprocessor.DefaultDataPointFunctionsNew`
+  - `filterprocessor.WithDataPointFunctions` in favor of `filterprocessor.WithDataPointFunctionsNew`
+  - `filterprocessor.DefaultLogFunctions` in favor of `filterprocessor.DefaultLogFunctionsNew`
+  - `filterprocessor.WithLogFunctions` in favor of `filterprocessor.WithLogFunctionsNew`
+  - `filterprocessor.DefaultMetricFunctions` in favor of `filterprocessor.DefaultMetricFunctionsNew`
+  - `filterprocessor.WithMetricFunctions` in favor of `filterprocessor.WithMetricFunctionsNew`
+  - `filterprocessor.DefaultSpanFunctions` in favor of `filterprocessor.DefaultSpanFunctionsNew`
+  - `filterprocessor.WithSpanFunctions` in favor of `filterprocessor.WithSpanFunctionsNew`
+  - `filtermprocessor.DefaultSpanEventFunctions` in favor of `filtermprocessor.DefaultSpanEventFunctionsNew`
+  - `filtermprocessor.WithSpanEventFunctions` in favor of `filtermprocessor.WithSpanEventFunctionsNew`
+  - `transformprocessor.DefaultDataPointFunctions` in favor of `transformprocessor.DefaultDataPointFunctionsNew`
+  - `transformprocessor.WithDataPointFunctions` in favor of `transformprocessor.WithDataPointFunctionsNew`
+  - `transformprocessor.DefaultLogFunctions` in favor of `transformprocessor.DefaultLogFunctionsNew`
+  - `transformprocessor.WithLogFunctions` in favor of `transformprocessor.WithLogFunctionsNew`
+  - `transformprocessor.DefaultMetricFunctions` in favor of `transformprocessor.DefaultMetricFunctionsNew`
+  - `transformprocessor.WithMetricFunctions` in favor of `transformprocessor.WithMetricFunctionsNew`
+  - `transformprocessor.DefaultSpanFunctions` in favor of `transformprocessor.DefaultSpanFunctionsNew`
+  - `transformprocessor.WithSpanFunctions` in favor of `transformprocessor.WithSpanFunctionsNew`
+  - `transformprocessor.DefaultSpanEventFunctions` in favor of `transformprocessor.DefaultSpanEventFunctionsNew`
+  - `transformprocessor.WithSpanEventFunctions` in favor of `transformprocessor.WithSpanEventFunctionsNew`
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/datadog`: introduce a container tags buffer in the stats writer, which is disabled by default. (#44661)
+- `pkg/ottl`: Add PSliceGetSetter interface to allow OTTL functions to accept typed accessors for `pcommon.Slice` paths. (#44421)
+
+<!-- previous-version -->
+
 ## v0.141.0
 
 ### 🛑 Breaking changes 🛑
