@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -46,7 +47,15 @@ func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64) (ottl.ExprFun
 		for _, value := range val.All() {
 			stringVal := value.Str()
 			if int64(len(stringVal)) > limit {
-				value.SetStr(stringVal[:limit])
+				truncateAt := int(limit)
+				// Only adjust for UTF-8 boundaries if the string is valid UTF-8
+				if utf8.ValidString(stringVal) {
+					// Back up to a valid UTF-8 boundary if we're in the middle of a rune
+					for truncateAt > 0 && !utf8.RuneStart(stringVal[truncateAt]) {
+						truncateAt--
+					}
+				}
+				value.SetStr(stringVal[:truncateAt])
 			}
 		}
 		// TODO: Write log when truncation is performed
