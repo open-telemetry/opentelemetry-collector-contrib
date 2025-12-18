@@ -13,17 +13,29 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap/zaptest"
 )
+
+// Helper function to create TelemetrySettings for tests
+func createTestTelemetrySettings(t *testing.T) component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	return set
+}
+
+func createNopTelemetrySettings() component.TelemetrySettings {
+	return componenttest.NewNopTelemetrySettings()
+}
 
 func TestPerRPCAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 	// test meta data is properly
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, createNopTelemetrySettings())
 	assert.NotNil(t, bauth)
 	perRPCAuth := &perRPCAuth{auth: bauth}
 	md, err := perRPCAuth.GetRequestMetadata(t.Context())
@@ -54,7 +66,7 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 	cfg.Scheme = scheme
 
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, createNopTelemetrySettings())
 	assert.NotNil(t, bauth)
 
 	base := &mockRoundTripper{}
@@ -73,7 +85,7 @@ func TestBearerAuthenticator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, createNopTelemetrySettings())
 	assert.NotNil(t, bauth)
 
 	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
@@ -109,7 +121,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Filename = filepath.Join("testdata", t.Name()+".token")
 
-	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	bauth := newBearerTokenAuth(cfg, createTestTelemetrySettings(t))
 	assert.NotNil(t, bauth)
 
 	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
@@ -160,7 +172,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	cfg.Filename = filepath.Join("testdata", t.Name()+".token")
 	cfg.Scheme = scheme
 
-	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	bauth := newBearerTokenAuth(cfg, createTestTelemetrySettings(t))
 	assert.NotNil(t, bauth)
 
 	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
@@ -212,7 +224,7 @@ func TestBearerTokenUpdateForGrpc(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.BearerToken = "1234"
 
-	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	bauth := newBearerTokenAuth(cfg, createTestTelemetrySettings(t))
 	assert.NotNil(t, bauth)
 
 	perRPCAuth, err := bauth.PerRPCCredentials()
@@ -241,7 +253,7 @@ func TestBearerServerAuthenticateWithScheme(t *testing.T) {
 	cfg.Scheme = "Bearer"
 	cfg.BearerToken = token
 
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, createNopTelemetrySettings())
 	assert.NotNil(t, bauth)
 
 	ctx := t.Context()
@@ -265,7 +277,7 @@ func TestBearerServerAuthenticate(t *testing.T) {
 	cfg.Scheme = ""
 	cfg.BearerToken = token
 
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, createNopTelemetrySettings())
 	assert.NotNil(t, bauth)
 
 	ctx := t.Context()
@@ -291,7 +303,7 @@ func TestBearerTokenMultipleTokens(t *testing.T) {
 	cfg.Scheme = "Bearer"
 	cfg.Tokens = []configopaque.String{"token1", "token2"}
 
-	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	bauth := newBearerTokenAuth(cfg, createTestTelemetrySettings(t))
 	assert.NotNil(t, bauth)
 
 	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
@@ -344,7 +356,7 @@ func TestBearerTokenMultipleTokensInFile(t *testing.T) {
 	cfg.Scheme = scheme
 	cfg.Filename = filename
 
-	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	bauth := newBearerTokenAuth(cfg, createTestTelemetrySettings(t))
 	assert.NotNil(t, bauth)
 
 	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
@@ -391,7 +403,7 @@ func TestCustomHeaderRoundTrip(t *testing.T) {
 	cfg.Scheme = ""
 	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, createNopTelemetrySettings())
 	assert.NotNil(t, bauth)
 
 	base := &mockRoundTripper{}
@@ -412,7 +424,7 @@ func TestCustomHeaderGetRequestMetadata(t *testing.T) {
 	cfg.Scheme = ""
 	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, createNopTelemetrySettings())
 	assert.NotNil(t, bauth)
 
 	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
@@ -435,7 +447,7 @@ func TestCustomHeaderAuthenticate(t *testing.T) {
 	cfg.Scheme = ""
 	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
-	bauth := newBearerTokenAuth(cfg, nil)
+	bauth := newBearerTokenAuth(cfg, createNopTelemetrySettings())
 	assert.NotNil(t, bauth)
 
 	ctx := t.Context()
