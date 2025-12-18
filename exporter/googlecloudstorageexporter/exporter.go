@@ -28,6 +28,7 @@ type storageExporter struct {
 	storageClient   *storage.Client
 	bucketHandle    *storage.BucketHandle
 	logger          *zap.Logger
+	signal          signalType
 }
 
 var (
@@ -35,10 +36,18 @@ var (
 	_ exporter.Traces = (*storageExporter)(nil)
 )
 
+type signalType string
+
+const (
+	signalTypeLogs   signalType = "logs"
+	signalTypeTraces signalType = "traces"
+)
+
 func newGCSExporter(
 	ctx context.Context,
 	cfg *Config,
 	logger *zap.Logger,
+	signal signalType,
 ) (*storageExporter, error) {
 	return newStorageExporter(
 		ctx,
@@ -46,6 +55,7 @@ func newGCSExporter(
 		metadata.ZoneWithContext,
 		metadata.ProjectIDWithContext,
 		logger,
+		signal,
 	)
 }
 
@@ -55,6 +65,7 @@ func newStorageExporter(
 	getZone func(context.Context) (string, error),
 	getProjectID func(context.Context) (string, error),
 	logger *zap.Logger,
+	signal signalType,
 ) (*storageExporter, error) {
 	errMsg := "failed to determine %s: not set in exporter config '%s' and unable to retrieve from metadata: %w"
 
@@ -75,6 +86,7 @@ func newStorageExporter(
 	return &storageExporter{
 		cfg:    cfg,
 		logger: logger,
+		signal: signal,
 	}, nil
 }
 
@@ -90,25 +102,22 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	s.logsMarshaler = &plog.JSONMarshaler{}
 	s.tracesMarshaler = &ptrace.JSONMarshaler{}
 
-	s.logger.Info("GCS Exporter configuration", zap.String("encoding", s.cfg.Encoding.String()))
-
-	if s.cfg.Encoding.String() != "" {
-		logsEncoding, errLogs := loadExtension[plog.Marshaler](host, s.cfg.Encoding, "logs marshaler")
-		if errLogs == nil {
-			s.logsMarshaler = logsEncoding
-		} else {
-			s.logger.Debug("Extension does not support logs marshaler", zap.Error(errLogs))
-		}
-
-		tracesEncoding, errTraces := loadExtension[ptrace.Marshaler](host, s.cfg.Encoding, "traces marshaler")
-		if errTraces == nil {
-			s.tracesMarshaler = tracesEncoding
-		} else {
-			s.logger.Debug("Extension does not support traces marshaler", zap.Error(errTraces))
-		}
-
-		if errLogs != nil && errTraces != nil {
-			return fmt.Errorf("failed to load extension %q: %w; %w", s.cfg.Encoding, errLogs, errTraces)
+	if s.cfg.Encoding != nil {
+		switch s.signal {
+		case signalTypeLogs:
+			logsEncoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
+			if err != nil {
+				s.logger.Warn("Failed to load logs encoding extension, using default JSON marshaler", zap.Error(err))
+			} else {
+				s.logsMarshaler = logsEncoding
+			}
+		case signalTypeTraces:
+			tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler")
+			if err != nil {
+				s.logger.Warn("Failed to load traces encoding extension, using default JSON marshaler", zap.Error(err))
+			} else {
+				s.tracesMarshaler = tracesEncoding
+			}
 		}
 	}
 

@@ -4,7 +4,8 @@ status:
   class: exporter
   distributions: [contrib]
   stability:
-    alpha: [logs, traces]
+    alpha: [logs]
+    development: [traces]
   codeowners:
     active: [constanca-m, braydonk]
     seeking_new: true
