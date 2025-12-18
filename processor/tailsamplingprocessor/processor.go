@@ -492,9 +492,8 @@ func (tsp *tailSamplingSpanProcessor) processCachedTrace(traceID pcommon.TraceID
 		if tsp.recordPolicy {
 			if metadata.PolicyName != "" {
 				sampling.SetAttrOnScopeSpans(traceTd, "tailsampling.policy", metadata.PolicyName)
-			} else {
-				sampling.SetBoolAttrOnScopeSpans(traceTd, "tailsampling.cached_decision", true)
 			}
+			sampling.SetBoolAttrOnScopeSpans(traceTd, "tailsampling.cached_decision", true)
 		}
 		tsp.forwardSpans(tsp.ctx, traceTd)
 		tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.

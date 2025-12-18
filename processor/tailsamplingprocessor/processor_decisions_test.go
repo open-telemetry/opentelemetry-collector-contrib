@@ -556,6 +556,102 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 		assert.FailNow(t, "Did not find expected attribute")
 	}
 	require.Equal(t, "mock-policy-1", policyAttr.AsString())
+	cacheAttr, ok := allTraces[1].ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.cached_decision")
+	if !ok {
+		assert.FailNow(t, "Did not find expected attribute")
+	}
+	require.True(t, cacheAttr.Bool())
+}
+
+func TestLateArrivingSpanUsesDecisionCacheWhenDropped(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	// Use this instead of the default no-op cache
+	c, err := cache.NewLRUDecisionCache(200)
+	require.NoError(t, err)
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait * 10,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withTestController(controller),
+			withPolicies(policies),
+			WithNonSampledDecisionCache(c),
+			withRecordPolicy(),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	// We are going to create 2 spans belonging to the same trace
+	traceID := uInt64ToTraceID(1)
+
+	// The first span will be sampled, this will later be set to not sampled, but the sampling decision will be cached
+	mpe.NextDecision = samplingpolicy.Dropped
+
+	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
+	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(uInt64ToSpanID(spanIndex))
+		return traces
+	}
+
+	// Generate and deliver first span
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(1)))
+
+	// The first tick won't do anything
+	controller.waitForTick()
+	require.Equal(t, 0, mpe.EvaluationCount)
+
+	// This will cause policy evaluations on the first span
+	controller.waitForTick()
+
+	// Policy should have been evaluated once
+	require.Equal(t, 1, mpe.EvaluationCount)
+
+	// The final decision SHOULD be Dropped.
+	require.Equal(t, 0, nextConsumer.SpanCount())
+
+	// Now we create a brand new tailsampling span processor with the same decision cache
+	p, err = newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	// Set next decision to not sampled, ensuring the next decision is determined by the decision cache, not the policy
+	mpe.NextDecision = samplingpolicy.NotSampled
+
+	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
+	// The policies should NOT be evaluated again.
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(2)))
+	controller.waitForTick()
+
+	// Policy should still have been evaluated only once
+	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
+	allTraces := nextConsumer.AllTraces()
+	require.Len(t, allTraces, 0)
+
+	metadata, ok := c.Get(traceID)
+	if !ok {
+		assert.FailNow(t, "Did not find expected metadata")
+	}
+	require.Equal(t, "mock-policy-1", metadata.PolicyName)
 }
 
 func TestLateArrivingSpanWithoutCacheMetadata(t *testing.T) {
