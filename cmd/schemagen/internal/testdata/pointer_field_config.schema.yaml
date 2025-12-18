@@ -1,0 +1,32 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
+title: PointerFieldConfig
+type: object
+$defs:
+  Address:
+    properties:
+      hostname:
+        type: string
+      path:
+        type: string
+      port:
+        type: integer
+        x-pointer: true
+    type: object
+properties:
+  address:
+    $ref: '#/$defs/Address'
+    x-pointer: true
+  name:
+    type: string
+    x-pointer: true
+  other_addresses:
+    items:
+      $ref: '#/$defs/Address'
+    type: array
+    x-pointer: true
+  tags:
+    items:
+      type: string
+    type: array
+    x-pointer: true

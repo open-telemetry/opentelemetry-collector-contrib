@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	trc "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
