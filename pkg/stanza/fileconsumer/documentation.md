@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_fileconsumer_file_offset_bytes
+### otelcol_fileconsumer_file_offset
 
 Current read offset in files being monitored. This value may reset when files are rotated. [Development]
 
@@ -20,7 +20,7 @@ Current read offset in files being monitored. This value may reset when files ar
 | ---- | ----------- | ------ |
 | file_path | The path of the file being monitored | Any Str |
 
-### otelcol_fileconsumer_file_size_bytes
+### otelcol_fileconsumer_file_size
 
 Current size of files being monitored. This value may reset when files are rotated. [Development]
 

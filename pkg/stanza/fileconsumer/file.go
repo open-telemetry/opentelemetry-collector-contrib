@@ -326,8 +326,8 @@ func (m *Manager) reportFileMetrics(ctx context.Context) {
 		}
 
 		// Record metrics with file_path attribute
-		m.telemetryBuilder.FileconsumerFileOffsetBytes.Record(ctx, offset, metric.WithAttributes(attribute.String("file_path", filePath)))
-		m.telemetryBuilder.FileconsumerFileSizeBytes.Record(ctx, fileSize, metric.WithAttributes(attribute.String("file_path", filePath)))
+		m.telemetryBuilder.FileconsumerFileOffset.Record(ctx, offset, metric.WithAttributes(attribute.String("file_path", filePath)))
+		m.telemetryBuilder.FileconsumerFileSize.Record(ctx, fileSize, metric.WithAttributes(attribute.String("file_path", filePath)))
 	}
 }
 
