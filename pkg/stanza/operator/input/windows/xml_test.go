@@ -274,7 +274,8 @@ func TestParseBodyFullExecution(t *testing.T) {
 }
 
 func TestParseBodyCorrelation(t *testing.T) {
-	guidString := "{11111111-1111-1111-1111-111111111111}"
+	activityIDGuid := "{11111111-1111-1111-1111-111111111111}"
+	relatedActivityIDGuid := "{22222222-2222-2222-2222-222222222222}"
 	xml := &EventXML{
 		EventID: EventID{
 			ID:         1,
@@ -304,8 +305,8 @@ func TestParseBodyCorrelation(t *testing.T) {
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
 		Correlation: &Correlation{
-			ActivityID:        &guidString,
-			RelatedActivityID: &guidString,
+			ActivityID:        &activityIDGuid,
+			RelatedActivityID: &relatedActivityIDGuid,
 		},
 		Version: 1,
 	}
@@ -337,7 +338,7 @@ func TestParseBodyCorrelation(t *testing.T) {
 		},
 		"correlation": map[string]any{
 			"activity_id":         "{11111111-1111-1111-1111-111111111111}",
-			"related_activity_id": "{11111111-1111-1111-1111-111111111111}",
+			"related_activity_id": "{22222222-2222-2222-2222-222222222222}",
 		},
 		"version": uint8(1),
 	}
@@ -557,7 +558,8 @@ func TestUnmarshalWithCorrelation(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
-	guidString := "{11111111-1111-1111-1111-111111111111}"
+	activityIDGuid := "{11111111-1111-1111-1111-111111111111}"
+	relatedActivityIDGuid := "{22222222-2222-2222-2222-222222222222}"
 
 	xml := &EventXML{
 		EventID: EventID{
@@ -590,8 +592,8 @@ func TestUnmarshalWithCorrelation(t *testing.T) {
 		},
 		Original: string(data),
 		Correlation: &Correlation{
-			ActivityID:        &guidString,
-			RelatedActivityID: &guidString,
+			ActivityID:        &activityIDGuid,
+			RelatedActivityID: &relatedActivityIDGuid,
 		},
 		Version: 2,
 	}
