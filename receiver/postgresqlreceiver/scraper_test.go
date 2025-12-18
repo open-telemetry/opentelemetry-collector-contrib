@@ -888,4 +888,9 @@ func TestGetInstanceId(t *testing.T) {
 	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
 	assert.NotNil(t, localInstanceID)
 	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	hostNameErrorSample := ""
+	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, "unknown:5432", localInstanceID)
 }
