@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/oracledbreceiver
+component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add stored procedure information (procedure_id, procedure_name, procedure_type) to Oracle DB receiver logs for top queries and query samples.
