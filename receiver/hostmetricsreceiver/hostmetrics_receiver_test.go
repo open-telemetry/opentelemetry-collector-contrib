@@ -255,6 +255,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(b.Context(), componenttest.NewNopHost()))
+	b.Cleanup(func() { require.NoError(b, receiver.Shutdown(b.Context())) })
 
 	for b.Loop() {
 		tickerCh <- time.Now()
@@ -264,10 +265,6 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	if !sink.receivedMetrics {
 		b.Fail()
 	}
-
-	b.Cleanup(func() {
-		require.NoError(b, receiver.Shutdown(b.Context()))
-	})
 }
 
 func Benchmark_ScrapeCpuMetrics(b *testing.B) {
