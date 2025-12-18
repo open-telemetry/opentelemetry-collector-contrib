@@ -1,0 +1,12 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
+title: NestedStructConfig
+type: object
+properties:
+  connection:
+    properties:
+      host:
+        type: string
+      port:
+        type: integer
+    type: object
