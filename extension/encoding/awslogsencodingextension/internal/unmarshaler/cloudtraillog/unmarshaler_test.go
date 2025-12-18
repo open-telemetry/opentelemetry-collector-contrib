@@ -5,6 +5,7 @@ package cloudtraillog
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -13,7 +14,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -22,9 +25,12 @@ const filesDirectory = "testdata"
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	factory := NewCloudTrailLogUnmarshalerFactory(component.BuildInfo{Version: "test-version"})
 	reader := readLogFile(t, filesDirectory, "cloudtrail_log.json")
-	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
+	decoder, err := factory(reader, encoding.StreamDecoderOptions{})
+	require.NoError(t, err)
+	logs := plog.NewLogs()
+	err = decoder.Decode(context.Background(), logs)
 	require.NoError(t, err)
 
 	// Read the expected logs from the file
@@ -60,12 +66,15 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 		},
 	}
 
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	factory := NewCloudTrailLogUnmarshalerFactory(component.BuildInfo{Version: "test-version"})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content := readLogFile(t, filesDirectory, tt.logFile)
-			logs, err := unmarshaler.UnmarshalAWSLogs(content)
+			decoder, err := factory(content, encoding.StreamDecoderOptions{})
+			require.NoError(t, err)
+			logs := plog.NewLogs()
+			err = decoder.Decode(context.Background(), logs)
 			require.NoError(t, err)
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, tt.expectedFile))
@@ -84,24 +93,30 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	factory := NewCloudTrailLogUnmarshalerFactory(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{"Records": []}`))
-	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
+	decoder, err := factory(reader, encoding.StreamDecoderOptions{})
+	require.NoError(t, err)
+	logs := plog.NewLogs()
+	err = decoder.Decode(context.Background(), logs)
 	require.NoError(t, err)
 	require.Equal(t, 0, logs.ResourceLogs().Len())
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	factory := NewCloudTrailLogUnmarshalerFactory(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{invalid-json}`))
-	_, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.ErrorContains(t, err, "failed to unmarshal payload as CloudTrail logs")
+	decoder, err := factory(reader, encoding.StreamDecoderOptions{})
+	require.NoError(t, err)
+	logs := plog.NewLogs()
+	err = decoder.Decode(context.Background(), logs)
+	require.ErrorContains(t, err, "failed to decode CloudTrail log document")
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	factory := NewCloudTrailLogUnmarshalerFactory(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{
 		"Records": [{
 			"eventTime": "invalid-timestamp",
@@ -109,16 +124,22 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T
 			"eventName": "TestEvent"
 		}]
 	}`))
-	_, err := unmarshaler.UnmarshalAWSLogs(reader)
+	decoder, err := factory(reader, encoding.StreamDecoderOptions{})
+	require.NoError(t, err)
+	logs := plog.NewLogs()
+	err = decoder.Decode(context.Background(), logs)
 	require.ErrorContains(t, err, "failed to parse timestamp of log")
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_ReadError(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	factory := NewCloudTrailLogUnmarshalerFactory(component.BuildInfo{Version: "test-version"})
 	reader := &errorReader{err: errors.New("read failed")}
-	_, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.ErrorContains(t, err, "failed to read CloudTrail logs")
+	decoder, err := factory(reader, encoding.StreamDecoderOptions{})
+	require.NoError(t, err)
+	logs := plog.NewLogs()
+	err = decoder.Decode(context.Background(), logs)
+	require.ErrorContains(t, err, "failed to decode CloudTrail log document")
 }
 
 func TestExtractTLSVersion(t *testing.T) {

@@ -5,12 +5,16 @@ package elbaccesslogs
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 type elbBenchmarkCase struct {
@@ -51,16 +55,16 @@ func createELBAccessLogContent(b *testing.B, filename string, nLogs int) []byte 
 }
 
 func BenchmarkUnmarshalAWSLogs(b *testing.B) {
-	u := &elbAccessLogUnmarshaler{
-		buildInfo: component.BuildInfo{},
-		logger:    zap.NewNop(),
-	}
+	factory := NewELBAccessLogUnmarshalerFactory(component.BuildInfo{}, zap.NewNop())
 	for _, bc := range elbCases {
 		data := createELBAccessLogContent(b, bc.filename, bc.nLogs)
 		b.Run(bc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
+				decoder, err := factory(bytes.NewReader(data), encoding.StreamDecoderOptions{})
+				require.NoError(b, err)
+				logs := plog.NewLogs()
+				err = decoder.Decode(context.Background(), logs)
 				require.NoError(b, err)
 			}
 		})

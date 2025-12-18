@@ -4,6 +4,7 @@
 package subscriptionfilter // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,10 +17,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
+
+var _ encoding.StreamDecoder[plog.Logs] = (*subscriptionFilterUnmarshaler)(nil)
 
 var (
 	errEmptyOwner     = errors.New("cloudwatch log with message type 'DATA_MESSAGE' has empty owner field")
@@ -48,34 +51,78 @@ func validateLog(log events.CloudwatchLogsData) error {
 
 type subscriptionFilterUnmarshaler struct {
 	buildInfo component.BuildInfo
+	reader    io.Reader
+	decoder   *gojson.Decoder
+	offset    encoding.StreamOffset
 }
 
-func NewSubscriptionFilterUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
-	return &subscriptionFilterUnmarshaler{
-		buildInfo: buildInfo,
+type subscriptionFilterUnmarshalerFactory struct {
+	buildInfo component.BuildInfo
+}
+
+func NewSubscriptionFilterUnmarshalerFactory(buildInfo component.BuildInfo) func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+	return func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+		decoder := gojson.NewDecoder(reader)
+		// Skip to initial offset
+		for i := encoding.StreamOffset(0); i < opts.InitialOffset; i++ {
+			var dummy interface{}
+			if err := decoder.Decode(&dummy); err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				break
+			}
+		}
+		return &subscriptionFilterUnmarshaler{
+			buildInfo: buildInfo,
+			reader:    reader,
+			decoder:   decoder,
+			offset:    opts.InitialOffset,
+		}, nil
 	}
 }
 
-// UnmarshalAWSLogs deserializes the given reader as CloudWatch Logs events
-// into a plog.Logs, grouping logs by owner (account ID), log group, and
-// log stream. Logs are assumed to be gzip-compressed as specified at
+// Decode reads the next CloudWatch Logs event from the stream.
+// Logs are assumed to be gzip-compressed as specified at
 // https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html.
-func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+func (f *subscriptionFilterUnmarshaler) Decode(ctx context.Context, to plog.Logs) error {
+	// Check context cancellation
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	var cwLog events.CloudwatchLogsData
-	decoder := gojson.NewDecoder(reader)
-	if err := decoder.Decode(&cwLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
+	if err := f.decoder.Decode(&cwLog); err != nil {
+		if errors.Is(err, io.EOF) {
+			return io.EOF
+		}
+		return fmt.Errorf("failed to decode decompressed reader: %w", err)
 	}
 
 	if cwLog.MessageType == "CONTROL_MESSAGE" {
-		return plog.NewLogs(), nil
+		// Return empty logs for control messages
+		plog.NewLogs().CopyTo(to)
+		return nil
 	}
 
 	if err := validateLog(cwLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("invalid cloudwatch log: %w", err)
+		return fmt.Errorf("invalid cloudwatch log: %w", err)
 	}
 
-	return f.createLogs(cwLog), nil
+	logs := f.createLogs(cwLog)
+	logs.CopyTo(to)
+
+	// Update offset (count log records)
+	recordCount := int64(to.LogRecordCount())
+	f.offset += encoding.StreamOffset(recordCount)
+
+	return nil
+}
+
+func (f *subscriptionFilterUnmarshaler) Offset() encoding.StreamOffset {
+	return f.offset
 }
 
 // createLogs create plog.Logs from the cloudwatchLog

@@ -5,6 +5,7 @@ package s3accesslog
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -205,13 +207,16 @@ func TestUnmarshalLogs(t *testing.T) {
 		},
 	}
 
-	u := s3AccessLogUnmarshaler{buildInfo: component.BuildInfo{}}
+	factory := NewS3AccessLogUnmarshalerFactory(component.BuildInfo{})
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
 			require.NoError(t, err)
 
-			logs, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
+			decoder, err := factory(bytes.NewReader(data), encoding.StreamDecoderOptions{})
+			require.NoError(t, err)
+			logs := plog.NewLogs()
+			err = decoder.Decode(context.Background(), logs)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 				return

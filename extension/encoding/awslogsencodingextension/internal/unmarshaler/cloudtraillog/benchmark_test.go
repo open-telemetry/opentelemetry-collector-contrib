@@ -5,12 +5,16 @@ package cloudtraillog
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"testing"
 
 	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 // createCloudTrailLogContent reads the sample CloudTrail log from testdata
@@ -75,7 +79,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		},
 	}
 
-	u := NewCloudTrailLogUnmarshaler(component.BuildInfo{})
+	factory := NewCloudTrailLogUnmarshalerFactory(component.BuildInfo{})
 	for name, benchmark := range benchmarks {
 		// Generate the log content with the specified number of records
 		logContent := createCloudTrailLogContent(b, benchmark.nLogs)
@@ -89,10 +93,15 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 				// Create a new reader for each iteration to ensure consistent behavior
 				reader := bytes.NewReader(logContent)
 
-				// Unmarshal the logs
-				_, err := u.UnmarshalAWSLogs(reader)
+				// Create decoder and decode the logs
+				decoder, err := factory(reader, encoding.StreamDecoderOptions{})
 				if err != nil {
-					b.Fatalf("Error unmarshaling logs: %v", err)
+					b.Fatalf("Error creating decoder: %v", err)
+				}
+				logs := plog.NewLogs()
+				err = decoder.Decode(context.Background(), logs)
+				if err != nil {
+					b.Fatalf("Error decoding logs: %v", err)
 				}
 			}
 		})

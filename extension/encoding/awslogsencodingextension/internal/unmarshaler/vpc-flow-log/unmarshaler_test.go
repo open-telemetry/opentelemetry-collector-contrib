@@ -5,6 +5,7 @@ package vpcflowlog
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -115,10 +117,13 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 				config.Format = test.format
 			}
 
-			u, err := NewVPCFlowLogUnmarshaler(config, component.BuildInfo{}, zap.NewNop(), test.featureGateEnabled)
+			factory, err := NewVPCFlowLogUnmarshalerFactory(config, component.BuildInfo{}, zap.NewNop(), test.featureGateEnabled)
 			require.NoError(t, err)
 
-			logs, err := u.UnmarshalAWSLogs(test.logInputReader)
+			decoder, err := factory(test.logInputReader, encoding.StreamDecoderOptions{})
+			require.NoError(t, err)
+			logs := plog.NewLogs()
+			err = decoder.Decode(context.Background(), logs)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 				return
@@ -194,7 +199,7 @@ func TestHandleAddresses(t *testing.T) {
 		},
 	}
 
-	v := &vpcFlowLogUnmarshaler{logger: zap.NewNop()}
+	v := &vpcFlowLogBase{logger: zap.NewNop()}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			record := plog.NewLogRecord()

@@ -5,12 +5,16 @@ package s3accesslog
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 // newLogFileContent reads data from testdata/valid_s3_access_log.log
@@ -47,13 +51,16 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		},
 	}
 
-	u := s3AccessLogUnmarshaler{buildInfo: component.BuildInfo{}}
+	factory := NewS3AccessLogUnmarshalerFactory(component.BuildInfo{})
 	for name, benchmark := range benchmarks {
 		logs := newLogFileContent(b, benchmark.nLogs)
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				_, err := u.UnmarshalAWSLogs(logs)
+				decoder, err := factory(logs, encoding.StreamDecoderOptions{})
+				require.NoError(b, err)
+				resultLogs := plog.NewLogs()
+				err = decoder.Decode(context.Background(), resultLogs)
 				require.NoError(b, err)
 			}
 		})

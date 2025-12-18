@@ -5,10 +5,12 @@ package waf // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
@@ -16,18 +18,50 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
+
+var _ encoding.StreamDecoder[plog.Logs] = (*wafLogUnmarshaler)(nil)
 
 type wafLogUnmarshaler struct {
 	buildInfo component.BuildInfo
+	reader    io.Reader
+	scanner   *bufio.Scanner
+	opts      encoding.StreamDecoderOptions
+	offset    encoding.StreamOffset
+
+	// Flush tracking
+	lastFlushTime time.Time
+	bytesRead     int64
+	itemsRead     int64
+
+	// State for resource attributes (webACLID is consistent across batch)
+	webACLID string
 }
 
-func NewWAFLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
-	return &wafLogUnmarshaler{
-		buildInfo: buildInfo,
+type wafLogUnmarshalerFactory struct {
+	buildInfo component.BuildInfo
+}
+
+func NewWAFLogUnmarshalerFactory(buildInfo component.BuildInfo) func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+	return func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+		scanner := bufio.NewScanner(reader)
+		// Skip to initial offset
+		for i := encoding.StreamOffset(0); i < opts.InitialOffset; i++ {
+			if !scanner.Scan() {
+				break
+			}
+		}
+		return &wafLogUnmarshaler{
+			buildInfo:     buildInfo,
+			reader:        reader,
+			scanner:       scanner,
+			opts:          opts,
+			offset:        opts.InitialOffset,
+			lastFlushTime: time.Now(),
+		}, nil
 	}
 }
 
@@ -61,9 +95,8 @@ type wafLog struct {
 	Ja4Fingerprint   string `json:"ja4Fingerprint"`
 }
 
-func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+func (w *wafLogUnmarshaler) Decode(ctx context.Context, to plog.Logs) error {
 	logs := plog.NewLogs()
-
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(
 		string(conventions.CloudProviderKey),
@@ -75,38 +108,103 @@ func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error
 	scopeLogs.Scope().SetVersion(w.buildInfo.Version)
 	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatWAFLog)
 
-	scanner := bufio.NewScanner(reader)
-	webACLID := ""
-	for scanner.Scan() {
-		logLine := scanner.Bytes()
+	batchWebACLID := w.webACLID
+	hasRecords := false
+
+	for {
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		// Check flush conditions
+		shouldFlush := false
+		if w.opts.FlushItems > 0 && w.itemsRead >= w.opts.FlushItems {
+			shouldFlush = true
+		}
+		if w.opts.FlushBytes > 0 && w.bytesRead >= w.opts.FlushBytes {
+			shouldFlush = true
+		}
+		if w.opts.FlushTimeout > 0 && time.Since(w.lastFlushTime) >= w.opts.FlushTimeout {
+			shouldFlush = true
+		}
+
+		// If we have records and should flush, break
+		if hasRecords && shouldFlush {
+			break
+		}
+
+		// Try to read the next line
+		if !w.scanner.Scan() {
+			if w.scanner.Err() != nil {
+				return fmt.Errorf("failed to scan line: %w", w.scanner.Err())
+			}
+			// EOF
+			if !hasRecords {
+				return io.EOF
+			}
+			break
+		}
+
+		logLine := w.scanner.Bytes()
+		lineSize := int64(len(logLine))
 
 		var log wafLog
 		if err := gojson.Unmarshal(logLine, &log); err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to unmarshal WAF log: %w", err)
+			return fmt.Errorf("failed to unmarshal WAF log: %w", err)
 		}
 		if log.WebACLID == "" {
-			return plog.Logs{}, errors.New("invalid WAF log: empty webaclId field")
+			return errors.New("invalid WAF log: empty webaclId field")
 		}
-		if webACLID != "" && log.WebACLID != webACLID {
-			return plog.Logs{}, fmt.Errorf(
+		if batchWebACLID != "" && log.WebACLID != batchWebACLID {
+			return fmt.Errorf(
 				"unexpected: new webaclId %q is different than previous one %q",
-				webACLID,
 				log.WebACLID,
+				batchWebACLID,
 			)
 		}
-		webACLID = log.WebACLID
+		batchWebACLID = log.WebACLID
 
 		record := scopeLogs.LogRecords().AppendEmpty()
 		if err := w.addWAFLog(log, record); err != nil {
-			return plog.Logs{}, err
+			return err
 		}
+
+		hasRecords = true
+		w.itemsRead++
+		w.bytesRead += lineSize
 	}
 
-	if err := setResourceAttributes(resourceLogs, webACLID); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to get resource attributes: %w", err)
+	if !hasRecords {
+		return io.EOF
 	}
 
-	return logs, nil
+	if err := setResourceAttributes(resourceLogs, batchWebACLID); err != nil {
+		return fmt.Errorf("failed to get resource attributes: %w", err)
+	}
+
+	// Update state
+	w.webACLID = batchWebACLID
+
+	// Copy to output
+	logs.CopyTo(to)
+
+	// Update offset (count log records)
+	recordCount := int64(to.LogRecordCount())
+	w.offset += encoding.StreamOffset(recordCount)
+
+	// Reset flush tracking
+	w.lastFlushTime = time.Now()
+	w.bytesRead = 0
+	w.itemsRead = 0
+
+	return nil
+}
+
+func (w *wafLogUnmarshaler) Offset() encoding.StreamOffset {
+	return w.offset
 }
 
 // setResourceAttributes based on the web ACL ID

@@ -5,6 +5,7 @@ package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -18,10 +19,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
+
+var _ encoding.StreamDecoder[plog.Logs] = (*s3AccessLogUnmarshaler)(nil)
 
 const (
 	// any field can be set to - to indicate that the data was unknown
@@ -33,11 +36,42 @@ const (
 
 type s3AccessLogUnmarshaler struct {
 	buildInfo component.BuildInfo
+	reader    io.Reader
+	scanner   *bufio.Scanner
+	opts      encoding.StreamDecoderOptions
+	offset    encoding.StreamOffset
+
+	// Flush tracking
+	lastFlushTime time.Time
+	bytesRead     int64
+	itemsRead     int64
+
+	// State for resource attributes (accumulated across batch)
+	resourceAttr *resourceAttributes
 }
 
-func NewS3AccessLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
-	return &s3AccessLogUnmarshaler{
-		buildInfo: buildInfo,
+type s3AccessLogUnmarshalerFactory struct {
+	buildInfo component.BuildInfo
+}
+
+func NewS3AccessLogUnmarshalerFactory(buildInfo component.BuildInfo) func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+	return func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+		scanner := bufio.NewScanner(reader)
+		// Skip to initial offset
+		for i := encoding.StreamOffset(0); i < opts.InitialOffset; i++ {
+			if !scanner.Scan() {
+				break
+			}
+		}
+		return &s3AccessLogUnmarshaler{
+			buildInfo:     buildInfo,
+			reader:        reader,
+			scanner:       scanner,
+			opts:          opts,
+			offset:        opts.InitialOffset,
+			lastFlushTime: time.Now(),
+			resourceAttr:  &resourceAttributes{},
+		}, nil
 	}
 }
 
@@ -46,24 +80,89 @@ type resourceAttributes struct {
 	bucketName  string
 }
 
-func (s *s3AccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	scanner := bufio.NewScanner(reader)
-
+func (s *s3AccessLogUnmarshaler) Decode(ctx context.Context, to plog.Logs) error {
 	logs, resourceLogs, scopeLogs := s.createLogs()
-	resourceAttr := &resourceAttributes{}
-	for scanner.Scan() {
-		log := scanner.Text()
-		if err := handleLog(resourceAttr, scopeLogs, log); err != nil {
-			return plog.Logs{}, err
+	batchResourceAttr := &resourceAttributes{
+		bucketOwner: s.resourceAttr.bucketOwner,
+		bucketName:  s.resourceAttr.bucketName,
+	}
+	hasRecords := false
+
+	for {
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
 		}
+
+		// Check flush conditions
+		shouldFlush := false
+		if s.opts.FlushItems > 0 && s.itemsRead >= s.opts.FlushItems {
+			shouldFlush = true
+		}
+		if s.opts.FlushBytes > 0 && s.bytesRead >= s.opts.FlushBytes {
+			shouldFlush = true
+		}
+		if s.opts.FlushTimeout > 0 && time.Since(s.lastFlushTime) >= s.opts.FlushTimeout {
+			shouldFlush = true
+		}
+
+		// If we have records and should flush, break
+		if hasRecords && shouldFlush {
+			break
+		}
+
+		// Try to read the next line
+		if !s.scanner.Scan() {
+			if s.scanner.Err() != nil {
+				return fmt.Errorf("error reading log line: %w", s.scanner.Err())
+			}
+			// EOF
+			if !hasRecords {
+				return io.EOF
+			}
+			break
+		}
+
+		log := s.scanner.Text()
+		lineSize := int64(len(log))
+
+		if err := handleLog(batchResourceAttr, scopeLogs, log); err != nil {
+			return err
+		}
+
+		hasRecords = true
+		s.itemsRead++
+		s.bytesRead += lineSize
 	}
 
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error reading log line: %w", err)
+	if !hasRecords {
+		return io.EOF
 	}
 
-	s.setResourceAttributes(resourceAttr, resourceLogs)
-	return logs, nil
+	s.setResourceAttributes(batchResourceAttr, resourceLogs)
+
+	// Update state
+	s.resourceAttr = batchResourceAttr
+
+	// Copy to output
+	logs.CopyTo(to)
+
+	// Update offset (count log records)
+	recordCount := int64(to.LogRecordCount())
+	s.offset += encoding.StreamOffset(recordCount)
+
+	// Reset flush tracking
+	s.lastFlushTime = time.Now()
+	s.bytesRead = 0
+	s.itemsRead = 0
+
+	return nil
+}
+
+func (s *s3AccessLogUnmarshaler) Offset() encoding.StreamOffset {
+	return s.offset
 }
 
 // createLogs with the expected fields for the scope logs

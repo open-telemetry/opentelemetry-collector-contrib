@@ -5,12 +5,16 @@ package waf
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"testing"
 
 	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 // newWAFLogContent reads the testdata/valid_log.json file, and creates
@@ -44,9 +48,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		},
 	}
 
-	u := wafLogUnmarshaler{
-		buildInfo: component.BuildInfo{},
-	}
+	factory := NewWAFLogUnmarshalerFactory(component.BuildInfo{})
 
 	for name, test := range tests {
 		data := newWAFLogContent(b, test.nLogs)
@@ -54,7 +56,10 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
+				decoder, err := factory(bytes.NewReader(data), encoding.StreamDecoderOptions{})
+				require.NoError(b, err)
+				logs := plog.NewLogs()
+				err = decoder.Decode(context.Background(), logs)
 				require.NoError(b, err)
 			}
 		})

@@ -5,10 +5,11 @@ package elbaccesslogs // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"bufio"
-	"errors"
+	"context"
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -16,20 +17,57 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
+
+var _ encoding.StreamDecoder[plog.Logs] = (*elbAccessLogUnmarshaler)(nil)
 
 type elbAccessLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
+	reader    io.Reader
+	scanner   *bufio.Scanner
+	opts      encoding.StreamDecoderOptions
+	offset    encoding.StreamOffset
+
+	// Flush tracking
+	lastFlushTime time.Time
+	bytesRead     int64
+	itemsRead     int64
+
+	// State for format detection and resource attributes
+	syntax       string
+	resourceAttr *resourceAttributes
+	firstLine    bool
 }
 
-func NewELBAccessLogUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) unmarshaler.AWSUnmarshaler {
-	return &elbAccessLogUnmarshaler{
-		buildInfo: buildInfo,
-		logger:    logger,
+type elbAccessLogUnmarshalerFactory struct {
+	buildInfo component.BuildInfo
+	logger    *zap.Logger
+}
+
+func NewELBAccessLogUnmarshalerFactory(buildInfo component.BuildInfo, logger *zap.Logger) func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+	return func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+		scanner := bufio.NewScanner(reader)
+		// Skip to initial offset
+		for i := encoding.StreamOffset(0); i < opts.InitialOffset; i++ {
+			if !scanner.Scan() {
+				break
+			}
+		}
+		return &elbAccessLogUnmarshaler{
+			buildInfo:     buildInfo,
+			logger:         logger,
+			reader:         reader,
+			scanner:        scanner,
+			opts:           opts,
+			offset:         opts.InitialOffset,
+			lastFlushTime:  time.Now(),
+			resourceAttr:   &resourceAttributes{},
+			firstLine:       true,
+		}, nil
 	}
 }
 
@@ -37,85 +75,131 @@ type resourceAttributes struct {
 	resourceID string
 }
 
-// UnmarshalAWSLogs processes a file containing ELB access logs.
-func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	scanner := bufio.NewScanner(reader)
-
+// Decode processes a batch of ELB access logs from the stream.
+func (f *elbAccessLogUnmarshaler) Decode(ctx context.Context, to plog.Logs) error {
 	logs, resourceLogs, scopeLogs := f.createLogs()
-	resourceAttr := &resourceAttributes{}
-
-	var line string
-	var fields []string
-
-	// Read first line to determine format
-	if !scanner.Scan() {
-		return plog.Logs{}, errors.New("no log lines found")
+	batchResourceAttr := &resourceAttributes{
+		resourceID: f.resourceAttr.resourceID,
 	}
-	line = scanner.Text()
+	hasRecords := false
 
-	fields, err := extractFields(line)
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
-	}
-	if len(fields) == 0 {
-		return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
-	}
-
-	// Check for control message
-	if fields[0] == EnableControlMessage {
-		f.logger.Info(fmt.Sprintf("Control message received: %s", line))
-		return plog.NewLogs(), nil
-	}
-
-	// Determine syntax
-	syntax, err := findLogSyntaxByField(fields[0])
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("unable to determine log syntax: %w", err)
-	}
 	for {
-		// Process lines based on determined syntax
-		switch syntax {
-		case albAccessLogs:
-			err = f.handleALBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-		case nlbAccessLogs:
-			err = f.handleNLBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-		case clbAccessLogs:
-			err = f.handleCLBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		default:
-			return plog.Logs{}, fmt.Errorf("unsupported log syntax: %s", syntax)
 		}
 
-		// Refill with next line until we reach the scanner end
-		if !scanner.Scan() {
+		// Check flush conditions
+		shouldFlush := false
+		if f.opts.FlushItems > 0 && f.itemsRead >= f.opts.FlushItems {
+			shouldFlush = true
+		}
+		if f.opts.FlushBytes > 0 && f.bytesRead >= f.opts.FlushBytes {
+			shouldFlush = true
+		}
+		if f.opts.FlushTimeout > 0 && time.Since(f.lastFlushTime) >= f.opts.FlushTimeout {
+			shouldFlush = true
+		}
+
+		// If we have records and should flush, break
+		if hasRecords && shouldFlush {
 			break
 		}
 
-		line = scanner.Text()
-		fields, err = extractFields(line)
+		// Try to read the next line
+		if !f.scanner.Scan() {
+			if f.scanner.Err() != nil {
+				return fmt.Errorf("error scanning log lines: %w", f.scanner.Err())
+			}
+			// EOF
+			if !hasRecords {
+				return io.EOF
+			}
+			break
+		}
+
+		line := f.scanner.Text()
+		lineSize := int64(len(line))
+
+		fields, err := extractFields(line)
 		if err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
+			return fmt.Errorf("failed to parse log line: %w", err)
 		}
 		if len(fields) == 0 {
-			return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
+			return fmt.Errorf("log line has no fields: %s", line)
 		}
+
+		// Check for control message
+		if fields[0] == EnableControlMessage {
+			f.logger.Info(fmt.Sprintf("Control message received: %s", line))
+			// Skip control messages, continue to next line
+			continue
+		}
+
+		// Determine syntax on first line
+		if f.firstLine {
+			syntax, err := findLogSyntaxByField(fields[0])
+			if err != nil {
+				return fmt.Errorf("unable to determine log syntax: %w", err)
+			}
+			f.syntax = syntax
+			f.firstLine = false
+		}
+
+		// Process lines based on determined syntax
+		switch f.syntax {
+		case albAccessLogs:
+			err = f.handleALBAccessLogs(fields, batchResourceAttr, scopeLogs)
+			if err != nil {
+				return err
+			}
+		case nlbAccessLogs:
+			err = f.handleNLBAccessLogs(fields, batchResourceAttr, scopeLogs)
+			if err != nil {
+				return err
+			}
+		case clbAccessLogs:
+			err = f.handleCLBAccessLogs(fields, batchResourceAttr, scopeLogs)
+			if err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unsupported log syntax: %s", f.syntax)
+		}
+
+		hasRecords = true
+		f.itemsRead++
+		f.bytesRead += lineSize
 	}
 
-	// Handle potential scanner errors
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error scanning log lines: %w", err)
+	if !hasRecords {
+		return io.EOF
 	}
 
-	f.setResourceAttributes(resourceAttr, resourceLogs)
-	return logs, nil
+	f.setResourceAttributes(batchResourceAttr, resourceLogs)
+
+	// Update state
+	f.resourceAttr = batchResourceAttr
+
+	// Copy to output
+	logs.CopyTo(to)
+
+	// Update offset (count log records)
+	recordCount := int64(to.LogRecordCount())
+	f.offset += encoding.StreamOffset(recordCount)
+
+	// Reset flush tracking
+	f.lastFlushTime = time.Now()
+	f.bytesRead = 0
+	f.itemsRead = 0
+
+	return nil
+}
+
+func (f *elbAccessLogUnmarshaler) Offset() encoding.StreamOffset {
+	return f.offset
 }
 
 // createLogs with the expected fields for the scope logs

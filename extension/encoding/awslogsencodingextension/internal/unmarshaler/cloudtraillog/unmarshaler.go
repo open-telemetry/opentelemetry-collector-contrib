@@ -4,6 +4,8 @@
 package cloudtraillog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -15,16 +17,23 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
+
+var _ encoding.StreamDecoder[plog.Logs] = (*CloudTrailLogUnmarshaler)(nil)
 
 type CloudTrailLogUnmarshaler struct {
 	buildInfo component.BuildInfo
+	reader    io.Reader
+	decoder   *gojson.Decoder
+	offset    encoding.StreamOffset
 }
 
-var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
+type CloudTrailLogUnmarshalerFactory struct {
+	buildInfo component.BuildInfo
+}
 
 // UserIdentity represents the user identity information in CloudTrail logs
 type UserIdentity struct {
@@ -134,34 +143,86 @@ type CloudTrailLog struct {
 	Records []CloudTrailRecord `json:"Records"`
 }
 
-func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogUnmarshaler {
-	return &CloudTrailLogUnmarshaler{
-		buildInfo: buildInfo,
+func NewCloudTrailLogUnmarshalerFactory(buildInfo component.BuildInfo) func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+	return func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+		decoder := gojson.NewDecoder(reader)
+		// Skip to initial offset
+		for i := encoding.StreamOffset(0); i < opts.InitialOffset; i++ {
+			var dummy interface{}
+			if err := decoder.Decode(&dummy); err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				// If we can't skip, we'll handle it in Decode
+				break
+			}
+		}
+		return &CloudTrailLogUnmarshaler{
+			buildInfo: buildInfo,
+			reader:    reader,
+			decoder:   decoder,
+			offset:    opts.InitialOffset,
+		}, nil
 	}
 }
 
-func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	decompressedBuf, err := io.ReadAll(reader)
+func (u *CloudTrailLogUnmarshaler) Decode(ctx context.Context, to plog.Logs) error {
+	// Check context cancellation
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	// Read one JSON document - decode into raw map first to check structure
+	var rawDoc map[string]interface{}
+	if err := u.decoder.Decode(&rawDoc); err != nil {
+		if errors.Is(err, io.EOF) {
+			return io.EOF
+		}
+		return fmt.Errorf("failed to decode CloudTrail log document: %w", err)
+	}
+
+	// Convert to JSON bytes to unmarshal into proper struct
+	jsonData, err := gojson.Marshal(rawDoc)
 	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to read CloudTrail logs: %w", err)
+		return fmt.Errorf("failed to marshal CloudTrail log: %w", err)
 	}
 
+	var logs plog.Logs
+	// Try to parse as CloudTrail log with Records first
 	var cloudTrailLog CloudTrailLog
-	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as CloudTrail logs: %w", err)
+	if err := gojson.Unmarshal(jsonData, &cloudTrailLog); err == nil && cloudTrailLog.Records != nil {
+		var err2 error
+		logs, err2 = u.processRecords(cloudTrailLog.Records)
+		if err2 != nil {
+			return err2
+		}
+	} else {
+		// Try to parse as a CloudTrail digest record
+		var cloudTrailDigest CloudTrailDigest
+		if err := gojson.Unmarshal(jsonData, &cloudTrailDigest); err != nil {
+			return fmt.Errorf("failed to unmarshal payload as CloudTrail logs or digest: %w", err)
+		}
+		var err2 error
+		logs, err2 = u.processDigestRecord(cloudTrailDigest)
+		if err2 != nil {
+			return err2
+		}
 	}
 
-	if cloudTrailLog.Records != nil {
-		return u.processRecords(cloudTrailLog.Records)
-	}
+	// Copy to output
+	logs.CopyTo(to)
 
-	// Try to parse as a CloudTrail digest record
-	var cloudTrailDigest CloudTrailDigest
-	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailDigest); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as a CloudTrail digest: %w", err)
-	}
+	// Update offset (count log records)
+	recordCount := int64(to.LogRecordCount())
+	u.offset += encoding.StreamOffset(recordCount)
 
-	return u.processDigestRecord(cloudTrailDigest)
+	return nil
+}
+
+func (u *CloudTrailLogUnmarshaler) Offset() encoding.StreamOffset {
+	return u.offset
 }
 
 func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (plog.Logs, error) {

@@ -5,6 +5,7 @@ package networkfirewall // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,18 +17,51 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
+
+var _ encoding.StreamDecoder[plog.Logs] = (*networkFirewallLogUnmarshaler)(nil)
 
 type networkFirewallLogUnmarshaler struct {
 	buildInfo component.BuildInfo
+	reader    io.Reader
+	scanner   *bufio.Scanner
+	opts      encoding.StreamDecoderOptions
+	offset    encoding.StreamOffset
+
+	// Flush tracking
+	lastFlushTime time.Time
+	bytesRead     int64
+	itemsRead     int64
+
+	// State for resource attributes (firewallName and availabilityZone are consistent across batch)
+	firewallName     string
+	availabilityZone string
 }
 
-func NewNetworkFirewallLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
-	return &networkFirewallLogUnmarshaler{
-		buildInfo: buildInfo,
+type networkFirewallLogUnmarshalerFactory struct {
+	buildInfo component.BuildInfo
+}
+
+func NewNetworkFirewallLogUnmarshalerFactory(buildInfo component.BuildInfo) func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+	return func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error) {
+		scanner := bufio.NewScanner(reader)
+		// Skip to initial offset
+		for i := encoding.StreamOffset(0); i < opts.InitialOffset; i++ {
+			if !scanner.Scan() {
+				break
+			}
+		}
+		return &networkFirewallLogUnmarshaler{
+			buildInfo:     buildInfo,
+			reader:        reader,
+			scanner:       scanner,
+			opts:          opts,
+			offset:        opts.InitialOffset,
+			lastFlushTime: time.Now(),
+		}, nil
 	}
 }
 
@@ -98,7 +132,7 @@ type networkFirewallLog struct {
 	} `json:"event"`
 }
 
-func (n *networkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+func (n *networkFirewallLogUnmarshaler) Decode(ctx context.Context, to plog.Logs) error {
 	logs := plog.NewLogs()
 
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
@@ -112,43 +146,108 @@ func (n *networkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	scopeLogs.Scope().SetVersion(n.buildInfo.Version)
 	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatNetworkFirewallLog)
 
-	firewallName := ""
-	availabilityZone := ""
+	batchFirewallName := n.firewallName
+	batchAvailabilityZone := n.availabilityZone
+	hasRecords := false
 
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		logLine := scanner.Bytes()
+	for {
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		// Check flush conditions
+		shouldFlush := false
+		if n.opts.FlushItems > 0 && n.itemsRead >= n.opts.FlushItems {
+			shouldFlush = true
+		}
+		if n.opts.FlushBytes > 0 && n.bytesRead >= n.opts.FlushBytes {
+			shouldFlush = true
+		}
+		if n.opts.FlushTimeout > 0 && time.Since(n.lastFlushTime) >= n.opts.FlushTimeout {
+			shouldFlush = true
+		}
+
+		// If we have records and should flush, break
+		if hasRecords && shouldFlush {
+			break
+		}
+
+		// Try to read the next line
+		if !n.scanner.Scan() {
+			if n.scanner.Err() != nil {
+				return fmt.Errorf("failed to scan line: %w", n.scanner.Err())
+			}
+			// EOF
+			if !hasRecords {
+				return io.EOF
+			}
+			break
+		}
+
+		logLine := n.scanner.Bytes()
+		lineSize := int64(len(logLine))
 
 		var log networkFirewallLog
 		if err := gojson.Unmarshal(logLine, &log); err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to unmarshal Network Firewall log: %w", err)
+			return fmt.Errorf("failed to unmarshal Network Firewall log: %w", err)
 		}
 		if log.FirewallName == "" {
-			return plog.Logs{}, errors.New("invalid Network Firewall log: empty firewall_name field")
+			return errors.New("invalid Network Firewall log: empty firewall_name field")
 		}
-		if firewallName == "" {
-			firewallName = log.FirewallName
-			availabilityZone = log.AvailabilityZone
+		if batchFirewallName == "" {
+			batchFirewallName = log.FirewallName
+			batchAvailabilityZone = log.AvailabilityZone
 		}
-		if firewallName != log.FirewallName {
-			return plog.Logs{}, fmt.Errorf(
+		if batchFirewallName != log.FirewallName {
+			return fmt.Errorf(
 				"unexpected: new firewall_name %q is different than previous one %q",
 				log.FirewallName,
-				firewallName,
+				batchFirewallName,
 			)
 		}
 
 		record := scopeLogs.LogRecords().AppendEmpty()
 		if err := n.addNetworkFirewallLog(log, record); err != nil {
-			return plog.Logs{}, err
+			return err
 		}
+
+		hasRecords = true
+		n.itemsRead++
+		n.bytesRead += lineSize
 	}
 
-	if err := setResourceAttributes(resourceLogs, firewallName, availabilityZone); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to set resource attributes: %w", err)
+	if !hasRecords {
+		return io.EOF
 	}
 
-	return logs, nil
+	if err := setResourceAttributes(resourceLogs, batchFirewallName, batchAvailabilityZone); err != nil {
+		return fmt.Errorf("failed to set resource attributes: %w", err)
+	}
+
+	// Update state
+	n.firewallName = batchFirewallName
+	n.availabilityZone = batchAvailabilityZone
+
+	// Copy to output
+	logs.CopyTo(to)
+
+	// Update offset (count log records)
+	recordCount := int64(to.LogRecordCount())
+	n.offset += encoding.StreamOffset(recordCount)
+
+	// Reset flush tracking
+	n.lastFlushTime = time.Now()
+	n.bytesRead = 0
+	n.itemsRead = 0
+
+	return nil
+}
+
+func (n *networkFirewallLogUnmarshaler) Offset() encoding.StreamOffset {
+	return n.offset
 }
 
 func setResourceAttributes(resourceLogs plog.ResourceLogs, firewallName, availabilityZone string) error {

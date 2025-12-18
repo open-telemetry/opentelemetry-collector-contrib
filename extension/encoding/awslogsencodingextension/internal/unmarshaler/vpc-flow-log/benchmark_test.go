@@ -5,13 +5,16 @@ package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 )
 
@@ -49,11 +52,13 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 		},
 	}
 
-	u := vpcFlowLogUnmarshaler{
-		cfg:       Config{FileFormat: constants.FileFormatPlainText},
-		buildInfo: component.BuildInfo{},
-		logger:    zap.NewNop(),
-	}
+	factory, err := NewVPCFlowLogUnmarshalerFactory(
+		Config{FileFormat: constants.FileFormatPlainText},
+		component.BuildInfo{},
+		zap.NewNop(),
+		false,
+	)
+	require.NoError(b, err)
 
 	for name, test := range tests {
 		data := createVPCFlowLogContent(b, filename, test.nLogs)
@@ -61,7 +66,10 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				_, err := u.unmarshalPlainTextLogs(bytes.NewReader(data))
+				decoder, err := factory(bytes.NewReader(data), encoding.StreamDecoderOptions{})
+				require.NoError(b, err)
+				logs := plog.NewLogs()
+				err = decoder.Decode(context.Background(), logs)
 				require.NoError(b, err)
 			}
 		})

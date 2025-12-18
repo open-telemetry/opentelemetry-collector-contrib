@@ -6,6 +6,7 @@ package awslogsencodingextension // import "github.com/open-telemetry/openteleme
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
-	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
 	networkfirewall "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
@@ -46,14 +46,17 @@ func init() {
 	)
 }
 
-var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
+var (
+	_ encoding.LogsUnmarshalerExtension   = (*encodingExtension)(nil)
+	_ encoding.LogsStreamDecoderExtension = (*encodingExtension)(nil)
+)
 
 type encodingExtension struct {
 	cfg *Config
 
-	unmarshaler awsunmarshaler.AWSUnmarshaler
-	format      string
-	gzipPool    sync.Pool
+	unmarshalerFactory func(reader io.Reader, opts encoding.StreamDecoderOptions) (encoding.StreamDecoder[plog.Logs], error)
+	format              string
+	gzipPool            sync.Pool
 }
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
@@ -66,8 +69,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 		return &encodingExtension{
-			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
+			unmarshalerFactory: subscriptionfilter.NewSubscriptionFilterUnmarshalerFactory(settings.BuildInfo),
+			format:             constants.FormatCloudWatchLogsSubscriptionFilter,
 		}, nil
 	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
 		if cfg.Format == constants.FormatVPCFlowLogV1 {
@@ -77,16 +80,16 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 
-		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
+		unmarshalerFactory, err := vpcflowlog.NewVPCFlowLogUnmarshalerFactory(
 			cfg.VPCFlowLogConfig,
 			settings.BuildInfo,
 			settings.Logger,
 			vpcFlowStartISO8601FormatFeatureGate.IsEnabled(),
 		)
 		return &encodingExtension{
-			cfg:         cfg,
-			unmarshaler: unmarshaler,
-			format:      constants.FormatVPCFlowLog,
+			cfg:                cfg,
+			unmarshalerFactory: unmarshalerFactory,
+			format:             constants.FormatVPCFlowLog,
 		}, err
 	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
 		if cfg.Format == constants.FormatS3AccessLogV1 {
@@ -96,8 +99,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 		return &encodingExtension{
-			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatS3AccessLog,
+			unmarshalerFactory: s3accesslog.NewS3AccessLogUnmarshalerFactory(settings.BuildInfo),
+			format:             constants.FormatS3AccessLog,
 		}, nil
 	case constants.FormatWAFLog, constants.FormatWAFLogV1:
 		if cfg.Format == constants.FormatWAFLogV1 {
@@ -107,8 +110,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 		return &encodingExtension{
-			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatWAFLog,
+			unmarshalerFactory: waf.NewWAFLogUnmarshalerFactory(settings.BuildInfo),
+			format:             constants.FormatWAFLog,
 		}, nil
 	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
 		if cfg.Format == constants.FormatCloudTrailLogV1 {
@@ -118,8 +121,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 		return &encodingExtension{
-			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatCloudTrailLog,
+			unmarshalerFactory: cloudtraillog.NewCloudTrailLogUnmarshalerFactory(settings.BuildInfo),
+			format:             constants.FormatCloudTrailLog,
 		}, nil
 	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
 		if cfg.Format == constants.FormatELBAccessLogV1 {
@@ -129,7 +132,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 		return &encodingExtension{
-			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
+			unmarshalerFactory: elbaccesslogs.NewELBAccessLogUnmarshalerFactory(
 				settings.BuildInfo,
 				settings.Logger,
 			),
@@ -137,8 +140,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		}, nil
 	case constants.FormatNetworkFirewallLog:
 		return &encodingExtension{
-			unmarshaler: networkfirewall.NewNetworkFirewallLogUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatNetworkFirewallLog,
+			unmarshalerFactory: networkfirewall.NewNetworkFirewallLogUnmarshalerFactory(settings.BuildInfo),
+			format:             constants.FormatNetworkFirewallLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
@@ -219,23 +222,19 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 }
 
 func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	encodingReader, reader, err := e.getReaderFromFormat(buf)
+	decoder, err := e.NewLogsStreamDecoder(
+		context.Background(),
+		bytes.NewReader(buf),
+		encoding.WithFlushBytes(int64(len(buf))),
+	)
 	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to get reader for %q logs: %w", e.format, err)
+		return plog.Logs{}, fmt.Errorf("failed to create stream decoder for %q logs: %w", e.format, err)
 	}
 
-	defer func() {
-		if encodingReader == gzipEncoding {
-			r := reader.(*gzip.Reader)
-			_ = r.Close()
-			e.gzipPool.Put(r)
-		}
-	}()
-
-	logs, err := e.unmarshaler.UnmarshalAWSLogs(reader)
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal logs as %q format: %w", e.format, err)
+	logs := plog.NewLogs()
+	if err := decoder.Decode(context.Background(), logs); err == nil || errors.Is(err, io.EOF) {
+		return logs, nil
+	} else {
+		return plog.Logs{}, fmt.Errorf("failed to decode %q logs: %w", e.format, err)
 	}
-
-	return logs, nil
 }

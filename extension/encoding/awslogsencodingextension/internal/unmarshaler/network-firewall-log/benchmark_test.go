@@ -5,6 +5,7 @@ package networkfirewall
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,6 +14,9 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 // readAndCompressLogFileForBenchmark reads and compresses log file for benchmarking
@@ -34,11 +38,16 @@ func readAndCompressLogFileForBenchmark(b *testing.B, dir, file string) []byte {
 }
 
 func BenchmarkUnmarshalNetworkFirewallAlertLog(b *testing.B) {
-	u := networkFirewallLogUnmarshaler{buildInfo: component.BuildInfo{}}
+	factory := NewNetworkFirewallLogUnmarshalerFactory(component.BuildInfo{})
 	data := readAndCompressLogFileForBenchmark(b, "testdata", "valid_alert_log.json")
 
 	for b.Loop() {
-		_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
+		decoder, err := factory(bytes.NewReader(data), encoding.StreamDecoderOptions{})
+		if err != nil {
+			b.Fatal(err)
+		}
+		logs := plog.NewLogs()
+		err = decoder.Decode(context.Background(), logs)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -46,11 +55,16 @@ func BenchmarkUnmarshalNetworkFirewallAlertLog(b *testing.B) {
 }
 
 func BenchmarkUnmarshalNetworkFirewallFlowLog(b *testing.B) {
-	u := networkFirewallLogUnmarshaler{buildInfo: component.BuildInfo{}}
+	factory := NewNetworkFirewallLogUnmarshalerFactory(component.BuildInfo{})
 	data := readAndCompressLogFileForBenchmark(b, "testdata", "valid_flow_log.json")
 
 	for b.Loop() {
-		_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
+		decoder, err := factory(bytes.NewReader(data), encoding.StreamDecoderOptions{})
+		if err != nil {
+			b.Fatal(err)
+		}
+		logs := plog.NewLogs()
+		err = decoder.Decode(context.Background(), logs)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -58,11 +72,16 @@ func BenchmarkUnmarshalNetworkFirewallFlowLog(b *testing.B) {
 }
 
 func BenchmarkUnmarshalNetworkFirewallTLSLog(b *testing.B) {
-	u := networkFirewallLogUnmarshaler{buildInfo: component.BuildInfo{}}
+	factory := NewNetworkFirewallLogUnmarshalerFactory(component.BuildInfo{})
 	data := readAndCompressLogFileForBenchmark(b, "testdata", "valid_tls_log.json")
 
 	for b.Loop() {
-		_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
+		decoder, err := factory(bytes.NewReader(data), encoding.StreamDecoderOptions{})
+		if err != nil {
+			b.Fatal(err)
+		}
+		logs := plog.NewLogs()
+		err = decoder.Decode(context.Background(), logs)
 		if err != nil {
 			b.Fatal(err)
 		}

@@ -6,6 +6,7 @@ package elbaccesslogs
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,8 +15,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -101,10 +104,13 @@ func TestUnmarshallELBAccessLogs(t *testing.T) {
 	}
 	// Create a mock logger
 	logger := zaptest.NewLogger(t)
-	elbUnmarshaler := NewELBAccessLogUnmarshaler(component.BuildInfo{}, logger)
+	factory := NewELBAccessLogUnmarshalerFactory(component.BuildInfo{}, logger)
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			logs, err := elbUnmarshaler.UnmarshalAWSLogs(test.reader)
+			decoder, err := factory(test.reader, encoding.StreamDecoderOptions{})
+			require.NoError(t, err)
+			logs := plog.NewLogs()
+			err = decoder.Decode(context.Background(), logs)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 				return
