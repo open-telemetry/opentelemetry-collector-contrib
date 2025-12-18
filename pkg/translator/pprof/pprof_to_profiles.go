@@ -404,27 +404,21 @@ func initLookupTables() lookupTables {
 	}
 
 	// mapping_table[0] must always be zero value (Mapping{}) and present.
-	lts.lastMappingTableIdx = 0
 	lts.mappingTable[mm{}] = lts.lastMappingTableIdx
 
 	// location_table[0] must always be zero value (Location{}) and present.
-	lts.lastLocationTableIdx = 0
 	lts.locationTable[loc{}] = lts.lastLocationTableIdx
 
 	// function_table[0] must always be zero value (Function{}) and present.
-	lts.lastFunctionTableIdx = 0
 	lts.functionTable[fn{}] = lts.lastFunctionTableIdx
 
 	// string_table[0] must always be "" and present.
-	lts.lastStringTableIdx = 0
 	lts.stringTable[""] = lts.lastStringTableIdx
 
 	// attribute_table[0] must always be zero value (KeyValueAndUnit{}) and present.
-	lts.lastAttributeTableIdx = 0
 	lts.attributeTable[attr{}] = lts.lastAttributeTableIdx
 
 	// stack_table[0] must always be zero value (Stack{}) and present.
-	lts.lastStackTableIdx = 0
 	lts.stackTable[""] = lts.lastStackTableIdx
 	return lts
 }
