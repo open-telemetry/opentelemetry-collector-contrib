@@ -24,6 +24,12 @@ resourceLogs:
                   - key: host.id
                     value:
                       stringValue: HOST
+                  - key: category
+                    value:
+                      stringValue: AppServiceAppLogs
+                  - key: operation.name
+                    value:
+                      stringValue: AppLog
                   - key: code.function
                     value:
                       stringValue: METHOD
@@ -33,13 +39,7 @@ resourceLogs:
                   - key: exception.stacktrace
                     value:
                       stringValue: STACKTRACE
-                  - key: category
-                    value:
-                      stringValue: AppServiceAppLogs
-                  - key: operation.name
-                    value:
-                      stringValue: AppLog
-            observedTimeUnixNano: "1765868294574971000"
+            observedTimeUnixNano: "1766081218373487000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

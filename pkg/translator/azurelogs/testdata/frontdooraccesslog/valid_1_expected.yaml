@@ -101,7 +101,7 @@ resourceLogs:
                 value:
                   stringValue: Microsoft.Cdn/Profiles/AccessLog/Write
             body: {}
-            observedTimeUnixNano: "1765868294575001000"
+            observedTimeUnixNano: "1766081218366138000"
             timeUnixNano: "1745500468000000000"
         scope:
           name: otelcol/azureresourcelogs
