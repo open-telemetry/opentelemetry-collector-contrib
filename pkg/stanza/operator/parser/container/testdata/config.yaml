@@ -12,16 +12,6 @@ add_metadata_from_file_path:
 max_log_size:
   type: container
   max_log_size: 10242
-max_batch_size:
-  type: container
-  max_batch_size: 5000
-max_unmatched_batch_size:
-  type: container
-  max_unmatched_batch_size: 500
-max_batch_size_and_max_unmatched_batch_size:
-  type: container
-  max_batch_size: 10000
-  max_unmatched_batch_size: 1000
 parse_from_simple:
   type: container
   parse_from: body.from

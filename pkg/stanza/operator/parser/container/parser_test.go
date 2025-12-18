@@ -89,41 +89,6 @@ func TestInternalRecombineCfg(t *testing.T) {
 	require.Equal(t, expected, cfg)
 }
 
-func TestInternalRecombineCfgWithMaxBatchSize(t *testing.T) {
-	cfg := createRecombineConfig(Config{
-		MaxLogSize:            102400,
-		MaxBatchSize:          5000,
-		MaxUnmatchedBatchSize: 500,
-	})
-	expected := recombine.NewConfigWithID(recombineInternalID)
-	expected.IsLastEntry = "attributes.logtag == 'F'"
-	expected.CombineField = entry.NewBodyField()
-	expected.CombineWith = ""
-	expected.SourceIdentifier = entry.NewAttributeField(attrs.LogFilePath)
-	expected.MaxLogSize = 102400
-	expected.MaxBatchSize = 5000
-	expected.MaxUnmatchedBatchSize = 500
-	require.Equal(t, expected, cfg)
-}
-
-func TestInternalRecombineCfgWithDefaultBatchSizes(t *testing.T) {
-	// When MaxBatchSize and MaxUnmatchedBatchSize are 0 (not set),
-	// recombine should use 0 (unlimited) as passed from container parser
-	cfg := createRecombineConfig(Config{
-		MaxLogSize:            102400,
-		MaxBatchSize:          0,
-		MaxUnmatchedBatchSize: 0,
-	})
-	expected := recombine.NewConfigWithID(recombineInternalID)
-	expected.IsLastEntry = "attributes.logtag == 'F'"
-	expected.CombineField = entry.NewBodyField()
-	expected.CombineWith = ""
-	expected.SourceIdentifier = entry.NewAttributeField(attrs.LogFilePath)
-	expected.MaxLogSize = 102400
-	expected.MaxBatchSize = 0
-	expected.MaxUnmatchedBatchSize = 0
-	require.Equal(t, expected, cfg)
-}
 
 func TestProcess(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {

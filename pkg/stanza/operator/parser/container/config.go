@@ -41,8 +41,6 @@ func NewConfigWithID(operatorID string) *Config {
 		Format:                  "",
 		AddMetadataFromFilePath: true,
 		MaxLogSize:              defaultMaxLogSize,
-		MaxBatchSize:            0,
-		MaxUnmatchedBatchSize:   0,
 	}
 }
 
@@ -53,8 +51,6 @@ type Config struct {
 	Format                  string          `mapstructure:"format"`
 	AddMetadataFromFilePath bool            `mapstructure:"add_metadata_from_filepath"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	MaxBatchSize            int             `mapstructure:"max_batch_size,omitempty"`
-	MaxUnmatchedBatchSize   int             `mapstructure:"max_unmatched_batch_size,omitempty"`
 }
 
 // Build will build a Container parser operator.
@@ -129,9 +125,9 @@ func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg.CombineWith = ""
 	recombineParserCfg.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
 	recombineParserCfg.MaxLogSize = c.MaxLogSize
-
-	recombineParserCfg.MaxBatchSize = c.MaxBatchSize
-	recombineParserCfg.MaxUnmatchedBatchSize = c.MaxUnmatchedBatchSize
+	// Set batch sizes to 0 (unlimited) - rely on max_log_size for protection
+	recombineParserCfg.MaxBatchSize = 0
+	recombineParserCfg.MaxUnmatchedBatchSize = 0
 
 	return recombineParserCfg
 }
