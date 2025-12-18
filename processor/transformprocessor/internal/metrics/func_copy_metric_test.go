@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -19,16 +18,16 @@ import (
 func Test_copyMetric(t *testing.T) {
 	tests := []struct {
 		testName string
-		name     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]
-		desc     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]
-		unit     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]
+		name     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]
+		desc     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]
+		unit     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]
 		want     func(s pmetric.MetricSlice)
 	}{
 		{
 			testName: "basic copy",
-			name:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
-			desc:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
-			unit:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
+			name:     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+			desc:     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+			unit:     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
 			want: func(ms pmetric.MetricSlice) {
 				metric := ms.At(0)
 				newMetric := ms.AppendEmpty()
@@ -37,13 +36,13 @@ func Test_copyMetric(t *testing.T) {
 		},
 		{
 			testName: "set name",
-			name: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+			name: ottl.NewTestingOptional[ottl.StringGetter[*ottlmetric.TransformContext]](ottl.StandardStringGetter[*ottlmetric.TransformContext]{
+				Getter: func(context.Context, *ottlmetric.TransformContext) (any, error) {
 					return "new name", nil
 				},
 			}),
-			desc: ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
-			unit: ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
+			desc: ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+			unit: ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
 			want: func(ms pmetric.MetricSlice) {
 				metric := ms.At(0)
 				newMetric := ms.AppendEmpty()
@@ -53,13 +52,13 @@ func Test_copyMetric(t *testing.T) {
 		},
 		{
 			testName: "set description",
-			name:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
-			desc: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+			name:     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+			desc: ottl.NewTestingOptional[ottl.StringGetter[*ottlmetric.TransformContext]](ottl.StandardStringGetter[*ottlmetric.TransformContext]{
+				Getter: func(context.Context, *ottlmetric.TransformContext) (any, error) {
 					return "new desc", nil
 				},
 			}),
-			unit: ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
+			unit: ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
 			want: func(ms pmetric.MetricSlice) {
 				metric := ms.At(0)
 				newMetric := ms.AppendEmpty()
@@ -69,10 +68,10 @@ func Test_copyMetric(t *testing.T) {
 		},
 		{
 			testName: "set unit",
-			name:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
-			desc:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
-			unit: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+			name:     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+			desc:     ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+			unit: ottl.NewTestingOptional[ottl.StringGetter[*ottlmetric.TransformContext]](ottl.StandardStringGetter[*ottlmetric.TransformContext]{
+				Getter: func(context.Context, *ottlmetric.TransformContext) (any, error) {
 					return "new unit", nil
 				},
 			}),
@@ -85,18 +84,18 @@ func Test_copyMetric(t *testing.T) {
 		},
 		{
 			testName: "set all",
-			name: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+			name: ottl.NewTestingOptional[ottl.StringGetter[*ottlmetric.TransformContext]](ottl.StandardStringGetter[*ottlmetric.TransformContext]{
+				Getter: func(context.Context, *ottlmetric.TransformContext) (any, error) {
 					return "new name", nil
 				},
 			}),
-			desc: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+			desc: ottl.NewTestingOptional[ottl.StringGetter[*ottlmetric.TransformContext]](ottl.StandardStringGetter[*ottlmetric.TransformContext]{
+				Getter: func(context.Context, *ottlmetric.TransformContext) (any, error) {
 					return "new desc", nil
 				},
 			}),
-			unit: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+			unit: ottl.NewTestingOptional[ottl.StringGetter[*ottlmetric.TransformContext]](ottl.StandardStringGetter[*ottlmetric.TransformContext]{
+				Getter: func(context.Context, *ottlmetric.TransformContext) (any, error) {
 					return "new unit", nil
 				},
 			}),
@@ -112,8 +111,8 @@ func Test_copyMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			ms := pmetric.NewMetricSlice()
-			input := ms.AppendEmpty()
+			ms := pmetric.NewScopeMetrics()
+			input := ms.Metrics().AppendEmpty()
 			input.SetName("test")
 			input.SetDescription("test")
 			input.SetUnit("test")
@@ -121,22 +120,18 @@ func Test_copyMetric(t *testing.T) {
 			d := input.Sum().DataPoints().AppendEmpty()
 			d.SetIntValue(1)
 
-			expected := pmetric.NewMetricSlice()
-			ms.CopyTo(expected)
-			tt.want(expected)
+			expected := pmetric.NewScopeMetrics()
+			ms.Metrics().CopyTo(expected.Metrics())
+			tt.want(expected.Metrics())
 
 			exprFunc, err := copyMetric(tt.name, tt.desc, tt.unit)
 			require.NoError(t, err)
-			_, err = exprFunc(nil, ottlmetric.NewTransformContext(input, ms, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), ms, input)
+			defer tCtx.Close()
+			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)
 
-			x := pmetric.NewScopeMetrics()
-			y := pmetric.NewScopeMetrics()
-
-			expected.CopyTo(x.Metrics())
-			ms.CopyTo(y.Metrics())
-
-			require.NoError(t, pmetrictest.CompareScopeMetrics(x, y))
+			require.NoError(t, pmetrictest.CompareScopeMetrics(expected, ms))
 		})
 	}
 }
