@@ -57,6 +57,13 @@ func PutBool(field string, value *bool, attributes pcommon.Map) {
 	}
 }
 
+// PutDouble places the value in the attributes map, if not nil
+func PutDouble(field string, value *float64, attributes pcommon.Map) {
+	if value != nil {
+		attributes.PutDouble(field, *value)
+	}
+}
+
 // PutStrIfNotPresent places value in the attributes map if not empty and not already present
 // Returns an error if the attribute is already present with a different value.
 func PutStrIfNotPresent(field, value string, attributes pcommon.Map) (bool, error) {
