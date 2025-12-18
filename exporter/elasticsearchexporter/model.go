@@ -271,6 +271,8 @@ func (ecsModeEncoder) encodeSpan(
 		string(conventions.DBNamespaceKey):              {to: "span.db.instance"},
 		string(conventions.DBQueryTextKey):              {to: "span.db.statement"},
 		string(conventions.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
+		// Dropping since transaction.root is not needed for individual spans
+		"transaction.root": {to: "", skip: true},
 	}
 
 	// Handle special cases.
