@@ -428,7 +428,7 @@ When more than one SemConv attribute maps to the same ECS attribute, the convert
 This is mean to support backwards compatibility for SemConv attributes that have been renamed/deprecated. 
 The value of the last-mapped attribute will take precedence.
 
-It is recommended to enrich events using the [elasticapmprocessor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticapmprocessor) to ensure index documents contain all required Elastic fields. 
+It is recommended to enrich events using the [elasticapmprocessor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticapmprocessor) to ensure index documents contain all required Elastic fields to power the Kibana UI. 
 
 ### Resource attribute mapping
 
