@@ -6,7 +6,6 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
@@ -93,9 +92,12 @@ func (config *Config) Validate() error {
 		}
 	}
 
-	if !slices.Contains(validFormats, logFormat(config.Format)) {
+	switch logFormat(config.Format) {
+	case defaultLogFormat, rawLogFormat, azureLogFormat: // valid
+	default:
 		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
 	}
+
 	if config.Partition == "" && config.Offset != "" {
 		return errors.New("cannot use 'offset' without 'partition'")
 	}

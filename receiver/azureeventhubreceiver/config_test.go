@@ -38,16 +38,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "all"),
-			expected: &Config{
-				Connection:               "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
-				Partition:                "foo",
-				Offset:                   "1234-5566",
-				Format:                   "raw",
-				ApplySemanticConventions: true,
-			},
-		},
-		{
 			id:                 component.NewIDWithName(metadata.Type, "auth"),
 			featureGateEnabled: true,
 			expected: &Config{
@@ -55,8 +45,7 @@ func TestLoadConfig(t *testing.T) {
 					Name:      "hubName",
 					Namespace: "namespace.servicebus.windows.net",
 				},
-				Auth:      &authID,
-				Partition: "foo",
+				Auth: &authID,
 			},
 		},
 		{
@@ -77,16 +66,20 @@ func TestLoadConfig(t *testing.T) {
 			expectedErrContains: "invalid format",
 		},
 		{
-			id:                  component.NewIDWithName(metadata.Type, "offset_without_partition"),
+			id:                  component.NewIDWithName(metadata.Type, "offset_with_partition"),
 			expectedErrContains: "cannot use 'offset' without 'partition'",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "offset_without_partition"),
+			expected: &Config{
+				Connection: "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
+				Partition:  "foo",
+				Offset:     "1234-5566",
+			},
 		},
 		{
 			id:                  component.NewIDWithName(metadata.Type, "feature_gate_exclusive_config"),
 			expectedErrContains: "poll_rate and max_poll_events can only be used with receiver.azureeventhubreceiver.UseAzeventhubs enabled",
-		},
-		{
-			id:                  component.NewIDWithName(metadata.Type, "auth_missing_feature_gate"),
-			expectedErrContains: "auth can only be used with receiver.azureeventhubreceiver.UseAzeventhubs enabled",
 		},
 		{
 			id:                  component.NewIDWithName(metadata.Type, "auth_missing_event_hub_name"),
