@@ -64,11 +64,11 @@ func getBucketNameFromARN(arn string) (string, error) {
 	}
 
 	s3Path := strings.TrimPrefix(arn, s3ARNPrefix)
-	pathParts := strings.SplitN(s3Path, "/", 2)
+	bucket, _, _ := strings.Cut(s3Path, "/")
 
-	if pathParts[0] == "" {
+	if bucket == "" {
 		return "", fmt.Errorf("invalid S3 ARN format, bucket name missing: %s", arn)
 	}
 
-	return pathParts[0], nil
+	return bucket, nil
 }
