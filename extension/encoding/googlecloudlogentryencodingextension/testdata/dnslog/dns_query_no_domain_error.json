@@ -1,0 +1,34 @@
+{
+  "insertId": "1l6ygnyf16t0em",
+  "jsonPayload": {
+    "queryType": "A",
+    "vmInstanceIdString": "2838092002611613780",
+    "dns64Translated": false,
+    "protocol": "UDP",
+    "vmZoneName": "europe-west1-c",
+    "sourceNetwork": "default",
+    "responseCode": "NXDOMAIN",
+    "vmInstanceName": "228025391384.instance-20251126-211431",
+    "vmProjectId": "elastic-logstash",
+    "vmInstanceId": 2838092002611613700,
+    "serverLatency": 12,
+    "rdata": "",
+    "sourceIP": "10.132.0.43",
+    "authAnswer": false,
+    "queryName": "non-existent-domain-123456789.com."
+  },
+  "resource": {
+    "type": "dns_query",
+    "labels": {
+      "target_name": "",
+      "location": "europe-west1",
+      "project_id": "elastic-logstash",
+      "target_type": "external",
+      "source_type": "gce-vm"
+    }
+  },
+  "timestamp": "2025-11-27T13:49:19.154591570Z",
+  "severity": "NOTICE",
+  "logName": "projects/elastic-logstash/logs/dns.googleapis.com%2Fdns_queries",
+  "receiveTimestamp": "2025-11-27T13:49:19.595309514Z"
+}
