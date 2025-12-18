@@ -645,7 +645,7 @@ func TestLateArrivingSpanUsesDecisionCacheWhenDropped(t *testing.T) {
 	require.Equal(t, 1, mpe.EvaluationCount)
 	require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
 	allTraces := nextConsumer.AllTraces()
-	require.Len(t, allTraces, 0)
+	require.Empty(t, allTraces)
 
 	metadata, ok := c.Get(traceID)
 	if !ok {
