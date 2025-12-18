@@ -171,10 +171,8 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	store, err := internal.NewAppendable(
 		r.consumer,
 		r.settings,
-		gcInterval(r.cfg.PrometheusConfig),
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
-		useCreatedMetricGate.IsEnabled(),
 		!r.cfg.ignoreMetadata,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
