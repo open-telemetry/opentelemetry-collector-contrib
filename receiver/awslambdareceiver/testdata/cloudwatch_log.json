@@ -1,0 +1,23 @@
+{
+  "owner": "123456789012",
+  "logGroup": "/aws/cloudtrail/management",
+  "logStream": "123456789012_CloudTrail_us-east-1",
+  "messageType": "DATA_MESSAGE",
+  "logEvents": [
+    {
+      "id": "evt-001",
+      "timestamp": 1732638456000,
+      "message": "{\"eventName\":\"ConsoleLogin\",\"userIdentity\":{\"type\":\"Root\"},\"sourceIPAddress\":\"99.84.22.14\",\"awsRegion\":\"us-east-1\"}"
+    },
+    {
+      "id": "evt-002",
+      "timestamp": 1732638469000,
+      "message": "{\"eventName\":\"StartInstances\",\"userIdentity\":{\"type\":\"IAMUser\",\"userName\":\"devops\"},\"awsRegion\":\"us-east-1\"}"
+    },
+    {
+      "id": "evt-003",
+      "timestamp": 1732638478000,
+      "message": "{\"eventName\":\"PutObject\",\"userIdentity\":{\"type\":\"AssumedRole\"},\"awsRegion\":\"us-east-1\",\"requestParameters\":{\"bucket\":\"app-logs\"}}"
+    }
+  ]
+}

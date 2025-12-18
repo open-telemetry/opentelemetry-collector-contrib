@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
@@ -151,8 +150,8 @@ func TestHandleAddresses(t *testing.T) {
 				destination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				string(conventions.SourceAddressKey):      "10.40.1.175",
-				string(conventions.DestinationAddressKey): "10.40.2.236",
+				"source.address":      "10.40.1.175",
+				"destination.address": "10.40.2.236",
 			},
 		},
 		"pkt_same_as_src-dst": {
@@ -163,8 +162,8 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				string(conventions.SourceAddressKey):      "10.40.1.175",
-				string(conventions.DestinationAddressKey): "10.40.2.236",
+				"source.address":      "10.40.1.175",
+				"destination.address": "10.40.2.236",
 			},
 		},
 		"different_source": {
@@ -175,9 +174,9 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				string(conventions.SourceAddressKey):       "10.20.33.164",
-				string(conventions.DestinationAddressKey):  "10.40.2.236",
-				string(conventions.NetworkLocalAddressKey): "10.40.1.175",
+				"source.address":        "10.20.33.164",
+				"destination.address":   "10.40.2.236",
+				"network.local.address": "10.40.1.175",
 			},
 		},
 		"different_destination": {
@@ -188,9 +187,9 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.20.33.164",
 			},
 			expected: map[string]string{
-				string(conventions.SourceAddressKey):       "10.40.2.236",
-				string(conventions.DestinationAddressKey):  "10.20.33.164",
-				string(conventions.NetworkLocalAddressKey): "10.40.2.31",
+				"source.address":        "10.40.2.236",
+				"destination.address":   "10.20.33.164",
+				"network.local.address": "10.40.2.31",
 			},
 		},
 	}
