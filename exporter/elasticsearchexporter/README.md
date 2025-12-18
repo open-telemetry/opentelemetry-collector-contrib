@@ -492,6 +492,9 @@ The value of the last-mapped attribute will take precedence.
 | db.query.text              | span.db.statement                                         | false    |
 | http.response.body.size    | http.response.encoded_body_size                           | false    |
 
+#### transaction.root
+The `transaction.root` ECS attribute is removed during ECS mapping since it is not required for individual spans.
+This attribute is only needed for transaction metrics. 
 
 ### Compound Mapping
 
