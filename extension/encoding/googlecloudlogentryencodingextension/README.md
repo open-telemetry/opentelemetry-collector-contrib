@@ -135,12 +135,8 @@ Examples:
 - VPC Flow Logs: `encoding.format: "gcp.vpcflow"`
 - Application Load Balancer Logs: `encoding.format: "gcp.load-balacer"`
 - Proxy Network Load Balancer Logs: `encoding.format: "gcp.proxy-nlb"`
-<<<<<<< HEAD
 - Cloud DNS Logs: `encoding.format: "gcp.dns"`
-
-=======
 - Passthrough Network Load Balancer Logs: `encoding.format: "gcp.passthrough-nlb"`
->>>>>>> 30ec495177 (Add support for External and Internal Passthrough Network Load Balancing logs)
 
 ### How encoding.format is determined
 
@@ -173,11 +169,8 @@ The following format values are supported in the `googlecloudlogentryencodingext
 | Application Load Balancer Logs | `load-balancer` | Global and Regional External Application Load Balancer logs |
 | Armor Logs | `armorlog` | Google Cloud armor logs (security policies applied) |
 | Proxy Network Load Balancer Logs | `proxy-nlb` | Proxy Network Load Balancer connection logs |
-<<<<<<< HEAD
 | Cloud DNS Logs | `dns` | Cloud DNS query and response logs |
-=======
-| Passthrough Network Load Balancer Logs | `passthrough-nlb` | Passthrough Network Load Balancer flow logs (External and Internal) |
->>>>>>> 30ec495177 (Add support for External and Internal Passthrough Network Load Balancing logs)
+| Passthrough Network Load Balancer Logs | `passthrough-nlb` | Passthrough Network Load Balancer flow logs 
 
 ### Cloud Audit Logs
 
