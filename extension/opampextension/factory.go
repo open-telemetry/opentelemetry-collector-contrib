@@ -29,6 +29,7 @@ func createDefaultConfig() component.Config {
 			ReportsEffectiveConfig:     true,
 			ReportsHealth:              true,
 			ReportsAvailableComponents: true,
+			AcceptsRemoteConfig:        false,
 		},
 		PPIDPollInterval: 5 * time.Second,
 	}

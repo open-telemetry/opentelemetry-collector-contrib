@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
@@ -463,6 +464,12 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 
 	if msg.CustomMessage != nil {
 		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
+	}
+	if msg.RemoteConfig != nil {
+		o.logger.Info("received remote config — sending SIGHUP to reload")
+		if err := syscall.Kill(os.Getpid(), syscall.SIGHUP); err != nil {
+			o.logger.Error("sending sighup signal", zap.Error(err))
+		}
 	}
 }
 

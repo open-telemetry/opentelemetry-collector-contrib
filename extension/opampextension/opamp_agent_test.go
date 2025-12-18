@@ -6,10 +6,13 @@ package opampextension
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap/zaptest"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -773,6 +776,58 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 
 		require.Equal(t, []component.ID{authID}, o.Dependencies())
 	})
+}
+
+func TestOpAMPAgent_onMessage(t *testing.T) {
+	t.Run("happy path - SIGHUP signal", func(t *testing.T) {
+		agent := opampAgent{
+			logger: zaptest.NewLogger(t),
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+
+		sighupReceived := make(chan bool, 1)
+		setupSignalHandler(t, ctx, func() {
+			sighupReceived <- true
+		})
+
+		agent.onMessage(ctx, &types.MessageData{
+			RemoteConfig: &protobufs.AgentRemoteConfig{},
+		})
+
+		select {
+		case <-sighupReceived:
+			// Success
+		case <-time.After(500 * time.Millisecond):
+			t.Error("Timed out waiting for SIGHUP reload")
+		}
+	})
+}
+
+func setupSignalHandler(t testing.TB, ctx context.Context, signalCallback func()) {
+	t.Helper()
+
+	sigChan := make(chan os.Signal, 1)
+	// Notify sigChan when SIGHUP is received
+	signal.Notify(sigChan, syscall.SIGHUP)
+
+	go func() {
+		t.Cleanup(func() {
+			signal.Stop(sigChan)
+		})
+
+		for {
+			select {
+			case sig := <-sigChan:
+				if sig == syscall.SIGHUP {
+					signalCallback()
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 }
 
 type mockStatusAggregator struct {
