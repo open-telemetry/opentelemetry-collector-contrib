@@ -105,26 +105,18 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	s.logsMarshaler = &plog.JSONMarshaler{}
 	s.tracesMarshaler = &ptrace.JSONMarshaler{}
 
-	s.logger.Info("GCS Exporter configuration", zap.String("encoding", s.cfg.Encoding.String()))
-
-	if s.cfg.Encoding.String() != "" {
-		logsEncoding, errLogs := loadExtension[plog.Marshaler](host, s.cfg.Encoding, "logs marshaler")
-		if errLogs == nil {
-			s.logsMarshaler = logsEncoding
-		} else {
-			s.logger.Debug("Extension does not support logs marshaler", zap.Error(errLogs))
+	if s.cfg.Encoding != nil {
+		logsEncoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
+		if err != nil {
+			return fmt.Errorf("failed to load logs extension: %w", err)
 		}
+		s.logsMarshaler = logsEncoding
 
-		tracesEncoding, errTraces := loadExtension[ptrace.Marshaler](host, s.cfg.Encoding, "traces marshaler")
-		if errTraces == nil {
-			s.tracesMarshaler = tracesEncoding
-		} else {
-			s.logger.Debug("Extension does not support traces marshaler", zap.Error(errTraces))
+		tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler")
+		if err != nil {
+			return fmt.Errorf("failed to load traces extension: %w", err)
 		}
-
-		if errLogs != nil && errTraces != nil {
-			return fmt.Errorf("failed to load extension %q: %w; %w", s.cfg.Encoding, errLogs, errTraces)
-		}
+		s.tracesMarshaler = tracesEncoding
 	}
 
 	// TODO Add option for authenticator
