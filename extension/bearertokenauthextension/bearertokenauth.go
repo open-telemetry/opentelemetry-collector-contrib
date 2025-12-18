@@ -18,8 +18,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension/internal/metadata"
 )
 
 var _ credentials.PerRPCCredentials = (*perRPCAuth)(nil)
@@ -54,19 +58,25 @@ type bearerTokenAuth struct {
 
 	shutdownCH chan struct{}
 
-	filename string
-	logger   *zap.Logger
+	filename  string
+	logger    *zap.Logger
+	telemetry *metadata.TelemetryBuilder
 }
 
-func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
+func newBearerTokenAuth(cfg *Config, set component.TelemetrySettings) *bearerTokenAuth {
 	if cfg.Filename != "" && (cfg.BearerToken != "" || len(cfg.Tokens) > 0) {
-		logger.Warn("a filename is specified. Configured token(s) is ignored!")
+		set.Logger.Warn("a filename is specified. Configured token(s) is ignored!")
+	}
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
+	if err != nil {
+		set.Logger.Error("failed to create telemetry builder", zap.Error(err))
 	}
 	a := &bearerTokenAuth{
-		header:   cfg.Header,
-		scheme:   cfg.Scheme,
-		filename: cfg.Filename,
-		logger:   logger,
+		header:    cfg.Header,
+		scheme:    cfg.Scheme,
+		filename:  cfg.Filename,
+		logger:    set.Logger,
+		telemetry: telemetryBuilder,
 	}
 	switch {
 	case len(cfg.Tokens) > 0:
@@ -232,10 +242,36 @@ func (b *bearerTokenAuth) Authenticate(ctx context.Context, headers map[string][
 	}
 	token := auth[0] // Extract token from authorization header
 	expectedTokens := b.authorizationValues()
-	for _, expectedToken := range expectedTokens {
+	for i, expectedToken := range expectedTokens {
 		if subtle.ConstantTimeCompare([]byte(expectedToken), []byte(token)) == 1 {
+			// Track successful authentication for this token index
+			if b.telemetry != nil {
+				b.telemetry.BearerTokenAuthUsage.Add(
+					ctx,
+					1,
+					metric.WithAttributes(
+						attribute.Int("token.index", i),
+						attribute.String("auth.type", "server"),
+						attribute.String("auth.status", "success"),
+						attribute.Bool("token.matched", true),
+					),
+				)
+			}
 			return ctx, nil // Authentication successful, token is valid
 		}
+	}
+	// Track authentication failure - token didn't match any configured tokens
+	if b.telemetry != nil {
+		b.telemetry.BearerTokenAuthUsage.Add(
+			ctx,
+			1,
+			metric.WithAttributes(
+				attribute.Int("token.index", -1),
+				attribute.String("auth.type", "server"),
+				attribute.String("auth.status", "failure"),
+				attribute.Bool("token.matched", false),
+			),
+		)
 	}
 	return ctx, fmt.Errorf("scheme or token does not match: %s", token) // Token is invalid
 }
@@ -249,6 +285,19 @@ type bearerAuthRoundTripper struct {
 
 // RoundTrip modifies the original request and adds Bearer token Authorization headers. Incoming requests support multiple tokens, but outgoing requests only use one.
 func (interceptor *bearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Track client authentication usage (always uses first token, index 0)
+	if interceptor.auth.telemetry != nil {
+		interceptor.auth.telemetry.BearerTokenAuthUsage.Add(
+			req.Context(),
+			1,
+			metric.WithAttributes(
+				attribute.Int("token.index", 0),
+				attribute.String("auth.type", "client"),
+				attribute.String("auth.status", "success"),
+				attribute.Bool("token.matched", true),
+			),
+		)
+	}
 	req2 := req.Clone(req.Context())
 	if req2.Header == nil {
 		req2.Header = make(http.Header)

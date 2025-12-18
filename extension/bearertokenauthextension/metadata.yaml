@@ -13,3 +13,32 @@ status:
 
 tests:
   config:
+
+attributes:
+  auth.status:
+    description: Authentication status (success or failure)
+    type: string
+    enum: [success, failure]
+  auth.type:
+    description: Type of authentication (client or server)
+    type: string
+    enum: [client, server]
+  token.index:
+    description: Index of the token in the configuration (0-based, -1 when ``token.matched`` is false)
+    type: int
+  token.matched:
+    description: Whether the provided token matches a configured token
+    type: bool
+
+telemetry:
+  metrics:
+    bearer_token_auth_usage:
+      enabled: true
+      description: Number of authentication attempts with bearer tokens
+      unit: "{attempt}"
+      stability:
+        level: development
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [auth.type, auth.status, token.index, token.matched]
