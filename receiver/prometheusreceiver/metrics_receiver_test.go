@@ -18,7 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -1541,27 +1540,6 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.Reso
 		}
 		assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
 	}
-}
-
-// TestStartTimeMetric validates that timeseries have start time set to 'process_start_time_seconds'
-func TestStartTimeMetric(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.RemoveStartTimeAdjustment", false)
-	require.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.RemoveStartTimeAdjustment", true)
-	}()
-	targets := []*testData{
-		{
-			name: "target1",
-			pages: []mockPrometheusResponse{
-				{code: 200, data: startTimeMetricPage},
-			},
-			validateFunc: verifyStartTimeMetricPage,
-		},
-	}
-	testComponent(t, targets, func(c *Config) {
-		c.UseStartTimeMetric = true
-	})
 }
 
 var startTimeMetricRegexPage = `

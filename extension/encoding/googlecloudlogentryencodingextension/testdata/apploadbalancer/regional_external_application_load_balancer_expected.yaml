@@ -1,0 +1,122 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-observability
+        - key: cloud.resource_id
+          value:
+            stringValue: loadbalancing.googleapis.com%2Fexternal_regional_requests
+        - key: gcp.resource_type
+          value:
+            stringValue: http_external_regional_lb_rule
+        - key: gcp.label.region
+          value:
+            stringValue: europe-southwest1
+        - key: gcp.label.backend_name
+          value:
+            stringValue: gcp-fixture-alb-backend-mig
+        - key: gcp.label.backend_scope
+          value:
+            stringValue: europe-southwest1-a
+        - key: gcp.label.backend_scope_type
+          value:
+            stringValue: ZONE
+        - key: gcp.label.backend_target_name
+          value:
+            stringValue: gcp-fixture-alb-backend-service
+        - key: gcp.label.backend_target_type
+          value:
+            stringValue: BACKEND_SERVICE
+        - key: gcp.label.backend_type
+          value:
+            stringValue: INSTANCE_GROUP
+        - key: gcp.label.forwarding_rule_name
+          value:
+            stringValue: gcp-fixture-alb-forwarding-rule
+        - key: gcp.label.matched_url_path_rule
+          value:
+            stringValue: UNMATCHED
+        - key: gcp.label.network_name
+          value:
+            stringValue: gcp-fixture-alb-network
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-observability
+        - key: gcp.label.target_proxy_name
+          value:
+            stringValue: gcp-fixture-alb-https-proxy
+        - key: gcp.label.url_map_name
+          value:
+            stringValue: gcp-fixture-alb-url-map
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 1043fs2f1ss3li
+              - key: gcp.load_balancing.backend_target_project_number
+                value:
+                  stringValue: projects/8560181848
+              - key: gcp.load_balancing.tls_info
+                value:
+                  kvlistValue:
+                    values:
+                      - key: tls.protocol.name
+                        value:
+                          stringValue: TLSv1.3
+                      - key: tls.cipher
+                        value:
+                          stringValue: TLS_CHACHA20_POLY1305_SHA256
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.full
+                value:
+                  stringValue: https://34.0.217.72/?curl=
+              - key: url.path
+                value:
+                  stringValue: /
+              - key: url.query
+                value:
+                  stringValue: curl=
+              - key: url.domain
+                value:
+                  stringValue: 34.0.217.72
+              - key: http.request.size
+                value:
+                  intValue: "44"
+              - key: http.response.status_code
+                value:
+                  intValue: "200"
+              - key: http.response.size
+                value:
+                  intValue: "746"
+              - key: user_agent.original
+                value:
+                  stringValue: curl/8.7.1
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "2"
+              - key: network.peer.address
+                value:
+                  stringValue: 79.117.34.252:60102
+              - key: server.address
+                value:
+                  stringValue: 10.20.0.4:80
+              - key: http.request.server.duration
+                value:
+                  doubleValue: 0.002058
+            body: {}
+            observedTimeUnixNano: "1763648335974065255"
+            timeUnixNano: "1763648328230937000"
+            severityNumber: 9
+            severityText: INFO
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.load-balancer

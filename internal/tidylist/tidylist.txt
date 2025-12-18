@@ -58,6 +58,7 @@ receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
 cmd/opampsupervisor
+cmd/schemagen
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
@@ -158,9 +159,9 @@ extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
 extension/headerssetterextension
-extension/healthcheckextension
 pkg/status
 internal/healthcheck
+extension/healthcheckextension
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
@@ -198,6 +199,7 @@ receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
 internal/k8sinventory
+internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools

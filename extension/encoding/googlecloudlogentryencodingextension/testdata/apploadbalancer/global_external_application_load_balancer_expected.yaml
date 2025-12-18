@@ -1,0 +1,105 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-observability
+        - key: cloud.resource_id
+          value:
+            stringValue: requests
+        - key: gcp.resource_type
+          value:
+            stringValue: http_load_balancer
+        - key: gcp.label.zone
+          value:
+            stringValue: global
+        - key: gcp.label.backend_service_name
+          value:
+            stringValue: gcp-fixture-alb-backend-service
+        - key: gcp.label.forwarding_rule_name
+          value:
+            stringValue: gcp-fixture-alb-forwarding-rule
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-observability
+        - key: gcp.label.target_proxy_name
+          value:
+            stringValue: gcp-fixture-alb-https-proxy
+        - key: gcp.label.url_map_name
+          value:
+            stringValue: gcp-fixture-alb-url-map
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: h91ql8g1lpdqh2
+              - key: gcp.load_balancing.status.details
+                value:
+                  stringValue: response_sent_by_backend
+              - key: gcp.load_balancing.cache.decision
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: RESPONSE_HAS_ETAG
+                      - stringValue: RESPONSE_HAS_LAST_MODIFIED
+                      - stringValue: RESPONSE_HAS_CONTENT_TYPE
+                      - stringValue: CACHE_MODE_USE_ORIGIN_HEADERS
+              - key: gcp.load_balancing.backend_target_project_number
+                value:
+                  stringValue: projects/8560181848
+              - key: network.peer.address
+                value:
+                  stringValue: 79.117.34.252
+              - key: gcp.load_balancing.tls_info
+                value:
+                  kvlistValue:
+                    values:
+                      - key: tls.protocol.name
+                        value:
+                          stringValue: TLSv1.3
+                      - key: tls.cipher
+                        value:
+                          stringValue: TLS_CHACHA20_POLY1305_SHA256
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.full
+                value:
+                  stringValue: https://35.227.246.6/
+              - key: url.path
+                value:
+                  stringValue: /
+              - key: url.domain
+                value:
+                  stringValue: 35.227.246.6
+              - key: http.request.size
+                value:
+                  intValue: "29"
+              - key: http.response.status_code
+                value:
+                  intValue: "200"
+              - key: http.response.size
+                value:
+                  intValue: "780"
+              - key: user_agent.original
+                value:
+                  stringValue: curl/8.7.1
+              - key: server.address
+                value:
+                  stringValue: 10.20.0.4
+              - key: http.request.server.duration
+                value:
+                  doubleValue: 0.005192
+            body: {}
+            observedTimeUnixNano: "1763645728360361140"
+            timeUnixNano: "1763645727558637000"
+            severityNumber: 9
+            severityText: INFO
+            traceId: 5334e0e7aee6ec1b1a8c34db601241ab
+            spanId: e9004ce8eccc7c2d
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.load-balancer
