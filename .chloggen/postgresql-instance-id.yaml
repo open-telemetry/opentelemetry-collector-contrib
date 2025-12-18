@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/postgresql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added service.instance.id in resource attributes for metrics and logs
+note: Added `service.instance.id` resource attribute for metrics and logs
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43907]
