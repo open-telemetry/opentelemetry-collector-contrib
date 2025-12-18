@@ -20,11 +20,11 @@
     "type": "loadbalancing.googleapis.com/ExternalNetworkLoadBalancerRule",
     "labels": {
       "backend_subnetwork_name": "estolfo-nlb-passthrough-subnet",
-      "primary_target_pool": "",
+      "primary_target_pool": "xx",
       "backend_group_type": "INSTANCE_GROUP",
       "backend_target_type": "BACKEND_SERVICE",
       "project_id": "elastic-logstash",
-      "target_pool": "",
+      "target_pool": "xx",
       "region": "europe-west3",
       "backend_group_scope": "ZONE",
       "backend_zone": "europe-west3-a",

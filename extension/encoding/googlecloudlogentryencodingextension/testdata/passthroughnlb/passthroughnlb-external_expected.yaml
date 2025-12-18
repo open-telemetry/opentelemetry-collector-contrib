@@ -45,10 +45,10 @@ resourceLogs:
             stringValue: estolfo-nlb-passthrough-backend-service
         - key: gcp.label.primary_target_pool
           value:
-            stringValue: ""
+            stringValue: xx
         - key: gcp.label.target_pool
           value:
-            stringValue: ""
+            stringValue: xx
     scopeLogs:
       - logRecords:
           - attributes:
