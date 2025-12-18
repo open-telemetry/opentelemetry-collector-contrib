@@ -95,10 +95,9 @@ const (
 	queryDirectWritesMetric     = "DIRECT_WRITES"
 
 	// Stored procedure columns
-	objectIDAttr    = "PROGRAM_ID"
-	objectOwnerAttr = "OWNER"
-	objectNameAttr  = "OBJECT_NAME"
-	objectTypeAttr  = "OBJECT_TYPE"
+	objectIDAttr   = "PROGRAM_ID"
+	objectNameAttr = "PROCEDURE_NAME"
+	objectTypeAttr = "PROCEDURE_TYPE"
 )
 
 var (
@@ -531,7 +530,6 @@ type queryMetricCacheHit struct {
 	queryText    string
 	metrics      map[string]int64
 	objectID     int64
-	objectOwner  string
 	objectName   string
 	objectType   string
 }
@@ -609,7 +607,6 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				childAddress: row[childAddressAttr],
 				metrics:      make(map[string]int64, len(metricNames)),
 				objectID:     objectID,
-				objectOwner:  row[objectOwnerAttr],
 				objectName:   row[objectNameAttr],
 				objectType:   row[objectTypeAttr],
 			}
@@ -696,7 +693,6 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.metrics[rowsProcessedMetric],
 			asFloatInSeconds(hit.metrics[userIoWaitTimeMetric]),
 			hit.objectID,
-			hit.objectOwner,
 			hit.objectName,
 			hit.objectType)
 	}
@@ -718,9 +714,9 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const hostName = "MACHINE"
 	const module = "MODULE"
 	const osUser = "OSUSER"
-	const objectID = "OBJECT_ID"
-	const objectName = "OBJECT_NAME"
-	const objectType = "OBJECT_TYPE"
+	const objectID = "PROCEDURE_ID"
+	const objectName = "PROCEDURE_NAME"
+	const objectType = "PROCEDURE_TYPE"
 	const process = "PROCESS"
 	const program = "PROGRAM"
 	const planHashValue = "PLAN_HASH_VALUE"
@@ -774,7 +770,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			clientPort = 0
 		}
 
-		// Parse stored procedure OBJECT_ID
+		// Parse stored procedure PROCEDURE_ID
 		var objID int64
 		if row[objectID] != "" {
 			objID, _ = strconv.ParseInt(row[objectID], 10, 64)
