@@ -21,9 +21,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -127,7 +127,7 @@ func TestSyncBulkIndexer(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"), // bulk request itself is successful
 						attribute.StringSlice("x-test", []string{"test"}),
-						conventions.HTTPResponseStatusCode(http.StatusOK),
+						attribute.Key("http.response.status_code").Int(http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -185,6 +185,18 @@ func TestSyncBulkIndexer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQueryParamsParsedFromEndpoints(t *testing.T) {
+	client, err := elasticsearch.NewDefaultClient()
+	require.NoError(t, err)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
+
+	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
+	require.Equal(t, map[string][]string{
+		"pipeline": {"test-pipeline"},
+	}, bi.QueryParams)
 }
 
 func TestNewBulkIndexer(t *testing.T) {
