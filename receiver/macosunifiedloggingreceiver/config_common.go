@@ -18,8 +18,6 @@ type Config struct {
 	// resolvedArchivePaths stores the expanded archive paths after glob resolution
 	// This is populated during Validate() and not exposed to users
 	// Only used on darwin platform (see config.go)
-	//
-	//nolint:unused // only used on darwin platform
 	resolvedArchivePaths []string
 
 	// Predicate is a filter predicate to pass to the log command

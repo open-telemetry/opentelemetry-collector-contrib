@@ -41,12 +41,10 @@ var (
 
 // TransformContext represents a log and its associated hierarchy.
 type TransformContext struct {
-	logRecord            plog.LogRecord
-	instrumentationScope pcommon.InstrumentationScope
-	resource             pcommon.Resource
-	cache                pcommon.Map
-	scopeLogs            plog.ScopeLogs
-	resourceLogs         plog.ResourceLogs
+	resourceLogs plog.ResourceLogs
+	scopeLogs    plog.ScopeLogs
+	logRecord    plog.LogRecord
+	cache        pcommon.Map
 }
 
 type logRecord plog.LogRecord
@@ -72,8 +70,8 @@ func (l logRecord) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
 func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
-	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
+	err := encoder.AddObject("resource", logging.Resource(tCtx.GetResource()))
+	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.GetInstrumentationScope())))
 	err = errors.Join(err, encoder.AddObject("log_record", logRecord(tCtx.logRecord)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	return err
@@ -82,31 +80,13 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
-// Deprecated: [v0.142.0] Use NewTransformContextPtr.
-func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeLogs plog.ScopeLogs, resourceLogs plog.ResourceLogs, options ...TransformContextOption) TransformContext {
-	tc := TransformContext{
-		logRecord:            logRecord,
-		instrumentationScope: instrumentationScope,
-		resource:             resource,
-		cache:                pcommon.NewMap(),
-		scopeLogs:            scopeLogs,
-		resourceLogs:         resourceLogs,
-	}
-	for _, opt := range options {
-		opt(&tc)
-	}
-	return tc
-}
-
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
 func NewTransformContextPtr(resourceLogs plog.ResourceLogs, scopeLogs plog.ScopeLogs, logRecord plog.LogRecord, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
-	tCtx.logRecord = logRecord
-	tCtx.instrumentationScope = scopeLogs.Scope()
-	tCtx.resource = resourceLogs.Resource()
-	tCtx.scopeLogs = scopeLogs
 	tCtx.resourceLogs = resourceLogs
+	tCtx.scopeLogs = scopeLogs
+	tCtx.logRecord = logRecord
 	for _, opt := range options {
 		opt(tCtx)
 	}
@@ -116,12 +96,10 @@ func NewTransformContextPtr(resourceLogs plog.ResourceLogs, scopeLogs plog.Scope
 // Close the current TransformContext.
 // After this function returns this instance cannot be used.
 func (tCtx *TransformContext) Close() {
-	tCtx.logRecord = plog.LogRecord{}
-	tCtx.instrumentationScope = pcommon.InstrumentationScope{}
-	tCtx.resource = pcommon.Resource{}
-	tCtx.cache.Clear()
-	tCtx.scopeLogs = plog.ScopeLogs{}
 	tCtx.resourceLogs = plog.ResourceLogs{}
+	tCtx.scopeLogs = plog.ScopeLogs{}
+	tCtx.logRecord = plog.LogRecord{}
+	tCtx.cache.Clear()
 	tcPool.Put(tCtx)
 }
 
@@ -132,12 +110,12 @@ func (tCtx *TransformContext) GetLogRecord() plog.LogRecord {
 
 // GetInstrumentationScope returns the instrumentation scope from the TransformContext.
 func (tCtx *TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return tCtx.instrumentationScope
+	return tCtx.scopeLogs.Scope()
 }
 
 // GetResource returns the resource from the TransformContext.
 func (tCtx *TransformContext) GetResource() pcommon.Resource {
-	return tCtx.resource
+	return tCtx.resourceLogs.Resource()
 }
 
 // GetScopeSchemaURLItem returns the scope schema URL item from the TransformContext.
