@@ -8,7 +8,7 @@ status:
   distributions: [core, contrib, k8s]
   warnings: [Orphaned Telemetry, Other]
   codeowners:
-    active: [TylerHelmuth, boostchicken, evan-bradley, edmocosta]
+    active: [TylerHelmuth, boostchicken, evan-bradley, edmocosta, bogdandrutu]
 tests:
   config:
 
