@@ -62,7 +62,9 @@ func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Trace
 
 func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces, ir *indexResolver, cfg *Config, timestamp time.Time) {
 	keys := ir.extractPlaceholderKeys(cfg.TracesIndex)
-	forEachSpan(td, ir, cfg, timestamp, keys, func(timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string) {
+	timeSuffix := ir.calculateTimeSuffix(cfg.TracesIndexTimeFormat, timestamp)
+
+	forEachSpan(td, ir, cfg, timeSuffix, keys, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string) {
 		payload, err := tbi.model.encodeTrace(resource, scope, scopeSchemaURL, span)
 		if err != nil {
 			tbi.appendPermanentError(err)
@@ -145,8 +147,7 @@ func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(
 	})
 }
 
-func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timestamp time.Time, keys []string, visitor func(timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string)) {
-	timeSuffix := indexResolver.calculateTimeSuffix(cfg.TracesIndexTimeFormat, timestamp)
+func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timeSuffix string, keys []string, visitor func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string)) {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		il := resourceSpans.At(i)
@@ -161,7 +162,7 @@ func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, ti
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				indexName := indexResolver.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, span.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
-				visitor(timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span, indexName)
+				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span, indexName)
 			}
 		}
 	}

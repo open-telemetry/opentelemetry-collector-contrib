@@ -118,9 +118,10 @@ func TestForEachLog(t *testing.T) {
 	cfg := &Config{LogsIndex: "test-%{service.name}", LogsIndexFallback: "", LogsIndexTimeFormat: ""}
 	ts := time.Now()
 	keys := resolver.extractPlaceholderKeys(cfg.LogsIndex)
+	timeSuffix := resolver.calculateTimeSuffix(cfg.LogsIndexTimeFormat, ts)
 
 	var results []string
-	forEachLog(ld, resolver, cfg, ts, keys, func(ts time.Time, res pcommon.Resource, rschema string, scope pcommon.InstrumentationScope, sschema string, log plog.LogRecord, indexName string) {
+	forEachLog(ld, resolver, cfg, timeSuffix, keys, func(_ pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, _ plog.LogRecord, indexName string) {
 		results = append(results, indexName)
 	})
 

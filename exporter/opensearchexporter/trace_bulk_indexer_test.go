@@ -118,9 +118,10 @@ func TestForEachSpan(t *testing.T) {
 	cfg := &Config{TracesIndex: "test-%{service.name}", TracesIndexFallback: "", TracesIndexTimeFormat: ""}
 	ts := time.Now()
 	keys := resolver.extractPlaceholderKeys(cfg.TracesIndex)
+	timeSuffix := resolver.calculateTimeSuffix(cfg.TracesIndexTimeFormat, ts)
 
 	var results []string
-	forEachSpan(td, resolver, cfg, ts, keys, func(ts time.Time, res pcommon.Resource, rschema string, scope pcommon.InstrumentationScope, sschema string, span ptrace.Span, indexName string) {
+	forEachSpan(td, resolver, cfg, timeSuffix, keys, func(_ pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, _ ptrace.Span, indexName string) {
 		results = append(results, indexName)
 	})
 

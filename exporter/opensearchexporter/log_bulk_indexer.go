@@ -60,7 +60,9 @@ func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
 
 func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, ir *indexResolver, cfg *Config, timestamp time.Time) {
 	keys := ir.extractPlaceholderKeys(cfg.LogsIndex)
-	forEachLog(ld, ir, cfg, timestamp, keys, func(timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string) {
+	timeSuffix := ir.calculateTimeSuffix(cfg.LogsIndexTimeFormat, timestamp)
+
+	forEachLog(ld, ir, cfg, timeSuffix, keys, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string) {
 		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, logRecord)
 		if err != nil {
 			lbi.appendPermanentError(err)
@@ -124,8 +126,7 @@ func newLogOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError fu
 	})
 }
 
-func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timestamp time.Time, keys []string, visitor func(timestamp time.Time, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string)) {
-	timeSuffix := indexResolver.calculateTimeSuffix(cfg.LogsIndexTimeFormat, timestamp)
+func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timeSuffix string, keys []string, visitor func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string)) {
 	resourceLogs := ld.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		il := resourceLogs.At(i)
@@ -140,7 +141,7 @@ func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timesta
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 				indexName := indexResolver.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, log.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
-				visitor(timestamp, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log, indexName)
+				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log, indexName)
 			}
 		}
 	}
