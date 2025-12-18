@@ -84,51 +84,61 @@ linters:
         path: processor/transformprocessor/internal/common/
         text: "var-naming: avoid meaningless package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
       - linters:
           - revive
         path: internal/healthcheck/internal/common/
         text: "var-naming: avoid meaningless package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45004
       - linters:
           - revive
         path: cmd/telemetrygen/pkg/
         text: "var-naming: avoid meaningless package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45005
       - linters:
           - revive
         path: extension/encoding/googlecloudlogentryencodingextension/internal/shared/
         text: "var-naming: avoid meaningless package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
       - linters:
           - revive
         path: pkg/stanza/errors/
         text: "var-naming: avoid package names that conflict with Go standard library package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
       - linters:
           - revive
         path: pkg/stanza/internal/time/
         text: "var-naming: avoid package names that conflict with Go standard library package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
       - linters:
           - revive
         path: pkg/stanza/operator/parser/json/
         text: "var-naming: avoid package names that conflict with Go standard library package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
       - linters:
           - revive
         path: pkg/stanza/operator/parser/time/
         text: "var-naming: avoid package names that conflict with Go standard library package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
       - linters:
           - revive
         path: extension/jaegerremotesampling/internal/server/http/
         text: "var-naming: avoid package names that conflict with Go standard library package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
       - linters:
           - revive
         path: extension/sumologicextension/internal/api/
         text: "var-naming: avoid meaningless package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
       - linters:
           - revive
         path: internal/healthcheck/internal/http/
