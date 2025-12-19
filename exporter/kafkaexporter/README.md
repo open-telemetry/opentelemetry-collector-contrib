@@ -23,9 +23,9 @@ processors for higher throughput and resiliency. Message payload encoding is con
 ## Configuration settings
 
 > [!NOTE]
-> You can opt out of using the [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
-> `exporter.kafkaexporter.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
-> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+> The Kafka exporter uses the [`franz-go`](https://github.com/twmb/franz-go) client library, which provides
+> better performance and support for modern Kafka features. The `exporter.kafkaexporter.UseFranzGo` feature
+> gate is now stable and always enabled (as of v0.141.0). The legacy Sarama client will be removed after v0.143.0.
 
 There are no required settings.
 
@@ -55,7 +55,7 @@ The following settings can be optionally configured:
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
 - `partition_logs_by_trace_id` (default = false): configures the exporter to partition log messages by trace ID, if the log record has one associated. Note: `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id` are mutually exclusive, and enabling both will lead to an error.
-- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options. Set to `tls: insecure: false` explicitly when using `AWS_MSK_IAM_OAUTHBEARER` as the authentication method.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
     - `username`: The username to use.
@@ -120,7 +120,7 @@ The following settings can be optionally configured:
         Only supports fast level
       - `snappy`
         No compression levels supported yet
-  - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
+  - `flush_max_messages` (default = 10000) The maximum number of messages the producer will send in a single broker request.
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
   - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
 

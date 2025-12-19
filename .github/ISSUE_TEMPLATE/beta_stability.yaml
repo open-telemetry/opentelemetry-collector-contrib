@@ -20,6 +20,7 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
+      - cmd/schemagen
       - cmd/telemetrygen
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
@@ -30,6 +31,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/metricsaslogs
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing
@@ -49,7 +51,6 @@ body:
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/bmchelix
-      - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
@@ -99,6 +100,7 @@ body:
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
       - extension/encoding/awslogsencoding
+      - extension/encoding/azureencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
@@ -145,6 +147,8 @@ body:
       - internal/grpcutil
       - internal/healthcheck
       - internal/k8sconfig
+      - internal/k8sinventory
+      - internal/k8sleaderelectortest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders

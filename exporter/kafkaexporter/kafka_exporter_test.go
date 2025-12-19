@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
@@ -20,17 +22,18 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -121,9 +124,6 @@ func TestTracesPusher_ctx(t *testing.T) {
 }
 
 func TestTracesPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_traces"
 	expectedTopicFromAttribute := "topic_from_traces_attr_kgo"
@@ -154,8 +154,6 @@ func TestTracesPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestTracesPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"
@@ -573,8 +571,6 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 }
 
 func TestMetricsDataPusher_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	config := createDefaultConfig().(*Config)
 
 	exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
@@ -603,9 +599,6 @@ func TestMetricsDataPusher_Kgo(t *testing.T) {
 }
 
 func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_metrics"
 	expectedTopicFromAttribute := "topic_from_metrics_attr_kgo"
@@ -782,8 +775,6 @@ func TestLogsDataPusher_ctx(t *testing.T) {
 }
 
 func TestLogsDataPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_logs"
 	expectedTopicFromAttribute := "topic_from_logs_attr_kgo"
@@ -814,8 +805,6 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_logs_topic_from_ctx"
@@ -871,6 +860,38 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 			{Key: "x-request-ids", Value: []byte("0187262")},
 		}
 		assert.ElementsMatch(t, expectedHeaders, record.Headers, "message headers mismatch")
+	})
+
+	// Produce message that exceeds MaxMessageBytes to trigger a permanent non-retriable error.
+	t.Run("WithNonRetriableError", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Producer.MaxMessageBytes = 512
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+			componenttest.NewNopHost(), config.Logs.Topic,
+		)
+		defer fakeCluster.Close()
+
+		// ensure we have a big payload to trigger the error
+		logs := testdata.GenerateLogs(20)
+
+		err := exp.exportData(t.Context(), logs)
+		require.ErrorAs(t, err, &kerr.MessageTooLarge, "expected MessageTooLarge error")
+		assert.True(t, consumererror.IsPermanent(err), "expected permanent error")
+	})
+
+	// Produce message to an unknown topic to trigger a retriable error.
+	t.Run("WithRetriableError", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+			componenttest.NewNopHost(), "non_existing_topic",
+		)
+		defer fakeCluster.Close()
+
+		logs := testdata.GenerateLogs(1)
+
+		err := exp.exportData(t.Context(), logs)
+		require.ErrorAs(t, err, &kerr.UnknownTopicOrPartition, "expected UnknownTopicOrPartition error")
+		assert.False(t, consumererror.IsPermanent(err), "expected retriable error")
 	})
 }
 
@@ -1152,9 +1173,6 @@ func TestProfilesPusher_ctx(t *testing.T) {
 }
 
 func TestProfilesPusher_attr_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
-
 	config := createDefaultConfig().(*Config)
 	attributeKey := "my_custom_topic_key_profile"
 	expectedTopicFromAttribute := "topic_from_profiles_attr_kgo"
@@ -1185,8 +1203,6 @@ func TestProfilesPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestProfilesPusher_ctx_Kgo(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
-	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"
@@ -1671,7 +1687,9 @@ func configureExporter[T any](tb testing.TB,
 		kgo.SeedBrokers(kcfg.Brokers...),
 		kgo.ClientID(cfg.ClientID),
 	}
-	client, err := kgo.NewClient(kgoClientOpts...)
+
+	client, err := kafka.NewFranzSyncProducer(tb.Context(), kcfg,
+		cfg.Producer, 1*time.Second, zap.NewNop(), kgoClientOpts...)
 	require.NoError(tb, err, "failed to create kgo.Client with fake cluster addresses")
 
 	messenger, err := exp.newMessenger(host) // messenger implements Marshaler[pmetric.Metrics]

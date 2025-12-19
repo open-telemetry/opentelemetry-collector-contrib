@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
@@ -43,49 +42,90 @@ func readAndCompressLogFile(t *testing.T, dir, file string) io.Reader {
 	return compressToGZIPReader(t, data)
 }
 
+func readLogFile(t *testing.T, dir, file string) io.Reader {
+	data, err := os.ReadFile(filepath.Join(dir, file))
+	require.NoError(t, err)
+	return bytes.NewReader(data)
+}
+
 func TestUnmarshalLogs_PlainText(t *testing.T) {
 	t.Parallel()
 
 	dir := "testdata"
-	tests := map[string]struct {
-		reader               io.Reader
+	tests := []struct {
+		name                 string
+		logInputReader       io.Reader
 		logsExpectedFilename string
+		format               string
 		expectedErr          string
 		featureGateEnabled   bool
 	}{
-		"valid_vpc_flow_log": {
-			reader:               readAndCompressLogFile(t, dir, "valid_vpc_flow_log.log"),
-			logsExpectedFilename: "valid_vpc_flow_log_expected.yaml",
+		{
+			name:                 "Valid VPC flow log from S3 - single logs",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_single.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_single_expected.yaml",
 			featureGateEnabled:   false,
 		},
-		"valid_vpc_flow_log_iso8601": {
-			reader:               readAndCompressLogFile(t, dir, "valid_vpc_flow_log.log"),
-			logsExpectedFilename: "valid_vpc_flow_log_expected_iso8601.yaml",
+		{
+			name:                 "Valid VPC flow log from S3 - multi logs",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_multi.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_expected_multi.yaml",
+			featureGateEnabled:   false,
+		},
+		{
+			name:                 "Valid VPC flow log from S3 with ISO8601 timestamps",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_multi.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_expected_multi_iso8601.yaml",
 			featureGateEnabled:   true,
 		},
-		"vpc_flow_log_with_more_fields_than_allowed": {
-			reader:             readAndCompressLogFile(t, dir, "vpc_flow_log_too_few_fields.log"),
+		{
+			name:                 "Valid VPC flow log from CloudWatch",
+			logInputReader:       readLogFile(t, dir, "valid_vpc_flow_cw.json"),
+			logsExpectedFilename: "valid_vpc_flow_cw_expected.yaml",
+			featureGateEnabled:   false,
+		},
+		{
+			name:                 "Valid VPC flow log from CloudWatch with customized fields",
+			logInputReader:       readLogFile(t, dir, "valid_vpc_flow_cw_custom.json"),
+			logsExpectedFilename: "valid_vpc_flow_cw_custom_expected.yaml",
+			format:               "version interface-id srcaddr dstaddr",
+			featureGateEnabled:   false,
+		},
+		{
+			name:               "Invalid VPC flow log with less fields than required",
+			logInputReader:     readAndCompressLogFile(t, dir, "vpc_flow_log_too_few_fields.log"),
 			expectedErr:        "log line has less fields than the ones expected",
 			featureGateEnabled: false,
 		},
-		"vpc_flow_log_with_less_fields_than_required": {
-			reader:             readAndCompressLogFile(t, dir, "vpc_flow_log_too_many_fields.log"),
+		{
+			name:               "Invalid VPC flow log with more fields than required",
+			logInputReader:     readAndCompressLogFile(t, dir, "vpc_flow_log_too_many_fields.log"),
 			expectedErr:        "log line has more fields than the ones expected",
 			featureGateEnabled: false,
 		},
 	}
 
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			u, err := NewVPCFlowLogUnmarshaler(constants.FileFormatPlainText, component.BuildInfo{}, zap.NewNop(), test.featureGateEnabled)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config := Config{
+				FileFormat: constants.FileFormatPlainText,
+			}
+
+			if test.format != "" {
+				config.Format = test.format
+			}
+
+			u, err := NewVPCFlowLogUnmarshaler(config, component.BuildInfo{}, zap.NewNop(), test.featureGateEnabled)
 			require.NoError(t, err)
 
-			logs, err := u.UnmarshalAWSLogs(test.reader)
-
+			logs, err := u.UnmarshalAWSLogs(test.logInputReader)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 				return
 			}
+
+			// To generate the golden files, uncomment the following line:
+			// golden.WriteLogsToFile(filepath.Join(dir, test.logsExpectedFilename), logs)
 
 			require.NoError(t, err)
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.logsExpectedFilename))
@@ -110,8 +150,8 @@ func TestHandleAddresses(t *testing.T) {
 				destination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				string(conventions.SourceAddressKey):      "10.40.1.175",
-				string(conventions.DestinationAddressKey): "10.40.2.236",
+				"source.address":      "10.40.1.175",
+				"destination.address": "10.40.2.236",
 			},
 		},
 		"pkt_same_as_src-dst": {
@@ -122,8 +162,8 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				string(conventions.SourceAddressKey):      "10.40.1.175",
-				string(conventions.DestinationAddressKey): "10.40.2.236",
+				"source.address":      "10.40.1.175",
+				"destination.address": "10.40.2.236",
 			},
 		},
 		"different_source": {
@@ -134,9 +174,9 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				string(conventions.SourceAddressKey):       "10.20.33.164",
-				string(conventions.DestinationAddressKey):  "10.40.2.236",
-				string(conventions.NetworkLocalAddressKey): "10.40.1.175",
+				"source.address":        "10.20.33.164",
+				"destination.address":   "10.40.2.236",
+				"network.local.address": "10.40.1.175",
 			},
 		},
 		"different_destination": {
@@ -147,9 +187,9 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.20.33.164",
 			},
 			expected: map[string]string{
-				string(conventions.SourceAddressKey):       "10.40.2.236",
-				string(conventions.DestinationAddressKey):  "10.20.33.164",
-				string(conventions.NetworkLocalAddressKey): "10.40.2.31",
+				"source.address":        "10.40.2.236",
+				"destination.address":   "10.20.33.164",
+				"network.local.address": "10.40.2.31",
 			},
 		},
 	}

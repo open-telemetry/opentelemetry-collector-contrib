@@ -221,7 +221,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	var err error
 	ddr.server, err = ddr.config.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		ddr.params.TelemetrySettings,
 		ddmux,
 	)
@@ -362,7 +362,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
 			continue
 		}
-		spanCount = otelTraces.SpanCount()
+		spanCount += otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
 			errorutil.HTTPError(w, err)

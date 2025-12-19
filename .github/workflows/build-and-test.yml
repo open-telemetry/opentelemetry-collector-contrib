@@ -26,8 +26,9 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -38,11 +39,12 @@ jobs:
       - name: Install Tools
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   check-collector-module-version:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
@@ -73,8 +75,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -87,6 +90,7 @@ jobs:
         run: make install-tools
       - name: Lint
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
@@ -128,8 +132,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -142,12 +147,14 @@ jobs:
         run: make install-tools
       - name: Run `govulncheck`
         run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   checks:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -181,6 +188,10 @@ jobs:
         run: |
           make gotidy
           git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
+      - name: Check for go package import order
+        run: |
+          make gogci
+          git diff --exit-code || (echo 'go package imports not formatted, please run "make gogci" and commit the changes in this PR.' && exit 1)
       - name: Gen distributions
         run: |
           make gendistributions
@@ -207,6 +218,7 @@ jobs:
         run: |
           make generate-gh-issue-templates
           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   unittest-matrix:
     strategy:
       fail-fast: false
@@ -233,8 +245,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -246,10 +259,11 @@ jobs:
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Cache Test Build
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
         with:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
       # Unit tests without JUnit output are much faster, so it's fine to run on every PR and every go version.
       # The only time we don't run them is when we already ran them with JUnit output.
@@ -269,12 +283,12 @@ jobs:
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
@@ -310,13 +324,13 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [unittest]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -343,9 +357,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -359,6 +373,7 @@ jobs:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP=${{ matrix.group }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   integration-sudo-tests-matrix:
     strategy:
@@ -372,9 +387,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -388,6 +403,7 @@ jobs:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
         run: make --no-print-directory -C ${{ matrix.group }} mod-integration-sudo-test
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
 
   integration-tests:
@@ -411,9 +427,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -426,13 +442,14 @@ jobs:
         run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   correctness-metrics:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -445,15 +462,18 @@ jobs:
         run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   build-examples:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
       - run: make genotelcontribcol
       - name: Build Examples
         run: make build-examples
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   cross-compile:
     runs-on: ubuntu-24.04
@@ -497,9 +517,9 @@ jobs:
           - os: windows
             arch: s390x
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -515,21 +535,22 @@ jobs:
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: ./bin/*
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   publish-check:
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           sparse-checkout: |
             .github/workflows/scripts/verify-dist-files-exist.sh
       - name: Download Binaries
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           merge-multiple: true
           path: ./bin/
@@ -542,12 +563,12 @@ jobs:
     needs: [lint, unittest, integration-tests]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -577,6 +598,7 @@ jobs:
         run: |
           docker push otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA"
           docker push otel/opentelemetry-collector-contrib-dev:latest
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   publish-stable:
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
@@ -586,7 +608,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
 
@@ -628,6 +650,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   rotate-milestone:
     # This job updates the "next release" milestone
     # to the latest released version and creates a new milestone
@@ -670,8 +693,9 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -682,7 +706,7 @@ jobs:
       - name: Install Tools
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
-      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           merge-multiple: true
           pattern: test-results-*
@@ -693,3 +717,4 @@ jobs:
         run: |
           make install-tools
           ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
+      - run: ./.github/workflows/scripts/check-disk-space.sh

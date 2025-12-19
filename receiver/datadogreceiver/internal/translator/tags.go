@@ -7,72 +7,89 @@ import (
 	"strings"
 	"sync"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+)
+
+var MultiTagParsingFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.datadogreceiver.EnableMultiTagParsing",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, parses `key:value` tags with duplicate keys into a slice attribute."),
+	featuregate.WithRegisterFromVersion("v0.142.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44747"),
 )
 
 // See:
 // https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/
 // https://github.com/DataDog/datadog-agent/blob/main/pkg/opentelemetry-mapping-go/otlp/attributes/attributes.go
 var datadogKnownResourceAttributes = map[string]string{
-	"env":     string(semconv.DeploymentEnvironmentNameKey),
-	"service": string(semconv.ServiceNameKey),
-	"version": string(semconv.ServiceVersionKey),
+	"env":     string(conventions.DeploymentEnvironmentNameKey),
+	"service": string(conventions.ServiceNameKey),
+	"version": string(conventions.ServiceVersionKey),
 
 	// Container-related attributes
-	"container_id":   string(semconv.ContainerIDKey),
-	"container_name": string(semconv.ContainerNameKey),
-	"image_name":     string(semconv.ContainerImageNameKey),
-	"image_tag":      string(semconv.ContainerImageTagsKey),
-	"runtime":        string(semconv.ContainerRuntimeKey),
+	"container_id":   string(conventions.ContainerIDKey),
+	"container_name": string(conventions.ContainerNameKey),
+	"image_name":     string(conventions.ContainerImageNameKey),
+	"image_tag":      string(conventions.ContainerImageTagsKey),
+	"runtime":        string(conventions.ContainerRuntimeNameKey),
 
 	// Cloud-related attributes
-	"cloud_provider": string(semconv.CloudProviderKey),
-	"region":         string(semconv.CloudRegionKey),
-	"zone":           string(semconv.CloudAvailabilityZoneKey),
+	"cloud_provider": string(conventions.CloudProviderKey),
+	"region":         string(conventions.CloudRegionKey),
+	"zone":           string(conventions.CloudAvailabilityZoneKey),
 
 	// ECS-related attributes
-	"task_family":        string(semconv.AWSECSTaskFamilyKey),
-	"task_arn":           string(semconv.AWSECSTaskARNKey),
-	"ecs_cluster_name":   string(semconv.AWSECSClusterARNKey),
-	"task_version":       string(semconv.AWSECSTaskRevisionKey),
-	"ecs_container_name": string(semconv.AWSECSContainerARNKey),
+	"task_family":        string(conventions.AWSECSTaskFamilyKey),
+	"task_arn":           string(conventions.AWSECSTaskARNKey),
+	"ecs_cluster_name":   string(conventions.AWSECSClusterARNKey),
+	"task_version":       string(conventions.AWSECSTaskRevisionKey),
+	"ecs_container_name": string(conventions.AWSECSContainerARNKey),
 
 	// K8-related attributes
-	"kube_container_name": string(semconv.K8SContainerNameKey),
-	"kube_cluster_name":   string(semconv.K8SClusterNameKey),
-	"kube_deployment":     string(semconv.K8SDeploymentNameKey),
-	"kube_replica_set":    string(semconv.K8SReplicaSetNameKey),
-	"kube_stateful_set":   string(semconv.K8SStatefulSetNameKey),
-	"kube_daemon_set":     string(semconv.K8SDaemonSetNameKey),
-	"kube_job":            string(semconv.K8SJobNameKey),
-	"kube_cronjob":        string(semconv.K8SCronJobNameKey),
-	"kube_namespace":      string(semconv.K8SNamespaceNameKey),
-	"pod_name":            string(semconv.K8SPodNameKey),
+	"kube_container_name": string(conventions.K8SContainerNameKey),
+	"kube_cluster_name":   string(conventions.K8SClusterNameKey),
+	"kube_deployment":     string(conventions.K8SDeploymentNameKey),
+	"kube_replica_set":    string(conventions.K8SReplicaSetNameKey),
+	"kube_stateful_set":   string(conventions.K8SStatefulSetNameKey),
+	"kube_daemon_set":     string(conventions.K8SDaemonSetNameKey),
+	"kube_job":            string(conventions.K8SJobNameKey),
+	"kube_cronjob":        string(conventions.K8SCronJobNameKey),
+	"kube_namespace":      string(conventions.K8SNamespaceNameKey),
+	"pod_name":            string(conventions.K8SPodNameKey),
 
 	// HTTP
-	"http.client_ip":               string(semconv.ClientAddressKey),
-	"http.response.content_length": string(semconv.HTTPResponseBodySizeKey),
-	"http.status_code":             string(semconv.HTTPResponseStatusCodeKey),
-	"http.request.content_length":  string(semconv.HTTPRequestBodySizeKey),
+	"http.client_ip":               string(conventions.ClientAddressKey),
+	"http.response.content_length": string(conventions.HTTPResponseBodySizeKey),
+	"http.status_code":             string(conventions.HTTPResponseStatusCodeKey),
+	"http.request.content_length":  string(conventions.HTTPRequestBodySizeKey),
 	"http.referer":                 "http.request.header.referer",
-	"http.method":                  string(semconv.HTTPRequestMethodKey),
-	"http.route":                   string(semconv.HTTPRouteKey),
-	"http.version":                 string(semconv.NetworkProtocolVersionKey),
-	"http.server_name":             string(semconv.ServerAddressKey),
-	"http.url":                     string(semconv.URLFullKey),
-	"http.useragent":               string(semconv.UserAgentOriginalKey),
+	"http.method":                  string(conventions.HTTPRequestMethodKey),
+	"http.route":                   string(conventions.HTTPRouteKey),
+	"http.version":                 string(conventions.NetworkProtocolVersionKey),
+	"http.server_name":             string(conventions.ServerAddressKey),
+	"http.url":                     string(conventions.URLFullKey),
+	"http.useragent":               string(conventions.UserAgentOriginalKey),
+
+	// AWS S3
+	"aws.s3.bucket_name":      string(conventions.AWSS3BucketKey),
+	"aws.response.request_id": string(conventions.AWSRequestIDKey),
+	"aws.service":             string(conventions.RPCServiceKey),
+	"aws.operation":           string(conventions.RPCMethodKey),
 
 	// DB
-	"db.type":      string(semconv.DBSystemNameKey),
-	"db.operation": string(semconv.DBOperationNameKey),
-	"db.instance":  string(semconv.DBCollectionNameKey),
-	"db.pool.name": string(semconv.DBClientConnectionPoolNameKey),
+	"db.type":      string(conventions.DBSystemNameKey),
+	"db.operation": string(conventions.DBOperationNameKey),
+	"db.instance":  string(conventions.DBNamespaceKey),
+	"db.sql.table": string(conventions.DBCollectionNameKey),
+	"db.pool.name": string(conventions.DBClientConnectionPoolNameKey),
+	"db.statement": string(conventions.DBQueryTextKey),
 
 	// Other
-	"process_id":       string(semconv.ProcessPIDKey),
-	"error.stacktrace": string(semconv.ExceptionStacktraceKey),
-	"error.msg":        string(semconv.ExceptionMessageKey),
+	"process_id":       string(conventions.ProcessPIDKey),
+	"error.stacktrace": string(conventions.ExceptionStacktraceKey),
+	"error.msg":        string(conventions.ExceptionMessageKey),
 }
 
 // translateDatadogTagToKeyValuePair translates a Datadog tag to a key value pair
@@ -157,15 +174,15 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 	}
 
 	if host != "" {
-		attrs.resource.PutStr(string(semconv.HostNameKey), host)
+		attrs.resource.PutStr(string(conventions.HostNameKey), host)
 	}
 
 	var key, val string
 	for _, tag := range tags {
 		key, val = translateDatadogTagToKeyValuePair(tag)
 		if attr, ok := datadogKnownResourceAttributes[key]; ok {
-			val = stringPool.Intern(val)                       // No need to intern the key if we already have it
-			if attr == string(semconv.ContainerImageTagsKey) { // type: string[]
+			val = stringPool.Intern(val)                           // No need to intern the key if we already have it
+			if attr == string(conventions.ContainerImageTagsKey) { // type: string[]
 				attrs.resource.PutEmptySlice(attr).AppendEmpty().SetStr(val)
 			} else {
 				attrs.resource.PutStr(attr, val)
@@ -177,7 +194,31 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 				// type string[]
 				attrs.resource.PutEmptySlice(key).AppendEmpty().SetStr(val)
 			} else {
-				attrs.dp.PutStr(key, val)
+				if !MultiTagParsingFeatureGate.IsEnabled() {
+					attrs.dp.PutStr(key, val)
+				} else {
+					// Datadog does, semantically, generate tags with the same key prefix but different values
+					// (e.g. the `kube_service` tag when using the `kubelet` integration)
+					// (https://docs.datadoghq.com/containers/kubernetes/tag/)
+					// and we handle this by using a slice whenever there is more than one value for the same key
+					value, exists := attrs.dp.Get(key)
+					if exists {
+						switch value.Type() {
+						case pcommon.ValueTypeSlice:
+							value.Slice().AppendEmpty().SetStr(val)
+						default:
+							oldValue := pcommon.NewValueEmpty()
+							value.CopyTo(oldValue)
+							attrs.dp.Remove(key)
+							slice := attrs.dp.PutEmptySlice(key)
+							firstValue := slice.AppendEmpty()
+							oldValue.CopyTo(firstValue)
+							slice.AppendEmpty().SetStr(val)
+						}
+					} else {
+						attrs.dp.PutStr(key, val)
+					}
+				}
 			}
 		}
 	}

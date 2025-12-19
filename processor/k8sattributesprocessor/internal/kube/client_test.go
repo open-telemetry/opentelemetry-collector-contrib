@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -35,7 +34,7 @@ import (
 )
 
 func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-	return fake.NewSimpleClientset(), nil
+	return fake.NewClientset(), nil
 }
 
 func newPodIdentifier(from, name, value string) PodIdentifier {
@@ -371,7 +370,6 @@ func TestPodCreate(t *testing.T) {
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
 	c.Associations = append(c.Associations, Association{
-		Name: "name",
 		Sources: []AssociationSource{
 			{
 				From: ResourceSource,
@@ -1068,9 +1066,9 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
@@ -1367,9 +1365,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
@@ -1625,9 +1623,9 @@ func TestNodeExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
 				}()
 			}
 
@@ -3148,7 +3146,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.K8SPodUIDKey),
+							Name: "k8s.pod.uid",
 						},
 					},
 				},
@@ -3177,7 +3175,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
+							Name: "container.id",
 						},
 					},
 				},
@@ -3222,7 +3220,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
+							Name: "container.id",
 						},
 						{
 							From: ConnectionSource,
@@ -3749,11 +3747,11 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 
 			// Check the result
 			if tt.expectedDeploymentName != "" {
-				deploymentName, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				deploymentName, exists := attributes["k8s.deployment.name"]
 				assert.True(t, exists, "Expected deployment name to be extracted")
 				assert.Equal(t, tt.expectedDeploymentName, deploymentName)
 			} else {
-				_, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				_, exists := attributes["k8s.deployment.name"]
 				assert.False(t, exists, "Expected no deployment name to be extracted")
 			}
 		})

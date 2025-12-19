@@ -14,11 +14,11 @@ import (
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -292,7 +292,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			args: args{
 				ld: func() plog.Logs {
 					lrr := testdata.GenerateLogsOneLogRecord()
-					lrr.ResourceLogs().At(0).Resource().Attributes().PutStr(string(conventions127.DeploymentEnvironmentNameKey), "new_env")
+					lrr.ResourceLogs().At(0).Resource().Attributes().PutStr("deployment.environment.name", "new_env")
 					return lrr
 				}(),
 				retry: false,
@@ -433,7 +433,7 @@ func TestLogsExporterHostMetadata(t *testing.T) {
 	assert.NotNil(t, exp)
 
 	// Test 2: Verify exporter can start successfully (this initializes metadata infrastructure)
-	err = exp.Start(t.Context(), nil)
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, exp.Shutdown(t.Context()))
@@ -495,7 +495,7 @@ func TestLogsExporterHostMetadataOnlyMode(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 
-	err = exp.Start(t.Context(), nil)
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, exp.Shutdown(t.Context()))

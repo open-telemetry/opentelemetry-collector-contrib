@@ -6,7 +6,7 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 )
@@ -27,7 +27,7 @@ func NewCollectorInstanceInfo(
 ) CollectorInstanceInfo {
 	var info CollectorInstanceInfo
 	for k, v := range set.Resource.Attributes().All() {
-		if k == string(semconv.ServiceInstanceIDKey) {
+		if k == string(conventions.ServiceInstanceIDKey) {
 			if str := v.Str(); str != "" {
 				info.serviceInstanceID = v.Str()
 				info.size++
@@ -46,7 +46,7 @@ func (info CollectorInstanceInfo) Size() int {
 func (info CollectorInstanceInfo) Copy(to pcommon.Map) {
 	to.EnsureCapacity(info.Size())
 	if info.serviceInstanceID != "" {
-		to.PutStr(keyWithPrefix(string(semconv.ServiceInstanceIDKey)), info.serviceInstanceID)
+		to.PutStr(keyWithPrefix(string(conventions.ServiceInstanceIDKey)), info.serviceInstanceID)
 	}
 }
 
