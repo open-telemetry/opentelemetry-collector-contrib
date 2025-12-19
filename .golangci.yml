@@ -196,6 +196,7 @@ linters:
             - go.opentelemetry.io/otel/semconv/v1.21.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45036
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44801
             - go.opentelemetry.io/otel/semconv/v1.25.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43806
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45074
