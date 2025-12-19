@@ -189,32 +189,8 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 
 func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
 	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
-		restCfg, err := k8sconfig.CreateRestConfig(apiCfg)
-		if err != nil {
-			return cache.NewSharedIndexInformer(
-				&cache.ListWatch{
-					ListWithContextFunc:  func(_ context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
-					WatchFuncWithContext: func(_ context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
-				},
-				&metav1.PartialObjectMetadata{},
-				watchSyncPeriod,
-				cache.Indexers{},
-			)
-		}
-
-		mc, err := metadata.NewForConfig(restCfg)
-		if err != nil {
-			return cache.NewSharedIndexInformer(
-				&cache.ListWatch{
-					ListWithContextFunc:  func(_ context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
-					WatchFuncWithContext: func(_ context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
-				},
-				&metav1.PartialObjectMetadata{},
-				watchSyncPeriod,
-				cache.Indexers{},
-			)
-		}
-
+		restCfg, _ := k8sconfig.CreateRestConfig(apiCfg)
+		mc, _ := metadata.NewForConfig(restCfg)
 		gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
 
 		lw := &cache.ListWatch{
