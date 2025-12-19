@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -25,12 +26,30 @@ func TestNewAzureAuthenticator(t *testing.T) {
 
 func TestGetToken(t *testing.T) {
 	m := mockTokenCredential{}
-	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
 	auth := authenticator{
 		credential: &m,
 	}
 	_, err := auth.GetToken(t.Context(), policy.TokenRequestOptions{})
 	require.NoError(t, err)
+}
+
+func TestToken(t *testing.T) {
+	m := mockTokenCredential{}
+	m.On("GetToken", mock.MatchedBy(func(ctx context.Context) bool {
+		_, ok := ctx.Deadline()
+		return ok
+	}), mock.Anything).Return(azcore.AccessToken{Token: "test", ExpiresOn: time.Now().Add(time.Hour)}, nil)
+
+	auth := authenticator{
+		credential: &m,
+		timeout:    1 * time.Second,
+	}
+
+	token, err := auth.Token()
+	require.NoError(t, err)
+	require.Equal(t, "test", token.AccessToken)
+	m.AssertExpectations(t)
 }
 
 func TestGetHeaderValue(t *testing.T) {
@@ -125,7 +144,7 @@ func TestAuthenticate(t *testing.T) {
 	}
 
 	m := mockTokenCredential{}
-	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
 	auth := authenticator{
 		credential: &m,
 	}
@@ -182,7 +201,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	m := mockTokenCredential{}
-	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
 	auth := authenticator{
 		credential: &m,
 	}
@@ -209,8 +228,8 @@ type mockTokenCredential struct {
 
 var _ azcore.TokenCredential = (*mockTokenCredential)(nil)
 
-func (m *mockTokenCredential) GetToken(context.Context, policy.TokenRequestOptions) (azcore.AccessToken, error) {
-	args := m.Called()
+func (m *mockTokenCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	args := m.Called(ctx, opts)
 	return args.Get(0).(azcore.AccessToken), args.Error(1)
 }
 
