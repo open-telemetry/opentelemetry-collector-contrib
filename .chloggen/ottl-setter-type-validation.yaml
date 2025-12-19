@@ -4,9 +4,14 @@ note: Return errors when OTTL context accessors receive values of the wrong type
 issues: [40198]
 subtext: |
   Setters in OTTL contexts now validate that values are of the expected type and return
-  descriptive errors when type mismatches occur, improving debugging experience.
-  This is the continuation of work done in \#43505, addressing remaining context such
-  as datapoint, profile, resource, span, and span event.
+  descriptive errors when type mismatches occur. This is the continuation of work done in
+  \#43505, addressing remaining contexts: datapoint, profile, profilesample, resource, span,
+  and spanevent.
+
+  Changes include:
+  - Slice setters (explicit_bounds, bucket_counts, positive.bucket_counts, negative.bucket_counts)
+    now use SetCommonTypedSliceValues/SetCommonIntSliceValues for better type handling.
+  - SetMap now returns an error for invalid value types instead of silently ignoring them.
 
   **Note:** Users may see new errors from OTTL statements that were previously silently failing
   due to type mismatches. These errors indicate pre-existing issues in OTTL configurations that
