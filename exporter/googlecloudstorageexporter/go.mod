@@ -8,9 +8,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.48.1-0.20251218222727-bf28fa76882d
-	go.opentelemetry.io/collector/component/componenttest v0.142.0
+	go.opentelemetry.io/collector/component/componenttest v0.142.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/confmap v1.48.1-0.20251218222727-bf28fa76882d
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/consumer v1.48.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/exporter v1.48.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/extension v1.48.1-0.20251218222727-bf28fa76882d

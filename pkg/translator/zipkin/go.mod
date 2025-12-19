@@ -28,7 +28,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251218222727-bf28fa76882d // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.142.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.142.1-0.20251218222727-bf28fa76882d // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -28,7 +28,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.48.1-0.20251218222727-bf28fa76882d // indirect
 	go.opentelemetry.io/collector/confmap v1.48.1-0.20251218222727-bf28fa76882d // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251218222727-bf28fa76882d // indirect
 	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251218222727-bf28fa76882d // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
