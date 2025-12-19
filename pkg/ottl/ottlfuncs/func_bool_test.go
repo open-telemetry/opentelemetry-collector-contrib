@@ -62,6 +62,26 @@ func Test_Bool(t *testing.T) {
 			err:      true,
 		},
 		{
+			name:     "string t",
+			value:    "t",
+			expected: true,
+		},
+		{
+			name:     "string f",
+			value:    "f",
+			expected: false,
+		},
+		{
+			name:     "string T",
+			value:    "T",
+			expected: true,
+		},
+		{
+			name:     "string F",
+			value:    "F",
+			expected: false,
+		},
+		{
 			name:     "string 6",
 			value:    "6",
 			expected: nil,
@@ -127,6 +147,12 @@ func Test_Bool(t *testing.T) {
 		{
 			name:     "some struct",
 			value:    struct{}{},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:     "some slice",
+			value:    []any{},
 			expected: nil,
 			err:      true,
 		},
