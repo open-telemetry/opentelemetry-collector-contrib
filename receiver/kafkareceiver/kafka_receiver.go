@@ -413,6 +413,14 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 		}
 	}
 
+	// Add Kafka topic, partition, and offset as resource attributes
+	// This makes the topic available for downstream processors and exporters
+	for resource := range handler.getResources(data) {
+		resource.Attributes().PutStr("kafka.topic", message.topic())
+		resource.Attributes().PutInt("kafka.partition", int64(message.partition()))
+		resource.Attributes().PutInt("kafka.offset", message.offset())
+	}
+
 	err = handler.consumeData(ctx, data)
 	handler.endObsReport(obsCtx, n, err)
 	return err
