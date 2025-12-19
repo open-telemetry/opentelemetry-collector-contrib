@@ -12,6 +12,7 @@ import (
 	"github.com/google/pprof/profile"
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
@@ -128,7 +129,8 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	}
 
 	var commentStrs string
-	commentStrs, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.comment")
+	commentStrs, attrErr = getAttributeString(src.Dictionary(),
+		string(semconv.PprofProfileCommentKey))
 	if attrErr != nil {
 		return nil, attrErr
 	}
@@ -136,15 +138,15 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		dst.Comments = append(dst.Comments, commentStrs)
 	}
 
-	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), "keep_frames")
+	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.keep_frames")
 	if attrErr != nil {
 		return nil, attrErr
 	}
-	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), "drop_frames")
+	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.keep_frames")
 	if attrErr != nil {
 		return nil, attrErr
 	}
-	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), "doc_url")
+	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.doc_url")
 	if attrErr != nil {
 		return nil, attrErr
 	}

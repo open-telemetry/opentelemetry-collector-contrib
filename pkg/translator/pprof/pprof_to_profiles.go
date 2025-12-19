@@ -145,7 +145,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 			// pprof.Sample.label - this field is split into string and numeric labels.
 			for lk, lv := range sample.Label {
 				if len(lv) != 1 {
-					return nil, fmt.Errorf("invalid length of string label value %d: %w",
+					return nil, fmt.Errorf("labels with multiple values (%d) are not supported: %w",
 						len(lv), errInvalPprof)
 				}
 				var idx int32
@@ -191,11 +191,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		// is no 1 to 1 mapping here.
 
 		// pprof.Profile.drop_frames
-		dropFramesIdx := lts.getIdxForAttribute("drop_frames", src.DropFrames)
+		dropFramesIdx := lts.getIdxForAttribute("pprof.profile.drop_frames", src.DropFrames)
 		p.AttributeIndices().Append(dropFramesIdx)
 
 		// pprof.Profile.keep_frames
-		keepFramesIdx := lts.getIdxForAttribute("keep_frames", src.KeepFrames)
+		keepFramesIdx := lts.getIdxForAttribute("pprof.profile.keep_frames", src.KeepFrames)
 		p.AttributeIndices().Append(keepFramesIdx)
 
 		// pprof.Profile.time_nanos
@@ -213,13 +213,14 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 		// pprof.Profile.comment
 		// TODO: refactor lookupTables to allow string[] to be held
-		p.AttributeIndices().Append(lts.getIdxForAttributeWithUnit("pprof.profile.comment", "", strings.Join(src.Comments, ",")))
+		p.AttributeIndices().Append(lts.getIdxForAttributeWithUnit(
+			string(semconv.PprofProfileCommentKey), "", strings.Join(src.Comments, ",")))
 
 		// pprof.Profile.default_sample_type
 		// As OTel pprofile uses a single Sample Type, it is implicit its default type.
 
 		// pprof.Profile.doc_url
-		docURLIdx := lts.getIdxForAttribute("doc_url", src.DocURL)
+		docURLIdx := lts.getIdxForAttribute("pprof.profile.doc_url", src.DocURL)
 		p.AttributeIndices().Append(docURLIdx)
 	}
 
