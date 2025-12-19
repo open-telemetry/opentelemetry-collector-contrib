@@ -175,7 +175,7 @@ func TestScraperScrape(t *testing.T) {
 			desc: "With cgroups",
 			config: func() *Config {
 				cfg := createDefaultDisabledConfig()
-				cfg.Metrics.SystemdUnitCPUTime.Enabled = true
+				cfg.Metrics.SystemdServiceCPUTime.Enabled = true
 				return cfg
 			},
 			units: []unitTuple{
@@ -187,6 +187,18 @@ func TestScraperScrape(t *testing.T) {
 					SubState:    "plugged",
 					Following:   "",
 					Path:        "/org/freedesktop/systemd1/unit/nginx_2eservice",
+					JobID:       uint32(0),
+					JobType:     "",
+					JobPath:     "/",
+				},
+				{
+					Name:        "dbus.socket",
+					Description: "D-Bus System Message Bus Socket",
+					LoadState:   "loaded",
+					ActiveState: "active",
+					SubState:    "plugged",
+					Following:   "",
+					Path:        "/org/freedesktop/systemd1/unit/dbus_2esocket",
 					JobID:       uint32(0),
 					JobType:     "",
 					JobPath:     "/",
@@ -228,6 +240,6 @@ func TestScraperScrape(t *testing.T) {
 func createDefaultDisabledConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.SystemdUnitState.Enabled = false
-	cfg.Metrics.SystemdUnitCPUTime.Enabled = false
+	cfg.Metrics.SystemdServiceCPUTime.Enabled = false
 	return cfg
 }
