@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.94.0
 	github.com/goccy/go-json v0.10.5
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.142.0
 	github.com/stretchr/testify v1.11.1
@@ -17,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.48.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.142.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.142.0
+	go.opentelemetry.io/collector/extension v1.48.0
 	go.opentelemetry.io/collector/pdata v1.48.0
 	go.opentelemetry.io/collector/receiver v1.48.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.142.0
@@ -86,3 +88,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding

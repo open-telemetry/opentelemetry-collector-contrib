@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -24,6 +25,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal/metadata"
 )
@@ -32,7 +34,34 @@ type emits interface {
 	plog.Logs | pmetric.Metrics
 }
 
+// newEmit creates a new initialized value of type T
+func newEmit[T emits]() T {
+	var zero T
+	switch any(zero).(type) {
+	case plog.Logs:
+		return any(plog.NewLogs()).(T)
+	case pmetric.Metrics:
+		return any(pmetric.NewMetrics()).(T)
+	}
+	return zero
+}
+
+// isEmpty checks if the emit value is empty
+func isEmpty[T emits](data T) bool {
+	switch v := any(data).(type) {
+	case plog.Logs:
+		return v.LogRecordCount() == 0
+	case pmetric.Metrics:
+		return v.DataPointCount() == 0
+	}
+	return false
+}
+
 type (
+	newDecoderFunc[T emits] func(
+		context.Context, io.Reader, ...encoding.StreamDecoderOption,
+	) (encoding.StreamDecoder[T], error)
+
 	unmarshalFunc[T emits]       func([]byte) (T, error)
 	s3EventConsumerFunc[T emits] func(context.Context, events.S3EventRecord, T) error
 	handlerRegistry              map[eventType]func() lambdaEventHandler
@@ -86,23 +115,23 @@ type lambdaEventHandler interface {
 
 // s3Handler is specialized in S3 object event handling
 type s3Handler[T emits] struct {
-	s3Service     internal.S3Service
-	logger        *zap.Logger
-	s3Unmarshaler unmarshalFunc[T]
-	consumer      s3EventConsumerFunc[T]
+	s3Service  internal.S3Service
+	logger     *zap.Logger
+	newDecoder newDecoderFunc[T]
+	consumer   s3EventConsumerFunc[T]
 }
 
 func newS3Handler[T emits](
 	service internal.S3Service,
 	baseLogger *zap.Logger,
-	unmarshal unmarshalFunc[T],
+	newDecoder newDecoderFunc[T],
 	consumer s3EventConsumerFunc[T],
 ) *s3Handler[T] {
 	return &s3Handler[T]{
-		s3Service:     service,
-		logger:        baseLogger.Named("s3"),
-		s3Unmarshaler: unmarshal,
-		consumer:      consumer,
+		s3Service:  service,
+		logger:     baseLogger.Named("s3"),
+		newDecoder: newDecoder,
+		consumer:   consumer,
 	}
 }
 
@@ -132,15 +161,23 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 		return err
 	}
 
-	data, err := s.s3Unmarshaler(body)
+	// TODO don't read the full object into memory above
+	d, err := s.newDecoder(ctx, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal S3 data: %w", err)
+		return fmt.Errorf("failed to create S3 object decoder: %w", err)
 	}
-
-	if err := s.consumer(ctx, parsedEvent, data); err != nil {
-		return checkConsumerErrorAndWrap(err)
+	for {
+		data := newEmit[T]() // TODO this is dumb, remove it
+		err := d.Decode(ctx, data)
+		if errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			return fmt.Errorf("failed to decode S3 object data: %w", err)
+		}
+		if err := s.consumer(ctx, parsedEvent, data); err != nil {
+			return checkConsumerErrorAndWrap(err)
+		}
 	}
-
 	return nil
 }
 

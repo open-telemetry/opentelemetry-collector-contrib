@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,6 +25,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
@@ -38,7 +40,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 		name          string
 		s3Event       events.S3Event
 		bucketData    []byte
-		unmarshaler   func(buf []byte) (plog.Logs, error)
+		newDecoder    newDecoderFunc[plog.Logs]
 		eventConsumer consumer.Logs
 		expectedErr   string
 	}{
@@ -59,8 +61,10 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			bucketData:    []byte("Some log in S3 object"),
-			unmarshaler:   customLogUnmarshaler{}.UnmarshalLogs,
+			bucketData: []byte("Some log in S3 object"),
+			newDecoder: func(_ context.Context, r io.Reader, _ ...encoding.StreamDecoderOption) (encoding.StreamDecoder[plog.Logs], error) {
+				return encoding.NewUnmarshalerStreamDecoder(r, customLogUnmarshaler{}.UnmarshalLogs), nil
+			},
 			eventConsumer: &noOpLogsConsumer{},
 		},
 		{
@@ -81,8 +85,10 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			bucketData:    []byte("Some log in S3 object"),
-			unmarshaler:   bytesToPlogs,
+			bucketData: []byte("Some log in S3 object"),
+			newDecoder: func(_ context.Context, r io.Reader, _ ...encoding.StreamDecoderOption) (encoding.StreamDecoder[plog.Logs], error) {
+				return encoding.NewUnmarshalerStreamDecoder(r, bytesToPlogs), nil
+			},
 			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_string.yaml")},
 		},
 		{
@@ -103,8 +109,10 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			bucketData:    []byte("H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA="),
-			unmarshaler:   bytesToPlogs,
+			bucketData: []byte("H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA="),
+			newDecoder: func(_ context.Context, r io.Reader, _ ...encoding.StreamDecoderOption) (encoding.StreamDecoder[plog.Logs], error) {
+				return encoding.NewUnmarshalerStreamDecoder(r, bytesToPlogs), nil
+			},
 			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_gzip.yaml")},
 		},
 		{
@@ -131,7 +139,9 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			unmarshaler:   customLogUnmarshaler{error: errors.New("failed to unmarshal logs")}.UnmarshalLogs,
+			newDecoder: func(_ context.Context, r io.Reader, _ ...encoding.StreamDecoderOption) (encoding.StreamDecoder[plog.Logs], error) {
+				return encoding.NewUnmarshalerStreamDecoder(r, customLogUnmarshaler{error: errors.New("failed to unmarshal logs")}.UnmarshalLogs), nil
+			},
 			eventConsumer: &noOpLogsConsumer{},
 			expectedErr:   "failed to unmarshal logs",
 		},
@@ -169,7 +179,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				return test.eventConsumer.ConsumeLogs(ctx, logs)
 			}
 
-			handler := newS3Handler(s3Service, zap.NewNop(), test.unmarshaler, logsConsumer)
+			handler := newS3Handler(s3Service, zap.NewNop(), test.newDecoder, logsConsumer)
 
 			var event json.RawMessage
 			event, err := json.Marshal(test.s3Event)
@@ -261,7 +271,10 @@ func TestS3HandlerParseEvent(t *testing.T) {
 		enrichS3Logs(logs, event)
 		return consumer.ConsumeLogs(ctx, logs)
 	}
-	handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer)
+	newDecoder := func(_ context.Context, r io.Reader, _ ...encoding.StreamDecoderOption) (encoding.StreamDecoder[plog.Logs], error) {
+		return encoding.NewUnmarshalerStreamDecoder(r, customLogUnmarshaler{}.UnmarshalLogs), nil
+	}
+	handler := newS3Handler(s3Service, zap.NewNop(), newDecoder, logsConsumer)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -451,7 +464,10 @@ func TestConsumerErrorHandling(t *testing.T) {
 				return test.consumerErr
 			}
 
-			handler := newS3Handler(s3Service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer)
+			newDecoder := func(_ context.Context, r io.Reader, _ ...encoding.StreamDecoderOption) (encoding.StreamDecoder[plog.Logs], error) {
+				return encoding.NewUnmarshalerStreamDecoder(r, customLogUnmarshaler{}.UnmarshalLogs), nil
+			}
+			handler := newS3Handler(s3Service, zap.NewNop(), newDecoder, logsConsumer)
 
 			event, err := json.Marshal(mockEvent)
 			require.NoError(t, err)

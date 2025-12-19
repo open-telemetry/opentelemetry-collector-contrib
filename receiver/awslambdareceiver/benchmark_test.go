@@ -6,15 +6,16 @@ package awslambdareceiver
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
 func BenchmarkHandleS3Notification(b *testing.B) {
@@ -32,6 +33,7 @@ func BenchmarkHandleS3Notification(b *testing.B) {
 			},
 		},
 	}
+
 	data, err := json.Marshal(event)
 	require.NoError(b, err)
 
@@ -40,11 +42,17 @@ func BenchmarkHandleS3Notification(b *testing.B) {
 
 	consumer := noOpLogsConsumer{}
 	// Wrap the consumer to match the new s3EventConsumerFunc signature
+
 	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
 		enrichS3Logs(logs, event)
 		return consumer.ConsumeLogs(ctx, logs)
 	}
-	handler := newS3Handler(service, zap.NewNop(), customLogUnmarshaler{}.UnmarshalLogs, logsConsumer)
+
+	newDecoder := func(_ context.Context, r io.Reader, _ ...encoding.StreamDecoderOption) (encoding.StreamDecoder[plog.Logs], error) {
+		return encoding.NewUnmarshalerStreamDecoder(r, customLogUnmarshaler{}.UnmarshalLogs), nil
+	}
+
+	handler := newS3Handler(service, zap.NewNop(), newDecoder, logsConsumer)
 
 	b.Run("HandleS3Event", func(b *testing.B) {
 		b.ReportAllocs()
