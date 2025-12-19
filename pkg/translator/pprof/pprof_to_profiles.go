@@ -353,7 +353,8 @@ func (lts *lookupTables) getIdxForStack(locs []*profile.Location) int32 {
 		locTableIDs = append(locTableIDs, idx)
 	}
 
-	key := attrIdxToString(locTableIDs)
+	// Use locIdxToString instead of attrIdxToString to preserve stack order.
+	key := locIdxToString(locTableIDs)
 	if idx, exists := lts.stackTable[key]; exists {
 		return idx
 	}
@@ -490,7 +491,8 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 		dic.StackTable().AppendEmpty()
 	}
 	for s, id := range lts.stackTable {
-		locIndices, err := stringToAttrIdx(s)
+		// Use stringToLocIdx instead of stringToAttrIdx to preserve stack order.
+		locIndices, err := stringToLocIdx(s)
 		if err != nil {
 			return err
 		}
@@ -559,6 +561,41 @@ func stringToAttrIdx(indices string) ([]int32, error) {
 	}
 	if !slices.IsSorted(result) {
 		return nil, fmt.Errorf("invalid order of indices '%s': %w", indices, errInalIdxFomrat)
+	}
+
+	return result, nil
+}
+
+// locIdxToString is a helper function to convert a list of location indices
+// into a string, preserving their order (unlike attrIdxToString which sorts).
+func locIdxToString(indices []int32) string {
+	if len(indices) == 0 {
+		return ""
+	}
+
+	stringNumbers := make([]string, len(indices))
+	for i, n := range indices {
+		stringNumbers[i] = strconv.FormatInt(int64(n), 10)
+	}
+
+	return strings.Join(stringNumbers, ";")
+}
+
+// stringToLocIdx is a helper function to convert a string into
+// a list of location indices, preserving their order.
+func stringToLocIdx(indices string) ([]int32, error) {
+	if indices == "" {
+		return []int32{}, nil
+	}
+	parts := strings.Split(indices, ";")
+
+	result := make([]int32, 0, len(parts))
+	for _, s := range parts {
+		n, err := strconv.ParseInt(s, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse '%s' as int32. %w", s, err)
+		}
+		result = append(result, int32(n))
 	}
 
 	return result, nil
