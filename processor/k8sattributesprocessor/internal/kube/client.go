@@ -1770,13 +1770,15 @@ func (c *WatchClient) resolveReplicaSetDeploymentLinkage(rsView *replicasetView)
 	}
 
 	// Reuse cached linkage to avoid repeated GETs
-	c.m.RLock()
-	cached := c.ReplicaSets[rsView.UID]
-	c.m.RUnlock()
-	if cached != nil && cached.Deployment.UID != "" {
-		rsView.DeploymentName = cached.Deployment.Name
-		rsView.DeploymentUID = cached.Deployment.UID
-		return
+c.m.RLock()
+if cached := c.ReplicaSets[rsView.UID]; cached != nil && cached.Deployment.UID != "" {
+    depName, depUID := cached.Deployment.Name, cached.Deployment.UID
+    c.m.RUnlock()
+    rsView.DeploymentName = depName
+    rsView.DeploymentUID = depUID
+    return
+}
+c.m.RUnlock()
 	}
 
 	// Fallback: typed GET, only accept controller=true Deployment owner
