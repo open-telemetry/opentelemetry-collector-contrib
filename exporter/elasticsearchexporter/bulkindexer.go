@@ -596,6 +596,7 @@ func (b *bulkIndexers) shutdown(ctx context.Context) error {
 	}()
 	select {
 	case <-ctx.Done():
+		<-doneCh // ensure all sessions are cleaned up
 		return ctx.Err()
 	case <-doneCh:
 	}
