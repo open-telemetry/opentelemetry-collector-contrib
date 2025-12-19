@@ -27,7 +27,7 @@ func ptr[T any](v T) *T { return &v }
 
 func genTypedRS(n int) []*apps_v1.ReplicaSet {
 	out := make([]*apps_v1.ReplicaSet, n)
-	for i := 0; i < n; i++ {
+	for i := range out {
 		name := fmt.Sprintf("deploy-%d-abc123defg", i)
 		out[i] = &apps_v1.ReplicaSet{
 			TypeMeta: meta_v1.TypeMeta{APIVersion: "apps/v1", Kind: "ReplicaSet"},
