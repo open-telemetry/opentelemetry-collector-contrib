@@ -531,6 +531,7 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 }
 
 // attrIdxToString is a helper function to convert a list of indices
+// into a string. This function modifies the input slice.
 func attrIdxToString(indices []int32) string {
 	if len(indices) == 0 {
 		return ""
