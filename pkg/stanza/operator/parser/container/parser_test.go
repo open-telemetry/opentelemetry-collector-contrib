@@ -89,7 +89,6 @@ func TestInternalRecombineCfg(t *testing.T) {
 	require.Equal(t, expected, cfg)
 }
 
-
 func TestProcess(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		cases := []struct {
