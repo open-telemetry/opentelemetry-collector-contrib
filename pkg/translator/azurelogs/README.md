@@ -222,14 +222,14 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | Original Field (JSON)                    | Log Record Attribute                      |
 | ---------------------------------------- | ----------------------------------------- |
 | `properties.accountLogonId`              | `azure.security.account_logon_id`         |
-| `properties.commandLine`                 | `azure.security.command_line`             |
+| `properties.commandLine`                 | `process.command_line`             |
 | `properties.domainName`                  | `azure.security.domain_name`              |
 | `properties.parentProcess`               | `azure.security.process.parent`           |
-| `properties.parentProcessId`             | `azure.security.process.parent.id`        |
-| `properties.processId`                   | `azure.security.process.id`               |
-| `properties.processName`                 | `azure.security.process.name`             |
-| `properties.userName`                    | `azure.security.user.name`                |
-| `properties.userSID`                     | `azure.security.user.sid`                 |
+| `properties.parentProcessId`             | `process.parent_pid`        |
+| `properties.processId`                   | `process.id`               |
+| `properties.processName`                 | `process.title`             |
+| `properties.userName`                    | `process.user.name`                |
+| `properties.userSID`                     | `process.user.id`                 |
 | `properties.actionTaken`                 | `azure.security.action_taken`             |
 | `properties.severity`                    | `azure.security.severity`                 |
 
