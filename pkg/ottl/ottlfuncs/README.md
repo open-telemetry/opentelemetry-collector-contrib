@@ -567,27 +567,17 @@ Examples:
 
 The `Bool` Converter converts the `value` to a bool type.
 
-The returned type is bool.
+The returned type is `bool`.
 
-The input `value` types:
+The accepted input `value` types are:
 
-- bool. Keeps value as is.
-- float64. Zero is false, any non-zero value is true.
-- int64. Zero is false, any non-zero value is true.
-- string. Tries to parse an bool from string. If it fails then nil will be returned. The following are some valid inputs that are parsed as true or false:
+- `bool`: Returns the value without changes.
+- `float64`: Returns `true` if non-zero, otherwise `false`.
+- `int64`: Returns `true` if non-zero, otherwise `false`.
+- `string`: Tries to parse a boolean from the string. It returns `true` for "1", "t", "T", "true", "TRUE", or "True"; returns `false` for "0", "f", "F", "false", "FALSE" or "False".
+- `nil`: Returns `nil`.
 
-    | Input | Output |
-    | --- | --- |
-    | `"true"` | `true` |
-    | `"false"` | `false` |
-    | `"True"` | `true` |
-    | `"False"` | `false` |
-    | `"TRUE"` | `true` |
-    | `"FALSE"` | `false` |
-    | `"1"` | `true` |
-    | `"0"` | `false` |
-
-If `value` is another type or parsing failed nil is always returned.
+If `value` is another type or parsing failed, `nil` is always returned.
 
 The `value` is either a path expression to a telemetry field to retrieve or a literal.
 
