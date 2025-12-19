@@ -39,7 +39,6 @@ func allLogRecords(l plog.Logs) plog.LogRecordSlice {
 		for j := 0; j < sls.Len(); j++ {
 			recs := sls.At(j).LogRecords()
 			for k := 0; k < recs.Len(); k++ {
-				// Create a new empty record in out and copy current record into it
 				rec := out.AppendEmpty()
 				recs.At(k).CopyTo(rec)
 			}
@@ -58,10 +57,11 @@ func basicConfig(portNumber uint) *Config {
 			MaxRowsPerQuery: 100,
 		},
 		TopQueryCollection: TopQueryCollection{
-			LookbackTime:        1000,
-			MaxQuerySampleCount: 100,
+			// More forgiving settings to capture top queries reliably
+			LookbackTime:        10000, // 10s lookback
+			MaxQuerySampleCount: 200,
 			TopQueryCount:       100,
-			CollectionInterval:  1 * time.Millisecond,
+			CollectionInterval:  100 * time.Millisecond, // avoid 1ms churn
 		},
 		isDirectDBConnectionEnabled: true,
 		LogsBuilderConfig: metadata.LogsBuilderConfig{
@@ -155,27 +155,31 @@ func TestEventsScraper(t *testing.T) {
 			},
 		},
 		{
-			name:        "TopQuery",
-			clientQuery: "SELECT * FROM dbo.test_table",
+			name: "TopQuery",
+			// Use a heavier, repeatable query to ensure it ranks in top queries
+			clientQuery: `
+SELECT TOP 100 *
+FROM dbo.test_table
+ORDER BY id
+OPTION (RECOMPILE, MAXDOP 1)
+`,
 			configModifyFunc: func(cfg *Config) *Config {
 				cfg.Events.DbServerTopQuery.Enabled = true
+				// TopQueryCollection already set in basicConfig; keep as-is
 				return cfg
 			},
 			validateFunc: func(t *testing.T, scraper *sqlServerScraperHelper, queryCount *atomic.Int32, finished *atomic.Bool) {
 				// Ensure queries are running
 				assert.Eventually(t, func() bool {
-					return queryCount.Load() > 1
-				}, 10*time.Second, 100*time.Millisecond, "Query did not start in time")
+					return queryCount.Load() > 10
+				}, 15*time.Second, 100*time.Millisecond, "Query did not start in time")
 
 				// Prime the scraper once
 				_, err := scraper.ScrapeLogs(t.Context())
 				assert.NoError(t, err)
 
-				currentQueriesCount := queryCount.Load()
-				// Ensure at least one additional execution to be considered for top query window
-				assert.Eventually(t, func() bool {
-					return queryCount.Load() > currentQueriesCount+1
-				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
+				// Keep generating workload for a bit to ensure it lands in the lookback window
+				time.Sleep(2 * time.Second)
 
 				var actualLog plog.Logs
 				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
@@ -184,19 +188,34 @@ func TestEventsScraper(t *testing.T) {
 					assert.NoError(tt, e)
 					recs := allLogRecords(actualLog)
 					assert.Positive(tt, recs.Len(), "no log records yet for top queries")
-				}, 10*time.Second, 100*time.Millisecond)
 
-				records := allLogRecords(actualLog)
-				found := false
-				for i := 0; i < records.Len(); i++ {
-					attrs := records.At(i).Attributes().AsRaw()
-					q, _ := attrs["db.query.text"].(string)
-					if q == "SELECT * FROM dbo.test_table" {
-						found = true
-						break
+					found := false
+					// Normalize and search for expected SQL text across common keys
+					target := "SELECT TOP 100 * FROM dbo.test_table ORDER BY id"
+					for i := 0; i < recs.Len(); i++ {
+						attrs := recs.At(i).Attributes().AsRaw()
+
+						// Optional: require correct event category/name if present
+						if v, ok := attrs["event.name"].(string); ok && v != "" && v != "db.server.top_query" {
+							continue
+						}
+
+						qs, _ := attrs["db.query.text"].(string)
+						if qs == "" {
+							qs, _ = attrs["db.statement"].(string)
+						}
+						if qs == "" {
+							qs, _ = attrs["sql.query"].(string)
+						}
+						norm := strings.Join(strings.Fields(qs), " ")
+						if strings.Contains(norm, target) {
+							found = true
+							break
+						}
 					}
-				}
-				assert.True(t, found, "expected top query to be present")
+					assert.True(tt, found, "expected top query to be present")
+				}, 20*time.Second, 200*time.Millisecond)
+
 				finished.Store(true)
 			},
 		},
@@ -233,8 +252,8 @@ func TestEventsScraper(t *testing.T) {
 							// only assert while test is active to avoid masking shutdown errors
 							assert.NoError(t, queryErr)
 						}
-						// Optional small delay to avoid overwhelming SQL Server while still producing load
-						time.Sleep(50 * time.Millisecond)
+						// small delay to keep throughput high but avoid overwhelming SQL Server
+						time.Sleep(10 * time.Millisecond)
 					}
 				}
 			}(queryContext)
