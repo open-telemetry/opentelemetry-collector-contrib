@@ -212,9 +212,12 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		p.SetPeriod(src.Period)
 
 		// pprof.Profile.comment
-		// TODO: refactor lookupTables to allow string[] to be held
-		p.AttributeIndices().Append(lts.getIdxForAttributeWithUnit(
-			string(semconv.PprofProfileCommentKey), "", strings.Join(src.Comments, ",")))
+		for ci, c := range src.Comments {
+			// Append a index to the attribute key, so that
+			// later src.Comments can be reconstructed correctly.
+			p.AttributeIndices().Append(lts.getIdxForAttribute(
+				string(semconv.PprofProfileCommentKey)+fmt.Sprintf(".%d", ci), c))
+		}
 
 		// pprof.Profile.default_sample_type
 		// As OTel pprofile uses a single Sample Type, it is implicit its default type.

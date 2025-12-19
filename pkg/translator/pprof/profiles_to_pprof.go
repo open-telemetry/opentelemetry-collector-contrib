@@ -8,11 +8,18 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/google/pprof/profile"
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+)
+
+var (
+	// errNotFound is returned if something requested is not available
+	errNotFound = errors.New("not found")
 )
 
 func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
@@ -120,7 +127,6 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	}
 
 	// Set pprof values that should be common across all profiles.
-
 	for i := range numProfiles {
 		dst.SampleType = append(dst.SampleType, &profile.ValueType{
 			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().TypeStrindex())),
@@ -128,26 +134,26 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		})
 	}
 
-	var commentStrs string
-	commentStrs, attrErr = getAttributeString(src.Dictionary(),
+	var commentStrs []string
+	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary(),
 		string(semconv.PprofProfileCommentKey))
-	if attrErr != nil {
+	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	if commentStrs != "" {
-		dst.Comments = append(dst.Comments, commentStrs)
+	if len(commentStrs) != 0 {
+		dst.Comments = append(dst.Comments, commentStrs...)
 	}
 
 	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.keep_frames")
-	if attrErr != nil {
+	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.keep_frames")
-	if attrErr != nil {
+	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.drop_frames")
+	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
 	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.doc_url")
-	if attrErr != nil {
+	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
 	dst.TimeNanos = int64(p.Time().AsTime().Nanosecond())
@@ -181,7 +187,7 @@ func allElementsSame[T cmp.Ordered](in []T) bool {
 
 // getAttributeString walks the attribute_table and returns the string value for
 // the given key.
-// It returns an error if the key can not be found in attribute_table.
+// It returns errNotFound if the key can not be found in attribute_table.
 func getAttributeString(dic pprofile.ProfilesDictionary, key string) (string, error) {
 	for _, attr := range dic.AttributeTable().All() {
 		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
@@ -189,7 +195,38 @@ func getAttributeString(dic pprofile.ProfilesDictionary, key string) (string, er
 			return attr.Value().AsString(), nil
 		}
 	}
-	return "", fmt.Errorf("attribute with key '%s' not found", key)
+	return "", fmt.Errorf("attribute with key '%s': %w", key, errNotFound)
+}
+
+// getAttributeStringWithPrefix walks the attribute_table and returns a string array
+// for all keys that start with the given prefix.
+// It returns errNotFound if the key can not be found in attribute_table.
+func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary, keyprefix string) ([]string, error) {
+	tmp := make(map[int]string)
+
+	for _, attr := range dic.AttributeTable().All() {
+		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		attrIdxStr, found := strings.CutPrefix(attrKey, keyprefix+".")
+		if !found {
+			continue
+		}
+		attrIdx, err := strconv.Atoi(attrIdxStr)
+		if err != nil {
+			return []string{}, err
+		}
+		tmp[attrIdx] = attr.Value().AsString()
+	}
+
+	if len(tmp) == 0 {
+		return []string{}, fmt.Errorf("attribute with prefix '%s': %w", keyprefix, errNotFound)
+	}
+
+	result := make([]string, len(tmp))
+	for k, v := range tmp {
+		result[k] = v
+	}
+
+	return result, nil
 }
 
 // getStringFromIdx returns the string on idx.
