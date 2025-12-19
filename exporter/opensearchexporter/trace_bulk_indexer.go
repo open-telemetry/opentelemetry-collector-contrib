@@ -63,25 +63,45 @@ func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Trace
 func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces, ir *indexResolver, cfg *Config, timestamp time.Time) {
 	keys := ir.extractPlaceholderKeys(cfg.TracesIndex)
 	timeSuffix := ir.calculateTimeSuffix(cfg.TracesIndexTimeFormat, timestamp)
+	resourceSpans := td.ResourceSpans()
 
-	forEachSpan(td, ir, cfg, timeSuffix, keys, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string) {
-		payload, err := tbi.model.encodeTrace(resource, scope, scopeSchemaURL, span)
-		if err != nil {
-			tbi.appendPermanentError(err)
-		} else {
-			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchapi.BulkRespItem, itemErr error) {
-				// Setup error handler. The handler handles the per item response status based on the
-				// selective ACKing in the bulk response.
-				tbi.processItemFailure(resp, itemErr, makeTrace(resource, resourceSchemaURL, scope, scopeSchemaURL, span))
-			}
-			bi := tbi.newBulkIndexerItem(payload, indexName)
-			bi.OnFailure = ItemFailureHandler
-			err = tbi.bulkIndexer.Add(ctx, bi)
-			if err != nil {
-				tbi.appendRetryTraceError(err, makeTrace(resource, resourceSchemaURL, scope, scopeSchemaURL, span))
+	for i := 0; i < resourceSpans.Len(); i++ {
+		il := resourceSpans.At(i)
+		resource := il.Resource()
+		resourceAttrs := ir.collectResourceAttributes(resource, keys)
+		scopeSpans := il.ScopeSpans()
+
+		for j := 0; j < scopeSpans.Len(); j++ {
+			scopeSpan := scopeSpans.At(j)
+			scopeAttrs := ir.collectScopeAttributes(scopeSpan.Scope(), keys)
+			spans := scopeSpans.At(j).Spans()
+
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				indexName := ir.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, span.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
+				tbi.processItem(ctx, indexName, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
 			}
 		}
-	})
+	}
+}
+
+func (tbi *traceBulkIndexer) processItem(ctx context.Context, indexName string, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) {
+	payload, err := tbi.model.encodeTrace(resource, scope, scopeSchemaURL, span)
+	if err != nil {
+		tbi.appendPermanentError(err)
+	} else {
+		ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchapi.BulkRespItem, itemErr error) {
+			// Setup error handler. The handler handles the per item response status based on the
+			// selective ACKing in the bulk response.
+			tbi.processItemFailure(resp, itemErr, makeTrace(resource, resourceSchemaURL, scope, scopeSchemaURL, span))
+		}
+		bi := tbi.newBulkIndexerItem(payload, indexName)
+		bi.OnFailure = ItemFailureHandler
+		err = tbi.bulkIndexer.Add(ctx, bi)
+		if err != nil {
+			tbi.appendRetryTraceError(err, makeTrace(resource, resourceSchemaURL, scope, scopeSchemaURL, span))
+		}
+	}
 }
 
 func makeTrace(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) ptrace.Traces {
@@ -145,25 +165,4 @@ func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(
 		Client:     client,
 		OnError:    onIndexerError,
 	})
-}
-
-func forEachSpan(td ptrace.Traces, indexResolver *indexResolver, cfg *Config, timeSuffix string, keys []string, visitor func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, indexName string)) {
-	resourceSpans := td.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
-		il := resourceSpans.At(i)
-		resource := il.Resource()
-		resourceAttrs := indexResolver.collectResourceAttributes(resource, keys)
-		scopeSpans := il.ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
-			scopeSpan := scopeSpans.At(j)
-			scopeAttrs := indexResolver.collectScopeAttributes(scopeSpan.Scope(), keys)
-			spans := scopeSpans.At(j).Spans()
-
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				indexName := indexResolver.resolveIndexName(cfg.TracesIndex, cfg.TracesIndexFallback, span.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
-				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span, indexName)
-			}
-		}
-	}
 }

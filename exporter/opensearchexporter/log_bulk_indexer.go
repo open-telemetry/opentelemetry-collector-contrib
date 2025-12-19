@@ -61,25 +61,45 @@ func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
 func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, ir *indexResolver, cfg *Config, timestamp time.Time) {
 	keys := ir.extractPlaceholderKeys(cfg.LogsIndex)
 	timeSuffix := ir.calculateTimeSuffix(cfg.LogsIndexTimeFormat, timestamp)
+	resourceLogs := ld.ResourceLogs()
 
-	forEachLog(ld, ir, cfg, timeSuffix, keys, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string) {
-		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, logRecord)
-		if err != nil {
-			lbi.appendPermanentError(err)
-		} else {
-			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchapi.BulkRespItem, itemErr error) {
-				// Setup error handler. The handler handles the per item response status based on the
-				// selective ACKing in the bulk response.
-				lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
-			}
-			bi := lbi.newBulkIndexerItem(payload, indexName)
-			bi.OnFailure = ItemFailureHandler
-			err = lbi.bulkIndexer.Add(ctx, bi)
-			if err != nil {
-				lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
+	for i := 0; i < resourceLogs.Len(); i++ {
+		il := resourceLogs.At(i)
+		resource := il.Resource()
+		resourceAttrs := ir.collectResourceAttributes(resource, keys)
+		scopeLogs := il.ScopeLogs()
+
+		for j := 0; j < scopeLogs.Len(); j++ {
+			scopeSpan := scopeLogs.At(j)
+			scopeAttrs := ir.collectScopeAttributes(scopeSpan.Scope(), keys)
+			logs := scopeLogs.At(j).LogRecords()
+
+			for k := 0; k < logs.Len(); k++ {
+				log := logs.At(k)
+				indexName := ir.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, log.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
+				lbi.processItem(ctx, indexName, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log)
 			}
 		}
-	})
+	}
+}
+
+func (lbi *logBulkIndexer) processItem(ctx context.Context, indexName string, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord) {
+	payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, logRecord)
+	if err != nil {
+		lbi.appendPermanentError(err)
+	} else {
+		ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchapi.BulkRespItem, itemErr error) {
+			// Setup error handler. The handler handles the per item response status based on the
+			// selective ACKing in the bulk response.
+			lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
+		}
+		bi := lbi.newBulkIndexerItem(payload, indexName)
+		bi.OnFailure = ItemFailureHandler
+		err = lbi.bulkIndexer.Add(ctx, bi)
+		if err != nil {
+			lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
+		}
+	}
 }
 
 func makeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, log plog.LogRecord) plog.Logs {
@@ -124,25 +144,4 @@ func newLogOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError fu
 		Client:     client,
 		OnError:    onIndexerError,
 	})
-}
-
-func forEachLog(ld plog.Logs, indexResolver *indexResolver, cfg *Config, timeSuffix string, keys []string, visitor func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord, indexName string)) {
-	resourceLogs := ld.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
-		il := resourceLogs.At(i)
-		resource := il.Resource()
-		resourceAttrs := indexResolver.collectResourceAttributes(resource, keys)
-		scopeLogs := il.ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
-			scopeSpan := scopeLogs.At(j)
-			scopeAttrs := indexResolver.collectScopeAttributes(scopeSpan.Scope(), keys)
-			logs := scopeLogs.At(j).LogRecords()
-
-			for k := 0; k < logs.Len(); k++ {
-				log := logs.At(k)
-				indexName := indexResolver.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, log.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
-				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log, indexName)
-			}
-		}
-	}
 }

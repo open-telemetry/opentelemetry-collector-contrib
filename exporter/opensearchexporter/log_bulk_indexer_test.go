@@ -105,31 +105,3 @@ func TestMakeLog(t *testing.T) {
 		t.Error("expected 1 log record")
 	}
 }
-
-func TestForEachLog(t *testing.T) {
-	ld := plog.NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("service.name", "test-service")
-	sl := rl.ScopeLogs().AppendEmpty()
-	log := sl.LogRecords().AppendEmpty()
-	log.Attributes().PutStr("key", "value")
-
-	resolver := newIndexResolver()
-	cfg := &Config{LogsIndex: "test-%{service.name}", LogsIndexFallback: "", LogsIndexTimeFormat: ""}
-	ts := time.Now()
-	keys := resolver.extractPlaceholderKeys(cfg.LogsIndex)
-	timeSuffix := resolver.calculateTimeSuffix(cfg.LogsIndexTimeFormat, ts)
-
-	var results []string
-	forEachLog(ld, resolver, cfg, timeSuffix, keys, func(_ pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, _ plog.LogRecord, indexName string) {
-		results = append(results, indexName)
-	})
-
-	if len(results) != 1 {
-		t.Errorf("expected 1 result, got %d", len(results))
-	}
-	expected := "test-test-service"
-	if results[0] != expected {
-		t.Errorf("expected index %s, got %s", expected, results[0])
-	}
-}

@@ -105,31 +105,3 @@ func TestMakeTrace(t *testing.T) {
 		t.Error("expected 1 span")
 	}
 }
-
-func TestForEachSpan(t *testing.T) {
-	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr("service.name", "test-service")
-	ss := rs.ScopeSpans().AppendEmpty()
-	span := ss.Spans().AppendEmpty()
-	span.Attributes().PutStr("key", "value")
-
-	resolver := newIndexResolver()
-	cfg := &Config{TracesIndex: "test-%{service.name}", TracesIndexFallback: "", TracesIndexTimeFormat: ""}
-	ts := time.Now()
-	keys := resolver.extractPlaceholderKeys(cfg.TracesIndex)
-	timeSuffix := resolver.calculateTimeSuffix(cfg.TracesIndexTimeFormat, ts)
-
-	var results []string
-	forEachSpan(td, resolver, cfg, timeSuffix, keys, func(_ pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, _ ptrace.Span, indexName string) {
-		results = append(results, indexName)
-	})
-
-	if len(results) != 1 {
-		t.Errorf("expected 1 result, got %d", len(results))
-	}
-	expected := "test-test-service"
-	if results[0] != expected {
-		t.Errorf("expected index %s, got %s", expected, results[0])
-	}
-}
