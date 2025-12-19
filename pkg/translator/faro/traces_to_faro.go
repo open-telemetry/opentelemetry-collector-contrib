@@ -18,7 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 )
 
@@ -104,7 +105,7 @@ func extractMetaFromResourceAttributes(resourceAttributes pcommon.Map) faroTypes
 	if version, ok := resourceAttributes.Get(string(conventions.ServiceVersionKey)); ok {
 		app.Version = version.Str()
 	}
-	if environment, ok := resourceAttributes.Get(string(conventions.DeploymentEnvironmentKey)); ok {
+	if environment, ok := resourceAttributes.Get(string(conventionsv126.DeploymentEnvironmentKey)); ok {
 		app.Environment = environment.Str()
 	}
 	if appBundleID, ok := resourceAttributes.Get(faroAppBundleID); ok {
