@@ -4,11 +4,10 @@
 package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
 const (
+	callsColumnName = "calls"
+
 	dbAttributePrefix           = "postgresql."
 	queryidColumnName           = "queryid"
-	totalExecTimeColumnName     = "total_exec_time"
-	totalPlanTimeColumnName     = "total_plan_time"
-	callsColumnName             = "calls"
 	rowsColumnName              = "rows"
 	sharedBlksDirtiedColumnName = "shared_blks_dirtied"
 	sharedBlksHitColumnName     = "shared_blks_hit"
@@ -16,29 +15,31 @@ const (
 	sharedBlksWrittenColumnName = "shared_blks_written"
 	tempBlksReadColumnName      = "temp_blks_read"
 	tempBlksWrittenColumnName   = "temp_blks_written"
+	totalExecTimeColumnName     = "total_exec_time"
+	totalPlanTimeColumnName     = "total_plan_time"
 )
 
 const (
-	querySampleColumnDatname              = "datname"
-	querySampleColumnUsename              = "usename"
+	querySampleColumnApplicationName      = "application_name"
 	querySampleColumnClientAddr           = "client_addr"
 	querySampleColumnClientHostname       = "client_hostname"
 	querySampleColumnClientPort           = "client_port"
-	querySampleColumnQueryStart           = "query_start"
-	querySampleColumnWaitEventType        = "wait_event_type"
-	querySampleColumnWaitEvent            = "wait_event"
-	querySampleColumnQueryID              = "query_id"
+	querySampleColumnDatname              = "datname"
+	querySampleColumnDurationMilliseconds = "duration_ms"
 	querySampleColumnPID                  = "pid"
-	querySampleColumnApplicationName      = "application_name"
+	querySampleColumnQuery                = "query"
+	querySampleColumnQueryID              = "query_id"
+	querySampleColumnQueryStart           = "query_start"
 	querySampleColumnQueryStartTimestamp  = "_query_start_timestamp"
 	querySampleColumnState                = "state"
-	querySampleColumnQuery                = "query"
-	querySampleColumnDurationMilliseconds = "duration_ms"
+	querySampleColumnUsename              = "usename"
+	querySampleColumnWaitEvent            = "wait_event"
+	querySampleColumnWaitEventType        = "wait_event_type"
 )
 
 const (
-	traceparentCarrierKey                = "traceparent"
 	insufficientPrivilegeQuerySampleText = "<insufficient privilege>"
+	traceparentCarrierKey                = "traceparent"
 )
 
 const (
