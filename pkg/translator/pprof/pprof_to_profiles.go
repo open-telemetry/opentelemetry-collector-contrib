@@ -62,6 +62,15 @@ type loc struct {
 	attrIdxs   string // List of consecutive increasing indices separated by a semicolon.
 }
 
+// stackKey is a string type used as a key in the stack table.
+type stackKey string
+
+// stack is a helper struct to build pprofile.ProfilesDictionary.stack_table.
+type stack struct {
+	id           int32
+	locationIdxs []int32
+}
+
 // lookupTables is a helper struct around pprofile.ProfilesDictionary.
 type lookupTables struct {
 	mappingTable        map[mm]int32
@@ -82,7 +91,7 @@ type lookupTables struct {
 	attributeTable        map[attr]int32
 	lastAttributeTableIdx int32
 
-	stackTable        map[string]int32
+	stackTable        map[stackKey]stack
 	lastStackTableIdx int32
 }
 
@@ -353,13 +362,13 @@ func (lts *lookupTables) getIdxForStack(locs []*profile.Location) int32 {
 		locTableIDs = append(locTableIDs, idx)
 	}
 
-	// Use locIdxToString instead of attrIdxToString to preserve stack order.
-	key := locIdxToString(locTableIDs)
-	if idx, exists := lts.stackTable[key]; exists {
-		return idx
+	// Use makeStackKey instead of attrIdxToString to preserve stack order.
+	key := makeStackKey(locTableIDs)
+	if s, exists := lts.stackTable[key]; exists {
+		return s.id
 	}
 	lts.lastStackTableIdx++
-	lts.stackTable[key] = lts.lastStackTableIdx
+	lts.stackTable[key] = stack{id: lts.lastStackTableIdx, locationIdxs: locTableIDs}
 	return lts.lastStackTableIdx
 }
 
@@ -413,7 +422,7 @@ func initLookupTables() lookupTables {
 		functionTable:  make(map[fn]int32),
 		stringTable:    make(map[string]int32),
 		attributeTable: make(map[attr]int32),
-		stackTable:     make(map[string]int32),
+		stackTable:     make(map[stackKey]stack),
 	}
 
 	// mapping_table[0] must always be zero value (Mapping{}) and present.
@@ -432,7 +441,7 @@ func initLookupTables() lookupTables {
 	lts.attributeTable[attr{}] = lts.lastAttributeTableIdx
 
 	// stack_table[0] must always be zero value (Stack{}) and present.
-	lts.stackTable[""] = lts.lastStackTableIdx
+	lts.stackTable[makeStackKey(nil)] = stack{id: lts.lastStackTableIdx, locationIdxs: nil}
 	return lts
 }
 
@@ -490,13 +499,8 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 	for i := 0; i < len(lts.stackTable); i++ {
 		dic.StackTable().AppendEmpty()
 	}
-	for s, id := range lts.stackTable {
-		// Use stringToLocIdx instead of stringToAttrIdx to preserve stack order.
-		locIndices, err := stringToLocIdx(s)
-		if err != nil {
-			return err
-		}
-		dic.StackTable().At(int(id)).LocationIndices().Append(locIndices...)
+	for _, s := range lts.stackTable {
+		dic.StackTable().At(int(s.id)).LocationIndices().Append(s.locationIdxs...)
 	}
 
 	for i := 0; i < len(lts.stringTable); i++ {
@@ -527,7 +531,6 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 }
 
 // attrIdxToString is a helper function to convert a list of indices
-// into a string.
 func attrIdxToString(indices []int32) string {
 	if len(indices) == 0 {
 		return ""
@@ -566,9 +569,9 @@ func stringToAttrIdx(indices string) ([]int32, error) {
 	return result, nil
 }
 
-// locIdxToString is a helper function to convert a list of location indices
-// into a string, preserving their order (unlike attrIdxToString which sorts).
-func locIdxToString(indices []int32) string {
+// makeStackKey is a helper function to convert a list of location indices
+// into a stackKey, preserving their order (unlike attrIdxToString which sorts).
+func makeStackKey(indices []int32) stackKey {
 	if len(indices) == 0 {
 		return ""
 	}
@@ -578,27 +581,7 @@ func locIdxToString(indices []int32) string {
 		stringNumbers[i] = strconv.FormatInt(int64(n), 10)
 	}
 
-	return strings.Join(stringNumbers, ";")
-}
-
-// stringToLocIdx is a helper function to convert a string into
-// a list of location indices, preserving their order.
-func stringToLocIdx(indices string) ([]int32, error) {
-	if indices == "" {
-		return []int32{}, nil
-	}
-	parts := strings.Split(indices, ";")
-
-	result := make([]int32, 0, len(parts))
-	for _, s := range parts {
-		n, err := strconv.ParseInt(s, 10, 32)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse '%s' as int32. %w", s, err)
-		}
-		result = append(result, int32(n))
-	}
-
-	return result, nil
+	return stackKey(strings.Join(stringNumbers, ";"))
 }
 
 // linesToString is a helper function to convert a list of lines into a string.
