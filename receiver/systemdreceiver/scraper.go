@@ -126,6 +126,22 @@ func (s *systemdScraper) hasCgroupMetrics() bool {
 	return s.cfg.Metrics.SystemdServiceCPUTime.Enabled
 }
 
+func (s *systemdScraper) scrapeRestartCount(now pcommon.Timestamp, unit *unitTuple) error {
+	restartVariant, err := s.conn.Object("org.freedesktop.systemd1", unit.Path).GetProperty("org.freedesktop.systemd1.Service.NRestarts")
+	if err != nil {
+		return err
+	}
+
+	var restarts int64
+	if err2 := restartVariant.Store(&restarts); err2 != nil {
+		return err2
+	}
+
+	s.mb.RecordSystemdServiceRestartsDataPoint(now, restarts)
+
+	return nil
+}
+
 func (s *systemdScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -148,6 +164,13 @@ func (s *systemdScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		if strings.HasSuffix(unit.Name, ".service") {
 			if s.hasCgroupMetrics() {
 				err := s.scrapeServiceCgroup(now, unit)
+				if err != nil {
+					errs.AddPartial(1, err)
+				}
+			}
+
+			if s.cfg.Metrics.SystemdServiceRestarts.Enabled {
+				err := s.scrapeRestartCount(now, unit)
 				if err != nil {
 					errs.AddPartial(1, err)
 				}
