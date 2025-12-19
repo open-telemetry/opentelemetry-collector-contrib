@@ -28,8 +28,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-// allLogRecords flattens a plog.Logs into a single LogRecordSlice
-// and avoids panics from direct indexing on empty slices.
+// allLogRecords flattens a plog.Logs into a single LogRecordSlice.
+// It copies records into a new slice using AppendEmpty and CopyTo.
+// Safe when there are zero Resource/Scope entries.
 func allLogRecords(l plog.Logs) plog.LogRecordSlice {
 	out := plog.NewLogRecordSlice()
 	rls := l.ResourceLogs()
@@ -38,7 +39,9 @@ func allLogRecords(l plog.Logs) plog.LogRecordSlice {
 		for j := 0; j < sls.Len(); j++ {
 			recs := sls.At(j).LogRecords()
 			for k := 0; k < recs.Len(); k++ {
-				out.Append(recs.At(k))
+				// Create a new empty record in out and copy current record into it
+				rec := out.AppendEmpty()
+				recs.At(k).CopyTo(rec)
 			}
 		}
 	}
