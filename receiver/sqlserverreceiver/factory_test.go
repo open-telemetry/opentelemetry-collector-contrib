@@ -9,6 +9,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/microsoft/go-mssqldb/azuread"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -84,6 +85,34 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, err)
 				scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
 				require.Empty(t, scrapers)
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(t.Context()))
+			},
+		},
+		{
+			desc: "[metrics] Test azure_datasource connection",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.DataSource = "Server=myserver.database.windows.net;Database=mydb;Fedauth=ActiveDirectoryDefault"
+				cfg.UseAzureAd = true
+				require.NoError(t, cfg.Validate())
+				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+
+				require.True(t, cfg.isDirectDBConnectionEnabled)
+
+				params := receivertest.NewNopSettings(metadata.Type)
+				scrapers, err := setupScrapers(params, cfg)
+				require.NoError(t, err)
+				require.NotEmpty(t, scrapers)
+
+				r, err := factory.CreateMetrics(
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
 				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(t.Context()))
 			},
@@ -265,4 +294,39 @@ func TestSetupQueries(t *testing.T) {
 	require.Len(t, metricsMetadata, 50, "Every time metrics are added or removed, the function `setupQueries` must "+
 		"be modified to properly account for the change. Please update `setupQueries` and then, "+
 		"and only then, update the expected metric count here.")
+}
+
+func TestGetDriverName(t *testing.T) {
+	testCases := []struct {
+		name           string
+		config         *Config
+		expectedDriver string
+	}{
+		{
+			name: "UseAzureAd true returns azuresql driver",
+			config: &Config{
+				UseAzureAd: true,
+			},
+			expectedDriver: azuread.DriverName,
+		},
+		{
+			name: "UseAzureAd false returns sqlserver driver",
+			config: &Config{
+				UseAzureAd: false,
+			},
+			expectedDriver: "sqlserver",
+		},
+		{
+			name:           "UseAzureAd not set returns sqlserver driver",
+			config:         &Config{},
+			expectedDriver: "sqlserver",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			driver := getDriverName(tc.config)
+			require.Equal(t, tc.expectedDriver, driver)
+		})
+	}
 }
