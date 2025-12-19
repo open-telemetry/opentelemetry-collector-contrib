@@ -93,8 +93,8 @@ func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, che
 	return invert
 }
 
-func SetAttrOnScopeSpans(data *samplingpolicy.TraceData, attrName, attrKey string) {
-	rs := data.ReceivedBatches.ResourceSpans()
+func SetAttrOnScopeSpans(data ptrace.Traces, attrName, attrKey string) {
+	rs := data.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		rss := rs.At(i)
 		for j := 0; j < rss.ScopeSpans().Len(); j++ {
