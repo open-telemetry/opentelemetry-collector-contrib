@@ -4,6 +4,7 @@
 package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,6 +32,7 @@ const (
 	attributeAzureResultType        = "azure.result.type"
 	attributeAzureResultSignature   = "azure.result.signature"
 	attributeAzureResultDescription = "azure.result.description"
+	attributeEventOriginal          = "event.original"
 
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
@@ -107,6 +109,26 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
+	var rawRecordMap map[int]json.RawMessage
+	getRawRecord := func(index int) json.RawMessage {
+		if rawRecordMap == nil {
+			// Create rawRecordMap on first use
+			var rawRecords struct {
+				Records []json.RawMessage `json:"records"`
+			}
+			if err := json.Unmarshal(buf, &rawRecords); err == nil {
+				rawRecordMap = make(map[int]json.RawMessage)
+				for i := range rawRecords.Records {
+					rawRecordMap[i] = rawRecords.Records[i]
+				}
+			}
+		}
+		if rawRecordMap != nil {
+			return rawRecordMap[index]
+		}
+		return nil
+	}
+
 	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
@@ -142,7 +164,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 				// TODO @constanca-m This will be removed once the categories
 				// are properly mapped to the semantic conventions in
 				// category_logs.go
-				err = lr.Body().FromRaw(extractRawAttributes(log))
+				rawRecord := getRawRecord(i)
+				err = lr.Body().FromRaw(extractRawAttributes(log, rawRecord))
 				if err != nil {
 					return plog.Logs{}, err
 				}
@@ -251,7 +274,7 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	addIdentityAttributes(log.Identity, record)
 }
 
-func extractRawAttributes(log *azureLogRecord) map[string]any {
+func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[string]any {
 	attrs := map[string]any{}
 
 	attrs[azureCategory] = log.Category
@@ -273,6 +296,17 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 
 	if log.Properties != nil {
 		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
+	}
+
+	// The original log needs to be preserved for logs that don't have a properties field
+	if len(log.Properties) == 0 && len(rawRecord) > 0 {
+		// Format the JSON with proper indentation to match expected output
+		var formattedJSON bytes.Buffer
+		if err := json.Indent(&formattedJSON, rawRecord, "", "\t"); err == nil {
+			attrs[attributeEventOriginal] = formattedJSON.String()
+		} else {
+			attrs[attributeEventOriginal] = string(rawRecord)
+		}
 	}
 
 	setIf(attrs, azureResultDescription, log.ResultDescription)
@@ -299,10 +333,8 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 		if err = json.Unmarshal(properties, &val); err == nil {
 			// Try primitive value
 			attrs[azureProperties] = val
-			return
 		}
-		// Otherwise add it as a string
-		attrs[azureProperties] = string(properties)
+		// Parsing failed completely - just return without setting properties
 		return
 	}
 

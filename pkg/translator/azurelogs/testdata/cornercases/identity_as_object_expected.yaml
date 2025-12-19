@@ -18,9 +18,6 @@ resourceLogs:
                   - key: category
                     value:
                       stringValue: NonExistentCategory
-                  - key: operation.name
-                    value:
-                      stringValue: SecretGet
                   - key: identity
                     value:
                       kvlistValue:
@@ -32,6 +29,24 @@ resourceLogs:
                                   - key: oid
                                     value:
                                       stringValue: 607964b6-41a5-4e24-a5db-db7aab3b9b34
+                  - key: operation.name
+                    value:
+                      stringValue: SecretGet
+                  - key: event.original
+                    value:
+                      stringValue: |-
+                        {
+                        	"time": "2022-11-11T04:48:27.6767145Z",
+                        	"resourceId": "/RESOURCE_ID",
+                        	"operationName": "SecretGet",
+                        	"category": "NonExistentCategory",
+                        	"identity": {
+                        		"claim": {
+                        			"oid": "607964b6-41a5-4e24-a5db-db7aab3b9b34"
+                        		}
+                        	}
+                        }
+            observedTimeUnixNano: "1766081218372861000"
             timeUnixNano: "1668142107676714500"
         scope:
           name: otelcol/azureresourcelogs
