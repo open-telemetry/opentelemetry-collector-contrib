@@ -5,12 +5,25 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/featuregate"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
+)
+
+const remoteRestartsFeatureGateName = "extension.opampextension.RemoteRestarts"
+
+// RemoteRestartsFeatureGate is the feature gate that controls the remote restart capability for the OpAMP client.
+var (
+	RemoteRestartsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		remoteRestartsFeatureGateName,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, opampextension supports the remote restarts opamp command."),
+		featuregate.WithRegisterFromVersion("v0.142.0"),
+	)
 )
 
 func NewFactory() extension.Factory {
@@ -29,7 +42,7 @@ func createDefaultConfig() component.Config {
 			ReportsEffectiveConfig:     true,
 			ReportsHealth:              true,
 			ReportsAvailableComponents: true,
-			AcceptsRemoteConfig:        false,
+			AcceptsRestartCommand:      false,
 		},
 		PPIDPollInterval: 5 * time.Second,
 	}

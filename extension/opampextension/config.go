@@ -64,8 +64,8 @@ type Capabilities struct {
 	ReportsHealth bool `mapstructure:"reports_health"`
 	// ReportsAvailableComponents enables the OpAMP ReportsAvailableComponents Capability (default: true)
 	ReportsAvailableComponents bool `mapstructure:"reports_available_components"`
-	// AcceptsRemoteConfig enables the OpAMP AcceptsRemoteConfig Capability (default: false)
-	AcceptsRemoteConfig bool `mapstructure:"accepts_remote_config"`
+	// AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)
+	AcceptsRestartCommand bool `mapstructure:"accepts_restart_command"`
 }
 
 func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
@@ -81,8 +81,8 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 	if caps.ReportsAvailableComponents {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
 	}
-	if caps.AcceptsRemoteConfig {
-		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
+	if caps.AcceptsRestartCommand {
+		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
 	}
 
 	return agentCapabilities

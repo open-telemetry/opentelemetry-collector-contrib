@@ -86,6 +86,8 @@ type opampAgent struct {
 	startTimeUnixNano    uint64
 	componentStatusCh    chan *eventSourcePair
 	readyCh              chan struct{}
+
+	remoteRestartsEnabled bool
 }
 
 var (
@@ -102,12 +104,17 @@ var (
 		string(conventions.ServiceVersionKey):    {},
 		string(conventions.ServiceInstanceIDKey): {},
 	}
+
+	FeatureGateRemoteRestart bool
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
 		componentstatus.ReportStatus(host, event)
 	}
+
+	// querying on startup so the value is cached
+	o.remoteRestartsEnabled = RemoteRestartsFeatureGate.IsEnabled()
 
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
@@ -148,6 +155,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 				return o.composeEffectiveConfig(), nil
 			},
 			OnMessage: o.onMessage,
+			OnCommand: o.onCommand,
 		},
 	}
 
@@ -465,12 +473,18 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	if msg.CustomMessage != nil {
 		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
 	}
-	if msg.RemoteConfig != nil {
-		o.logger.Info("received remote config — sending SIGHUP to reload")
-		if err := syscall.Kill(os.Getpid(), syscall.SIGHUP); err != nil {
-			o.logger.Error("sending sighup signal", zap.Error(err))
+}
+
+// TODO: update tests
+func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAgentCommand) error {
+	cmdType := command.GetType()
+	if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
+		if o.remoteRestartsEnabled && o.capabilities.AcceptsRestartCommand {
+			o.logger.Info("received remote config — sending SIGHUP to reload")
+			return syscall.Kill(os.Getpid(), syscall.SIGHUP)
 		}
 	}
+	return nil
 }
 
 func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
