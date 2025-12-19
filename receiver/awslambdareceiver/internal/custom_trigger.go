@@ -149,7 +149,7 @@ func (m *ErrorReplayTriggerHandler) PostProcess(ctx context.Context) {
 
 	err := m.s3Service.DeleteObject(ctx, m.bucket, m.currentKey)
 	if err != nil {
-		m.logger.Error("Removal failed", zap.String("object", m.currentKey), zap.String("cause", err.Error()))
+		m.logger.Error("Removal failed", zap.String("object", m.currentKey), zap.Error(err))
 	}
 }
 
