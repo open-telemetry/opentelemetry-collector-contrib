@@ -589,17 +589,7 @@ func (b *bulkIndexers) shutdown(ctx context.Context) error {
 		}
 	}
 
-	doneCh := make(chan struct{})
-	go func() {
-		b.wg.Wait()
-		close(doneCh)
-	}()
-	select {
-	case <-ctx.Done():
-		<-doneCh // ensure all sessions are cleaned up
-		return ctx.Err()
-	case <-doneCh:
-	}
+	b.wg.Wait()
 	return nil
 }
 
