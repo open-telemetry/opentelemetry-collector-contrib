@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -47,26 +47,18 @@ type hecSpan struct {
 	Links      []hecLink         `json:"links,omitempty"`
 }
 
-func mapSpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, config *Config) *splunk.Event {
-	sourceKey := config.OtelAttrsToHec.Source
-	sourceTypeKey := config.OtelAttrsToHec.SourceType
-	indexKey := config.OtelAttrsToHec.Index
-	hostKey := config.OtelAttrsToHec.Host
-
+func SpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, mapping HecToOtelAttrs, source, sourceType, index string) *Event {
 	host := unknownHostName
-	source := config.Source
-	sourceType := config.SourceType
-	index := config.Index
 	commonFields := map[string]any{}
 	for k, v := range resource.Attributes().All() {
 		switch k {
-		case hostKey:
+		case mapping.Host:
 			host = v.Str()
-		case sourceKey:
+		case mapping.Source:
 			source = v.Str()
-		case sourceTypeKey:
+		case mapping.SourceType:
 			sourceType = v.Str()
-		case indexKey:
+		case mapping.Index:
 			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
@@ -75,7 +67,7 @@ func mapSpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, config *C
 		}
 	}
 
-	se := &splunk.Event{
+	se := &Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(span.StartTimestamp()),
 		Host:       host,
 		Source:     source,
