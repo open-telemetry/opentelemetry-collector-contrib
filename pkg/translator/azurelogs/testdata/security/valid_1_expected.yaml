@@ -31,36 +31,33 @@ resourceLogs:
               - key: azure.security.account_logon_id
                 value:
                   stringValue: 0x2r4
-              - key: azure.security.command_line
-                value:
-                  stringValue: c:\mydirectory\doubleetension.pdf.exe
-              - key: azure.security.domain_name
-                value:
-                  stringValue: hpc
-              - key: azure.security.process.parent
-                value:
-                  stringValue: unknown
-              - key: azure.security.process.parent.id
-                value:
-                  stringValue: "0"
-              - key: azure.security.process.id
-                value:
-                  stringValue: "6988"
-              - key: azure.security.process.name
-                value:
-                  stringValue: c:\mydirectory\doubleetension.pdf.exe
-              - key: azure.security.user.name
-                value:
-                  stringValue: exampleUser
-              - key: azure.security.user.sid
-                value:
-                  stringValue: S-3-2-12
               - key: azure.security.action_taken
                 value:
                   stringValue: Detected
+              - key: azure.security.domain_name
+                value:
+                  stringValue: hpc
               - key: azure.security.severity
                 value:
                   stringValue: High
+              - key: enduser.id
+                value:
+                  stringValue: S-3-2-12
+              - key: process.command_line
+                value:
+                  stringValue: c:\mydirectory\doubleetension.pdf.exe
+              - key: process.executable.path
+                value:
+                  stringValue: c:\mydirectory\doubleetension.pdf.exe
+              - key: process.owner
+                value:
+                  stringValue: exampleUser
+              - key: process.parent_pid
+                value:
+                  intValue: "0"
+              - key: process.pid
+                value:
+                  intValue: "6988"
               - key: cloud.account.id
                 value:
                   stringValue: 22222222-2222-2222-2222-222222222222
