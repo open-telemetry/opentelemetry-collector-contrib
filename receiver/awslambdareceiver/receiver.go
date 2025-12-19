@@ -57,6 +57,7 @@ type awsLambdaReceiver struct {
 	hp handlerProvider
 
 	// s3Provider to be reused by any component.
+	// Derived once Start is called.
 	s3Provider internal.S3Provider
 }
 
@@ -96,6 +97,9 @@ func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) erro
 	if os.Getenv("AWS_EXECUTION_ENV") == "" || !strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") {
 		return errors.New("awslambdareceiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
 	}
+
+	// Initialize S3 provider to be used by implementations
+	a.s3Provider = &internal.S3ServiceProvider{}
 
 	var err error
 	a.hp, err = a.handlerProvider(ctx, host, a.s3Provider)
@@ -170,6 +174,12 @@ func (a *awsLambdaReceiver) handleCustomTriggers(ctx context.Context, customEven
 
 		customEvent.PostProcess(ctx)
 		count++
+	}
+
+	// validate for any error during iteration
+	if err := customEvent.Error(); err != nil {
+		a.logger.Error("error occurred during custom trigger iteration", zap.Error(err))
+		return err
 	}
 
 	a.logger.Info(fmt.Sprintf("Processed %d events", count))

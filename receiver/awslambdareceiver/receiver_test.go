@@ -5,6 +5,7 @@ package awslambdareceiver
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -452,6 +453,7 @@ func TestHandleCustomTrigger(t *testing.T) {
 				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
 				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
 				handler.EXPECT().IsDryRun().AnyTimes().Return(false)
+				handler.EXPECT().Error().AnyTimes().Return(nil)
 
 				handler.EXPECT().
 					GetNext(gomock.Any()).Times(2).
@@ -468,6 +470,7 @@ func TestHandleCustomTrigger(t *testing.T) {
 				handler.EXPECT().HasNext(t.Context()).Times(1).Return(true)
 				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
 				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
+				handler.EXPECT().Error().AnyTimes().Return(nil)
 
 				// set dry-run mode to true
 				handler.EXPECT().IsDryRun().AnyTimes().Return(true)
@@ -487,6 +490,7 @@ func TestHandleCustomTrigger(t *testing.T) {
 				handler.EXPECT().HasNext(t.Context()).Times(1).Return(true)
 				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
 				handler.EXPECT().IsDryRun().AnyTimes().Return(false)
+				handler.EXPECT().Error().AnyTimes().Return(nil)
 
 				handler.EXPECT().
 					GetNext(gomock.Any()).Times(1).
@@ -496,6 +500,20 @@ func TestHandleCustomTrigger(t *testing.T) {
 			},
 			expectHandleCount: 0,
 			expectError:       "unknown event type with key: test",
+		},
+		{
+			name: "Event handling ends with error when handler returns error",
+			handlerFunc: func() internal.CustomTriggerHandler {
+				handler := internal.NewMockCustomTriggerHandler(goMock)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
+
+				// set error on the handler
+				handler.EXPECT().Error().Return(errors.New("some error from handler"))
+
+				return handler
+			},
+			expectHandleCount: 0,
+			expectError:       "some error from handler",
 		},
 	}
 

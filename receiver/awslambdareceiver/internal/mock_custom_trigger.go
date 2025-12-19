@@ -40,6 +40,20 @@ func (m *MockCustomTriggerHandler) EXPECT() *MockCustomTriggerHandlerMockRecorde
 	return m.recorder
 }
 
+// Error mocks base method.
+func (m *MockCustomTriggerHandler) Error() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockCustomTriggerHandlerMockRecorder) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockCustomTriggerHandler)(nil).Error))
+}
+
 // GetNext mocks base method.
 func (m *MockCustomTriggerHandler) GetNext(arg0 context.Context) ([]byte, error) {
 	m.ctrl.T.Helper()
@@ -117,6 +131,20 @@ func NewMockIterator[T any](ctrl *gomock.Controller) *MockIterator[T] {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockIterator[T]) EXPECT() *MockIteratorMockRecorder[T] {
 	return m.recorder
+}
+
+// Error mocks base method.
+func (m *MockIterator[T]) Error() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockIteratorMockRecorder[T]) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockIterator[T])(nil).Error))
 }
 
 // GetNext mocks base method.

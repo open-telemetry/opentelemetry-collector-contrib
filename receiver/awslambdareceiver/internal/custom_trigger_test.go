@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -260,5 +261,26 @@ func TestS3ListIterator(t *testing.T) {
 		require.Equal(t, *next, ctsB[0])
 
 		require.False(t, iterator.HasNext(t.Context()))
+	})
+
+	t.Run("Iterate with listing error - error preserved and exposed for caller", func(t *testing.T) {
+		gc := gomock.NewController(t)
+		s3ServiceMock := NewMockS3Service(gc)
+
+		errorText := "awslambdareceiver: error listing objects"
+		bucketName := "bucket"
+		prefix := "prefix"
+
+		// Mock listing with error
+		s3ServiceMock.EXPECT().
+			ListObjects(gomock.Any(), bucketName, gomock.Any(), prefix).
+			Return(&s3.ListObjectsV2Output{}, errors.New(errorText)).
+			Times(1)
+
+		iterator := newS3ListIterator(s3ServiceMock, bucketName, prefix)
+
+		// validate iterator calls
+		require.False(t, iterator.HasNext(t.Context()))
+		require.EqualError(t, iterator.Error(), errorText)
 	})
 }
