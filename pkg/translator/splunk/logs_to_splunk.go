@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 
 import (
 	"encoding/hex"
@@ -23,24 +23,15 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config) *splunk.Event {
+func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecToOtelAttrs, toHecAttrs OtelToHecFields, source, sourceType, index string) *Event {
 	body := lr.Body().AsRaw()
 	if body == nil || body == "" {
-		// events with no body are rejected by Splunk.
+		// events with no body are rejected by
 		return nil
 	}
 
 	host := unknownHostName
-	source := config.Source
-	sourcetype := config.SourceType
-	index := config.Index
 	fields := map[string]any{}
-	sourceKey := config.OtelAttrsToHec.Source
-	sourceTypeKey := config.OtelAttrsToHec.SourceType
-	indexKey := config.OtelAttrsToHec.Index
-	hostKey := config.OtelAttrsToHec.Host
-	severityTextKey := config.HecFields.SeverityText
-	severityNumberKey := config.HecFields.SeverityNumber
 	if spanID := lr.SpanID(); !spanID.IsEmpty() {
 		fields[spanIDFieldKey] = hex.EncodeToString(spanID[:])
 	}
@@ -48,21 +39,21 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		fields[traceIDFieldKey] = hex.EncodeToString(traceID[:])
 	}
 	if lr.SeverityText() != "" {
-		fields[severityTextKey] = lr.SeverityText()
+		fields[toHecAttrs.SeverityText] = lr.SeverityText()
 	}
 	if lr.SeverityNumber() != plog.SeverityNumberUnspecified {
-		fields[severityNumberKey] = lr.SeverityNumber()
+		fields[toHecAttrs.SeverityNumber] = lr.SeverityNumber()
 	}
 
 	for k, v := range res.Attributes().All() {
 		switch k {
-		case hostKey:
+		case toOtelAttrs.Host:
 			host = v.Str()
-		case sourceKey:
+		case toOtelAttrs.Source:
 			source = v.Str()
-		case sourceTypeKey:
-			sourcetype = v.Str()
-		case indexKey:
+		case toOtelAttrs.SourceType:
+			sourceType = v.Str()
+		case toOtelAttrs.Index:
 			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
@@ -72,13 +63,13 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	}
 	for k, v := range lr.Attributes().All() {
 		switch k {
-		case hostKey:
+		case toOtelAttrs.Host:
 			host = v.Str()
-		case sourceKey:
+		case toOtelAttrs.Source:
 			source = v.Str()
-		case sourceTypeKey:
-			sourcetype = v.Str()
-		case indexKey:
+		case toOtelAttrs.SourceType:
+			sourceType = v.Str()
+		case toOtelAttrs.Index:
 			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
@@ -92,11 +83,11 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		ts = lr.ObservedTimestamp()
 	}
 
-	return &splunk.Event{
+	return &Event{
 		Time:       nanoTimestampToEpochMilliseconds(ts),
 		Host:       host,
 		Source:     source,
-		SourceType: sourcetype,
+		SourceType: sourceType,
 		Index:      index,
 		Event:      body,
 		Fields:     fields,

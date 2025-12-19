@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splunkhecexporter
+package splunk
 
 import (
 	"encoding/hex"
@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_traceDataToSplunk(t *testing.T) {
@@ -21,8 +19,11 @@ func Test_traceDataToSplunk(t *testing.T) {
 	tests := []struct {
 		name            string
 		traceDataFn     func() ptrace.Traces
-		wantSplunkEvent *splunk.Event
-		configFn        func() *Config
+		wantSplunkEvent *Event
+		toOtelAttrs     HecToOtelAttrs
+		source          string
+		sourceType      string
+		index           string
 	}{
 		{
 			name: "valid",
@@ -38,9 +39,10 @@ func Test_traceDataToSplunk(t *testing.T) {
 				return traces
 			},
 			wantSplunkEvent: commonSplunkEvent("myspan", ts),
-			configFn: func() *Config {
-				return createDefaultConfig().(*Config)
-			},
+			toOtelAttrs:     DefaultHecToOtelAttrs(),
+			source:          "",
+			sourceType:      "",
+			index:           "",
 		},
 		{
 			name: "custom_config",
@@ -55,18 +57,16 @@ func Test_traceDataToSplunk(t *testing.T) {
 				initSpan("myspan", ts, ils.Spans().AppendEmpty())
 				return traces
 			},
-			configFn: func() *Config {
-				cfg := createDefaultConfig().(*Config)
-				cfg.OtelAttrsToHec = splunk.HecToOtelAttrs{
-					Source:     "mysource",
-					SourceType: "mysourcetype",
-					Host:       "myhost",
-					Index:      "myindex",
-				}
-
-				return cfg
+			toOtelAttrs: HecToOtelAttrs{
+				Source:     "mysource",
+				SourceType: "mysourcetype",
+				Host:       "myhost",
+				Index:      "myindex",
 			},
-			wantSplunkEvent: func() *splunk.Event {
+			source:     "",
+			sourceType: "",
+			index:      "",
+			wantSplunkEvent: func() *Event {
 				e := commonSplunkEvent("myspan", ts)
 				e.Index = "mysourcetype"
 				e.SourceType = "othersourcetype"
@@ -78,8 +78,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			traces := tt.traceDataFn()
 
-			cfg := tt.configFn()
-			event := mapSpanToSplunkEvent(traces.ResourceSpans().At(0).Resource(), traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), cfg)
+			event := SpanToSplunkEvent(traces.ResourceSpans().At(0).Resource(), traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), tt.toOtelAttrs, tt.source, tt.sourceType, tt.index)
 			require.NotNil(t, event)
 			assert.Equal(t, tt.wantSplunkEvent, event)
 		})
@@ -115,8 +114,8 @@ func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
 func commonSplunkEvent(
 	name string,
 	ts pcommon.Timestamp,
-) *splunk.Event {
-	return &splunk.Event{
+) *Event {
+	return &Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(ts),
 		Host:       "myhost",
 		Source:     "myservice",

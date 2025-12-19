@@ -171,6 +171,7 @@ pkg/translator/prometheus pkg/translator/prometheus
 pkg/translator/prometheusremotewrite pkg/translator/prometheusremotewrite
 pkg/translator/signalfx pkg/translator/signalfx
 pkg/translator/skywalking pkg/translator/skywalking
+pkg/translator/splunk pkg/translator/splunk
 pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest

@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
@@ -40,7 +41,7 @@ func createDefaultConfig() component.Config {
 			Endpoint: defaultEndpoint,
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
-		HecToOtelAttrs: splunk.HecToOtelAttrs{
+		HecToOtelAttrs: translator.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
 			Index:      splunk.DefaultIndexLabel,

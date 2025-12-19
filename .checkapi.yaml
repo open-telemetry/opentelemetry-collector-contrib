@@ -31,6 +31,7 @@ ignored_paths:
   - pkg/translator/prometheusremotewrite
   - pkg/translator/signalfx
   - pkg/translator/skywalking
+  - pkg/translator/splunk
   - pkg/winperfcounters
   - pkg/xk8stest
   - processor/tailsamplingprocessor
