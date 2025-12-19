@@ -264,23 +264,31 @@ The table below explains supported options,
 
 ### Running with AWS CLI
 
-First, you need the name of the deployed Lambda. You can extract this from the deployment.
-Then, invoke the Lambda with command,
+First, obtain the name of the deployed Lambda function from your deployment.
+Then, invoke the Lambda with the following command:
 
 ```shell
 aws lambda invoke \
   --function-name <LAMBDA_DEPLOYMENT_NAME> \
-  --payload '{ "replayFailedEvents": {"dryrun": false}}' \
+  --payload '{ "replayFailedEvents": {}}' \
   --cli-binary-format raw-in-base64-out /dev/null
 ```
 
-If successful, you should see `"StatusCode": 200` as an output.
-You may check CloudWatch logs for detailed logs.
+If successful, you should see `"StatusCode": 200` in the output.
+Check the CloudWatch logs for detailed information.
 
 > [!NOTE]
 > Using AWS CLI, you can use `--timeout` option to increase currently configured Lambda timeout for custom invocations.
 > Also note that errors resulting from this manual trigger are not retained back to S3 failure destination. 
 > This is because Lambda only retains errors for asynchronous invocations.
 
+To perform a dry run, use the following command with `dryrun` set to `true`:
 
+```shell
+aws lambda invoke \
+  --function-name <LAMBDA_DEPLOYMENT_NAME> \
+  --payload '{ "replayFailedEvents": { "dryrun": true }}' \
+  --cli-binary-format raw-in-base64-out /dev/null
+```
 
+This allows you to see how many error events are available for replay without actually processing them.
