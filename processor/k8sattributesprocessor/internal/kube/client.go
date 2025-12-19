@@ -1827,19 +1827,6 @@ type replicasetView struct {
 func normalizeRS(obj any) (replicasetView, bool) {
 	switch v := obj.(type) {
 	case *apps_v1.ReplicaSet:
-		rv := replicasetView{
-			UID:       string(v.GetUID()),
-			Name:      v.GetName(),
-			Namespace: v.GetNamespace(),
-		}
-		for _, owner := range v.GetOwnerReferences() {
-			if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
-				rv.DeploymentName = owner.Name
-				rv.DeploymentUID = string(owner.UID)
-				break
-			}
-		}
-		return rv, true
 	case *meta_v1.PartialObjectMetadata:
 		rv := replicasetView{
 			UID:       string(v.GetUID()),
