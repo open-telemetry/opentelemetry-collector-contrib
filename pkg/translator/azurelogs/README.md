@@ -179,13 +179,13 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 
 ### Autoscale
 
-| Original Field (JSON)               | Log Record Attribute                   |
-| ----------------------------------- | -------------------------------------- |
-| `properties.description`            | `azure.autoscale.description`          |
-| `properties.resourceName`           | `azure.autoscale.resource.name`        |
+| Original Field (JSON)               | Log Record Attribute                        |
+| ----------------------------------- | ------------------------------------------- |
+| `properties.description`            | `azure.autoscale.description`               |
+| `properties.resourceName`           | `azure.autoscale.resource.name`             |
 | `properties.oldInstancesCount`      | `azure.autoscale.instances.previous_count`  |
-| `properties.newInstancesCount`      | `azure.autoscale.instances.count`  |
-| `properties.lastScaleActionTime`    | `azure.autoscale.resource.last_scale` |
+| `properties.newInstancesCount`      | `azure.autoscale.instances.count`           |
+| `properties.lastScaleActionTime`    | `azure.autoscale.resource.last_scale`       |
 
 ### Policy
 
@@ -212,26 +212,26 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | ---------------------------------------- | --------------------------------------------- |
 | `properties.title`                       | `azure.resourcehealth.title`                  |
 | `properties.details`                     | `azure.resourcehealth.details`                |
-| `properties.currentHealthStatus`         | `azure.resourcehealth.state`  |
-| `properties.previousHealthStatus`        | `azure.resourcehealth.previous_state` |
+| `properties.currentHealthStatus`         | `azure.resourcehealth.state`                  |
+| `properties.previousHealthStatus`        | `azure.resourcehealth.previous_state`         |
 | `properties.type`                        | `azure.resourcehealth.type`                   |
 | `properties.cause`                       | `azure.resourcehealth.cause`                  |
 
 ### Security
 
-| Original Field (JSON)                    | Log Record Attribute                      |
-| ---------------------------------------- | ----------------------------------------- |
-| `properties.accountLogonId`              | `azure.security.account_logon_id`         |
-| `properties.commandLine`                 | `process.command_line`             |
-| `properties.domainName`                  | `azure.security.domain_name`              |
-| `properties.parentProcess`               | `azure.security.process.parent`           |
-| `properties.parentProcessId`             | `process.parent_pid`        |
-| `properties.processId`                   | `process.id`               |
-| `properties.processName`                 | `process.title`             |
-| `properties.userName`                    | `process.user.name`                |
-| `properties.userSID`                     | `process.user.id`                 |
-| `properties.actionTaken`                 | `azure.security.action_taken`             |
-| `properties.severity`                    | `azure.security.severity`                 |
+| Original Field (JSON)                    | Log Record Attribute                      | Notes |
+| ---------------------------------------- | ----------------------------------------- | ----- |
+| `properties.accountLogonId`              | `azure.security.account_logon_id`         | |
+| `properties.commandLine`                 | `process.command_line`                    | |
+| `properties.domainName`                  | `azure.security.domain_name`              | |
+| `properties.parentProcess`               | Not mapped                                | Contains descriptive text (e.g., "unknown") rather than process name; `process.parent_pid` provides the parent process identifier |
+| `properties.parentProcessId`             | `process.parent_pid`                      | |
+| `properties.processId`                   | `process.pid`                             | |
+| `properties.processName`                 | `process.executable.path`                 | |
+| `properties.userName`                    | `process.owner`                           | |
+| `properties.userSID`                     | `enduser.id`                              | |
+| `properties.actionTaken`                 | `azure.security.action_taken`             | |
+| `properties.severity`                    | `azure.security.severity`                 | |
 
 ### Service Health
 
@@ -245,8 +245,8 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | `properties.communication.routeType`                         | `azure.servicehealth.communication.route_type`     |
 | `properties.incidentType`                                    | `azure.servicehealth.incident.type`                |
 | `properties.trackingId`                                      | `azure.servicehealth.tracking.id`                  |
-| `properties.impactStartTime`                                 | `azure.servicehealth.impact.start`       |
-| `properties.impactMitigationTime`                            | `azure.servicehealth.impact.mitigation`  |
+| `properties.impactStartTime`                                 | `azure.servicehealth.impact.start`                 |
+| `properties.impactMitigationTime`                            | `azure.servicehealth.impact.mitigation`            |
 | `properties.impactedServices`                                | `azure.servicehealth.impact.services` (array)      |
 | `properties.impactedServices[].ServiceName`                  | `name` (within service object)                     |
 | `properties.impactedServices[].ServiceId`                    | `id` (within service object)                       |

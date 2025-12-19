@@ -148,17 +148,10 @@ const (
 	attributeAzureRecommendationLink          = "azure.recommendation.link"
 
 	// Security specific attributes
-	attributeAzureSecurityAccountLogonID  = "azure.security.account_logon_id"
-	attributeAzureSecurityCommandLine     = "azure.security.command_line"
-	attributeAzureSecurityDomainName      = "azure.security.domain_name"
-	attributeAzureSecurityParentProcess   = "azure.security.process.parent"
-	attributeAzureSecurityParentProcessID = "azure.security.process.parent.id"
-	attributeAzureSecurityProcessID       = "azure.security.process.id"
-	attributeAzureSecurityProcessName     = "azure.security.process.name"
-	attributeAzureSecurityUserName        = "azure.security.user.name"
-	attributeAzureSecurityUserSID         = "azure.security.user.sid"
-	attributeAzureSecurityActionTaken     = "azure.security.action_taken"
-	attributeAzureSecuritySeverity        = "azure.security.severity"
+	attributeAzureSecurityAccountLogonID = "azure.security.account_logon_id"
+	attributeAzureSecurityDomainName     = "azure.security.domain_name"
+	attributeAzureSecurityActionTaken    = "azure.security.action_taken"
+	attributeAzureSecuritySeverity       = "azure.security.severity"
 
 	// Service Health specific attributes
 	attributeAzureServiceHealthTitle                    = "azure.servicehealth.title"
@@ -940,15 +933,21 @@ func addSecurityLogProperties(data []byte, record plog.LogRecord) error {
 		return fmt.Errorf("failed to parse Security properties: %w", err)
 	}
 
+	// Map to OTel process semantic conventions
+	putStr(string(conventions.ProcessCommandLineKey), properties.CommandLine, record)
+	if err := putInt(string(conventions.ProcessPIDKey), properties.ProcessID, record); err != nil {
+		return err
+	}
+	if err := putInt(string(conventions.ProcessParentPIDKey), properties.ParentProcessID, record); err != nil {
+		return err
+	}
+	putStr(string(conventions.ProcessExecutablePathKey), properties.ProcessName, record)
+	putStr(string(conventions.ProcessOwnerKey), properties.UserName, record)
+	putStr(string(conventions.EnduserIDKey), properties.UserSID, record)
+
+	// Azure-specific fields that don't have OTel equivalents
 	putStr(attributeAzureSecurityAccountLogonID, properties.AccountLogonID, record)
-	putStr(attributeAzureSecurityCommandLine, properties.CommandLine, record)
 	putStr(attributeAzureSecurityDomainName, properties.DomainName, record)
-	putStr(attributeAzureSecurityParentProcess, properties.ParentProcess, record)
-	putStr(attributeAzureSecurityParentProcessID, properties.ParentProcessID, record)
-	putStr(attributeAzureSecurityProcessID, properties.ProcessID, record)
-	putStr(attributeAzureSecurityProcessName, properties.ProcessName, record)
-	putStr(attributeAzureSecurityUserName, properties.UserName, record)
-	putStr(attributeAzureSecurityUserSID, properties.UserSID, record)
 	putStr(attributeAzureSecurityActionTaken, properties.ActionTaken, record)
 	putStr(attributeAzureSecuritySeverity, properties.Severity, record)
 
