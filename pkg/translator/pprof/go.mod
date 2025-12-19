@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.24.0
 
 require (
+	github.com/google/go-cmp v0.7.0
 	github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d
 	github.com/stretchr/testify v1.11.1
 	github.com/zeebo/xxh3 v1.0.2
