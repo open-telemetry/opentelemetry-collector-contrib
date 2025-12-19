@@ -589,6 +589,8 @@ func (b *bulkIndexers) shutdown(ctx context.Context) error {
 		}
 	}
 
+	// wait for active sessions to complete
+	// Ideally, we would not hang here indefinitely
 	b.wg.Wait()
 	return nil
 }
