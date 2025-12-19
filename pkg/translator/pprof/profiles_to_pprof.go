@@ -45,6 +45,21 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	mappingMap := make(map[uint64]*profile.Mapping)
 	locationMap := make(map[uint64]*profile.Location)
 
+	// Pre-populate all mappings from the mapping table to preserve all of them
+	// (not just those referenced by locations) and maintain their original order.
+	for i, m := range src.Dictionary().MappingTable().All() {
+		if i == 0 {
+			// Skip the zero-value mapping at index 0.
+			continue
+		}
+		populateMapping(dst, mappingMap,
+			m.MemoryStart(),
+			m.MemoryLimit(),
+			m.FileOffset(),
+			getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
+		)
+	}
+
 	// As all profiles hold the same number of samples,
 	// assume they only differ on the sample type and therefore can
 	// be merged into a pprof profile.

@@ -95,6 +95,18 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 	// Initialize remaining lookup tables of pprofile.ProfilesDictionary in initLookupTables.
 	lts := initLookupTables()
 
+	// Pre-populate all mappings from the original profile in order.
+	// This ensures all mappings are preserved and their IDs match the original order.
+	for _, m := range src.Mapping {
+		lts.getIdxForMapping(
+			m.Start,
+			m.Limit,
+			m.Offset,
+			lts.getIdxForString(m.File),
+			lts.getIdxForMMAttributes(m),
+		)
+	}
+
 	// Add envelope messages
 	rp := dst.ResourceProfiles().AppendEmpty()
 	rp.SetSchemaUrl(semconv.SchemaURL)
