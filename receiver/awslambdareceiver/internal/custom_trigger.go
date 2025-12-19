@@ -143,7 +143,7 @@ func (m *ErrorReplayTriggerHandler) PostProcess(ctx context.Context) {
 	}
 
 	if !m.trigger.Config.RemoveOnSuccess {
-		m.logger.Info(fmt.Sprintf("Removal disabled, skipping object removal: %s", m.currentKey))
+		m.logger.Info("Removal disabled, skipping object removal", zap.String("object", m.currentKey))
 		return
 	}
 
