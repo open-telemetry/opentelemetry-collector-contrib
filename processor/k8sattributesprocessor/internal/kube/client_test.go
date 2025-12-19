@@ -3812,6 +3812,7 @@ func TestDeploymentHashSuffixPattern(t *testing.T) {
 		})
 	}
 }
+
 func TestResolveReplicaSetDeploymentLinkage_ReuseCache(t *testing.T) {
 	c := &WatchClient{
 		ReplicaSets: make(map[string]*ReplicaSet),
