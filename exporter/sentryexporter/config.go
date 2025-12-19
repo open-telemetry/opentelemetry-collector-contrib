@@ -5,24 +5,53 @@ package sentryexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"fmt"
+	"net/url"
+
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-// Config defines the configuration for the Sentry Exporter.
+const (
+	// DefaultAttributeForProject is the default resource attribute used for project routing
+	DefaultAttributeForProject = "service.name"
+)
+
 type Config struct {
-	// DSN to report transaction to Sentry. If the DSN is not set, no trace will be sent to Sentry.
-	DSN string `mapstructure:"dsn"`
-	// The deployment environment name, such as production or staging.
-	// Environments are case-sensitive. The environment name can't contain newlines, spaces or forward slashes,
-	// can't be the string "None", or exceed 64 characters.
-	Environment string `mapstructure:"environment"`
-	// InsecureSkipVerify controls whether the client verifies the Sentry server certificate chain
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+	URL                string              `mapstructure:"url"`
+	OrgSlug            string              `mapstructure:"org_slug"`
+	AuthToken          configopaque.String `mapstructure:"auth_token"`
+	AutoCreateProjects bool                `mapstructure:"auto_create_projects"`
+	Routing            RoutingConfig       `mapstructure:"routing"`
+
+	confighttp.ClientConfig `mapstructure:"http"`
+	TimeoutConfig           exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	QueueConfig             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 }
 
-// Validate checks if the exporter configuration is valid
+type RoutingConfig struct {
+	AttributeToProjectMapping map[string]string `mapstructure:"attribute_to_project_mapping"`
+	ProjectFromAttribute      string            `mapstructure:"project_from_attribute"`
+}
+
 func (cfg *Config) Validate() error {
-	if cfg.Environment == "None" || len(cfg.Environment) > 64 {
-		return errors.New("can't be string \"None\" or exceed 64 characters")
+	if cfg.URL == "" {
+		return errors.New("'url' must be configured")
 	}
+	if _, err := url.Parse(cfg.URL); err != nil {
+		return fmt.Errorf("invalid 'url': %w", err)
+	}
+	if cfg.OrgSlug == "" {
+		return errors.New("'org_slug' is required")
+	}
+	if cfg.AuthToken == "" {
+		return errors.New("'auth_token' is required")
+	}
+	if cfg.Timeout < 0 {
+		return errors.New("'timeout' must be non-negative")
+	}
+
 	return nil
 }
