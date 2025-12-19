@@ -158,7 +158,7 @@ const (
 	attributeAzureServiceHealthService                  = "azure.servicehealth.service"
 	attributeAzureServiceHealthRegion                   = "azure.servicehealth.region"
 	attributeAzureServiceHealthCommunicationID          = "azure.servicehealth.communication.id"
-	attributeAzureServiceHealthCommunicationText        = "azure.servicehealth.communication.text"
+	attributeAzureServiceHealthCommunicationBody        = "azure.servicehealth.communication.body"
 	attributeAzureServiceHealthCommunicationRouteType   = "azure.servicehealth.communication.route_type"
 	attributeAzureServiceHealthIncidentType             = "azure.servicehealth.incident.type"
 	attributeAzureServiceHealthTrackingID               = "azure.servicehealth.tracking.id"
@@ -169,7 +169,7 @@ const (
 	attributeAzureServiceHealthImpactCategory           = "azure.servicehealth.impact.category"
 	attributeAzureServiceHealthDefaultLanguageTitle     = "azure.servicehealth.default_language.title"
 	attributeAzureServiceHealthDefaultLanguageContent   = "azure.servicehealth.default_language.content"
-	attributeAzureServiceHealthStage                    = "azure.servicehealth.stage"
+	attributeAzureServiceHealthState                    = "azure.servicehealth.state"
 	attributeAzureServiceHealthMaintenanceID            = "azure.servicehealth.maintenance.id"
 	attributeAzureServiceHealthMaintenanceType          = "azure.servicehealth.maintenance.type"
 	attributeAzureServiceHealthIsHIR                    = "azure.servicehealth.is_hir"
@@ -1031,7 +1031,7 @@ func addServiceHealthLogProperties(data []byte, record plog.LogRecord) error {
 	putStr(attributeAzureServiceHealthTitle, properties.Title, record)
 	putStr(attributeAzureServiceHealthService, properties.Service, record)
 	putStr(attributeAzureServiceHealthRegion, properties.Region, record)
-	putStr(attributeAzureServiceHealthCommunicationText, properties.CommunicationText, record)
+	putStr(attributeAzureServiceHealthCommunicationBody, properties.CommunicationText, record)
 	putStr(attributeAzureServiceHealthCommunicationID, properties.CommunicationID, record)
 	putStr(attributeAzureServiceHealthIncidentType, properties.IncidentType, record)
 	putStr(attributeAzureServiceHealthTrackingID, properties.TrackingID, record)
@@ -1039,7 +1039,7 @@ func addServiceHealthLogProperties(data []byte, record plog.LogRecord) error {
 	putStr(attributeAzureServiceHealthImpactMitigationTime, properties.ImpactMitigationTime, record)
 	putStr(attributeAzureServiceHealthDefaultLanguageTitle, properties.DefaultLanguageTitle, record)
 	putStr(attributeAzureServiceHealthDefaultLanguageContent, properties.DefaultLanguageContent, record)
-	putStr(attributeAzureServiceHealthStage, properties.Stage, record)
+	putStr(attributeAzureServiceHealthState, properties.Stage, record)
 	putStr(attributeAzureServiceHealthMaintenanceID, properties.MaintenanceID, record)
 	putStr(attributeAzureServiceHealthMaintenanceType, properties.MaintenanceType, record)
 	if properties.IsHIR {
