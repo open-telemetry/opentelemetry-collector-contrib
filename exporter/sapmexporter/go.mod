@@ -1,3 +1,4 @@
+// Deprecated: [v0.143.0] Use OTLP exporter instead
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
 
 go 1.24.0
