@@ -56,12 +56,13 @@ func TestPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*testContext]
-		orig     any
-		newVal   any
-		modified func(log plog.LogRecord)
-		bodyType string
+		name               string
+		path               ottl.Path[*testContext]
+		orig               any
+		newVal             any
+		modified           func(log plog.LogRecord)
+		bodyType           string
+		skipSetterTypeCheck bool
 	}{
 		{
 			name: "time_unix_nano",
@@ -139,7 +140,8 @@ func TestPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord) {
 				log.Body().SetStr("new body")
 			},
-			bodyType: "string",
+			bodyType:            "string",
+			skipSetterTypeCheck: true, // body uses SetValue which doesn't validate types
 		},
 		{
 			name: "body is int",
@@ -151,7 +153,8 @@ func TestPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord) {
 				log.Body().SetInt(2)
 			},
-			bodyType: "int",
+			bodyType:            "int",
+			skipSetterTypeCheck: true, // body uses SetValue which doesn't validate types
 		},
 		{
 			name: "body is slice",
@@ -166,7 +169,8 @@ func TestPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord) {
 				newBodySlice.CopyTo(log.Body().Slice())
 			},
-			bodyType: "slice",
+			bodyType:            "slice",
+			skipSetterTypeCheck: true, // body uses SetValue which doesn't validate types
 		},
 		{
 			name: "body is map",
@@ -181,7 +185,8 @@ func TestPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord) {
 				newBodyMap.CopyTo(log.Body().Map())
 			},
-			bodyType: "map",
+			bodyType:            "map",
+			skipSetterTypeCheck: true, // body uses SetValue which doesn't validate types
 		},
 		{
 			name: "body.string",
@@ -365,8 +370,15 @@ func TestPathGetSetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(t.Context(), newTestContext(log), tt.newVal)
+			ctx := newTestContext(log)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
 			require.NoError(t, err)
+
+			// Verify that setting an invalid type returns an error
+			if tt.path.Keys() == nil && !tt.skipSetterTypeCheck {
+				err = accessor.Set(t.Context(), ctx, struct{}{})
+				require.Error(t, err)
+			}
 
 			expectedLog := createTelemetry(tt.bodyType)
 			tt.modified(expectedLog)

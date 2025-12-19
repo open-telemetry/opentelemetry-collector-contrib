@@ -467,12 +467,8 @@ func accessExplicitBounds[K Context]() ottl.StandardGetSetter[K] {
 			return nil, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			newExplicitBounds, err := ctxutil.ExpectType[[]float64](val)
-			if err != nil {
-				return err
-			}
 			if histogramDataPoint, ok := tCtx.GetDataPoint().(pmetric.HistogramDataPoint); ok {
-				histogramDataPoint.ExplicitBounds().FromRaw(newExplicitBounds)
+				return ctxutil.SetCommonTypedSliceValues[float64](histogramDataPoint.ExplicitBounds(), val)
 			}
 			return nil
 		},
@@ -488,12 +484,8 @@ func accessBucketCounts[K Context]() ottl.StandardGetSetter[K] {
 			return nil, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			newBucketCount, err := ctxutil.ExpectType[[]uint64](val)
-			if err != nil {
-				return err
-			}
 			if histogramDataPoint, ok := tCtx.GetDataPoint().(pmetric.HistogramDataPoint); ok {
-				histogramDataPoint.BucketCounts().FromRaw(newBucketCount)
+				return ctxutil.SetCommonIntSliceValues[uint64](histogramDataPoint.BucketCounts(), val)
 			}
 			return nil
 		},
@@ -593,12 +585,8 @@ func accessPositiveBucketCounts[K Context]() ottl.StandardGetSetter[K] {
 			return nil, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			newPositiveBucketCounts, err := ctxutil.ExpectType[[]uint64](val)
-			if err != nil {
-				return err
-			}
 			if expoHistogramDataPoint, ok := tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint); ok {
-				expoHistogramDataPoint.Positive().BucketCounts().FromRaw(newPositiveBucketCounts)
+				return ctxutil.SetCommonIntSliceValues[uint64](expoHistogramDataPoint.Positive().BucketCounts(), val)
 			}
 			return nil
 		},
@@ -656,12 +644,8 @@ func accessNegativeBucketCounts[K Context]() ottl.StandardGetSetter[K] {
 			return nil, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			newNegativeBucketCounts, err := ctxutil.ExpectType[[]uint64](val)
-			if err != nil {
-				return err
-			}
 			if expoHistogramDataPoint, ok := tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint); ok {
-				expoHistogramDataPoint.Negative().BucketCounts().FromRaw(newNegativeBucketCounts)
+				return ctxutil.SetCommonIntSliceValues[uint64](expoHistogramDataPoint.Negative().BucketCounts(), val)
 			}
 			return nil
 		},

@@ -632,6 +632,12 @@ func TestPathGetSetter(t *testing.T) {
 			tt.modified(expectedSpan)
 
 			assert.Equal(t, expectedSpan, span)
+
+			// Verify that setting an invalid type returns an error
+			if tt.path.Keys() == nil {
+				err = accessor.Set(t.Context(), newTestContext(span), struct{}{})
+				require.Error(t, err)
+			}
 		})
 	}
 }
