@@ -33,6 +33,7 @@ type CustomTriggerHandler interface {
 type Iterator[T any] interface {
 	HasNext(context.Context) bool
 	GetNext(context.Context) (T, error)
+	Error() error
 }
 
 // errorReplayTrigger defines error replay custom trigger structure
@@ -128,6 +129,10 @@ func (m *ErrorReplayTriggerHandler) GetNext(ctx context.Context) ([]byte, error)
 	return event.RequestPayload, nil
 }
 
+func (m *ErrorReplayTriggerHandler) Error() error {
+	return m.s3Iterator.Error()
+}
+
 func (m *ErrorReplayTriggerHandler) PostProcess(ctx context.Context) {
 	if m.currentKey == "" {
 		// nothing to do
@@ -163,6 +168,8 @@ type s3ListIterator struct {
 	currentObj *types.Object
 	index      int
 	done       bool
+
+	err error
 }
 
 func newS3ListIterator(s3Service S3Service, bucket, prefix string) Iterator[*types.Object] {
@@ -184,6 +191,7 @@ func (i *s3ListIterator) HasNext(ctx context.Context) bool {
 		i.latest, err = i.s3Service.ListObjects(ctx, i.bucket, "", i.prefix)
 		if err != nil {
 			i.done = true
+			i.err = err
 			return false
 		}
 	}
@@ -199,6 +207,7 @@ func (i *s3ListIterator) HasNext(ctx context.Context) bool {
 		i.latest, err = i.s3Service.ListObjects(ctx, i.bucket, *i.latest.NextContinuationToken, i.prefix)
 		if err != nil {
 			i.done = true
+			i.err = err
 			return false
 		}
 		i.index = 0
@@ -212,8 +221,12 @@ func (i *s3ListIterator) HasNext(ctx context.Context) bool {
 
 func (i *s3ListIterator) GetNext(_ context.Context) (*types.Object, error) {
 	if i.currentObj == nil {
-		return nil, errors.New("payload not available")
+		return nil, errors.New("payload not available, check HasNext before calling for GetNext")
 	}
 
 	return i.currentObj, nil
+}
+
+func (i *s3ListIterator) Error() error {
+	return i.err
 }
