@@ -130,6 +130,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
+
 	c := &WatchClient{
 		logger:                 set.Logger,
 		Rules:                  rules,
@@ -1824,7 +1825,7 @@ type replicasetView struct {
 
 func normalizeRS(obj any) (replicasetView, bool) {
 	// Check if the object implements the meta_v1.Object interface
-	metadata, ok := obj.(meta_v1.Object)
+	meta, ok := obj.(meta_v1.Object)
 	if !ok {
 		// Handle DeletedFinalStateUnknown objects
 		if deleted, ok := obj.(cache.DeletedFinalStateUnknown); ok && deleted.Obj != nil {
@@ -1836,13 +1837,13 @@ func normalizeRS(obj any) (replicasetView, bool) {
 
 	// Extract common fields from the metadata
 	rv := replicasetView{
-		UID:       string(metadata.GetUID()),
-		Name:      metadata.GetName(),
-		Namespace: metadata.GetNamespace(),
+		UID:       string(meta.GetUID()),
+		Name:      meta.GetName(),
+		Namespace: meta.GetNamespace(),
 	}
 
 	// Process owner references to find the Deployment
-	for _, owner := range metadata.GetOwnerReferences() {
+	for _, owner := range meta.GetOwnerReferences() {
 		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
 			rv.DeploymentName = owner.Name
 			rv.DeploymentUID = string(owner.UID)
