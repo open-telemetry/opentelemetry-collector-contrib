@@ -138,7 +138,7 @@ func (m *ErrorReplayTriggerHandler) PostProcess(ctx context.Context) {
 
 	// skip if dry-run mode
 	if m.IsDryRun() {
-		m.logger.Info(fmt.Sprintf("Dry-run enabled, skipping object: %s", m.currentKey))
+		m.logger.Info("Dry-run enabled, skipping object", zap.String("object", m.currentKey))
 		return
 	}
 
