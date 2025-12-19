@@ -138,7 +138,7 @@ func (*authenticator) Shutdown(context.Context) error {
 }
 
 // GetToken returns an access token with a valid token for authorization.
-// Implements azcore.TokenCredential.
+// Implements tokenSource interface.
 func (a *authenticator) GetToken(ctx context.Context, options policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	if a.credential == nil {
 		// This is not expected, since creating a new authenticator
