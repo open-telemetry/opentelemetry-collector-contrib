@@ -62,6 +62,15 @@ type loc struct {
 	attrIdxs   string // List of consecutive increasing indices separated by a semicolon.
 }
 
+// stackKey is a string type used as a key in the stack table.
+type stackKey string
+
+// stack is a helper struct to build pprofile.ProfilesDictionary.stack_table.
+type stack struct {
+	id           int32
+	locationIdxs []int32
+}
+
 // lookupTables is a helper struct around pprofile.ProfilesDictionary.
 type lookupTables struct {
 	mappingTable        map[mm]int32
@@ -82,7 +91,7 @@ type lookupTables struct {
 	attributeTable        map[attr]int32
 	lastAttributeTableIdx int32
 
-	stackTable        map[string]int32
+	stackTable        map[stackKey]stack
 	lastStackTableIdx int32
 }
 
@@ -94,6 +103,18 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 	// Initialize remaining lookup tables of pprofile.ProfilesDictionary in initLookupTables.
 	lts := initLookupTables()
+
+	// Pre-populate all mappings from the original profile in order.
+	// This ensures all mappings are preserved and their IDs match the original order.
+	for _, m := range src.Mapping {
+		lts.getIdxForMapping(
+			m.Start,
+			m.Limit,
+			m.Offset,
+			lts.getIdxForString(m.File),
+			lts.getIdxForMMAttributes(m),
+		)
+	}
 
 	// Add envelope messages
 	rp := dst.ResourceProfiles().AppendEmpty()
@@ -341,12 +362,13 @@ func (lts *lookupTables) getIdxForStack(locs []*profile.Location) int32 {
 		locTableIDs = append(locTableIDs, idx)
 	}
 
-	key := attrIdxToString(locTableIDs)
-	if idx, exists := lts.stackTable[key]; exists {
-		return idx
+	// Use makeStackKey instead of attrIdxToString to preserve stack order.
+	key := makeStackKey(locTableIDs)
+	if s, exists := lts.stackTable[key]; exists {
+		return s.id
 	}
 	lts.lastStackTableIdx++
-	lts.stackTable[key] = lts.lastStackTableIdx
+	lts.stackTable[key] = stack{id: lts.lastStackTableIdx, locationIdxs: locTableIDs}
 	return lts.lastStackTableIdx
 }
 
@@ -400,32 +422,26 @@ func initLookupTables() lookupTables {
 		functionTable:  make(map[fn]int32),
 		stringTable:    make(map[string]int32),
 		attributeTable: make(map[attr]int32),
-		stackTable:     make(map[string]int32),
+		stackTable:     make(map[stackKey]stack),
 	}
 
 	// mapping_table[0] must always be zero value (Mapping{}) and present.
-	lts.lastMappingTableIdx = 0
 	lts.mappingTable[mm{}] = lts.lastMappingTableIdx
 
 	// location_table[0] must always be zero value (Location{}) and present.
-	lts.lastLocationTableIdx = 0
 	lts.locationTable[loc{}] = lts.lastLocationTableIdx
 
 	// function_table[0] must always be zero value (Function{}) and present.
-	lts.lastFunctionTableIdx = 0
 	lts.functionTable[fn{}] = lts.lastFunctionTableIdx
 
 	// string_table[0] must always be "" and present.
-	lts.lastStringTableIdx = 0
 	lts.stringTable[""] = lts.lastStringTableIdx
 
 	// attribute_table[0] must always be zero value (KeyValueAndUnit{}) and present.
-	lts.lastAttributeTableIdx = 0
 	lts.attributeTable[attr{}] = lts.lastAttributeTableIdx
 
 	// stack_table[0] must always be zero value (Stack{}) and present.
-	lts.lastStackTableIdx = 0
-	lts.stackTable[""] = lts.lastStackTableIdx
+	lts.stackTable[makeStackKey(nil)] = stack{id: lts.lastStackTableIdx, locationIdxs: nil}
 	return lts
 }
 
@@ -483,12 +499,8 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 	for i := 0; i < len(lts.stackTable); i++ {
 		dic.StackTable().AppendEmpty()
 	}
-	for s, id := range lts.stackTable {
-		locIndices, err := stringToAttrIdx(s)
-		if err != nil {
-			return err
-		}
-		dic.StackTable().At(int(id)).LocationIndices().Append(locIndices...)
+	for _, s := range lts.stackTable {
+		dic.StackTable().At(int(s.id)).LocationIndices().Append(s.locationIdxs...)
 	}
 
 	for i := 0; i < len(lts.stringTable); i++ {
@@ -519,7 +531,7 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 }
 
 // attrIdxToString is a helper function to convert a list of indices
-// into a string.
+// into a string. This function modifies the input slice.
 func attrIdxToString(indices []int32) string {
 	if len(indices) == 0 {
 		return ""
@@ -556,6 +568,21 @@ func stringToAttrIdx(indices string) ([]int32, error) {
 	}
 
 	return result, nil
+}
+
+// makeStackKey is a helper function to convert a list of location indices
+// into a stackKey, preserving their order (unlike attrIdxToString which sorts).
+func makeStackKey(indices []int32) stackKey {
+	if len(indices) == 0 {
+		return ""
+	}
+
+	stringNumbers := make([]string, len(indices))
+	for i, n := range indices {
+		stringNumbers[i] = strconv.FormatInt(int64(n), 10)
+	}
+
+	return stackKey(strings.Join(stringNumbers, ";"))
 }
 
 // linesToString is a helper function to convert a list of lines into a string.

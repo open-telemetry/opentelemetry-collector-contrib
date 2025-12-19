@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/pprof/profile"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -41,8 +42,11 @@ func TestConvertPprofToPprofile(t *testing.T) {
 			default:
 				t.Fatalf("expected error '%s' but got '%s'", tc.expectedError, err)
 			}
-			_, err = convertPprofileToPprof(pprofile)
+			roundTrip, err := convertPprofileToPprof(pprofile)
 			require.NoError(t, err)
+			if diff := cmp.Diff(p.String(), roundTrip.String()); diff != "" {
+				t.Fatalf("round-trip profile mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
