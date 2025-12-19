@@ -100,14 +100,3 @@ extensions:
     scopes:
       - https://monitor.azure.com/.default
 ```
-
-### With timeout
-
-You can set a timeout for fetching the token. This is useful when the token endpoint is slow to respond.
-This parameter is only used when the extension is used as an OAuth2 TokenSource.
-
-```yaml
-extensions:
-  azureauth:
-    timeout: 5s
-```

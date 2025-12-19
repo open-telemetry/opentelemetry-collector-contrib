@@ -6,7 +6,6 @@ package azureauthextension // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -34,10 +33,6 @@ type Config struct {
 	ServicePrincipal configoptional.Optional[ServicePrincipal] `mapstructure:"service_principal"`
 	UseDefault       bool                                      `mapstructure:"use_default"`
 	Scopes           []string                                  `mapstructure:"scopes"`
-	// Timeout parameter configures `http.Client.Timeout` for the underneath client to authorization
-	// server while fetching and refreshing tokens.
-	// This parameter is only used when the extension is used as an OAuth2 TokenSource.
-	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -104,10 +99,7 @@ func (cfg *ServicePrincipal) Validate() error {
 		errs = append(errs, errMutuallyExclusiveAuth)
 	}
 
-	if len(errs) > 0 {
-		return errors.Join(errs...)
-	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (cfg *Config) Validate() error {

@@ -36,17 +36,15 @@ func TestGetToken(t *testing.T) {
 
 func TestToken(t *testing.T) {
 	m := mockTokenCredential{}
-	m.On("GetToken", mock.MatchedBy(func(ctx context.Context) bool {
-		_, ok := ctx.Deadline()
-		return ok
-	}), mock.Anything).Return(azcore.AccessToken{Token: "test", ExpiresOn: time.Now().Add(time.Hour)}, nil)
+	m.On("GetToken", mock.Anything, mock.Anything).Return(
+		azcore.AccessToken{Token: "test", ExpiresOn: time.Now().Add(time.Hour)}, nil,
+	)
 
 	auth := authenticator{
 		credential: &m,
-		timeout:    1 * time.Second,
 	}
 
-	token, err := auth.Token()
+	token, err := auth.Token(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, "test", token.AccessToken)
 	m.AssertExpectations(t)

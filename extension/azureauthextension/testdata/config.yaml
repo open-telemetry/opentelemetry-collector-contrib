@@ -3,10 +3,6 @@ azureauth:
 azureauth/use_default:
   use_default: true
 
-azureauth/valid_timeout:
-  use_default: true
-  timeout: 1s
-
 azureauth/valid_service_principal_secret:
   service_principal:
     client_id: test

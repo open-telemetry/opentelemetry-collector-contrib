@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -58,13 +57,6 @@ func TestLoadConfig(t *testing.T) {
 					ClientID:              "test",
 					ClientCertificatePath: "test",
 				}),
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "valid_timeout"),
-			expected: &Config{
-				UseDefault: true,
-				Timeout:    time.Second,
 			},
 		},
 		{

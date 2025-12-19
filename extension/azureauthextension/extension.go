@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -28,7 +27,10 @@ type authenticator struct {
 	credential azcore.TokenCredential
 	logger     *zap.Logger
 	scopes     []string
-	timeout    time.Duration
+}
+
+type tokenSource interface {
+	Token(context.Context) (*oauth2.Token, error)
 }
 
 var (
@@ -36,7 +38,7 @@ var (
 	_ extensionauth.HTTPClient = (*authenticator)(nil)
 	_ extensionauth.Server     = (*authenticator)(nil)
 	_ azcore.TokenCredential   = (*authenticator)(nil)
-	_ oauth2.TokenSource       = (*authenticator)(nil)
+	_ tokenSource              = (*authenticator)(nil)
 )
 
 func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, error) {
@@ -109,7 +111,6 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 		credential: credential,
 		logger:     logger,
 		scopes:     cfg.Scopes,
-		timeout:    cfg.Timeout,
 	}, nil
 }
 
@@ -151,18 +152,10 @@ func (a *authenticator) GetToken(ctx context.Context, options policy.TokenReques
 
 // Token returns an access token with a valid token for authorization.
 // Implements oauth2.TokenSource interface.
-func (a *authenticator) Token() (*oauth2.Token, error) {
+func (a *authenticator) Token(ctx context.Context) (*oauth2.Token, error) {
 	opts := policy.TokenRequestOptions{
 		Scopes: a.scopes,
 	}
-
-	ctx := context.Background()
-	if a.timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, a.timeout)
-		defer cancel()
-	}
-
 	token, err := a.credential.GetToken(ctx, opts)
 	if err != nil {
 		return nil, err
