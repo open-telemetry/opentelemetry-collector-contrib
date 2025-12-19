@@ -187,7 +187,7 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 	}
 }
 
-func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(client kubernetes.Interface, namespace string) cache.SharedInformer {
+func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
 	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
 		if err := apiCfg.Validate(); err != nil {
 			return cache.NewSharedIndexInformer(
