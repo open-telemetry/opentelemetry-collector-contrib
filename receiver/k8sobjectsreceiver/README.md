@@ -33,6 +33,8 @@ The following is example configuration
         label_selector: environment in (production),tier in (frontend)
         field_selector: status.phase=Running
         interval: 15m
+        exclude_namespaces:
+          - regexp: namespace-to-ignore
       - name: events
         mode: watch
         group: events.k8s.io
@@ -59,9 +61,10 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
 - `resource_version` allows watch resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
+- `exclude_namespaces`: allows excluding namespaces from being watched/pulled, (NOTE: if a new namespace that matches the regex is added, the collector will need to be restarted)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
 use this config to specify the group to select. By default, it will select the first group.
-For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup. In 
+For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup. In
 this case, it will select `v1` by default.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
 
@@ -151,7 +154,7 @@ Following config will work for collecting pods and events only. You need to add
 appropriate rule for collecting other objects.
 
 When using watch mode you must also specify `list` verb so that the receiver has permission to do its initial list if no
-`resource_version` was supplied or a list to recover from [410 Gone scenarios](https://kubernetes.io/docs/reference/using-api/api-concepts/#410-gone-responses). 
+`resource_version` was supplied or a list to recover from [410 Gone scenarios](https://kubernetes.io/docs/reference/using-api/api-concepts/#410-gone-responses).
 
 ```bash
 <<EOF | kubectl apply -f -
@@ -167,11 +170,12 @@ rules:
   resources:
   - events
   - pods
+  - namespaces
   verbs:
   - get
   - list
   - watch
-- apiGroups: 
+- apiGroups:
   - "events.k8s.io"
   resources:
   - events
