@@ -1770,18 +1770,16 @@ func (c *WatchClient) resolveReplicaSetDeploymentLinkage(rsView *replicasetView)
 	}
 
 	// Reuse cached linkage to avoid repeated GETs
-c.m.RLock()
-if cached := c.ReplicaSets[rsView.UID]; cached != nil && cached.Deployment.UID != "" {
-    depName, depUID := cached.Deployment.Name, cached.Deployment.UID
-    c.m.RUnlock()
-    rsView.DeploymentName = depName
-    rsView.DeploymentUID = depUID
-    return
-}
-c.m.RUnlock()
+	c.m.RLock()
+	if cached := c.ReplicaSets[rsView.UID]; cached != nil && cached.Deployment.UID != "" {
+		depName, depUID := cached.Deployment.Name, cached.Deployment.UID
+		c.m.RUnlock()
+		rsView.DeploymentName = depName
+		rsView.DeploymentUID = depUID
+		return
 	}
+	c.m.RUnlock()
 
-	// Fallback: typed GET, only accept controller=true Deployment owner
 	rsFull, err := c.kc.AppsV1().ReplicaSets(rsView.Namespace).Get(context.Background(), rsView.Name, meta_v1.GetOptions{})
 	if err != nil {
 		c.logger.Debug("failed to fetch full RS for ownerRefs",
@@ -1825,30 +1823,34 @@ type replicasetView struct {
 }
 
 func normalizeRS(obj any) (replicasetView, bool) {
-	switch v := obj.(type) {
-	case *apps_v1.ReplicaSet:
-	case *meta_v1.PartialObjectMetadata:
-		rv := replicasetView{
-			UID:       string(v.GetUID()),
-			Name:      v.GetName(),
-			Namespace: v.GetNamespace(),
+	// Check if the object implements the meta_v1.Object interface
+	metadata, ok := obj.(meta_v1.Object)
+	if !ok {
+		// Handle DeletedFinalStateUnknown objects
+		if deleted, ok := obj.(cache.DeletedFinalStateUnknown); ok && deleted.Obj != nil {
+			return normalizeRS(deleted.Obj)
 		}
-		for _, owner := range v.GetOwnerReferences() {
-			if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
-				rv.DeploymentName = owner.Name
-				rv.DeploymentUID = string(owner.UID)
-				break
-			}
-		}
-		return rv, true
-	case cache.DeletedFinalStateUnknown:
-		if v.Obj == nil {
-			return replicasetView{}, false
-		}
-		return normalizeRS(v.Obj)
-	default:
+		// Unsupported type
 		return replicasetView{}, false
 	}
+
+	// Extract common fields from the metadata
+	rv := replicasetView{
+		UID:       string(metadata.GetUID()),
+		Name:      metadata.GetName(),
+		Namespace: metadata.GetNamespace(),
+	}
+
+	// Process owner references to find the Deployment
+	for _, owner := range metadata.GetOwnerReferences() {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
+			rv.DeploymentName = owner.Name
+			rv.DeploymentUID = string(owner.UID)
+			break
+		}
+	}
+
+	return rv, true
 }
 
 func (c *WatchClient) upsertReplicaSet(rv replicasetView) {
