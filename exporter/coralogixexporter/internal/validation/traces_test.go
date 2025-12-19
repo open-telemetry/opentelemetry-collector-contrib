@@ -199,7 +199,7 @@ func TestCollectMissingAttributes(t *testing.T) {
 	rs1.Resource().Attributes().PutStr("service.name", "service-1")
 	rs1.Resource().Attributes().PutStr("cx.subsystem.name", "subsystem-1")
 	ss1 := rs1.ScopeSpans().AppendEmpty()
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss1.Spans().AppendEmpty()
 		span.SetName("span-" + string(rune('a'+i)))
 		span.SetTraceID(getTraceID("trace-1---------"))
@@ -230,7 +230,7 @@ func TestCollectInvalidDurationSpans_Limit(t *testing.T) {
 	ss := rs.ScopeSpans().AppendEmpty()
 
 	// Create 10 invalid spans
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		span := ss.Spans().AppendEmpty()
 		span.SetName("invalid-span")
 		span.SetTraceID(getTraceID("trace----------"))
@@ -449,7 +449,7 @@ func TestCollectSpansByID(t *testing.T) {
 	targetSpan.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	// Add attributes to make it larger
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		targetSpan.Attributes().PutStr("attr-"+string(rune('a'+i%26)), "value-data")
 	}
 
