@@ -12,9 +12,9 @@ metrics:
     enabled: false
 ```
 
-### systemd.unit.cpu.time
+### systemd.service.cpu.time
 
-Total CPU time spent by this unit.
+Total CPU time spent by this service.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

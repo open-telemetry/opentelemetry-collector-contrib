@@ -8,6 +8,7 @@ package systemdreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/containerd/cgroups/v3"
@@ -81,8 +82,8 @@ type unitTuple struct {
 	JobPath     dbus.ObjectPath
 }
 
-// Find the active cgroup for each unit and scrape statistics from it.
-func (s *systemdScraper) scrapeUnitCgroup(now pcommon.Timestamp, unit *unitTuple) error {
+// Find the active cgroup for each service and scrape statistics from it.
+func (s *systemdScraper) scrapeServiceCgroup(now pcommon.Timestamp, unit *unitTuple) error {
 	if cgroups.Mode() != cgroups.Unified {
 		return errNotUnifiedCGroup
 	}
@@ -113,8 +114,8 @@ func (s *systemdScraper) scrapeUnitCgroup(now pcommon.Timestamp, unit *unitTuple
 	// controllers.
 
 	if stats.CPU != nil {
-		s.mb.RecordSystemdUnitCPUTimeDataPoint(now, int64(stats.CPU.SystemUsec), metadata.AttributeCPUModeSystem)
-		s.mb.RecordSystemdUnitCPUTimeDataPoint(now, int64(stats.CPU.UserUsec), metadata.AttributeCPUModeUser)
+		s.mb.RecordSystemdServiceCPUTimeDataPoint(now, int64(stats.CPU.SystemUsec), metadata.AttributeCPUModeSystem)
+		s.mb.RecordSystemdServiceCPUTimeDataPoint(now, int64(stats.CPU.UserUsec), metadata.AttributeCPUModeUser)
 	}
 
 	return nil
@@ -122,7 +123,7 @@ func (s *systemdScraper) scrapeUnitCgroup(now pcommon.Timestamp, unit *unitTuple
 
 // Are any of our cgroup requiring metrics available
 func (s *systemdScraper) hasCgroupMetrics() bool {
-	return s.cfg.Metrics.SystemdUnitCPUTime.Enabled
+	return s.cfg.Metrics.SystemdServiceCPUTime.Enabled
 }
 
 func (s *systemdScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -144,10 +145,12 @@ func (s *systemdScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			}
 		}
 
-		if s.hasCgroupMetrics() {
-			err := s.scrapeUnitCgroup(now, unit)
-			if err != nil {
-				errs.AddPartial(1, err)
+		if strings.HasSuffix(unit.Name, ".service") {
+			if s.hasCgroupMetrics() {
+				err := s.scrapeServiceCgroup(now, unit)
+				if err != nil {
+					errs.AddPartial(1, err)
+				}
 			}
 		}
 

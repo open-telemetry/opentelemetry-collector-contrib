@@ -70,7 +70,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemdUnitCPUTimeDataPoint(ts, 1, AttributeCPUModeSystem)
+			mb.RecordSystemdServiceCPUTimeDataPoint(ts, 1, AttributeCPUModeSystem)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -100,12 +100,12 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "systemd.unit.cpu.time":
-					assert.False(t, validatedMetrics["systemd.unit.cpu.time"], "Found a duplicate in the metrics slice: systemd.unit.cpu.time")
-					validatedMetrics["systemd.unit.cpu.time"] = true
+				case "systemd.service.cpu.time":
+					assert.False(t, validatedMetrics["systemd.service.cpu.time"], "Found a duplicate in the metrics slice: systemd.service.cpu.time")
+					validatedMetrics["systemd.service.cpu.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total CPU time spent by this unit.", ms.At(i).Description())
+					assert.Equal(t, "Total CPU time spent by this service.", ms.At(i).Description())
 					assert.Equal(t, "us", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

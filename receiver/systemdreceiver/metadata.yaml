@@ -36,8 +36,8 @@ attributes:
       - refreshing
 
 metrics:
-  systemd.unit.cpu.time:
-    description: Total CPU time spent by this unit.
+  systemd.service.cpu.time:
+    description: Total CPU time spent by this service.
     enabled: true
     stability:
       level: development
