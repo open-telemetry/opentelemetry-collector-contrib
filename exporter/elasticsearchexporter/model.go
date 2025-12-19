@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv22 "go.opentelemetry.io/otel/semconv/v1.22.0"
+	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
@@ -40,7 +40,7 @@ type conversionEntry struct {
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.ServiceInstanceIDKey):         {to: "service.node.name"},
-	string(semconv22.DeploymentEnvironmentKey):       {to: "service.environment"},
+	string(conventionsv126.DeploymentEnvironmentKey): {to: "service.environment"},
 	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
 	string(conventions.TelemetrySDKNameKey):          {skip: true},
 	string(conventions.TelemetrySDKLanguageKey):      {skip: true},
@@ -212,7 +212,7 @@ func (ecsModeEncoder) encodeLog(
 		string(conventions.ExceptionMessageKey):     {to: "error.message"},
 		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
 		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		string(semconv22.ExceptionEscapedKey):       {to: "event.error.exception.handled"},
+		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
@@ -267,7 +267,7 @@ func (ecsModeEncoder) encodeSpan(
 	spanAttrsConversionMap := map[string]conversionEntry{
 		string(conventions.MessagingDestinationNameKey): {to: messageQueueName},
 		string(conventions.MessagingOperationNameKey):   {to: "span.action"},
-		string(semconv22.DBSystemKey):                   {to: "span.db.type"},
+		string(conventionsv126.DBSystemKey):             {to: "span.db.type"},
 		string(conventions.DBNamespaceKey):              {to: "span.db.instance"},
 		string(conventions.DBQueryTextKey):              {to: "span.db.statement"},
 		string(conventions.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
