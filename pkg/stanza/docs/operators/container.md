@@ -10,8 +10,6 @@ The `container` operator parses logs in `docker`, `cri-o` and `containerd` forma
 | `format`                     | ``               | The container log format to use if it is known. Users can choose between `docker`, `crio` and `containerd`. If not set, the format will be automatically detected.                                                                    |
 | `add_metadata_from_filepath` | `true`           | Set if k8s metadata should be added from the file path. Requires the `log.file.path` field to be present.                                                                                                                             |
 | `max_log_size`               | `0`              | The maximum bytes size of the recombined log when parsing partial logs. Once the size exceeds the limit, all received entries of the source will be combined and flushed. "0" of max_log_size means no limit.                         |
-| `max_batch_size`             | `0`              | The maximum number of consecutive entries that will be combined into a single entry when recombining CRI logs (crio/containerd formats). Only applies to CRI logs with partial/final tags. "0" means use the recombine operator default (1000). Set to a higher value to handle logs with many partial entries. |
-| `max_unmatched_batch_size`   | `0`              | The maximum number of consecutive partial entries that will be combined before a final entry is detected (for CRI logs). Once the limit is reached, all accumulated entries will be flushed. "0" means use the recombine operator default (100). This is a safety mechanism to prevent unbounded memory growth. |
 | `output`                     | Next in pipeline | The connected operator(s) that will receive all outbound entries.                                                                                                                                                                     |
 | `parse_from`                 | `body`           | The [field](../types/field.md) from which the value will be parsed.                                                                                                                                                                   |
 | `parse_to`                   | `attributes`     | The [field](../types/field.md) to which the value will be parsed.                                                                                                                                                                     |
@@ -198,15 +196,6 @@ or the final entry (F). Using this tag, we can recombine the CRI logs back into 
 Configuration:
 ```yaml
 - type: container
-```
-
-If you need to handle very large multiline logs (more than 100 partial entries or 1000 total entries), you can configure the batch size limits:
-
-```yaml
-- type: container
-  max_log_size: 10MiB
-  max_batch_size: 5000             # Allow up to 5000 entries to be combined
-  max_unmatched_batch_size: 500    # Allow up to 500 partial (P) entries before final (F) entry
 ```
 
 <table>
