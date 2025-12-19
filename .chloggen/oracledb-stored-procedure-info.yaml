@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add stored procedure information (procedure_id, procedure_name, procedure_type) to Oracle DB receiver logs for top queries and query samples.
+note: Add stored procedure information to logs for top queries and query samples.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44764]
