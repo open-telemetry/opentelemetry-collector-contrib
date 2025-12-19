@@ -14,8 +14,9 @@ type Config struct {
 }
 
 type PathConfig struct {
-	Enabled bool   `mapstructure:"enabled"`
-	Path    string `mapstructure:"path"`
+	Enabled           bool   `mapstructure:"enabled"`
+	Path              string `mapstructure:"path"`
+	IncludeAttributes bool   `mapstructure:"include_attributes"`
 }
 
 // LegacyConfig contains the config for the original healthcheck extension. We plan to migrate

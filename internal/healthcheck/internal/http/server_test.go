@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/goleak"
 
@@ -2975,12 +2976,11 @@ func TestStatus(t *testing.T) {
 			url := ts.URL + path
 
 			// Create a custom client with aggressive timeouts
+			transport := &http.Transport{DisableKeepAlives: true, MaxConnsPerHost: 1}
+			defer transport.CloseIdleConnections()
 			client := &http.Client{
-				Timeout: 100 * time.Millisecond,
-				Transport: &http.Transport{
-					DisableKeepAlives: true,
-					MaxConnsPerHost:   1,
-				},
+				Timeout:   100 * time.Millisecond,
+				Transport: transport,
 			}
 
 			for _, ts := range tc.teststeps {
@@ -3189,12 +3189,252 @@ func TestConfig(t *testing.T) {
 
 			resp, err := client.Get(url)
 			require.NoError(t, err)
+			defer resp.Body.Close()
 			assert.Equal(t, tc.expectedStatusCode, resp.StatusCode)
 
 			body, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
-			defer resp.Body.Close()
 			assert.Equal(t, tc.expectedBody, body)
 		})
 	}
+}
+
+func TestStatusVerboseIncludesAttributes(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: true,
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, traces.InstanceIDs(), componentstatus.StatusOK)
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "not enough permissions to read cpu data")
+	scrapers := attrs.PutEmptySlice("scrapers")
+	for _, scraper := range []string{"cpu", "memory", "network"} {
+		scrapers.AppendEmpty().SetStr(scraper)
+	}
+
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	resp, err := client.Get(ts.URL + config.Status.Path + "?verbose")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	expectedAttrs := map[string]any{
+		"error_msg": "not enough permissions to read cpu data",
+		"scrapers":  []any{"cpu", "memory", "network"},
+	}
+
+	assert.Equal(t, expectedAttrs, st.Attributes)
+
+	metricsStatus, ok := st.ComponentStatuses["pipeline:"+metrics.PipelineID.String()]
+	require.True(t, ok)
+	assert.Equal(t, expectedAttrs, metricsStatus.Attributes)
+
+	exporterKey := "exporter:" + metrics.ExporterID.ComponentID().String()
+	exporterStatus, ok := metricsStatus.ComponentStatuses[exporterKey]
+	require.True(t, ok)
+	assert.Equal(t, expectedAttrs, exporterStatus.Attributes)
+}
+
+func TestStatusNonVerboseExcludesAttributes(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: true,
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "test error")
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	// Request without verbose parameter - attributes should not be included
+	resp, err := client.Get(ts.URL + config.Status.Path)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	// Attributes should be empty map when verbose is false
+	assert.Empty(t, st.Attributes)
+}
+
+func TestStatusExcludesAttributesWhenConfigDisabled(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: false,
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "test error")
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	// Request with verbose parameter but include_attributes=false - attributes should not be included
+	resp, err := client.Get(ts.URL + config.Status.Path + "?verbose")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	// Attributes should be empty map when include_attributes is false
+	assert.Empty(t, st.Attributes)
 }

@@ -57,10 +57,14 @@ func NewServer(
 
 	if legacyConfig.UseV2 {
 		srv.httpConfig = config.ServerConfig
+		includeAttributes := true // default for backward compatibility
+		if config.Status.Enabled {
+			includeAttributes = config.Status.IncludeAttributes
+		}
 		if componentHealthConfig != nil {
-			srv.responder = componentHealthResponder(&now, componentHealthConfig)
+			srv.responder = componentHealthResponder(&now, componentHealthConfig, includeAttributes)
 		} else {
-			srv.responder = defaultResponder(&now)
+			srv.responder = defaultResponder(&now, includeAttributes)
 		}
 		if config.Status.Enabled {
 			srv.mux.Handle(config.Status.Path, srv.statusHandler())
