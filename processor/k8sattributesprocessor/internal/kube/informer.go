@@ -189,18 +189,6 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 
 func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
 	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
-		if err := apiCfg.Validate(); err != nil {
-			return cache.NewSharedIndexInformer(
-				&cache.ListWatch{
-					ListWithContextFunc:  func(_ context.Context, _ metav1.ListOptions) (runtime.Object, error) { return nil, err },
-					WatchFuncWithContext: func(_ context.Context, _ metav1.ListOptions) (watch.Interface, error) { return nil, err },
-				},
-				&metav1.PartialObjectMetadata{},
-				watchSyncPeriod,
-				cache.Indexers{},
-			)
-		}
-
 		restCfg, err := k8sconfig.CreateRestConfig(apiCfg)
 		if err != nil {
 			return cache.NewSharedIndexInformer(
