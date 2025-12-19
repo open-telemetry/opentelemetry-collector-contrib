@@ -165,7 +165,6 @@ pkg/translator/azurelogs pkg/translator/azurelogs
 pkg/translator/faro pkg/translator/faro
 pkg/translator/jaeger pkg/translator/jaeger
 pkg/translator/loki pkg/translator/loki
-pkg/translator/opencensus pkg/translator/opencensus
 pkg/translator/pprof pkg/translator/pprof
 pkg/translator/prometheus pkg/translator/prometheus
 pkg/translator/prometheusremotewrite pkg/translator/prometheusremotewrite
