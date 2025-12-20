@@ -22,7 +22,7 @@ const (
 	operatorType              = "container"
 	recombineSourceIdentifier = attrs.LogFilePath
 	recombineIsLastEntry      = "attributes.logtag == 'F'"
-	defaultMaxLogSize         = 10 * 1024 * 1024
+	defaultMaxLogSize         = 1024 * 1024
 )
 
 func init() {
@@ -99,7 +99,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 //	combine_field: body
 //	combine_with: ""
 //	is_last_entry: attributes.logtag == 'F'
-//	max_log_size: 102400
+//	max_log_size: 1048576 (1MiB)
 //	source_identifier: attributes["log.file.path"]
 //	type: recombine
 func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.BatchingLogEmitter) (operator.Operator, error) {

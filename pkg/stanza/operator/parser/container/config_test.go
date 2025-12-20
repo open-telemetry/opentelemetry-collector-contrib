@@ -118,5 +118,5 @@ func TestConfig(t *testing.T) {
 
 func TestDefaultValues(t *testing.T) {
 	cfg := NewConfig()
-	assert.Equal(t, helper.ByteSize(10*1024*1024), cfg.MaxLogSize)
+	assert.Equal(t, helper.ByteSize(1024*1024), cfg.MaxLogSize)
 }

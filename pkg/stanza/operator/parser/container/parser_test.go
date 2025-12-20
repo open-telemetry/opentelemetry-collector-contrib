@@ -4,6 +4,8 @@
 package container
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -730,6 +732,120 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 			}
 
 			fake.ExpectEntries(t, tc.expectedOutput)
+
+			select {
+			case e := <-fake.Received:
+				require.FailNow(t, "Received unexpected entry: ", "%+v", e)
+			default:
+			}
+		})
+	}
+}
+
+func TestMaxLogSizeRecombine(t *testing.T) {
+	const (
+		partialSize = 600 * 1024 // 600KB per partial entry
+		oneMiB      = 1024 * 1024
+	)
+
+	filePath := "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log"
+	largeContent := strings.Repeat("x", partialSize)
+
+	makeCRIOEntry := func(content, tag string) *entry.Entry {
+		return &entry.Entry{
+			Body: fmt.Sprintf("2024-04-13T07:59:37.505201169-10:00 stdout %s %s", tag, content),
+			Attributes: map[string]any{
+				attrs.LogFilePath: filePath,
+			},
+		}
+	}
+
+	cases := []struct {
+		name     string
+		op       func() (operator.Operator, error)
+		input    []*entry.Entry
+		validate func(t *testing.T, fake *testutil.FakeOutput)
+	}{
+		{
+			"default_1MiB_limit_flushes_oversized_logs",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				makeCRIOEntry(largeContent, "P"),
+				makeCRIOEntry(largeContent, "P"),
+				makeCRIOEntry("final", "F"),
+			},
+			func(t *testing.T, fake *testutil.FakeOutput) {
+				// First entry: flushed due to size limit
+				select {
+				case e := <-fake.Received:
+					body, _ := e.Body.(string)
+					require.Greater(t, len(body), partialSize)
+					require.Contains(t, e.Attributes, "log.iostream")
+				case <-time.After(time.Second):
+					require.FailNow(t, "Timed out waiting for first entry")
+				}
+
+				// Second entry: final content
+				select {
+				case e := <-fake.Received:
+					body, _ := e.Body.(string)
+					require.Equal(t, "final", body)
+					require.Contains(t, e.Attributes, "log.iostream")
+				case <-time.After(time.Second):
+					require.FailNow(t, "Timed out waiting for second entry")
+				}
+			},
+		},
+		{
+			"zero_allows_unlimited_batching",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				cfg.MaxLogSize = 0 // Unlimited
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				makeCRIOEntry(largeContent, "P"),
+				makeCRIOEntry(largeContent, "P"),
+				makeCRIOEntry("final", "F"),
+			},
+			func(t *testing.T, fake *testutil.FakeOutput) {
+				// Single combined entry exceeding 1MiB
+				select {
+				case e := <-fake.Received:
+					body, _ := e.Body.(string)
+					require.Greater(t, len(body), oneMiB)
+					require.Contains(t, body, "final")
+					require.Contains(t, e.Attributes, "log.iostream")
+				case <-time.After(time.Second):
+					require.FailNow(t, "Timed out waiting for combined entry")
+				}
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			op, err := tc.op()
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			r := op.(*Parser)
+			fake := testutil.NewFakeOutput(t)
+			r.OutputOperators = []operator.Operator{fake}
+
+			for _, e := range tc.input {
+				require.NoError(t, r.Process(ctx, e))
+			}
+
+			tc.validate(t, fake)
 
 			select {
 			case e := <-fake.Received:
