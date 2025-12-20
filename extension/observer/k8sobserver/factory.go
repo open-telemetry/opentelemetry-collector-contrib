@@ -26,9 +26,12 @@ func NewFactory() extension.Factory {
 // CreateDefaultConfig creates the default configuration for the extension.
 func createDefaultConfig() component.Config {
 	return &Config{
-		APIConfig:    k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-		ObservePods:  true,
-		ObserveNodes: false,
+		APIConfig:                  k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		ObservePods:                true,
+		ObserveNodes:               false,
+		ObservePendingPods:         false,
+		ObserveInitContainers:      false,
+		InitContainerTerminatedTTL: DefaultInitContainerTerminatedTTL,
 	}
 }
 

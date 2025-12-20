@@ -6,6 +6,7 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -14,8 +15,9 @@ import (
 
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
 // include the pod itself as well as an endpoint for each container port that is mapped
-// to a container that is in a running state.
-func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint {
+// to a container that is in a running state. Init containers are included when configured,
+// with terminated init containers only included if they terminated within the TTL.
+func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePendingPods bool, observeInitContainers bool, initContainerTerminatedTTL time.Duration) []observer.Endpoint {
 	podID := observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
 
@@ -27,8 +29,11 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 		Namespace:   pod.Namespace,
 	}
 
-	// Return no endpoints if the Pod is not running
-	if pod.Status.Phase != v1.PodRunning {
+	// Return no endpoints if the Pod is not in an observable phase
+	if pod.Status.Phase == v1.PodPending && !observePendingPods {
+		return nil
+	}
+	if pod.Status.Phase != v1.PodRunning && pod.Status.Phase != v1.PodPending {
 		return nil
 	}
 
@@ -40,11 +45,27 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 
 	// Map of running containers by name.
 	runningContainers := map[string]runningContainer{}
+	initContainers := map[string]runningContainer{}
 
 	for i := range pod.Status.ContainerStatuses {
 		container := &pod.Status.ContainerStatuses[i]
 		if container.State.Running != nil {
 			runningContainers[container.Name] = containerIDWithRuntime(container)
+		}
+	}
+
+	if observeInitContainers {
+		for i := range pod.Status.InitContainerStatuses {
+			container := &pod.Status.InitContainerStatuses[i]
+			if container.State.Running != nil {
+				// Always include running init containers
+				initContainers[container.Name] = containerIDWithRuntime(container)
+			} else if container.State.Terminated != nil {
+				// Only include terminated init containers if they terminated recently
+				if time.Since(container.State.Terminated.FinishedAt.Time) <= initContainerTerminatedTTL {
+					initContainers[container.Name] = containerIDWithRuntime(container)
+				}
+			}
 		}
 	}
 
@@ -66,10 +87,11 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 			ID:     endpointID,
 			Target: podIP,
 			Details: &observer.PodContainer{
-				Name:        container.Name,
-				ContainerID: rc.ID,
-				Image:       container.Image,
-				Pod:         podDetails,
+				Name:            container.Name,
+				ContainerID:     rc.ID,
+				Image:           container.Image,
+				IsInitContainer: false,
+				Pod:             podDetails,
 			},
 		})
 
@@ -91,6 +113,33 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 					ContainerName:  container.Name,
 					ContainerID:    rc.ID,
 					ContainerImage: container.Image,
+				},
+			})
+		}
+	}
+
+	if observeInitContainers {
+		for i := range pod.Spec.InitContainers {
+			container := &pod.Spec.InitContainers[i]
+			rc, ok := initContainers[container.Name]
+			if !ok {
+				continue
+			}
+
+			endpointID := observer.EndpointID(
+				fmt.Sprintf(
+					"%s/%s", podID, container.Name,
+				),
+			)
+			endpoints = append(endpoints, observer.Endpoint{
+				ID:     endpointID,
+				Target: podIP,
+				Details: &observer.PodContainer{
+					Name:            container.Name,
+					ContainerID:     rc.ID,
+					Image:           container.Image,
+					IsInitContainer: true,
+					Pod:             podDetails,
 				},
 			})
 		}

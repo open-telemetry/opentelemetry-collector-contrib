@@ -5,9 +5,13 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"errors"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
+
+// DefaultInitContainerTerminatedTTL is the default time-to-live for terminated init container endpoints.
+const DefaultInitContainerTerminatedTTL = 15 * time.Minute
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
@@ -40,6 +44,21 @@ type Config struct {
 	ObserveIngresses bool `mapstructure:"observe_ingresses"`
 	// Namespaces limits the namespaces for the observed resources. By default, all namespaces will be observed.
 	Namespaces []string `mapstructure:"namespaces"`
+	// ObservePendingPods determines whether to report endpoints for pods in Pending phase.
+	// When false, only pods in Running phase are observed. When true, pods in both Pending
+	// and Running phases are observed. This is required to observe running init containers.
+	// `false` by default to maintain backward compatibility.
+	ObservePendingPods bool `mapstructure:"observe_pending_pods"`
+	// ObserveInitContainers determines whether to report init container endpoints.
+	// Only effective when ObservePods is true. To observe running init containers,
+	// ObservePendingPods must also be enabled. `false` by default.
+	ObserveInitContainers bool `mapstructure:"observe_init_containers"`
+	// InitContainerTerminatedTTL controls how long after termination an init container
+	// endpoint remains observable. Running init containers are always observed.
+	// Terminated init containers are only observed if they terminated within this duration.
+	// This prevents keeping receivers open indefinitely for completed init containers.
+	// Default is 15 minutes.
+	InitContainerTerminatedTTL time.Duration `mapstructure:"init_container_terminated_ttl"`
 }
 
 // Validate checks if the extension configuration is valid
