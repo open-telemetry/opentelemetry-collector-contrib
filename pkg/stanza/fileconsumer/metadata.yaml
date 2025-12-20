@@ -19,7 +19,7 @@ telemetry:
     fileconsumer_file_offset:
       description: Current read offset in files being monitored. This value may reset when files are rotated.
       unit: "By"
-      enabled: true
+      enabled: false
       stability:
         level: development
       gauge:
@@ -28,7 +28,7 @@ telemetry:
     fileconsumer_file_size:
       description: Current size of files being monitored. This value may reset when files are rotated.
       unit: "By"
-      enabled: true
+      enabled: false
       stability:
         level: development
       gauge:
