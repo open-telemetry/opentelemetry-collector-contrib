@@ -103,7 +103,10 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
 	showDeprecationWarnings(cfg, set.Logger)
-	c := newTracesClient(set, cfg)
+	c, err := newTracesClient(set, cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	e, err := exporterhelper.NewTraces(
 		ctx,
@@ -136,7 +139,10 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 	showDeprecationWarnings(cfg, set.Logger)
-	c := newMetricsClient(set, cfg)
+	c, err := newMetricsClient(set, cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	e, err := exporterhelper.NewMetrics(
 		ctx,
@@ -169,7 +175,10 @@ func createLogsExporter(
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
 	showDeprecationWarnings(cfg, set.Logger)
-	c := newLogsClient(set, cfg)
+	c, err := newLogsClient(set, cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	logsExporter, err := exporterhelper.NewLogs(
 		ctx,

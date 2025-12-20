@@ -16,3 +16,28 @@ tests:
     retry_on_failure:
       enabled: false
   expect_consumer_error: true
+
+attributes:
+  host:
+    description: The value of the Splunk event host field
+    type: string
+  index:
+    description: The value of the Splunk event index field
+    type: string
+  sourcetype:
+    description: The value of the Splunk event sourcetype field
+    type: string
+
+telemetry:
+  metrics:
+    splunk_events_created:
+      enabled: true
+      stability:
+        level: development
+      description: The count of Splunk events created
+      optional: true
+      unit: "{events}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [ index, sourcetype, host ]
