@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
@@ -415,7 +416,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	dec := json.NewDecoder(bodyReader)
 
-	var unfiltered []*splunk.Event
+	var unfiltered []*translator.Event
 	var firstEvent any
 	firstErr := dec.Decode(&firstEvent)
 
@@ -428,7 +429,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	case []any:
 		// Array of events
 		eventBytes, _ := json.Marshal(v)
-		var events []splunk.Event
+		var events []translator.Event
 		if err := json.Unmarshal(eventBytes, &events); err != nil {
 			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 			return
@@ -451,7 +452,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	default:
 		// Single event
 		eventBytes, _ := json.Marshal(v)
-		var event splunk.Event
+		var event translator.Event
 		if err := json.Unmarshal(eventBytes, &event); err != nil {
 			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 			return
@@ -459,8 +460,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		unfiltered = append(unfiltered, &event)
 	}
 
-	var events []*splunk.Event
-	var metricEvents []*splunk.Event
+	var events []*translator.Event
+	var metricEvents []*translator.Event
 
 	for len(unfiltered) > 0 {
 		msg := unfiltered[0]
@@ -497,7 +498,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 
 		if dec.More() {
-			var msg splunk.Event
+			var msg translator.Event
 			err := dec.Decode(&msg)
 			if err != nil {
 				r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
