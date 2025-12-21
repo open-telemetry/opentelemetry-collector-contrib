@@ -7,10 +7,10 @@ change_type: breaking
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change BoolExpr to be an interface to allow literals implementation.
+note: Move BoolExpr to be an internal member to allow literals implementation.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [44954]
+issues: [44954, 45095]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

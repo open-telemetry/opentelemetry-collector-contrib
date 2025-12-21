@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/runtime"
 )
 
 // PathExpressionParser is how a context provides OTTL access to all its Paths.
@@ -807,7 +809,7 @@ func NewTestingLiteralGetter[K, V any](literal bool, getter typedGetter[K, V]) (
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, V](val), nil
+		return runtime.NewLiteral[K, V](val), nil
 	}
 	return mockLiteralGetter[K, V]{valueGetter: getter.Get}, nil
 }

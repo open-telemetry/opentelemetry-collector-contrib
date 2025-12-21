@@ -15,13 +15,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/runtime"
 )
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
 	function          Expr[K]
-	condition         BoolExpr[K]
+	condition         runtime.BoolExpr[K]
 	origText          string
 	telemetrySettings component.TelemetrySettings
 }
@@ -52,7 +54,7 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 
 // Condition holds a top level Condition. A Condition is a boolean expression to match telemetry.
 type Condition[K any] struct {
-	condition BoolExpr[K]
+	condition runtime.BoolExpr[K]
 	origText  string
 }
 

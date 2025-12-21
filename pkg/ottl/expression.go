@@ -19,6 +19,7 @@ import (
 	"golang.org/x/exp/constraints"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/runtime"
 )
 
 // ExprFunc is a function in OTTL
@@ -160,20 +161,15 @@ type listGetter[K any] struct {
 }
 
 func newListGetter[K any](slice []Getter[K]) (Getter[K], error) {
-	g := listGetter[K]{slice}
-	if len(slice) == 0 {
-		return &g, nil
-	}
-	for _, v := range slice {
-		if !isLiteralGetter(v) {
-			return &g, nil
+	literals := make([]any, len(slice))
+	for i, v := range slice {
+		val, isLiteral := runtime.GetLiteralValue(v)
+		if !isLiteral {
+			return &listGetter[K]{slice: slice}, nil
 		}
+		literals[i] = val
 	}
-	val, err := g.Get(context.Background(), *new(K))
-	if err != nil {
-		return nil, err
-	}
-	return newLiteral[K, any](val), nil
+	return runtime.NewLiteral[K, any](literals), nil
 }
 
 func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
@@ -196,21 +192,18 @@ type mapGetter[K any] struct {
 }
 
 func newMapGetter[K any](mapValues map[string]Getter[K]) (Getter[K], error) {
-	g := mapGetter[K]{mapValues: mapValues}
-	// Check if literal, if yes then return literal Getter.
-	if len(mapValues) == 0 {
-		return &g, nil
-	}
-	for _, v := range mapValues {
-		if !isLiteralGetter(v) {
-			return &g, nil
+	literals := pcommon.NewMap()
+	for k, v := range mapValues {
+		val, isLiteral := runtime.GetLiteralValue(v)
+		if !isLiteral {
+			return &mapGetter[K]{mapValues: mapValues}, nil
+		}
+		err := addToMapResult(literals, k, val)
+		if err != nil {
+			return nil, err
 		}
 	}
-	val, err := g.Get(context.Background(), *new(K))
-	if err != nil {
-		return nil, err
-	}
-	return newLiteral[K, any](val), nil
+	return runtime.NewLiteral[K, any](literals), nil
 }
 
 func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
@@ -220,32 +213,40 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch typedVal := val.(type) {
-		case pcommon.Map:
-			target := result.PutEmpty(k).SetEmptyMap()
-			typedVal.CopyTo(target)
-		case []any:
-			target := result.PutEmpty(k).SetEmptySlice()
-			for _, el := range typedVal {
-				switch typedEl := el.(type) {
-				case pcommon.Map:
-					m := target.AppendEmpty().SetEmptyMap()
-					typedEl.CopyTo(m)
-				default:
-					err := target.AppendEmpty().FromRaw(el)
-					if err != nil {
-						return nil, err
-					}
-				}
-			}
-		default:
-			err := result.PutEmpty(k).FromRaw(val)
-			if err != nil {
-				return nil, err
-			}
+		err = addToMapResult(result, k, val)
+		if err != nil {
+			return nil, err
 		}
 	}
 	return result, nil
+}
+
+func addToMapResult(result pcommon.Map, k string, val any) error {
+	switch typedVal := val.(type) {
+	case pcommon.Map:
+		target := result.PutEmpty(k).SetEmptyMap()
+		typedVal.CopyTo(target)
+	case []any:
+		target := result.PutEmpty(k).SetEmptySlice()
+		for _, el := range typedVal {
+			switch typedEl := el.(type) {
+			case pcommon.Map:
+				m := target.AppendEmpty().SetEmptyMap()
+				typedEl.CopyTo(m)
+			default:
+				err := target.AppendEmpty().FromRaw(el)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	default:
+		err := result.PutEmpty(k).FromRaw(val)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // PSliceGetSetter is a GetSetter that must interact with a pcommon.Slice
@@ -292,12 +293,12 @@ func newStandardPSliceGetter[K any](getter Getter[K]) (PSliceGetter[K], error) {
 	g := StandardPSliceGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, pcommon.Slice](val), nil
+		return runtime.NewLiteral[K, pcommon.Slice](val), nil
 	}
 	return g, nil
 }
@@ -398,12 +399,12 @@ func newStandardStringGetter[K any](getter Getter[K]) (StringGetter[K], error) {
 	g := StandardStringGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, string](val), nil
+		return runtime.NewLiteral[K, string](val), nil
 	}
 	return g, nil
 }
@@ -449,12 +450,12 @@ func newStandardIntGetter[K any](getter Getter[K]) (IntGetter[K], error) {
 	g := StandardIntGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, int64](val), nil
+		return runtime.NewLiteral[K, int64](val), nil
 	}
 	return g, nil
 }
@@ -498,12 +499,12 @@ func newStandardFloatGetter[K any](getter Getter[K]) (FloatGetter[K], error) {
 	g := StandardFloatGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, float64](val), nil
+		return runtime.NewLiteral[K, float64](val), nil
 	}
 	return g, nil
 }
@@ -547,12 +548,12 @@ func newStandardBoolGetter[K any](getter Getter[K]) (BoolGetter[K], error) {
 	g := StandardBoolGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, bool](val), nil
+		return runtime.NewLiteral[K, bool](val), nil
 	}
 	return g, nil
 }
@@ -661,12 +662,12 @@ func newStandardPMapGetter[K any](getter Getter[K]) (PMapGetter[K], error) {
 	g := StandardPMapGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, pcommon.Map](val), nil
+		return runtime.NewLiteral[K, pcommon.Map](val), nil
 	}
 	return g, nil
 }
@@ -722,12 +723,12 @@ func newStandardStringLikeGetter[K any](getter Getter[K]) (StringLikeGetter[K], 
 	g := StandardStringLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, *string](val), nil
+		return runtime.NewLiteral[K, *string](val), nil
 	}
 	return g, nil
 }
@@ -788,12 +789,12 @@ func newStandardFloatLikeGetter[K any](getter Getter[K]) (FloatLikeGetter[K], er
 	g := StandardFloatLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, *float64](val), nil
+		return runtime.NewLiteral[K, *float64](val), nil
 	}
 	return g, nil
 }
@@ -867,12 +868,12 @@ func newStandardIntLikeGetter[K any](getter Getter[K]) (IntLikeGetter[K], error)
 	g := StandardIntLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, *int64](val), nil
+		return runtime.NewLiteral[K, *int64](val), nil
 	}
 	return g, nil
 }
@@ -946,12 +947,12 @@ func newStandardByteSliceLikeGetter[K any](getter Getter[K]) (ByteSliceLikeGette
 	g := StandardByteSliceLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, []byte](val), nil
+		return runtime.NewLiteral[K, []byte](val), nil
 	}
 	return g, nil
 }
@@ -1036,12 +1037,12 @@ func newStandardBoolLikeGetter[K any](getter Getter[K]) (BoolLikeGetter[K], erro
 	g := StandardBoolLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, *bool](val), nil
+		return runtime.NewLiteral[K, *bool](val), nil
 	}
 	return g, nil
 }
@@ -1098,17 +1099,17 @@ func (g StandardBoolLikeGetter[K]) Get(ctx context.Context, tCtx K) (*bool, erro
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	if val.IsNil != nil && *val.IsNil {
-		return newLiteral[K, any](nil), nil
+		return runtime.NewLiteral[K, any](nil), nil
 	}
 
 	if s := val.String; s != nil {
-		return newLiteral[K, any](*s), nil
+		return runtime.NewLiteral[K, any](*s), nil
 	}
 	if b := val.Bool; b != nil {
-		return newLiteral[K, any](bool(*b)), nil
+		return runtime.NewLiteral[K, any](bool(*b)), nil
 	}
 	if b := val.Bytes; b != nil {
-		return newLiteral[K, any]([]byte(*b)), nil
+		return runtime.NewLiteral[K, any]([]byte(*b)), nil
 	}
 
 	if val.Enum != nil {
@@ -1116,15 +1117,15 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, any](int64(*enum)), nil
+		return runtime.NewLiteral[K, any](int64(*enum)), nil
 	}
 
 	if eL := val.Literal; eL != nil {
 		if f := eL.Float; f != nil {
-			return newLiteral[K, any](*f), nil
+			return runtime.NewLiteral[K, any](*f), nil
 		}
 		if i := eL.Int; i != nil {
-			return newLiteral[K, any](*i), nil
+			return runtime.NewLiteral[K, any](*i), nil
 		}
 		if eL.Path != nil {
 			np, err := p.newPath(eL.Path)
@@ -1190,12 +1191,12 @@ func newStandardTimeGetter[K any](getter Getter[K]) (TimeGetter[K], error) {
 	g := StandardTimeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, time.Time](val), nil
+		return runtime.NewLiteral[K, time.Time](val), nil
 	}
 	return g, nil
 }
@@ -1234,12 +1235,12 @@ func newStandardDurationGetter[K any](getter Getter[K]) (DurationGetter[K], erro
 	g := StandardDurationGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, ok := runtime.GetLiteralValue(getter); ok {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
 		}
-		return newLiteral[K, time.Duration](val), nil
+		return runtime.NewLiteral[K, time.Duration](val), nil
 	}
 	return g, nil
 }
@@ -1266,4 +1267,8 @@ func (g StandardDurationGetter[K]) Get(ctx context.Context, tCtx K) (time.Durati
 	default:
 		return 0, TypeError(fmt.Sprintf("expected duration but got %T", val))
 	}
+}
+
+func GetLiteralValue[K any, V any](g runtime.Getter[K, V]) (V, bool) {
+	return runtime.GetLiteralValue(g)
 }

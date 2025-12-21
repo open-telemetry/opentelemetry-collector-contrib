@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/runtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -651,7 +652,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: eq,
+								Op: runtime.Eq,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -722,7 +723,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: ne,
+								Op: runtime.Ne,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -793,7 +794,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: eq,
+								Op: runtime.Eq,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -1369,7 +1370,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: eq,
+								Op: runtime.Eq,
 								Right: value{
 									MathExpression: &mathExpression{
 										Left: &addSubTerm{
@@ -1468,7 +1469,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: eq,
+							Op: runtime.Eq,
 							Right: value{
 								String: ottltest.Strp("fido"),
 							},
@@ -1500,7 +1501,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: ne,
+							Op: runtime.Ne,
 							Right: value{
 								String: ottltest.Strp("fido"),
 							},
@@ -1549,7 +1550,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: eq,
+							Op: runtime.Eq,
 							Right: value{
 								MathExpression: &mathExpression{
 									Left: &addSubTerm{
@@ -1914,7 +1915,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: ne,
+							Op: runtime.Ne,
 							Right: value{
 								String: ottltest.Strp("foo"),
 							},
@@ -1941,7 +1942,7 @@ func Test_parseWhere(t *testing.T) {
 											},
 										},
 									},
-									Op: ne,
+									Op: runtime.Ne,
 									Right: value{
 										String: ottltest.Strp("bar"),
 									},
@@ -1974,7 +1975,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: eq,
+							Op: runtime.Eq,
 							Right: value{
 								String: ottltest.Strp("foo"),
 							},
@@ -2003,7 +2004,7 @@ func Test_parseWhere(t *testing.T) {
 											},
 										},
 									},
-									Op: eq,
+									Op: runtime.Eq,
 									Right: value{
 										String: ottltest.Strp("bar"),
 									},
@@ -2060,7 +2061,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: eq,
+							Op: runtime.Eq,
 							Right: value{
 								String: ottltest.Strp("bar"),
 							},
@@ -2149,7 +2150,7 @@ func Test_parseWhere(t *testing.T) {
 							Left: value{
 								IsNil: (*isNil)(ottltest.Boolp(true)),
 							},
-							Op: eq,
+							Op: runtime.Eq,
 							Right: value{
 								IsNil: (*isNil)(ottltest.Boolp(true)),
 							},
@@ -2167,7 +2168,7 @@ func Test_parseWhere(t *testing.T) {
 							Left: value{
 								IsNil: (*isNil)(ottltest.Boolp(true)),
 							},
-							Op: eq,
+							Op: runtime.Eq,
 							Right: value{
 								String: ottltest.Strp("nil"),
 							},
@@ -2621,14 +2622,14 @@ func Test_parseValueExpression(t *testing.T) {
 func Test_Statement_Execute(t *testing.T) {
 	tests := []struct {
 		name              string
-		condition         BoolExpr[any]
+		condition         runtime.BoolExpr[any]
 		function          ExprFunc[any]
 		expectedCondition bool
 		expectedResult    any
 	}{
 		{
 			name:      "Condition matched",
-			condition: newAlwaysTrue[any](),
+			condition: runtime.NewAlwaysTrue[any](),
 			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
@@ -2637,7 +2638,7 @@ func Test_Statement_Execute(t *testing.T) {
 		},
 		{
 			name:      "Condition not matched",
-			condition: newAlwaysFalse[any](),
+			condition: runtime.NewAlwaysFalse[any](),
 			function: func(context.Context, any) (any, error) {
 				return 1, nil
 			},
@@ -2646,7 +2647,7 @@ func Test_Statement_Execute(t *testing.T) {
 		},
 		{
 			name:      "No result",
-			condition: newAlwaysTrue[any](),
+			condition: runtime.NewAlwaysTrue[any](),
 			function: func(context.Context, any) (any, error) {
 				return nil, nil
 			},
@@ -2673,17 +2674,17 @@ func Test_Statement_Execute(t *testing.T) {
 func Test_Condition_Eval(t *testing.T) {
 	tests := []struct {
 		name           string
-		condition      BoolExpr[any]
+		condition      runtime.BoolExpr[any]
 		expectedResult bool
 	}{
 		{
 			name:           "Condition matched",
-			condition:      newAlwaysTrue[any](),
+			condition:      runtime.NewAlwaysTrue[any](),
 			expectedResult: true,
 		},
 		{
 			name:           "Condition not matched",
-			condition:      newAlwaysFalse[any](),
+			condition:      runtime.NewAlwaysFalse[any](),
 			expectedResult: false,
 		},
 	}
@@ -2703,7 +2704,7 @@ func Test_Condition_Eval(t *testing.T) {
 func Test_Statements_Execute_Error(t *testing.T) {
 	tests := []struct {
 		name      string
-		condition BoolExpr[any]
+		condition runtime.BoolExpr[any]
 		function  ExprFunc[any]
 		errorMode ErrorMode
 	}{
@@ -2725,7 +2726,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 		},
 		{
 			name:      "IgnoreError error from function",
-			condition: newAlwaysTrue[any](),
+			condition: runtime.NewAlwaysTrue[any](),
 			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test")
 			},
@@ -2733,7 +2734,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 		},
 		{
 			name:      "PropagateError error from function",
-			condition: newAlwaysTrue[any](),
+			condition: runtime.NewAlwaysTrue[any](),
 			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test")
 			},
@@ -2749,7 +2750,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 		},
 		{
 			name:      "SilentError error from function",
-			condition: newAlwaysTrue[any](),
+			condition: runtime.NewAlwaysTrue[any](),
 			function: func(context.Context, any) (any, error) {
 				return 1, errors.New("test")
 			},
@@ -2783,7 +2784,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 func Test_ConditionSequence_Eval(t *testing.T) {
 	tests := []struct {
 		name           string
-		conditions     []BoolExpr[any]
+		conditions     []runtime.BoolExpr[any]
 		function       ExprFunc[any]
 		errorMode      ErrorMode
 		logicOp        LogicOperation
@@ -2791,8 +2792,8 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 	}{
 		{
 			name: "True with OR",
-			conditions: []BoolExpr[any]{
-				newAlwaysTrue[any](),
+			conditions: []runtime.BoolExpr[any]{
+				runtime.NewAlwaysTrue[any](),
 			},
 			errorMode:      IgnoreError,
 			logicOp:        Or,
@@ -2800,10 +2801,10 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "At least one True with OR",
-			conditions: []BoolExpr[any]{
-				newAlwaysFalse[any](),
-				newAlwaysFalse[any](),
-				newAlwaysTrue[any](),
+			conditions: []runtime.BoolExpr[any]{
+				runtime.NewAlwaysFalse[any](),
+				runtime.NewAlwaysFalse[any](),
+				runtime.NewAlwaysTrue[any](),
 			},
 			errorMode:      IgnoreError,
 			logicOp:        Or,
@@ -2811,9 +2812,9 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "False with OR",
-			conditions: []BoolExpr[any]{
-				newAlwaysFalse[any](),
-				newAlwaysFalse[any](),
+			conditions: []runtime.BoolExpr[any]{
+				runtime.NewAlwaysFalse[any](),
+				runtime.NewAlwaysFalse[any](),
 			},
 			errorMode:      IgnoreError,
 			logicOp:        Or,
@@ -2821,7 +2822,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "Single erroring condition is treated as false when using Ignore with OR",
-			conditions: []BoolExpr[any]{
+			conditions: []runtime.BoolExpr[any]{
 				newErrExpr[any](errors.New("test")),
 			},
 			errorMode:      IgnoreError,
@@ -2830,9 +2831,9 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "erroring condition is ignored when using Ignore with OR",
-			conditions: []BoolExpr[any]{
+			conditions: []runtime.BoolExpr[any]{
 				newErrExpr[any](errors.New("test")),
-				newAlwaysTrue[any](),
+				runtime.NewAlwaysTrue[any](),
 			},
 			errorMode:      IgnoreError,
 			logicOp:        Or,
@@ -2840,9 +2841,9 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "True with AND",
-			conditions: []BoolExpr[any]{
-				newAlwaysTrue[any](),
-				newAlwaysTrue[any](),
+			conditions: []runtime.BoolExpr[any]{
+				runtime.NewAlwaysTrue[any](),
+				runtime.NewAlwaysTrue[any](),
 			},
 			errorMode:      IgnoreError,
 			logicOp:        And,
@@ -2850,10 +2851,10 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "At least one False with AND",
-			conditions: []BoolExpr[any]{
-				newAlwaysFalse[any](),
-				newAlwaysTrue[any](),
-				newAlwaysTrue[any](),
+			conditions: []runtime.BoolExpr[any]{
+				runtime.NewAlwaysFalse[any](),
+				runtime.NewAlwaysTrue[any](),
+				runtime.NewAlwaysTrue[any](),
 			},
 			errorMode:      IgnoreError,
 			logicOp:        And,
@@ -2861,8 +2862,8 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "False with AND",
-			conditions: []BoolExpr[any]{
-				newAlwaysFalse[any](),
+			conditions: []runtime.BoolExpr[any]{
+				runtime.NewAlwaysFalse[any](),
 			},
 			errorMode:      IgnoreError,
 			logicOp:        And,
@@ -2870,7 +2871,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "Single erroring condition is treated as false when using Ignore with AND",
-			conditions: []BoolExpr[any]{
+			conditions: []runtime.BoolExpr[any]{
 				newErrExpr[any](errors.New("test")),
 			},
 			errorMode:      IgnoreError,
@@ -2879,9 +2880,9 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		},
 		{
 			name: "erroring condition is ignored when using Ignore with AND",
-			conditions: []BoolExpr[any]{
+			conditions: []runtime.BoolExpr[any]{
 				newErrExpr[any](errors.New("test")),
-				newAlwaysTrue[any](),
+				runtime.NewAlwaysTrue[any](),
 			},
 			errorMode:      IgnoreError,
 			logicOp:        And,
@@ -2914,27 +2915,27 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 func Test_ConditionSequence_Eval_Error(t *testing.T) {
 	tests := []struct {
 		name       string
-		conditions []BoolExpr[any]
+		conditions []runtime.BoolExpr[any]
 		function   ExprFunc[any]
 		errorMode  ErrorMode
 	}{
 		{
 			name: "Propagate Error from condition",
-			conditions: []BoolExpr[any]{
+			conditions: []runtime.BoolExpr[any]{
 				newErrExpr[any](errors.New("test")),
 			},
 			errorMode: PropagateError,
 		},
 		{
 			name: "Ignore Error from function with IgnoreError",
-			conditions: []BoolExpr[any]{
+			conditions: []runtime.BoolExpr[any]{
 				newErrExpr[any](errors.New("test")),
 			},
 			errorMode: IgnoreError,
 		},
 		{
 			name: "Ignore Error from function with SilentError",
-			conditions: []BoolExpr[any]{
+			conditions: []runtime.BoolExpr[any]{
 				newErrExpr[any](errors.New("test")),
 			},
 			errorMode: SilentError,
@@ -3387,6 +3388,6 @@ func (e *errExpr[K]) Eval(context.Context, K) (bool, error) {
 
 func (*errExpr[K]) unexported() {}
 
-func newErrExpr[K any](err error) BoolExpr[K] {
+func newErrExpr[K any](err error) runtime.BoolExpr[K] {
 	return &errExpr[K]{err: err}
 }

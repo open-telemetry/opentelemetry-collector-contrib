@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+package runtime // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/runtime"
 
 import (
 	"context"
@@ -21,9 +21,6 @@ type literalExpr[K any, V any] struct {
 func (e *literalExpr[K, V]) Eval(context.Context, K) (V, error) {
 	return e.val, nil
 }
-
-//nolint:unused
-func (*literalExpr[K, V]) unexported() {}
 
 func (e *literalExpr[K, V]) getValue() V {
 	return e.val

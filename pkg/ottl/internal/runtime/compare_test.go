@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottl
+package runtime
 
 import (
 	"fmt"
@@ -67,7 +67,7 @@ func Test_comparison(t *testing.T) {
 		name string
 		a    any
 		b    any
-		want []bool // in order of eq, ne, lt, lte, gte, gt.
+		want []bool // in order of Eq, Ne, Lt, Lte, Gte, Gt.
 	}{
 		{"identity string", sa, sa, []bool{true, false, false, true, true, false}},
 		{"identity int64", i64a, i64a, []bool{true, false, false, true, true, false}},
@@ -145,7 +145,7 @@ func Test_comparison(t *testing.T) {
 		{"slice and other type", sl1, sa, []bool{false, true, false, false, false, false}},
 		{"pslice and other type", psl1, sa, []bool{false, true, false, false, false, false}},
 	}
-	ops := []compareOp{eq, ne, lt, lte, gte, gt}
+	ops := []CompareOp{Eq, Ne, Lt, Lte, Gte, Gt}
 	comp := NewValueComparator()
 	for _, tt := range tests {
 		for _, op := range ops {
@@ -156,22 +156,22 @@ func Test_comparison(t *testing.T) {
 				var got bool
 				var funcName string
 				switch op {
-				case eq:
+				case Eq:
 					funcName = "Equal"
 					got = comp.Equal(tt.a, tt.b)
-				case ne:
+				case Ne:
 					funcName = "NotEqual"
 					got = comp.NotEqual(tt.a, tt.b)
-				case gt:
+				case Gt:
 					funcName = "Greater"
 					got = comp.Greater(tt.a, tt.b)
-				case gte:
+				case Gte:
 					funcName = "GreaterEqual"
 					got = comp.GreaterEqual(tt.a, tt.b)
-				case lt:
+				case Lt:
 					funcName = "Less"
 					got = comp.Less(tt.a, tt.b)
-				case lte:
+				case Lte:
 					funcName = "LessEqual"
 					got = comp.LessEqual(tt.a, tt.b)
 				default:
@@ -194,7 +194,7 @@ func BenchmarkCompareEQInt64(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(i64a, i64b, eq)
+		c.compare(i64a, i64b, Eq)
 	}
 }
 
@@ -203,7 +203,7 @@ func BenchmarkCompareEQFloat(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(f64a, f64b, eq)
+		c.compare(f64a, f64b, Eq)
 	}
 }
 
@@ -212,7 +212,7 @@ func BenchmarkCompareEQString(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(sa, sb, eq)
+		c.compare(sa, sb, Eq)
 	}
 }
 
@@ -221,7 +221,7 @@ func BenchmarkCompareEQPString(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(&sa, &sb, eq)
+		c.compare(&sa, &sb, Eq)
 	}
 }
 
@@ -230,7 +230,7 @@ func BenchmarkCompareEQBytes(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(ba, bb, eq)
+		c.compare(ba, bb, Eq)
 	}
 }
 
@@ -239,7 +239,7 @@ func BenchmarkCompareEQNil(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(nil, nil, eq)
+		c.compare(nil, nil, Eq)
 	}
 }
 
@@ -248,7 +248,7 @@ func BenchmarkCompareNEInt(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(i64a, i64b, ne)
+		c.compare(i64a, i64b, Ne)
 	}
 }
 
@@ -257,7 +257,7 @@ func BenchmarkCompareNEFloat(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(f64a, f64b, ne)
+		c.compare(f64a, f64b, Ne)
 	}
 }
 
@@ -266,7 +266,7 @@ func BenchmarkCompareNEString(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(sa, sb, ne)
+		c.compare(sa, sb, Ne)
 	}
 }
 
@@ -275,7 +275,7 @@ func BenchmarkCompareLTFloat(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(f64a, f64b, lt)
+		c.compare(f64a, f64b, Lt)
 	}
 }
 
@@ -284,7 +284,7 @@ func BenchmarkCompareLTString(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(sa, sb, lt)
+		c.compare(sa, sb, Lt)
 	}
 }
 
@@ -293,17 +293,17 @@ func BenchmarkCompareLTNil(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		c.compare(nil, nil, lt)
+		c.compare(nil, nil, Lt)
 	}
 }
 
 // this is only used for benchmarking, and is a rough equivalent of the original compare function
-// before adding lt, lte, gte, and gt.
-func compareEq(a, b any, op compareOp) bool {
+// before adding Lt, Lte, Gte, and Gt.
+func compareEq(a, b any, op CompareOp) bool {
 	switch op {
-	case eq:
+	case Eq:
 		return a == b
-	case ne:
+	case Ne:
 		return a != b
 	default:
 		return false
@@ -312,6 +312,6 @@ func compareEq(a, b any, op compareOp) bool {
 
 func BenchmarkCompareEQFunction(b *testing.B) {
 	for b.Loop() {
-		compareEq(sa, sb, eq)
+		compareEq(sa, sb, Eq)
 	}
 }

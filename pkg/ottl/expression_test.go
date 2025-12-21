@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/runtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -405,7 +406,7 @@ func Test_newGetter(t *testing.T) {
 				},
 			},
 			want:        []any{},
-			wantLiteral: false,
+			wantLiteral: true,
 		},
 		{
 			name: "string list",
@@ -732,11 +733,13 @@ func Test_newGetter(t *testing.T) {
 
 			var val any
 			if tt.wantLiteral {
-				require.True(t, isLiteralGetter(reader))
-				val, err = reader.Get(t.Context(), nil)
-				require.NoError(t, err)
+				var isLiteral bool
+				val, isLiteral = runtime.GetLiteralValue(reader)
+				require.True(t, isLiteral)
 			} else {
-				require.False(t, isLiteralGetter(reader))
+				var isLiteral bool
+				_, isLiteral = runtime.GetLiteralValue(reader)
+				require.False(t, isLiteral)
 				val, err = reader.Get(t.Context(), tCtx)
 				require.NoError(t, err)
 			}
@@ -2694,17 +2697,9 @@ func Test_newStandardStringGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantLiteralTrue: true,
-			wantErr:         true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any]("foo"),
+				getter: runtime.NewLiteral[any, any]("foo"),
 			},
 			wantLiteralTrue: true,
 		},
@@ -2718,7 +2713,8 @@ func Test_newStandardStringGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -2747,16 +2743,9 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any]("foo"),
+				getter: runtime.NewLiteral[any, any]("foo"),
 			},
 			wantLiteralTrue: true,
 		},
@@ -2770,7 +2759,8 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -2799,16 +2789,9 @@ func Test_newStandardIntGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](int64(1)),
+				getter: runtime.NewLiteral[any, any](int64(1)),
 			},
 			wantLiteralTrue: true,
 		},
@@ -2822,7 +2805,8 @@ func Test_newStandardIntGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -2851,16 +2835,9 @@ func Test_newStandardIntLikeGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](int64(1)),
+				getter: runtime.NewLiteral[any, any](int64(1)),
 			},
 			wantLiteralTrue: true,
 		},
@@ -2874,7 +2851,8 @@ func Test_newStandardIntLikeGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -2903,16 +2881,9 @@ func Test_newStandardFloatGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](float64(1)),
+				getter: runtime.NewLiteral[any, any](float64(1)),
 			},
 			wantLiteralTrue: true,
 		},
@@ -2926,7 +2897,8 @@ func Test_newStandardFloatGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -2955,16 +2927,9 @@ func Test_newStandardFloatLikeGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](float64(1)),
+				getter: runtime.NewLiteral[any, any](float64(1)),
 			},
 			wantLiteralTrue: true,
 		},
@@ -2978,7 +2943,8 @@ func Test_newStandardFloatLikeGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -3007,16 +2973,9 @@ func Test_newStandardBoolGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](true),
+				getter: runtime.NewLiteral[any, any](true),
 			},
 			wantLiteralTrue: true,
 		},
@@ -3030,7 +2989,8 @@ func Test_newStandardBoolGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -3059,16 +3019,9 @@ func Test_newStandardBoolLikeGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](true),
+				getter: runtime.NewLiteral[any, any](true),
 			},
 			wantLiteralTrue: true,
 		},
@@ -3082,7 +3035,8 @@ func Test_newStandardBoolLikeGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -3111,16 +3065,9 @@ func Test_newStandardDurationGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](100 * time.Millisecond),
+				getter: runtime.NewLiteral[any, any](100 * time.Millisecond),
 			},
 			wantLiteralTrue: true,
 		},
@@ -3134,7 +3081,8 @@ func Test_newStandardDurationGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -3164,16 +3112,9 @@ func Test_newStandardTimeGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](currentTime),
+				getter: runtime.NewLiteral[any, any](currentTime),
 			},
 			wantLiteralTrue: true,
 		},
@@ -3187,7 +3128,8 @@ func Test_newStandardTimeGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -3216,16 +3158,9 @@ func Test_newStandardByteSliceLikeGetterGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any]([]byte{0, 1}),
+				getter: runtime.NewLiteral[any, any]([]byte{0, 1}),
 			},
 			wantLiteralTrue: true,
 		},
@@ -3239,7 +3174,8 @@ func Test_newStandardByteSliceLikeGetterGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -3271,16 +3207,9 @@ func Test_newStandardPMapGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](m),
+				getter: runtime.NewLiteral[any, any](m),
 			},
 			wantLiteralTrue: true,
 		},
@@ -3294,7 +3223,8 @@ func Test_newStandardPMapGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -3326,16 +3256,9 @@ func Test_newStandardPSliceGetter(t *testing.T) {
 			wantLiteralTrue: false,
 		},
 		{
-			name: "getter implements literalGetter with error",
-			args: args[any]{
-				getter: newErrLiteral(errors.New("foo")),
-			},
-			wantErr: true,
-		},
-		{
 			name: "getter implements literalGetter",
 			args: args[any]{
-				getter: newLiteral[any, any](s),
+				getter: runtime.NewLiteral[any, any](s),
 			},
 			wantLiteralTrue: true,
 		},
@@ -3349,25 +3272,12 @@ func Test_newStandardPSliceGetter(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			_, isLiteral := runtime.GetLiteralValue(g)
+			assert.Equal(t, tt.wantLiteralTrue, isLiteral)
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, s, val)
 		})
 	}
-}
-
-type errLiteral[K any] struct {
-	err error
-}
-
-func (l *errLiteral[K]) Get(context.Context, K) (any, error) {
-	return nil, l.err
-}
-
-func (*errLiteral[K]) isLiteral() {}
-
-func newErrLiteral(err error) *errLiteral[any] {
-	return &errLiteral[any]{err: err}
 }

@@ -1,11 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottl
+package runtime
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,21 +24,23 @@ func TestGetLiteralValue(t *testing.T) {
 	})
 
 	t.Run("getter does not contain literal", func(t *testing.T) {
-		g := mockedGetter[any]{value: "value"}
+		g := &mockedGetter[any]{value: "value"}
 		val, ok := GetLiteralValue[any, any](g)
 		require.False(t, ok)
 		require.Nil(t, val)
 	})
 	t.Run("getter contains literal", func(t *testing.T) {
-		g := newLiteral[any, any]("value")
+		g := NewLiteral[any, any]("value")
 		val, ok := GetLiteralValue[any, any](g)
 		require.True(t, ok)
 		require.Equal(t, "value", val)
 	})
-	t.Run("getter returns error", func(t *testing.T) {
-		g := newErrLiteral(errors.New("err"))
-		val, ok := GetLiteralValue[any, any](g)
-		require.False(t, ok)
-		require.Nil(t, val)
-	})
+}
+
+type mockedGetter[T any] struct {
+	value any
+}
+
+func (l *mockedGetter[T]) Get(context.Context, T) (any, error) {
+	return l.value, nil
 }

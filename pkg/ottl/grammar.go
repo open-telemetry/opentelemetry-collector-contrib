@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/alecthomas/participle/v2/lexer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/runtime"
 )
 
 // parsedStatement represents a parsed statement. It is the entry point into the statement DSL.
@@ -125,64 +127,11 @@ func (b *booleanExpression) accept(v grammarVisitor) {
 	}
 }
 
-// compareOp is the type of a comparison operator.
-type compareOp int
-
-// These are the allowed values of a compareOp
-const (
-	eq compareOp = iota
-	ne
-	lt
-	lte
-	gte
-	gt
-)
-
-// a fast way to get from a string to a compareOp
-var compareOpTable = map[string]compareOp{
-	"==": eq,
-	"!=": ne,
-	"<":  lt,
-	"<=": lte,
-	">":  gt,
-	">=": gte,
-}
-
-// Capture is how the parser converts an operator string to a compareOp.
-func (c *compareOp) Capture(values []string) error {
-	op, ok := compareOpTable[values[0]]
-	if !ok {
-		return fmt.Errorf("'%s' is not a valid operator", values[0])
-	}
-	*c = op
-	return nil
-}
-
-// String() for compareOp gives us more legible test results and error messages.
-func (c *compareOp) String() string {
-	switch *c {
-	case eq:
-		return "eq"
-	case ne:
-		return "ne"
-	case lt:
-		return "lt"
-	case lte:
-		return "lte"
-	case gte:
-		return "gte"
-	case gt:
-		return "gt"
-	default:
-		return "UNKNOWN OP!"
-	}
-}
-
 // comparison represents an optional boolean condition.
 type comparison struct {
-	Left  value     `parser:"@@"`
-	Op    compareOp `parser:"@OpComparison"`
-	Right value     `parser:"@@"`
+	Left  value             `parser:"@@"`
+	Op    runtime.CompareOp `parser:"@OpComparison"`
+	Right value             `parser:"@@"`
 }
 
 func (c *comparison) accept(v grammarVisitor) {

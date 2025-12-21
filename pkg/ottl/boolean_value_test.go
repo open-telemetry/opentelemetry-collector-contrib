@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/runtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -86,7 +87,7 @@ func comparisonHelper(left, right any, op string) *comparison {
 	return &comparison{
 		Left:  valueFor(left),
 		Right: valueFor(right),
-		Op:    compareOpTable[op],
+		Op:    runtime.CompareOpTable[op],
 	}
 }
 
@@ -200,7 +201,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 				Left: value{
 					Enum: (*enumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 				},
-				Op: eq,
+				Op: runtime.Eq,
 				Right: value{
 					String: ottltest.Strp("trash"),
 				},
@@ -500,7 +501,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 							Left: value{
 								String: ottltest.Strp("test"),
 							},
-							Op: eq,
+							Op: runtime.Eq,
 							Right: value{
 								String: ottltest.Strp("not test"),
 							},
