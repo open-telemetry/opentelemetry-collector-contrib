@@ -17,7 +17,6 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -143,20 +142,17 @@ func newElasticsearchClient(
 
 	// Extract username/password from URL if present, matching elasticsearch.newTransport
 	// This allows authentication via URL like http://user:pass@localhost:9200
+	password := string(config.Authentication.Password)
 	if len(urls) > 0 && urls[0].User != nil {
-		if config.Authentication.User == "" {
-			config.Authentication.User = urls[0].User.Username()
-		}
-		if pw, ok := urls[0].User.Password(); ok && len(config.Authentication.Password) == 0 {
-			config.Authentication.Password = configopaque.String(pw)
-		}
+		config.Authentication.User = urls[0].User.Username()
+		password, _ = urls[0].User.Password()
 	}
 
 	// Create transport configuration matching elasticsearch.newTransport structure
 	tpConfig := elastictransport.Config{
 		URLs:     urls,
 		Username: config.Authentication.User,
-		Password: string(config.Authentication.Password),
+		Password: password,
 		APIKey:   string(config.Authentication.APIKey),
 
 		Header: headers,
