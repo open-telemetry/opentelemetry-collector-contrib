@@ -114,6 +114,7 @@ func newElasticsearchClient(
 
 	headers := make(http.Header)
 	headers.Set("User-Agent", userAgent)
+	// FIXME: meta header and compatibility header
 
 	// endpoints converts Config.Endpoints, Config.CloudID,
 	// and Config.ClientConfig.Endpoint to a list of addresses.
@@ -172,7 +173,7 @@ func newElasticsearchClient(
 
 		Transport:       httpClient.Transport,
 		Logger:          esLogger,
-		Instrumentation: elastictransport.NewOtelInstrumentation(telemetry.TracerProvider, false, "otelcol-contrib"),
+		Instrumentation: elastictransport.NewOtelInstrumentation(telemetry.TracerProvider, false, "otelcol-contrib"), // FIXME: use collector version
 	}
 
 	tp, err := elastictransport.New(tpConfig)
