@@ -12,20 +12,40 @@ import (
 	"maps"
 
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
+var ProtobufEncodingFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.protobufCheckpointEncoding",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Use protobuf encoding for checkpoint storage instead of JSON. Provides ~7x faster decoding and 31% storage savings."),
+	featuregate.WithRegisterFromVersion("v0.143.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266"),
+)
+
 const knownFilesKey = "knownFiles"
 
 // Save syncs the most recent set of files to the database
+// Uses protobuf encoding if the feature gate is enabled, otherwise uses JSON
 func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata) error {
 	return SaveKey(ctx, persister, rmds, knownFilesKey)
 }
 
+func shouldUseProtobuf() bool {
+	return ProtobufEncodingFeatureGate.IsEnabled()
+}
+
 func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
+	// Use protobuf if feature gate is enabled
+	if shouldUseProtobuf() {
+		return SaveKeyProto(ctx, persister, rmds, key, ops...)
+	}
+
+	// Otherwise use JSON (default)
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
@@ -49,7 +69,8 @@ func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.M
 	return errs
 }
 
-// Load loads the most recent set of files to the database
+// Load loads the most recent set of files from the database
+// Tries protobuf first for backward compatibility, falls back to JSON if protobuf fails
 func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata, error) {
 	return LoadKey(ctx, persister, knownFilesKey)
 }
@@ -64,6 +85,14 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*
 		return []*reader.Metadata{}, nil
 	}
 
+	// Try protobuf first (for backward compatibility with existing protobuf checkpoints)
+	// This allows seamless migration even when the feature gate is disabled
+	rmds, err := tryLoadProtobuf(encoded)
+	if err == nil {
+		return rmds, nil
+	}
+
+	// Fall back to JSON if protobuf fails
 	dec := json.NewDecoder(bytes.NewReader(encoded))
 
 	// Decode the number of entries
@@ -74,7 +103,7 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*
 
 	// Decode each of the known files
 	var errs error
-	rmds := make([]*reader.Metadata, 0, knownFileCount)
+	rmds = make([]*reader.Metadata, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
 		rmd := new(reader.Metadata)
 		err = dec.Decode(rmd)
