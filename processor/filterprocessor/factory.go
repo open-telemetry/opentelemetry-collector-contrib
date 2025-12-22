@@ -29,7 +29,7 @@ import (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 type filterProcessorFactory struct {
-	resourceFunctions                   map[string]ottl.Factory[ottlresource.TransformContext]
+	resourceFunctions                   map[string]ottl.Factory[*ottlresource.TransformContext]
 	dataPointFunctions                  map[string]ottl.Factory[*ottldatapoint.TransformContext]
 	logFunctions                        map[string]ottl.Factory[*ottllog.TransformContext]
 	metricFunctions                     map[string]ottl.Factory[*ottlmetric.TransformContext]
@@ -48,12 +48,21 @@ type filterProcessorFactory struct {
 // FactoryOption applies changes to filterProcessorFactory.
 type FactoryOption func(factory *filterProcessorFactory)
 
-// WithResourceFunctions will override the default OTTL resource context functions with the provided resourceFunctions in resulting processor.
-// Subsequent uses of WithResourceFunctions will merge the provided resourceFunctions with the previously registered functions.
+// Deprecated: [v0.142.0] Use WithResourceFunctionsNew.
 func WithResourceFunctions(resourceFunctions []ottl.Factory[ottlresource.TransformContext]) FactoryOption {
+	newResourceFunctions := make([]ottl.Factory[*ottlresource.TransformContext], 0, len(resourceFunctions))
+	for _, resourceFunction := range resourceFunctions {
+		newResourceFunctions = append(newResourceFunctions, ottl.NewFactory[*ottlresource.TransformContext](resourceFunction.Name(), resourceFunction.CreateDefaultArguments(), fromNonPointerFunction(resourceFunction.CreateFunction)))
+	}
+	return WithResourceFunctionsNew(newResourceFunctions)
+}
+
+// WithResourceFunctionsNew will override the default OTTL resource context functions with the provided resourceFunctions in resulting processor.
+// Subsequent uses of WithResourceFunctionsNew will merge the provided resourceFunctions with the previously registered functions.
+func WithResourceFunctionsNew(resourceFunctions []ottl.Factory[*ottlresource.TransformContext]) FactoryOption {
 	return func(factory *filterProcessorFactory) {
 		if !factory.defaultResourceFunctionsOverridden {
-			factory.resourceFunctions = map[string]ottl.Factory[ottlresource.TransformContext]{}
+			factory.resourceFunctions = map[string]ottl.Factory[*ottlresource.TransformContext]{}
 			factory.defaultResourceFunctionsOverridden = true
 		}
 		factory.resourceFunctions = mergeFunctionsToMap(factory.resourceFunctions, resourceFunctions)

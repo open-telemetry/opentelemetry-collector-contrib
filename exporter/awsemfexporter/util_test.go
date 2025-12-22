@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -198,7 +197,7 @@ func TestGetNamespace(t *testing.T) {
 			"empty namespace, no service namespace",
 			func() pmetric.ResourceMetrics {
 				rm := pmetric.NewResourceMetrics()
-				rm.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "myServiceName")
+				rm.Resource().Attributes().PutStr("service.name", "myServiceName")
 				return rm
 			}(),
 			"",
@@ -208,7 +207,7 @@ func TestGetNamespace(t *testing.T) {
 			"empty namespace, no service name",
 			func() pmetric.ResourceMetrics {
 				rm := pmetric.NewResourceMetrics()
-				rm.Resource().Attributes().PutStr(string(conventions.ServiceNamespaceKey), "myServiceNS")
+				rm.Resource().Attributes().PutStr("service.namespace", "myServiceNS")
 				return rm
 			}(),
 			"",
@@ -226,7 +225,7 @@ func TestGetNamespace(t *testing.T) {
 
 func TestGetLogInfo(t *testing.T) {
 	rm1 := pmetric.NewResourceMetrics()
-	rm1.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "myServiceName")
+	rm1.Resource().Attributes().PutStr("service.name", "myServiceName")
 	rm1.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
 	rm1.Resource().Attributes().PutStr("aws.ecs.cluster.name", "test-cluster-name")
 	rm1.Resource().Attributes().PutStr("aws.ecs.task.id", "test-task-id")
@@ -234,7 +233,7 @@ func TestGetLogInfo(t *testing.T) {
 	rm1.Resource().Attributes().PutStr("aws.ecs.container.instance.id", "203e0410260d466bab7873bb4f317b4e")
 	rm1.Resource().Attributes().PutStr("aws.ecs.task.family", "test-task-definition-family")
 	rm2 := pmetric.NewResourceMetrics()
-	rm2.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "test-emf")
+	rm2.Resource().Attributes().PutStr("service.name", "test-emf")
 	rm2.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
 	rm2.Resource().Attributes().PutStr("ClusterName", "test-cluster-name")
 	rm2.Resource().Attributes().PutStr("TaskId", "test-task-id")

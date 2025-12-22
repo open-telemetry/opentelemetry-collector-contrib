@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/passthroughnlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -235,6 +236,26 @@ func TestPayloads(t *testing.T) {
 			logFilename:      "testdata/proxynlb/proxynlb-basic.json",
 			expectedFilename: "testdata/proxynlb/proxynlb-basic_expected.yaml",
 		},
+		{
+			name:             "passthrough nlb log - external",
+			logFilename:      "testdata/passthroughnlb/passthroughnlb-external.json",
+			expectedFilename: "testdata/passthroughnlb/passthroughnlb-external_expected.yaml",
+		},
+		{
+			name:             "passthrough nlb log - internal",
+			logFilename:      "testdata/passthroughnlb/passthroughnlb-internal.json",
+			expectedFilename: "testdata/passthroughnlb/passthroughnlb-internal_expected.yaml",
+		},
+		{
+			name:             "dns query log - no error",
+			logFilename:      "testdata/dnslog/dns_query_no_error.json",
+			expectedFilename: "testdata/dnslog/dns_query_no_error_expected.yaml",
+		},
+		{
+			name:             "dns query log - nxdomain error",
+			logFilename:      "testdata/dnslog/dns_query_no_domain_error.json",
+			expectedFilename: "testdata/dnslog/dns_query_no_domain_error_expected.yaml",
+		},
 	}
 
 	extension := newTestExtension(t, Config{})
@@ -348,6 +369,11 @@ func TestGetEncodingFormatFunction(t *testing.T) {
 			name:           "proxy nlb log connections",
 			logType:        proxynlb.ConnectionsLogNameSuffix,
 			expectedFormat: constants.GCPFormatProxyNLBLog,
+		},
+		{
+			name:           "passthrough nlb log connections",
+			logType:        passthroughnlb.ConnectionsLogNameSuffix,
+			expectedFormat: constants.GCPFormatPassthroughNLBLog,
 		},
 		{
 			name:           "unknown log type",
