@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -99,14 +99,14 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 	return cl.logResponseBody
 }
 
-// newElasticsearchClient returns a new esapi.Transport.
+// newElasticsearchClient returns a new elastictransport.Interface.
 func newElasticsearchClient(
 	ctx context.Context,
 	config *Config,
 	host component.Host,
 	telemetry component.TelemetrySettings,
 	userAgent string,
-) (esapi.Transport, error) {
+) (elastictransport.Interface, error) {
 	httpClient, err := config.ToClient(ctx, host, telemetry)
 	if err != nil {
 		return nil, err
