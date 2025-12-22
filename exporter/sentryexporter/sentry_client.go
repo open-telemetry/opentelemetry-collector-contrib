@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -90,6 +91,35 @@ func parseProjectID(id string) int {
 	return projectID
 }
 
+// parseNextCursor extracts the cursor for the next page from a Sentry Link header.
+func parseNextCursor(header http.Header) (cursor string, hasMore, found bool) {
+	linkHeader := header.Get("Link")
+	if linkHeader == "" {
+		return "", false, false
+	}
+
+	for _, part := range strings.Split(linkHeader, ",") {
+		part = strings.TrimSpace(part)
+		if !strings.Contains(part, `rel="next"`) {
+			continue
+		}
+
+		found = true
+		hasMore = strings.Contains(part, `results="true"`)
+
+		if idx := strings.Index(part, `cursor="`); idx != -1 {
+			start := idx + len(`cursor="`)
+			if end := strings.Index(part[start:], `"`); end != -1 {
+				cursor = part[start : start+end]
+			}
+		}
+
+		break
+	}
+
+	return cursor, hasMore, found
+}
+
 func newSentryClientImpl(baseURL, authToken string, httpClient *http.Client) *sentryClient {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
@@ -103,34 +133,51 @@ func newSentryClientImpl(baseURL, authToken string, httpClient *http.Client) *se
 
 // GetAllProjects fetches all projects for a given organization.
 func (c *sentryClient) GetAllProjects(ctx context.Context, orgSlug string) ([]projectInfo, error) {
-	url := fmt.Sprintf("%s/api/0/organizations/%s/projects/", c.baseURL, orgSlug)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.authToken))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, &sentryHTTPError{
-			statusCode: resp.StatusCode,
-			body:       string(body),
-			headers:    resp.Header,
-		}
-	}
-
+	baseURL := fmt.Sprintf("%s/api/0/organizations/%s/projects/", c.baseURL, orgSlug)
+	cursor := ""
 	var projects []projectInfo
-	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+
+	for {
+		pageURL := baseURL
+		if cursor != "" {
+			pageURL = fmt.Sprintf("%s?cursor=%s", baseURL, url.QueryEscape(cursor))
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.authToken))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := c.client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			return nil, &sentryHTTPError{
+				statusCode: resp.StatusCode,
+				body:       string(body),
+				headers:    resp.Header,
+			}
+		}
+
+		var pageProjects []projectInfo
+		if err := json.NewDecoder(resp.Body).Decode(&pageProjects); err != nil {
+			return nil, fmt.Errorf("failed to decode response: %w", err)
+		}
+		projects = append(projects, pageProjects...)
+
+		nextCursor, hasMore, found := parseNextCursor(resp.Header)
+		if !found || !hasMore || nextCursor == "" {
+			break
+		}
+
+		cursor = nextCursor
 	}
 
 	return projects, nil
@@ -138,34 +185,51 @@ func (c *sentryClient) GetAllProjects(ctx context.Context, orgSlug string) ([]pr
 
 // GetProjectKeys fetches the project keys for a given organization and project.
 func (c *sentryClient) GetProjectKeys(ctx context.Context, orgSlug, projectSlug string) ([]projectKey, error) {
-	url := fmt.Sprintf("%s/api/0/projects/%s/%s/keys/", c.baseURL, orgSlug, projectSlug)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.authToken))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, &sentryHTTPError{
-			statusCode: resp.StatusCode,
-			body:       string(body),
-			headers:    resp.Header,
-		}
-	}
-
+	baseURL := fmt.Sprintf("%s/api/0/projects/%s/%s/keys/", c.baseURL, orgSlug, projectSlug)
+	cursor := ""
 	var keys []projectKey
-	if err := json.NewDecoder(resp.Body).Decode(&keys); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+
+	for {
+		pageURL := baseURL
+		if cursor != "" {
+			pageURL = fmt.Sprintf("%s?cursor=%s", baseURL, url.QueryEscape(cursor))
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.authToken))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := c.client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			return nil, &sentryHTTPError{
+				statusCode: resp.StatusCode,
+				body:       string(body),
+				headers:    resp.Header,
+			}
+		}
+
+		var pageKeys []projectKey
+		if err := json.NewDecoder(resp.Body).Decode(&pageKeys); err != nil {
+			return nil, fmt.Errorf("failed to decode response: %w", err)
+		}
+		keys = append(keys, pageKeys...)
+
+		nextCursor, hasMore, found := parseNextCursor(resp.Header)
+		if !found || !hasMore || nextCursor == "" {
+			break
+		}
+
+		cursor = nextCursor
 	}
 
 	return keys, nil
