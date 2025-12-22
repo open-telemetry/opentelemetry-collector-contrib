@@ -367,3 +367,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/otela
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter => ../../otelarrowexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver => ../../../receiver/otelarrowreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk => ../../../pkg/translator/splunk
