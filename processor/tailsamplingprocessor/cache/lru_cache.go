@@ -15,33 +15,30 @@ import (
 // It does not specify the type of sampling decision that was made, only that
 // a decision was made for an ID. You need separate DecisionCaches for caching
 // sampled and not sampled trace IDs.
-type lruDecisionCache[V any] struct {
-	cache *lru.Cache[uint64, V]
+type lruDecisionCache struct {
+	cache *lru.Cache[uint64, DecisionMetadata]
 }
 
-var _ Cache[any] = (*lruDecisionCache[any])(nil)
+var _ Cache = (*lruDecisionCache)(nil)
 
 // NewLRUDecisionCache returns a new lruDecisionCache.
 // The size parameter indicates the amount of keys the cache will hold before it
 // starts evicting the least recently used key.
-func NewLRUDecisionCache[V any](size int) (Cache[V], error) {
-	c, err := lru.New[uint64, V](size)
+func NewLRUDecisionCache(size int) (Cache, error) {
+	c, err := lru.New[uint64, DecisionMetadata](size)
 	if err != nil {
 		return nil, err
 	}
-	return &lruDecisionCache[V]{cache: c}, nil
+	return &lruDecisionCache{cache: c}, nil
 }
 
-func (c *lruDecisionCache[V]) Get(id pcommon.TraceID) (V, bool) {
+func (c *lruDecisionCache) Get(id pcommon.TraceID) (DecisionMetadata, bool) {
 	return c.cache.Get(rightHalfTraceID(id))
 }
 
-func (c *lruDecisionCache[V]) Put(id pcommon.TraceID, v V) {
-	_ = c.cache.Add(rightHalfTraceID(id), v)
+func (c *lruDecisionCache) Put(id pcommon.TraceID, metadata DecisionMetadata) {
+	_ = c.cache.Add(rightHalfTraceID(id), metadata)
 }
-
-// Delete is no-op since LRU relies on least recently used key being evicting automatically
-func (*lruDecisionCache[V]) Delete(pcommon.TraceID) {}
 
 func rightHalfTraceID(id pcommon.TraceID) uint64 {
 	return binary.LittleEndian.Uint64(id[8:])
