@@ -8,6 +8,7 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -393,4 +394,30 @@ func TestSplunkHecExporter(t *testing.T) {
 
 func waitForEventToBeIndexed() {
 	time.Sleep(3 * time.Second)
+}
+
+func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
+	span.Attributes().PutStr("foo", "bar")
+	span.SetName(name)
+	span.SetStartTimestamp(ts)
+	spanLink := span.Links().AppendEmpty()
+	spanLink.TraceState().FromRaw("OK")
+	bytes, _ := hex.DecodeString("12345678")
+	var traceID [16]byte
+	copy(traceID[:], bytes)
+	spanLink.SetTraceID(traceID)
+	bytes, _ = hex.DecodeString("1234")
+	var spanID [8]byte
+	copy(spanID[:], bytes)
+	spanLink.SetSpanID(spanID)
+	spanLink.Attributes().PutInt("foo", 1)
+	spanLink.Attributes().PutBool("bar", false)
+	foobarContents := spanLink.Attributes().PutEmptySlice("foobar")
+	foobarContents.AppendEmpty().SetStr("a")
+	foobarContents.AppendEmpty().SetStr("b")
+
+	spanEvent := span.Events().AppendEmpty()
+	spanEvent.Attributes().PutStr("foo", "bar")
+	spanEvent.SetName("myEvent")
+	spanEvent.SetTimestamp(ts + 3)
 }

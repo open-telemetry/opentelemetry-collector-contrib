@@ -184,6 +184,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
