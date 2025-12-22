@@ -45,13 +45,13 @@ resourceLogs:
                   stringValue: "2017-03-31"
               - key: azure.result.type
                 value:
-                  stringValue: "Active"
+                  stringValue: Active
               - key: azure.result.signature
                 value:
-                  stringValue: "Succeeded"
+                  stringValue: Succeeded
               - key: azure.result.description
                 value:
-                  stringValue: "A new recommendation is available."
+                  stringValue: A new recommendation is available.
               - key: network.peer.address
                 value:
                   stringValue: 0.0.0.0
@@ -59,6 +59,7 @@ resourceLogs:
                 value:
                   stringValue: Microsoft.Advisor
             body: {}
+            observedTimeUnixNano: "1766081218366802000"
             severityNumber: 9
             severityText: Informational
             timeUnixNano: "1745503906421669000"

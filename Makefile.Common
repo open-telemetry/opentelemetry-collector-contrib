@@ -89,6 +89,7 @@ GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
 MODERNIZE           := $(TOOLS_BIN_DIR)/modernize
+SCHEMAGEN           := $(TOOLS_BIN_DIR)/schemagen
 
 # Tools used by go generate commands
 MDATAGEN := $(TOOLS_BIN_DIR)/mdatagen
@@ -272,9 +273,11 @@ generate: generate-tools
 ifeq ($(CURDIR),$(SRC_ROOT))
 	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
+	$(MAKE) gogci
 else
 	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(GOCMD) generate ./...
 	$(MAKE) fmt
+	$(MAKE) gci
 endif
 
 .PHONY: lint
@@ -287,7 +290,10 @@ govulncheck: $(GOVULNCHECK)
 
 .PHONY: modernize
 modernize: $(MODERNIZE)
-	$(MODERNIZE) -fix -test -v ./...
+	$(MODERNIZE) -fix -test -tags integration -v -any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr \
+		-omitzero -plusbuild \
+		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
+		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -waitgroup ./...
 
 .PHONY: tidy
 tidy:
@@ -358,3 +364,11 @@ run-changed-tests:
 			done \
 		fi \
 	fi
+
+SRC ?= $(CURDIR)
+FLAGS ?=
+
+.PHONY: schemagen
+schemagen: $(SCHEMAGEN)
+	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
+	$(SCHEMAGEN) $(FLAGS) $(SRC)
