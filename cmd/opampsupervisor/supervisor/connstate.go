@@ -125,7 +125,7 @@ func (t *ConnectionStateTracker) Start() {
 		return
 	}
 
-	if t.config.StartupTimeout < 0 {
+	if t.config.StartupTimeout <= 0 {
 		t.logger.Debug("Starting connection state tracker without startup timeout")
 		return
 	}
