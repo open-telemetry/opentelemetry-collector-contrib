@@ -338,7 +338,7 @@ func TestConnectionStateTracker_ConnectWhileAlreadyUsingFallback(t *testing.T) {
 func TestConnectionStateTracker_RuntimeTimerOnlyStartsAfterConnected(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
-		StartupTimeout: 0,                      // Disabled
+		StartupTimeout: 0,                     // Disabled
 		RuntimeTimeout: 50 * time.Millisecond, // Enabled
 		Logger:         logger,
 	})
@@ -520,4 +520,3 @@ func TestConnectionStateTracker_NoRuntimeFallbackWhenAlreadyUsingFallback(t *tes
 		t.Fatal("Expected fallback event after disconnect")
 	}
 }
-
