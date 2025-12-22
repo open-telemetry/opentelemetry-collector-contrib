@@ -175,6 +175,22 @@ agent:
   # OpAmp extension will connect to
   opamp_server_port:
 
+  # Path to a fallback configuration file to use when the OpAMP server is
+  # unreachable. This must be a complete, standalone Collector configuration.
+  # The fallback config is intentionally not merged with config_files to ensure
+  # predictable fallback behavior.
+  fallback_config: /etc/otelcol/fallback.yaml
+
+  # How long to wait for the initial connection to the OpAMP server before
+  # switching to the fallback configuration. If not set or zero, startup
+  # fallback is disabled.
+  fallback_startup_timeout: 30s
+
+  # How long to allow disconnection from the OpAMP server during runtime
+  # before switching to the fallback configuration. If not set or zero,
+  # runtime fallback is disabled.
+  fallback_runtime_timeout: 60s
+
 # Supervisor's internal telemetry settings.
 telemetry:
   # Logs configuration.
@@ -298,6 +314,30 @@ When the supervisor cannot connect to the OpAMP server, the collector will
 be run with the last known configuration if a previous configuration is persisted.
 If no previous configuration has been persisted, the collector does not run.
 The supervisor will continually attempt to reconnect to the OpAMP server with exponential backoff.
+
+#### Fallback Configuration
+
+For enhanced resilience, the Supervisor supports a fallback configuration mechanism.
+When configured, the Supervisor can automatically switch to a fallback configuration
+if the OpAMP server becomes unreachable for a specified duration.
+
+**Startup Fallback**: If `fallback_startup_timeout` is set and the Supervisor cannot
+establish an initial connection to the OpAMP server within that duration, the Collector
+will be started with the fallback configuration specified in `fallback_config`.
+
+**Runtime Fallback**: If `fallback_runtime_timeout` is set and the connection to the
+OpAMP server is lost after being previously connected, the Supervisor will wait for
+the specified duration. If the connection is not restored, the Collector will be
+switched to the fallback configuration.
+
+**Recovery**: When the connection to the OpAMP server is restored after using the
+fallback configuration, the Supervisor automatically switches back to the remote
+configuration provided by the server.
+
+Note that the fallback configuration is intentionally a standalone configuration file
+and is not merged with the `config_files` setting. This ensures predictable fallback
+behavior without dependencies on other configuration files. The OpAMP extension
+configuration is automatically added to maintain Supervisor-Collector communication.
 
 ### Executing Collector
 

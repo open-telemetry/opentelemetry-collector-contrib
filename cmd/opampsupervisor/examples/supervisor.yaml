@@ -1,0 +1,41 @@
+server:
+  endpoint: "http://host.docker.internal:4320/v1/opamp"
+  headers:
+    X-Auth: "nice auth"
+  tls:
+    insecure_skip_verify: true
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_own_logs: true
+  reports_own_traces: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+
+agent:
+  executable: /otelcontribcol
+  passthrough_logs: true
+
+  # This passes config files to the Collector.
+  config_files: 
+    - /etc/otel/config.yaml
+    - /etc/otel/config.yaml
+  
+  # This adds CLI arguments to the Collector.
+  args:
+    - ''
+
+  # This adds env vars to the Collector process.
+  env: {}
+
+# The storage can be used for many things:
+# - It stores configuration sent by the OpAMP server so that new collector
+#   processes can start with the most known desired config.
+storage:
+  directory: /etc/otel/supervisor-data/
+
+telemetry:
+  logs: 
+    level: debug

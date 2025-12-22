@@ -129,6 +129,48 @@ For more details on the healthcheck configuration, see the see the [full list of
 
 Note that the healthceck endpoint is not enabled by default. To enable it, you must explicitly set at least the `endpoint` field in the configuration.
 
+## Fallback Configuration
+
+The Supervisor supports a fallback configuration mechanism that provides resilience when the OpAMP server becomes unreachable. This is useful for ensuring the Collector starts and continues to operate with a known-good configuration during network outages or server maintenance.
+
+### Configuration Options
+
+The following options can be configured under the `agent` section:
+
+```yaml
+agent:
+  executable: /path/to/collector
+  fallback_config: /path/to/fallback_config.yaml
+  fallback_startup_timeout: 30s
+  fallback_runtime_timeout: 60s
+```
+
+| Option | Description |
+|--------|-------------|
+| `fallback_config` | Path to a fallback configuration file to use when the OpAMP server is unreachable. This must be a complete, standalone Collector configuration. |
+| `fallback_startup_timeout` | How long to wait for the initial connection to the OpAMP server before switching to the fallback configuration. If not set or zero, startup fallback is disabled. |
+| `fallback_runtime_timeout` | How long to allow disconnection from the OpAMP server during runtime before switching to the fallback configuration. If not set or zero, runtime fallback is disabled. |
+
+### Behavior
+
+1. **Startup Fallback**: If `fallback_startup_timeout` is configured and the Supervisor cannot connect to the OpAMP server within that duration, the Collector will be started with the fallback configuration.
+
+2. **Runtime Fallback**: If `fallback_runtime_timeout` is configured and the connection to the OpAMP server is lost after being previously connected, the Supervisor will wait for the specified duration. If the connection is not restored within that time, the Collector will be switched to the fallback configuration.
+
+3. **Recovery**: When the connection to the OpAMP server is restored after using the fallback configuration, the Supervisor will automatically switch back to the remote configuration provided by the server.
+
+### Important Notes
+
+- The fallback configuration is a **standalone configuration file**. It is intentionally not merged with the `config_files` setting. This ensures predictable fallback behavior without dependencies on other configuration files.
+
+- The OpAMP extension configuration is automatically added to the fallback configuration to maintain communication between the Supervisor and the Collector.
+
+- The Supervisor will continue attempting to reconnect to the OpAMP server even while using the fallback configuration.
+
+### Example
+
+See [examples/supervisor_fallback.yaml](./examples/supervisor_fallback.yaml) for a complete example configuration with fallback enabled.
+
 ## Status
 
 The OpenTelemetry OpAMP Supervisor is intended to be the reference
