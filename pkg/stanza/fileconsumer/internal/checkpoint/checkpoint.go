@@ -22,7 +22,7 @@ import (
 var ProtobufEncodingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.protobufCheckpointEncoding",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Use protobuf encoding for checkpoint storage instead of JSON. Provides ~7x faster decoding and 31% storage savings."),
+	featuregate.WithRegisterDescription("Use protobuf encoding for checkpoint storage instead of JSON."),
 	featuregate.WithRegisterFromVersion("v0.143.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266"),
 )
@@ -35,13 +35,9 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 	return SaveKey(ctx, persister, rmds, knownFilesKey)
 }
 
-func shouldUseProtobuf() bool {
-	return ProtobufEncodingFeatureGate.IsEnabled()
-}
-
 func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
 	// Use protobuf if feature gate is enabled
-	if shouldUseProtobuf() {
+	if ProtobufEncodingFeatureGate.IsEnabled() {
 		return SaveKeyProto(ctx, persister, rmds, key, ops...)
 	}
 
