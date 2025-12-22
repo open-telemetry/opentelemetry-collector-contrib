@@ -176,6 +176,7 @@ components:
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
     - pkg/translator/skywalking
+    - pkg/translator/splunk
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
