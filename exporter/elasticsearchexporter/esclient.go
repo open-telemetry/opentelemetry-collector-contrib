@@ -10,13 +10,14 @@ import (
 	"io"
 	"math/rand/v2"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/elastic/elastic-transport-go/v8/elastictransport"
-	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -134,17 +135,32 @@ func newElasticsearchClient(
 		maxRetries = config.Retry.MaxRetries
 	}
 
-	return elasticsearchv8.NewClient(elasticsearchv8.Config{
-		Transport: httpClient.Transport,
+	// Convert addresses to URLs
+	urls, err := addrsToURLs(endpoints)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create client: %s", err)
+	}
 
-		// configure connection setup
-		Addresses: endpoints,
-		Username:  config.Authentication.User,
-		Password:  string(config.Authentication.Password),
-		APIKey:    string(config.Authentication.APIKey),
-		Header:    headers,
+	// Extract username/password from URL if present, matching elasticsearch.newTransport
+	// This allows authentication via URL like http://user:pass@localhost:9200
+	if len(urls) > 0 && urls[0].User != nil {
+		if config.Authentication.User == "" {
+			config.Authentication.User = urls[0].User.Username()
+		}
+		if pw, ok := urls[0].User.Password(); ok && len(config.Authentication.Password) == 0 {
+			config.Authentication.Password = configopaque.String(pw)
+		}
+	}
 
-		// configure retry behavior
+	// Create transport configuration matching elasticsearch.newTransport structure
+	tpConfig := elastictransport.Config{
+		URLs:     urls,
+		Username: config.Authentication.User,
+		Password: string(config.Authentication.Password),
+		APIKey:   string(config.Authentication.APIKey),
+
+		Header: headers,
+
 		RetryOnStatus: config.Retry.RetryOnStatus,
 		DisableRetry:  !config.Retry.Enabled,
 		RetryOnError: func(_ *http.Request, err error) bool {
@@ -153,19 +169,39 @@ func newElasticsearchClient(
 		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
-		// configure sniffing
-		DiscoverNodesOnStart:  config.Discovery.OnStart,
-		DiscoverNodesInterval: config.Discovery.Interval,
-
-		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Instrumentation: elasticsearchv8.NewOpenTelemetryInstrumentation(
-			telemetry.TracerProvider,
-			false, /* captureSearchBody */
-		),
-		Logger: esLogger,
-	})
+
+		DiscoverNodesInterval: config.Discovery.Interval,
+
+		Transport:       httpClient.Transport,
+		Logger:          esLogger,
+		Instrumentation: elastictransport.NewOtelInstrumentation(telemetry.TracerProvider, false, "otelcol-contrib"),
+	}
+
+	tp, err := elastictransport.New(tpConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating transport: %s", err)
+	}
+
+	// Handle node discovery on start, matching elasticsearch.NewClient behavior
+	if config.Discovery.OnStart {
+		go tp.DiscoverNodes()
+	}
+
+	return tp, nil
+}
+
+func addrsToURLs(addrs []string) ([]*url.URL, error) {
+	var urls []*url.URL
+	for _, addr := range addrs {
+		u, err := url.Parse(addr)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse url %q: %w", addr, err)
+		}
+		urls = append(urls, u)
+	}
+	return urls, nil
 }
 
 func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Duration {

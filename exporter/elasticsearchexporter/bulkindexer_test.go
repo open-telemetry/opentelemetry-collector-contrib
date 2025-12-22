@@ -6,12 +6,13 @@ package elasticsearchexporter
 import (
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
 
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/go-docappender/v2"
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -87,18 +88,20 @@ func TestSyncBulkIndexer(t *testing.T) {
 				},
 				MetadataKeys: []string{"x-test"},
 			}
-			esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
-				RoundTripFunc: func(r *http.Request) (*http.Response, error) {
-					if r.URL.Path == "/_bulk" {
-						reqCnt.Add(1)
-					}
-					return &http.Response{
-						Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-						Body:       io.NopCloser(strings.NewReader(tt.responseBody)),
-						StatusCode: http.StatusOK,
-					}, nil
-				},
-			}})
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{
+					RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+						if r.URL.Path == "/_bulk" {
+							reqCnt.Add(1)
+						}
+						return &http.Response{
+							Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:       io.NopCloser(strings.NewReader(tt.responseBody)),
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+				}})
 			require.NoError(t, err)
 
 			ct := componenttest.NewTelemetry()
@@ -187,7 +190,9 @@ func TestSyncBulkIndexer(t *testing.T) {
 }
 
 func TestNewBulkIndexer(t *testing.T) {
-	client, err := elasticsearch.NewDefaultClient()
+	client, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+	})
 	require.NoError(t, err)
 	cfg := createDefaultConfig()
 
