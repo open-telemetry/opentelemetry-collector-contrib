@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
+
+	internalrl "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter/internal/ratelimit"
 )
 
 var (
@@ -37,6 +39,7 @@ var (
 const (
 	maxProjects              = 1000
 	projectCreationQueueSize = 1000
+	timeout                  = 5 * time.Second
 )
 
 // newHTTPClient is used to override the http client factory. While running tests
@@ -73,6 +76,7 @@ type endpointState struct {
 	inflight singleflight.Group
 
 	projectCreationQueue chan projectCreationRequest
+	pendingCreations     sync.Map
 	workerCtx            context.Context
 	workerCancel         context.CancelFunc
 	workerWg             sync.WaitGroup
@@ -83,6 +87,12 @@ type endpointState struct {
 	startErr     error
 	shutdownOnce sync.Once
 	closing      atomic.Bool
+}
+
+// projectRoutingKey is a composite key for routing traces and logs by project slug and platform.
+type projectRoutingKey struct {
+	slug     string
+	platform string
 }
 
 // sentryExporter is a per-signal wrapper that forwards to the shared endpointState.
@@ -151,99 +161,48 @@ func (s *endpointState) pushTraceData(ctx context.Context, logger *zap.Logger, t
 
 // routeTracesByProject splits traces by project and sends each batch to the appropriate endpoint
 func (s *endpointState) routeTracesByProject(ctx context.Context, logger *zap.Logger, td ptrace.Traces) error {
-	type projectKey struct {
-		slug     string
-		platform string
-	}
-	projectGroups := make(map[projectKey]ptrace.Traces)
+	projectGroups := make(map[projectRoutingKey]any)
+	var droppedSpans int
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		rs := td.ResourceSpans().At(i)
 		attrs := rs.Resource().Attributes()
 		projectSlug := s.extractProjectSlug(attrs)
 
 		if projectSlug == "" {
-			logger.Warn("Dropping trace: missing required routing attribute",
-				zap.String("attribute", s.attributeKey))
+			droppedSpans += countSpansInResource(rs)
 			continue
 		}
 
 		platform := s.extractPlatform(attrs)
-		key := projectKey{slug: projectSlug, platform: platform}
+		key := projectRoutingKey{slug: projectSlug, platform: platform}
 
-		if _, exists := projectGroups[key]; !exists {
-			projectGroups[key] = ptrace.NewTraces()
+		group, exists := projectGroups[key]
+		if !exists {
+			group = ptrace.NewTraces()
 		}
-		rs.CopyTo(projectGroups[key].ResourceSpans().AppendEmpty())
+		traces := group.(ptrace.Traces)
+		rs.CopyTo(traces.ResourceSpans().AppendEmpty())
+		projectGroups[key] = traces
 	}
 
-	var errs error
-	var projectsBeingCreated int
-	for key, traces := range projectGroups {
-		endpoint, err := s.getOrCreateProjectEndpoint(ctx, logger, key.slug, key.platform)
-		if err != nil {
-			if errors.Is(err, errProjectBeingCreated) {
-				projectsBeingCreated++
-				continue
-			}
-			logger.Error("Failed to get endpoint for project",
-				zap.String("project", key.slug),
-				zap.Error(err))
-			errs = errors.Join(errs, err)
-			continue
-		}
-
-		if err := s.sendTracesToEndpoint(ctx, logger, traces, endpoint); err != nil {
-			var httpErr *sentryHTTPError
-			if errors.As(err, &httpErr) {
-				if httpErr.statusCode == http.StatusForbidden && strings.Contains(httpErr.body, "event submission rejected with_reason: ProjectId") {
-					logger.Warn("Project may have been deleted, removing from cache and retrying",
-						zap.String("project", key.slug),
-						zap.Int("status_code", httpErr.statusCode))
-					s.projectMapMu.Lock()
-					delete(s.projectToEndpoint, key.slug)
-					s.projectMapMu.Unlock()
-
-					newEndpoint, retryErr := s.getOrCreateProjectEndpoint(ctx, logger, key.slug, key.platform)
-					if retryErr != nil {
-						if errors.Is(retryErr, errProjectBeingCreated) {
-							projectsBeingCreated++
-							continue
-						}
-						logger.Error("Failed to get endpoint for project on retry",
-							zap.String("project", key.slug),
-							zap.Error(retryErr))
-						errs = errors.Join(errs, retryErr)
-						continue
-					}
-
-					if retryErr := s.sendTracesToEndpoint(ctx, logger, traces, newEndpoint); retryErr != nil {
-						logger.Error("Failed to send traces to project on retry",
-							zap.String("project", key.slug),
-							zap.Error(retryErr))
-						errs = errors.Join(errs, retryErr)
-						continue
-					}
-					continue
-				}
-			}
-
-			logger.Error("Failed to send traces to project",
-				zap.String("project", key.slug),
-				zap.Error(err))
-			errs = errors.Join(errs, err)
-		}
+	if droppedSpans > 0 {
+		logger.Warn("Dropping traces missing routing attribute",
+			zap.String("attribute", s.attributeKey),
+			zap.Int("dropped_spans", droppedSpans))
 	}
 
-	if projectsBeingCreated > 0 {
-		logger.Warn("Data dropped for projects being created asynchronously, future data will succeed",
-			zap.Int("projects_being_created", projectsBeingCreated))
-	}
-
-	if errs != nil {
-		return consumererror.NewPermanent(errs)
-	}
-	return nil
+	return s.routeByProject(
+		ctx,
+		logger,
+		projectGroups,
+		func(ctx context.Context, logger *zap.Logger, data any, endpoint *otlpEndpoints) error {
+			return s.sendTracesToEndpoint(ctx, logger, data.(ptrace.Traces), endpoint)
+		},
+	)
 }
 
 // sendTracesToEndpoint sends traces to a specific endpoint
@@ -254,8 +213,7 @@ func (s *endpointState) sendTracesToEndpoint(ctx context.Context, logger *zap.Lo
 		return fmt.Errorf("failed to marshal traces: %w", err)
 	}
 
-	authHeader := fmt.Sprintf("sentry sentry_key=%s", endpoint.PublicKey)
-	if err := s.sendOTLPData(ctx, logger, endpoint.PublicKey, dataCategoryTrace, endpoint.TracesURL, data, authHeader); err != nil {
+	if err := s.sendOTLPData(ctx, logger, endpoint.PublicKey, dataCategoryTrace, endpoint.TracesURL, data, endpoint.AuthHeader); err != nil {
 		return fmt.Errorf("failed to send traces to Sentry: %w", err)
 	}
 
@@ -280,99 +238,108 @@ func (s *endpointState) projectCreationWorker() {
 				zap.String("project", req.projectSlug),
 				zap.String("platform", req.platform))
 
+			keepPending := false
 			if req.projectSlug == "" || s.defaultTeamSlug == "" {
 				s.telemetrySettings.Logger.Warn("Skipping invalid project creation request",
 					zap.String("project", req.projectSlug),
 					zap.String("team", s.defaultTeamSlug))
-				continue
-			}
+			} else {
 
-			s.projectMapMu.RLock()
-			_, exists := s.projectToEndpoint[req.projectSlug]
-			s.projectMapMu.RUnlock()
-			if exists {
-				s.telemetrySettings.Logger.Debug("Project already exists, skipping creation",
-					zap.String("project", req.projectSlug))
-				continue
-			}
+				s.projectMapMu.RLock()
+				_, exists := s.projectToEndpoint[req.projectSlug]
+				s.projectMapMu.RUnlock()
+				if exists {
+					s.telemetrySettings.Logger.Debug("Project already exists, skipping creation",
+						zap.String("project", req.projectSlug))
+				} else {
 
-			createCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-			_, err := s.sentryClient.CreateProject(createCtx, s.config.OrgSlug, s.defaultTeamSlug, req.projectSlug, req.projectSlug, req.platform)
-			cancel()
+					createCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+					_, err := s.sentryClient.CreateProject(createCtx, s.config.OrgSlug, s.defaultTeamSlug, req.projectSlug, req.projectSlug, req.platform)
+					cancel()
 
-			if err != nil {
-				var apiErr *sentryAPIError
-				if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusTooManyRequests {
-					retryAfter := defaultRetryAfter
-					if apiErr.Headers != nil {
-						if reset := apiErr.Headers.Get("X-Sentry-Rate-Limit-Reset"); reset != "" {
-							retryAfter = parseXSentryRateLimitReset(reset)
+					if err != nil {
+						var apiErr *sentryHTTPError
+						if errors.As(err, &apiErr) && apiErr.statusCode == http.StatusTooManyRequests {
+							retryAfter := internalrl.DefaultRetryAfter
+							if apiErr.headers != nil {
+								if reset := apiErr.headers.Get("X-Sentry-Rate-Limit-Reset"); reset != "" {
+									retryAfter = parseXSentryRateLimitReset(reset)
+								}
+							}
+							s.telemetrySettings.Logger.Warn("Rate limited while creating project, will retry",
+								zap.String("project", req.projectSlug),
+								zap.Duration("retry_after", retryAfter))
+
+							if retryAfter > 0 {
+								time.Sleep(retryAfter)
+							}
+							select {
+							case s.projectCreationQueue <- req:
+								keepPending = true
+							default:
+								s.telemetrySettings.Logger.Warn("Failed to re-queue rate-limited project creation",
+									zap.String("project", req.projectSlug))
+							}
+						} else {
+							s.telemetrySettings.Logger.Error("Failed to create project asynchronously",
+								zap.String("project", req.projectSlug),
+								zap.Error(err))
+						}
+					} else {
+
+						endpointCtx, endpointCancel := context.WithTimeout(context.Background(), 30*time.Second)
+						endpoint, err := s.sentryClient.GetOTLPEndpoints(endpointCtx, s.config.OrgSlug, req.projectSlug)
+						endpointCancel()
+
+						if err != nil {
+							var apiErr *sentryHTTPError
+							if errors.As(err, &apiErr) && apiErr.statusCode == http.StatusTooManyRequests {
+								retryAfter := internalrl.DefaultRetryAfter
+								if apiErr.headers != nil {
+									if reset := apiErr.headers.Get("X-Sentry-Rate-Limit-Reset"); reset != "" {
+										retryAfter = parseXSentryRateLimitReset(reset)
+									}
+								}
+								s.telemetrySettings.Logger.Warn("Rate limited while fetching endpoints, will retry",
+									zap.String("project", req.projectSlug),
+									zap.Duration("retry_after", retryAfter))
+
+								if retryAfter > 0 {
+									time.Sleep(retryAfter)
+								}
+								select {
+								case s.projectCreationQueue <- req:
+									keepPending = true
+								default:
+									s.telemetrySettings.Logger.Warn("Failed to re-queue rate-limited endpoint fetch",
+										zap.String("project", req.projectSlug))
+								}
+							} else {
+								s.telemetrySettings.Logger.Error("Failed to get endpoints for newly created project",
+									zap.String("project", req.projectSlug),
+									zap.Error(err))
+							}
+						} else {
+
+							s.projectMapMu.Lock()
+							s.projectToEndpoint[req.projectSlug] = endpoint
+							s.projectMapMu.Unlock()
+
+							s.telemetrySettings.Logger.Info("Successfully created project asynchronously",
+								zap.String("project", req.projectSlug),
+								zap.String("team", s.defaultTeamSlug),
+								zap.String("platform", req.platform))
 						}
 					}
-					s.telemetrySettings.Logger.Warn("Rate limited while creating project, will retry",
-						zap.String("project", req.projectSlug),
-						zap.Duration("retry_after", retryAfter))
-
-					if retryAfter > 0 {
-						time.Sleep(retryAfter)
-					}
-					select {
-					case s.projectCreationQueue <- req:
-						continue
-					default:
-						s.telemetrySettings.Logger.Warn("Failed to re-queue rate-limited project creation",
-							zap.String("project", req.projectSlug))
-					}
 				}
-				s.telemetrySettings.Logger.Error("Failed to create project asynchronously",
-					zap.String("project", req.projectSlug),
-					zap.Error(err))
-				continue
 			}
 
-			endpointCtx, endpointCancel := context.WithTimeout(context.Background(), 30*time.Second)
-			endpoint, err := s.sentryClient.GetOTLPEndpoints(endpointCtx, s.config.OrgSlug, req.projectSlug)
-			endpointCancel()
-
-			if err != nil {
-				var apiErr *sentryAPIError
-				if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusTooManyRequests {
-					retryAfter := defaultRetryAfter
-					if apiErr.Headers != nil {
-						if reset := apiErr.Headers.Get("X-Sentry-Rate-Limit-Reset"); reset != "" {
-							retryAfter = parseXSentryRateLimitReset(reset)
-						}
-					}
-					s.telemetrySettings.Logger.Warn("Rate limited while fetching endpoints, will retry",
-						zap.String("project", req.projectSlug),
-						zap.Duration("retry_after", retryAfter))
-
-					if retryAfter > 0 {
-						time.Sleep(retryAfter)
-					}
-					select {
-					case s.projectCreationQueue <- req:
-						continue
-					default:
-						s.telemetrySettings.Logger.Warn("Failed to re-queue rate-limited endpoint fetch",
-							zap.String("project", req.projectSlug))
-					}
-				}
-				s.telemetrySettings.Logger.Error("Failed to get endpoints for newly created project",
-					zap.String("project", req.projectSlug),
-					zap.Error(err))
-				continue
+			if !keepPending {
+				s.pendingCreations.Delete(req.projectSlug)
 			}
 
-			s.projectMapMu.Lock()
-			s.projectToEndpoint[req.projectSlug] = endpoint
-			s.projectMapMu.Unlock()
-
-			s.telemetrySettings.Logger.Info("Successfully created project asynchronously",
-				zap.String("project", req.projectSlug),
-				zap.String("team", s.defaultTeamSlug),
-				zap.String("platform", req.platform))
 		}
+
 	}
 }
 
@@ -401,7 +368,6 @@ func (s *endpointState) Start(ctx context.Context, host component.Host) error {
 		if err != nil {
 			s.telemetrySettings.Logger.Warn("Failed to pre-populate project cache",
 				zap.Error(err))
-			s.startErr = nil
 			return
 		}
 
@@ -475,9 +441,10 @@ func (s *endpointState) preloadEndpointsFromOrgKeys(ctx context.Context, project
 		}
 
 		s.projectToEndpoint[project.Slug] = &otlpEndpoints{
-			TracesURL: fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/traces/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
-			LogsURL:   fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/logs/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
-			PublicKey: key.Public,
+			TracesURL:  fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/traces/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
+			LogsURL:    fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/logs/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
+			PublicKey:  key.Public,
+			AuthHeader: fmt.Sprintf("sentry sentry_key=%s", key.Public),
 		}
 	}
 }
@@ -492,7 +459,18 @@ func (s *endpointState) Shutdown(_ context.Context) error {
 		}
 
 		close(s.projectCreationQueue)
-		s.workerWg.Wait()
+
+		done := make(chan struct{})
+		go func() {
+			s.workerWg.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(timeout):
+			s.telemetrySettings.Logger.Warn("Timed out waiting for project creation worker to stop")
+		}
 
 		if s.client != nil {
 			s.client.CloseIdleConnections()
@@ -519,35 +497,59 @@ func (s *endpointState) pushLogData(ctx context.Context, logger *zap.Logger, ld 
 }
 
 func (s *endpointState) routeLogsByProject(ctx context.Context, logger *zap.Logger, ld plog.Logs) error {
-	type projectKey struct {
-		slug     string
-		platform string
-	}
-	projectGroups := make(map[projectKey]plog.Logs)
+	projectGroups := make(map[projectRoutingKey]any)
+	var droppedLogs int
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		rl := ld.ResourceLogs().At(i)
 		attrs := rl.Resource().Attributes()
 		projectSlug := s.extractProjectSlug(attrs)
 
 		if projectSlug == "" {
-			logger.Warn("Dropping logs: missing required routing attribute",
-				zap.String("attribute", s.attributeKey))
+			droppedLogs += countLogsInResource(rl)
 			continue
 		}
 
 		platform := s.extractPlatform(attrs)
-		key := projectKey{slug: projectSlug, platform: platform}
+		key := projectRoutingKey{slug: projectSlug, platform: platform}
 
-		if _, exists := projectGroups[key]; !exists {
-			projectGroups[key] = plog.NewLogs()
+		group, exists := projectGroups[key]
+		if !exists {
+			group = plog.NewLogs()
 		}
-		rl.CopyTo(projectGroups[key].ResourceLogs().AppendEmpty())
+		logs := group.(plog.Logs)
+		rl.CopyTo(logs.ResourceLogs().AppendEmpty())
+		projectGroups[key] = logs
 	}
 
+	if droppedLogs > 0 {
+		logger.Warn("Dropping logs missing routing attribute",
+			zap.String("attribute", s.attributeKey),
+			zap.Int("dropped_log_records", droppedLogs))
+	}
+
+	return s.routeByProject(
+		ctx,
+		logger,
+		projectGroups,
+		func(ctx context.Context, logger *zap.Logger, data any, endpoint *otlpEndpoints) error {
+			return s.sendLogsToEndpoint(ctx, logger, data.(plog.Logs), endpoint)
+		},
+	)
+}
+
+func (s *endpointState) routeByProject(ctx context.Context, logger *zap.Logger, projectGroups map[projectRoutingKey]any, send func(context.Context, *zap.Logger, any, *otlpEndpoints) error) error {
 	var errs error
 	var projectsBeingCreated int
-	for key, logs := range projectGroups {
+
+	for key, data := range projectGroups {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		endpoint, err := s.getOrCreateProjectEndpoint(ctx, logger, key.slug, key.platform)
 		if err != nil {
 			if errors.Is(err, errProjectBeingCreated) {
@@ -561,7 +563,7 @@ func (s *endpointState) routeLogsByProject(ctx context.Context, logger *zap.Logg
 			continue
 		}
 
-		if err := s.sendLogsToEndpoint(ctx, logger, logs, endpoint); err != nil {
+		if err := send(ctx, logger, data, endpoint); err != nil {
 			var httpErr *sentryHTTPError
 			if errors.As(err, &httpErr) {
 				if httpErr.statusCode == http.StatusForbidden && strings.Contains(httpErr.body, "event submission rejected with_reason: ProjectId") {
@@ -585,8 +587,8 @@ func (s *endpointState) routeLogsByProject(ctx context.Context, logger *zap.Logg
 						continue
 					}
 
-					if retryErr := s.sendLogsToEndpoint(ctx, logger, logs, newEndpoint); retryErr != nil {
-						logger.Error("Failed to send logs to project on retry",
+					if retryErr := send(ctx, logger, data, newEndpoint); retryErr != nil {
+						logger.Error("Failed to send data to project on retry",
 							zap.String("project", key.slug),
 							zap.Error(retryErr))
 						errs = errors.Join(errs, retryErr)
@@ -596,7 +598,7 @@ func (s *endpointState) routeLogsByProject(ctx context.Context, logger *zap.Logg
 				}
 			}
 
-			logger.Error("Failed to send logs to project",
+			logger.Error("Failed to send data to project",
 				zap.String("project", key.slug),
 				zap.Error(err))
 			errs = errors.Join(errs, err)
@@ -614,6 +616,24 @@ func (s *endpointState) routeLogsByProject(ctx context.Context, logger *zap.Logg
 	return nil
 }
 
+func countSpansInResource(rs ptrace.ResourceSpans) int {
+	total := 0
+	scopeSpans := rs.ScopeSpans()
+	for i := 0; i < scopeSpans.Len(); i++ {
+		total += scopeSpans.At(i).Spans().Len()
+	}
+	return total
+}
+
+func countLogsInResource(rl plog.ResourceLogs) int {
+	total := 0
+	scopeLogs := rl.ScopeLogs()
+	for i := 0; i < scopeLogs.Len(); i++ {
+		total += scopeLogs.At(i).LogRecords().Len()
+	}
+	return total
+}
+
 func (s *endpointState) sendLogsToEndpoint(ctx context.Context, logger *zap.Logger, ld plog.Logs, endpoint *otlpEndpoints) error {
 	request := plogotlp.NewExportRequestFromLogs(ld)
 	data, err := request.MarshalProto()
@@ -621,8 +641,7 @@ func (s *endpointState) sendLogsToEndpoint(ctx context.Context, logger *zap.Logg
 		return fmt.Errorf("failed to marshal logs: %w", err)
 	}
 
-	authHeader := fmt.Sprintf("sentry sentry_key=%s", endpoint.PublicKey)
-	if err := s.sendOTLPData(ctx, logger, endpoint.PublicKey, dataCategoryLog, endpoint.LogsURL, data, authHeader); err != nil {
+	if err := s.sendOTLPData(ctx, logger, endpoint.PublicKey, dataCategoryLog, endpoint.LogsURL, data, endpoint.AuthHeader); err != nil {
 		return fmt.Errorf("failed to send logs to Sentry: %w", err)
 	}
 
@@ -636,6 +655,7 @@ func (s *endpointState) sendLogsToEndpoint(ctx context.Context, logger *zap.Logg
 type sentryHTTPError struct {
 	statusCode int
 	body       string
+	headers    http.Header
 }
 
 func (e *sentryHTTPError) Error() string {
@@ -673,6 +693,7 @@ func (s *endpointState) sendOTLPData(ctx context.Context, logger *zap.Logger, ds
 		return &sentryHTTPError{
 			statusCode: resp.StatusCode,
 			body:       string(body),
+			headers:    resp.Header,
 		}
 	}
 
@@ -753,6 +774,10 @@ func (s *endpointState) getOrCreateProjectEndpoint(ctx context.Context, logger *
 			return nil, fmt.Errorf("maximum number of projects (%d) reached, cannot create project %s", maxProjects, projectSlug)
 		}
 
+		if _, pending := s.pendingCreations.LoadOrStore(projectSlug, struct{}{}); pending {
+			return nil, errProjectBeingCreated
+		}
+
 		select {
 		case s.projectCreationQueue <- projectCreationRequest{
 			projectSlug: projectSlug,
@@ -762,6 +787,7 @@ func (s *endpointState) getOrCreateProjectEndpoint(ctx context.Context, logger *
 				zap.String("project", projectSlug),
 				zap.String("platform", platform))
 		default:
+			s.pendingCreations.Delete(projectSlug)
 			return nil, fmt.Errorf("project creation queue is full for project %s", projectSlug)
 		}
 

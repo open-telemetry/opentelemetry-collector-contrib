@@ -15,8 +15,6 @@ import (
 
 var errRateLimited = errors.New("error sending data, rate-limited")
 
-const defaultRetryAfter = 60 * time.Second
-
 type dataCategory string
 
 const (
@@ -72,7 +70,7 @@ func (r *rateLimiter) isRateLimited(dsn string, category dataCategory, now time.
 func (r *rateLimiter) updateFromResponse(dsn string, resp *http.Response, now time.Time) {
 	limits := internalrl.FromResponse(resp)
 	if len(limits) == 0 && resp.StatusCode == http.StatusTooManyRequests {
-		limits = internalrl.Map{internalrl.CategoryAll: internalrl.Deadline(now.Add(defaultRetryAfter))}
+		limits = internalrl.Map{internalrl.CategoryAll: internalrl.Deadline(now.Add(internalrl.DefaultRetryAfter))}
 	}
 	if len(limits) == 0 {
 		return
@@ -100,7 +98,7 @@ func mapCategory(category dataCategory) internalrl.Category {
 
 // parseXSentryRateLimitReset parses the X-Sentry-Rate-Limit-Reset header from the Sentry API.
 func parseXSentryRateLimitReset(reset string) time.Duration {
-	retryAfter := defaultRetryAfter
+	retryAfter := internalrl.DefaultRetryAfter
 
 	if resetTime, err := strconv.ParseInt(reset, 10, 64); err == nil {
 		resetAt := time.Unix(resetTime, 0)

@@ -76,20 +76,10 @@ type projectInfo struct {
 
 // otlpEndpoints contains the OTLP endpoint URLs for a project.
 type otlpEndpoints struct {
-	TracesURL string
-	LogsURL   string
-	PublicKey string
-}
-
-// sentryAPIError represents an error from Sentry Management API.
-type sentryAPIError struct {
-	StatusCode int
-	Body       string
-	Headers    http.Header
-}
-
-func (e *sentryAPIError) Error() string {
-	return fmt.Sprintf("request failed with status %d: %s", e.StatusCode, e.Body)
+	TracesURL  string
+	LogsURL    string
+	PublicKey  string
+	AuthHeader string
 }
 
 func parseProjectID(id string) int {
@@ -127,15 +117,14 @@ func (c *sentryClient) GetAllProjects(ctx context.Context, orgSlug string) ([]pr
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer c.closeIdleConnections()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, &sentryAPIError{
-			StatusCode: resp.StatusCode,
-			Body:       string(body),
-			Headers:    resp.Header,
+		return nil, &sentryHTTPError{
+			statusCode: resp.StatusCode,
+			body:       string(body),
+			headers:    resp.Header,
 		}
 	}
 
@@ -163,15 +152,14 @@ func (c *sentryClient) GetProjectKeys(ctx context.Context, orgSlug, projectSlug 
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer c.closeIdleConnections()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, &sentryAPIError{
-			StatusCode: resp.StatusCode,
-			Body:       string(body),
-			Headers:    resp.Header,
+		return nil, &sentryHTTPError{
+			statusCode: resp.StatusCode,
+			body:       string(body),
+			headers:    resp.Header,
 		}
 	}
 
@@ -199,15 +187,14 @@ func (c *sentryClient) GetOrgProjectKeys(ctx context.Context, orgSlug string) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer c.closeIdleConnections()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, &sentryAPIError{
-			StatusCode: resp.StatusCode,
-			Body:       string(body),
-			Headers:    resp.Header,
+		return nil, &sentryHTTPError{
+			statusCode: resp.StatusCode,
+			body:       string(body),
+			headers:    resp.Header,
 		}
 	}
 
@@ -246,15 +233,14 @@ func (c *sentryClient) CreateProject(ctx context.Context, orgSlug, teamSlug, pro
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer c.closeIdleConnections()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
-		return nil, &sentryAPIError{
-			StatusCode: resp.StatusCode,
-			Body:       string(respBody),
-			Headers:    resp.Header,
+		return nil, &sentryHTTPError{
+			statusCode: resp.StatusCode,
+			body:       string(respBody),
+			headers:    resp.Header,
 		}
 	}
 
@@ -295,20 +281,11 @@ func (c *sentryClient) GetOTLPEndpoints(ctx context.Context, orgSlug, projectSlu
 	}
 
 	endpoints := &otlpEndpoints{
-		TracesURL: fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/traces/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
-		LogsURL:   fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/logs/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
-		PublicKey: activeKey.Public,
+		TracesURL:  fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/traces/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
+		LogsURL:    fmt.Sprintf("%s://%s/api/%s/integration/otlp/v1/logs/", dsn.GetScheme(), dsn.GetHost(), dsn.GetProjectID()),
+		PublicKey:  activeKey.Public,
+		AuthHeader: fmt.Sprintf("sentry sentry_key=%s", activeKey.Public),
 	}
 
 	return endpoints, nil
-}
-
-// closeIdleConnections drains any idle connections created by the Sentry client.
-func (c *sentryClient) closeIdleConnections() {
-	if c == nil || c.client == nil {
-		return
-	}
-	if tr, ok := c.client.Transport.(interface{ CloseIdleConnections() }); ok {
-		tr.CloseIdleConnections()
-	}
 }

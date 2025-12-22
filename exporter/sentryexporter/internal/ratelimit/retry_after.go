@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const defaultRetryAfter = 1 * time.Minute
+const DefaultRetryAfter = 1 * time.Minute
 
 var errInvalidRetryAfter = errors.New("invalid input")
 
@@ -39,5 +39,5 @@ func parseRetryAfter(s string, now time.Time) (Deadline, error) {
 		return Deadline(date), nil
 	}
 invalid:
-	return Deadline(now.Add(defaultRetryAfter)), errInvalidRetryAfter
+	return Deadline(now.Add(DefaultRetryAfter)), errInvalidRetryAfter
 }

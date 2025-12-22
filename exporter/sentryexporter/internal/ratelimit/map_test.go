@@ -60,7 +60,7 @@ func TestFromResponse(t *testing.T) {
 			&http.Response{
 				StatusCode: http.StatusTooManyRequests,
 			},
-			Map{CategoryAll: Deadline(now.Add(defaultRetryAfter))},
+			Map{CategoryAll: Deadline(now.Add(DefaultRetryAfter))},
 		},
 		{
 			"429 Retry-After",

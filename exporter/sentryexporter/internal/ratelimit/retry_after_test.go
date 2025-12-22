@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseRetryAfter(t *testing.T) {
-	defaultDeadline := Deadline(now.Add(defaultRetryAfter))
+	defaultDeadline := Deadline(now.Add(DefaultRetryAfter))
 	tests := map[string]struct {
 		input   string
 		want    Deadline
