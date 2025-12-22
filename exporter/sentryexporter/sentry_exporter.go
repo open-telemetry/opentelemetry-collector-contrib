@@ -5,6 +5,7 @@ package sentryexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -339,7 +340,6 @@ func (s *endpointState) projectCreationWorker() {
 			}
 
 		}
-
 	}
 }
 
@@ -671,12 +671,24 @@ func (s *endpointState) sendOTLPData(ctx context.Context, logger *zap.Logger, ds
 		return exporterhelper.NewThrottleRetry(errRateLimited, delay)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(data))
+	var compressed bytes.Buffer
+	gz := gzip.NewWriter(&compressed)
+	if _, err := gz.Write(data); err != nil {
+		return fmt.Errorf("failed to gzip request: %w", err)
+	}
+	if err := gz.Close(); err != nil {
+		return fmt.Errorf("failed to finalize gzip request: %w", err)
+	}
+
+	compressedData := compressed.Bytes()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(compressedData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/x-protobuf")
+	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("x-sentry-auth", authHeader)
 
 	resp, err := s.client.Do(req)
@@ -699,7 +711,8 @@ func (s *endpointState) sendOTLPData(ctx context.Context, logger *zap.Logger, ds
 
 	logger.Debug("Successfully sent data to Sentry",
 		zap.Int("status_code", resp.StatusCode),
-		zap.Int("data_size", len(data)))
+		zap.Int("data_size", len(data)),
+		zap.Int("compressed_size", len(compressedData)))
 
 	return nil
 }
