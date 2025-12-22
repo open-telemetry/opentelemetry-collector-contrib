@@ -18,7 +18,7 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### container.cpu.usage
 
@@ -26,7 +26,7 @@ Total CPU usage (sum of all cores per second) averaged over the sample window
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {cpu} | Gauge | Double | development |
+| {cpu} | Gauge | Double | Development |
 
 ### container.filesystem.available
 
@@ -34,7 +34,7 @@ Container filesystem available
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### container.filesystem.capacity
 
@@ -42,7 +42,7 @@ Container filesystem capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### container.filesystem.usage
 
@@ -50,7 +50,7 @@ Container filesystem usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### container.memory.available
 
@@ -58,7 +58,7 @@ Container memory available
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### container.memory.major_page_faults
 
@@ -66,7 +66,7 @@ Container memory major_page_faults
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### container.memory.page_faults
 
@@ -74,7 +74,7 @@ Container memory page_faults
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### container.memory.rss
 
@@ -82,7 +82,7 @@ Container memory rss
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### container.memory.usage
 
@@ -90,7 +90,7 @@ Container memory usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### container.memory.working_set
 
@@ -98,7 +98,7 @@ Container memory working_set
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.node.cpu.time
 
@@ -106,7 +106,7 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### k8s.node.cpu.usage
 
@@ -114,7 +114,7 @@ Total CPU usage (sum of all cores per second) averaged over the sample window
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {cpu} | Gauge | Double | development |
+| {cpu} | Gauge | Double | Development |
 
 ### k8s.node.filesystem.available
 
@@ -122,7 +122,7 @@ Node filesystem available
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.node.filesystem.capacity
 
@@ -130,7 +130,7 @@ Node filesystem capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.node.filesystem.usage
 
@@ -138,7 +138,7 @@ Node filesystem usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.node.memory.available
 
@@ -146,7 +146,7 @@ Node memory available
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.node.memory.major_page_faults
 
@@ -154,7 +154,7 @@ Node memory major_page_faults
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### k8s.node.memory.page_faults
 
@@ -162,7 +162,7 @@ Node memory page_faults
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### k8s.node.memory.rss
 
@@ -170,7 +170,7 @@ Node memory rss
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.node.memory.usage
 
@@ -178,7 +178,7 @@ Node memory usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.node.memory.working_set
 
@@ -186,7 +186,7 @@ Node memory working_set
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.node.network.errors
 
@@ -194,7 +194,7 @@ Node network errors
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -209,7 +209,7 @@ Node network IO
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -224,7 +224,7 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | development |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### k8s.pod.cpu.usage
 
@@ -232,7 +232,7 @@ Total CPU usage (sum of all cores per second) averaged over the sample window
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {cpu} | Gauge | Double | development |
+| {cpu} | Gauge | Double | Development |
 
 ### k8s.pod.filesystem.available
 
@@ -240,7 +240,7 @@ Pod filesystem available
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.pod.filesystem.capacity
 
@@ -248,7 +248,7 @@ Pod filesystem capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.pod.filesystem.usage
 
@@ -256,7 +256,7 @@ Pod filesystem usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.pod.memory.available
 
@@ -264,7 +264,7 @@ Pod memory available
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.pod.memory.major_page_faults
 
@@ -272,7 +272,7 @@ Pod memory major_page_faults
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### k8s.pod.memory.page_faults
 
@@ -280,7 +280,7 @@ Pod memory page_faults
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### k8s.pod.memory.rss
 
@@ -288,7 +288,7 @@ Pod memory rss
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.pod.memory.usage
 
@@ -296,7 +296,7 @@ Pod memory usage
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.pod.memory.working_set
 
@@ -304,7 +304,7 @@ Pod memory working_set
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.pod.network.errors
 
@@ -312,7 +312,7 @@ Pod network errors
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | development |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -327,7 +327,7 @@ Pod network IO
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | development |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -342,7 +342,7 @@ The number of available bytes in the volume.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.volume.capacity
 
@@ -350,7 +350,7 @@ The total capacity in bytes of the volume.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 ### k8s.volume.inodes
 
@@ -358,7 +358,7 @@ The total inodes in the filesystem.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### k8s.volume.inodes.free
 
@@ -366,7 +366,7 @@ The free inodes in the filesystem.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ### k8s.volume.inodes.used
 
@@ -374,7 +374,7 @@ The inodes used by the filesystem. This may not equal inodes - free because file
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 ## Optional Metrics
 
@@ -392,7 +392,7 @@ The time since the container started
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 ### k8s.container.cpu.node.utilization
 
@@ -400,7 +400,7 @@ Container cpu utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.container.cpu_limit_utilization
 
@@ -408,7 +408,7 @@ Container cpu utilization as a ratio of the container's limits
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.container.cpu_request_utilization
 
@@ -416,7 +416,7 @@ Container cpu utilization as a ratio of the container's requests
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.container.memory.node.utilization
 
@@ -424,7 +424,7 @@ Container memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.container.memory_limit_utilization
 
@@ -432,7 +432,7 @@ Container memory utilization as a ratio of the container's limits
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.container.memory_request_utilization
 
@@ -440,7 +440,7 @@ Container memory utilization as a ratio of the container's requests
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.node.uptime
 
@@ -448,7 +448,7 @@ The time since the node started
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 ### k8s.pod.cpu.node.utilization
 
@@ -456,7 +456,7 @@ Pod cpu utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.pod.cpu_limit_utilization
 
@@ -464,7 +464,7 @@ Pod cpu utilization as a ratio of the pod's total container limits. If any conta
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.pod.cpu_request_utilization
 
@@ -472,7 +472,7 @@ Pod cpu utilization as a ratio of the pod's total container requests. If any con
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.pod.memory.node.utilization
 
@@ -480,7 +480,7 @@ Pod memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.pod.memory_limit_utilization
 
@@ -488,7 +488,7 @@ Pod memory utilization as a ratio of the pod's total container limits. If any co
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.pod.memory_request_utilization
 
@@ -496,7 +496,7 @@ Pod memory utilization as a ratio of the pod's total container requests. If any 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | development |
+| 1 | Gauge | Double | Development |
 
 ### k8s.pod.uptime
 
@@ -504,7 +504,7 @@ The time since the pod started
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | development |
+| s | Sum | Int | Cumulative | true | Development |
 
 ### k8s.pod.volume.usage
 
@@ -512,7 +512,7 @@ The number of used bytes in the pod volume.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ## Resource Attributes
 

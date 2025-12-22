@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -46,7 +46,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(params, endpoint)
+		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
 
 		return exporterFactory.CreateMetrics(ctx, oParams, &oCfg)
 	}

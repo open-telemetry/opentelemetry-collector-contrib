@@ -217,7 +217,10 @@ const successfulInstanceResponse = `{
       "version": ""
     },
     "full_configuration": "",
-    "health_status": ""
+    "health_status": "",
+    "collector_resource_attributes": {},
+    "collector_deployment_type": "unknown",
+    "ttl": 900000000000
   },
   "uuid": "test-uuid"
 }`
@@ -291,8 +294,11 @@ func TestHandleMetadata(t *testing.T) {
 					Hostname: "test-hostname",
 					UUID:     "test-uuid",
 					Metadata: payload.OtelCollector{
-						FullComponents:   []payload.CollectorModule{},
-						ActiveComponents: []payload.ServiceComponent{},
+						FullComponents:              []payload.CollectorModule{},
+						ActiveComponents:            []payload.ServiceComponent{},
+						CollectorResourceAttributes: map[string]string{},
+						CollectorDeploymentType:     "unknown", // Default value set by config validation
+						TTL:                         int64(5 * time.Minute * 3),
 					},
 				},
 			}

@@ -13,12 +13,14 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
+    - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
+    - connector/metricsaslogs
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
@@ -38,7 +40,6 @@ components:
     - exporter/azuredataexplorer
     - exporter/azuremonitor
     - exporter/bmchelix
-    - exporter/carbon
     - exporter/cassandra
     - exporter/clickhouse
     - exporter/coralogix
@@ -82,6 +83,7 @@ components:
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awslogs_encoding
     - extension/awsproxy
+    - extension/azure_encoding
     - extension/azureauth
     - extension/basicauth
     - extension/bearertokenauth
@@ -91,7 +93,6 @@ components:
     - extension/db_storage
     - extension/docker_observer
     - extension/ecs_observer
-    - extension/ecs_task_observer
     - extension/encoding
     - extension/file_storage
     - extension/googleclientauth
@@ -135,6 +136,8 @@ components:
     - internal/grpcutil
     - internal/healthcheck
     - internal/k8sconfig
+    - internal/k8sinventory
+    - internal/k8sleaderelectortest
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
@@ -168,15 +171,18 @@ components:
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/opencensus
+    - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
     - pkg/translator/skywalking
+    - pkg/translator/splunk
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
     - processor/akamaidetector
     - processor/attributes
+    - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
     - processor/datadogsemantics
@@ -226,6 +232,7 @@ components:
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
+    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azureblob
@@ -234,7 +241,7 @@ components:
     - receiver/bigip
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoosreceiver
+    - receiver/ciscoos
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
@@ -253,6 +260,7 @@ components:
     - receiver/gitlab
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
+    - receiver/googlecloudpubsubpush
     - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/hostmetrics
@@ -273,6 +281,7 @@ components:
     - receiver/kubeletstats
     - receiver/libhoney
     - receiver/loki
+    - receiver/macosunifiedlogging
     - receiver/memcached
     - receiver/mongodb
     - receiver/mongodbatlas
@@ -325,11 +334,13 @@ components:
     - receiver/windowseventlog
     - receiver/windowsperfcounters
     - receiver/windowsservice
+    - receiver/yanggrpc
     - receiver/zipkin
     - receiver/zookeeper
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/interfaces
     - scraper/load
     - scraper/memory
     - scraper/network

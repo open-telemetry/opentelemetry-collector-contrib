@@ -276,6 +276,24 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(sample_type.type, "profile_sample_type_type")`,
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
+				tbl := tCtx.GetProfilesDictionary().StringTable()
+				idx, err := pprofile.SetString(tbl, "profile_sample_type_type")
+				require.NoError(t, err)
+				tCtx.GetProfile().SampleType().SetTypeStrindex(idx)
+			},
+		},
+		{
+			statement: `set(sample_type.unit, "profile_sample_type_unit")`,
+			want: func(t *testing.T, tCtx ottlprofile.TransformContext) {
+				tbl := tCtx.GetProfilesDictionary().StringTable()
+				idx, err := pprofile.SetString(tbl, "profile_sample_type_unit")
+				require.NoError(t, err)
+				tCtx.GetProfile().SampleType().SetUnitStrindex(idx)
+			},
+		},
+		{
 			statement: `truncate_all(attributes, 100)`,
 			want:      func(_ *testing.T, _ ottlprofile.TransformContext) {},
 		},
@@ -335,7 +353,7 @@ func Test_e2e_editors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			statements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range statements {
 				validator, tCtx := newDictionaryValidator(constructProfileTransformContextEditors())
@@ -346,7 +364,7 @@ func Test_e2e_editors(t *testing.T) {
 				tt.want(t, exTCtx)
 				require.NoError(t, exValidator.validate())
 
-				assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
+				require.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 			}
 		})
 	}
@@ -1038,6 +1056,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(profile_id, ProfileID("0102030405060708090a0b0c0d0e0f10"))`,
+			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
+				tCtx.GetProfile().SetProfileID(pprofile.ProfileID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+			},
+		},
+		{
 			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(_ *testing.T, tCtx ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", []any{"A", "B", "C"})
@@ -1238,21 +1262,21 @@ func Test_e2e_converters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			statements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range statements {
 				tCtx := constructProfileTransformContext()
 				_, _, err = statement.Execute(t.Context(), tCtx)
 				if tt.errMsg == "" {
-					assert.NoError(t, err)
+					require.NoError(t, err)
 				} else if err != nil {
-					assert.Contains(t, err.Error(), tt.errMsg)
+					assert.ErrorContains(t, err, tt.errMsg)
 				}
 
 				exTCtx := constructProfileTransformContext()
 				tt.want(t, exTCtx)
 
-				assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
+				require.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 			}
 		})
 	}
@@ -1342,7 +1366,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			statements, err := parseStatementWithAndWithoutPathContext(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, statement := range statements {
 				tCtx := constructProfileTransformContext()
@@ -1351,7 +1375,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 				exTCtx := constructProfileTransformContext()
 				tt.want(t, exTCtx)
 
-				assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
+				require.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 			}
 		})
 	}
@@ -1411,7 +1435,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 
 			for _, statement := range tt.statements {
 				statements, err := parseStatementWithAndWithoutPathContext(statement)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				for _, s := range statements {
 					_, _, _ = s.Execute(t.Context(), tCtx)
@@ -1421,7 +1445,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			exTCtx := constructProfileTransformContext()
 			tt.want(t, exTCtx)
 
-			assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
+			require.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 		})
 	}
 }
@@ -1523,13 +1547,13 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 
 			profileParser, err := ottlprofile.NewParser(ottlfuncs.StandardFuncs[ottlprofile.TransformContext](), settings)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			valueExpr, err := profileParser.ParseValueExpression(tt.statement)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tCtx := constructProfileTransformContextValueExpressions()
 			val, err := valueExpr.Eval(t.Context(), tCtx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), val)
 		})

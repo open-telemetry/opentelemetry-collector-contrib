@@ -73,8 +73,8 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	confighttp.ClientConfig   `mapstructure:",squash"`                                 // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
@@ -110,6 +110,8 @@ type Config struct {
 	// This flag is incompatible with disabling host metadata,
 	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
+
+	OrchestratorExplorer OrchestratorExplorerConfig `mapstructure:"orchestrator_explorer"`
 
 	// Non-fatal warnings found during configuration loading.
 	warnings []error
@@ -181,6 +183,7 @@ func (c *Config) Validate() error {
 
 // StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
 // It does not validate online; this is handled on startup.
+//
 // Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
 func StaticAPIKeyCheck(key string) error {
 	if key == "" {
@@ -320,6 +323,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("logs::endpoint") {
 		c.Logs.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
+	if !configMap.IsSet("orchestrator_explorer::endpoint") {
+		c.OrchestratorExplorer.Endpoint = fmt.Sprintf("https://orchestrator.%s/api/v2/orchmanif", c.API.Site)
+	}
 
 	// Return an error if an endpoint is explicitly set to ""
 	if c.Metrics.Endpoint == "" || c.Traces.Endpoint == "" || c.Logs.Endpoint == "" {
@@ -344,31 +350,12 @@ func defaultClientConfig() confighttp.ClientConfig {
 	return client
 }
 
-// newDefaultQueueConfig creates the default exporter queue configuration.
-func newDefaultQueueConfig() exporterhelper.QueueBatchConfig {
-	queueSet := exporterhelper.NewDefaultQueueConfig()
-	// Override batching options since the defaults cause payloads that are over our limits
-	// See e.g. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16834 or https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17566
-	//
-	// The limits were chosen based on the API intake limits:
-	// - Trace intake: 3.2MB
-	// - Log intake: https://docs.datadoghq.com/api/latest/logs/
-	// - Metrics V2 intake: https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
-	queueSet.Batch = configoptional.Default(exporterhelper.BatchConfig{
-		FlushTimeout: 10 * time.Second,
-		Sizer:        exporterhelper.RequestSizerTypeItems,
-		MinSize:      10,
-		MaxSize:      100,
-	})
-	return queueSet
-}
-
 // CreateDefaultConfig creates the default exporter configuration
 func CreateDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: newDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -421,6 +408,13 @@ func CreateDefaultConfig() component.Config {
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
+		},
+
+		OrchestratorExplorer: OrchestratorExplorerConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
+			},
+			Enabled: false,
 		},
 
 		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373

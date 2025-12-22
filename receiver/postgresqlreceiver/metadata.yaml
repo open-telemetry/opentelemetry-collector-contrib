@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17]
+    active: [antonblock, ishleenk17, Caleb-Hurshman]
     seeking_new: true
     emeritus: [djaglowski]
 

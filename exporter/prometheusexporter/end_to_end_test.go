@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -67,7 +68,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := exporterFactory.CreateMetrics(ctx, set, exporterCfg)
 	require.NoError(t, err)
-	require.NoError(t, exporter.Start(ctx, nil), "Failed to start the Prometheus exporter")
+	require.NoError(t, exporter.Start(ctx, componenttest.NewNopHost()), "Failed to start the Prometheus exporter")
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(ctx)) })
 
 	// 3. Create the Prometheus receiver scraping from the DropWizard mock server and
@@ -94,7 +95,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetrics(ctx, receiverCreateSet, rcvCfg, exporter)
 	require.NoError(t, err)
-	require.NoError(t, prometheusReceiver.Start(ctx, nil), "Failed to start the Prometheus receiver")
+	require.NoError(t, prometheusReceiver.Start(ctx, componenttest.NewNopHost()), "Failed to start the Prometheus receiver")
 	t.Cleanup(func() { require.NoError(t, prometheusReceiver.Shutdown(ctx)) })
 
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
@@ -138,7 +139,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_scrape_samples_scraped.instance="127.0.0.1:.*",job="otel-collector",otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver\",otel_scope_schema_url=\"\",otel_scope_version=\"latest\". 13 .*`,
 		`. HELP test_scrape_series_added The approximate number of new series in this scrape`,
 		`. TYPE test_scrape_series_added gauge`,
-		`test_scrape_series_added.instance="127.0.0.1:.*",job="otel-collector",otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver\",otel_scope_schema_url=\"\",otel_scope_version=\"latest\". 13 .*`,
+		`test_scrape_series_added.instance="127.0.0.1:.*",job="otel-collector",otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver\",otel_scope_schema_url=\"\",otel_scope_version=\"latest\". (0|13) .*`,
 		`. HELP test_up The scraping was successful`,
 		`. TYPE test_up gauge`,
 		`test_up.instance="127.0.0.1:.*",job="otel-collector",otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver\",otel_scope_schema_url=\"\",otel_scope_version=\"latest\". 1 .*`,

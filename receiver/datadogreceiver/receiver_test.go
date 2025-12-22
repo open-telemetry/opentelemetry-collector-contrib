@@ -6,6 +6,7 @@ package datadogreceiver
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -28,6 +29,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 )
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
@@ -50,6 +52,20 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	cfg.(*Config).Endpoint = "localhost:0"
 	ddr, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
+
+	err = ddr.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err, "Server should start")
+
+	err = ddr.Shutdown(t.Context())
+	assert.NoError(t, err, "Server should stop")
+}
+
+func TestDatadogLogsReceiver_Lifecycle(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "localhost:0"
+	ddr, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	assert.NoError(t, err, "Logs receiver should be created")
 
 	err = ddr.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err, "Server should start")
@@ -805,4 +821,171 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	assert.Equal(t, "test", environment.AsString())
 	hostName, _ := got.ResourceMetrics().At(0).Resource().Attributes().Get("host.name")
 	assert.Equal(t, "hosta", hostName.AsString())
+}
+
+func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.LogsSink)
+
+	ctx := t.Context()
+
+	dd, err := newDataDogReceiver(
+		ctx,
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextLogsConsumer = sink
+
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(t.Context()))
+	}()
+
+	logsPayloadV2 := &translator.DatadogLogPayload{
+		Source:   "agent",
+		Tags:     "image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:6.32.1,kube_app_instance:datadog-agent,pod_phase:running",
+		Hostname: "i-abc123",
+		Message:  "2025-09-21 09:12:36 UTC | TRACE | INFO | (comp/trace/agent/agent.go:211 in handleSignal) | Received signal 15 (terminated)",
+		Service:  "agent",
+		Status:   "info",
+	}
+
+	pb, err := json.Marshal(logsPayloadV2)
+	assert.NoError(t, err)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/api/v2/logs", dd.(*datadogReceiver).address),
+		io.NopCloser(bytes.NewReader(pb)),
+	)
+	require.NoError(t, err, "Must not error when creating request")
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.JSONEq(t, `{"errors": []}`, string(body), "Expected JSON response to be `{\"errors\": []}`, got %s", string(body))
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	theLogs := sink.AllLogs()
+	require.Len(t, theLogs, 1)
+
+	got := theLogs[0]
+	// 1 log record
+	require.Equal(t, 1, got.LogRecordCount())
+	// 1 resource log
+	require.Equal(t, 1, got.ResourceLogs().Len())
+	// 1 scope log
+	require.Equal(t, 1, got.ResourceLogs().At(0).ScopeLogs().Len())
+	// 1 scope log record
+	require.Equal(t, 1, got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+
+	theRecord := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, logsPayloadV2.Message, theRecord.Body().Str())
+
+	attributes := theRecord.Attributes().AsRaw()
+	assert.Equal(t, logsPayloadV2.Status, attributes["status"])
+	assert.Equal(t, logsPayloadV2.Hostname, attributes["hostname"])
+	assert.Equal(t, logsPayloadV2.Service, attributes["service"])
+	assert.Equal(t, logsPayloadV2.Timestamp, attributes["timestamp"])
+	assert.Equal(t, logsPayloadV2.Source, attributes["ddsource"])
+	assert.Equal(t, logsPayloadV2.Tags, attributes["ddtags"])
+}
+
+func TestDatadogLogsV2_MultipleLogs_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.LogsSink)
+
+	ctx := t.Context()
+
+	dd, err := newDataDogReceiver(
+		ctx,
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextLogsConsumer = sink
+
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(t.Context()))
+	}()
+
+	logsPayloadV2 := []*translator.DatadogLogPayload{
+		{
+			Source:   "agent",
+			Tags:     "image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:6.32.1,kube_app_instance:datadog-agent,pod_phase:running",
+			Hostname: "i-abc123",
+			Message:  "2025-09-21 09:12:36 UTC | TRACE | INFO | (comp/trace/agent/agent.go:123 in handleSignal) | Received signal 15 (terminated)",
+			Service:  "agent",
+			Status:   "info",
+		},
+		{
+			Source:   "agent",
+			Tags:     "image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:6.32.1,kube_app_instance:datadog-agent,pod_phase:running",
+			Hostname: "i-abc123",
+			Message:  "2025-09-21 09:13:12 UTC | TRACE | WARN | (comp/core/tagger/taggerimpl/remote/tagger.go:321 in run) | error received from remote tagger: rpc error: code = Canceled desc = context canceled",
+			Service:  "agent",
+			Status:   "warn",
+		},
+	}
+
+	pb, err := json.Marshal(logsPayloadV2)
+	assert.NoError(t, err)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/api/v2/logs", dd.(*datadogReceiver).address),
+		io.NopCloser(bytes.NewReader(pb)),
+	)
+	require.NoError(t, err, "Must not error when creating request")
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.JSONEq(t, `{"errors": []}`, string(body), "Expected JSON response to be `{\"errors\": []}`, got %s", string(body))
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	theLogs := sink.AllLogs()
+	require.Len(t, theLogs, 1)
+
+	got := theLogs[0]
+	// 2 log records
+	require.Equal(t, 2, got.LogRecordCount())
+	// 1 resource log
+	require.Equal(t, 1, got.ResourceLogs().Len())
+	// 1 scope log
+	require.Equal(t, 1, got.ResourceLogs().At(0).ScopeLogs().Len())
+	// 2 log records on the scope
+	require.Equal(t, 2, got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+
+	record1 := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, logsPayloadV2[0].Message, record1.Body().Str())
+
+	attributes := record1.Attributes().AsRaw()
+	assert.Equal(t, logsPayloadV2[0].Status, attributes["status"])
+	assert.Equal(t, logsPayloadV2[0].Hostname, attributes["hostname"])
+	assert.Equal(t, logsPayloadV2[0].Service, attributes["service"])
+	assert.Equal(t, logsPayloadV2[0].Timestamp, attributes["timestamp"])
+	assert.Equal(t, logsPayloadV2[0].Source, attributes["ddsource"])
+	assert.Equal(t, logsPayloadV2[0].Tags, attributes["ddtags"])
+
+	record2 := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
+	assert.Equal(t, logsPayloadV2[1].Message, record2.Body().Str())
+
+	attributes = record2.Attributes().AsRaw()
+	assert.Equal(t, logsPayloadV2[1].Status, attributes["status"])
+	assert.Equal(t, logsPayloadV2[1].Hostname, attributes["hostname"])
+	assert.Equal(t, logsPayloadV2[1].Service, attributes["service"])
+	assert.Equal(t, logsPayloadV2[1].Timestamp, attributes["timestamp"])
+	assert.Equal(t, logsPayloadV2[1].Source, attributes["ddsource"])
+	assert.Equal(t, logsPayloadV2[1].Tags, attributes["ddtags"])
 }

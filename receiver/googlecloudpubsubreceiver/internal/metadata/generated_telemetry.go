@@ -6,10 +6,9 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -61,13 +60,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ReceiverGooglecloudpubsubEncodingError, err = builder.meter.Int64Counter(
 		"otelcol_receiver.googlecloudpubsub.encoding_error",
-		metric.WithDescription("Number of times a message couldn't be decoded by the configured encoder [development]"),
+		metric.WithDescription("Number of times a message couldn't be decoded by the configured encoder [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverGooglecloudpubsubStreamRestarts, err = builder.meter.Int64Counter(
 		"otelcol_receiver.googlecloudpubsub.stream_restarts",
-		metric.WithDescription("Number of times the stream (re)starts due to a Pub/Sub servers connection close [development]"),
+		metric.WithDescription("Number of times the stream (re)starts due to a Pub/Sub servers connection close [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

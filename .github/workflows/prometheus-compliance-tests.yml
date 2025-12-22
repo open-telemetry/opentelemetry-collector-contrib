@@ -29,10 +29,11 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           path: opentelemetry-collector-contrib
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -50,7 +51,7 @@ jobs:
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           repository: prometheus/compliance
           path: compliance
@@ -64,5 +65,7 @@ jobs:
       - name: Run compliance tests
         run: |
           set -o pipefail && \
-          go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" ./ |& tee ./test-report.txt
+          # Skipping Staleness test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved
+          go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" -skip "TestRemoteWrite/otelcollector/Staleness" ./ |& tee ./test-report.txt
         working-directory: compliance/remotewrite/sender
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh

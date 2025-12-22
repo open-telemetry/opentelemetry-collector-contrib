@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -53,15 +54,16 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 500 * time.Millisecond,
-					Headers: map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
+					Headers: configopaque.MapList{
+						{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
+					},
 				},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Enabled = true
 					queue.NumConsumers = 3
 					queue.QueueSize = 10
 					return queue
-				}(),
+				}()),
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: usMetricsEndpoint,
 					AppToken:        metricsAppToken,

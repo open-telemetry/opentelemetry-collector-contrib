@@ -147,12 +147,14 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			SendDelay:           se.config.DimensionClient.SendDelay,
 			MaxBuffered:         se.config.DimensionClient.MaxBuffered,
 			MetricsConverter:    *se.converter,
+			DefaultProperties:   se.config.DefaultProperties,
 			ExcludeProperties:   se.config.ExcludeProperties,
 			MaxConnsPerHost:     se.config.DimensionClient.MaxConnsPerHost,
 			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
 			MaxIdleConnsPerHost: se.config.DimensionClient.MaxIdleConnsPerHost,
 			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
 			Timeout:             se.config.DimensionClient.Timeout,
+			DropTags:            se.config.DimensionClient.DropTags,
 		})
 	dimClient.Start()
 
@@ -216,7 +218,7 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
 	se.config.TLS = se.config.IngestTLSs
 
-	return se.config.ToClient(ctx, host, se.telemetrySettings)
+	return se.config.ToClient(ctx, host.GetExtensions(), se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -264,7 +266,7 @@ func buildHeaders(config *Config, version string) map[string]string {
 	// Add any custom headers from the config. They will override the pre-defined
 	// ones above in case of conflict, but, not the content encoding one since
 	// the latter one is defined according to the payload.
-	for k, v := range config.Headers {
+	for k, v := range config.Headers.Iter {
 		headers[k] = string(v)
 	}
 	// we want to control how headers are set, overriding user headers with our passthrough.

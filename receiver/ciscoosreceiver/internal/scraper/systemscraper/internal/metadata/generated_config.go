@@ -75,12 +75,20 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for system resource attributes.
 type ResourceAttributesConfig struct {
-	CiscoDeviceIP ResourceAttributeConfig `mapstructure:"cisco.device.ip"`
+	HostIP ResourceAttributeConfig `mapstructure:"host.ip"`
+	HwType ResourceAttributeConfig `mapstructure:"hw.type"`
+	OsName ResourceAttributeConfig `mapstructure:"os.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		CiscoDeviceIP: ResourceAttributeConfig{
+		HostIP: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		HwType: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OsName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

@@ -12,17 +12,17 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/testhelper"
 )
 
 var (
-	t1 = testhelper.TimestampFromMs(1)
-	t2 = testhelper.TimestampFromMs(2)
-	t3 = testhelper.TimestampFromMs(3)
-	t4 = testhelper.TimestampFromMs(4)
-	t5 = testhelper.TimestampFromMs(5)
+	tUnknown = testhelper.TimestampFromMs(0)
+	t1       = testhelper.TimestampFromMs(1)
+	t2       = testhelper.TimestampFromMs(2)
+	t3       = testhelper.TimestampFromMs(3)
+	t4       = testhelper.TimestampFromMs(4)
+	t5       = testhelper.TimestampFromMs(5)
 
 	bounds0  = []float64{1, 2, 4}
 	percent0 = []float64{10, 50, 90}
@@ -41,7 +41,7 @@ var (
 )
 
 func TestStartTimeMetricMatch(t *testing.T) {
-	const startTime = pcommon.Timestamp(123 * 1e9)
+	startTime := tUnknown
 	const currentTime = pcommon.Timestamp(126 * 1e9)
 	const collectorStartTime = pcommon.Timestamp(129 * 1e9)
 	const matchBuilderStartTime = 124
@@ -101,6 +101,17 @@ func TestStartTimeMetricMatch(t *testing.T) {
 			expectedStartTime: timestampFromFloat64(matchBuilderStartTime + 1),
 		},
 		{
+			name: "start time already set",
+			inputs: testhelper.Metrics(
+				testhelper.SumMetric("test_sum_metric", testhelper.DoublePoint(nil, t1, currentTime, 16)),
+				testhelper.HistogramMetric("test_histogram_metric", testhelper.HistogramPoint(nil, t1, currentTime, []float64{1, 2}, []uint64{2, 3, 4})),
+				testhelper.SummaryMetric("test_summary_metric", testhelper.SummaryPoint(nil, t1, currentTime, 10, 100, []float64{10, 50, 90}, []float64{9, 15, 48})),
+				testhelper.GaugeMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, startTime, currentTime, matchBuilderStartTime)),
+				testhelper.GaugeMetric("process_start_time_seconds", testhelper.DoublePoint(nil, startTime, currentTime, matchBuilderStartTime+1)),
+			),
+			expectedStartTime: t1,
+		},
+		{
 			name: "empty gauge start time metrics",
 			inputs: testhelper.Metrics(
 				testhelper.GaugeMetric("process_start_time_seconds"),
@@ -148,8 +159,8 @@ func TestStartTimeMetricMatch(t *testing.T) {
 
 			// We need to make sure the job and instance labels are set before the adjuster is used.
 			pmetrics := tt.inputs
-			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "0")
-			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "job")
+			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.instance.id", "0")
+			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.name", "job")
 			_, err := stma.AdjustMetrics(t.Context(), tt.inputs)
 			assert.NoError(t, err)
 			for i := 0; i < tt.inputs.ResourceMetrics().Len(); i++ {
@@ -189,7 +200,7 @@ func TestStartTimeMetricMatch(t *testing.T) {
 }
 
 func TestStartTimeMetricFallback(t *testing.T) {
-	const startTime = pcommon.Timestamp(123 * 1e9)
+	startTime := tUnknown
 	const currentTime = pcommon.Timestamp(126 * 1e9)
 	mockStartTime := time.Now().Add(-10 * time.Hour)
 	mockStartTimeSeconds := float64(mockStartTime.Unix())
@@ -246,8 +257,8 @@ func TestStartTimeMetricFallback(t *testing.T) {
 
 			// We need to make sure the job and instance labels are set before the adjuster is used.
 			pmetrics := tt.inputs
-			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "0")
-			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "job")
+			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.instance.id", "0")
+			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.name", "job")
 			_, err := stma.AdjustMetrics(t.Context(), tt.inputs)
 			assert.NoError(t, err, tt.inputs)
 			for i := 0; i < tt.inputs.ResourceMetrics().Len(); i++ {
@@ -281,7 +292,7 @@ func TestStartTimeMetricFallback(t *testing.T) {
 }
 
 func TestMultiMetrics(t *testing.T) {
-	const startTime = pcommon.Timestamp(123 * 1e9)
+	startTime := tUnknown
 	const currentTime = pcommon.Timestamp(126 * 1e9)
 	const matchBuilderStartTime = 124
 	matchedStartTimeStamp := timestampFromFloat64(matchBuilderStartTime)

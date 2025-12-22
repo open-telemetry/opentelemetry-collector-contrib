@@ -13,7 +13,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 const (
@@ -30,6 +30,7 @@ const (
 	categoryAppServiceHTTPLogs                 = "AppServiceHTTPLogs"
 	categoryAppServiceIPSecAuditLogs           = "AppServiceIPSecAuditLogs"
 	categoryAppServicePlatformLogs             = "AppServicePlatformLogs"
+	categoryRecommendation                     = "Recommendation"
 
 	// attributeAzureRef holds the request tracking reference, also
 	// placed in the request header "X-Azure-Ref".
@@ -76,6 +77,14 @@ const (
 
 	// attributeAzureFrontDoorWAFAction holds the action taken on the request.
 	attributeAzureFrontDoorWAFAction = "azure.frontdoor.waf.action"
+
+	// Recommendation specific attributes
+	attributeAzureRecommendationCategory      = "azure.recommendation.category"
+	attributeAzureRecommendationImpact        = "azure.recommendation.impact"
+	attributeAzureRecommendationName          = "azure.recommendation.name"
+	attributeAzureRecommendationType          = "azure.recommendation.type"
+	attributeAzureRecommendationSchemaVersion = "azure.recommendation.schema_version"
+	attributeAzureRecommendationLink          = "azure.recommendation.link"
 )
 
 var (
@@ -109,6 +118,8 @@ func addRecordAttributes(category string, data []byte, record plog.LogRecord) er
 		err = addAppServiceIPSecAuditLogsProperties(data, record)
 	case categoryAppServicePlatformLogs:
 		err = addAppServicePlatformLogsProperties(data, record)
+	case categoryRecommendation:
+		err = addRecommendationLogProperties(data, record)
 	default:
 		err = errUnsupportedCategory
 	}
@@ -349,9 +360,9 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 	putStr(attributeCacheStatus, properties.CacheStatus, record)
 
 	if properties.IsReceivedFromClient {
-		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "receive")
+		record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "receive")
 	} else {
-		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "transmit")
+		record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "transmit")
 	}
 
 	return nil
@@ -558,4 +569,34 @@ func addAppServiceIPSecAuditLogsProperties(_ []byte, _ plog.LogRecord) error {
 func addAppServicePlatformLogsProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
+}
+
+// recommendationLogProperties represents the properties field of a Recommendation activity log.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#recommendation-category
+type recommendationLogProperties struct {
+	RecommendationSchemaVersion string `json:"recommendationSchemaVersion"`
+	RecommendationCategory      string `json:"recommendationCategory"`
+	RecommendationImpact        string `json:"recommendationImpact"`
+	RecommendationName          string `json:"recommendationName"`
+	RecommendationResourceLink  string `json:"recommendationResourceLink"`
+	RecommendationType          string `json:"recommendationType"`
+}
+
+// addRecommendationLogProperties parses Recommendation activity logs from Azure Advisor
+// and maps them to OpenTelemetry semantic conventions.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#recommendation-category
+func addRecommendationLogProperties(data []byte, record plog.LogRecord) error {
+	var properties recommendationLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Recommendation properties: %w", err)
+	}
+
+	putStr(attributeAzureRecommendationCategory, properties.RecommendationCategory, record)
+	putStr(attributeAzureRecommendationImpact, properties.RecommendationImpact, record)
+	putStr(attributeAzureRecommendationName, properties.RecommendationName, record)
+	putStr(attributeAzureRecommendationType, properties.RecommendationType, record)
+	putStr(attributeAzureRecommendationSchemaVersion, properties.RecommendationSchemaVersion, record)
+	putStr(attributeAzureRecommendationLink, properties.RecommendationResourceLink, record)
+
+	return nil
 }

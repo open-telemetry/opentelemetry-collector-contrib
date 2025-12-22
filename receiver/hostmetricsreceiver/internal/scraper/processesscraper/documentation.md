@@ -18,7 +18,7 @@ Total number of processes in each state.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {processes} | Sum | Int | Cumulative | false | development |
+| {processes} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -32,4 +32,4 @@ Total number of created processes.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {processes} | Sum | Int | Cumulative | true | development |
+| {processes} | Sum | Int | Cumulative | true | Development |

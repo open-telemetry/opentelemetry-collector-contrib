@@ -67,7 +67,7 @@ func BenchmarkTransform(b *testing.B) {
 				pt.SetTypeStrindex(4)
 				pt.SetUnitStrindex(5)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
 				s.Values().Append(1)
 

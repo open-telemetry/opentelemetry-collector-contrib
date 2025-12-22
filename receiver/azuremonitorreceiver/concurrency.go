@@ -47,7 +47,7 @@ type syncMapImpl[V any] struct {
 	m sync.Map
 }
 
-func NewSyncMapImpl[V any]() concurrentMetricsBuilderMap[V] {
+func newSyncMapImpl[V any]() concurrentMetricsBuilderMap[V] {
 	return &syncMapImpl[V]{}
 }
 
@@ -85,7 +85,7 @@ type mutexMapImpl[V any] struct {
 	mutex sync.RWMutex
 }
 
-func NewMutexMapImpl[V any]() concurrentMetricsBuilderMap[V] {
+func newMutexMapImpl[V any]() concurrentMetricsBuilderMap[V] {
 	return &mutexMapImpl[V]{m: make(map[string]V)}
 }
 

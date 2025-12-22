@@ -4,6 +4,7 @@ cmd/golden cmd/golden
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
+cmd/schemagen cmd/schemagen
 cmd/telemetrygen cmd/telemetrygen
 confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
@@ -14,6 +15,7 @@ connector/datadogconnector connector/datadog
 connector/exceptionsconnector connector/exceptions
 connector/failoverconnector connector/failover
 connector/grafanacloudconnector connector/grafanacloud
+connector/metricsaslogsconnector connector/metricsaslogs
 connector/otlpjsonconnector connector/otlpjson
 connector/roundrobinconnector connector/roundrobin
 connector/routingconnector connector/routing
@@ -82,6 +84,7 @@ extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
 extension/encoding/awslogsencodingextension extension/encoding/awslogsencoding
+extension/encoding/azureencodingextension extension/encoding/azureencoding
 extension/encoding/googlecloudlogentryencodingextension extension/encoding/googlecloudlogentryencoding
 extension/encoding/jaegerencodingextension extension/encoding/jaegerencoding
 extension/encoding/jsonlogencodingextension extension/encoding/jsonlogencoding
@@ -128,6 +131,8 @@ internal/filter internal/filter
 internal/grpcutil internal/grpcutil
 internal/healthcheck internal/healthcheck
 internal/k8sconfig internal/k8sconfig
+internal/k8sinventory internal/k8sinventory
+internal/k8sleaderelectortest internal/k8sleaderelectortest
 internal/kafka internal/kafka
 internal/kubelet internal/kubelet
 internal/metadataproviders internal/metadataproviders
@@ -161,10 +166,12 @@ pkg/translator/faro pkg/translator/faro
 pkg/translator/jaeger pkg/translator/jaeger
 pkg/translator/loki pkg/translator/loki
 pkg/translator/opencensus pkg/translator/opencensus
+pkg/translator/pprof pkg/translator/pprof
 pkg/translator/prometheus pkg/translator/prometheus
 pkg/translator/prometheusremotewrite pkg/translator/prometheusremotewrite
 pkg/translator/signalfx pkg/translator/signalfx
 pkg/translator/skywalking pkg/translator/skywalking
+pkg/translator/splunk pkg/translator/splunk
 pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
@@ -192,6 +199,7 @@ processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
 processor/resourcedetectionprocessor/internal/akamai processor/resourcedetection/internal/akamai
+processor/resourcedetectionprocessor/internal/azure processor/resourcedetection/internal/azure
 processor/resourcedetectionprocessor/internal/digitalocean processor/resourcedetection/internal/digitalocean
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
 processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
@@ -215,6 +223,7 @@ receiver/awscloudwatchreceiver receiver/awscloudwatch
 receiver/awscontainerinsightreceiver receiver/awscontainerinsight
 receiver/awsecscontainermetricsreceiver receiver/awsecscontainermetrics
 receiver/awsfirehosereceiver receiver/awsfirehose
+receiver/awslambdareceiver receiver/awslambda
 receiver/awss3receiver receiver/awss3
 receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
@@ -222,6 +231,7 @@ receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
 receiver/chronyreceiver receiver/chrony
 receiver/ciscoosreceiver receiver/ciscoos
+receiver/ciscoosreceiver/internal/scraper/interfacesscraper receiver/ciscoos/internal/scraper/interfaces
 receiver/ciscoosreceiver/internal/scraper/systemscraper receiver/ciscoos/internal/scraper/systemscraper
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
@@ -240,6 +250,7 @@ receiver/fluentforwardreceiver receiver/fluentforward
 receiver/githubreceiver receiver/github
 receiver/gitlabreceiver receiver/gitlab
 receiver/googlecloudmonitoringreceiver receiver/googlecloudmonitoring
+receiver/googlecloudpubsubpushreceiver receiver/googlecloudpubsubpush
 receiver/googlecloudpubsubreceiver receiver/googlecloudpubsub
 receiver/googlecloudspannerreceiver receiver/googlecloudspanner
 receiver/haproxyreceiver receiver/haproxy
@@ -265,13 +276,13 @@ receiver/jmxreceiver receiver/jmx
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
 receiver/k8seventsreceiver receiver/k8sevents
-receiver/k8slogreceiver receiver/k8slog
 receiver/k8sobjectsreceiver receiver/k8sobjects
 receiver/kafkametricsreceiver receiver/kafkametrics
 receiver/kafkareceiver receiver/kafka
 receiver/kubeletstatsreceiver receiver/kubeletstats
 receiver/libhoneyreceiver receiver/libhoney
 receiver/lokireceiver receiver/loki
+receiver/macosunifiedloggingreceiver receiver/macosunifiedlogging
 receiver/memcachedreceiver receiver/memcached
 receiver/mongodbatlasreceiver receiver/mongodbatlas
 receiver/mongodbreceiver receiver/mongodb
@@ -324,6 +335,7 @@ receiver/webhookeventreceiver receiver/webhookevent
 receiver/windowseventlogreceiver receiver/windowseventlog
 receiver/windowsperfcountersreceiver receiver/windowsperfcounters
 receiver/windowsservicereceiver receiver/windowsservice
+receiver/yanggrpcreceiver receiver/yanggrpc
 receiver/zipkinreceiver receiver/zipkin
 receiver/zookeeperreceiver receiver/zookeeper
 scraper/zookeeperscraper scraper/zookeeper
@@ -333,7 +345,6 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/carbonexporter exporter/carbon
-extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon
+receiver/k8slogreceiver receiver/k8slog

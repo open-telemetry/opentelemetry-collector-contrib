@@ -41,6 +41,8 @@ func (c OutputConfig) Build(set component.TelemetrySettings) (OutputOperator, er
 // OutputOperator provides a basic implementation of an output operator.
 type OutputOperator struct {
 	BasicOperator
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // CanProcess will always return true for an output operator.

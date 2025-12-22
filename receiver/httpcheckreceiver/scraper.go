@@ -218,7 +218,7 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 
 		// Process each endpoint in the unified list
 		for _, endpoint := range allEndpoints {
-			client, clientErr := target.ToClient(ctx, host, h.settings)
+			client, clientErr := target.ToClient(ctx, host.GetExtensions(), h.settings)
 			if clientErr != nil {
 				h.settings.Logger.Error("failed to initialize HTTP client", zap.String("endpoint", endpoint), zap.Error(clientErr))
 				err = multierr.Append(err, clientErr)
@@ -305,7 +305,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			}
 
 			// Add headers to the request
-			for key, value := range h.cfg.Targets[targetIndex].Headers {
+			for key, value := range h.cfg.Targets[targetIndex].Headers.Iter {
 				req.Header.Set(key, value.String()) // Convert configopaque.String to string
 			}
 

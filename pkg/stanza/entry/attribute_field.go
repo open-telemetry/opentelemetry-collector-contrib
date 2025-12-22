@@ -22,9 +22,11 @@ func NewAttributeField(keys ...string) Field {
 	if keys == nil {
 		keys = []string{}
 	}
-	return Field{AttributeField{
-		Keys: keys,
-	}}
+	return Field{
+		FieldInterface: AttributeField{
+			Keys: keys,
+		},
+	}
 }
 
 // Parent returns the parent of the current field.

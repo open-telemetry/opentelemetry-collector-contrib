@@ -58,6 +58,8 @@ data:
         api:
           key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # Change this to your Datadog API key
           site: datadoghq.com # Change this to your site if not using the default
+        sending_queue:
+          batch:
     processors:
       resourcedetection:
         # ensures host.name and other important resource tags
@@ -119,13 +121,6 @@ data:
           - tag_name: kube_app_managed_by
             key: app.kubernetes.io/managed-by
             from: pod
-
-      batch:
-        # Datadog APM Intake limit is 3.2MB. Let's make sure the batches do not
-        # go over that.
-        send_batch_max_size: 1000
-        send_batch_size: 100
-        timeout: 10s
     service:
       # This will make the collector output logs in JSON format
       telemetry:
@@ -137,13 +132,12 @@ data:
       pipelines:
         metrics:
           receivers: [hostmetrics, otlp]
-          processors: [resourcedetection, k8sattributes, batch]
+          processors: [resourcedetection, k8sattributes]
           exporters: [datadog]
         traces:
           receivers: [otlp]
-          processors: [resourcedetection, k8sattributes, batch]
+          processors: [resourcedetection, k8sattributes]
           exporters: [datadog]
         logs:
           receivers: [filelog]
-          processors: [batch]
           exporters: [datadog]

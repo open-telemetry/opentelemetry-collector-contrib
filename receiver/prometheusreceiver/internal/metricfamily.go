@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
@@ -55,9 +56,15 @@ type metricGroup struct {
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
-func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
+func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
-	mtype, isMonotonic := convToMetricType(metadata.Type)
+	// Native histograms have intrinsic metric type, use it,
+	// regardless of what metadata says.
+	if isNativeHistogram {
+		metadata.Type = model.MetricTypeHistogram
+	}
+
+	mtype, isMonotonic := convToMetricType(metadata.Type, isNativeHistogram && !isNHCB)
 	if mtype == pmetric.MetricTypeEmpty {
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
@@ -171,9 +178,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	tsNanos := timestampFromMs(mg.ts)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
@@ -249,9 +253,6 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	tsNanos := timestampFromMs(mg.ts)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
@@ -390,9 +391,6 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	point.SetTimestamp(tsNanos)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
 }
@@ -404,9 +402,6 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	if mg.mtype == pmetric.MetricTypeSum {
 		if mg.createdSeconds != 0 {
 			point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-		} else if !removeStartTimeAdjustment.IsEnabled() {
-			// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-			point.SetStartTimestamp(tsNanos)
 		}
 	}
 	point.SetTimestamp(tsNanos)

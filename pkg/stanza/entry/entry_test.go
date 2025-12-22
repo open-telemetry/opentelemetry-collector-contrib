@@ -225,9 +225,11 @@ func TestFieldFromString(t *testing.T) {
 			output: Field{FieldInterface: AttributeField{Keys: []string{"test", "foo", "bar"}}},
 		},
 		{
-			name:   "SimpleResource",
-			input:  "resource.test",
-			output: Field{ResourceField{Keys: []string{"test"}}},
+			name:  "SimpleResource",
+			input: "resource.test",
+			output: Field{
+				FieldInterface: ResourceField{Keys: []string{"test"}},
+			},
 		},
 		{
 			name:   "NestedResource",

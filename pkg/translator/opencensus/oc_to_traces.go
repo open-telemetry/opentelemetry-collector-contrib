@@ -12,7 +12,8 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
+	conventionsv121 "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -20,8 +21,11 @@ import (
 )
 
 // OCToTraces may be used only by OpenCensus receiver and exporter implementations.
+//
 // Deprecated: use ptrace.Traces instead.
 // TODO: move this function to OpenCensus package.
+//
+// Deprecated: this functionality is no longer maintained and will be removed.
 func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*octrace.Span) ptrace.Traces {
 	traceData := ptrace.NewTraces()
 	if node == nil && resource == nil && len(spans) == 0 {
@@ -167,9 +171,9 @@ func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attribut
 	if ocAttrs != nil {
 		// If conventions.OtelStatusCode is set, it must override the status code value.
 		// See the reverse translation in traces_to_oc.go:statusToOC().
-		if attr, ok := ocAttrs.AttributeMap[string(conventions.OtelStatusCodeKey)]; ok {
+		if attr, ok := ocAttrs.AttributeMap[string(conventions.OTelStatusCodeKey)]; ok {
 			code = ptrace.StatusCode(attr.GetIntValue())
-			delete(ocAttrs.AttributeMap, string(conventions.OtelStatusCodeKey))
+			delete(ocAttrs.AttributeMap, string(conventions.OTelStatusCodeKey))
 		}
 	}
 
@@ -343,8 +347,8 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 
 	dest.PutStr("message.type", msgEvent.Type.String())
 	dest.PutInt(string(conventions.MessagingMessageIDKey), int64(msgEvent.Id))
-	dest.PutInt(string(conventions.MessagingMessagePayloadSizeBytesKey), int64(msgEvent.UncompressedSize))
-	dest.PutInt(string(conventions.MessagingMessagePayloadCompressedSizeBytesKey), int64(msgEvent.CompressedSize))
+	dest.PutInt(string(conventionsv121.MessagingMessagePayloadSizeBytesKey), int64(msgEvent.UncompressedSize))
+	dest.PutInt(string(conventionsv121.MessagingMessagePayloadCompressedSizeBytesKey), int64(msgEvent.CompressedSize))
 }
 
 func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest ptrace.Span) {

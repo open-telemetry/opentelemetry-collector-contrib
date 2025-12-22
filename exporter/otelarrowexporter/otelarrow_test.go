@@ -307,14 +307,14 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
-			"header": configopaque.String(expectedHeader[0]),
+		Headers: configopaque.MapList{
+			{Name: "header", Value: configopaque.String(expectedHeader[0])},
 		},
 		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
@@ -512,15 +512,15 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.RetryConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
-			"header": "header-value",
+		Headers: configopaque.MapList{
+			{Name: "header", Value: "header-value"},
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
@@ -612,7 +612,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -811,7 +811,7 @@ func TestSendLogData(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeLogs
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -923,8 +923,8 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 			Insecure: true,
 		},
 		WaitForReady: clientWaitForReady,
-		Headers: map[string]configopaque.String{
-			"header": configopaque.String(expectedHeader[0]),
+		Headers: configopaque.MapList{
+			{Name: "header", Value: configopaque.String(expectedHeader[0])},
 		},
 		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
@@ -933,7 +933,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	// Arrow client is enabled, but the server doesn't support it.
 	cfg.Arrow.NumStreams = 1
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	set := exportertest.NewNopSettings(factory.Type())
 	exp, err := factory.CreateTraces(t.Context(), set, cfg)
@@ -1101,7 +1101,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 		NumStreams:        1,
 		MaxStreamLifetime: 100 * time.Second,
 	}
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	set := exportertest.NewNopSettings(factory.Type())
 	set.Logger = zaptest.NewLogger(t)
@@ -1158,7 +1158,7 @@ func TestUserDialOptions(t *testing.T) {
 		WaitForReady: true,
 	}
 	cfg.Arrow.Disabled = true
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	const testAgent = "test-user-agent (release=:+1:)"
 

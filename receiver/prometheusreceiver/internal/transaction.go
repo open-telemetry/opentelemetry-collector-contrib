@@ -30,9 +30,11 @@ import (
 	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
-var removeStartTimeAdjustment = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
-	featuregate.StageAlpha,
+	featuregate.StageStable,
+	featuregate.WithRegisterFromVersion("v0.121.0"),
+	featuregate.WithRegisterToVersion("v0.142.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" leave the start time unset. Use the new metricstarttime processor instead."),
 )
@@ -52,22 +54,21 @@ type metricFamilyKey struct {
 }
 
 type transaction struct {
-	isNew                  bool
-	trimSuffixes           bool
-	enableNativeHistograms bool
-	addingNativeHistogram  bool // true if the last sample was a native histogram.
-	addingNHCB             bool // true if the last sample was a NHCB.
-	ctx                    context.Context
-	families               map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily
-	mc                     scrape.MetricMetadataStore
-	sink                   consumer.Metrics
-	externalLabels         labels.Labels
-	nodeResources          map[resourceKey]pcommon.Resource
-	scopeAttributes        map[resourceKey]map[scopeID]pcommon.Map
-	logger                 *zap.Logger
-	buildInfo              component.BuildInfo
-	metricAdjuster         MetricsAdjuster
-	obsrecv                *receiverhelper.ObsReport
+	isNew                 bool
+	trimSuffixes          bool
+	useMetadata           bool
+	addingNativeHistogram bool // true if the last sample was a native histogram.
+	addingNHCB            bool // true if the last sample was a NHCB.
+	ctx                   context.Context
+	families              map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily
+	mc                    scrape.MetricMetadataStore
+	sink                  consumer.Metrics
+	externalLabels        labels.Labels
+	nodeResources         map[resourceKey]pcommon.Resource
+	scopeAttributes       map[resourceKey]map[scopeID]pcommon.Map
+	logger                *zap.Logger
+	buildInfo             component.BuildInfo
+	obsrecv               *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
@@ -82,29 +83,27 @@ type scopeID struct {
 
 func newTransaction(
 	ctx context.Context,
-	metricAdjuster MetricsAdjuster,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
-	enableNativeHistograms bool,
+	useMetadata bool,
 ) *transaction {
 	return &transaction{
-		ctx:                    ctx,
-		families:               make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
-		isNew:                  true,
-		trimSuffixes:           trimSuffixes,
-		enableNativeHistograms: enableNativeHistograms,
-		sink:                   sink,
-		metricAdjuster:         metricAdjuster,
-		externalLabels:         externalLabels,
-		logger:                 settings.Logger,
-		buildInfo:              settings.BuildInfo,
-		obsrecv:                obsrecv,
-		bufBytes:               make([]byte, 0, 1024),
-		scopeAttributes:        make(map[resourceKey]map[scopeID]pcommon.Map),
-		nodeResources:          map[resourceKey]pcommon.Resource{},
+		ctx:             ctx,
+		families:        make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
+		isNew:           true,
+		trimSuffixes:    trimSuffixes,
+		useMetadata:     useMetadata,
+		sink:            sink,
+		externalLabels:  externalLabels,
+		logger:          settings.Logger,
+		buildInfo:       settings.BuildInfo,
+		obsrecv:         obsrecv,
+		bufBytes:        make([]byte, 0, 1024),
+		scopeAttributes: make(map[resourceKey]map[scopeID]pcommon.Map),
+		nodeResources:   map[resourceKey]pcommon.Resource{},
 	}
 }
 
@@ -175,7 +174,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 
 	scope := getScopeID(ls)
 
-	if t.enableNativeHistograms && value.IsStaleNaN(val) {
+	if value.IsStaleNaN(val) {
 		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, scope, metricName, ls) {
 			return 0, nil
 		}
@@ -187,9 +186,14 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
 	if err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+		// never return errors, as that fails the while scrape
+		// return ref==0 indicating that the series was not added
+		return 0, nil
 	}
 
-	return 0, nil // never return errors, as that fails the whole scrape
+	// never return errors, as that fails the whole scrape
+	// return ref==1 indicating that the series was added and needs staleness tracking
+	return 1, nil
 }
 
 // detectAndStoreNativeHistogramStaleness returns true if it detects
@@ -246,11 +250,7 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
 		mf, ok := t.families[key][scope][fnKey]
 		if !ok || !mf.includesMetric(mn) {
-			curMf = newMetricFamily(mn, t.mc, t.logger)
-			// Don't convert NHCB to ExponentialHistogram.
-			if curMf.mtype == pmetric.MetricTypeHistogram && mfKey.isExponentialHistogram && !t.addingNHCB {
-				curMf.mtype = pmetric.MetricTypeExponentialHistogram
-			}
+			curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
 			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
 			return curMf
 		}
@@ -289,10 +289,6 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 }
 
 func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
-	if !t.enableNativeHistograms {
-		return 0, nil
-	}
-
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -350,9 +346,14 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	}
 	if err != nil {
 		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+		// never return errors, as that fails the while scrape
+		// return ref==0 indicating that the series was not added
+		return 0, nil
 	}
 
-	return 0, nil // never return errors, as that fails the whole scrape
+	// never return errors, as that fails the whole scrape
+	// return ref==1 indicating that the series was added and needs staleness tracking
+	return 1, nil
 }
 
 func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
@@ -511,9 +512,13 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 	if !ok {
 		return nil, errors.New("unable to find target in context")
 	}
-	t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
-	if !ok {
-		return nil, errors.New("unable to find MetricMetadataStore in context")
+	if t.useMetadata {
+		t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
+		if !ok {
+			return nil, errors.New("unable to find MetricMetadataStore in context")
+		}
+	} else {
+		t.mc = &emptyMetadataStore{}
 	}
 
 	rKey, err := t.getJobAndInstance(lbs)
@@ -575,13 +580,6 @@ func (t *transaction) Commit() error {
 	numPoints := md.DataPointCount()
 	if numPoints == 0 {
 		return nil
-	}
-
-	if !removeStartTimeAdjustment.IsEnabled() {
-		if err = t.metricAdjuster.AdjustMetrics(md); err != nil {
-			t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
-			return err
-		}
 	}
 
 	err = t.sink.ConsumeMetrics(ctx, md)
