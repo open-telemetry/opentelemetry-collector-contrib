@@ -1,0 +1,41 @@
+{
+    "insertId": "sbjsimg21w91yt",
+    "jsonPayload": {
+      "@type": "type.googleapis.com/google.cloud.loadbalancing.type.InternalNetworkLoadBalancerLogEntry",
+      "packetsReceived": "12",
+      "connection": {
+        "clientIp": "78.153.140.203",
+        "serverPort": 80,
+        "protocol": 6,
+        "serverIp": "35.207.166.31",
+        "clientPort": 35144
+      },
+      "startTime": "2025-12-01T07:57:05.73459905Z",
+      "rtt": "0.063198476s",
+      "packetsSent": "12",
+      "endTime": "2025-12-01T07:57:05.854664955Z",
+      "bytesSent": "1232"
+    },
+    "resource": {
+      "type": "loadbalancing.googleapis.com/InternalNetworkLoadBalancerRule",
+      "labels": {
+        "backend_subnetwork_name": "estolfo-nlb-passthrough-subnet",
+        "primary_target_pool": "xx",
+        "backend_group_type": "INSTANCE_GROUP",
+        "backend_target_type": "BACKEND_SERVICE",
+        "project_id": "elastic-logstash",
+        "target_pool": "xx",
+        "region": "europe-west3",
+        "backend_group_scope": "ZONE",
+        "backend_zone": "europe-west3-a",
+        "backend_group_name": "estolfo-nlb-passthrough-backend-mig",
+        "forwarding_rule_name": "estolfo-nlb-passthrough-forwarding-rule",
+        "backend_network_name": "estolfo-nlb-passthrough-network",
+        "backend_service_name": "estolfo-nlb-passthrough-backend-service"
+      }
+    },
+    "timestamp": "2025-12-01T07:57:05.854664955Z",
+    "logName": "projects/elastic-logstash/logs/loadbalancing.googleapis.com%2Fflows",
+    "receiveTimestamp": "2025-12-01T07:57:12.459072344Z"
+  }
+  

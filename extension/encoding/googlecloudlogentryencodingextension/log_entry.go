@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/dnslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/passthroughnlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
@@ -85,6 +86,8 @@ func getEncodingFormat(logType string) string {
 		return constants.GCPFormatProxyNLBLog
 	case dnslog.CloudDNSQueryLogSuffix:
 		return constants.GCPFormatDNSQueryLog
+	case passthroughnlb.ConnectionsLogNameSuffix:
+		return constants.GCPFormatPassthroughNLBLog
 	default:
 		return ""
 	}
@@ -519,6 +522,13 @@ func handlePayload(encodingFormat string, log logEntry, logRecord plog.LogRecord
 		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
 		if err := dnslog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse DNS Query log JSON payload: %w", err)
+		}
+		return nil
+
+	case constants.GCPFormatPassthroughNLBLog:
+		scope.Attributes().PutStr(constants.FormatIdentificationTag, encodingFormat)
+		if err := passthroughnlb.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse Passthrough NLB log JSON payload: %w", err)
 		}
 		return nil
 		// Fall through to default payload handling for non-armor load balancer logs

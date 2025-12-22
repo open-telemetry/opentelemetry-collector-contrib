@@ -25,6 +25,9 @@ Currently, this extension [can parse the following logs](#supported-log-types) i
   - [Cloud Armor logs](https://docs.cloud.google.com/armor/docs/request-logging) (embedded within load balancer logs) (extension [mapping](#cloud-armor-logs))
 - [Proxy Network Load Balancer logs](https://docs.cloud.google.com/load-balancing/docs/tcp/tcp-ssl-proxy-logging-monitoring#log-records) (extension [mapping](#proxy-network-load-balancer-logs))
 - [Cloud DNS logs](https://docs.cloud.google.com/dns/docs/monitoring#dns-log-record-format) (extension [mapping](#cloud-dns-logs))
+- Passthrough Network Load Balancer logs (extension [mapping](#passthrough-network-load-balancer-logs))
+  - [External Network Load Balancer](https://cloud.google.com/load-balancing/docs/network/networklb-monitoring)
+  - [Internal Network Load Balancer](https://docs.cloud.google.com/load-balancing/docs/internal/internal-logging-monitoring)
 
 For all others logs, the payload will be placed in the log record attribute. In this case, the following configuration options are supported:
 
@@ -133,7 +136,7 @@ Examples:
 - Application Load Balancer Logs: `encoding.format: "gcp.load-balacer"`
 - Proxy Network Load Balancer Logs: `encoding.format: "gcp.proxy-nlb"`
 - Cloud DNS Logs: `encoding.format: "gcp.dns"`
-
+- Passthrough Network Load Balancer Logs: `encoding.format: "gcp.passthrough-nlb"`
 
 ### How encoding.format is determined
 
@@ -167,6 +170,7 @@ The following format values are supported in the `googlecloudlogentryencodingext
 | Armor Logs | `armorlog` | Google Cloud armor logs (security policies applied) |
 | Proxy Network Load Balancer Logs | `proxy-nlb` | Proxy Network Load Balancer connection logs |
 | Cloud DNS Logs | `dns` | Cloud DNS query and response logs |
+| Passthrough Network Load Balancer Logs | `passthrough-nlb` | Passthrough Network Load Balancer flow logs 
 
 ### Cloud Audit Logs
 
@@ -478,4 +482,34 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 - `1` → `icmp`
 
 Resource labels such as `backend_name`, `network_name`, and `load_balancing_scheme` are surfaced automatically via the existing `gcp.label.*` attribute pattern.
+
+### Passthrough Network Load Balancer logs
+
+Passthrough Network Load Balancer flow logs cover both [External](https://cloud.google.com/load-balancing/docs/network/networklb-monitoring) and [Internal](https://docs.cloud.google.com/load-balancing/docs/internal/internal-logging-monitoring) Network Load Balancers. These logs are mapped into OpenTelemetry attributes as follows:
+
+| Original field | Log record attribute |
+|---|---|
+| `connection.clientIp` | `client.address` |
+| `connection.clientPort` | `client.port` |
+| `connection.serverIp` | `server.address` |
+| `connection.serverPort` | `server.port` |
+| `connection.protocol` | `network.transport` (translated from IANA protocol number, e.g., `tcp`, `udp`, `icmp`) |
+| `startTime` | `gcp.load_balancing.passthrough_nlb.packets.start_time` |
+| `endTime` | `gcp.load_balancing.passthrough_nlb.packets.end_time` |
+| `bytesReceived` | `gcp.load_balancing.passthrough_nlb.bytes_received` |
+| `bytesSent` | `gcp.load_balancing.passthrough_nlb.bytes_sent` |
+| `packetsReceived` | `gcp.load_balancing.passthrough_nlb.packets_received` |
+| `packetsSent` | `gcp.load_balancing.passthrough_nlb.packets_sent` |
+| `rtt` | `gcp.load_balancing.passthrough_nlb.rtt` |
+
+**Supported log types**: This parser handles both:
+- `type.googleapis.com/google.cloud.loadbalancing.type.ExternalNetworkLoadBalancerLogEntry`
+- `type.googleapis.com/google.cloud.loadbalancing.type.InternalNetworkLoadBalancerLogEntry`
+
+**Protocol translation**: The numeric protocol field from GCP is automatically translated to human-readable protocol names using the [IANA Protocol Numbers](https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml) standard. Common values include:
+- `6` → `tcp`
+- `17` → `udp`
+- `1` → `icmp`
+
+Resource labels such as `backend_group_name`, `backend_network_name`, `forwarding_rule_name`, and `region` are set with the `gcp.label.*` prefix.
 
