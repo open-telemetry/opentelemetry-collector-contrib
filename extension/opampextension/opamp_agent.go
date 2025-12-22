@@ -475,7 +475,6 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	}
 }
 
-// TODO: update tests
 func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 	cmdType := command.GetType()
 	if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {

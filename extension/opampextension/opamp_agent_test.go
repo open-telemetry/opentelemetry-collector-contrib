@@ -778,13 +778,17 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 	})
 }
 
-func TestOpAMPAgent_onMessage(t *testing.T) {
-	t.Run("happy path - SIGHUP signal", func(t *testing.T) {
+func TestOpAMPAgent_onCommand(t *testing.T) {
+	t.Run("remote restarts not enabled by feature gate", func(t *testing.T) {
 		agent := opampAgent{
-			logger: zaptest.NewLogger(t),
+			logger:                zaptest.NewLogger(t),
+			remoteRestartsEnabled: false,
+			capabilities: Capabilities{
+				AcceptsRestartCommand: true,
+			},
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		t.Cleanup(cancel)
 
 		sighupReceived := make(chan bool, 1)
@@ -792,15 +796,95 @@ func TestOpAMPAgent_onMessage(t *testing.T) {
 			sighupReceived <- true
 		})
 
-		agent.onMessage(ctx, &types.MessageData{
-			RemoteConfig: &protobufs.AgentRemoteConfig{},
+		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		}))
+
+		select {
+		case <-sighupReceived:
+			t.Error("shouldn't have received SIGHUP")
+		case <-time.After(250 * time.Millisecond):
+			// success
+		}
+	})
+	t.Run("restart capability not enabled", func(t *testing.T) {
+		agent := opampAgent{
+			logger:                zaptest.NewLogger(t),
+			remoteRestartsEnabled: true,
+			capabilities: Capabilities{
+				AcceptsRestartCommand: false,
+			},
+		}
+
+		ctx, cancel := context.WithCancel(t.Context())
+		t.Cleanup(cancel)
+
+		sighupReceived := make(chan bool, 1)
+		setupSignalHandler(t, ctx, func() {
+			sighupReceived <- true
 		})
+
+		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		}))
+
+		select {
+		case <-sighupReceived:
+			t.Error("shouldn't have received SIGHUP")
+		case <-time.After(250 * time.Millisecond):
+			// success
+		}
+	})
+	t.Run("happy path - not restart command", func(t *testing.T) {
+		agent := opampAgent{
+			logger: zaptest.NewLogger(t),
+		}
+
+		ctx, cancel := context.WithCancel(t.Context())
+		t.Cleanup(cancel)
+
+		sighupReceived := make(chan bool, 1)
+		setupSignalHandler(t, ctx, func() {
+			sighupReceived <- true
+		})
+
+		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
+			Type: 13,
+		}))
+
+		select {
+		case <-sighupReceived:
+			t.Error("shouldn't have received SIGHUP")
+		case <-time.After(250 * time.Millisecond):
+			// success
+		}
+	})
+	t.Run("happy path", func(t *testing.T) {
+		agent := opampAgent{
+			logger:                zaptest.NewLogger(t),
+			remoteRestartsEnabled: true,
+			capabilities: Capabilities{
+				AcceptsRestartCommand: true,
+			},
+		}
+
+		ctx, cancel := context.WithCancel(t.Context())
+		t.Cleanup(cancel)
+
+		sighupReceived := make(chan bool, 1)
+		setupSignalHandler(t, ctx, func() {
+			sighupReceived <- true
+		})
+
+		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		}))
 
 		select {
 		case <-sighupReceived:
 			// Success
-		case <-time.After(500 * time.Millisecond):
-			t.Error("Timed out waiting for SIGHUP reload")
+		case <-time.After(250 * time.Millisecond):
+			t.Error("should have received SIGHUP")
 		}
 	})
 }
