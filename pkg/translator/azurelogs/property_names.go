@@ -6,8 +6,8 @@ package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"strings"
 
-	conventions128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventions134 "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	conventionsv134 "go.opentelemetry.io/otel/semconv/v1.34.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
@@ -17,7 +17,7 @@ import (
 func handleFrontDoorAccessLog(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "trackingReference":
-		attrs[string(conventions134.AzServiceRequestIDKey)] = value
+		attrs[string(conventionsv134.AzServiceRequestIDKey)] = value
 	case "httpMethod":
 		attrs[string(conventions.HTTPRequestMethodKey)] = value
 	case "httpVersion":
@@ -113,9 +113,9 @@ func handleAppServiceAppLogs(field string, value any, attrs, attrsProps map[stri
 	case "Host":
 		attrs[string(conventions.HostIDKey)] = value
 	case "Method":
-		attrs[string(conventions128.CodeFunctionKey)] = value
+		attrs[string(conventionsv128.CodeFunctionKey)] = value
 	case "Source":
-		attrs[string(conventions128.CodeFilepathKey)] = value
+		attrs[string(conventionsv128.CodeFilepathKey)] = value
 	case "Stacktrace", "StackTrace":
 		attrs[string(conventions.ExceptionStacktraceKey)] = value
 	default:

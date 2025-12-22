@@ -13,7 +13,8 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
+	conventionsv121 "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -67,7 +68,7 @@ func spanToOC(span ptrace.Span) *octrace.Span {
 				DroppedAttributesCount: 0,
 			}
 		}
-		attributes.AttributeMap[string(conventions.OtelStatusCodeKey)] = statusAttr
+		attributes.AttributeMap[string(conventions.OTelStatusCodeKey)] = statusAttr
 	}
 
 	return &octrace.Span{
@@ -266,8 +267,8 @@ func eventToOC(event ptrace.SpanEvent) *octrace.Span_TimeEvent {
 	ocMessageEventAttrs := []string{
 		"message.type",
 		string(conventions.MessagingMessageIDKey),
-		string(conventions.MessagingMessagePayloadSizeBytesKey),
-		string(conventions.MessagingMessagePayloadCompressedSizeBytesKey),
+		string(conventionsv121.MessagingMessagePayloadSizeBytesKey),
+		string(conventionsv121.MessagingMessagePayloadCompressedSizeBytesKey),
 	}
 	// TODO: Find a better way to check for message_event. Maybe use the event.Name.
 	if attrs.Len() == len(ocMessageEventAttrs) {
@@ -289,8 +290,8 @@ func eventToOC(event ptrace.SpanEvent) *octrace.Span_TimeEvent {
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
 						Id:               uint64(ocMessageEventAttrValues[string(conventions.MessagingMessageIDKey)].Int()),
-						UncompressedSize: uint64(ocMessageEventAttrValues[string(conventions.MessagingMessagePayloadSizeBytesKey)].Int()),
-						CompressedSize:   uint64(ocMessageEventAttrValues[string(conventions.MessagingMessagePayloadCompressedSizeBytesKey)].Int()),
+						UncompressedSize: uint64(ocMessageEventAttrValues[string(conventionsv121.MessagingMessagePayloadSizeBytesKey)].Int()),
+						CompressedSize:   uint64(ocMessageEventAttrValues[string(conventionsv121.MessagingMessagePayloadCompressedSizeBytesKey)].Int()),
 					},
 				},
 			}
