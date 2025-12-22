@@ -792,7 +792,7 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 		t.Cleanup(cancel)
 
 		sighupReceived := make(chan bool, 1)
-		setupSignalHandler(t, ctx, func() {
+		setupSignalHandler(ctx, t, func() {
 			sighupReceived <- true
 		})
 
@@ -820,7 +820,7 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 		t.Cleanup(cancel)
 
 		sighupReceived := make(chan bool, 1)
-		setupSignalHandler(t, ctx, func() {
+		setupSignalHandler(ctx, t, func() {
 			sighupReceived <- true
 		})
 
@@ -844,7 +844,7 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 		t.Cleanup(cancel)
 
 		sighupReceived := make(chan bool, 1)
-		setupSignalHandler(t, ctx, func() {
+		setupSignalHandler(ctx, t, func() {
 			sighupReceived <- true
 		})
 
@@ -872,7 +872,7 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 		t.Cleanup(cancel)
 
 		sighupReceived := make(chan bool, 1)
-		setupSignalHandler(t, ctx, func() {
+		setupSignalHandler(ctx, t, func() {
 			sighupReceived <- true
 		})
 
@@ -889,7 +889,7 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 	})
 }
 
-func setupSignalHandler(t testing.TB, ctx context.Context, signalCallback func()) {
+func setupSignalHandler(ctx context.Context, t testing.TB, signalCallback func()) {
 	t.Helper()
 
 	sigChan := make(chan os.Signal, 1)

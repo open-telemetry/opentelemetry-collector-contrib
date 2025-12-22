@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.48.0
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.142.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.142.0
+	go.opentelemetry.io/collector/featuregate v1.48.0
 	go.opentelemetry.io/collector/service v0.142.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.142.0
 	go.uber.org/goleak v1.3.0
@@ -62,7 +63,6 @@ require (
 	go.opentelemetry.io/collector/exporter v1.48.0 // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.142.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.142.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.48.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.142.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.142.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.142.0 // indirect
