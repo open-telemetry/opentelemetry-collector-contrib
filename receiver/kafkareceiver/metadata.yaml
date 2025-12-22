@@ -34,6 +34,20 @@ attributes:
     description: The Kafka topic.
     type: string
 
+resource_attributes:
+  kafka.topic:
+    description: The Kafka topic from which the message was received.
+    enabled: true
+    type: string
+  kafka.partition:
+    description: The Kafka partition from which the message was received.
+    enabled: true
+    type: int
+  kafka.offset:
+    description: The Kafka offset of the message.
+    enabled: true
+    type: int
+
 telemetry:
   metrics:
     kafka_broker_closed:
