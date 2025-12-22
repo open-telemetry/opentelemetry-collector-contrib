@@ -104,8 +104,6 @@ var (
 		string(conventions.ServiceVersionKey):    {},
 		string(conventions.ServiceInstanceIDKey): {},
 	}
-
-	FeatureGateRemoteRestart bool
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
