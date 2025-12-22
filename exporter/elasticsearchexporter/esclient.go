@@ -113,7 +113,6 @@ func newElasticsearchClient(
 	}
 
 	headers := make(http.Header)
-	headers.Set("User-Agent", userAgent)
 	// FIXME: meta header and compatibility header
 
 	// endpoints converts Config.Endpoints, Config.CloudID,
@@ -151,6 +150,8 @@ func newElasticsearchClient(
 
 	// Create transport configuration matching elasticsearch.newTransport structure
 	tpConfig := elastictransport.Config{
+		UserAgent: userAgent,
+
 		URLs:     urls,
 		Username: config.Authentication.User,
 		Password: password,
