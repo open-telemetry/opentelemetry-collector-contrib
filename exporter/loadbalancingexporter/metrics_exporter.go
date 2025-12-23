@@ -139,20 +139,31 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	}
 
 	var errs error
+	var failedMetrics *pmetric.Metrics
+
 	for exp, mds := range metricsByExporter {
 		start := time.Now()
 		err := exp.ConsumeMetrics(ctx, mds)
 		duration := time.Since(start)
 
 		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
 		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
 		} else {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
 			e.logger.Debug("failed to export metrics", zap.Error(err))
+			if failedMetrics == nil {
+				metrics := pmetric.NewMetrics()
+				failedMetrics = &metrics
+			}
+			mds.ResourceMetrics().MoveAndAppendTo(failedMetrics.ResourceMetrics())
+			errs = multierr.Append(errs, err)
 		}
+	}
+
+	if errs != nil && failedMetrics != nil && failedMetrics.MetricCount() > 0 {
+		return consumererror.NewMetrics(errs, *failedMetrics)
 	}
 
 	return errs
