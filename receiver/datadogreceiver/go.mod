@@ -4,10 +4,10 @@ go 1.24.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.178
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.73.0
-	github.com/DataDog/datadog-agent/pkg/trace v0.73.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.51.0
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.73.2
+	github.com/DataDog/datadog-agent/pkg/trace v0.73.2
+	github.com/DataDog/datadog-api-client-go/v2 v2.52.0
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
@@ -41,15 +41,15 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.73.0 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.73.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.2 // indirect
 	github.com/DataDog/go-sqllexer v0.1.9 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
@@ -138,8 +138,8 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
-	google.golang.org/grpc v1.77.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/grpc v1.78.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

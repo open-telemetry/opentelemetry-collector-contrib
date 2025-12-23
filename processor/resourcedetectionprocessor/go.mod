@@ -8,18 +8,18 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.6
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.16
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.277.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/hetznercloud/hcloud-go/v2 v2.32.0
+	github.com/hetznercloud/hcloud-go/v2 v2.33.0
 	github.com/linode/go-metadata v0.2.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.142.0
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.36
 	github.com/shirou/gopsutil/v4 v4.25.11
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.48.1-0.20251218222727-bf28fa76882d

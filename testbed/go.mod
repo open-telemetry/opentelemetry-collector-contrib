@@ -70,7 +70,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/text v0.32.0
-	google.golang.org/grpc v1.77.0
+	google.golang.org/grpc v1.78.0
 )
 
 require (
@@ -85,20 +85,20 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.178 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.73.0 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.73.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.73.0 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.51.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.73.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.73.2 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.52.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.2 // indirect
 	github.com/DataDog/go-sqllexer v0.1.9 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
@@ -121,7 +121,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.277.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.67.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.16 // indirect
@@ -184,7 +184,7 @@ require (
 	github.com/go-zookeeper/zk v1.0.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
-	github.com/goccy/go-yaml v1.19.0 // indirect
+	github.com/goccy/go-yaml v1.19.1 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
@@ -409,8 +409,8 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/api v0.252.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20251022142026-3a174f9686a8 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
