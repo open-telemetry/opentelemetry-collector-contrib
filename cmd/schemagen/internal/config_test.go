@@ -16,7 +16,7 @@ import (
 
 func TestReadConfig_FileInput(t *testing.T) {
 	dir := t.TempDir()
-	chdir(t, dir)
+	t.Chdir(dir)
 	file := createConfigFile(t, dir, "service.go")
 
 	cfg, err := readConfigForTest(t, file)
@@ -34,7 +34,7 @@ func TestReadConfig_FileInput(t *testing.T) {
 
 func TestReadConfig_DirectoryInput(t *testing.T) {
 	dir := t.TempDir()
-	chdir(t, dir)
+	t.Chdir(dir)
 
 	cfg, err := readConfigForTest(t, dir)
 	require.NoError(t, err)
@@ -43,18 +43,18 @@ func TestReadConfig_DirectoryInput(t *testing.T) {
 	require.Empty(t, cfg.FilePath)
 	require.Equal(t, dir, cfg.DirPath)
 	require.Equal(t, dir, cfg.OutputFolder)
-	require.Equal(t, "", cfg.RootTypeName)
+	require.Empty(t, cfg.RootTypeName)
 }
 
 func TestReadConfig_Errors(t *testing.T) {
 	t.Run("missing args", func(t *testing.T) {
-		chdir(t, t.TempDir())
+		t.Chdir(t.TempDir())
 		_, err := readConfigForTest(t)
 		require.Error(t, err)
 	})
 
 	t.Run("missing path", func(t *testing.T) {
-		chdir(t, t.TempDir())
+		t.Chdir(t.TempDir())
 		missing := filepath.Join(t.TempDir(), "missing")
 		_, err := readConfigForTest(t, missing)
 		require.Error(t, err)
@@ -62,7 +62,7 @@ func TestReadConfig_Errors(t *testing.T) {
 
 	t.Run("unknown file type", func(t *testing.T) {
 		dir := t.TempDir()
-		chdir(t, dir)
+		t.Chdir(dir)
 		file := createConfigFile(t, dir, "config.go")
 
 		_, err := readConfigForTest(t, "-t", "xml", file)
@@ -72,7 +72,7 @@ func TestReadConfig_Errors(t *testing.T) {
 
 func TestReadConfig_DefaultRootTypeDerivedFromPath(t *testing.T) {
 	dir := t.TempDir()
-	chdir(t, dir)
+	t.Chdir(dir)
 	target := createConfigFile(t, dir, "my_config.go")
 
 	cfg, err := readConfigForTest(t, target)
@@ -83,7 +83,7 @@ func TestReadConfig_DefaultRootTypeDerivedFromPath(t *testing.T) {
 
 func TestReadConfig_RespectsRootTypeFlag(t *testing.T) {
 	dir := t.TempDir()
-	chdir(t, dir)
+	t.Chdir(dir)
 	target := createConfigFile(t, dir, "component.go")
 
 	cfg, err := readConfigForTest(t, "-r", "ExplicitType", target)
@@ -114,7 +114,7 @@ func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 
 	workDir := filepath.Join(projectDir, "workdir")
 	require.NoError(t, os.Mkdir(workDir, 0o700))
-	chdir(t, workDir)
+	t.Chdir(workDir)
 
 	target := createConfigFile(t, workDir, "component.go")
 
@@ -138,16 +138,6 @@ func createConfigFile(t *testing.T, dir, name string) string {
 	target := filepath.Join(dir, name)
 	require.NoError(t, os.WriteFile(target, []byte("package test"), 0o600))
 	return target
-}
-
-func chdir(t *testing.T, dir string) {
-	t.Helper()
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-	require.NoError(t, os.Chdir(dir))
-	t.Cleanup(func() {
-		require.NoError(t, os.Chdir(wd))
-	})
 }
 
 func readConfigForTest(t *testing.T, args ...string) (*Config, error) {

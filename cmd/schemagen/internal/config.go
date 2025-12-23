@@ -94,14 +94,8 @@ func ReadConfig() (*Config, error) {
 		*rootType = toPascalCase(fileName)
 	}
 
-	ext := *fileType
-	switch *fileType {
-	case "yaml", "yml":
-		ext = ".yaml"
-	case "json":
-		ext = ".json"
-	default:
-		return nil, errors.New("unknown schema file type - use yaml or json: " + ext)
+	if *fileType != "json" && *fileType != "yaml" && *fileType != "yml" {
+		return nil, errors.New("unknown schema file type - use yaml or json: " + *fileType)
 	}
 
 	s, ok := ReadSettingsFile()

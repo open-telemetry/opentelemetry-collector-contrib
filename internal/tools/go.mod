@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/cmd/builder v0.143.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.143.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/tools v0.40.0
+	golang.org/x/tools v0.39.0
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.13.0
 	mvdan.cc/gofumpt v0.9.2
@@ -281,7 +281,7 @@ require (
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 	golang.org/x/mod v0.31.0 // indirect
-	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect

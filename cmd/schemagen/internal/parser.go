@@ -47,6 +47,17 @@ func (p *Parser) Parse() (*Schema, error) {
 		return nil, e
 	}
 
+	mainPkg := p.processPackages(set, pkgs)
+	p.initializeSchema(mainPkg.ID, fmt.Sprintf("%s %s", mainPkg.Name, p.config.Mode))
+
+	if err := p.parseTypes(); err != nil {
+		return nil, err
+	}
+
+	return p.schema, nil
+}
+
+func (p *Parser) processPackages(set *token.FileSet, pkgs []*packages.Package) *packages.Package {
 	mainPkg := pkgs[0]
 	for _, pkg := range pkgs {
 		isMainPkg := pkg.Dir == p.config.DirPath
@@ -65,13 +76,7 @@ func (p *Parser) Parse() (*Schema, error) {
 	if _, ok := p.types[p.config.RootTypeName]; !ok && p.config.Mode == Component {
 		fmt.Printf("Warning: Root type %s not found among collected type specs\n", p.config.RootTypeName)
 	}
-	p.initializeSchema(mainPkg.ID, fmt.Sprintf("%s %s", mainPkg.Name, p.config.Mode))
-
-	if err := p.parseTypes(); err != nil {
-		return nil, err
-	}
-
-	return p.schema, nil
+	return mainPkg
 }
 
 func (p *Parser) initializeSchema(id, title string) {
@@ -152,7 +157,7 @@ func (p *Parser) parseType(typeInfo TypeInfo) (SchemaElement, error) {
 	if err != nil {
 		return nil, err
 	}
-	if typeInfo.comms != nil && len(typeInfo.comms) > 0 {
+	if len(typeInfo.comms) > 0 {
 		if desc, ok := ExtractDescriptionFromComment(typeInfo.comms[0]); ok {
 			schemaElement.setDescription(desc)
 		}
