@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/passthroughnlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -61,24 +61,24 @@ func TestHandleHTTPRequestField(t *testing.T) {
 				Protocol:       "HTTP/1.1",
 			},
 			expectsAttributes: map[string]any{
-				string(conventions.HTTPResponseSizeKey):       int64(300),
-				string(conventions.HTTPResponseStatusCodeKey): int64(200),
-				string(conventions.HTTPRequestMethodKey):      "POST",
-				string(conventions.HTTPRequestSizeKey):        int64(100),
-				string(conventions.URLFullKey):                "https://www.googleapis.com/logging/v2",
-				string(conventions.URLDomainKey):              "www.googleapis.com",
-				string(conventions.URLPathKey):                "/logging/v2",
-				gcpCacheFillBytes:                             int64(12345),
-				gcpCacheHitField:                              true,
-				gcpCacheValidatedWithOriginSeverField:         false,
-				gcpCacheLookupField:                           true,
-				string(conventions.NetworkProtocolNameKey):    "http",
-				string(conventions.NetworkProtocolVersionKey): "1.1",
-				refererHeaderField:                            "referer",
-				requestServerDurationField:                    float64(10),
-				string(conventions.UserAgentOriginalKey):      "test",
-				string(conventions.NetworkPeerAddressKey):     "127.0.0.2",
-				string(conventions.ServerAddressKey):          "127.0.0.3",
+				"http.response.size":                  int64(300),
+				"http.response.status_code":           int64(200),
+				"http.request.method":                 "POST",
+				"http.request.size":                   int64(100),
+				"url.full":                            "https://www.googleapis.com/logging/v2",
+				"url.domain":                          "www.googleapis.com",
+				"url.path":                            "/logging/v2",
+				gcpCacheFillBytes:                     int64(12345),
+				gcpCacheHitField:                      true,
+				gcpCacheValidatedWithOriginSeverField: false,
+				gcpCacheLookupField:                   true,
+				"network.protocol.name":               "http",
+				"network.protocol.version":            "1.1",
+				refererHeaderField:                    "referer",
+				requestServerDurationField:            float64(10),
+				"user_agent.original":                 "test",
+				"network.peer.address":                "127.0.0.2",
+				"server.address":                      "127.0.0.3",
 			},
 		},
 		{
@@ -170,8 +170,8 @@ func TestHandleLogNameField(t *testing.T) {
 			logName:        "projects/my-project/logs/log-id",
 			expectsLogType: "log-id",
 			expectsAttributes: map[string]any{
-				gcpProjectField:                        "my-project",
-				string(conventions.CloudResourceIDKey): "log-id",
+				gcpProjectField:     "my-project",
+				"cloud.resource_id": "log-id",
 			},
 		},
 		{
@@ -179,8 +179,8 @@ func TestHandleLogNameField(t *testing.T) {
 			logName:        "organizations/123456/logs/log-id",
 			expectsLogType: "log-id",
 			expectsAttributes: map[string]any{
-				gcpOrganizationField:                   "123456",
-				string(conventions.CloudResourceIDKey): "log-id",
+				gcpOrganizationField: "123456",
+				"cloud.resource_id":  "log-id",
 			},
 		},
 		{
@@ -188,8 +188,8 @@ func TestHandleLogNameField(t *testing.T) {
 			logName:        "billingAccounts/BA123/logs/log-id",
 			expectsLogType: "log-id",
 			expectsAttributes: map[string]any{
-				gcpBillingAccountField:                 "BA123",
-				string(conventions.CloudResourceIDKey): "log-id",
+				gcpBillingAccountField: "BA123",
+				"cloud.resource_id":    "log-id",
 			},
 		},
 		{
@@ -197,8 +197,8 @@ func TestHandleLogNameField(t *testing.T) {
 			logName:        "folders/456789/logs/log-id",
 			expectsLogType: "log-id",
 			expectsAttributes: map[string]any{
-				gcpFolderField:                         "456789",
-				string(conventions.CloudResourceIDKey): "log-id",
+				gcpFolderField:      "456789",
+				"cloud.resource_id": "log-id",
 			},
 		},
 		{
@@ -438,6 +438,11 @@ func TestGetEncodingFormat(t *testing.T) {
 			name:           "proxy nlb log connections",
 			logType:        proxynlb.ConnectionsLogNameSuffix,
 			expectedFormat: constants.GCPFormatProxyNLBLog,
+		},
+		{
+			name:           "passthrough nlb log connections",
+			logType:        passthroughnlb.ConnectionsLogNameSuffix,
+			expectedFormat: constants.GCPFormatPassthroughNLBLog,
 		},
 		{
 			name:           "unknown log type",

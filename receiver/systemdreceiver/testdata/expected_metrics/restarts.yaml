@@ -1,0 +1,21 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: systemd.unit.name
+          value:
+            stringValue: nginx.service
+    scopeMetrics:
+      - metrics:
+          - description: Number of automatic restarts for the service.
+            name: systemd.service.restarts
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{restarts}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest
