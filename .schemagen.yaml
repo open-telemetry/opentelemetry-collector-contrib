@@ -1,0 +1,30 @@
+outputFolder: ./schemas/
+refs:
+  scraperhelper:
+    id: go.opentelemetry.io/collector/scraper/scraperhelper
+  configauth:
+    id: go.opentelemetry.io/collector/config/configauth
+  configmiddleware:
+    id: go.opentelemetry.io/collector/config/configmiddleware
+  configtls:
+    id: go.opentelemetry.io/collector/config/configtls
+  filter:
+    id: go.opentelemetry.io/collector/filter
+  configcompression:
+    id: go.opentelemetry.io/collector/config/configcompression
+  confighttp:
+    id: go.opentelemetry.io/collector/config/confighttp
+mappings:
+  time:
+    Time:
+      schemaType: string
+      format: date-time
+    Duration:
+      schemaType: string
+      format: duration
+  component:
+    ID:
+      schemaType: string
+  configopaque:
+    String:
+      schemaType: string

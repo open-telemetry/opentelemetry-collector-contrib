@@ -28,10 +28,10 @@ func run() error {
 		return err
 	}
 
-	err = internal.WriteSchemaToFile(schema, config)
-	if err != nil {
-		return err
+	path, writeErr := internal.WriteSchemaToFile(schema, config)
+	if writeErr != nil {
+		return writeErr
 	}
-	fmt.Println("Schema successfully written to", config.SchemaPath)
+	fmt.Println("Schema successfully written to", path)
 	return nil
 }

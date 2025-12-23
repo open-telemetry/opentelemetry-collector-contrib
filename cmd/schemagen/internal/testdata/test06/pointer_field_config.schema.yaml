@@ -1,0 +1,32 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test06
+title: test06 component
+type: object
+$defs:
+  Address:
+    properties:
+      hostname:
+        type: string
+      path:
+        type: string
+      port:
+        type: integer
+        x-pointer: true
+    type: object
+properties:
+  address:
+    $ref: '#/$defs/Address'
+    x-pointer: true
+  name:
+    type: string
+    x-pointer: true
+  other_addresses:
+    items:
+      $ref: '#/$defs/Address'
+    type: array
+    x-pointer: true
+  tags:
+    items:
+      type: string
+    type: array
+    x-pointer: true
