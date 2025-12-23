@@ -53,6 +53,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	supervisorresource "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/resource"
 	supervisorTelemetry "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
@@ -73,6 +74,15 @@ var (
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
 
 	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
+
+	// supervisorVersion can be overridden at build time via
+	// -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor.supervisorVersion=<version>"
+	supervisorVersion   = "latest"
+	supervisorBuildInfo = component.BuildInfo{
+		Command:     "opamp-supervisor",
+		Description: "OpenTelemetry OpAMP Supervisor",
+		Version:     supervisorVersion,
+	}
 )
 
 const (
@@ -249,29 +259,20 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
+	sdkRes, err := supervisorresource.New(ctx, supervisorBuildInfo, &cfg.Resource)
+	if err != nil {
+		return telemetrySettings{}, fmt.Errorf("failed to create telemetry resource: %w", err)
+	}
+
+	attrSlice := sdkRes.Attributes()
+	resourceAttrs := make([]telemetryconfig.AttributeNameValue, 0, len(attrSlice))
 	pcommonRes := pcommon.NewResource()
-	for k, v := range cfg.Resource {
-		pcommonRes.Attributes().PutStr(k, *v)
+	for _, kv := range attrSlice {
+		resourceAttrs = append(resourceAttrs, attributeToNameValue(kv))
+		setPcommonAttribute(pcommonRes.Attributes(), kv)
 	}
 
-	if _, ok := cfg.Resource[string(conventions.ServiceNameKey)]; !ok {
-		pcommonRes.Attributes().PutStr(string(conventions.ServiceNameKey), "opamp-supervisor")
-	}
-
-	if _, ok := cfg.Resource[string(conventions.ServiceInstanceIDKey)]; !ok {
-		instanceUUID, _ := uuid.NewRandom()
-		instanceID := instanceUUID.String()
-		pcommonRes.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instanceID)
-	}
-
-	// TODO currently we do not have the build info containing the version available to set semconv.ServiceVersionKey
-
-	var attrs []telemetryconfig.AttributeNameValue
-	for k, v := range pcommonRes.Attributes().All() {
-		attrs = append(attrs, telemetryconfig.AttributeNameValue{Name: k, Value: v.Str()})
-	}
-
-	sch := conventions.SchemaURL
+	schemaURL := sdkRes.SchemaURL()
 
 	sdk, err := telemetryconfig.NewSDK(
 		telemetryconfig.WithContext(ctx),
@@ -287,8 +288,8 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 					Processors: cfg.Logs.Processors,
 				},
 				Resource: &telemetryconfig.Resource{
-					SchemaUrl:  &sch,
-					Attributes: attrs,
+					SchemaUrl:  &schemaURL,
+					Attributes: resourceAttrs,
 				},
 			},
 		),
@@ -323,6 +324,105 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		},
 		lp,
 	}, nil
+}
+
+func attributeToNameValue(kv attribute.KeyValue) telemetryconfig.AttributeNameValue {
+	attr := telemetryconfig.AttributeNameValue{
+		Name: string(kv.Key),
+	}
+
+	setType := func(value string) {
+		attr.Type = &telemetryconfig.AttributeNameValueType{Value: value}
+	}
+
+	switch kv.Value.Type() {
+	case attribute.BOOL:
+		setType("bool")
+		attr.Value = kv.Value.AsBool()
+	case attribute.INT64:
+		setType("int")
+		attr.Value = kv.Value.AsInt64()
+	case attribute.FLOAT64:
+		setType("double")
+		attr.Value = kv.Value.AsFloat64()
+	case attribute.STRING:
+		setType("string")
+		attr.Value = kv.Value.AsString()
+	case attribute.BOOLSLICE:
+		setType("bool_array")
+		values := kv.Value.AsBoolSlice()
+		out := make([]any, 0, len(values))
+		for _, v := range values {
+			out = append(out, v)
+		}
+		attr.Value = out
+	case attribute.INT64SLICE:
+		setType("int_array")
+		values := kv.Value.AsInt64Slice()
+		out := make([]any, 0, len(values))
+		for _, v := range values {
+			out = append(out, v)
+		}
+		attr.Value = out
+	case attribute.FLOAT64SLICE:
+		setType("double_array")
+		values := kv.Value.AsFloat64Slice()
+		out := make([]any, 0, len(values))
+		for _, v := range values {
+			out = append(out, v)
+		}
+		attr.Value = out
+	case attribute.STRINGSLICE:
+		setType("string_array")
+		values := kv.Value.AsStringSlice()
+		out := make([]any, 0, len(values))
+		for _, v := range values {
+			out = append(out, v)
+		}
+		attr.Value = out
+	default:
+		setType("string")
+		attr.Value = kv.Value.Emit()
+	}
+
+	return attr
+}
+
+func setPcommonAttribute(dest pcommon.Map, kv attribute.KeyValue) {
+	key := string(kv.Key)
+
+	switch kv.Value.Type() {
+	case attribute.BOOL:
+		dest.PutBool(key, kv.Value.AsBool())
+	case attribute.INT64:
+		dest.PutInt(key, kv.Value.AsInt64())
+	case attribute.FLOAT64:
+		dest.PutDouble(key, kv.Value.AsFloat64())
+	case attribute.STRING:
+		dest.PutStr(key, kv.Value.AsString())
+	case attribute.BOOLSLICE:
+		slice := dest.PutEmptySlice(key)
+		for _, v := range kv.Value.AsBoolSlice() {
+			slice.AppendEmpty().SetBool(v)
+		}
+	case attribute.INT64SLICE:
+		slice := dest.PutEmptySlice(key)
+		for _, v := range kv.Value.AsInt64Slice() {
+			slice.AppendEmpty().SetInt(v)
+		}
+	case attribute.FLOAT64SLICE:
+		slice := dest.PutEmptySlice(key)
+		for _, v := range kv.Value.AsFloat64Slice() {
+			slice.AppendEmpty().SetDouble(v)
+		}
+	case attribute.STRINGSLICE:
+		slice := dest.PutEmptySlice(key)
+		for _, v := range kv.Value.AsStringSlice() {
+			slice.AppendEmpty().SetStr(v)
+		}
+	default:
+		dest.PutStr(key, kv.Value.Emit())
+	}
 }
 
 func (s *Supervisor) Start(ctx context.Context) error {
