@@ -13,7 +13,6 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -23,11 +22,11 @@ import (
 func TestMetricsToOC(t *testing.T) {
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
-	attrs.PutStr(string(conventions.HostNameKey), "host1")
-	attrs.PutInt(string(conventions.ProcessPIDKey), 123)
+	attrs.PutStr("host.name", "host1")
+	attrs.PutInt("process.pid", 123)
 	attrs.PutStr(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
-	attrs.PutStr(string(conventions.TelemetrySDKLanguageKey), "cpp")
-	attrs.PutStr(string(conventions.TelemetrySDKVersionKey), "v2.0.1")
+	attrs.PutStr("telemetry.sdk.language", "cpp")
+	attrs.PutStr("telemetry.sdk.version", "v2.0.1")
 	attrs.PutStr(occonventions.AttributeExporterVersion, "v1.2.0")
 
 	tests := []struct {
