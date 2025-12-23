@@ -35,9 +35,11 @@ jobs:
           branch="otelbot/update-otel-$(date +%s)"
           git checkout -b "$branch"
           make genotelcontribcol
-          echo "CURRENT_VERSION=$CURRENT_VERSION" >> "$GITHUB_ENV"
-          echo "LAST_COMMIT=$LAST_COMMIT" >> "$GITHUB_ENV"
-          echo "BRANCH_NAME=$branch" >> "$GITHUB_ENV"
+          {
+            echo "CURRENT_VERSION=$CURRENT_VERSION"
+            echo "LAST_COMMIT=$LAST_COMMIT"
+            echo "BRANCH_NAME=$branch"
+          } >> "$GITHUB_ENV"
       - name: Gets packages from links with retries
         uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         with:
