@@ -20,7 +20,6 @@ import (
 
 var (
 	errIPNotFound        = errors.New("no IP address found in the resource attributes")
-	errParseIP           = errors.New("could not parse IP address")
 	errUnspecifiedIP     = errors.New("unspecified address")
 	errUnspecifiedSource = errors.New("no source attributes defined")
 )

@@ -84,9 +84,9 @@ func (g *maxMindProvider) cityAttributes(ipAddress netip.Addr) (*[]attribute.Key
 	}
 
 	// city
-	appendIfNotEmpty(conventions.AttributeGeoCityName, string(city.City.Names.English))
+	appendIfNotEmpty(conventions.AttributeGeoCityName, city.City.Names.English)
 	// country
-	appendIfNotEmpty(conventions.AttributeGeoCountryName, string(city.Country.Names.English))
+	appendIfNotEmpty(conventions.AttributeGeoCountryName, city.Country.Names.English)
 	appendIfNotEmpty(conventions.AttributeGeoCountryIsoCode, city.Country.ISOCode)
 	// continent
 	appendIfNotEmpty(conventions.AttributeGeoContinentName, city.Continent.Names.English)
