@@ -29,6 +29,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
+// setAsyncPolling enables or disables the async polling feature gate for tests
+// and ensures it's restored to its original state after the test completes.
+//
+//nolint:unparam
+func setAsyncPolling(tb testing.TB, value bool) {
+	currentState := asyncPollingGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(asyncPollingGate.ID(), value))
+	tb.Cleanup(func() {
+		require.NoError(tb, featuregate.GlobalRegistry().Set(asyncPollingGate.ID(), currentState))
+	})
+}
+
 // TestDefaultBehaviors
 // - Files are read starting from the end.
 // - Logs are tokenized based on newlines.
@@ -1669,4 +1681,147 @@ func TestArchive(t *testing.T) {
 	log4 := emit.Token{Body: []byte("testlog4"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
 
 	sink.ExpectCalls(t, log3, log4)
+}
+
+// TestAsyncPolling tests that async polling with feature gate enabled
+// properly reads files and respects poll intervals
+func TestAsyncPolling(t *testing.T) {
+	setAsyncPolling(t, true)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "testlog1\ntestlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog2"))
+
+	// Add more logs
+	filetest.WriteString(t, temp, "testlog3\ntestlog4\n")
+	sink.ExpectToken(t, []byte("testlog3"))
+	sink.ExpectToken(t, []byte("testlog4"))
+}
+
+// TestAsyncPollingMultipleFiles tests that async polling properly handles
+// multiple files concurrently with the worker pool
+func TestAsyncPollingMultipleFiles(t *testing.T) {
+	setAsyncPolling(t, true)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	// Create multiple files
+	temp1 := filetest.OpenTemp(t, tempDir)
+	temp2 := filetest.OpenTemp(t, tempDir)
+	temp3 := filetest.OpenTemp(t, tempDir)
+
+	filetest.WriteString(t, temp1, "file1-log1\nfile1-log2\n")
+	filetest.WriteString(t, temp2, "file2-log1\nfile2-log2\n")
+	filetest.WriteString(t, temp3, "file3-log1\nfile3-log2\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	// All files should be read concurrently
+	expectedTokens := map[string]bool{
+		"file1-log1": false,
+		"file1-log2": false,
+		"file2-log1": false,
+		"file2-log2": false,
+		"file3-log1": false,
+		"file3-log2": false,
+	}
+
+	// Read all expected tokens
+	for range 6 {
+		token, _ := sink.NextCall(t)
+		expectedTokens[string(token)] = true
+	}
+
+	// Verify all tokens were received
+	for token, received := range expectedTokens {
+		assert.True(t, received, "Expected token %s was not received", token)
+	}
+}
+
+// TestAsyncPollingNoOverlap tests that async polling prevents overlapping polls
+func TestAsyncPollingNoOverlap(t *testing.T) {
+	setAsyncPolling(t, true)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.PollInterval = 50 * time.Millisecond
+	operator, sink := testManager(t, cfg)
+
+	// Create a file
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "testlog1\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectToken(t, []byte("testlog1"))
+
+	// Wait for multiple poll cycles
+	time.Sleep(250 * time.Millisecond)
+
+	// Add more logs - should still be processed correctly
+	filetest.WriteString(t, temp, "testlog2\n")
+	sink.ExpectToken(t, []byte("testlog2"))
+}
+
+// TestAsyncPollingFastRotation tests that async polling handles fast file rotation
+// This is the main use case from issue #17846
+func TestAsyncPollingFastRotation(t *testing.T) {
+	setAsyncPolling(t, true)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.PollInterval = 50 * time.Millisecond
+	operator, sink := testManager(t, cfg)
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	// Simulate fast file rotation
+	for i := range 5 {
+		temp := filetest.OpenTemp(t, tempDir)
+		filetest.WriteString(t, temp, fmt.Sprintf("log-from-file-%d\n", i))
+		// Wait a very short time before next rotation (simulating fast rotation)
+		time.Sleep(30 * time.Millisecond)
+	}
+
+	// Wait for all files to be processed
+	time.Sleep(300 * time.Millisecond)
+
+	// Verify all logs were captured
+	receivedLogs := make(map[string]bool)
+	for range 5 {
+		token, _ := sink.NextCall(t)
+		receivedLogs[string(token)] = true
+	}
+
+	for i := range 5 {
+		expectedLog := fmt.Sprintf("log-from-file-%d", i)
+		assert.True(t, receivedLogs[expectedLog], "Expected log %s was not received", expectedLog)
+	}
 }

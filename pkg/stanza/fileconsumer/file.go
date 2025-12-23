@@ -39,6 +39,10 @@ type Manager struct {
 	pollsToArchive int
 
 	telemetryBuilder *metadata.TelemetryBuilder
+
+	// Poll synchronization to prevent overlapping polls
+	pollMutex  sync.Mutex
+	pollActive bool
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -107,13 +111,42 @@ func (m *Manager) startPoller(ctx context.Context) {
 			case <-globTicker.C:
 			}
 
-			m.poll(ctx)
+			if asyncPollingGate.IsEnabled() {
+				// Launch poll asynchronously to ensure poll_interval is respected
+				// regardless of how long the poll takes to complete
+				m.wg.Add(1)
+				go func() {
+					defer m.wg.Done()
+					m.poll(ctx)
+				}()
+			} else {
+				// Legacy synchronous polling
+				m.poll(ctx)
+			}
 		}
 	}()
 }
 
 // poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
+	// When async polling is enabled, prevent overlapping polls
+	if asyncPollingGate.IsEnabled() {
+		m.pollMutex.Lock()
+		if m.pollActive {
+			m.set.Logger.Warn("Previous poll still in progress, skipping this poll cycle")
+			m.pollMutex.Unlock()
+			return
+		}
+		m.pollActive = true
+		m.pollMutex.Unlock()
+
+		defer func() {
+			m.pollMutex.Lock()
+			m.pollActive = false
+			m.pollMutex.Unlock()
+		}()
+	}
+
 	// Used to keep track of the number of batches processed in this poll cycle
 	batchesProcessed := 0
 
@@ -159,17 +192,41 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 
 	m.readLostFiles(ctx)
 
-	// read new readers to end
 	var wg sync.WaitGroup
-	for _, r := range m.tracker.CurrentPollFiles() {
-		wg.Add(1)
-		go func(r *reader.Reader) {
-			defer wg.Done()
-			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
-			r.ReadToEnd(ctx)
-			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
-		}(r)
+
+	// When async polling is enabled, use worker pool pattern with semaphore
+	// to ensure maxBatchFiles is used as a true concurrency limit
+	if asyncPollingGate.IsEnabled() {
+		// Create semaphore for worker pool to limit concurrent file operations
+		sem := make(chan struct{}, m.maxBatchFiles)
+
+		for _, r := range m.tracker.CurrentPollFiles() {
+			wg.Add(1)
+			go func(r *reader.Reader) {
+				defer wg.Done()
+
+				// Acquire semaphore slot
+				sem <- struct{}{}
+				defer func() { <-sem }() // Release semaphore slot
+
+				m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
+				r.ReadToEnd(ctx)
+				m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
+			}(r)
+		}
+	} else {
+		// Spawn goroutines for all files without semaphore
+		for _, r := range m.tracker.CurrentPollFiles() {
+			wg.Add(1)
+			go func(r *reader.Reader) {
+				defer wg.Done()
+				m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
+				r.ReadToEnd(ctx)
+				m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
+			}(r)
+		}
 	}
+
 	wg.Wait()
 
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, int64(0-m.tracker.EndConsume()))

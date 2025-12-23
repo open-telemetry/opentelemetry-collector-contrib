@@ -52,6 +52,14 @@ var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
 
+var asyncPollingGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.asyncPolling",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, uses asynchronous polling and worker pool pattern to ensure poll_interval is respected and files are processed concurrently."),
+	featuregate.WithRegisterFromVersion("v0.143.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17846"),
+)
+
 // NewConfig creates a new input config with default values
 func NewConfig() *Config {
 	return &Config{
