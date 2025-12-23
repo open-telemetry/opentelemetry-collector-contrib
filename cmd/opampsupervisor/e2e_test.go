@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -894,10 +895,9 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		precheck func(t *testing.T)
 	}{
 		{
-			name: "With service.AllowNoPipelines",
-			cfg:  "nocap",
-			precheck: func(t *testing.T) {
-			},
+			name:     "With service.AllowNoPipelines",
+			cfg:      "nocap",
+			precheck: func(t *testing.T) {},
 		},
 		{
 			name: "Without service.AllowNoPipelines",
@@ -2406,22 +2406,6 @@ func TestSupervisorHealthCheckServerBackendConnError(t *testing.T) {
 	}, 5*time.Second, 100*time.Millisecond, "Health check server did not start")
 }
 
-func findRandomPort() (int, error) {
-	l, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	port := l.Addr().(*net.TCPAddr).Port
-
-	err = l.Close()
-	if err != nil {
-		return 0, err
-	}
-
-	return port, nil
-}
-
 func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	agentDescription := atomic.Value{}
 
@@ -2576,6 +2560,378 @@ func TestSupervisorReportsHeartbeat(t *testing.T) {
 	}, 3*time.Second, 250*time.Millisecond)
 }
 
+func TestSupervisorUpgradesAgent(t *testing.T) {
+	var ext string
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+
+	// Hex encoded hashes of the binaries from v0.135.0
+	// Hashes retrieved from these files of the release:
+	// https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.135.0/opentelemetry-collector-releases_otelcol-contrib_checksums.txt
+	// https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.135.0/opentelemetry-collector-releases_otelcol-contrib_windows_checksums.txt
+	agentHashes := map[string]string{
+		"linux-amd64":   "43132748eb0effb56b9d508ca789149684bf7ab6ade5d65cd0b22c4d265a30c0",
+		"linux-arm64":   "f1f65f915e73c0b95e25d42c9b2ba2cf57fb01be37c3e266505ee78000686570",
+		"darwin-arm64":  "a6c6b21b85d469b7fcbade017b3e8d39cd88580f3ed5c972542a223771b2f485",
+		"darwin-amd64":  "d5db819e4c2065ca94cb49e34a468ae622114555e1859aa1a077ad155fddf1ff",
+		"windows-amd64": "1f62ac108461aa381a8af298115f59c7e6400f3501f9ce359268641c01f44d35",
+	}
+
+	// Determine values dependent on the OS and architecture
+	hash, ok := agentHashes[fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)]
+	if !ok {
+		t.Skipf("Agent package hashes only available for [linux-amd64, linux-arm64, darwin-arm64, darwin-amd64, windows-amd64] and not available for this OS and architecture: %s-%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	agentFileName := fmt.Sprintf("otelcontribcol_%s_%s%s", runtime.GOOS, runtime.GOARCH, ext)
+
+	// Setup for agent package message
+	agentVersion := "0.135.0"
+	agentHash, err := hex.DecodeString(hash)
+	require.NoError(t, err)
+	agentName := fmt.Sprintf("otelcol-contrib_0.135.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
+	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.135.0/%s", agentName)
+	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.135.0/%s.sig", agentName)
+	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.135.0/%s.pem", agentName)
+	cert := getURLContents(t, agentCertURL)
+	sig := getURLContents(t, agentSigURL)
+	signatureField := bytes.Join([][]byte{cert, sig}, []byte(" "))
+
+	t.Run("successful upgrade", func(t *testing.T) {
+		// Upgrading will overwrite the agent binary
+		// Use a temp dir and copy binary to a new path to not affect other tests
+		tmpDir := t.TempDir()
+		storageDir := filepath.Join(tmpDir, "storage")
+		agentFilePath := filepath.Join("..", "..", "bin", agentFileName)
+		agentFileCopyPath := filepath.Join(tmpDir, agentFileName)
+		copyFile(t, agentFilePath, agentFileCopyPath)
+
+		// Setup for verifying supervisor response messages
+		versionFound := false
+		agentIDChan := make(chan []byte, 1)
+		packageStatusesChan := make(chan *protobufs.PackageStatuses, 1)
+		server := newOpAMPServer(
+			t,
+			defaultConnectingHandler,
+			types.ConnectionCallbacks{
+				OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+					select {
+					case agentIDChan <- message.InstanceUid:
+					default:
+					}
+
+					// This will verify the agent version attribute is set to the new version after the upgrade
+					if message.AgentDescription != nil {
+						if message.AgentDescription.IdentifyingAttributes != nil {
+							for _, attr := range message.AgentDescription.IdentifyingAttributes {
+								if attr.Key == string(semconv.ServiceVersionKey) {
+									if attr.Value.GetStringValue() == agentVersion {
+										versionFound = true
+									}
+								}
+							}
+						}
+					}
+
+					if message.PackageStatuses != nil {
+						select {
+						case packageStatusesChan <- message.PackageStatuses:
+						default:
+						}
+					}
+
+					return &protobufs.ServerToAgent{}
+				},
+			},
+		)
+
+		// Start the supervisor
+		s, _ := newSupervisor(t, "upgrade", map[string]string{
+			"url":         server.addr,
+			"storage_dir": storageDir,
+			"agent_path":  agentFileCopyPath,
+		})
+		require.NoError(t, s.Start(t.Context()))
+		defer s.Shutdown()
+
+		// Wait for the supervisor to connect
+		waitForSupervisorConnection(server.supervisorConnected, true)
+		t.Logf("Supervisor connected")
+
+		// Retrieve the ID for use in future messages
+		agentID := <-agentIDChan
+
+		// Verify initial package status
+		// This will be empty because there hasn't been any packages processed yet
+		// https://github.com/open-telemetry/opamp-go/blob/main/client/internal/clientcommon.go#L149-L167
+		ps := <-packageStatusesChan
+		require.Equal(t, &protobufs.PackageStatuses{}, ps)
+
+		// Send the agent package message to trigger supervisor upgrading the collector
+		server.sendToSupervisor(&protobufs.ServerToAgent{
+			InstanceUid: agentID,
+			PackagesAvailable: &protobufs.PackagesAvailable{
+				Packages: map[string]*protobufs.PackageAvailable{
+					"": {
+						Type:    protobufs.PackageType_PackageType_TopLevel,
+						Version: "v" + agentVersion,
+						Hash:    []byte{0x01, 0x02},
+						File: &protobufs.DownloadableFile{
+							DownloadUrl: agentURL,
+							ContentHash: agentHash,
+							Signature:   signatureField,
+						},
+					},
+				},
+				AllPackagesHash: []byte{0x03, 0x04},
+			},
+		})
+		t.Logf("Sent PackagesAvailable message to supervisor")
+
+		// Wait for new package statuses and verify we have the first "Installing" status report
+		ps = <-packageStatusesChan
+		require.Equal(t, &protobufs.PackageStatuses{
+			Packages: map[string]*protobufs.PackageStatus{
+				"": {
+					Name:                 "",
+					AgentHasVersion:      "",
+					AgentHasHash:         nil,
+					ServerOfferedVersion: "v" + agentVersion,
+					ServerOfferedHash:    []byte{0x01, 0x02},
+					Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
+				},
+			},
+			ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+		}, ps)
+		t.Logf("Received package_installing status from supervisor")
+
+		// Handle and verify the various "Downloading" status reports we'll get as the supervisor downloads the agent package
+		for {
+			ps = <-packageStatusesChan
+			// basic checks while downloading the package
+			if ps.Packages[""].Status == protobufs.PackageStatusEnum_PackageStatusEnum_Downloading {
+				require.Equal(t, []byte{0x03, 0x04}, ps.ServerProvidedAllPackagesHash)
+				require.Equal(t, "v"+agentVersion, ps.Packages[""].ServerOfferedVersion)
+				continue
+			}
+			break
+		}
+
+		// Verify the final "Installed" status report
+		require.Equal(t, &protobufs.PackageStatuses{
+			Packages: map[string]*protobufs.PackageStatus{
+				"": {
+					Name:                 "",
+					AgentHasVersion:      "v" + agentVersion,
+					AgentHasHash:         []byte{0x01, 0x02},
+					ServerOfferedVersion: "v" + agentVersion,
+					ServerOfferedHash:    []byte{0x01, 0x02},
+					Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installed,
+					DownloadDetails:      ps.Packages[""].DownloadDetails, // Don't need to verify this, set this to pass the check
+				},
+			},
+			ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+		}, ps)
+		t.Logf("Received package_installed status from supervisor")
+
+		// Verify the agent description containing the new version was found
+		require.Eventually(t, func() bool {
+			return versionFound
+		}, 5*time.Second, 250*time.Millisecond, "Agent description after upgrade did not contain the agent version.")
+	})
+
+	t.Run("failed upgrade w/ rollback", func(t *testing.T) {
+		// Upgrading will overwrite the agent binary
+		// Use a temp dir and copy binary to a new path to not affect other tests
+		tmpDir := t.TempDir()
+		storageDir := filepath.Join(tmpDir, "storage")
+		agentFilePath := filepath.Join("..", "..", "bin", agentFileName)
+		agentFileCopyPath := filepath.Join(tmpDir, agentFileName)
+		copyFile(t, agentFilePath, agentFileCopyPath)
+
+		// Get the binary version from the Collector binary
+		// using the `components` command that prints a YAML-encoded
+		// map of information about the Collector build.
+		componentsInfo, err := exec.Command(agentFileCopyPath, "components").Output()
+		require.NoError(t, err)
+		k := koanf.New("::")
+		err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+		require.NoError(t, err)
+		buildinfo := k.StringMap("buildinfo")
+		buildVersion := buildinfo["version"]
+
+		// Setup for verifying supervisor response messages
+		versionFound := false
+		agentIDChan := make(chan []byte, 1)
+		packageStatusesChan := make(chan *protobufs.PackageStatuses, 1)
+		agentDescriptionVersion := atomic.Value{}
+		server := newOpAMPServer(
+			t,
+			defaultConnectingHandler,
+			types.ConnectionCallbacks{
+				OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+					select {
+					case agentIDChan <- message.InstanceUid:
+					default:
+					}
+
+					// This will verify the agent version attribute is set to the new version after the upgrade
+					if message.AgentDescription != nil {
+						if message.AgentDescription.IdentifyingAttributes != nil {
+							for _, attr := range message.AgentDescription.IdentifyingAttributes {
+								if attr.Key == string(semconv.ServiceVersionKey) {
+									if attr.Value.GetStringValue() == agentVersion {
+										versionFound = true
+									}
+									agentDescriptionVersion.Store(attr.Value.GetStringValue())
+								}
+							}
+						}
+					}
+
+					if message.PackageStatuses != nil {
+						select {
+						case packageStatusesChan <- message.PackageStatuses:
+						default:
+						}
+					}
+
+					return &protobufs.ServerToAgent{}
+				},
+			},
+		)
+		defer server.shutdown()
+
+		// Start the supervisor
+		s, _ := newSupervisor(t, "upgrade_fail", map[string]string{
+			"url":         server.addr,
+			"storage_dir": storageDir,
+			"agent_path":  agentFileCopyPath,
+		})
+		require.NoError(t, s.Start(t.Context()))
+		defer s.Shutdown()
+
+		// Wait for the supervisor to connect
+		waitForSupervisorConnection(server.supervisorConnected, true)
+		t.Logf("Supervisor connected")
+
+		// Retrieve the ID for use in future messages
+		agentID := <-agentIDChan
+
+		// Verify initial package status
+		// This will be empty because there hasn't been any packages processed yet
+		// https://github.com/open-telemetry/opamp-go/blob/main/client/internal/clientcommon.go#L149-L167
+		ps := <-packageStatusesChan
+		require.Equal(t, &protobufs.PackageStatuses{}, ps)
+
+		// Send the agent package message to trigger supervisor upgrading the collector
+		server.sendToSupervisor(&protobufs.ServerToAgent{
+			InstanceUid: agentID,
+			PackagesAvailable: &protobufs.PackagesAvailable{
+				Packages: map[string]*protobufs.PackageAvailable{
+					"": {
+						Type:    protobufs.PackageType_PackageType_TopLevel,
+						Version: "v" + agentVersion,
+						Hash:    []byte{0x01, 0x02},
+						File: &protobufs.DownloadableFile{
+							DownloadUrl: agentURL,
+							ContentHash: agentHash,
+							Signature:   signatureField,
+						},
+					},
+				},
+				AllPackagesHash: []byte{0x03, 0x04},
+			},
+		})
+		t.Logf("Sent PackagesAvailable message to supervisor")
+
+		// Wait for new package statuses and verify we have the first "Installing" status report
+		ps = <-packageStatusesChan
+		require.Equal(t, &protobufs.PackageStatuses{
+			Packages: map[string]*protobufs.PackageStatus{
+				"": {
+					Name:                 "",
+					AgentHasVersion:      "",
+					AgentHasHash:         nil,
+					ServerOfferedVersion: "v" + agentVersion,
+					ServerOfferedHash:    []byte{0x01, 0x02},
+					Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
+				},
+			},
+			ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+		}, ps)
+		t.Logf("Received package_installing status from supervisor")
+
+		// Handle and verify the various "Downloading" status reports we'll get as the supervisor downloads the agent package
+		for {
+			ps = <-packageStatusesChan
+			// basic checks while downloading the package
+			if ps.Packages[""].Status == protobufs.PackageStatusEnum_PackageStatusEnum_Downloading {
+				require.Equal(t, []byte{0x03, 0x04}, ps.ServerProvidedAllPackagesHash)
+				require.Equal(t, "v"+agentVersion, ps.Packages[""].ServerOfferedVersion)
+				continue
+			}
+			break
+		}
+
+		// Verify a failed install status
+		require.Equal(t, &protobufs.PackageStatuses{
+			Packages: map[string]*protobufs.PackageStatus{
+				"": {
+					Name:                 "",
+					AgentHasVersion:      "",
+					AgentHasHash:         nil,
+					ServerOfferedVersion: "v" + agentVersion,
+					ServerOfferedHash:    []byte{0x01, 0x02},
+					Status:               protobufs.PackageStatusEnum_PackageStatusEnum_InstallFailed,
+					ErrorMessage:         "failed to install/update the package  downloaded from https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.135.0/otelcol-contrib_0.135.0_darwin_arm64.tar.gz: start updated agent binary: agent process did not start successfully after 7s",
+					DownloadDetails:      ps.Packages[""].DownloadDetails, // Don't need to verify this, set this to pass the check
+				},
+			},
+			ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+		}, ps)
+		t.Logf("Received package_install_failed status from supervisor")
+
+		// Verify the agent description containing the new version was never seen
+		require.False(t, versionFound, "Agent description contained the new version after a failed upgrade.")
+		// Verify a rollback to the original version occurred
+		require.Equal(t, buildVersion, agentDescriptionVersion.Load(), "Last seen agent description version did not match the build version after a failed upgrade.")
+
+		// Verify the collector is running by checking the healthcheck endpoint
+		require.Eventually(t, func() bool {
+			resp, err := http.DefaultClient.Get("http://localhost:13133")
+			if err != nil {
+				t.Logf("Failed healthcheck: %s", err)
+				return false
+			}
+			require.NoError(t, resp.Body.Close())
+			if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+				t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+				return false
+			}
+			return true
+		}, 3*time.Second, 100*time.Millisecond, "Backup collector was not running after failed upgrade.")
+	})
+}
+
+// findRandomPort finds a random port on the host that is not in use.
+func findRandomPort() (int, error) {
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	port := l.Addr().(*net.TCPAddr).Port
+
+	err = l.Close()
+	if err != nil {
+		return 0, err
+	}
+
+	return port, nil
+}
+
 // isHeartbeatMessage returns true if all fields of the message are nil.
 func isHeartbeatMessage(message *protobufs.AgentToServer) bool {
 	empty := true
@@ -2593,4 +2949,34 @@ func isHeartbeatMessage(message *protobufs.AgentToServer) bool {
 	empty = empty && message.Flags == 0
 
 	return empty
+}
+
+// getURLContents retrieves the contents of a file from a given URL.
+func getURLContents(t *testing.T, url string) []byte {
+	// #nosec G107 -- The URL is not user-controlled
+	r, err := http.Get(url)
+	require.NoError(t, err)
+	defer r.Body.Close()
+
+	by, err := io.ReadAll(r.Body)
+	require.NoError(t, err)
+
+	return by
+}
+
+// copyFile copies a file from one path to another.
+func copyFile(t *testing.T, from, to string) {
+	fromFile, err := os.Open(from)
+	require.NoError(t, err)
+	defer fromFile.Close()
+
+	fi, err := fromFile.Stat()
+	require.NoError(t, err)
+
+	toFile, err := os.OpenFile(to, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fi.Mode())
+	require.NoError(t, err)
+	defer toFile.Close()
+
+	_, err = io.Copy(toFile, fromFile)
+	require.NoError(t, err)
 }
