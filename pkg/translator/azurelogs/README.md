@@ -70,7 +70,7 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | `appid`                                                              | `azure.identity.application.id`          |
 | `amr`                                                                | `azure.identity.auth.methods.references` |
 | `http://schemas.microsoft.com/identity/claims/objectidentifier`      | `azure.identity.identifier.object`       |
-| `name`                                                               | `azure.identity.identifier.name`         |
+| `name`                                                               | `user.name`         |
 | `http://schemas.microsoft.com/identity/claims/identityprovider`      | `azure.identity.provider`                |
 
 ## Resource Logs
