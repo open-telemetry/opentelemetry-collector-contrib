@@ -253,7 +253,7 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 	ts1 := getTS(metrics1)
 	e1 := []metricExpectation{
 		{
-			"foo",
+			"foo_info",
 			pmetric.MetricTypeSum,
 			"",
 			[]dataPointExpectation{
