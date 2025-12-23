@@ -117,6 +117,7 @@ const (
 	attributeAzureAdministrativeHierarchy = "azure.administrative.hierarchy"
 
 	// Alert specific attributes
+	attributeAzureAlertWebhookURI      = "azure.alert.webhook.uri"
 	attributeAzureAlertRuleURI         = "azure.alert.rule.uri"
 	attributeAzureAlertRuleName        = "azure.alert.rule.name"
 	attributeAzureAlertRuleDescription = "azure.alert.rule.description"
@@ -731,6 +732,7 @@ func addAdministrativeLogProperties(data []byte, record plog.LogRecord) error {
 // alertLogProperties represents the properties field of an Alert activity log.
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#alert-category
 type alertLogProperties struct {
+	WebHookURI          string `json:"webHookUri"`
 	RuleURI             string `json:"RuleUri"`
 	RuleName            string `json:"RuleName"`
 	RuleDescription     string `json:"RuleDescription"`
@@ -751,6 +753,7 @@ func addAlertLogProperties(data []byte, record plog.LogRecord) error {
 		return fmt.Errorf("failed to parse Alert properties: %w", err)
 	}
 
+	putStr(attributeAzureAlertWebhookURI, properties.WebHookURI, record)
 	putStr(attributeAzureAlertRuleURI, properties.RuleURI, record)
 	putStr(attributeAzureAlertRuleName, properties.RuleName, record)
 	putStr(attributeAzureAlertRuleDescription, properties.RuleDescription, record)

@@ -650,6 +650,10 @@ func TestUnmarshalLogs_Alert(t *testing.T) {
 			logFilename:      "valid_1.json",
 			expectedFilename: "valid_1_expected.yaml",
 		},
+		"valid_2": {
+			logFilename:      "valid_2.json",
+			expectedFilename: "valid_2_expected.yaml",
+		},
 	}
 
 	u := &ResourceLogsUnmarshaler{

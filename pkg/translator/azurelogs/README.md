@@ -166,7 +166,7 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 
 | Original Field (JSON)               | Log Record Attribute                  |
 | ----------------------------------- | ------------------------------------- |
-| `properties.webHookUri`             | `azure.alert.rule.uri`                |
+| `properties.webHookUri`             | `azure.alert.webhook.uri`             |
 | `properties.ruleUri`                | `azure.alert.rule.uri`                |
 | `properties.ruleName`               | `azure.alert.rule.name`               |
 | `properties.description`            | `azure.alert.rule.description`        |
