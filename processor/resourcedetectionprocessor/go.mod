@@ -13,7 +13,7 @@ require (
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/hetznercloud/hcloud-go/v2 v2.32.0
+	github.com/hetznercloud/hcloud-go/v2 v2.33.0
 	github.com/linode/go-metadata v0.2.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.142.0
