@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"regexp"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -160,19 +159,9 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		}
 	}()
 
-	var startTimeMetricRegex *regexp.Regexp
-	if r.cfg.StartTimeMetricRegex != "" {
-		startTimeMetricRegex, err = regexp.Compile(r.cfg.StartTimeMetricRegex)
-		if err != nil {
-			return err
-		}
-	}
-
 	store, err := internal.NewAppendable(
 		r.consumer,
 		r.settings,
-		r.cfg.UseStartTimeMetric,
-		startTimeMetricRegex,
 		!r.cfg.ignoreMetadata,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
