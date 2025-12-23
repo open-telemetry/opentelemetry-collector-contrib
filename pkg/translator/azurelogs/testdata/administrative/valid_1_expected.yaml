@@ -97,7 +97,7 @@ resourceLogs:
               - key: azure.identity.identifier.object
                 value:
                   stringValue: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
-              - key: azure.identity.identifier.name
+              - key: user.name
                 value:
                   stringValue: 8lEWzt6Ed5a3RZMV7p9x6FI31xksIsZsmh09g0Lbdq0
               - key: user.email

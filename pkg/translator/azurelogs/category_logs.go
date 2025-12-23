@@ -91,7 +91,7 @@ const (
 	attributeIdentityClaimsApplicationID         = "azure.identity.application.id"
 	attributeIdentityClaimsAuthMethodsReferences = "azure.identity.auth.methods.references"
 	attributeIdentityClaimsIdentifierObject      = "azure.identity.identifier.object"
-	attributeIdentityClaimsIdentifierName        = "azure.identity.identifier.name"
+	attributeIdentityClaimsIdentifierName        = "user.name"
 	attributeIdentityClaimsProvider              = "azure.identity.provider"
 
 	// azure front door WAF attributes
