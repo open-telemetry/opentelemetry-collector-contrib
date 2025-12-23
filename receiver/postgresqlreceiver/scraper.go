@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
@@ -210,23 +211,30 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 		return
 	}
 	for _, atts := range attributes {
-		p.lb.RecordDbServerQuerySampleEvent(context.Background(),
+		// Use a background context so query-sample logs are not automatically linked to the scrape context.
+		logCtx := context.Background()
+		if ctxFromQuery, ok := atts[querySampleTraceContextKey]; ok {
+			if ctx, ok := ctxFromQuery.(context.Context); ok {
+				logCtx = ctx
+			}
+		}
+		p.lb.RecordDbServerQuerySampleEvent(logCtx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			atts["db.namespace"].(string),
-			atts["db.query.text"].(string),
-			atts["user.name"].(string),
-			atts[dbAttributePrefix+"state"].(string),
-			atts[dbAttributePrefix+"pid"].(int64),
-			atts[dbAttributePrefix+"application_name"].(string),
-			atts["network.peer.address"].(string),
-			atts["network.peer.port"].(int64),
-			atts[dbAttributePrefix+"client_hostname"].(string),
-			atts[dbAttributePrefix+"query_start"].(string),
-			atts[dbAttributePrefix+"wait_event"].(string),
-			atts[dbAttributePrefix+"wait_event_type"].(string),
-			atts[dbAttributePrefix+"query_id"].(string),
-			atts["duration"].(float64),
+			atts[string(semconv.DBNamespaceKey)].(string),
+			atts[string(semconv.DBQueryTextKey)].(string),
+			atts[string(semconv.UserNameKey)].(string),
+			atts[dbAttributePrefix+querySampleColumnState].(string),
+			atts[dbAttributePrefix+querySampleColumnPID].(int64),
+			atts[dbAttributePrefix+querySampleColumnApplicationName].(string),
+			atts[string(semconv.NetworkPeerAddressKey)].(string),
+			atts[string(semconv.NetworkPeerPortKey)].(int64),
+			atts[dbAttributePrefix+querySampleColumnClientHostname].(string),
+			atts[dbAttributePrefix+querySampleColumnQueryStart].(string),
+			atts[dbAttributePrefix+querySampleColumnWaitEvent].(string),
+			atts[dbAttributePrefix+querySampleColumnWaitEventType].(string),
+			atts[dbAttributePrefix+querySampleColumnQueryID].(string),
+			atts[postgresqlTotalExecTimeAttributeName].(float64),
 		)
 	}
 }
@@ -323,11 +331,11 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	count := 0
 	for pq.Len() > 0 && count < int(topNQuery) {
 		item := heap.Pop(&pq).(*priorityqueue.QueueItem[map[string]any, float64])
-		query := item.Value[QueryTextAttributeName].(string)
+		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
-			database := item.Value[DatabaseAttributeName].(string)
+			database := item.Value[string(semconv.DBNamespaceKey)].(string)
 			dbClient, err := clientFactory.getClient(database)
 			if err == nil {
 				plan, err = dbClient.explainQuery(query, queryID, logger)
@@ -349,7 +357,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			context.Background(),
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			item.Value[DatabaseAttributeName].(string),
+			item.Value[string(semconv.DBNamespaceKey)].(string),
 			query,
 			item.Value[dbAttributePrefix+callsColumnName].(int64),
 			item.Value[dbAttributePrefix+rowsColumnName].(int64),
