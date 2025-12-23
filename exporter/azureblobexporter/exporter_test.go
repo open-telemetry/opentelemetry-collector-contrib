@@ -177,8 +177,10 @@ func TestGenerateBlobNameTimezoneSpecificLocation(t *testing.T) {
 			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 			LogsFormat:     "2006/01/02/logs_15_04_05.json",
 			TracesFormat:   "2006/01/02/traces_15_04_05.json",
+			SerialNumEnabled: true,
 			SerialNumRange: 10000,
 			Params:         map[string]string{},
+			TimeParserEnabled: true,
 			Timezone:       tzName,
 		},
 	}
