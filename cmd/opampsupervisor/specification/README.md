@@ -219,9 +219,55 @@ telemetry:
             otlp:
               protocol: http/protobuf
               endpoint: https://backend:4318
-  # Resource attributes.
+  # Resource configuration.
+  # Supports static attributes, attributes lists, and automatic detection
+  # from cloud providers and host environments.
   resource:
-    service.namespace: otel-demo
+    # Static resource attributes with explicit types
+    attributes:
+      - name: deployment.environment
+        value: production
+        type: string
+      - name: service.namespace
+        value: otel-demo
+        type: string
+
+    # Alternative: legacy inline attributes (string values only)
+    # service.namespace: otel-demo
+    # deployment.environment: production
+
+    # Alternative: comma-separated attributes list
+    # attributes_list: "service.namespace=otel-demo,deployment.environment=production"
+
+    # Optional custom schema URL
+    # schema_url: https://opentelemetry.io/schemas/1.24.0
+
+    # Resource detection from cloud providers and host environment
+    detection:
+      # List of detectors to run
+      # Available detectors: env, host, aws, aws/ec2, aws/ecs, aws/eks, aws/lambda, gcp, azure
+      detectors:
+        - env    # Reads OTEL_RESOURCE_ATTRIBUTES environment variable
+        - host   # Detects host.name, os.type, os.description, etc.
+        - aws    # Detects all AWS environments (EC2, ECS, EKS, Lambda)
+        # Or use specific AWS detectors:
+        # - aws/ec2
+        # - aws/ecs
+        # - aws/eks
+        # - aws/lambda
+        # - gcp    # Detects GCP environment attributes
+        # - azure  # Detects Azure VM attributes
+
+      # Optional: filter detected attributes using wildcard patterns
+      attributes:
+        # Include only matching attributes
+        included:
+          - "host.*"
+          - "cloud.*"
+          - "service.*"
+        # Exclude specific attributes (takes precedence over included)
+        excluded:
+          - "host.id"  # Example: exclude for privacy
 
 ```
 

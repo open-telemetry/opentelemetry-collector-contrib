@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
+
+	supervisorresource "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/resource"
 )
 
 // Supervisor is the Supervisor config file format.
@@ -295,7 +297,11 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource map[string]*string `mapstructure:"resource"`
+	// Resource follows the declarative configuration schema (resource.yaml). Static attributes, OTEL_RESOURCE_ATTRIBUTES-style
+	// lists, and detection settings (including detection/development) can all be configured under this block. Besides the
+	// schema-defined detectors (container, host, process, service) the supervisor also exposes Go SDK detectors such as env,
+	// host, and cloud provider detectors (aws/*, gcp, azure) for parity with the SDK surface.
+	Resource supervisorresource.Config `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -385,6 +391,11 @@ func DefaultSupervisor() Supervisor {
 				Level:            zapcore.InfoLevel,
 				OutputPaths:      []string{"stdout"},
 				ErrorOutputPaths: []string{"stderr"},
+			},
+			Resource: supervisorresource.Config{
+				Detection: &supervisorresource.DetectionConfig{
+					Detectors: []any{"env"},
+				},
 			},
 		},
 	}
