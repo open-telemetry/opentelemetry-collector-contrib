@@ -1,5 +1,7 @@
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.1 h1:Oz9h4pxhFIeoT8tD8sTuUOaF3eCRcXxgXey32wG9NzY=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.1/go.mod h1:09fwpmPZ058CfhFUmSwMd/7OADA/dCP/L0RH3tXsNFY=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.2 h1:ouzvjuboTmglLrRvZIA9dZnYJ29C9MTfZ6GDUrJPwqg=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.73.2/go.mod h1:09fwpmPZ058CfhFUmSwMd/7OADA/dCP/L0RH3tXsNFY=
 github.com/DataDog/datadog-go/v5 v5.8.1 h1:+GOES5W9zpKlhwHptZVW2C0NLVf7ilr7pHkDcbNvpIc=
 github.com/DataDog/datadog-go/v5 v5.8.1/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.1.9 h1:0R8FnSHGXRtZo70UxgCneL7Yu4PurswUAMb5N3kOIrI=
