@@ -8,8 +8,8 @@ import (
 	"fmt"
 )
 
-// BoolExpr represents a condition in OTTL
-type BoolExpr[K any] interface {
+// boolExpr represents a condition in OTTL
+type boolExpr[K any] interface {
 	Eval(ctx context.Context, tCtx K) (bool, error)
 
 	unexported()
@@ -17,15 +17,15 @@ type BoolExpr[K any] interface {
 
 type literalBoolExpr[K any] = literalExpr[K, bool]
 
-func newAlwaysTrue[K any]() BoolExpr[K] {
+func newAlwaysTrue[K any]() boolExpr[K] {
 	return newLiteralExpr[K](true)
 }
 
-func newAlwaysFalse[K any]() BoolExpr[K] {
+func newAlwaysFalse[K any]() boolExpr[K] {
 	return newLiteralExpr[K](false)
 }
 
-func newNot[K any](expr BoolExpr[K]) BoolExpr[K] {
+func newNot[K any](expr boolExpr[K]) boolExpr[K] {
 	if f, ok := expr.(*literalBoolExpr[K]); ok {
 		return newLiteralExpr[K](!f.getValue())
 	}
@@ -34,7 +34,7 @@ func newNot[K any](expr BoolExpr[K]) BoolExpr[K] {
 }
 
 type notBoolExpr[K any] struct {
-	expr BoolExpr[K]
+	expr boolExpr[K]
 }
 
 func (*notBoolExpr[K]) unexported() {}
@@ -45,10 +45,10 @@ func (e *notBoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return !val, err
 }
 
-// newAndExprs a BoolExpr that returns a short-circuited result of ANDing
+// newAndExprs a boolExpr that returns a short-circuited result of ANDing
 // boolExpressionEvaluator funcs
-func newAndExprs[K any](exprs []BoolExpr[K]) BoolExpr[K] {
-	newExprs := make([]BoolExpr[K], 0, len(exprs))
+func newAndExprs[K any](exprs []boolExpr[K]) boolExpr[K] {
+	newExprs := make([]boolExpr[K], 0, len(exprs))
 	for i := range exprs {
 		// If any literal evaluates to false, we can simply return false.
 		// If a literal evaluates to true, it won't affect the expression's outcome, so we can skip evaluating it again.
@@ -75,7 +75,7 @@ func newAndExprs[K any](exprs []BoolExpr[K]) BoolExpr[K] {
 }
 
 type andExprs[K any] struct {
-	exprs []BoolExpr[K]
+	exprs []boolExpr[K]
 }
 
 func (*andExprs[K]) unexported() {}
@@ -94,10 +94,10 @@ func (e *andExprs[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return true, nil
 }
 
-// newOrExprs a BoolExpr that returns a short-circuited result of ORing
+// newOrExprs a boolExpr that returns a short-circuited result of ORing
 // boolExpressionEvaluator funcs
-func newOrExprs[K any](exprs []BoolExpr[K]) BoolExpr[K] {
-	newExprs := make([]BoolExpr[K], 0, len(exprs))
+func newOrExprs[K any](exprs []boolExpr[K]) boolExpr[K] {
+	newExprs := make([]boolExpr[K], 0, len(exprs))
 	// If any literal evaluates to true, we can simply return true.
 	// If a literal evaluates to false, it won't affect the expression's outcome, so we can skip evaluating it again.
 	for i := range exprs {
@@ -124,7 +124,7 @@ func newOrExprs[K any](exprs []BoolExpr[K]) BoolExpr[K] {
 }
 
 type orExprs[K any] struct {
-	exprs []BoolExpr[K]
+	exprs []boolExpr[K]
 }
 
 func (*orExprs[K]) unexported() {}
@@ -143,7 +143,7 @@ func (e *orExprs[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return false, nil
 }
 
-func (p *Parser[K]) newComparisonExpr(comparison *comparison) (BoolExpr[K], error) {
+func (p *Parser[K]) newComparisonExpr(comparison *comparison) (boolExpr[K], error) {
 	if comparison == nil {
 		return newAlwaysTrue[K](), nil
 	}
@@ -187,7 +187,7 @@ func (e *comparisonExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return e.comparator.compare(a, b, e.op), nil
 }
 
-func (p *Parser[K]) newBoolExpr(expr *booleanExpression) (BoolExpr[K], error) {
+func (p *Parser[K]) newBoolExpr(expr *booleanExpression) (boolExpr[K], error) {
 	if expr == nil {
 		return newAlwaysTrue[K](), nil
 	}
@@ -195,7 +195,7 @@ func (p *Parser[K]) newBoolExpr(expr *booleanExpression) (BoolExpr[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	funcs := []BoolExpr[K]{f}
+	funcs := []boolExpr[K]{f}
 	for _, rhs := range expr.Right {
 		f, err = p.newBooleanTermEvaluator(rhs.Term)
 		if err != nil {
@@ -207,7 +207,7 @@ func (p *Parser[K]) newBoolExpr(expr *booleanExpression) (BoolExpr[K], error) {
 	return newOrExprs(funcs), nil
 }
 
-func (p *Parser[K]) newBooleanTermEvaluator(term *term) (BoolExpr[K], error) {
+func (p *Parser[K]) newBooleanTermEvaluator(term *term) (boolExpr[K], error) {
 	if term == nil {
 		return newAlwaysTrue[K](), nil
 	}
@@ -215,7 +215,7 @@ func (p *Parser[K]) newBooleanTermEvaluator(term *term) (BoolExpr[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	funcs := []BoolExpr[K]{f}
+	funcs := []boolExpr[K]{f}
 	for _, rhs := range term.Right {
 		f, err = p.newBooleanValueEvaluator(rhs.Value)
 		if err != nil {
@@ -227,12 +227,12 @@ func (p *Parser[K]) newBooleanTermEvaluator(term *term) (BoolExpr[K], error) {
 	return newAndExprs(funcs), nil
 }
 
-func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpr[K], error) {
+func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (boolExpr[K], error) {
 	if value == nil {
 		return newAlwaysTrue[K](), nil
 	}
 
-	var boolExpr BoolExpr[K]
+	var boolExpr boolExpr[K]
 	var err error
 	switch {
 	case value.Comparison != nil:
@@ -271,7 +271,7 @@ func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpr[K], 
 	return boolExpr, nil
 }
 
-func (p *Parser[K]) newConverterEvaluator(c converter) (BoolExpr[K], error) {
+func (p *Parser[K]) newConverterEvaluator(c converter) (boolExpr[K], error) {
 	getter, err := p.newGetterFromConverter(c)
 	if err != nil {
 		return nil, err
@@ -280,7 +280,7 @@ func (p *Parser[K]) newConverterEvaluator(c converter) (BoolExpr[K], error) {
 	return newConverterExpr(getter)
 }
 
-func newConverterExpr[K any](getter Getter[K]) (BoolExpr[K], error) {
+func newConverterExpr[K any](getter Getter[K]) (boolExpr[K], error) {
 	if val, ok := GetLiteralValue(getter); ok {
 		boolResult, okResult := val.(bool)
 		if !okResult {

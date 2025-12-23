@@ -7,7 +7,7 @@ import (
 	"context"
 )
 
-var _ BoolExpr[any] = (*literalExpr[any, bool])(nil)
+var _ boolExpr[any] = (*literalExpr[any, bool])(nil)
 
 func newLiteralExpr[K, V any](val V) *literalExpr[K, V] {
 	return &literalExpr[K, V]{val: val}
