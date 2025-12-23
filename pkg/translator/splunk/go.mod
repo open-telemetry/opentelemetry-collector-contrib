@@ -4,8 +4,8 @@ go 1.24.0
 
 require (
 	github.com/goccy/go-json v0.10.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.142.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.48.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/otel v1.39.0
