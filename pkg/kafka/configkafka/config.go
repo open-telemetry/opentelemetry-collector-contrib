@@ -390,23 +390,35 @@ type SASLConfig struct {
 	Username string `mapstructure:"username"`
 	// Password to be used on authentication
 	Password string `mapstructure:"password"`
-	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OIDCFILE,
+	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER,
 	// OIDC_STRING, SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
 	// SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
-	// OIDCFile holds configuration for OIDC with file-based secret
-	OIDCFILE OIDCFileConfig `mapstructure:"oidc_file"`
+	// OAUTHBEARER holds configuration for OIDC with file-based secret
+	OAUTHBEARER OAUTHBEARERConfig `mapstructure:"oauth_bearer"`
 }
 
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "AWS_MSK_IAM_OAUTHBEARER":
 		// TODO validate c.AWSMSK
-	case "OIDCFILE":
-		// TODO valid c.OIDCFile
+	case "OAUTHBEARER":
+		if c.OAUTHBEARER.ClientSecretFilePath == "" {
+			return errors.New("Oauth client secret file path is required")
+		}
+		if c.OAUTHBEARER.TokenURL == "" {
+			return errors.New("Oauth client token URL is required")
+		}
+		_, err := url.Parse(c.OAUTHBEARER.TokenURL)
+		if err != nil {
+			return fmt.Errorf("Oauth client token URL is not a valid URL: %v", err)
+		}
+		if len(c.OAUTHBEARER.Scopes) == 0 {
+			return errors.New("Oauth client requires at least one specified scope")
+		}
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
@@ -436,9 +448,9 @@ type AWSMSKConfig struct {
 	_ struct{}
 }
 
-// OIDCFileConfig defines the additional configuration fields
-// for the OIDCFILE mechanism
-type OIDCFileConfig struct {
+// OAUTHBEARERConfig defines the additional configuration fields
+// for the OAUTHBEARER mechanism
+type OAUTHBEARERConfig struct {
 	ClientSecretFilePath string           `mapstructure:"client_secret_file_path"`
 	TokenURL             string           `mapstructure:"token_url"`
 	Scopes               []string         `mapstructure:"scopes"`
@@ -446,6 +458,7 @@ type OIDCFileConfig struct {
 	EndPointParams       url.Values       `mapstructure:"endpoint_params"`
 	AuthStyle            oauth2.AuthStyle `mapstructure:"auth_style"`
 	ExpiryBuffer         int              `mapstructure:"expiry_buffer"`
+	_                    struct{}         // prevent unkeyed literal initialization
 }
 
 // KerberosConfig defines kerberos configuration.
