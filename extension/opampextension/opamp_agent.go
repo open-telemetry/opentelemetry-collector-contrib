@@ -478,7 +478,11 @@ func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAge
 	if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
 		if o.remoteRestartsEnabled && o.capabilities.AcceptsRestartCommand {
 			o.logger.Info("received remote config — sending SIGHUP to reload")
-			return syscall.Kill(os.Getpid(), syscall.SIGHUP)
+			collectorProcess, err := os.FindProcess(os.Getpid())
+			if err != nil {
+				return fmt.Errorf("finding current process from pid: %w", err)
+			}
+			return collectorProcess.Signal(syscall.SIGHUP)
 		}
 	}
 	return nil
