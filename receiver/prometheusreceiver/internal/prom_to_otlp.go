@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 var _ = featuregate.GlobalRegistry().MustRegister(

@@ -1,0 +1,106 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
+title: ComplexTypeFieldConfig
+type: object
+$defs:
+  Certificate:
+    properties:
+      password:
+        type: string
+        x-pointer: true
+      path:
+        type: string
+    type: object
+  Credentials:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  Endpoint:
+    properties:
+      headers:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  MetadataEntry:
+    properties:
+      attributes:
+        additionalProperties:
+          type: string
+        type: object
+      value:
+        type: string
+    type: object
+  RetryPolicy:
+    properties:
+      backoff_seconds:
+        items:
+          type: integer
+        type: array
+      max_attempts:
+        type: integer
+    type: object
+  TLSConfig:
+    properties:
+      certificates:
+        items:
+          $ref: '#/$defs/Certificate'
+        type: array
+      insecure:
+        type: boolean
+    type: object
+properties:
+  credentials:
+    $ref: '#/$defs/Credentials'
+  enabled:
+    type: boolean
+  endpoints:
+    items:
+      $ref: '#/$defs/Endpoint'
+    type: array
+  inline:
+    properties:
+      labels:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      options:
+        items:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+        type: array
+    type: object
+  metadata:
+    additionalProperties:
+      $ref: '#/$defs/MetadataEntry'
+    type: object
+  retry:
+    $ref: '#/$defs/RetryPolicy'
+  routes:
+    items:
+      additionalProperties:
+        items:
+          type: string
+        type: array
+      type: object
+    type: array
+  service_name:
+    type: string
+  tls:
+    $ref: '#/$defs/TLSConfig'
+    x-pointer: true

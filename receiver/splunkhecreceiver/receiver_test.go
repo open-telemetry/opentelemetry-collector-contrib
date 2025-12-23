@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
@@ -221,7 +222,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "one object in JSON array",
 			req: func() *http.Request {
-				messages := []*splunk.Event{splunkMsg}
+				messages := []*translator.Event{splunkMsg}
 
 				msgBytes, err := json.Marshal(messages)
 				require.NoError(t, err)
@@ -251,7 +252,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				splunkMetricMsg := buildSplunkHecMetricsMsg("metric", currentTime, 10, 2)
 				splunkMetricMsg2 := buildSplunkHecMetricsMsg("metric", currentTime, 13, 2)
 
-				messages := []*splunk.Event{splunkMsg, splunkMsg2, splunkMsg3, splunkMetricMsg, splunkMetricMsg2}
+				messages := []*translator.Event{splunkMsg, splunkMsg2, splunkMsg3, splunkMetricMsg, splunkMetricMsg2}
 
 				msgBytes, err := json.Marshal(messages)
 				require.NoError(t, err)
@@ -283,8 +284,8 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
 				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
 
-				messages1 := []*splunk.Event{splunkMsg, splunkMsg2}
-				messages2 := []*splunk.Event{splunkMsg3}
+				messages1 := []*translator.Event{splunkMsg, splunkMsg2}
+				messages2 := []*translator.Event{splunkMsg3}
 
 				msgBytes, err := json.Marshal(messages1)
 				require.NoError(t, err)
@@ -310,7 +311,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
 				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
 
-				messages := []*splunk.Event{splunkMsg, splunkMsg2}
+				messages := []*translator.Event{splunkMsg, splunkMsg2}
 
 				msgBytes, err := json.Marshal(messages)
 				require.NoError(t, err)
@@ -336,7 +337,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				splunkMsg2 := buildSplunkHecMsg(currentTime, 1)
 				splunkMsg3 := buildSplunkHecMsg(currentTime, 2)
 
-				messages := []*splunk.Event{splunkMsg, splunkMsg2}
+				messages := []*translator.Event{splunkMsg, splunkMsg2}
 
 				msgBytes, err := json.Marshal(messages)
 				require.NoError(t, err)
@@ -801,7 +802,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			exporterConfig.Endpoint = endServer.URL
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
-			var splunkhecMsg *splunk.Event
+			var splunkhecMsg *translator.Event
 			if tt.metric {
 				splunkhecMsg = buildSplunkHecMetricsMsg("metric", currentTime, 1.0, 3)
 			} else {
@@ -927,7 +928,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			done := make(chan bool)
 			go func() {
 				got := <-receivedSplunkLogs
-				var event splunk.Event
+				var event translator.Event
 				e := json.Unmarshal(got, &event)
 				assert.NoError(t, e)
 				if tt.index == "" {
@@ -1043,7 +1044,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			done := make(chan bool)
 			go func() {
 				got := <-receivedSplunkMetrics
-				var event splunk.Event
+				var event translator.Event
 				e := json.Unmarshal(got, &event)
 				assert.NoError(t, e)
 				if tt.index == "" {
@@ -1082,8 +1083,8 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 	}
 }
 
-func buildSplunkHecMetricsMsg(event any, time float64, value int64, dimensions uint) *splunk.Event {
-	ev := &splunk.Event{
+func buildSplunkHecMetricsMsg(event any, time float64, value int64, dimensions uint) *translator.Event {
+	ev := &translator.Event{
 		Time:  time,
 		Event: event,
 		Fields: map[string]any{
@@ -1097,8 +1098,8 @@ func buildSplunkHecMetricsMsg(event any, time float64, value int64, dimensions u
 	return ev
 }
 
-func buildSplunkHecMsg(time float64, dimensions uint) *splunk.Event {
-	ev := &splunk.Event{
+func buildSplunkHecMsg(time float64, dimensions uint) *translator.Event {
+	ev := &translator.Event{
 		Time:       time,
 		Event:      "foo",
 		Fields:     map[string]any{},
@@ -2045,7 +2046,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
-	config.HecToOtelAttrs = splunk.HecToOtelAttrs{
+	config.HecToOtelAttrs = translator.HecToOtelAttrs{
 		Source:     "com.source.foo",
 		SourceType: "com.sourcetype.foo",
 		Index:      "com.index.foo",

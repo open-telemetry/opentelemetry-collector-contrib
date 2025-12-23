@@ -1,0 +1,20 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
+title: MixedTagsConfig
+type: object
+properties:
+  GoFallbackField:
+    description: GoFallbackField has no tags and keeps the Go field name.
+    type: string
+  JSONOnlyFlag:
+    description: JSONOnlyFlag is only tagged with json.
+    type: boolean
+  legacy_endpoint:
+    description: LegacyEndpoint relies on mapstructure only.
+    type: string
+  map_only:
+    description: MapOnlyCounter demonstrates mapstructure tags with modifiers.
+    type: integer
+  primary:
+    description: PrimaryEndpoint uses both json and mapstructure tags.
+    type: string

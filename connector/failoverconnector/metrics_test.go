@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
@@ -139,7 +140,7 @@ func TestMetricsWithQueue(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 
 	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{

@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,9 +24,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
-
-// Time to wait before restarting, when the stream stopped
-const streamRecoveryBackoffPeriod = 250 * time.Millisecond
 
 type StreamHandler struct {
 	stream      pubsubpb.Subscriber_StreamingPullClient
@@ -46,7 +45,8 @@ type StreamHandler struct {
 	// time that acknowledge loop waits before acknowledging messages
 	ackBatchWait time.Duration
 
-	isRunning atomic.Bool
+	isRunning    atomic.Bool
+	retryAttempt int
 }
 
 // ack adds the ackID to the list of message to be acknowledged asynchronously
@@ -137,10 +137,13 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 			err := handler.initStream(ctx)
 			if err != nil {
 				handler.settings.Logger.Error("Failed to recovery stream.")
+				handler.retryAttempt++
+			} else {
+				handler.retryAttempt = 0
 			}
 		}
 		handler.settings.Logger.Debug("End of recovery loop, restarting.")
-		time.Sleep(streamRecoveryBackoffPeriod)
+		time.Sleep(exponentialBackoff(handler.retryAttempt))
 	}
 	handler.settings.Logger.Warn("Shutting down recovery loop.")
 	handler.handlerWaitGroup.Done()
@@ -256,4 +259,17 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 	cancel()
 	handler.settings.Logger.Debug("Response Stream loop ended.")
 	handler.streamWaitGroup.Done()
+}
+
+// exponentialBackoff will backoff exponentially with a maximum of 2 minutes
+func exponentialBackoff(retryAttempt int) time.Duration {
+	if retryAttempt < 1 {
+		return 0
+	}
+	maxDuration := 2 * time.Minute
+	backoffMs := 250.0 * math.Pow(2, float64(retryAttempt-1))
+	if backoffMs > float64(maxDuration.Milliseconds()) {
+		backoffMs = float64(maxDuration.Milliseconds())
+	}
+	return time.Duration(backoffMs*(0.7+rand.Float64()*0.3)) * time.Millisecond
 }

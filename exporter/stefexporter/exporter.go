@@ -88,7 +88,7 @@ func (s *stefExporter) Start(ctx context.Context, host component.Host) error {
 	s.connMan.Start()
 
 	// Wrap async implementation of sendMetricsAsync into a sync-callable API.
-	s.sync2Async = internal.NewSync2Async(s.set.Logger, s.cfg.QueueConfig.NumConsumers, s.sendMetricsAsync)
+	s.sync2Async = internal.NewSync2Async(s.set.Logger, s.cfg.QueueConfig.GetOrInsertDefault().NumConsumers, s.sendMetricsAsync)
 
 	// Begin connection attempt in a goroutine to avoid blocking Start().
 	go func() {

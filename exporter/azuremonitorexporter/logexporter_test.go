@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -177,9 +176,9 @@ func TestLogRecordToEnvelopeCloudTags(t *testing.T) {
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
 
 	resourceAttributes := resource.Attributes().AsRaw()
-	expectedCloudRole := resourceAttributes[string(conventions.ServiceNamespaceKey)].(string) + "." + resourceAttributes[string(conventions.ServiceNameKey)].(string)
+	expectedCloudRole := resourceAttributes["service.namespace"].(string) + "." + resourceAttributes["service.name"].(string)
 	require.Equal(t, expectedCloudRole, envelope.Tags[aiCloudRoleConvention])
-	expectedCloudRoleInstance := resourceAttributes[string(conventions.ServiceInstanceIDKey)]
+	expectedCloudRoleInstance := resourceAttributes["service.instance.id"]
 	require.Equal(t, expectedCloudRoleInstance, envelope.Tags[aiCloudRoleInstanceConvention])
 }
 
@@ -192,7 +191,7 @@ func TestLogRecordToEnvelopeApplicationTags(t *testing.T) {
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
 
 	resourceAttributes := resource.Attributes().AsRaw()
-	expectedAppVer := resourceAttributes[string(conventions.ServiceVersionKey)].(string)
+	expectedAppVer := resourceAttributes["service.version"].(string)
 	require.Equal(t, expectedAppVer, envelope.Tags[aiAppVersionConvention])
 }
 
@@ -207,11 +206,11 @@ func TestLogRecordToEnvelopeDeviceTags(t *testing.T) {
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
 
 	resourceAttributes := resource.Attributes().AsRaw()
-	expectedDeviceModel := resourceAttributes[string(conventions.DeviceManufacturerKey)].(string)
+	expectedDeviceModel := resourceAttributes["device.manufacturer"].(string)
 	require.Equal(t, expectedDeviceModel, envelope.Tags[aiDeviceModelConvention])
-	expectedDeviceType := resourceAttributes[string(conventions.DeviceModelIdentifierKey)].(string)
+	expectedDeviceType := resourceAttributes["device.model.identifier"].(string)
 	require.Equal(t, expectedDeviceType, envelope.Tags[aiDeviceTypeConvention])
-	expectedOSVersion := resourceAttributes[string(conventions.OSNameKey)].(string) + " " + resourceAttributes[string(conventions.OSVersionKey)].(string)
+	expectedOSVersion := resourceAttributes["os.name"].(string) + " " + resourceAttributes["os.version"].(string)
 	require.Equal(t, expectedOSVersion, envelope.Tags[aiDeviceOSConvention])
 }
 
@@ -235,14 +234,14 @@ func getTestLogs() plog.Logs {
 	// add the resource
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resource := resourceLogs.Resource()
-	resource.Attributes().PutStr(string(conventions.ServiceNameKey), defaultServiceName)
-	resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), defaultServiceNamespace)
-	resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), defaultServiceInstance)
-	resource.Attributes().PutStr(string(conventions.ServiceVersionKey), defaultServiceVersion)
-	resource.Attributes().PutStr(string(conventions.OSNameKey), defaultOSName)
-	resource.Attributes().PutStr(string(conventions.OSVersionKey), defaultOSVersion)
-	resource.Attributes().PutStr(string(conventions.DeviceManufacturerKey), defaultDeviceManufacturer)
-	resource.Attributes().PutStr(string(conventions.DeviceModelIdentifierKey), defaultDeviceModelIdentifier)
+	resource.Attributes().PutStr("service.name", defaultServiceName)
+	resource.Attributes().PutStr("service.namespace", defaultServiceNamespace)
+	resource.Attributes().PutStr("service.instance.id", defaultServiceInstance)
+	resource.Attributes().PutStr("service.version", defaultServiceVersion)
+	resource.Attributes().PutStr("os.name", defaultOSName)
+	resource.Attributes().PutStr("os.version", defaultOSVersion)
+	resource.Attributes().PutStr("device.manufacturer", defaultDeviceManufacturer)
+	resource.Attributes().PutStr("device.model.identifier", defaultDeviceModelIdentifier)
 
 	// add the scope
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
@@ -410,8 +409,8 @@ func TestHandleExceptionDataWithDetails(t *testing.T) {
 			exceptionMessage: "Cannot read property 'undefined'",
 			stackTrace:       "at Object.method (/path/file.js:10)\nat Object.method2 (/path/file2.js:20)",
 			resourceAttrs: map[string]any{
-				string(conventions.ServiceNameKey): "testService",
-				"custom.attr":                      "value",
+				"service.name": "testService",
+				"custom.attr":  "value",
 			},
 		},
 		{
@@ -435,10 +434,10 @@ func TestHandleExceptionDataWithDetails(t *testing.T) {
 			logRecord.SetSeverityText(tt.severityText)
 
 			attrs := logRecord.Attributes()
-			attrs.PutStr(string(conventions.ExceptionTypeKey), tt.exceptionType)
-			attrs.PutStr(string(conventions.ExceptionMessageKey), tt.exceptionMessage)
+			attrs.PutStr("exception.type", tt.exceptionType)
+			attrs.PutStr("exception.message", tt.exceptionMessage)
 			if tt.stackTrace != "" {
-				attrs.PutStr(string(conventions.ExceptionStacktraceKey), tt.stackTrace)
+				attrs.PutStr("exception.stacktrace", tt.stackTrace)
 			}
 
 			resource := pcommon.NewResource()

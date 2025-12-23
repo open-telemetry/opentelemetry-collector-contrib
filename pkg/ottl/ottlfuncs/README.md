@@ -1897,15 +1897,17 @@ Examples:
 
 ### ProfileID
 
-`ProfileID(bytes)`
+`ProfileID(bytes|string)`
 
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice.
+The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 16 bytes.
+`bytes`  byte slice of exactly 16 bytes.
+`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `ProfileID(0x00112233445566778899aabbccddeeff)`
+- `ProfileID("a389023abaa839283293ed323892389d")`
 
 ### RemoveXML
 
@@ -2163,15 +2165,17 @@ Examples:
 
 ### SpanID
 
-`SpanID(bytes)`
+`SpanID(bytes|string)`
 
-The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice.
+The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 8 bytes.
+`bytes`  byte slice of exactly 8 bytes.
+`string` is a string of exactly 16 hex characters solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `SpanID(0x0000000000000000)`
+- `SpanID("0102030405060708")`
 
 ### Split
 
@@ -2448,15 +2452,18 @@ Examples:
 
 ### TraceID
 
-`TraceID(bytes)`
+`TraceID(bytes|string)`
 
-The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice.
+The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 16 bytes.
+`bytes`  byte slice of exactly 16 bytes.
+`string` is a string of exactly 16 bytes solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
+- `TraceID("a389023abaa839283293ed323892389d")`
+
 
 ### TruncateTime
 

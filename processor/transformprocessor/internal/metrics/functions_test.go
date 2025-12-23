@@ -33,7 +33,7 @@ func Test_DataPointFunctions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expected := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
+			expected := ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()
 			expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
 			expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
 			expected["merge_histogram_buckets"] = newMergeHistogramBucketsFactory()
@@ -50,7 +50,7 @@ func Test_DataPointFunctions(t *testing.T) {
 }
 
 func Test_MetricFunctions(t *testing.T) {
-	expected := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
+	expected := ottlfuncs.StandardFuncs[*ottlmetric.TransformContext]()
 	expected["convert_sum_to_gauge"] = newConvertSumToGaugeFactory()
 	expected["convert_gauge_to_sum"] = newConvertGaugeToSumFactory()
 	expected["aggregate_on_attributes"] = newAggregateOnAttributesFactory()

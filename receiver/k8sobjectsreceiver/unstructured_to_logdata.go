@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -58,7 +58,7 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 			rl := resourceLogs.AppendEmpty()
 			resourceAttrs := rl.Resource().Attributes()
 			if namespace := getNamespace(e); namespace != "" {
-				resourceAttrs.PutStr(string(semconv.K8SNamespaceNameKey), namespace)
+				resourceAttrs.PutStr(string(conventions.K8SNamespaceNameKey), namespace)
 			}
 			sl := rl.ScopeLogs().AppendEmpty()
 			sl.Scope().SetName(metadata.ScopeName)

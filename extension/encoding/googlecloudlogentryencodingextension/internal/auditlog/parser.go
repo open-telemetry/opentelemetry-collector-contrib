@@ -11,7 +11,7 @@ import (
 	gojson "github.com/goccy/go-json"
 	"github.com/iancoleman/strcase"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -248,8 +248,8 @@ func handleStatus(s *status, attr pcommon.Map) {
 		return
 	}
 
-	shared.PutInt(string(semconv.RPCJSONRPCErrorCodeKey), s.Code, attr)
-	shared.PutStr(string(semconv.RPCJSONRPCErrorMessageKey), s.Message, attr)
+	shared.PutInt(string(conventions.RPCJSONRPCErrorCodeKey), s.Code, attr)
+	shared.PutStr(string(conventions.RPCJSONRPCErrorMessageKey), s.Message, attr)
 }
 
 func handleAuthenticationInfo(info *authenticationInfo, attr pcommon.Map) {
@@ -257,8 +257,8 @@ func handleAuthenticationInfo(info *authenticationInfo, attr pcommon.Map) {
 		return
 	}
 
-	shared.PutStr(string(semconv.UserIDKey), info.PrincipalSubject, attr)
-	shared.PutStr(string(semconv.UserEmailKey), info.PrincipalEmail, attr)
+	shared.PutStr(string(conventions.UserIDKey), info.PrincipalSubject, attr)
+	shared.PutStr(string(conventions.UserEmailKey), info.PrincipalEmail, attr)
 	shared.PutStr(gcpAuditAuthenticationAuthoritySelector, info.AuthoritySelector, attr)
 	shared.PutStr(gcpAuditAuthenticationServiceAccountKeyName, info.ServiceAccountKeyName, attr)
 }
@@ -317,24 +317,24 @@ func handleRequestMetadata(metadata *requestMetadata, attr pcommon.Map) error {
 		return nil
 	}
 
-	shared.PutStr(string(semconv.ClientAddressKey), metadata.CallerIP, attr)
-	shared.PutStr(string(semconv.UserAgentOriginalKey), metadata.CallerSuppliedUserAgent, attr)
+	shared.PutStr(string(conventions.ClientAddressKey), metadata.CallerIP, attr)
+	shared.PutStr(string(conventions.UserAgentOriginalKey), metadata.CallerSuppliedUserAgent, attr)
 	shared.PutStr(gcpAuditRequestCallerNetwork, metadata.CallerNetwork, attr)
 
 	if metadata.RequestAttributes != nil {
-		if err := shared.AddStrAsInt(string(semconv.HTTPRequestSizeKey), metadata.RequestAttributes.Size, attr); err != nil {
+		if err := shared.AddStrAsInt(string(conventions.HTTPRequestSizeKey), metadata.RequestAttributes.Size, attr); err != nil {
 			return fmt.Errorf("failed to add http request size %s: %w", metadata.RequestAttributes.Size, err)
 		}
-		shared.PutStr(string(semconv.HTTPRequestMethodKey), metadata.RequestAttributes.Method, attr)
-		shared.PutStr(string(semconv.URLQueryKey), metadata.RequestAttributes.Query, attr)
-		shared.PutStr(string(semconv.URLPathKey), metadata.RequestAttributes.Path, attr)
-		shared.PutStr(string(semconv.URLSchemeKey), metadata.RequestAttributes.Scheme, attr)
+		shared.PutStr(string(conventions.HTTPRequestMethodKey), metadata.RequestAttributes.Method, attr)
+		shared.PutStr(string(conventions.URLQueryKey), metadata.RequestAttributes.Query, attr)
+		shared.PutStr(string(conventions.URLPathKey), metadata.RequestAttributes.Path, attr)
+		shared.PutStr(string(conventions.URLSchemeKey), metadata.RequestAttributes.Scheme, attr)
 		shared.PutStr(gcpAuditRequestTime, metadata.RequestAttributes.Time, attr)
 		shared.PutStr("http.request.header.host", metadata.RequestAttributes.Host, attr)
 		for h, v := range metadata.RequestAttributes.Headers {
 			shared.PutStr("http.request.header."+strings.ToLower(h), v, attr)
 		}
-		shared.PutStr(string(semconv.NetworkProtocolNameKey), strings.ToLower(metadata.RequestAttributes.Protocol), attr)
+		shared.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(metadata.RequestAttributes.Protocol), attr)
 		shared.PutStr(gcpAuditRequestReason, metadata.RequestAttributes.Reason, attr)
 		shared.PutStr(httpRequestID, metadata.RequestAttributes.ID, attr)
 		shared.PutStr(gcpAuditRequestAuthPrincipal, metadata.RequestAttributes.Auth.Principal, attr)
@@ -356,10 +356,10 @@ func handleRequestMetadata(metadata *requestMetadata, attr pcommon.Map) error {
 	}
 
 	if metadata.DestinationAttributes != nil {
-		if err := shared.AddStrAsInt(string(semconv.ServerPortKey), metadata.DestinationAttributes.Port, attr); err != nil {
+		if err := shared.AddStrAsInt(string(conventions.ServerPortKey), metadata.DestinationAttributes.Port, attr); err != nil {
 			return fmt.Errorf("failed to add destination port %s: %w", metadata.DestinationAttributes.Port, err)
 		}
-		shared.PutStr(string(semconv.ServerAddressKey), metadata.DestinationAttributes.IP, attr)
+		shared.PutStr(string(conventions.ServerAddressKey), metadata.DestinationAttributes.IP, attr)
 		shared.PutStr(gcpAuditDestinationPrincipal, metadata.DestinationAttributes.Principal, attr)
 		shared.PutStr(gcpAuditDestinationRegionCode, metadata.DestinationAttributes.RegionCode, attr)
 		if len(metadata.DestinationAttributes.Labels) > 0 {

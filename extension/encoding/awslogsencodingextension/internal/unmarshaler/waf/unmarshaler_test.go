@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -97,9 +96,9 @@ func TestSetKeyAttributes(t *testing.T) {
 		"valid": {
 			webACLID: "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
 			expectsMap: map[string]any{
-				string(conventions.CloudRegionKey):     "us-east-1",
-				string(conventions.CloudAccountIDKey):  "1234",
-				string(conventions.CloudResourceIDKey): "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
+				"cloud.region":      "us-east-1",
+				"cloud.account.id":  "1234",
+				"cloud.resource_id": "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
 			},
 		},
 		"unexpected_prefix": {

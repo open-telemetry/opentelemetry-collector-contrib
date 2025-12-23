@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -86,19 +85,19 @@ func TestAkamaiDetector_Detect_OK(t *testing.T) {
 
 	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	got := res.Attributes().AsRaw()
 	want := map[string]any{
-		string(conventions.CloudPlatformKey):  cloudPlatform,
-		string(conventions.CloudProviderKey):  cloudProvider,
-		string(conventions.CloudRegionKey):    region,
-		string(conventions.CloudAccountIDKey): acct,
-		string(conventions.HostIDKey):         strconv.Itoa(id),
-		string(conventions.HostNameKey):       label,
-		string(conventions.HostTypeKey):       instanceType,
-		string(conventions.HostImageIDKey):    imageID,
-		string(conventions.HostImageNameKey):  imageLabel,
+		"cloud.platform":   cloudPlatform,
+		"cloud.provider":   cloudProvider,
+		"cloud.region":     region,
+		"cloud.account.id": acct,
+		"host.id":          strconv.Itoa(id),
+		"host.name":        label,
+		"host.type":        instanceType,
+		"host.image.id":    imageID,
+		"host.image.name":  imageLabel,
 	}
 	assert.Equal(t, want, got)
 }

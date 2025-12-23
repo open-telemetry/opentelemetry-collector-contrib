@@ -37,7 +37,7 @@ const (
 type Config struct {
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	Protocol Protocol         `mapstructure:"protocol"`
 	Resolver ResolverSettings `mapstructure:"resolver"`

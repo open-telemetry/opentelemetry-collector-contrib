@@ -98,7 +98,6 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 			set,
 			cfg.TargetAllocator.Get(),
 			&baseCfg,
-			cfg.enableNativeHistograms,
 		),
 	}
 	return pr, nil
@@ -172,11 +171,8 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	store, err := internal.NewAppendable(
 		r.consumer,
 		r.settings,
-		gcInterval(r.cfg.PrometheusConfig),
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
-		useCreatedMetricGate.IsEnabled(),
-		r.cfg.enableNativeHistograms,
 		!r.cfg.ignoreMetadata,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
@@ -232,7 +228,6 @@ func (r *pReceiver) initScrapeOptions() *scrape.Options {
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
 		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
-		EnableNativeHistogramsIngestion:     r.cfg.enableNativeHistograms,
 	}
 
 	return opts
@@ -342,7 +337,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.NotificationsSub,
 		o.Gatherer,
 		o.Registerer,
-		nil,
+		nil, // StatsRenderer
 		o.EnableRemoteWriteReceiver,
 		o.AcceptRemoteWriteProtoMsgs,
 		o.EnableOTLPWriteReceiver,
@@ -351,7 +346,8 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.CTZeroIngestionEnabled,
 		5*time.Minute, // LookbackDelta - Using the default value of 5 minutes
 		o.EnableTypeAndUnitLabels,
-		nil, // OverrideErrorCode
+		false, // appendMetadata from remote write
+		nil,   // OverrideErrorCode
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579

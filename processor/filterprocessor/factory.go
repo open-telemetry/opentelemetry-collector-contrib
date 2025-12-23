@@ -29,11 +29,11 @@ import (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 type filterProcessorFactory struct {
-	resourceFunctions                   map[string]ottl.Factory[ottlresource.TransformContext]
-	dataPointFunctions                  map[string]ottl.Factory[ottldatapoint.TransformContext]
-	logFunctions                        map[string]ottl.Factory[ottllog.TransformContext]
-	metricFunctions                     map[string]ottl.Factory[ottlmetric.TransformContext]
-	spanEventFunctions                  map[string]ottl.Factory[ottlspanevent.TransformContext]
+	resourceFunctions                   map[string]ottl.Factory[*ottlresource.TransformContext]
+	dataPointFunctions                  map[string]ottl.Factory[*ottldatapoint.TransformContext]
+	logFunctions                        map[string]ottl.Factory[*ottllog.TransformContext]
+	metricFunctions                     map[string]ottl.Factory[*ottlmetric.TransformContext]
+	spanEventFunctions                  map[string]ottl.Factory[*ottlspanevent.TransformContext]
 	spanFunctions                       map[string]ottl.Factory[*ottlspan.TransformContext]
 	profileFunctions                    map[string]ottl.Factory[ottlprofile.TransformContext]
 	defaultResourceFunctionsOverridden  bool
@@ -48,60 +48,105 @@ type filterProcessorFactory struct {
 // FactoryOption applies changes to filterProcessorFactory.
 type FactoryOption func(factory *filterProcessorFactory)
 
-// WithResourceFunctions will override the default OTTL resource context functions with the provided resourceFunctions in resulting processor.
-// Subsequent uses of WithResourceFunctions will merge the provided resourceFunctions with the previously registered functions.
+// Deprecated: [v0.142.0] Use WithResourceFunctionsNew.
 func WithResourceFunctions(resourceFunctions []ottl.Factory[ottlresource.TransformContext]) FactoryOption {
+	newResourceFunctions := make([]ottl.Factory[*ottlresource.TransformContext], 0, len(resourceFunctions))
+	for _, resourceFunction := range resourceFunctions {
+		newResourceFunctions = append(newResourceFunctions, ottl.NewFactory[*ottlresource.TransformContext](resourceFunction.Name(), resourceFunction.CreateDefaultArguments(), fromNonPointerFunction(resourceFunction.CreateFunction)))
+	}
+	return WithResourceFunctionsNew(newResourceFunctions)
+}
+
+// WithResourceFunctionsNew will override the default OTTL resource context functions with the provided resourceFunctions in resulting processor.
+// Subsequent uses of WithResourceFunctionsNew will merge the provided resourceFunctions with the previously registered functions.
+func WithResourceFunctionsNew(resourceFunctions []ottl.Factory[*ottlresource.TransformContext]) FactoryOption {
 	return func(factory *filterProcessorFactory) {
 		if !factory.defaultResourceFunctionsOverridden {
-			factory.resourceFunctions = map[string]ottl.Factory[ottlresource.TransformContext]{}
+			factory.resourceFunctions = map[string]ottl.Factory[*ottlresource.TransformContext]{}
 			factory.defaultResourceFunctionsOverridden = true
 		}
 		factory.resourceFunctions = mergeFunctionsToMap(factory.resourceFunctions, resourceFunctions)
 	}
 }
 
-// WithDataPointFunctions will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
-// Subsequent uses of WithDataPointFunctions will merge the provided dataPointFunctions with the previously registered functions.
+// Deprecated: [v0.142.0] Use WithDataPointFunctionsNew.
 func WithDataPointFunctions(dataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]) FactoryOption {
+	newDataPointFunctions := make([]ottl.Factory[*ottldatapoint.TransformContext], 0, len(dataPointFunctions))
+	for _, dataPointFunction := range dataPointFunctions {
+		newDataPointFunctions = append(newDataPointFunctions, ottl.NewFactory[*ottldatapoint.TransformContext](dataPointFunction.Name(), dataPointFunction.CreateDefaultArguments(), fromNonPointerFunction(dataPointFunction.CreateFunction)))
+	}
+	return WithDataPointFunctionsNew(newDataPointFunctions)
+}
+
+// WithDataPointFunctionsNew will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
+// Subsequent uses of WithDataPointFunctionsNew will merge the provided dataPointFunctions with the previously registered functions.
+func WithDataPointFunctionsNew(dataPointFunctions []ottl.Factory[*ottldatapoint.TransformContext]) FactoryOption {
 	return func(factory *filterProcessorFactory) {
 		if !factory.defaultDataPointFunctionsOverridden {
-			factory.dataPointFunctions = map[string]ottl.Factory[ottldatapoint.TransformContext]{}
+			factory.dataPointFunctions = map[string]ottl.Factory[*ottldatapoint.TransformContext]{}
 			factory.defaultDataPointFunctionsOverridden = true
 		}
 		factory.dataPointFunctions = mergeFunctionsToMap(factory.dataPointFunctions, dataPointFunctions)
 	}
 }
 
-// WithLogFunctions will override the default OTTL log context functions with the provided logFunctions in the resulting processor.
-// Subsequent uses of WithLogFunctions will merge the provided logFunctions with the previously registered functions.
+// Deprecated: [v0.142.0] Use WithLogFunctionsNew.
 func WithLogFunctions(logFunctions []ottl.Factory[ottllog.TransformContext]) FactoryOption {
+	newLogFunctions := make([]ottl.Factory[*ottllog.TransformContext], 0, len(logFunctions))
+	for _, logFunction := range logFunctions {
+		newLogFunctions = append(newLogFunctions, ottl.NewFactory[*ottllog.TransformContext](logFunction.Name(), logFunction.CreateDefaultArguments(), fromNonPointerFunction(logFunction.CreateFunction)))
+	}
+	return WithLogFunctionsNew(newLogFunctions)
+}
+
+// WithLogFunctionsNew will override the default OTTL log context functions with the provided logFunctions in the resulting processor.
+// Subsequent uses of WithLogFunctionsNew will merge the provided logFunctions with the previously registered functions.
+func WithLogFunctionsNew(logFunctions []ottl.Factory[*ottllog.TransformContext]) FactoryOption {
 	return func(factory *filterProcessorFactory) {
 		if !factory.defaultLogFunctionsOverridden {
-			factory.logFunctions = map[string]ottl.Factory[ottllog.TransformContext]{}
+			factory.logFunctions = map[string]ottl.Factory[*ottllog.TransformContext]{}
 			factory.defaultLogFunctionsOverridden = true
 		}
 		factory.logFunctions = mergeFunctionsToMap(factory.logFunctions, logFunctions)
 	}
 }
 
-// WithMetricFunctions will override the default OTTL metric context functions with the provided metricFunctions in the resulting processor.
-// Subsequent uses of WithMetricFunctions will merge the provided metricFunctions with the previously registered functions.
+// Deprecated: [v0.142.0] Use WithMetricFunctionsNew.
 func WithMetricFunctions(metricFunctions []ottl.Factory[ottlmetric.TransformContext]) FactoryOption {
+	newMetricFunctions := make([]ottl.Factory[*ottlmetric.TransformContext], 0, len(metricFunctions))
+	for _, metricFunction := range metricFunctions {
+		newMetricFunctions = append(newMetricFunctions, ottl.NewFactory[*ottlmetric.TransformContext](metricFunction.Name(), metricFunction.CreateDefaultArguments(), fromNonPointerFunction(metricFunction.CreateFunction)))
+	}
+	return WithMetricFunctionsNew(newMetricFunctions)
+}
+
+// WithMetricFunctionsNew will override the default OTTL metric context functions with the provided metricFunctions in the resulting processor.
+// Subsequent uses of WithMetricFunctionsNew will merge the provided metricFunctions with the previously registered functions.
+func WithMetricFunctionsNew(metricFunctions []ottl.Factory[*ottlmetric.TransformContext]) FactoryOption {
 	return func(factory *filterProcessorFactory) {
 		if !factory.defaultMetricFunctionsOverridden {
-			factory.metricFunctions = map[string]ottl.Factory[ottlmetric.TransformContext]{}
+			factory.metricFunctions = map[string]ottl.Factory[*ottlmetric.TransformContext]{}
 			factory.defaultMetricFunctionsOverridden = true
 		}
 		factory.metricFunctions = mergeFunctionsToMap(factory.metricFunctions, metricFunctions)
 	}
 }
 
-// WithSpanEventFunctions will override the default OTTL spanevent context functions with the provided spanEventFunctions in the resulting processor.
-// Subsequent uses of WithSpanEventFunctions will merge the provided spanEventFunctions with the previously registered functions.
+// Deprecated: [v0.142.0] Use WithSpanEventFunctionsNew.
 func WithSpanEventFunctions(spanEventFunctions []ottl.Factory[ottlspanevent.TransformContext]) FactoryOption {
+	newSpanFunctions := make([]ottl.Factory[*ottlspanevent.TransformContext], 0, len(spanEventFunctions))
+	for _, spanEventFunction := range spanEventFunctions {
+		newSpanFunctions = append(newSpanFunctions, ottl.NewFactory[*ottlspanevent.TransformContext](spanEventFunction.Name(), spanEventFunction.CreateDefaultArguments(), fromNonPointerFunction(spanEventFunction.CreateFunction)))
+	}
+	return WithSpanEventFunctionsNew(newSpanFunctions)
+}
+
+// WithSpanEventFunctionsNew will override the default OTTL spanevent context functions with the provided spanEventFunctions in the resulting processor.
+// Subsequent uses of WithSpanEventFunctionsNew will merge the provided spanEventFunctions with the previously registered functions.
+func WithSpanEventFunctionsNew(spanEventFunctions []ottl.Factory[*ottlspanevent.TransformContext]) FactoryOption {
 	return func(factory *filterProcessorFactory) {
 		if !factory.defaultSpanEventFunctionsOverridden {
-			factory.spanEventFunctions = map[string]ottl.Factory[ottlspanevent.TransformContext]{}
+			factory.spanEventFunctions = map[string]ottl.Factory[*ottlspanevent.TransformContext]{}
 			factory.defaultSpanEventFunctionsOverridden = true
 		}
 		factory.spanEventFunctions = mergeFunctionsToMap(factory.spanEventFunctions, spanEventFunctions)

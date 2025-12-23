@@ -147,6 +147,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			SendDelay:           se.config.DimensionClient.SendDelay,
 			MaxBuffered:         se.config.DimensionClient.MaxBuffered,
 			MetricsConverter:    *se.converter,
+			DefaultProperties:   se.config.DefaultProperties,
 			ExcludeProperties:   se.config.ExcludeProperties,
 			MaxConnsPerHost:     se.config.DimensionClient.MaxConnsPerHost,
 			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,

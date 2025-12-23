@@ -10,26 +10,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
 func testHTTPAttributeMapping(t *testing.T, variant string) {
 	httpAttributeValues := map[string]any{
-		string(conventions.HTTPRequestMethodKey): string(conventions.HTTPRequestMethodKey),
-		string(conventions.URLFullKey):           string(conventions.URLFullKey),
-		string(conventions.URLPathKey):           string(conventions.URLPathKey),
-		string(conventions.URLQueryKey):          string(conventions.URLQueryKey),
-		string(conventions.URLSchemeKey):         string(conventions.URLSchemeKey),
+		"http.request.method": "http.request.method",
+		"url.full":            "url.full",
+		"url.path":            "url.path",
+		"url.query":           "url.query",
+		"url.scheme":          "url.scheme",
 
-		string(conventions.HTTPResponseStatusCodeKey):                "200",
-		string(conventions.NetworkProtocolNameKey):                   string(conventions.NetworkProtocolNameKey),
-		string(conventions.UserAgentOriginalKey):                     string(conventions.UserAgentOriginalKey),
-		string(conventions.HTTPRequestHeader("content-length").Key):  "1",
-		string(conventions.HTTPRequestBodySizeKey):                   2,
-		string(conventions.HTTPResponseHeader("content-length").Key): "3",
-		string(conventions.HTTPResponseBodySizeKey):                  4,
+		"http.response.status_code":           "200",
+		"network.protocol.name":               "network.protocol.name",
+		"user_agent.original":                 "user_agent.original",
+		"http.request.header.content-length":  "1",
+		"http.request.body.size":              2,
+		"http.response.header.content-length": "3",
+		"http.response.body.size":             4,
 
-		string(conventions.HTTPRouteKey): string(conventions.HTTPRouteKey),
+		"http.route": "http.route",
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -49,14 +48,14 @@ func testHTTPAttributeMapping(t *testing.T, variant string) {
 
 	attributeMap.Range(httpAttributes.MapAttribute)
 
-	assert.Equal(t, string(conventions.HTTPRequestMethodKey), httpAttributes.HTTPRequestMethod)
-	assert.Equal(t, string(conventions.URLFullKey), httpAttributes.URLAttributes.URLFull)
-	assert.Equal(t, string(conventions.URLPathKey), httpAttributes.URLAttributes.URLPath)
-	assert.Equal(t, string(conventions.URLQueryKey), httpAttributes.URLAttributes.URLQuery)
-	assert.Equal(t, string(conventions.URLSchemeKey), httpAttributes.URLAttributes.URLScheme)
+	assert.Equal(t, "http.request.method", httpAttributes.HTTPRequestMethod)
+	assert.Equal(t, "url.full", httpAttributes.URLAttributes.URLFull)
+	assert.Equal(t, "url.path", httpAttributes.URLAttributes.URLPath)
+	assert.Equal(t, "url.query", httpAttributes.URLAttributes.URLQuery)
+	assert.Equal(t, "url.scheme", httpAttributes.URLAttributes.URLScheme)
 	assert.Equal(t, int64(200), httpAttributes.HTTPResponseStatusCode)
-	assert.Equal(t, string(conventions.NetworkProtocolNameKey), httpAttributes.NetworkAttributes.NetworkProtocolName)
-	assert.Equal(t, string(conventions.UserAgentOriginalKey), httpAttributes.UserAgentAttributes.UserAgentOriginal)
+	assert.Equal(t, "network.protocol.name", httpAttributes.NetworkAttributes.NetworkProtocolName)
+	assert.Equal(t, "user_agent.original", httpAttributes.UserAgentAttributes.UserAgentOriginal)
 
 	vals, ok := httpAttributes.HTTPRequestHeaders["content-length"]
 	require.True(t, ok)
@@ -77,7 +76,7 @@ func testHTTPAttributeMapping(t *testing.T, variant string) {
 	assert.Equal(t, int64(3), reqResInt)
 
 	assert.Equal(t, int64(4), httpAttributes.HTTPResponseBodySize)
-	assert.Equal(t, string(conventions.HTTPRouteKey), httpAttributes.HTTPRoute)
+	assert.Equal(t, "http.route", httpAttributes.HTTPRoute)
 
 	networkAttributesValidations(t, httpAttributes.NetworkAttributes)
 
@@ -98,9 +97,9 @@ func TestHTTPAttributeMapping(t *testing.T) {
 
 func testRPCPAttributeMapping(t *testing.T, variant string) {
 	rpcAttributeValues := map[string]any{
-		string(conventions.RPCSystemKey):  string(conventions.RPCSystemKey),
-		string(conventions.RPCServiceKey): string(conventions.RPCServiceKey),
-		string(conventions.RPCMethodKey):  string(conventions.RPCMethodKey),
+		"rpc.system":  "rpc.system",
+		"rpc.service": "rpc.service",
+		"rpc.method":  "rpc.method",
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -120,9 +119,9 @@ func testRPCPAttributeMapping(t *testing.T, variant string) {
 	rpcAttributes := &rpcAttributes{}
 	attributeMap.Range(rpcAttributes.MapAttribute)
 
-	assert.Equal(t, string(conventions.RPCSystemKey), rpcAttributes.RPCSystem)
-	assert.Equal(t, string(conventions.RPCServiceKey), rpcAttributes.RPCService)
-	assert.Equal(t, string(conventions.RPCMethodKey), rpcAttributes.RPCMethod)
+	assert.Equal(t, "rpc.system", rpcAttributes.RPCSystem)
+	assert.Equal(t, "rpc.service", rpcAttributes.RPCService)
+	assert.Equal(t, "rpc.method", rpcAttributes.RPCMethod)
 
 	networkAttributesValidations(t, rpcAttributes.NetworkAttributes)
 
@@ -143,15 +142,15 @@ func TestRPCPAttributeMapping(t *testing.T) {
 
 func testDatabaseAttributeMapping(t *testing.T, variant string) {
 	databaseAttributeValues := map[string]any{
-		string(conventions.DBCollectionNameKey):      string(conventions.DBCollectionNameKey),
-		string(conventions.DBNamespaceKey):           string(conventions.DBNamespaceKey),
-		string(conventions.DBOperationBatchSizeKey):  0,
-		string(conventions.DBOperationNameKey):       string(conventions.DBOperationNameKey),
-		string(conventions.DBQuerySummaryKey):        string(conventions.DBQuerySummaryKey),
-		string(conventions.DBQueryTextKey):           string(conventions.DBQueryTextKey),
-		string(conventions.DBResponseStatusCodeKey):  string(conventions.DBResponseStatusCodeKey),
-		string(conventions.DBStoredProcedureNameKey): string(conventions.DBStoredProcedureNameKey),
-		string(conventions.DBSystemNameKey):          string(conventions.DBSystemNameKey),
+		"db.collection.name":       "db.collection.name",
+		"db.namespace":             "db.namespace",
+		"db.operation.batch.size":  0,
+		"db.operation.name":        "db.operation.name",
+		"db.query.summary":         "db.query.summary",
+		"db.query.text":            "db.query.text",
+		"db.response.status_code":  "db.response.status_code",
+		"db.stored_procedure.name": "db.stored_procedure.name",
+		"db.system.name":           "db.system.name",
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -171,15 +170,15 @@ func testDatabaseAttributeMapping(t *testing.T, variant string) {
 	databaseAttributes := &databaseAttributes{}
 	attributeMap.Range(databaseAttributes.MapAttribute)
 
-	assert.Equal(t, string(conventions.DBCollectionNameKey), databaseAttributes.DBCollectionName)
-	assert.Equal(t, string(conventions.DBNamespaceKey), databaseAttributes.DBNamespace)
+	assert.Equal(t, "db.collection.name", databaseAttributes.DBCollectionName)
+	assert.Equal(t, "db.namespace", databaseAttributes.DBNamespace)
 	assert.Equal(t, int64(0), databaseAttributes.DBOperationBatchSize)
-	assert.Equal(t, string(conventions.DBOperationNameKey), databaseAttributes.DBOperationName)
-	assert.Equal(t, string(conventions.DBQuerySummaryKey), databaseAttributes.DBQuerySummary)
-	assert.Equal(t, string(conventions.DBQueryTextKey), databaseAttributes.DBQueryText)
-	assert.Equal(t, string(conventions.DBResponseStatusCodeKey), databaseAttributes.DBResponseStatusCode)
-	assert.Equal(t, string(conventions.DBStoredProcedureNameKey), databaseAttributes.DBStoredProcedureName)
-	assert.Equal(t, string(conventions.DBSystemNameKey), databaseAttributes.DBSystemName)
+	assert.Equal(t, "db.operation.name", databaseAttributes.DBOperationName)
+	assert.Equal(t, "db.query.summary", databaseAttributes.DBQuerySummary)
+	assert.Equal(t, "db.query.text", databaseAttributes.DBQueryText)
+	assert.Equal(t, "db.response.status_code", databaseAttributes.DBResponseStatusCode)
+	assert.Equal(t, "db.stored_procedure.name", databaseAttributes.DBStoredProcedureName)
+	assert.Equal(t, "db.system.name", databaseAttributes.DBSystemName)
 
 	networkAttributesValidations(t, databaseAttributes.NetworkAttributes)
 
@@ -200,22 +199,22 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 
 func testMessagingAttributeMapping(t *testing.T, variant string) {
 	messagingAttributeValues := map[string]any{
-		string(conventions.MessagingBatchMessageCountKey):           0,
-		string(conventions.MessagingClientIDKey):                    string(conventions.MessagingClientIDKey),
-		string(conventions.MessagingConsumerGroupNameKey):           string(conventions.MessagingConsumerGroupNameKey),
-		string(conventions.MessagingDestinationAnonymousKey):        true,
-		string(conventions.MessagingDestinationNameKey):             string(conventions.MessagingDestinationNameKey),
-		string(conventions.MessagingDestinationPartitionIDKey):      string(conventions.MessagingDestinationPartitionIDKey),
-		string(conventions.MessagingDestinationSubscriptionNameKey): string(conventions.MessagingDestinationSubscriptionNameKey),
-		string(conventions.MessagingDestinationTemplateKey):         string(conventions.MessagingDestinationTemplateKey),
-		string(conventions.MessagingDestinationTemporaryKey):        false,
-		string(conventions.MessagingMessageBodySizeKey):             1,
-		string(conventions.MessagingMessageConversationIDKey):       string(conventions.MessagingMessageConversationIDKey),
-		string(conventions.MessagingMessageEnvelopeSizeKey):         2,
-		string(conventions.MessagingMessageIDKey):                   string(conventions.MessagingMessageIDKey),
-		string(conventions.MessagingOperationNameKey):               string(conventions.MessagingOperationNameKey),
-		string(conventions.MessagingOperationTypeKey):               string(conventions.MessagingOperationTypeKey),
-		string(conventions.MessagingSystemKey):                      string(conventions.MessagingSystemKey),
+		"messaging.batch.message_count":           0,
+		"messaging.client.id":                     "messaging.client.id",
+		"messaging.consumer.group.name":           "messaging.consumer.group.name",
+		"messaging.destination.anonymous":         true,
+		"messaging.destination.name":              "messaging.destination.name",
+		"messaging.destination.partition.id":      "messaging.destination.partition.id",
+		"messaging.destination.subscription.name": "messaging.destination.subscription.name",
+		"messaging.destination.template":          "messaging.destination.template",
+		"messaging.destination.temporary":         false,
+		"messaging.message.body.size":             1,
+		"messaging.message.conversation_id":       "messaging.message.conversation_id",
+		"messaging.message.envelope.size":         2,
+		"messaging.message.id":                    "messaging.message.id",
+		"messaging.operation.name":                "messaging.operation.name",
+		"messaging.operation.type":                "messaging.operation.type",
+		"messaging.system":                        "messaging.system",
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -236,21 +235,21 @@ func testMessagingAttributeMapping(t *testing.T, variant string) {
 	attributeMap.Range(messagingAttributes.MapAttribute)
 
 	assert.Equal(t, int64(0), messagingAttributes.MessagingBatchMessageCount)
-	assert.Equal(t, string(conventions.MessagingClientIDKey), messagingAttributes.MessagingClientID)
-	assert.Equal(t, string(conventions.MessagingConsumerGroupNameKey), messagingAttributes.MessagingConsumerGroup)
+	assert.Equal(t, "messaging.client.id", messagingAttributes.MessagingClientID)
+	assert.Equal(t, "messaging.consumer.group.name", messagingAttributes.MessagingConsumerGroup)
 	assert.True(t, messagingAttributes.MessagingDestinationAnonymous)
-	assert.Equal(t, string(conventions.MessagingDestinationNameKey), messagingAttributes.MessagingDestination)
-	assert.Equal(t, string(conventions.MessagingDestinationPartitionIDKey), messagingAttributes.MessagingDestinationPartitionID)
-	assert.Equal(t, string(conventions.MessagingDestinationSubscriptionNameKey), messagingAttributes.MessagingDestinationSubName)
-	assert.Equal(t, string(conventions.MessagingDestinationTemplateKey), messagingAttributes.MessagingDestinationTemplate)
+	assert.Equal(t, "messaging.destination.name", messagingAttributes.MessagingDestination)
+	assert.Equal(t, "messaging.destination.partition.id", messagingAttributes.MessagingDestinationPartitionID)
+	assert.Equal(t, "messaging.destination.subscription.name", messagingAttributes.MessagingDestinationSubName)
+	assert.Equal(t, "messaging.destination.template", messagingAttributes.MessagingDestinationTemplate)
 	assert.False(t, messagingAttributes.MessagingDestinationTemporary)
 	assert.Equal(t, int64(1), messagingAttributes.MessagingMessageBodySize)
-	assert.Equal(t, string(conventions.MessagingMessageConversationIDKey), messagingAttributes.MessagingMessageConversationID)
+	assert.Equal(t, "messaging.message.conversation_id", messagingAttributes.MessagingMessageConversationID)
 	assert.Equal(t, int64(2), messagingAttributes.MessagingMessageEnvelopeSize)
-	assert.Equal(t, string(conventions.MessagingMessageIDKey), messagingAttributes.MessagingMessageID)
-	assert.Equal(t, string(conventions.MessagingOperationNameKey), messagingAttributes.MessagingOperation)
-	assert.Equal(t, string(conventions.MessagingOperationTypeKey), messagingAttributes.MessagingOperationType)
-	assert.Equal(t, string(conventions.MessagingSystemKey), messagingAttributes.MessagingSystem)
+	assert.Equal(t, "messaging.message.id", messagingAttributes.MessagingMessageID)
+	assert.Equal(t, "messaging.operation.name", messagingAttributes.MessagingOperation)
+	assert.Equal(t, "messaging.operation.type", messagingAttributes.MessagingOperationType)
+	assert.Equal(t, "messaging.system", messagingAttributes.MessagingSystem)
 	networkAttributesValidations(t, messagingAttributes.NetworkAttributes)
 
 	if variant == "client" {
@@ -271,7 +270,7 @@ func TestMessagingAttributeMapping(t *testing.T) {
 // Tests what happens when an attribute that should be an int is not
 func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	attributeMap := pcommon.NewMap()
-	attributeMap.PutStr(string(conventions.NetworkPeerPortKey), "xx")
+	attributeMap.PutStr("network.peer.port", "xx")
 
 	attrs := &networkAttributes{}
 	attributeMap.Range(attrs.MapAttribute)
@@ -281,35 +280,35 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 }
 
 func addClientAttributes(m pcommon.Map) {
-	m.PutStr(string(conventions.ClientAddressKey), string(conventions.ClientAddressKey))
-	m.PutInt(string(conventions.ClientPortKey), 3000)
+	m.PutStr("client.address", "client.address")
+	m.PutInt("client.port", 3000)
 }
 
 func addServerAttributes(m pcommon.Map) {
-	m.PutStr(string(conventions.ServerAddressKey), string(conventions.ServerAddressKey))
-	m.PutInt(string(conventions.ServerPortKey), 61461)
+	m.PutStr("server.address", "server.address")
+	m.PutInt("server.port", 61461)
 }
 
 func addNetworkAttributes(m pcommon.Map) {
-	m.PutStr(string(conventions.NetworkTransportKey), string(conventions.NetworkTransportKey))
-	m.PutStr(string(conventions.NetworkPeerAddressKey), string(conventions.NetworkPeerAddressKey))
-	m.PutInt(string(conventions.NetworkPeerPortKey), 1)
-	m.PutStr(string(conventions.NetworkLocalAddressKey), string(conventions.NetworkLocalAddressKey))
+	m.PutStr("network.transport", "network.transport")
+	m.PutStr("network.peer.address", "network.peer.address")
+	m.PutInt("network.peer.port", 1)
+	m.PutStr("network.local.address", "network.local.address")
 }
 
 func networkAttributesValidations(t *testing.T, networkAttributes networkAttributes) {
-	assert.Equal(t, string(conventions.NetworkTransportKey), networkAttributes.NetworkTransport)
-	assert.Equal(t, string(conventions.NetworkPeerAddressKey), networkAttributes.NetworkPeerAddress)
+	assert.Equal(t, "network.transport", networkAttributes.NetworkTransport)
+	assert.Equal(t, "network.peer.address", networkAttributes.NetworkPeerAddress)
 	assert.Equal(t, int64(1), networkAttributes.NetworkPeerPort)
-	assert.Equal(t, string(conventions.NetworkLocalAddressKey), networkAttributes.NetworkLocalAddress)
+	assert.Equal(t, "network.local.address", networkAttributes.NetworkLocalAddress)
 }
 
 func serverAttributesValidations(t *testing.T, serverAttributes serverAttributes) {
-	assert.Equal(t, string(conventions.ServerAddressKey), serverAttributes.ServerAddress)
+	assert.Equal(t, "server.address", serverAttributes.ServerAddress)
 	assert.Equal(t, int64(61461), serverAttributes.ServerPort)
 }
 
 func clientAttributesValidations(t *testing.T, clientAttributes clientAttributes) {
-	assert.Equal(t, string(conventions.ClientAddressKey), clientAttributes.ClientAddress)
+	assert.Equal(t, "client.address", clientAttributes.ClientAddress)
 	assert.Equal(t, int64(3000), clientAttributes.ClientPort)
 }

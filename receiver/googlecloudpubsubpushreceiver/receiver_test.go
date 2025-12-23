@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver/internal/metadata"
@@ -296,7 +295,7 @@ func TestTelemetry(t *testing.T) {
 
 	metadatatest.AssertEqualHTTPServerRequestDuration(t, tel, []metricdata.HistogramDataPoint[float64]{{
 		Attributes: attribute.NewSet(
-			attribute.Int(string(semconv.HTTPResponseStatusCodeKey), http.StatusOK),
+			attribute.Int("http.response.status_code", http.StatusOK),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 

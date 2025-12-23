@@ -1,0 +1,60 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
+title: TimeTypeFieldConfig
+type: object
+$defs:
+  Schedule:
+    properties:
+      interval:
+        type: string
+        x-customType: time.Duration
+      next_run:
+        type: string
+        x-customType: time.Time
+      timestamps:
+        items:
+          type: string
+          x-customType: time.Time
+        type: array
+    type: object
+properties:
+  durations:
+    additionalProperties:
+      type: string
+      x-customType: time.Duration
+    type: object
+  optional_schedule:
+    $ref: '#/$defs/Schedule'
+    x-pointer: true
+  probes:
+    items:
+      type: string
+      x-customType: time.Time
+      x-pointer: true
+    type: array
+  retry_intervals:
+    items:
+      type: string
+      x-customType: time.Duration
+    type: array
+  schedule:
+    $ref: '#/$defs/Schedule'
+  start_at:
+    type: string
+    x-customType: time.Time
+  timeout:
+    type: string
+    x-customType: time.Duration
+  window:
+    properties:
+      begin:
+        type: string
+        x-customType: time.Time
+        x-pointer: true
+      end:
+        type: string
+        x-customType: time.Time
+      grace:
+        type: string
+        x-customType: time.Duration
+    type: object

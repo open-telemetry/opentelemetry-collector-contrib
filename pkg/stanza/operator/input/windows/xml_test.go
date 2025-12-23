@@ -69,6 +69,7 @@ func TestParseBody(t *testing.T) {
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
 	}
 
 	expected := map[string]any{
@@ -96,6 +97,7 @@ func TestParseBody(t *testing.T) {
 				map[string]any{"2nd_name": "another_value"},
 			},
 		},
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -137,6 +139,7 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
 	}
 
 	expected := map[string]any{
@@ -171,6 +174,7 @@ func TestParseBodySecurityExecution(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -223,6 +227,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
 	}
 
 	expected := map[string]any{
@@ -262,6 +267,80 @@ func TestParseBodyFullExecution(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
+		"version": uint8(0),
+	}
+
+	require.Equal(t, expected, formattedBody(xml))
+}
+
+func TestParseBodyCorrelation(t *testing.T) {
+	activityIDGuid := "{11111111-1111-1111-1111-111111111111}"
+	relatedActivityIDGuid := "{22222222-2222-2222-2222-222222222222}"
+	xml := &EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name:            "provider",
+			GUID:            "guid",
+			EventSourceName: "event source",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer: "computer",
+		Channel:  "application",
+		RecordID: 1,
+		Level:    "Information",
+		Message:  "message",
+		Task:     "task",
+		Opcode:   "opcode",
+		Keywords: []string{"keyword"},
+		EventData: EventData{
+			Data: []Data{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}},
+		},
+		RenderedLevel:    "rendered_level",
+		RenderedTask:     "rendered_task",
+		RenderedOpcode:   "rendered_opcode",
+		RenderedKeywords: []string{"RenderedKeywords"},
+		Correlation: &Correlation{
+			ActivityID:        &activityIDGuid,
+			RelatedActivityID: &relatedActivityIDGuid,
+		},
+		Version: 1,
+	}
+
+	expected := map[string]any{
+		"event_id": map[string]any{
+			"id":         uint32(1),
+			"qualifiers": uint16(2),
+		},
+		"provider": map[string]any{
+			"name":         "provider",
+			"guid":         "guid",
+			"event_source": "event source",
+		},
+		"system_time": "2020-07-30T01:01:01.123456789Z",
+		"computer":    "computer",
+		"channel":     "application",
+		"record_id":   uint64(1),
+		"level":       "rendered_level",
+		"message":     "message",
+		"task":        "rendered_task",
+		"opcode":      "rendered_opcode",
+		"keywords":    []string{"RenderedKeywords"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"1st_name": "value"},
+				map[string]any{"2nd_name": "another_value"},
+			},
+		},
+		"correlation": map[string]any{
+			"activity_id":         "{11111111-1111-1111-1111-111111111111}",
+			"related_activity_id": "{22222222-2222-2222-2222-222222222222}",
+		},
+		"version": uint8(1),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -292,6 +371,7 @@ func TestParseNoRendered(t *testing.T) {
 		EventData: EventData{
 			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
+		Version: 0,
 	}
 
 	expected := map[string]any{
@@ -319,6 +399,7 @@ func TestParseNoRendered(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -353,6 +434,7 @@ func TestParseBodySecurity(t *testing.T) {
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
 		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
 	}
 
 	expected := map[string]any{
@@ -380,6 +462,7 @@ func TestParseBodySecurity(t *testing.T) {
 				map[string]any{"another_name": "another_value"},
 			},
 		},
+		"version": uint8(0),
 	}
 
 	require.Equal(t, expected, formattedBody(xml))
@@ -460,8 +543,59 @@ func TestUnmarshalWithEventData(t *testing.T) {
 				{Name: "Source", Value: "RulesEngine"},
 			},
 		},
-		Keywords: []string{"0x80000000000000"},
+		Keywords:    []string{"0x80000000000000"},
+		Original:    string(data),
+		Correlation: &Correlation{},
+	}
+
+	require.Equal(t, xml, event)
+}
+
+func TestUnmarshalWithCorrelation(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlWithCorrelation.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalEventXML(data)
+	require.NoError(t, err)
+
+	activityIDGuid := "{11111111-1111-1111-1111-111111111111}"
+	relatedActivityIDGuid := "{22222222-2222-2222-2222-222222222222}"
+
+	xml := &EventXML{
+		EventID: EventID{
+			ID:         4624,
+			Qualifiers: 0,
+		},
+		Provider: Provider{
+			Name: "Microsoft-Windows-Security-Auditing",
+			GUID: "{54849625-5478-4994-a5ba-3e3b0328c30d}",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2025-12-02T23:33:05.2167526Z",
+		},
+		Computer: "computer",
+		Channel:  "Security",
+		RecordID: 13177,
+		Level:    "0",
+		Message:  "",
+		Task:     "12544",
+		Opcode:   "0",
+		EventData: EventData{
+			Data:   []Data{{Name: "SubjectDomainName", Value: "WORKGROUP"}},
+			Binary: "",
+		},
+		Keywords: []string{"0x8020000000000000"},
+		Security: &Security{},
+		Execution: &Execution{
+			ProcessID: 800,
+			ThreadID:  7852,
+		},
 		Original: string(data),
+		Correlation: &Correlation{
+			ActivityID:        &activityIDGuid,
+			RelatedActivityID: &relatedActivityIDGuid,
+		},
+		Version: 2,
 	}
 
 	require.Equal(t, xml, event)
@@ -496,10 +630,12 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 			Data:   []Data{{Name: "", Value: "1st_value"}, {Name: "", Value: "2nd_value"}},
 			Binary: "2D20",
 		},
-		Keywords:  []string{"0x80000000000000"},
-		Security:  &Security{},
-		Execution: &Execution{},
-		Original:  string(data),
+		Keywords:    []string{"0x80000000000000"},
+		Security:    &Security{},
+		Execution:   &Execution{},
+		Original:    string(data),
+		Correlation: &Correlation{},
+		Version:     0,
 	}
 
 	require.Equal(t, xml, event)
@@ -538,7 +674,9 @@ func TestUnmarshalWithUserData(t *testing.T) {
 			ProcessID: 1472,
 			ThreadID:  7784,
 		},
-		Original: string(data),
+		Original:    string(data),
+		Correlation: &Correlation{},
+		Version:     1,
 	}
 
 	require.Equal(t, xml, event)

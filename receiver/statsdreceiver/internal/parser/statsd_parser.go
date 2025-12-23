@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -530,7 +530,7 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 			containerID := strings.TrimPrefix(part, "c:")
 
 			if containerID != "" {
-				kvs = append(kvs, attribute.String(string(semconv.ContainerIDKey), containerID))
+				kvs = append(kvs, attribute.String(string(conventions.ContainerIDKey), containerID))
 			}
 		case strings.HasPrefix(part, "T"):
 			// As per DogStatD protocol v1.3:

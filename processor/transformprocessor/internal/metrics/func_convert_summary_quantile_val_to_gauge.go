@@ -18,11 +18,11 @@ type convertSummaryQuantileValToGaugeArguments struct {
 	Suffix       ottl.Optional[string]
 }
 
-func newConvertSummaryQuantileValToGaugeFactory() ottl.Factory[ottlmetric.TransformContext] {
+func newConvertSummaryQuantileValToGaugeFactory() ottl.Factory[*ottlmetric.TransformContext] {
 	return ottl.NewFactory("convert_summary_quantile_val_to_gauge", &convertSummaryQuantileValToGaugeArguments{}, createConvertSummaryQuantileValToGaugeFunction)
 }
 
-func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*convertSummaryQuantileValToGaugeArguments)
 
 	if !ok {
@@ -32,11 +32,11 @@ func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArg
 	return convertSummaryQuantileValToGauge(args.AttributeKey, args.Suffix)
 }
 
-func convertSummaryQuantileValToGauge(attrKey, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func convertSummaryQuantileValToGauge(attrKey, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	metricNameSuffix := suffix.GetOr(".quantiles")
 	attributeKey := attrKey.GetOr("quantile")
 
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil, nil

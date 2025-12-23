@@ -38,7 +38,6 @@ type k8sobjectsreceiver struct {
 	obsrecv         *receiverhelper.ObsReport
 	mu              sync.Mutex
 	cancel          context.CancelFunc
-	wg              sync.WaitGroup
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -133,6 +132,8 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
 		}
 
+		// Register callbacks with the leader elector extension. These callbacks remain active
+		// for the lifetime of the receiver, allowing it to restart when leadership is regained.
 		elector.SetCallBackFuncs(
 			func(ctx context.Context) {
 				cctx, cancel := context.WithCancel(ctx)
@@ -142,12 +143,15 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
-			// onStoppedLeading: stop watches, but DO NOT shut the whole receiver down
 			func() {
-				kr.setting.Logger.Info("no longer leader, stopping watches")
-				kr.stopWatches()
-			},
-		)
+				// Shutdown on leader loss. The receiver will restart if leadership is regained
+				// since the callbacks remain registered with the leader elector extension.
+				kr.setting.Logger.Info("no longer leader, stopping")
+				err = kr.Shutdown(context.Background())
+				if err != nil {
+					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
+				}
+			})
 	} else {
 		cctx, cancel := context.WithCancel(ctx)
 		kr.cancel = cancel
@@ -160,37 +164,17 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
-	// Stop informers and wait for them to exit.
 	kr.setting.Logger.Info("Object Receiver stopped")
-	kr.stopWatches()
-
 	if kr.cancel != nil {
 		kr.cancel()
-		kr.cancel = nil
 	}
-	return nil
-}
 
-// stopWatches closes all informer stop channels (idempotently) and waits for their goroutines to exit.
-func (kr *k8sobjectsreceiver) stopWatches() {
 	kr.mu.Lock()
-	// Copy and clear the list under lock to avoid races on restart
-	chans := kr.stopperChanList
-	kr.stopperChanList = nil
+	for _, stopperChan := range kr.stopperChanList {
+		close(stopperChan)
+	}
 	kr.mu.Unlock()
-
-	if len(chans) == 0 {
-		return
-	}
-	for _, ch := range chans {
-		select {
-		case <-ch: // already closed
-		default:
-			close(ch)
-		}
-	}
-	// Now wait for all WG-tracked loops (both pull & watch) to exit
-	kr.wg.Wait()
+	return nil
 }
 
 func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) {
@@ -225,9 +209,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	stopperChan := make(chan struct{})
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
-	kr.wg.Add(1)
 	kr.mu.Unlock()
-	defer kr.wg.Done()
 	ticker := newTicker(ctx, config.Interval)
 	listOption := metav1.ListOptions{
 		FieldSelector: config.FieldSelector,
@@ -248,20 +230,14 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 				kr.setting.Logger.Error("error in pulling object",
 					zap.String("resource", config.gvr.String()),
 					zap.Error(err))
-				continue
+			} else if len(objects.Items) > 0 {
+				logs := pullObjectsToLogData(objects, time.Now(), config, kr.setting.BuildInfo.Version)
+				obsCtx := kr.obsrecv.StartLogsOp(ctx)
+				logRecordCount := logs.LogRecordCount()
+				err = kr.consumer.ConsumeLogs(obsCtx, logs)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
 			}
-			if len(objects.Items) == 0 {
-				continue
-			}
-			logs := pullObjectsToLogData(objects, time.Now(), config, kr.setting.BuildInfo.Version)
-			obsCtx := kr.obsrecv.StartLogsOp(ctx)
-			logRecordCount := logs.LogRecordCount()
-			err = kr.consumer.ConsumeLogs(obsCtx, logs)
-			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
-
 		case <-stopperChan:
-			return
-		case <-ctx.Done():
 			return
 		}
 	}
@@ -271,9 +247,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	stopperChan := make(chan struct{})
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
-	kr.wg.Add(1)
 	kr.mu.Unlock()
-	defer kr.wg.Done()
 
 	if kr.config.IncludeInitialState {
 		kr.sendInitialState(ctx, config, resource)
@@ -286,7 +260,6 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	})
 
 	cancelCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	cfgCopy := *config
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
 		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
@@ -374,10 +347,6 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 	res := watcher.ResultChan()
 	for {
 		select {
-		case <-ctx.Done():
-			kr.setting.Logger.Info("context canceled, stopping watch",
-				zap.String("resource", config.gvr.String()))
-			return true
 		case data, ok := <-res:
 			if data.Type == apiWatch.Error {
 				errObject := apierrors.FromObject(data.Object)

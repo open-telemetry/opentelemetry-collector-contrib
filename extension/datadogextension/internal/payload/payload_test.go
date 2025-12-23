@@ -168,6 +168,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 		fullConfig,
 		deploymentType,
 		buildInfo,
+		int64(5*time.Minute*3),
 	)
 
 	// Add full components (what would come from module info)
@@ -435,6 +436,7 @@ func TestPrepareOtelCollectorMetadata_DeploymentType(t *testing.T) {
 				"{}",
 				tt.deploymentType,
 				buildInfo,
+				int64(5*time.Minute*3),
 			)
 
 			assert.Equal(t, tt.deploymentType, metadata.CollectorDeploymentType)

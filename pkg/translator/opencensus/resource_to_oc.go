@@ -11,7 +11,7 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource/resourcekeys"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"

@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -53,9 +52,9 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
-	set.Resource.Attributes().PutStr(string(semconv.ServiceNameKey), "otelcol-distro")
-	set.Resource.Attributes().PutStr(string(semconv.ServiceVersionKey), "distro.0")
-	set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
+	set.Resource.Attributes().PutStr("service.name", "otelcol-distro")
+	set.Resource.Attributes().PutStr("service.version", "distro.0")
+	set.Resource.Attributes().PutStr("service.instance.id", "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcol-distro", o.agentType)
@@ -86,15 +85,15 @@ func TestCreateAgentDescription(t *testing.T) {
 			cfg:  func(_ *Config) {},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID),
-					stringKeyValue(string(semconv.ServiceNameKey), serviceName),
-					stringKeyValue(string(semconv.ServiceVersionKey), serviceVersion),
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.version", serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
-					stringKeyValue(string(semconv.HostNameKey), hostname),
-					stringKeyValue(string(semconv.OSDescriptionKey), description),
-					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
 				},
 			},
 		},
@@ -102,23 +101,23 @@ func TestCreateAgentDescription(t *testing.T) {
 			name: "Extra attributes specified",
 			cfg: func(c *Config) {
 				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
-					"env":                         "prod",
-					string(semconv.K8SPodNameKey): "my-very-cool-pod",
+					"env":          "prod",
+					"k8s.pod.name": "my-very-cool-pod",
 				}
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID),
-					stringKeyValue(string(semconv.ServiceNameKey), serviceName),
-					stringKeyValue(string(semconv.ServiceVersionKey), serviceVersion),
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.version", serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue("env", "prod"),
-					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
-					stringKeyValue(string(semconv.HostNameKey), hostname),
-					stringKeyValue(string(semconv.K8SPodNameKey), "my-very-cool-pod"),
-					stringKeyValue(string(semconv.OSDescriptionKey), description),
-					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("k8s.pod.name", "my-very-cool-pod"),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
 				},
 			},
 		},
@@ -126,20 +125,20 @@ func TestCreateAgentDescription(t *testing.T) {
 			name: "Extra attributes override",
 			cfg: func(c *Config) {
 				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
-					string(semconv.HostNameKey): "override-host",
+					"host.name": "override-host",
 				}
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID),
-					stringKeyValue(string(semconv.ServiceNameKey), serviceName),
-					stringKeyValue(string(semconv.ServiceVersionKey), serviceVersion),
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.version", serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
-					stringKeyValue(string(semconv.HostNameKey), "override-host"),
-					stringKeyValue(string(semconv.OSDescriptionKey), description),
-					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", "override-host"),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
 				},
 			},
 		},
@@ -150,16 +149,16 @@ func TestCreateAgentDescription(t *testing.T) {
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID),
-					stringKeyValue(string(semconv.ServiceNameKey), serviceName),
-					stringKeyValue(string(semconv.ServiceVersionKey), serviceVersion),
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.version", serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(extraResourceAttrKey, extraResourceAttrValue),
-					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
-					stringKeyValue(string(semconv.HostNameKey), hostname),
-					stringKeyValue(string(semconv.OSDescriptionKey), description),
-					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
 				},
 			},
 		},
@@ -171,9 +170,9 @@ func TestCreateAgentDescription(t *testing.T) {
 			tc.cfg(cfg)
 
 			set := extensiontest.NewNopSettings(extensiontest.NopType)
-			set.Resource.Attributes().PutStr(string(semconv.ServiceNameKey), serviceName)
-			set.Resource.Attributes().PutStr(string(semconv.ServiceVersionKey), serviceVersion)
-			set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID)
+			set.Resource.Attributes().PutStr("service.name", serviceName)
+			set.Resource.Attributes().PutStr("service.version", serviceVersion)
+			set.Resource.Attributes().PutStr("service.instance.id", serviceInstanceUUID)
 			set.Resource.Attributes().PutStr(extraResourceAttrKey, extraResourceAttrValue)
 
 			o, err := newOpampAgent(cfg, set)
