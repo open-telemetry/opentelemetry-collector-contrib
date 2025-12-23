@@ -414,7 +414,7 @@ func (c SASLConfig) Validate() error {
 		}
 		_, err := url.Parse(c.OAUTHBEARER.TokenURL)
 		if err != nil {
-			return fmt.Errorf("Oauth client token URL is not a valid URL: %v", err)
+			return fmt.Errorf("Oauth client token URL is not a valid URL: %w", err)
 		}
 		if len(c.OAUTHBEARER.Scopes) == 0 {
 			return errors.New("Oauth client requires at least one specified scope")
