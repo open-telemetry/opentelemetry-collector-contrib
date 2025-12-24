@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.48.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.142.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/extension/extensiontest v0.142.1-0.20251218222727-bf28fa76882d
+	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/service v0.142.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/service/hostcapabilities v0.142.1-0.20251218222727-bf28fa76882d
 	go.uber.org/goleak v1.3.0
@@ -62,7 +63,6 @@ require (
 	go.opentelemetry.io/collector/exporter v1.48.1-0.20251218222727-bf28fa76882d // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.142.1-0.20251218222727-bf28fa76882d // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.142.1-0.20251218222727-bf28fa76882d // indirect
-	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251218222727-bf28fa76882d // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.142.1-0.20251218222727-bf28fa76882d // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.142.1-0.20251218222727-bf28fa76882d // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.142.1-0.20251218222727-bf28fa76882d // indirect
