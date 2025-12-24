@@ -356,13 +356,13 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	return 1, nil
 }
 
-func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
+func (t *transaction) AppendSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
 	return t.setCreationTimestamp(ls, atMs, ctMs)
 }
 
-func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) AppendHistogramSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	var schema int32
 	if h != nil {
 		schema = h.Schema
