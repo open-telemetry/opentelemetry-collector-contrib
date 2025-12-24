@@ -488,6 +488,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"db.namespace":               "users",
 		"db.query.text":              "SELECT * FROM users WHERE user_id=?",
 		"http.response.body.size":    "http.response.encoded_body_size",
+		"transaction.root":           true,
 	})
 	require.NoError(t, err)
 
