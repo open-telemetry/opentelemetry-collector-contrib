@@ -5,6 +5,7 @@ package split
 
 import (
 	"errors"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -280,6 +281,7 @@ func TestLineEndSplitFunc_Detailed(t *testing.T) {
 		pattern     string
 		omitPattern bool
 		flushAtEOF  bool
+		encoding    encoding.Encoding
 		input       []byte
 		steps       []splittest.Step
 	}{
@@ -432,12 +434,398 @@ func TestLineEndSplitFunc_Detailed(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		if tc.encoding == nil {
+			tc.encoding = unicode.UTF8
+		}
 		cfg := Config{
 			LineEndPattern: tc.pattern,
 			OmitPattern:    tc.omitPattern,
 		}
-		splitFunc, err := cfg.Func(unicode.UTF8, tc.flushAtEOF, 0)
+		splitFunc, err := cfg.Func(tc.encoding, tc.flushAtEOF, 0)
 		require.NoError(t, err)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
+}
+
+func TestLineEndSplitFunc_Comprehensive(t *testing.T) {
+	testCases := []struct {
+		name        string
+		pattern     string
+		omitPattern bool
+		flushAtEOF  bool
+		encoding    encoding.Encoding
+		input       []byte
+		steps       []splittest.Step
+	}{
+		// UTF-8 encoding tests
+		{
+			name:    "UTF8_EmptyInput",
+			pattern: `LOGEND`,
+			input:   []byte(""),
+		},
+		{
+			name:    "UTF8_PatternAtStart",
+			pattern: `LOGEND`,
+			input:   []byte("LOGEND rest of log"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGEND"),
+			},
+		},
+		{
+			name:        "UTF8_PatternAtStartOmitPattern",
+			pattern:     `LOGEND`,
+			omitPattern: true,
+			input:       []byte("LOGEND rest of log"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGEND"), ""),
+			},
+		},
+		{
+			name:    "UTF8_MatchAtEndOfBuffer",
+			pattern: `LOGEND`,
+			input:   []byte("log content LOGEND"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log content LOGEND"),
+			},
+		},
+		{
+			name:        "UTF8_MatchAtEndOfBufferOmitPattern",
+			pattern:     `LOGEND`,
+			omitPattern: true,
+			input:       []byte("log content LOGEND"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("log content LOGEND"), "log content "),
+			},
+		},
+		{
+			name:    "UTF8_ThreeLogs",
+			pattern: `LOGEND`,
+			input:   []byte("log1 LOGEND log2 LOGEND log3 LOGEND"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 LOGEND"),
+				splittest.ExpectToken(" log2 LOGEND"),
+				splittest.ExpectToken(" log3 LOGEND"),
+			},
+		},
+		{
+			name:        "UTF8_ThreeLogsOmitPattern",
+			pattern:     `LOGEND`,
+			omitPattern: true,
+			input:       []byte("log1 LOGEND log2 LOGEND log3 LOGEND"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("log1 LOGEND"), "log1 "),
+				splittest.ExpectAdvanceToken(len(" log2 LOGEND"), " log2 "),
+				splittest.ExpectAdvanceToken(len(" log3 LOGEND"), " log3 "),
+			},
+		},
+		{
+			name:       "UTF8_FlushAtEOFWithMatch",
+			pattern:    `LOGEND`,
+			flushAtEOF: true,
+			input:      []byte("log1 LOGEND log2"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 LOGEND"),
+				splittest.ExpectToken(" log2"),
+			},
+		},
+		{
+			name:       "UTF8_FlushAtEOFNoMatch",
+			pattern:    `LOGEND`,
+			flushAtEOF: true,
+			input:      []byte("log1 log2 log3"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 log2 log3"),
+			},
+		},
+		{
+			name:        "UTF8_FlushAtEOFNoMatchOmitPattern",
+			pattern:     `LOGEND`,
+			omitPattern: true,
+			flushAtEOF:  true,
+			input:       []byte("log1 log2 log3"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 log2 log3"),
+			},
+		},
+		{
+			name:       "UTF8_NoFlushAtEOFNoMatch",
+			pattern:    `LOGEND`,
+			flushAtEOF: false,
+			input:      []byte("log1 log2 log3"),
+		},
+		{
+			name:    "UTF8_RegexWithQuantifier",
+			pattern: ` \d{3}$`,
+			input:   []byte("log line 123\nlog line 456\nlog line 789"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log line 123"),
+				splittest.ExpectToken("\nlog line 456"),
+				splittest.ExpectToken("\nlog line 789"),
+			},
+		},
+		{
+			name:        "UTF8_RegexWithQuantifierOmitPattern",
+			pattern:     ` \d{3}$`,
+			omitPattern: true,
+			input:       []byte("log line 123\nlog line 456\nlog line 789"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("log line 123"), "log line"),
+				splittest.ExpectAdvanceToken(len("\nlog line 456"), "\nlog line"),
+				splittest.ExpectAdvanceToken(len("\nlog line 789"), "\nlog line"),
+			},
+		},
+		{
+			name:    "UTF8_MatchAtBufferBoundary",
+			pattern: `END`,
+			input:   []byte("log1 ENDlog2 END"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 END"),
+				splittest.ExpectToken("log2 END"),
+			},
+		},
+		{
+			name:    "UTF8_MultipleMatchesSameLine",
+			pattern: `END`,
+			input:   []byte("log1 END log2 END log3 END"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 END"),
+				splittest.ExpectToken(" log2 END"),
+				splittest.ExpectToken(" log3 END"),
+			},
+		},
+		// Edge cases with incomplete data
+		{
+			name:    "UTF8_MatchAtLastByte",
+			pattern: `X`,
+			input:   []byte("logX"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("logX"),
+			},
+		},
+		{
+			name:        "UTF8_MatchAtLastByteOmitPattern",
+			pattern:     `X`,
+			omitPattern: true,
+			input:       []byte("logX"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("logX"), "log"),
+			},
+		},
+		{
+			name:    "UTF8_ConsecutiveMatches",
+			pattern: `END`,
+			input:   []byte("ENDENDEND"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("END"),
+				splittest.ExpectToken("END"),
+				splittest.ExpectToken("END"),
+			},
+		},
+		{
+			name:        "UTF8_ConsecutiveMatchesOmitPattern",
+			pattern:     `END`,
+			omitPattern: true,
+			input:       []byte("ENDENDEND"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("END"), ""),
+				splittest.ExpectAdvanceToken(len("END"), ""),
+				splittest.ExpectAdvanceToken(len("END"), ""),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		if tc.encoding == nil {
+			tc.encoding = unicode.UTF8
+		}
+		re, err := regexp.Compile("(?m)" + tc.pattern)
+		require.NoError(t, err)
+		splitFunc := LineEndSplitFunc(re, tc.omitPattern, tc.flushAtEOF, tc.encoding)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
+}
+
+func TestLineStartSplitFunc_Comprehensive(t *testing.T) {
+	testCases := []struct {
+		name        string
+		pattern     string
+		omitPattern bool
+		flushAtEOF  bool
+		encoding    encoding.Encoding
+		input       []byte
+		steps       []splittest.Step
+	}{
+		// UTF-8 encoding tests
+		{
+			name:    "UTF8_EmptyInput",
+			pattern: `LOGSTART`,
+			input:   []byte(""),
+		},
+		{
+			name:    "UTF8_PatternAtStart",
+			pattern: `LOGSTART`,
+			input:   []byte("LOGSTART rest of log LOGSTART next log"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART rest of log "),
+			},
+		},
+		{
+			name:        "UTF8_PatternAtStartOmitPattern",
+			pattern:     `LOGSTART`,
+			omitPattern: true,
+			input:       []byte("LOGSTART rest of log LOGSTART next log"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART rest of log "), " rest of log "),
+			},
+		},
+		{
+			name:    "UTF8_PrecedingNonMatch",
+			pattern: `LOGSTART`,
+			input:   []byte("prefix LOGSTART rest LOGSTART next"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("prefix "),
+				splittest.ExpectToken("LOGSTART rest "),
+			},
+		},
+		{
+			name:        "UTF8_PrecedingNonMatchOmitPattern",
+			pattern:     `LOGSTART`,
+			omitPattern: true,
+			input:       []byte("prefix LOGSTART rest LOGSTART next"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("prefix "),
+				splittest.ExpectAdvanceToken(len("LOGSTART rest "), " rest "),
+			},
+		},
+		{
+			name:    "UTF8_ThreeLogs",
+			pattern: `LOGSTART`,
+			input:   []byte("LOGSTART log1 LOGSTART log2 LOGSTART log3"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART log1 "),
+				splittest.ExpectToken("LOGSTART log2 "),
+			},
+		},
+		{
+			name:        "UTF8_ThreeLogsOmitPattern",
+			pattern:     `LOGSTART`,
+			omitPattern: true,
+			input:       []byte("LOGSTART log1 LOGSTART log2 LOGSTART log3"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART log1 "), " log1 "),
+				splittest.ExpectAdvanceToken(len("LOGSTART log2 "), " log2 "),
+			},
+		},
+		{
+			name:       "UTF8_FlushAtEOFWithMatch",
+			pattern:    `LOGSTART`,
+			flushAtEOF: true,
+			input:      []byte("LOGSTART log1 LOGSTART log2"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART log1 "),
+				splittest.ExpectToken("LOGSTART log2"),
+			},
+		},
+		{
+			name:       "UTF8_FlushAtEOFNoMatch",
+			pattern:    `LOGSTART`,
+			flushAtEOF: true,
+			input:      []byte("log1 log2 log3"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 log2 log3"),
+			},
+		},
+		{
+			name:        "UTF8_FlushAtEOFNoMatchOmitPattern",
+			pattern:     `LOGSTART`,
+			omitPattern: true,
+			flushAtEOF:  true,
+			input:       []byte("log1 log2 log3"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 log2 log3"),
+			},
+		},
+		{
+			name:       "UTF8_NoFlushAtEOFNoMatch",
+			pattern:    `LOGSTART`,
+			flushAtEOF: false,
+			input:      []byte("log1 log2 log3"),
+		},
+		{
+			name:    "UTF8_RegexWithQuantifier",
+			pattern: `^\d+`,
+			input:   []byte("123 log line\n456 log line\n789 log line"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("123 log line\n"),
+				splittest.ExpectToken("456 log line\n"),
+			},
+		},
+		{
+			name:        "UTF8_RegexWithQuantifierOmitPattern",
+			pattern:     `^\d+`,
+			omitPattern: true,
+			input:       []byte("123 log line\n456 log line\n789 log line"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("123 log line\n"), " log line\n"),
+				splittest.ExpectAdvanceToken(len("456 log line\n"), " log line\n"),
+			},
+		},
+		{
+			name:    "UTF8_MatchAtBufferBoundary",
+			pattern: `START`,
+			input:   []byte("log1 STARTlog2 START"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 "),
+				splittest.ExpectToken("STARTlog2 "),
+			},
+		},
+		{
+			name:    "UTF8_MultipleMatchesSameLine",
+			pattern: `START`,
+			input:   []byte("START log1 START log2 START log3"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("START log1 "),
+				splittest.ExpectToken("START log2 "),
+			},
+		},
+		{
+			name:    "UTF8_EmptyToken",
+			pattern: `START`,
+			input:   []byte("STARTlog1 STARTlog2 STARTlog3"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("STARTlog1 "),
+				splittest.ExpectToken("STARTlog2 "),
+			},
+		},
+		{
+			name:        "UTF8_EmptyTokenOmitPattern",
+			pattern:     `START`,
+			omitPattern: true,
+			input:       []byte("STARTlog1 STARTlog2 STARTlog3"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("STARTlog1 "), "log1 "),
+				splittest.ExpectAdvanceToken(len("STARTlog2 "), "log2 "),
+			},
+		},
+		// Edge cases
+		{
+			name:    "UTF8_MatchAtEndOfBuffer",
+			pattern: `START`,
+			input:   []byte("logSTART nextSTART"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log"),
+				splittest.ExpectToken("START next"),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		if tc.encoding == nil {
+			tc.encoding = unicode.UTF8
+		}
+		re, err := regexp.Compile("(?m)" + tc.pattern)
+		require.NoError(t, err)
+		splitFunc := LineStartSplitFunc(re, tc.omitPattern, tc.flushAtEOF, tc.encoding)
 		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
 }

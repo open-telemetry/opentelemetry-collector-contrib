@@ -26,6 +26,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.48.1-0.20251218222727-bf28fa76882d
 	go.opentelemetry.io/collector/receiver/receivertest v0.142.1-0.20251218222727-bf28fa76882d
 	go.uber.org/zap v1.27.1
+	golang.org/x/text v0.31.0
 )
 
 require (
@@ -71,7 +72,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/text v0.31.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
 	google.golang.org/grpc v1.78.0 // indirect
