@@ -1222,7 +1222,8 @@ func Test_PushMetricsData_Histogram_NaN_Sum(t *testing.T) {
 	dp := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
 	dp.SetSum(math.NaN())
 
-	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c, err := newMetricsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	require.NoError(t, err)
 	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(t.Context(), metrics, map[string]string{})
@@ -1239,7 +1240,8 @@ func Test_PushMetricsData_Histogram_NaN_Sum_MultiMetric(t *testing.T) {
 	dp.SetSum(math.NaN())
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.UseMultiMetricFormat = true
-	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), cfg)
+	c, err := newMetricsClient(exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
 	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(t.Context(), metrics, map[string]string{})
@@ -1255,7 +1257,8 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 	dp := summary.SetEmptySummary().DataPoints().AppendEmpty()
 	dp.SetSum(math.NaN())
 
-	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c, err := newMetricsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	require.NoError(t, err)
 	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(t.Context(), metrics, map[string]string{})
@@ -1587,8 +1590,8 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		},
 	}
 
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
-
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	require.NoError(t, err)
 	for _, test := range tests {
 		for _, disabled := range []bool{true, false} {
 			t.Run(test.name(disabled), func(t *testing.T) {
@@ -1601,20 +1604,21 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 }
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
-
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	require.NoError(t, err)
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
 	log.Body().SetDouble(math.Inf(1))
 
-	err := c.pushLogData(t.Context(), logs)
+	err = c.pushLogData(t.Context(), logs)
 
 	assert.Error(t, err, "Permanent error: unsupported value: +Inf")
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	require.NoError(t, err)
 	c.hecWorker = &defaultHecWorker{url: &url.URL{Host: "in va lid"}, logger: zap.NewNop()}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
@@ -1622,7 +1626,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 	// 0 -> unlimited size batch, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
-	err := c.pushLogData(t.Context(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
 	var logsErr consumererror.Logs
 	assert.ErrorAs(t, err, &logsErr)
@@ -1653,7 +1657,8 @@ func Test_pushLogData_PostError(t *testing.T) {
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
-	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	splunkClient, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	require.NoError(t, err)
 	logs := createLogData(1, 1, 1)
 
 	responseBody := `some error occurred`
@@ -1662,7 +1667,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	httpClient, _ := newTestClient(400, responseBody)
 	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 	// Sending logs using the client.
-	err := splunkClient.pushLogData(t.Context(), logs)
+	err = splunkClient.pushLogData(t.Context(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
 	require.EqualError(t, err, "Permanent error: HTTP \"/v1/endpoint\" 400 \"Bad Request\"")
 	// The returned error should contain the response body responseBody.
@@ -1685,8 +1690,8 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	config.MaxContentLengthLogs, config.DisableCompression = 250, true
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
-
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	require.NoError(t, err)
 	// Just two records
 	logs := createLogData(2, 1, 1)
 
@@ -1694,7 +1699,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
-	err := c.pushLogData(t.Context(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
 
 	// Only the record that was not successfully sent should be returned
@@ -1710,8 +1715,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
 	config.MaxContentLengthLogs, config.DisableCompression = 300, true
 
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
-
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	require.NoError(t, err)
 	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs"}, []int{10})
 	profilingData := createLogDataWithCustomLibraries(1, []string{"otel.profiling"}, []int{20})
 	var headers *[]http.Header
@@ -1720,7 +1725,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
-	err := c.pushLogData(t.Context(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
 	err = c.pushLogData(t.Context(), profilingData)
 	require.NoError(t, err)
@@ -1803,7 +1808,8 @@ func benchPushLogData(b *testing.B, numResources, numRecords int, bufSize uint, 
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs = bufSize
 	config.DisableCompression = !compressionEnabled
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	require.NoError(b, err)
 	c.hecWorker = &mockHecWorker{}
 	exp, err := exporterhelper.NewLogs(b.Context(), exportertest.NewNopSettings(metadata.Type), config,
 		c.pushLogData)
@@ -1952,7 +1958,8 @@ func benchPushMetricData(b *testing.B, numResources, numRecords int, bufSize uin
 	config.MaxContentLengthMetrics = bufSize
 	config.DisableCompression = !compressionEnabled
 	config.UseMultiMetricFormat = useMultiMetricFormat
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	require.NoError(b, err)
 	c.hecWorker = &mockHecWorker{}
 	exp, err := exporterhelper.NewMetrics(b.Context(), exportertest.NewNopSettings(metadata.Type), config,
 		c.pushMetricsData)
@@ -1971,7 +1978,8 @@ func benchPushMetricData(b *testing.B, numResources, numRecords int, bufSize uin
 func BenchmarkConsumeLogsRejected(b *testing.B) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.DisableCompression = true
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	require.NoError(b, err)
 	c.hecWorker = &mockHecWorker{failSend: true}
 
 	exp, err := exporterhelper.NewLogs(b.Context(), exportertest.NewNopSettings(metadata.Type), config,
@@ -1997,10 +2005,11 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	for _, disable := range []bool{true, false} {
 		config.DisableCompression = disable
 
-		c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+		c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+		require.NoError(t, err)
 		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
-		err := c.pushLogData(t.Context(), logs)
+		err = c.pushLogData(t.Context(), logs)
 		require.Error(t, err)
 
 		assert.True(t, consumererror.IsPermanent(err))
@@ -2105,8 +2114,8 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.ExportRaw = true
 	cfg.MaxContentLengthLogs = 6
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), cfg)
-
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
 	// The first request succeeds, the second fails.
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
@@ -2118,7 +2127,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	logRecords.AppendEmpty().Body().SetStr("log-2-too-big") // should be permanently rejected as it's too big
 	logRecords.AppendEmpty().Body().SetStr("log-3")         // should be rejected and returned to for retry
 
-	err := c.pushLogData(t.Context(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	expectedErr := consumererror.Logs{}
 	require.ErrorContains(t, err, "503")
 	require.ErrorAs(t, err, &expectedErr)
@@ -2127,8 +2136,8 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 }
 
 func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
-	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
-
+	c, err := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	require.NoError(t, err)
 	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
@@ -2138,7 +2147,7 @@ func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
 	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
 
-	err := c.pushLogData(t.Context(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	expectedErr := consumererror.Logs{}
 	require.ErrorContains(t, err, "503")
 	require.ErrorAs(t, err, &expectedErr)
