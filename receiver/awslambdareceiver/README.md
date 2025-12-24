@@ -217,7 +217,78 @@ The Lambda function requires the following IAM permissions:
 - Error retrying 
 
   Error retrying can be configured through the Lambda deployment setting.
-  For example, errors can be forwarded to a S3 bucket.
   Read more about at [AWS error handling for asynchronous invocations](https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-configuring.html).
 
+- Retaining failed records
 
+  This component supports replaying retained failure records stored at S3.
+  Read more about retaining records at [Capture records of Lambda Async Invocations](https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-retain-records.html).
+
+### Error replaying from S3
+
+When an S3 bucket is configured as the destination for retaining failed Lambda records, the receiver supports replaying those failed events for reprocessing.
+To enable this feature, set the `failure_bucket_arn` configuration to the ARN of your S3 bucket used as the Lambda failure destination.
+
+```yaml
+receivers:
+  awslambda:
+    s3:
+      encoding: awslogs_encoding
+    failure_bucket_arn: "arn:aws:s3:::example"
+```
+
+With required configuration present, receiver accepts a custom event to trigger replaying failed events.
+Consider the event structure below,
+
+```json
+{
+  "replayFailedEvents": {
+    "dryrun": false,
+    "removeOnSuccess": true
+  }
+}
+```
+
+JSON key `replayFailedEvents` defines the custom event type for replaying failed events.
+The table below explains supported options,
+
+| Option          | Description                                                                                    | Default |
+|-----------------|------------------------------------------------------------------------------------------------|---------|
+| dryrun          | Run the command without processing. Useful to understand details about replaying error files   | false   |
+| removeOnSuccess | Configure whether to remove error event from S3 error destination, if processing is successful | true    |
+
+> [!NOTE]  
+> It is recommended to use "dryrun" mode to validate the number of replayable errors in the error destination bucket.
+> If there are many errors, the Lambda invocation may time out before processing all error entries.
+> If a timeout occur, you will need to run the custom event multiple times to fully process all error events from the bucket.
+
+### Running with AWS CLI
+
+First, obtain the name of the deployed Lambda function from your deployment.
+Then, invoke the Lambda with the following command:
+
+```shell
+aws lambda invoke \
+  --function-name <LAMBDA_DEPLOYMENT_NAME> \
+  --payload '{ "replayFailedEvents": {}}' \
+  --cli-binary-format raw-in-base64-out /dev/null
+```
+
+If successful, you should see `"StatusCode": 200` in the output.
+Check the CloudWatch logs for detailed information.
+
+> [!NOTE]
+> Using AWS CLI, you can use `--timeout` option to increase currently configured Lambda timeout for custom invocations.
+> Also note that errors resulting from this manual trigger are not retained back to S3 failure destination. 
+> This is because Lambda only retains errors for asynchronous invocations.
+
+To perform a dry run, use the following command with `dryrun` set to `true`:
+
+```shell
+aws lambda invoke \
+  --function-name <LAMBDA_DEPLOYMENT_NAME> \
+  --payload '{ "replayFailedEvents": { "dryrun": true }}' \
+  --cli-binary-format raw-in-base64-out /dev/null
+```
+
+This allows you to see how many error events are available for replay without actually processing them.

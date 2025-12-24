@@ -9,3 +9,6 @@ awslambda/json_log_encoding:
     encoding: json_log_encoding
 
 awslambda/empty_encoding:
+
+awslambda/with_failure_arn:
+  failure_bucket_arn: arn:aws:s3:::example
