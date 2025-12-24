@@ -103,103 +103,120 @@ func TestStringTagFilter(t *testing.T) {
 			Desc:      "invert nonmatching node attribute key",
 			Trace:     newTraceStringAttrs(map[string]any{"non_matching": "value"}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:      "invert nonmatching node attribute value",
 			Trace:     newTraceStringAttrs(map[string]any{"example": "non_matching"}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:      "invert nonmatching node attribute list",
 			Trace:     newTraceStringAttrs(map[string]any{"example": "non_matching"}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"first_value", "value", "last_value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:      "invert matching node attribute",
 			Trace:     newTraceStringAttrs(map[string]any{"example": "value"}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertNotSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
 			Desc:      "invert matching node attribute list",
 			Trace:     newTraceStringAttrs(map[string]any{"example": "value"}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"first_value", "value", "last_value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertNotSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
 			Desc:      "invert nonmatching span attribute key",
 			Trace:     newTraceStringAttrs(nil, "nonmatching", "value"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:      "invert nonmatching span attribute value",
 			Trace:     newTraceStringAttrs(nil, "example", "nonmatching"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:      "invert nonmatching span attribute list",
 			Trace:     newTraceStringAttrs(nil, "example", "nonmatching"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"first_value", "value", "last_value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:      "invert matching span attribute",
 			Trace:     newTraceStringAttrs(nil, "example", "value"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertNotSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
 			Desc:      "invert matching span attribute list",
 			Trace:     newTraceStringAttrs(nil, "example", "value"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"first_value", "value", "last_value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertNotSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
 			Desc:      "invert matching span attribute with regex",
 			Trace:     newTraceStringAttrs(nil, "example", "grpc.health.v1.HealthCheck"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"v[0-9]+.HealthCheck$"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertNotSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
 			Desc:      "invert matching span attribute with regex list",
 			Trace:     newTraceStringAttrs(nil, "example", "grpc.health.v1.HealthCheck"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"^http", "v[0-9]+.HealthCheck$", "metrics$"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertNotSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
 			Desc:      "invert nonmatching span attribute with regex",
 			Trace:     newTraceStringAttrs(nil, "example", "grpc.health.v1.HealthCheck"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"v[a-z]+.HealthCheck$"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:      "invert nonmatching span attribute with regex list",
 			Trace:     newTraceStringAttrs(nil, "example", "grpc.health.v1.HealthCheck"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"^http", "v[a-z]+.HealthCheck$", "metrics$"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:      "invert matching plain text node attribute in regex",
 			Trace:     newTraceStringAttrs(map[string]any{"example": "value"}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertNotSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
 			Desc:      "invert matching plain text node attribute in regex list",
 			Trace:     newTraceStringAttrs(map[string]any{"example": "value"}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"first_value", "value", "last_value"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize, InvertMatch: true},
-			Decision:  samplingpolicy.InvertNotSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
 			Desc:      "invert nonmatching span attribute on empty filter list",
 			Trace:     newTraceStringAttrs(nil, "example", "grpc.health.v1.HealthCheck"),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{}, EnabledRegexMatching: true, InvertMatch: true},
-			Decision:  samplingpolicy.InvertSampled,
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Decision: samplingpolicy.InvertSampled,
 		},
 		{
 			Desc:                  "invert matching node attribute key with DisableInvertDecision",
@@ -219,11 +236,11 @@ func TestStringTagFilter(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			if c.DisableInvertDecision {
-				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", true)
+			if !c.DisableInvertDecision {
+				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", false)
 				assert.NoError(t, err)
 				defer func() {
-					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", false)
+					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", true)
 					assert.NoError(t, err)
 				}()
 			}
