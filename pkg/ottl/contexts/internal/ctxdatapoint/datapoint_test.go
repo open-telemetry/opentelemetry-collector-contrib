@@ -2031,3 +2031,277 @@ func (m *testContext) GetDataPoint() any {
 func newTestContext(dataPoint any) *testContext {
 	return &testContext{dataPoint: dataPoint}
 }
+
+func TestPathGetSetter_SetterTypeValidation(t *testing.T) {
+	tests := []struct {
+		name         string
+		path         ottl.Path[*testContext]
+		dataPoint    any
+		invalidValue any
+		errContains  string
+	}{
+		{
+			name: "start_time_unix_nano invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "start_time_unix_nano",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeInt),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "time_unix_nano invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "time_unix_nano",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeInt),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "start_time invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "start_time",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeInt),
+			invalidValue: "invalid",
+			errContains:  "expects time.Time",
+		},
+		{
+			name: "time invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "time",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeInt),
+			invalidValue: "invalid",
+			errContains:  "expects time.Time",
+		},
+		{
+			name: "value_double invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "value_double",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeDouble),
+			invalidValue: "invalid",
+			errContains:  "expects float64",
+		},
+		{
+			name: "value_int invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "value_int",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeInt),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "flags invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "flags",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeInt),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "exemplars invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "exemplars",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeInt),
+			invalidValue: "invalid",
+			errContains:  "expects pmetric.ExemplarSlice",
+		},
+		{
+			name: "attributes invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			dataPoint:    createNumberDataPoint(pmetric.NumberDataPointValueTypeInt),
+			invalidValue: "invalid",
+			errContains:  "unsupported type provided for setting a pcommon.Map",
+		},
+		{
+			name: "count invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "count",
+			},
+			dataPoint:    createHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "sum invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "sum",
+			},
+			dataPoint:    createHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects float64",
+		},
+		{
+			name: "explicit_bounds invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "explicit_bounds",
+			},
+			dataPoint:    createHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "invalid type provided for setting a slice",
+		},
+		{
+			name: "explicit_bounds invalid slice element type",
+			path: &pathtest.Path[*testContext]{
+				N: "explicit_bounds",
+			},
+			dataPoint:    createHistogramDataPointTelemetry(),
+			invalidValue: []any{"not", "floats"},
+			errContains:  "invalid value type provided for a slice of float64",
+		},
+		{
+			name: "bucket_counts invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "bucket_counts",
+			},
+			dataPoint:    createHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "cannot set a slice of",
+		},
+		{
+			name: "bucket_counts invalid slice element type",
+			path: &pathtest.Path[*testContext]{
+				N: "bucket_counts",
+			},
+			dataPoint:    createHistogramDataPointTelemetry(),
+			invalidValue: []any{"not", "ints"},
+			errContains:  "invalid value type provided for a slice of uint64",
+		},
+		{
+			name: "scale invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "scale",
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "zero_count invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "zero_count",
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "positive invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "positive",
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects pmetric.ExponentialHistogramDataPointBuckets",
+		},
+		{
+			name: "positive.offset invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "positive",
+				NextPath: &pathtest.Path[*testContext]{
+					N: "offset",
+				},
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "positive.bucket_counts invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "positive",
+				NextPath: &pathtest.Path[*testContext]{
+					N: "bucket_counts",
+				},
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "cannot set a slice of",
+		},
+		{
+			name: "positive.bucket_counts invalid slice element type",
+			path: &pathtest.Path[*testContext]{
+				N: "positive",
+				NextPath: &pathtest.Path[*testContext]{
+					N: "bucket_counts",
+				},
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: []any{"not", "ints"},
+			errContains:  "invalid value type provided for a slice of uint64",
+		},
+		{
+			name: "negative invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "negative",
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects pmetric.ExponentialHistogramDataPointBuckets",
+		},
+		{
+			name: "negative.offset invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "negative",
+				NextPath: &pathtest.Path[*testContext]{
+					N: "offset",
+				},
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects int64",
+		},
+		{
+			name: "negative.bucket_counts invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "negative",
+				NextPath: &pathtest.Path[*testContext]{
+					N: "bucket_counts",
+				},
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "cannot set a slice of",
+		},
+		{
+			name: "negative.bucket_counts invalid slice element type",
+			path: &pathtest.Path[*testContext]{
+				N: "negative",
+				NextPath: &pathtest.Path[*testContext]{
+					N: "bucket_counts",
+				},
+			},
+			dataPoint:    createExpoHistogramDataPointTelemetry(),
+			invalidValue: []any{"not", "ints"},
+			errContains:  "invalid value type provided for a slice of uint64",
+		},
+		{
+			name: "quantile_values invalid type",
+			path: &pathtest.Path[*testContext]{
+				N: "quantile_values",
+			},
+			dataPoint:    createSummaryDataPointTelemetry(),
+			invalidValue: "invalid",
+			errContains:  "expects pmetric.SummaryDataPointValueAtQuantileSlice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := ctxdatapoint.PathGetSetter(tt.path)
+			require.NoError(t, err)
+
+			ctx := newTestContext(tt.dataPoint)
+			err = accessor.Set(t.Context(), ctx, tt.invalidValue)
+			assert.ErrorContains(t, err, tt.errContains)
+		})
+	}
+}
