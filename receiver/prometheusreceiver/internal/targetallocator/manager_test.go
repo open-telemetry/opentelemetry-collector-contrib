@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -99,6 +100,78 @@ func TestManagerShutdown(t *testing.T) {
 		logEntries := logs.FilterMessage("Stopping target allocator")
 		return logEntries.Len() > 0
 	}, 5*time.Second, 50*time.Millisecond, "expected shutdown log message")
+}
+
+// TestManagerShutdown_Synctest demonstrates why synctest cannot be used with tests
+// that involve HTTP servers. This test will timeout because:
+//
+//  1. httptest.Server creates goroutines that perform real network I/O
+//  2. synctest bubbles only control "durably blocked" goroutines (those waiting on
+//     channels, timers, or other bubble-internal operations)
+//  3. Goroutines blocked on network I/O (socket reads/writes) are NOT considered
+//     "durably blocked" by synctest - they're waiting on external OS events
+//  4. synctest.Wait() will never return because it's waiting for the HTTP server
+//     goroutines to become durably blocked, but they never will
+//
+// DO NOT RUN THIS TEST - it will hang until the test timeout
+func TestManagerShutdown_Synctest(t *testing.T) {
+	t.Skip("SKIP: This test demonstrates synctest limitations with HTTP - it will hang indefinitely")
+
+	synctest.Test(t, func(t *testing.T) {
+		// Create a mock target allocator server
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			if r.URL.Path == "/scrape_configs" {
+				_, _ = w.Write([]byte("{}"))
+			}
+		}))
+		defer server.Close()
+
+		cfg := &Config{
+			Interval:    100 * time.Millisecond,
+			CollectorID: "test-collector",
+		}
+		cfg.Endpoint = server.URL
+		promCfg, err := promconfig.Load("", nil)
+		require.NoError(t, err)
+
+		// Create a logger with observer to capture logs
+		core, logs := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+		settings := receivertest.NewNopSettings(metadata.Type)
+		settings.Logger = logger
+
+		manager := NewManager(settings, cfg, promCfg)
+
+		ctx := t.Context()
+
+		promLogger := promslog.NewNopLogger()
+		reg := prometheus.NewRegistry()
+		sdMetrics, err := discovery.RegisterSDMetrics(reg, discovery.NewRefreshMetrics(reg))
+		require.NoError(t, err)
+		discoveryManager := discovery.NewManager(ctx, promLogger, reg, sdMetrics)
+		require.NotNil(t, discoveryManager)
+
+		scrapeManager, err := scrape.NewManager(&scrape.Options{}, promLogger, nil, nil, reg)
+		require.NoError(t, err)
+		defer scrapeManager.Stop()
+
+		err = manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager)
+		require.NoError(t, err)
+
+		// In theory, this should wait for all goroutines to be blocked on the ticker
+		// In practice, this hangs because HTTP server goroutines are blocked on
+		// network I/O, which synctest doesn't recognize as "durably blocked"
+		synctest.Wait()
+
+		manager.Shutdown()
+
+		synctest.Wait()
+
+		// We never get here because synctest.Wait() hangs
+		logEntries := logs.FilterMessage("Stopping target allocator")
+		require.Greater(t, logEntries.Len(), 0, "expected shutdown log message")
+	})
 }
 
 func TestInstantiateShard(t *testing.T) {

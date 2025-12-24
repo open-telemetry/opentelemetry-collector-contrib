@@ -16,6 +16,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/goccy/go-yaml"
@@ -891,4 +892,72 @@ func prometheusMetricFamilyToProtoBuf(t *testing.T, buffer *bytes.Buffer, metric
 	require.NoError(t, err)
 
 	return buffer
+}
+
+// TestScrapeWithSynctest_Demonstration demonstrates why synctest cannot be used
+// for Prometheus scraping tests.
+//
+// The Prometheus receiver's core functionality involves:
+// 1. Running HTTP servers (mockPrometheus) to serve metrics
+// 2. The scrape manager making HTTP requests to scrape those metrics
+// 3. Processing the scraped data and sending to consumers
+//
+// All of these operations involve real network I/O, which are
+// incompatible with synctest's fake clock mechanism.
+//
+// DO NOT RUN THIS TEST - it will hang until the test timeout
+func TestScrapeWithSynctest_Demonstration(t *testing.T) {
+	t.Skip("SKIP: This test demonstrates synctest limitations with Prometheus scraping - it will hang indefinitely")
+
+	synctest.Test(t, func(t *testing.T) {
+		testData := &testData{
+			name: "synctest_demo",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: `
+# HELP demo_counter A demo counter
+# TYPE demo_counter counter
+demo_counter 42
+`},
+			},
+			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+				// We never get here because synctest.Wait() hangs
+				require.NotEmpty(t, result)
+			},
+		}
+
+		// Setup creates an httptest.Server
+		mp, cfg, err := setupMockPrometheus(testData)
+		require.NoError(t, err)
+		defer mp.Close()
+
+		cms := new(consumertest.MetricsSink)
+		receiver, err := newPrometheusReceiver(
+			receivertest.NewNopSettings(metadata.Type),
+			&Config{PrometheusConfig: cfg},
+			cms,
+		)
+		require.NoError(t, err)
+		receiver.skipOffsetting = true
+
+		ctx := t.Context()
+		require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+		defer func() {
+			require.NoError(t, receiver.Shutdown(ctx))
+		}()
+
+		// The scrape manager is now running and will try to scrape the mock server.
+		// In a normal test, we'd use waitForScrapeResults() which uses assert.Eventually()
+		// to poll for results.
+
+		// With synctest, we might think we can just wait for goroutines to settle:
+		// This will hang forever because:
+		// 1. The HTTP server goroutine is blocked on Accept() - waiting for connections
+		// 2. The scrape manager goroutines are blocked on HTTP client operations
+		// 3. These are all "real" I/O operations that synctest doesn't control
+		synctest.Wait()
+
+		// We never reach this point
+		metrics := cms.AllMetrics()
+		require.NotEmpty(t, metrics, "Expected to receive scraped metrics")
+	})
 }

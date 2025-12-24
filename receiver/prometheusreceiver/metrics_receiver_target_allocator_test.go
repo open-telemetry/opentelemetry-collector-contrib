@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/goccy/go-yaml"
@@ -171,4 +172,93 @@ func (mp *mockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	_, _ = rw.Write(data)
+}
+
+// TestTargetAllocatorProvidesEmptyScrapeConfig_Synctest demonstrates why synctest
+// cannot be used for end-to-end Prometheus receiver tests.
+//
+// This test involves multiple HTTP servers:
+// 1. mockPrometheus - serves the /metrics endpoint with Prometheus metrics
+// 2. mockTargetAllocator - serves target discovery information
+//
+// The problem is because:
+// - The Prometheus receiver's scrape manager creates HTTP clients to scrape targets
+// - These clients perform real network I/O to reach the mock servers
+// - synctest.Wait() hangs because multiple goroutines are blocked on network I/O:
+//   - HTTP server accept loops waiting for connections
+//   - HTTP client connections waiting for responses
+//   - Scrape manager goroutines waiting for scrape results
+//
+// DO NOT RUN THIS TEST - it will hang until the test timeout
+func TestTargetAllocatorProvidesEmptyScrapeConfig_Synctest(t *testing.T) {
+	t.Skip("SKIP: This test demonstrates synctest limitations with HTTP - it will hang indefinitely")
+
+	synctest.Test(t, func(t *testing.T) {
+		// PROBLEM 1: This creates an HTTP server with goroutines blocked on network I/O
+		mockProm := newMockPrometheus(map[string][]mockPrometheusResponse{
+			"/metrics": {
+				{
+					code: 200,
+					data: exportedMetrics,
+				},
+			},
+		})
+		t.Cleanup(func() { mockProm.srv.Close() })
+
+		// PROBLEM 2: Another HTTP server with more goroutines blocked on network I/O
+		tas := newMockTargetAllocator(mockProm.srv.Listener.Addr().String())
+		t.Cleanup(func() { tas.srv.Close() })
+
+		promSDConfig := &promHTTP.SDConfig{
+			RefreshInterval: model.Duration(45 * time.Second),
+			URL:             tas.srv.URL,
+		}
+
+		pCfg, err := promConfig.Load("", promslog.NewNopLogger())
+		require.NoError(t, err)
+
+		config := &Config{
+			PrometheusConfig:     (*PromConfig)(pCfg),
+			StartTimeMetricRegex: "",
+			TargetAllocator: configoptional.Some(targetallocator.Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: tas.srv.URL,
+				},
+				CollectorID:  "1",
+				HTTPSDConfig: (*targetallocator.PromHTTPSDConfig)(promSDConfig),
+				Interval:     60 * time.Second,
+			}),
+		}
+
+		cms := new(consumertest.MetricsSink)
+		settings := receivertest.NewNopSettings(metadata.Type)
+		logsOverWarn := atomic.Int64{}
+		settings.Logger, err = zap.NewDevelopment(zap.Hooks(func(logentry zapcore.Entry) error {
+			if logentry.Level >= zapcore.WarnLevel {
+				logsOverWarn.Add(1)
+			}
+			return nil
+		}))
+		require.NoError(t, err)
+		receiver, err := newPrometheusReceiver(settings, config, cms)
+		require.NoError(t, err, "Failed to create Prometheus receiver")
+		receiver.skipOffsetting = true
+
+		require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()), "Failed to start Prometheus receiver")
+		t.Cleanup(func() {
+			require.NoError(t, receiver.Shutdown(t.Context()))
+		})
+
+		// PROBLEM 3: This will HANG forever
+		// synctest.Wait() is waiting for all goroutines to be "durably blocked"
+		// but the HTTP server goroutines and scrape manager goroutines are blocked
+		// on network I/O, which synctest doesn't recognize as durably blocked
+		synctest.Wait()
+
+		// We never reach this point
+		metrics := cms.AllMetrics()
+		require.Greater(t, len(metrics), 0, "Expected to receive metrics")
+
+		require.Zero(t, logsOverWarn.Load(), "There are log messages over the WARN level, see logs")
+	})
 }
