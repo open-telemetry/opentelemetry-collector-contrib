@@ -896,6 +896,9 @@ func generateIDsAndBatches(numIDs int) ([]pcommon.TraceID, []ptrace.Traces) {
 			span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 			span.SetTraceID(traceIDs[i])
 
+			if j != 0 {
+				span.SetParentSpanID(uInt64ToSpanID(uint64(spanID)))
+			}
 			spanID++
 			span.SetSpanID(uInt64ToSpanID(uint64(spanID)))
 			tds = append(tds, td)
@@ -946,6 +949,7 @@ func newSyncIDBatcher() idbatcher.Batcher {
 	batches <- nil
 	return &syncIDBatcher{
 		batchPipe: batches,
+		openBatch: idbatcher.Batch{},
 	}
 }
 
@@ -954,7 +958,7 @@ func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
 	if s.stopped {
 		panic("cannot add to stopped batcher!")
 	}
-	s.openBatch = append(s.openBatch, id)
+	s.openBatch[id] = struct{}{}
 	s.Unlock()
 }
 
@@ -964,12 +968,14 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	firstBatch, ok := <-s.batchPipe
 	// When batchPipe is closed it means we have stopped and just need to return the openBatch as the last entries.
 	if !ok {
-		return s.openBatch, false
+		batch := s.openBatch
+		s.openBatch = nil
+		return batch, false
 	}
 	// Do not move the open batch to the channel if we are stopped. It will panic, we return it once the channel is closed instead.
 	if !s.stopped {
 		s.batchPipe <- s.openBatch
-		s.openBatch = nil
+		s.openBatch = idbatcher.Batch{}
 	}
 	return firstBatch, true
 }
@@ -1132,6 +1138,54 @@ func TestDeleteQueueCleared(t *testing.T) {
 	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
 	// All traces should be removed from the delete queue.
 	assert.Zero(t, sp.(*tailSamplingSpanProcessor).deleteTraceQueue.Len())
+}
+
+func TestRootReceivedBatcher(t *testing.T) {
+	traceIDs, batches := generateIDsAndBatches(128)
+	cfg := Config{
+		DecisionWait:            time.Minute,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    128,
+			NonSampledCacheSize: 128,
+		},
+		PolicyCfgs: []PolicyCfg{
+			{sharedPolicyCfg: sharedPolicyCfg{
+				Name: "test-policy",
+				Type: Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{
+					SamplingPercentage: 50,
+				},
+			}},
+		},
+		DecisionWaitAfterRootReceived: time.Second,
+		DropPendingTracesOnShutdown:   true,
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = sp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = sp.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	for _, batch := range batches {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+	}
+	// Wait long enough that we pass the decision wait after a root is received,
+	// but no where near the base decision wait.
+	time.Sleep(2 * time.Second)
+
+	// Make sure about half of traces are sampled before a tick is called.
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Less(t, len(allSampledTraces), len(traceIDs)*6/10)
+	assert.Greater(t, len(allSampledTraces), len(traceIDs)*4/10)
 }
 
 func TestExtension(t *testing.T) {
