@@ -98,6 +98,81 @@ func Test_truncateAll(t *testing.T) {
 	}
 }
 
+func Test_truncateAll_UTF8(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		limit  int64
+		expect string
+	}{
+		{
+			name:   "mid-rune truncation backs up to boundary",
+			input:  "ab😀c", // 'ab' (2) + emoji (4) + 'c' (1) = 7 bytes
+			limit:  4,      // cuts inside emoji, backs up to 'ab'
+			expect: "ab",
+		},
+		{
+			name:   "exact rune boundary preserved",
+			input:  "ab😀c",
+			limit:  6, // exactly after emoji
+			expect: "ab😀",
+		},
+		{
+			name:   "invalid UTF-8 uses byte-level cut",
+			input:  string([]byte{0x80, 0x81, 0x82, 0x83}),
+			limit:  2,
+			expect: string([]byte{0x80, 0x81}),
+		},
+		{
+			// Grapheme cluster: "👩🏾‍🦳" (woman with white hair) is 1 visible character
+			// but consists of 4 Unicode code points (runes):
+			//   👩 (woman)           = 4 bytes (f0 9f 91 a9)
+			//   🏾 (skin tone)       = 4 bytes (f0 9f 8f be)
+			//   ‍ (zero-width joiner) = 3 bytes (e2 80 8d)
+			//   🦳 (white hair)      = 4 bytes (f0 9f a6 b3)
+			// Total: 15 bytes, 4 runes, 1 visible character
+			// Truncating at limit=10 lands in the middle of the byte 9-11,
+			// so we back up to byte 8 (end of skin tone modifier).
+			// Result is valid UTF-8 but a split grapheme cluster.
+			name:   "grapheme cluster truncates at rune boundary not grapheme boundary",
+			input:  "👩🏾‍🦳",
+			limit:  10,
+			expect: "👩🏾",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scenarioMap := pcommon.NewMap()
+			scenarioMap.PutStr("test", tt.input)
+
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc, err := TruncateAll(target, tt.limit)
+			require.NoError(t, err)
+
+			_, err = exprFunc(nil, scenarioMap)
+			require.NoError(t, err)
+			assert.True(t, setterWasCalled)
+
+			result, _ := scenarioMap.Get("test")
+			assert.Equal(t, tt.expect, result.Str())
+		})
+	}
+}
+
 func Test_truncateAll_validation(t *testing.T) {
 	_, err := TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, -1)
 	require.Error(t, err)
