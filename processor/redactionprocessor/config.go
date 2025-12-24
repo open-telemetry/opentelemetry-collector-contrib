@@ -49,8 +49,8 @@ type Config struct {
 	// without being changed or removed.
 	IgnoredKeys []string `mapstructure:"ignored_keys"`
 
-	// IgnoredKeyPatterns is a list of span attribute key patterns (regex) that are not redacted.
-	// Span attributes matching any of these patterns are allowed to pass through the filter
+	// IgnoredKeyPatterns is a list of attribute key patterns (regex) that are not redacted.
+	// attributes matching any of these patterns are allowed to pass through the filter
 	// without their values being checked or modified.
 	IgnoredKeyPatterns []string `mapstructure:"ignored_key_patterns"`
 

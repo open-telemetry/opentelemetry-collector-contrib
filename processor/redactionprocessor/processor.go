@@ -506,7 +506,7 @@ func (s *redaction) shouldIgnoreKey(k string) bool {
 	}
 	// Check if key matches any of the ignored key patterns
 	for _, compiledRE := range s.ignoreKeyRegexList {
-		if match := compiledRE.MatchString(k); match {
+		if compiledRE.MatchString(k) {
 			return true
 		}
 	}
