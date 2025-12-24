@@ -87,6 +87,7 @@ type processHandle interface {
 	MemoryPercentWithContext(context.Context) (float32, error)
 	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
 	NumThreadsWithContext(context.Context) (int32, error)
+	ThreadsWithContext(context.Context) (map[int32]*cpu.TimesStat, error)
 	CreateTimeWithContext(context.Context) (int64, error)
 	PpidWithContext(context.Context) (int32, error)
 	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)
@@ -100,6 +101,16 @@ type processHandle interface {
 
 type gopsProcessHandles struct {
 	handles []wrappedProcessHandle
+}
+
+func wrapGopsProcessHandles(processes []*process.Process) processHandles {
+	wrapped := make([]wrappedProcessHandle, len(processes))
+	for i, p := range processes {
+		wrapped[i] = wrappedProcessHandle{
+			Process: p,
+		}
+	}
+	return &gopsProcessHandles{handles: wrapped}
 }
 
 func (p *gopsProcessHandles) Pid(index int) int32 {
