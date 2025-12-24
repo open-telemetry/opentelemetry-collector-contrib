@@ -53,8 +53,8 @@ func StandardLogFuncs() map[string]ottl.Factory[*ottllog.TransformContext] {
 	return ottlfuncs.StandardConverters[*ottllog.TransformContext]()
 }
 
-func StandardProfileFuncs() map[string]ottl.Factory[ottlprofile.TransformContext] {
-	return ottlfuncs.StandardConverters[ottlprofile.TransformContext]()
+func StandardProfileFuncs() map[string]ottl.Factory[*ottlprofile.TransformContext] {
+	return ottlfuncs.StandardConverters[*ottlprofile.TransformContext]()
 }
 
 func StandardResourceFuncs() map[string]ottl.Factory[*ottlresource.TransformContext] {

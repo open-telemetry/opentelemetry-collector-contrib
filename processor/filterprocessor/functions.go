@@ -76,7 +76,7 @@ func DefaultSpanEventFunctionsNew() []ottl.Factory[*ottlspanevent.TransformConte
 	return slices.Collect(maps.Values(defaultSpanEventFunctionsMap()))
 }
 
-func DefaultProfileFunctions() []ottl.Factory[ottlprofile.TransformContext] {
+func DefaultProfileFunctions() []ottl.Factory[*ottlprofile.TransformContext] {
 	return slices.Collect(maps.Values(defaultProfileFunctionsMap()))
 }
 
@@ -104,7 +104,7 @@ func defaultSpanEventFunctionsMap() map[string]ottl.Factory[*ottlspanevent.Trans
 	return filterottl.StandardSpanEventFuncs()
 }
 
-func defaultProfileFunctionsMap() map[string]ottl.Factory[ottlprofile.TransformContext] {
+func defaultProfileFunctionsMap() map[string]ottl.Factory[*ottlprofile.TransformContext] {
 	return filterottl.StandardProfileFuncs()
 }
 
