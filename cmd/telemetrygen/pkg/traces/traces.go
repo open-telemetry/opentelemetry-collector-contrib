@@ -70,12 +70,20 @@ func Start(cfg *Config) error {
 
 	var ssp sdktrace.SpanProcessor
 	if cfg.Batch {
-		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second), sdktrace.WithMaxExportBatchSize(cfg.BatchSize))
 		defer func() {
 			logger.Info("stop the batch span processor")
 
 			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
 				logger.Error("failed to stop the batch span processor", zap.Error(tempError))
+			}
+		}()
+	} else {
+		ssp = sdktrace.NewSimpleSpanProcessor(exp)
+		defer func() {
+			logger.Info("stop the simple span processor")
+			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
+				logger.Error("failed to stop the simple span processor", zap.Error(tempError))
 			}
 		}()
 	}
@@ -87,9 +95,7 @@ func Start(cfg *Config) error {
 		sdktrace.WithResource(resource.NewWithAttributes(conventions.SchemaURL, attributes...)),
 	)
 
-	if cfg.Batch {
-		tracerProvider.RegisterSpanProcessor(ssp)
-	}
+	tracerProvider.RegisterSpanProcessor(ssp)
 
 	otel.SetTracerProvider(tracerProvider)
 
