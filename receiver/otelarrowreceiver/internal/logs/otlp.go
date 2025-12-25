@@ -42,14 +42,18 @@ func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper
 func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	ld := req.Logs()
 	numRecords := ld.LogRecordCount()
-	if numRecords == 0 {
+	sizeBytes := uint64(r.sizer.LogsSize(ld))
+
+	// Early return for truly empty requests (no data at all).
+	// We check size rather than record count to ensure requests with
+	// metadata but no log records still go through admission control.
+	if sizeBytes == 0 {
 		return plogotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartLogsOp(ctx)
 
 	var err error
-	sizeBytes := uint64(r.sizer.LogsSize(req.Logs()))
 	if releaser, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeLogs(ctx, ld)
 		releaser() // immediate release
