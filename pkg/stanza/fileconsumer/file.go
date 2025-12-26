@@ -176,7 +176,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
-	file, err := os.Open(path) // #nosec - operator must read in files defined by user
+	file, err := openFile(path)
 	if err != nil {
 		m.set.Logger.Error("Failed to open file", zap.Error(err))
 		return nil, nil
