@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,36 +45,6 @@ func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 	require.NoError(t, err, "Failed to handle workflow run event")
 
 	expectedFile := filepath.Join("testdata", "workflow-run-expected.yaml")
-
-	// Uncomment the following line to update the golden file
-	// golden.WriteTraces(t, expectedFile, traces)
-
-	expectedTraces, err := golden.ReadTraces(expectedFile)
-	require.NoError(t, err, "Failed to read expected traces")
-
-	require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
-}
-
-func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
-	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
-	consumer := consumertest.NewNop()
-
-	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
-	require.NoError(t, err, "failed to create receiver")
-
-	testFilePath := filepath.Join("testdata", "workflow-job-completed.json")
-	data, err := os.ReadFile(testFilePath)
-	require.NoError(t, err, "Failed to read test data file")
-
-	var event github.WorkflowJobEvent
-	err = json.Unmarshal(data, &event)
-	require.NoError(t, err, "Failed to unmarshal workflow job event")
-
-	traces, err := receiver.handleWorkflowJob(&event, data)
-	require.NoError(t, err, "Failed to handle workflow job event")
-
-	expectedFile := filepath.Join("testdata", "workflow-job-expected.yaml")
 
 	// Uncomment the following line to update the golden file
 	// golden.WriteTraces(t, expectedFile, traces)
@@ -130,6 +102,96 @@ func TestHandleWorkflowJobWithGoldenFileSkipped(t *testing.T) {
 	require.Equal(t, float64(0), queueAttr.Double())
 
 	require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
+}
+
+func TestWorkflowJobIDMatchesCheckRunID(t *testing.T) {
+	// This test verifies that workflow_job.id corresponds to the check_run_id
+	// (the numeric ID in check_run_url). This is a critical assumption for the
+	// github_context ID generation mode.
+	testFilePath := filepath.Join("testdata", "workflow-job-completed.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowJobEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow job event")
+
+	// Extract check_run_id from check_run_url
+	// Example: https://api.github.com/repos/open-telemetry/open-telemetry-otel-collector/check-runs/40685651258
+	checkRunURL := event.GetWorkflowJob().GetCheckRunURL()
+	require.NotEmpty(t, checkRunURL, "check_run_url should not be empty")
+
+	// Parse the numeric ID from the URL
+	parts := strings.Split(checkRunURL, "/")
+	require.Greater(t, len(parts), 0, "check_run_url should have path components")
+
+	checkRunIDFromURL := parts[len(parts)-1]
+	require.NotEmpty(t, checkRunIDFromURL, "check_run_id should be extractable from URL")
+
+	// Convert to int64 for comparison
+	checkRunIDInt, err := strconv.ParseInt(checkRunIDFromURL, 10, 64)
+	require.NoError(t, err, "check_run_id from URL should be a valid int64")
+
+	// Verify it matches workflow_job.id
+	workflowJobID := event.GetWorkflowJob().GetID()
+	require.Equal(t, checkRunIDInt, workflowJobID,
+		"workflow_job.id (%d) must match the check_run_id from check_run_url (%d)",
+		workflowJobID, checkRunIDInt)
+}
+
+func TestHandleWorkflowJobWithGoldenFileIDGeneration(t *testing.T) {
+	tests := []struct {
+		name              string
+		idGeneration      string
+		inputFile         string
+		expectedFile      string
+	}{
+		{
+			name:          "legacy mode",
+			idGeneration:  "legacy",
+			inputFile:     "workflow-job-completed.json",
+			expectedFile:  "workflow-job-expected.yaml",
+		},
+		{
+			name:          "check_run_id mode",
+			idGeneration:  "check_run_id",
+			inputFile:     "workflow-job-completed.json",
+			expectedFile:  "workflow-job-expected-check-run-id.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defaultConfig := createDefaultConfig().(*Config)
+			defaultConfig.WebHook.Endpoint = "localhost:0"
+			defaultConfig.WebHook.IDGeneration = tt.idGeneration
+			consumer := consumertest.NewNop()
+
+			receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
+			require.NoError(t, err, "failed to create receiver")
+
+			testFilePath := filepath.Join("testdata", tt.inputFile)
+			data, err := os.ReadFile(testFilePath)
+			require.NoError(t, err, "Failed to read test data file")
+
+			var event github.WorkflowJobEvent
+			err = json.Unmarshal(data, &event)
+			require.NoError(t, err, "Failed to unmarshal workflow job event")
+
+			traces, err := receiver.handleWorkflowJob(&event, data)
+			require.NoError(t, err, "Failed to handle workflow job event")
+
+			expectedFile := filepath.Join("testdata", tt.expectedFile)
+
+			// Uncomment the following line to update the golden file
+			// golden.WriteTraces(t, expectedFile, traces)
+
+			expectedTraces, err := golden.ReadTraces(expectedFile)
+			require.NoError(t, err, "Failed to read expected traces")
+
+			require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
+		})
+	}
 }
 
 func TestNewParentSpanID(t *testing.T) {
@@ -601,6 +663,7 @@ func TestNewJobSpanID(t *testing.T) {
 		runID      int64
 		runAttempt int
 		jobName    string
+		checkRunID int64
 		wantError  bool
 	}{
 		{
@@ -608,6 +671,7 @@ func TestNewJobSpanID(t *testing.T) {
 			runID:      12345,
 			runAttempt: 1,
 			jobName:    "test-job",
+			checkRunID: 99999,
 			wantError:  false,
 		},
 		{
@@ -615,6 +679,7 @@ func TestNewJobSpanID(t *testing.T) {
 			runID:      54321,
 			runAttempt: 1,
 			jobName:    "test-job",
+			checkRunID: 99999,
 			wantError:  false,
 		},
 		{
@@ -622,6 +687,7 @@ func TestNewJobSpanID(t *testing.T) {
 			runID:      12345,
 			runAttempt: 2,
 			jobName:    "test-job",
+			checkRunID: 99999,
 			wantError:  false,
 		},
 		{
@@ -629,6 +695,7 @@ func TestNewJobSpanID(t *testing.T) {
 			runID:      12345,
 			runAttempt: 1,
 			jobName:    "other-job",
+			checkRunID: 99999,
 			wantError:  false,
 		},
 		{
@@ -636,6 +703,7 @@ func TestNewJobSpanID(t *testing.T) {
 			runID:      0,
 			runAttempt: 0,
 			jobName:    "",
+			checkRunID: 0,
 			wantError:  false,
 		},
 		{
@@ -643,6 +711,7 @@ func TestNewJobSpanID(t *testing.T) {
 			runID:      12345,
 			runAttempt: 1,
 			jobName:    "test-job!@#$%^&*()",
+			checkRunID: 99999,
 			wantError:  false,
 		},
 		{
@@ -650,6 +719,7 @@ func TestNewJobSpanID(t *testing.T) {
 			runID:      12345,
 			runAttempt: 1,
 			jobName:    "test job with spaces",
+			checkRunID: 99999,
 			wantError:  false,
 		},
 		{
@@ -657,14 +727,15 @@ func TestNewJobSpanID(t *testing.T) {
 			runID:      12345,
 			runAttempt: 1,
 			jobName:    "测试工作",
+			checkRunID: 99999,
 			wantError:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// First call to get span ID
-			spanID1, err1 := newJobSpanID(tt.runID, tt.runAttempt, tt.jobName)
+			// Test legacy mode
+			spanID1, err1 := newJobSpanID(tt.runID, tt.runAttempt, tt.jobName, tt.checkRunID, "legacy")
 
 			if tt.wantError {
 				require.Error(t, err1)
@@ -676,12 +747,12 @@ func TestNewJobSpanID(t *testing.T) {
 			require.NotEqual(t, pcommon.SpanID{}, spanID1, "span ID should not be empty")
 
 			// Verify consistent results for same input
-			spanID2, err2 := newJobSpanID(tt.runID, tt.runAttempt, tt.jobName)
+			spanID2, err2 := newJobSpanID(tt.runID, tt.runAttempt, tt.jobName, tt.checkRunID, "legacy")
 			require.NoError(t, err2)
 			require.Equal(t, spanID1, spanID2, "same inputs should generate same span ID")
 
 			// Verify different inputs generate different span IDs
-			differentSpanID, err3 := newJobSpanID(tt.runID+1, tt.runAttempt, tt.jobName)
+			differentSpanID, err3 := newJobSpanID(tt.runID+1, tt.runAttempt, tt.jobName, tt.checkRunID, "legacy")
 			require.NoError(t, err3)
 			require.NotEqual(t, spanID1, differentSpanID, "different inputs should generate different span IDs")
 		})
@@ -693,12 +764,13 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 	runID := int64(12345)
 	runAttempt := 1
 	jobName := "test-job"
+	checkRunID := int64(99999)
 
-	spanID1, err1 := newJobSpanID(runID, runAttempt, jobName)
+	spanID1, err1 := newJobSpanID(runID, runAttempt, jobName, checkRunID, "legacy")
 	require.NoError(t, err1)
 
 	for range 5 {
-		spanID2, err2 := newJobSpanID(runID, runAttempt, jobName)
+		spanID2, err2 := newJobSpanID(runID, runAttempt, jobName, checkRunID, "legacy")
 		require.NoError(t, err2)
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")
 	}

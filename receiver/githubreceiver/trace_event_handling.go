@@ -213,7 +213,15 @@ func (gtr *githubTracesReceiver) createParentSpan(
 		return pcommon.SpanID{}, fmt.Errorf("failed to generate parent span ID: %w", err)
 	}
 
-	jobSpanID, err := newJobSpanID(event.GetWorkflowJob().GetRunID(), int(event.GetWorkflowJob().GetRunAttempt()), event.GetWorkflowJob().GetName())
+	// workflow_job.id corresponds to the check_run_id (matches the {id} in check_run_url)
+	checkRunID := event.GetWorkflowJob().GetID()
+	jobSpanID, err := newJobSpanID(
+		event.GetWorkflowJob().GetRunID(),
+		int(event.GetWorkflowJob().GetRunAttempt()),
+		event.GetWorkflowJob().GetName(),
+		checkRunID,
+		gtr.cfg.WebHook.IDGeneration,
+	)
 	if err != nil {
 		return pcommon.SpanID{}, fmt.Errorf("failed to generate job span ID: %w", err)
 	}
@@ -252,8 +260,26 @@ func (gtr *githubTracesReceiver) createParentSpan(
 
 // newJobSpanId creates a deterministic Job Span ID based on the provided runID,
 // runAttempt, and the name of the job.
-func newJobSpanID(runID int64, runAttempt int, jobName string) (pcommon.SpanID, error) {
-	input := fmt.Sprintf("%d%d%s", runID, runAttempt, jobName)
+//
+// When idGeneration is "legacy" (default), the span ID is generated from:
+//   - runID + runAttempt + jobName
+//
+// When idGeneration is "check_run_id", the span ID is generated from:
+//   - checkRunID + runAttempt
+//
+// The checkRunID corresponds to workflow_job.id from the webhook payload, which
+// matches the {id} in check_run_url. This provides a stable job identity that
+// doesn't break when job display names are changed or duplicated.
+func newJobSpanID(runID int64, runAttempt int, jobName string, checkRunID int64, idGeneration string) (pcommon.SpanID, error) {
+	var input string
+	if idGeneration == idGenerationCheckRunID {
+		// check_run_id: Use check_run_id for deterministic job identity
+		input = fmt.Sprintf("%d:%d", checkRunID, runAttempt)
+	} else {
+		// legacy (default): Use job name for deterministic job identity
+		input = fmt.Sprintf("%d%d%s", runID, runAttempt, jobName)
+	}
+
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
 

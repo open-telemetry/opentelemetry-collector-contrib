@@ -47,6 +47,7 @@ type WebHook struct {
 	Secret                  string                         `mapstructure:"secret"`           // secret for webhook
 	ServiceName             string                         `mapstructure:"service_name"`
 	IncludeSpanEvents       bool                           `mapstructure:"include_span_events"` // attach raw webhook event JSON as span events
+	IDGeneration            string                         `mapstructure:"id_generation"`       // ID generation mode: "legacy" (default) or "check_run_id"
 }
 
 type GitHubHeaders struct {
@@ -54,16 +55,22 @@ type GitHubHeaders struct {
 	Fixed        map[string]string `mapstructure:","` // are not allowed to be overwritten
 }
 
+const (
+	idGenerationLegacy      = "legacy"
+	idGenerationCheckRunID  = "check_run_id"
+)
+
 var (
 	_ component.Config    = (*Config)(nil)
 	_ confmap.Unmarshaler = (*Config)(nil)
 
-	errMissingEndpointFromConfig   = errors.New("missing receiver server endpoint from config")
+	errMissingEndpointFromConfig = errors.New("missing receiver server endpoint from config")
 	errReadTimeoutExceedsMaxValue  = errors.New("the duration specified for read_timeout exceeds the maximum allowed value of 10s")
 	errWriteTimeoutExceedsMaxValue = errors.New("the duration specified for write_timeout exceeds the maximum allowed value of 10s")
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
 	errRequireOneScraper           = errors.New("must specify at least one scraper")
 	errGitHubHeader                = errors.New("github default headers [X-GitHub-Event, X-GitHub-Delivery, X-GitHub-Hook-ID, X-Hub-Signature-256] cannot be configured")
+	errInvalidIDGeneration         = errors.New("id_generation must be 'legacy' or 'check_run_id'")
 )
 
 // Validate the configuration passed through the OTEL config.yaml
@@ -98,6 +105,11 @@ func (cfg *Config) Validate() error {
 		if _, exists := cfg.WebHook.GitHubHeaders.Fixed[key]; exists {
 			errs = multierr.Append(errs, errGitHubHeader)
 		}
+	}
+
+	// Validate id_generation is one of the allowed values
+	if cfg.WebHook.IDGeneration != "" && cfg.WebHook.IDGeneration != idGenerationLegacy && cfg.WebHook.IDGeneration != idGenerationCheckRunID {
+		errs = multierr.Append(errs, errInvalidIDGeneration)
 	}
 
 	return errs

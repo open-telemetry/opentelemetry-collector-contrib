@@ -22,6 +22,7 @@
   - [Scraping](#scraping)
 - [Traces - Getting Started](#traces---getting-started)
   - [Receiver Configuration](#receiver-configuration)
+  - [ID Generation](#id-generation)
   - [Configuring Service Name](#configuring-service-name)
   - [Configuration a GitHub App](#configuration-a-github-app)
   - [Custom Properties as Resource Attributes](#custom-properties-as-resource-attributes)
@@ -166,6 +167,7 @@ The WebHook configuration exposes the following settings:
 [Configuring Service Name](#configuring-service-name) section for more
 information.
 * `include_span_events`: (default = `false`) - When set to `true`, attaches the raw webhook event JSON as a span event. The workflow run event is attached to the workflow run span, and the workflow job event is attached to the job span.
+* `id_generation`: (default = `"legacy"`) - Controls how deterministic span IDs are generated for job spans. Valid values are `"legacy"` or `"check_run_id"`. See the [ID Generation](#id-generation) section for more information.
 
 The WebHook configuration block also accepts all the [confighttp][cfghttp]
 settings.
@@ -183,6 +185,7 @@ receivers:
             service_name: github-actions  # single logical CI service (See Configuring Service Name section below)
             required_headers:
                 WAF-Header: "value"
+            id_generation: legacy  # or "check_run_id"
         scrapers: # The validation expects at least a dummy scraper config
             scraper:
                 github_org: open-telemetry
@@ -190,6 +193,57 @@ receivers:
 
 For tracing, all configuration is set under the `webhook` key. The full set
 of exposed configuration values can be found in [`config.go`](./config.go).
+
+### ID Generation
+
+The GitHub receiver generates deterministic span IDs to enable correlation between workflow runs, jobs, and steps. The `id_generation` configuration option controls how job span IDs are generated.
+
+#### Legacy Mode (Default)
+
+Legacy mode generates job span IDs using a combination of:
+- Workflow run ID
+- Run attempt number
+- Job display name
+
+This approach has a limitation: if a job display name changes or if multiple jobs have the same name within a workflow, the span IDs will change or collide, breaking trace continuity.
+
+**Important**: When using legacy mode, job names MUST be unique within each workflow to avoid span ID conflicts. GitHub does not enforce this behavior, but warns about duplicate job names during workflow linting.
+
+#### Check Run ID Mode (Recommended for New Deployments)
+
+Check run ID mode generates job span IDs using:
+- Check run ID (`workflow_job.id` from the webhook payload)
+- Run attempt number
+
+The check run ID corresponds to the unique identifier in the job's `check_run_url` and is stable across job name changes. This makes traces resilient to job renames and eliminates the duplicate name conflict issue.
+
+**Benefits**:
+- Job span IDs remain stable when job display names are changed
+- No risk of span ID collisions from duplicate job names
+- Simpler workflow maintenance without strict naming constraints
+
+**Migration Consideration**: Changing the `id_generation` setting will alter job span IDs. This means:
+- Traces generated before and after the change will have different job span IDs
+- Dashboards and alerts that group or filter by job span IDs may show a discontinuity at the switch point
+- Historical trace correlation for the same job across the mode change will not work automatically
+
+Plan the migration during a maintenance window or when trace retention will naturally age out old data.
+
+#### Configuration Example
+
+```yaml
+receivers:
+    github:
+        webhook:
+            endpoint: localhost:19418
+            path: /events
+            health_path: /health
+            secret: ${env:SECRET_STRING_VAR}
+            id_generation: check_run_id  # Use check_run_id for stable span IDs
+        scrapers:
+            scraper:
+                github_org: open-telemetry
+```
 
 ### Configuring Service Name
 
