@@ -25,7 +25,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.142.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251223191316-a9aaa99a1214 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.142.1-0.20251218222727-bf28fa76882d // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.142.1-0.20251223191316-a9aaa99a1214 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
