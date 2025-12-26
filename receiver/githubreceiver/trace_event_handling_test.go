@@ -123,7 +123,7 @@ func TestWorkflowJobIDMatchesCheckRunID(t *testing.T) {
 
 	// Parse the numeric ID from the URL
 	parts := strings.Split(checkRunURL, "/")
-	require.Greater(t, len(parts), 0, "check_run_url should have path components")
+	require.NotEmpty(t, parts, "check_run_url should have path components")
 
 	checkRunIDFromURL := parts[len(parts)-1]
 	require.NotEmpty(t, checkRunIDFromURL, "check_run_id should be extractable from URL")
