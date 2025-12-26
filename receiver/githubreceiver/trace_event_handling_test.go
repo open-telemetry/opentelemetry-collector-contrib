@@ -153,10 +153,10 @@ func TestHandleWorkflowJobWithGoldenFileIDGeneration(t *testing.T) {
 			expectedFile:  "workflow-job-expected.yaml",
 		},
 		{
-			name:          "check_run_id mode",
-			idGeneration:  "check_run_id",
+			name:          "simplified mode",
+			idGeneration:  "simplified",
 			inputFile:     "workflow-job-completed.json",
-			expectedFile:  "workflow-job-expected-check-run-id.yaml",
+			expectedFile:  "workflow-job-expected-simplified.yaml",
 		},
 	}
 
@@ -528,7 +528,7 @@ func TestCreateStepSpans(t *testing.T) {
 	}
 }
 
-func TestNewStepSpanID(t *testing.T) {
+func TestNewStepSpanIDLegacy(t *testing.T) {
 	tests := []struct {
 		name       string
 		runID      int64
@@ -614,8 +614,7 @@ func TestNewStepSpanID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// First call to get span ID
-			spanID1, err1 := newStepSpanID(tt.runID, tt.runAttempt, tt.jobName, tt.stepName, tt.number)
+			spanID1, err1 := newStepSpanIDLegacy(tt.runID, tt.runAttempt, tt.jobName, tt.stepName, tt.number)
 
 			if tt.wantError {
 				require.Error(t, err1)
@@ -627,19 +626,19 @@ func TestNewStepSpanID(t *testing.T) {
 			require.NotEqual(t, pcommon.SpanID{}, spanID1, "span ID should not be empty")
 
 			// Verify consistent results for same input
-			spanID2, err2 := newStepSpanID(tt.runID, tt.runAttempt, tt.jobName, tt.stepName, tt.number)
+			spanID2, err2 := newStepSpanIDLegacy(tt.runID, tt.runAttempt, tt.jobName, tt.stepName, tt.number)
 			require.NoError(t, err2)
 			require.Equal(t, spanID1, spanID2, "same inputs should generate same span ID")
 
 			// Verify different inputs generate different span IDs
-			differentSpanID, err3 := newStepSpanID(tt.runID+1, tt.runAttempt, tt.jobName, tt.stepName, tt.number)
+			differentSpanID, err3 := newStepSpanIDLegacy(tt.runID+1, tt.runAttempt, tt.jobName, tt.stepName, tt.number)
 			require.NoError(t, err3)
 			require.NotEqual(t, spanID1, differentSpanID, "different inputs should generate different span IDs")
 		})
 	}
 }
 
-func TestNewStepSpanID_Consistency(t *testing.T) {
+func TestNewStepSpanIDLegacy_Consistency(t *testing.T) {
 	// Test that generates the same span ID for same inputs across multiple calls
 	runID := int64(12345)
 	runAttempt := 1
@@ -647,11 +646,11 @@ func TestNewStepSpanID_Consistency(t *testing.T) {
 	stepName := "build"
 	number := 1
 
-	spanID1, err1 := newStepSpanID(runID, runAttempt, jobName, stepName, number)
+	spanID1, err1 := newStepSpanIDLegacy(runID, runAttempt, jobName, stepName, number)
 	require.NoError(t, err1)
 
 	for range 5 {
-		spanID2, err2 := newStepSpanID(runID, runAttempt, jobName, stepName, number)
+		spanID2, err2 := newStepSpanIDLegacy(runID, runAttempt, jobName, stepName, number)
 		require.NoError(t, err2)
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")
 	}
@@ -937,6 +936,55 @@ func TestStepSpansHaveNoEvents(t *testing.T) {
 				"Step/queue span '%s' should not have events", span.Name())
 		}
 	}
+}
+
+func TestNewStepSpanIDSimplified_NumberStability(t *testing.T) {
+	// Test that step span IDs in simplified mode are stable (don't use step.Number)
+	runID := int64(12345)
+	runAttempt := 1
+	jobName := "test-job"
+	stepName := "Build"
+	checkRunID := int64(99999)
+	stepKey := "Build"
+
+	// Simplified mode: same inputs should yield same ID (no number parameter)
+	spanID1, err1 := newStepSpanIDSimplified(checkRunID, runAttempt, stepKey)
+	require.NoError(t, err1)
+
+	spanID2, err2 := newStepSpanIDSimplified(checkRunID, runAttempt, stepKey)
+	require.NoError(t, err2)
+
+	require.Equal(t, spanID1, spanID2, "simplified mode: span IDs should be stable")
+
+	// Verify this is different from legacy mode (which DOES depend on number)
+	legacySpanID1, err3 := newStepSpanIDLegacy(runID, runAttempt, jobName, stepName, 1)
+	require.NoError(t, err3)
+	legacySpanID2, err4 := newStepSpanIDLegacy(runID, runAttempt, jobName, stepName, 2)
+	require.NoError(t, err4)
+	require.NotEqual(t, legacySpanID1, legacySpanID2, "legacy mode: span IDs should differ when number changes")
+}
+
+func TestNewStepSpanIDSimplified_DuplicateNames(t *testing.T) {
+	// Test that duplicate step names yield different span IDs when using deduped keys
+	checkRunID := int64(99999)
+	runAttempt := 1
+
+	// First occurrence (key = "Build")
+	spanID1, err1 := newStepSpanIDSimplified(checkRunID, runAttempt, "Build")
+	require.NoError(t, err1)
+
+	// Second occurrence (key = "Build-1")
+	spanID2, err2 := newStepSpanIDSimplified(checkRunID, runAttempt, "Build-1")
+	require.NoError(t, err2)
+
+	// Third occurrence (key = "Build-2")
+	spanID3, err3 := newStepSpanIDSimplified(checkRunID, runAttempt, "Build-2")
+	require.NoError(t, err3)
+
+	// All three span IDs should be different because the step keys are different
+	require.NotEqual(t, spanID1, spanID2, "Duplicate step names should yield different span IDs (Build vs Build-1)")
+	require.NotEqual(t, spanID1, spanID3, "Duplicate step names should yield different span IDs (Build vs Build-2)")
+	require.NotEqual(t, spanID2, spanID3, "Duplicate step names should yield different span IDs (Build-1 vs Build-2)")
 }
 
 func TestCorrectActionTimestamps(t *testing.T) {

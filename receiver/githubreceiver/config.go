@@ -56,8 +56,8 @@ type GitHubHeaders struct {
 }
 
 const (
-	idGenerationLegacy      = "legacy"
-	idGenerationCheckRunID  = "check_run_id"
+	idGenerationLegacy     = "legacy"
+	idGenerationSimplified = "simplified"
 )
 
 var (
@@ -70,7 +70,7 @@ var (
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
 	errRequireOneScraper           = errors.New("must specify at least one scraper")
 	errGitHubHeader                = errors.New("github default headers [X-GitHub-Event, X-GitHub-Delivery, X-GitHub-Hook-ID, X-Hub-Signature-256] cannot be configured")
-	errInvalidIDGeneration         = errors.New("id_generation must be 'legacy' or 'check_run_id'")
+	errInvalidIDGeneration         = errors.New("id_generation must be 'legacy' or 'simplified'")
 )
 
 // Validate the configuration passed through the OTEL config.yaml
@@ -108,7 +108,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Validate id_generation is one of the allowed values
-	if cfg.WebHook.IDGeneration != "" && cfg.WebHook.IDGeneration != idGenerationLegacy && cfg.WebHook.IDGeneration != idGenerationCheckRunID {
+	if cfg.WebHook.IDGeneration != "" && cfg.WebHook.IDGeneration != idGenerationLegacy && cfg.WebHook.IDGeneration != idGenerationSimplified {
 		errs = multierr.Append(errs, errInvalidIDGeneration)
 	}
 

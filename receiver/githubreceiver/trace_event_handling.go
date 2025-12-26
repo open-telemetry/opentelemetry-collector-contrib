@@ -264,7 +264,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 // When idGeneration is "legacy" (default), the span ID is generated from:
 //   - runID + runAttempt + jobName
 //
-// When idGeneration is "check_run_id", the span ID is generated from:
+// When idGeneration is "simplified", the span ID is generated from:
 //   - checkRunID + runAttempt
 //
 // The checkRunID corresponds to workflow_job.id from the webhook payload, which
@@ -272,8 +272,8 @@ func (gtr *githubTracesReceiver) createParentSpan(
 // doesn't break when job display names are changed or duplicated.
 func newJobSpanID(runID int64, runAttempt int, jobName string, checkRunID int64, idGeneration string) (pcommon.SpanID, error) {
 	var input string
-	if idGeneration == idGenerationCheckRunID {
-		// check_run_id: Use check_run_id for deterministic job identity
+	if idGeneration == idGenerationSimplified {
+		// simplified: Use check_run_id for deterministic job identity
 		input = fmt.Sprintf("%d:%d", checkRunID, runAttempt)
 	} else {
 		// legacy (default): Use job name for deterministic job identity
@@ -350,7 +350,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 
 // createStepSpan creates a span with a deterministic spandID for the provided
 // step.
-func (*githubTracesReceiver) createStepSpan(
+func (gtr *githubTracesReceiver) createStepSpan(
 	resourceSpans ptrace.ResourceSpans,
 	traceID pcommon.TraceID,
 	parentSpanID pcommon.SpanID,
@@ -365,12 +365,21 @@ func (*githubTracesReceiver) createStepSpan(
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
-	runID := event.GetWorkflowJob().GetRunID()
-	runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
-	jobName := event.GetWorkflowJob().GetName()
-	stepName := step.GetName()
-	number := int(step.GetNumber())
-	spanID, err := newStepSpanID(runID, runAttempt, jobName, stepName, number)
+	var spanID pcommon.SpanID
+	var err error
+	if gtr.cfg.WebHook.IDGeneration == idGenerationSimplified {
+		checkRunID := event.GetWorkflowJob().GetID()
+		runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
+		stepKey := name // The deduped step name passed as 'name'
+		spanID, err = newStepSpanIDSimplified(checkRunID, runAttempt, stepKey)
+	} else {
+		runID := event.GetWorkflowJob().GetRunID()
+		runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
+		jobName := event.GetWorkflowJob().GetName()
+		stepName := step.GetName()
+		number := int(step.GetNumber())
+		spanID, err = newStepSpanIDLegacy(runID, runAttempt, jobName, stepName, number)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to generate step span ID: %w", err)
 	}
@@ -406,10 +415,28 @@ func (*githubTracesReceiver) createStepSpan(
 	return nil
 }
 
-// newStepSpanID creates a deterministic Step Span ID based on the provided
-// inputs.
-func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number int) (pcommon.SpanID, error) {
+// newStepSpanIDLegacy creates a deterministic Step Span ID using the legacy algorithm.
+// Generated from: runID + runAttempt + jobName + stepName + number
+func newStepSpanIDLegacy(runID int64, runAttempt int, jobName, stepName string, number int) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%d%s%s%d", runID, runAttempt, jobName, stepName, number)
+	hash := sha256.Sum256([]byte(input))
+	spanIDHex := hex.EncodeToString(hash[:])
+
+	var spanID pcommon.SpanID
+	_, err := hex.Decode(spanID[:], []byte(spanIDHex[16:32]))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+
+	return spanID, nil
+}
+
+// newStepSpanIDSimplified creates a deterministic Step Span ID using the simplified algorithm.
+// Generated from: checkRunID + runAttempt + stepKey
+// The stepKey should be the deduped step name (e.g., "Build", "Build-1", "Build-2")
+// as produced by newUniqueSteps().
+func newStepSpanIDSimplified(checkRunID int64, runAttempt int, stepKey string) (pcommon.SpanID, error) {
+	input := fmt.Sprintf("%d:%d:%s", checkRunID, runAttempt, stepKey)
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
 
@@ -424,7 +451,7 @@ func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number
 
 // createJobQueueSpan creates a span for the job queue based on the provided
 // event by using the delta between the job created and completed times.
-func (*githubTracesReceiver) createJobQueueSpan(
+func (gtr *githubTracesReceiver) createJobQueueSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,
@@ -440,9 +467,18 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
-	runID := event.GetWorkflowJob().GetRunID()
-	runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
-	spanID, err := newStepSpanID(runID, runAttempt, jobName, spanName, 1)
+	var spanID pcommon.SpanID
+	var err error
+	if gtr.cfg.WebHook.IDGeneration == idGenerationSimplified {
+		checkRunID := event.GetWorkflowJob().GetID()
+		runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
+		stepKey := spanName // Queue span uses the span name (queue-<jobName>) as its step key
+		spanID, err = newStepSpanIDSimplified(checkRunID, runAttempt, stepKey)
+	} else {
+		runID := event.GetWorkflowJob().GetRunID()
+		runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
+		spanID, err = newStepSpanIDLegacy(runID, runAttempt, jobName, spanName, 1)
+	}
 	if err != nil {
 		return pcommon.SpanID{}, fmt.Errorf("failed to generate step span ID: %w", err)
 	}
