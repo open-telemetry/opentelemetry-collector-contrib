@@ -18,7 +18,7 @@ func (*Manager) readLostFiles(context.Context) {
 // openFile opens a file on Windows with FILE_SHARE_DELETE flag to allow
 // other processes to delete or rename the file while it's open.
 func openFile(path string) (*os.File, error) {
-	if len(path) == 0 {
+	if path == "" {
 		return nil, syscall.ERROR_FILE_NOT_FOUND
 	}
 
