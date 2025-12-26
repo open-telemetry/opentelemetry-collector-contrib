@@ -141,22 +141,22 @@ func TestWorkflowJobIDMatchesCheckRunID(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFileIDGeneration(t *testing.T) {
 	tests := []struct {
-		name              string
-		idGeneration      string
-		inputFile         string
-		expectedFile      string
+		name         string
+		idGeneration string
+		inputFile    string
+		expectedFile string
 	}{
 		{
-			name:          "legacy mode",
-			idGeneration:  "legacy",
-			inputFile:     "workflow-job-completed.json",
-			expectedFile:  "workflow-job-expected.yaml",
+			name:         "legacy mode",
+			idGeneration: "legacy",
+			inputFile:    "workflow-job-completed.json",
+			expectedFile: "workflow-job-expected.yaml",
 		},
 		{
-			name:          "simplified mode",
-			idGeneration:  "simplified",
-			inputFile:     "workflow-job-completed.json",
-			expectedFile:  "workflow-job-expected-simplified.yaml",
+			name:         "simplified mode",
+			idGeneration: "simplified",
+			inputFile:    "workflow-job-completed.json",
+			expectedFile: "workflow-job-expected-simplified.yaml",
 		},
 	}
 
