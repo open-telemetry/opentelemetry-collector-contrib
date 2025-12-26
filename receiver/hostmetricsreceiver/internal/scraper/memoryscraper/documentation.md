@@ -36,6 +36,14 @@ metrics:
     enabled: true
 ```
 
+### system.darwin.memory.pressure
+
+Percentage of memory pressure on Darwin system.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| % | Sum | Int | Cumulative | false | Development |
+
 ### system.linux.memory.available
 
 An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
