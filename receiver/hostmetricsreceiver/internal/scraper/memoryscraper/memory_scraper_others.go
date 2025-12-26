@@ -6,9 +6,10 @@
 package memoryscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 
 import (
+	"fmt"
+
 	"github.com/shirou/gopsutil/v4/mem"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"golang.org/x/sys/unix"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
@@ -29,7 +30,7 @@ func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, mem
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, _ *mem.VirtualMemoryStat) error {
 	b, err := unix.SysctlRaw("vm.memory_pressure")
 	if err != nil {
-		return scrapererror.NewPartialScrapeError(err, metricsLen)
+		return fmt.Errorf("error retrieving vm.memory_pressure: %w", err)
 	}
 	result := uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24
 	s.mb.RecordSystemDarwinMemoryPressureDataPoint(now, int64(result))
