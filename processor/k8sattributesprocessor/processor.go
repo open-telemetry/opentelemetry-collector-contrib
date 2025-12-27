@@ -155,16 +155,16 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	}
 
 	var pod *kube.Pod
-	if podIdentifierValue.IsNotEmpty() {
-		var podFound bool
-		if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound {
-			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
+	var podFound bool
+	if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound {
+		kp.logger.Debug("getting the pod", zap.Any("pod", pod))
 
-			for key, val := range pod.Attributes {
-				setResourceAttribute(resource.Attributes(), key, val)
-			}
-			kp.addContainerAttributes(resource.Attributes(), pod)
+		for key, val := range pod.Attributes {
+			setResourceAttribute(resource.Attributes(), key, val)
 		}
+		kp.addContainerAttributes(resource.Attributes(), pod)
+	} else {
+		kp.logger.Debug("unable to find pod based on identifier", zap.Any("value", podIdentifierValue))
 	}
 
 	namespace := getNamespace(pod, resource.Attributes())
