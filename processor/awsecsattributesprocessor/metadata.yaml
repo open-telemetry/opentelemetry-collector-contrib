@@ -1,0 +1,10 @@
+type: awsecsattributes
+
+status:
+  class: processor
+  stability:
+    beta: [logs, metrics, traces, profiles]
+  distributions: [contrib, ecs]
+  warnings: [Statefulness]
+  codeowners:
+    active: [daidokoro, iblancasa]
