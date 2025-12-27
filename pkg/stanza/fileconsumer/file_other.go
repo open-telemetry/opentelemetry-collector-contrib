@@ -7,6 +7,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"os"
 	"sync"
 
 	"go.uber.org/zap"
@@ -63,4 +64,8 @@ OUTER:
 		}(lostReader)
 	}
 	lostWG.Wait()
+}
+
+func openFile(path string) (*os.File, error) {
+	return os.Open(path) // #nosec - operator must read in files defined by user
 }
