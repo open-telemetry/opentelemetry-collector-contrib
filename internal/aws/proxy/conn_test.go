@@ -4,19 +4,16 @@
 package proxy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/aws/session"
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -27,18 +24,18 @@ var ec2Region = "us-west-2"
 
 type mock struct {
 	getEC2RegionErr error
-	sn              *session.Session
+	cfg             aws.Config
 }
 
-func (m *mock) getEC2Region(_ *session.Session) (string, error) {
+func (m *mock) getEC2Region(_ context.Context, _ aws.Config) (string, error) {
 	if m.getEC2RegionErr != nil {
 		return "", m.getEC2RegionErr
 	}
 	return ec2Region, nil
 }
 
-func (m *mock) newAWSSession(string, string, *zap.Logger) (*session.Session, error) {
-	return m.sn, nil
+func (m *mock) newAWSConfig(_ context.Context, _, _ string, _ *zap.Logger) (aws.Config, error) {
+	return m.cfg, nil
 }
 
 func logSetup() (*zap.Logger, *observer.ObservedLogs) {
@@ -46,23 +43,24 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 	return zap.New(core), recorded
 }
 
-func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
-	f2 func(roleArn, region string, logger *zap.Logger) (*session.Session, error),
+func setupMock(cfg aws.Config) (
+	f1 func(ctx context.Context, cfg aws.Config) (string, error),
+	f2 func(ctx context.Context, roleArn, region string, logger *zap.Logger) (aws.Config, error),
 ) {
 	f1 = getEC2Region
-	f2 = newAWSSession
-	m := mock{sn: sess}
+	f2 = newAWSConfig
+	m := mock{cfg: cfg}
 	getEC2Region = m.getEC2Region
-	newAWSSession = m.newAWSSession
+	newAWSConfig = m.newAWSConfig
 	return f1, f2
 }
 
 func tearDownMock(
-	f1 func(s *session.Session) (string, error),
-	f2 func(roleArn, region string, logger *zap.Logger) (*session.Session, error),
+	f1 func(ctx context.Context, cfg aws.Config) (string, error),
+	f2 func(ctx context.Context, roleArn, region string, logger *zap.Logger) (aws.Config, error),
 ) {
 	getEC2Region = f1
-	newAWSSession = f2
+	newAWSConfig = f2
 }
 
 // fetch region value from environment variable
@@ -72,15 +70,14 @@ func TestRegionFromEnv(t *testing.T) {
 
 	t.Setenv("AWS_REGION", region)
 
-	expectedSession, err := session.NewSession()
-	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCfg := aws.Config{Region: region}
+	f1, f2 := setupMock(expectedCfg)
 	defer tearDownMock(f1, f2)
 
-	awsCfg, s, err := getAWSConfigSession(DefaultConfig(), logger)
+	ctx := context.Background()
+	awsCfg, err := getAWSConfigSession(ctx, DefaultConfig(), logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
-	assert.Equal(t, expectedSession, s, "mock session is not overridden")
-	assert.Equal(t, region, *awsCfg.Region, "region value fetched from environment")
+	assert.Equal(t, region, awsCfg.Region, "region value fetched from environment")
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
@@ -93,18 +90,17 @@ func TestRegionFromEnv(t *testing.T) {
 func TestRegionFromConfig(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
-	expectedSession, err := session.NewSession()
-	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCfg := aws.Config{}
+	f1, f2 := setupMock(expectedCfg)
 	defer tearDownMock(f1, f2)
 
 	cfgWithRegion := DefaultConfig()
 	cfgWithRegion.Region = "ap-northeast-1"
 
-	awsCfg, s, err := getAWSConfigSession(cfgWithRegion, logger)
+	ctx := context.Background()
+	awsCfg, err := getAWSConfigSession(ctx, cfgWithRegion, logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
-	assert.Equal(t, expectedSession, s, "mock session is not overridden")
-	assert.Equal(t, cfgWithRegion.Region, *awsCfg.Region, "region value fetched from the config file")
+	assert.Equal(t, cfgWithRegion.Region, awsCfg.Region, "region value fetched from the config file")
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
@@ -114,20 +110,22 @@ func TestRegionFromConfig(t *testing.T) {
 }
 
 func TestRegionFromECS(t *testing.T) {
+	// Clear environment variables that might interfere
+	t.Setenv(awsDefaultRegionEnvVar, "")
+	t.Setenv(awsRegionEnvVar, "")
 	t.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
 	t.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafile.txt")
 
 	logger, recordedLogs := logSetup()
 
-	expectedSession, err := session.NewSession()
-	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCfg := aws.Config{}
+	f1, f2 := setupMock(expectedCfg)
 	defer tearDownMock(f1, f2)
 
-	awsCfg, s, err := getAWSConfigSession(DefaultConfig(), logger)
+	ctx := context.Background()
+	awsCfg, err := getAWSConfigSession(ctx, DefaultConfig(), logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
-	assert.Equal(t, expectedSession, s, "mock session is not overridden")
-	assert.Equal(t, "us-west-50", *awsCfg.Region, "region value fetched from ECS metadata")
+	assert.Equal(t, "us-west-50", awsCfg.Region, "region value fetched from ECS metadata")
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
@@ -137,44 +135,55 @@ func TestRegionFromECS(t *testing.T) {
 }
 
 func TestRegionFromECSInvalidArn(t *testing.T) {
+	// Clear environment variables that might interfere
+	t.Setenv(awsDefaultRegionEnvVar, "")
+	t.Setenv(awsRegionEnvVar, "")
 	t.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
 	t.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafileInvalidArn.txt")
 
 	logger, recordedLogs := logSetup()
 
-	expectedSession, err := session.NewSession()
-	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCfg := aws.Config{}
+	f1, f2 := setupMock(expectedCfg)
 	defer tearDownMock(f1, f2)
 
-	_, s, err := getAWSConfigSession(DefaultConfig(), logger)
+	ctx := context.Background()
+	_, err := getAWSConfigSession(ctx, DefaultConfig(), logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
-	assert.Equal(t, expectedSession, s, "mock session is not overridden")
 
 	logs := recordedLogs.All()
-	// assert fetching from ECS metadata failed
-	sndToLastEntry := logs[len(logs)-2]
-	assert.Contains(t, sndToLastEntry.Message, "Unable to fetch region from ECS metadata", "expected log message")
-	assert.Error(t, sndToLastEntry.Context[0].Interface.(error), "expected error")
-
-	// fall back to use EC2 meta data service
-	lastEntry := logs[len(logs)-1]
-	assert.Contains(t, lastEntry.Message, "Fetched region from EC2 metadata", "expected log message")
+	// Find the log entry about ECS metadata failure
+	var foundECSError bool
+	var foundEC2Fallback bool
+	for _, entry := range logs {
+		if strings.Contains(entry.Message, "Unable to fetch region from ECS metadata") {
+			foundECSError = true
+			assert.Error(t, entry.Context[0].Interface.(error), "expected error")
+		}
+		if strings.Contains(entry.Message, "Fetched region from EC2 metadata") {
+			foundEC2Fallback = true
+		}
+	}
+	assert.True(t, foundECSError, "expected ECS metadata error log")
+	assert.True(t, foundEC2Fallback, "expected EC2 metadata fallback log")
 }
 
 // fetch region value from ec2 meta data service
 func TestRegionFromEC2(t *testing.T) {
+	// Clear environment variables that might interfere
+	t.Setenv(awsDefaultRegionEnvVar, "")
+	t.Setenv(awsRegionEnvVar, "")
+
 	logger, recordedLogs := logSetup()
 
-	expectedSession, err := session.NewSession()
-	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCfg := aws.Config{}
+	f1, f2 := setupMock(expectedCfg)
 	defer tearDownMock(f1, f2)
 
-	awsCfg, s, err := getAWSConfigSession(DefaultConfig(), logger)
+	ctx := context.Background()
+	awsCfg, err := getAWSConfigSession(ctx, DefaultConfig(), logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
-	assert.Equal(t, expectedSession, s, "mock session is not overridden")
-	assert.Equal(t, ec2Region, *awsCfg.Region, "region value fetched from ec2-metadata service")
+	assert.Equal(t, ec2Region, awsCfg.Region, "region value fetched from ec2-metadata service")
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
@@ -184,6 +193,10 @@ func TestRegionFromEC2(t *testing.T) {
 }
 
 func TestNoRegion(t *testing.T) {
+	// Clear environment variables that might interfere
+	t.Setenv(awsDefaultRegionEnvVar, "")
+	t.Setenv(awsRegionEnvVar, "")
+
 	logger, recordedLogs := logSetup()
 	m := mock{
 		getEC2RegionErr: errors.New("expected getEC2Region error"),
@@ -194,7 +207,8 @@ func TestNoRegion(t *testing.T) {
 		getEC2Region = f1
 	}()
 
-	_, _, err := getAWSConfigSession(DefaultConfig(), logger)
+	ctx := context.Background()
+	_, err := getAWSConfigSession(ctx, DefaultConfig(), logger)
 	assert.Error(t, err, "getAWSConfigSession should fail")
 
 	logs := recordedLogs.All()
@@ -237,29 +251,34 @@ func TestMissingECSMetadataFile(t *testing.T) {
 func TestLoadEnvConfigCreds(t *testing.T) {
 	cases := struct {
 		Env map[string]string
-		Val credentials.Value
+		Val aws.Credentials
 	}{
 		Env: map[string]string{
-			"AWS_ACCESS_KEY":    "AKID",
-			"AWS_SECRET_KEY":    "SECRET",
-			"AWS_SESSION_TOKEN": "TOKEN",
+			"AWS_ACCESS_KEY_ID":     "AKID",
+			"AWS_SECRET_ACCESS_KEY": "SECRET",
+			"AWS_SESSION_TOKEN":     "TOKEN",
 		},
-		Val: credentials.Value{
+		Val: aws.Credentials{
 			AccessKeyID: "AKID", SecretAccessKey: "SECRET", SessionToken: "TOKEN",
-			ProviderName: "EnvConfigCredentials",
+			Source: "EnvConfigCredentials",
 		},
 	}
 
 	for k, v := range cases.Env {
 		t.Setenv(k, v)
 	}
-	cfg, err := newAWSSession("", "", zap.NewNop())
-	assert.NoError(t, err, "Expect no error")
-	value, err := cfg.Config.Credentials.Get()
-	assert.NoError(t, err, "Expect no error")
-	assert.Equal(t, cases.Val, value, "Expect the credentials value to match")
 
-	_, err = newAWSSession("ROLEARN", "TEST", zap.NewNop())
+	ctx := context.Background()
+	cfg, err := newAWSConfig(ctx, "", "", zap.NewNop())
+	assert.NoError(t, err, "Expect no error")
+
+	creds, err := cfg.Credentials.Retrieve(ctx)
+	assert.NoError(t, err, "Expect no error")
+	assert.Equal(t, cases.Val.AccessKeyID, creds.AccessKeyID, "Expect access key to match")
+	assert.Equal(t, cases.Val.SecretAccessKey, creds.SecretAccessKey, "Expect secret key to match")
+	assert.Equal(t, cases.Val.SessionToken, creds.SessionToken, "Expect session token to match")
+
+	_, err = newAWSConfig(ctx, "ROLEARN", "TEST", zap.NewNop())
 	assert.ErrorContains(t, err, "unable to handle AWS error", "expected error message")
 }
 
@@ -295,13 +314,13 @@ func TestGetProxyAddressPriority(t *testing.T) {
 
 func TestGetPartition(t *testing.T) {
 	p := getPartition("us-east-1")
-	assert.Equal(t, endpoints.AwsPartitionID, p)
+	assert.Equal(t, awsPartitionID, p)
 
 	p = getPartition("cn-north-1")
-	assert.Equal(t, endpoints.AwsCnPartitionID, p)
+	assert.Equal(t, awsCnPartitionID, p)
 
 	p = getPartition("us-gov-east-1")
-	assert.Equal(t, endpoints.AwsUsGovPartitionID, p)
+	assert.Equal(t, awsUsGovPartitionID, p)
 
 	p = getPartition("XYZ")
 	assert.Empty(t, p)
@@ -317,26 +336,8 @@ func TestGetSTSRegionalEndpoint(t *testing.T) {
 	p = getSTSRegionalEndpoint("us-gov-east-1")
 	assert.Equal(t, "https://sts.us-gov-east-1.amazonaws.com", p)
 
-	p = getPartition("XYZ")
+	p = getSTSRegionalEndpoint("XYZ")
 	assert.Empty(t, p)
-}
-
-func TestNewSessionCreationFailed(t *testing.T) {
-	// manipulate env vars so that session.NewSession() fails
-	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
-	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "invalid")
-
-	_, err := newAWSSession("", "dontCare", zap.NewNop())
-	assert.Error(t, err, "expected failure")
-}
-
-func TestGetSTSCredsFailed(t *testing.T) {
-	// manipulate env vars so that session.NewSession() fails
-	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
-	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "invalid")
-
-	_, err := newAWSSession("ROLEARN", "us-west-2", zap.NewNop())
-	assert.Error(t, err, "expected failure")
 }
 
 func TestProxyServerTransportInvalidProxyAddr(t *testing.T) {
@@ -356,86 +357,75 @@ func TestProxyServerTransportHappyCase(t *testing.T) {
 func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 	const expectedRoleARN = "a role ARN"
 	called := false
-	fake := &stsCalls{
+
+	ctx := context.Background()
+	cfg := aws.Config{}
+
+	fake := &stsCallsV2{
 		log: zap.NewNop(),
-		getSTSCredsFromRegionEndpoint: func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {
-			assert.Equal(t, endpoints.UsEast1RegionID, region, "expected region differs")
+		getSTSCredsFromRegionEndpoint: func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
+			assert.Equal(t, usEast1RegionID, region, "expected region differs")
 			assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
 			called = true
-			return nil
+			return &mockCredentialsProvider{}
 		},
 	}
-	_, err := fake.getSTSCredsFromPrimaryRegionEndpoint(nil, expectedRoleARN, "us-west-2")
+	_, err := fake.getSTSCredsFromPrimaryRegionEndpoint(ctx, cfg, expectedRoleARN, "us-west-2")
 	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
 	assert.NoError(t, err, "no expected error")
 
 	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {
-		assert.Equal(t, endpoints.CnNorth1RegionID, region, "expected region differs")
+	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
+		assert.Equal(t, cnNorth1RegionID, region, "expected region differs")
 		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
 		called = true
-		return nil
+		return &mockCredentialsProvider{}
 	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(nil, expectedRoleARN, "cn-north-1")
+	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(ctx, cfg, expectedRoleARN, "cn-north-1")
 	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
 	assert.NoError(t, err, "no expected error")
 
 	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {
-		assert.Equal(t, endpoints.UsGovWest1RegionID, region, "expected region differs")
+	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
+		assert.Equal(t, usGovWest1RegionID, region, "expected region differs")
 		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
 		called = true
-		return nil
+		return &mockCredentialsProvider{}
 	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(nil, expectedRoleARN, "us-gov-east-1")
+	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(ctx, cfg, expectedRoleARN, "us-gov-east-1")
 	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
 	assert.NoError(t, err, "no expected error")
 
 	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ *zap.Logger, _ *session.Session, _, _ string) *credentials.Credentials {
+	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, _, _ string) aws.CredentialsProvider {
 		called = true
-		return nil
+		return &mockCredentialsProvider{}
 	}
 	invalidRegion := "invalid region"
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(nil, expectedRoleARN, invalidRegion)
+	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(ctx, cfg, expectedRoleARN, invalidRegion)
 	assert.False(t, called, "getSTSCredsFromRegionEndpoint should not be called")
 	assert.EqualError(t, err,
 		fmt.Sprintf("unrecognized AWS region: %s, or partition: ", invalidRegion),
 		"expected error message")
 }
 
-type mockAWSErr struct{}
-
-func (*mockAWSErr) Error() string {
-	return "mockAWSErr"
-}
-
-func (*mockAWSErr) Code() string {
-	return sts.ErrCodeRegionDisabledException
-}
-
-func (*mockAWSErr) Message() string {
-	return ""
-}
-
-func (*mockAWSErr) OrigErr() error {
-	return errors.New("mockAWSErr")
-}
-
-type mockProvider struct {
+// mockCredentialsProvider implements aws.CredentialsProvider for testing
+type mockCredentialsProvider struct {
 	retrieveErr error
 }
 
-func (m *mockProvider) Retrieve() (credentials.Value, error) {
-	val, _ := credentials.AnonymousCredentials.Get()
+func (m *mockCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
 	if m.retrieveErr != nil {
-		return val, m.retrieveErr
+		return aws.Credentials{}, m.retrieveErr
 	}
-	return val, nil
-}
-
-func (*mockProvider) IsExpired() bool {
-	return true
+	return aws.Credentials{
+		AccessKeyID:     "mockAccessKey",
+		SecretAccessKey: "mockSecret",
+		SessionToken:    "mockToken",
+		Source:          "mockProvider",
+		CanExpire:       true,
+		Expires:         time.Now().Add(time.Hour),
+	}, nil
 }
 
 func TestSTSRegionalEndpointDisabled(t *testing.T) {
@@ -446,15 +436,19 @@ func TestSTSRegionalEndpointDisabled(t *testing.T) {
 		expectedRegion  = "us-west-2000"
 	)
 	called := false
-	expectedErr := &mockAWSErr{}
-	fake := &stsCalls{
+	expectedErr := &types.RegionDisabledException{Message: aws.String("Region is disabled")}
+
+	ctx := context.Background()
+	cfg := aws.Config{}
+
+	fake := &stsCallsV2{
 		log: logger,
-		getSTSCredsFromRegionEndpoint: func(_ *zap.Logger, _ *session.Session, _, _ string) *credentials.Credentials {
+		getSTSCredsFromRegionEndpoint: func(_ context.Context, _ *zap.Logger, _ aws.Config, _, _ string) aws.CredentialsProvider {
 			called = true
-			return credentials.NewCredentials(&mockProvider{expectedErr})
+			return &mockCredentialsProvider{retrieveErr: expectedErr}
 		},
 	}
-	_, err := fake.getCreds(expectedRegion, expectedRoleARN)
+	_, err := fake.getCreds(ctx, cfg, expectedRegion, expectedRoleARN)
 	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
 	assert.NoError(t, err, "no expected error")
 
@@ -464,8 +458,5 @@ func TestSTSRegionalEndpointDisabled(t *testing.T) {
 		"STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
 		"expected log message")
 	assert.Equal(t,
-		expectedRegion, lastEntry.Context[0].String, "expected error")
-	assert.EqualError(t,
-		lastEntry.Context[1].Interface.(error),
-		expectedErr.Error(), "expected error")
+		expectedRegion, lastEntry.Context[0].String, "expected region")
 }
