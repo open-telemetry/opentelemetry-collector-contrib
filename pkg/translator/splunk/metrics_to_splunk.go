@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 
 import (
 	"hash/fnv"
@@ -52,26 +52,19 @@ func sanitizeFloat(value float64) any {
 	return value
 }
 
-func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Config, logger *zap.Logger) []*splunk.Event {
-	sourceKey := config.OtelAttrsToHec.Source
-	sourceTypeKey := config.OtelAttrsToHec.SourceType
-	indexKey := config.OtelAttrsToHec.Index
-	hostKey := config.OtelAttrsToHec.Host
+func MetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, logger *zap.Logger, mapping HecToOtelAttrs, source, sourceType, index string) []*Event {
 	host := unknownHostName
-	source := config.Source
-	sourceType := config.SourceType
-	index := config.Index
 	commonFields := map[string]any{}
 
 	for k, v := range res.Attributes().All() {
 		switch k {
-		case hostKey:
+		case mapping.Host:
 			host = v.Str()
-		case sourceKey:
+		case mapping.Source:
 			source = v.Str()
-		case sourceTypeKey:
+		case mapping.SourceType:
 			sourceType = v.Str()
-		case indexKey:
+		case mapping.Index:
 			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
@@ -84,7 +77,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		pts := m.Gauge().DataPoints()
-		splunkMetrics := make([]*splunk.Event, pts.Len())
+		splunkMetrics := make([]*Event, pts.Len())
 
 		for gi := 0; gi < pts.Len(); gi++ {
 			dataPt := pts.At(gi)
@@ -102,7 +95,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		return splunkMetrics
 	case pmetric.MetricTypeHistogram:
 		pts := m.Histogram().DataPoints()
-		var splunkMetrics []*splunk.Event
+		var splunkMetrics []*Event
 		for gi := 0; gi < pts.Len(); gi++ {
 			dataPt := pts.At(gi)
 			bounds := dataPt.ExplicitBounds()
@@ -153,7 +146,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		return splunkMetrics
 	case pmetric.MetricTypeSum:
 		pts := m.Sum().DataPoints()
-		splunkMetrics := make([]*splunk.Event, pts.Len())
+		splunkMetrics := make([]*Event, pts.Len())
 		for gi := 0; gi < pts.Len(); gi++ {
 			dataPt := pts.At(gi)
 			fields := cloneMap(commonFields)
@@ -171,7 +164,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		return splunkMetrics
 	case pmetric.MetricTypeSummary:
 		pts := m.Summary().DataPoints()
-		var splunkMetrics []*splunk.Event
+		var splunkMetrics []*Event
 		for gi := 0; gi < pts.Len(); gi++ {
 			dataPt := pts.At(gi)
 			// first, add one event for sum, and one for count
@@ -220,20 +213,20 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	}
 }
 
-func createEvent(timestamp pcommon.Timestamp, host, source, sourceType, index string, fields map[string]any) *splunk.Event {
-	return &splunk.Event{
+func createEvent(timestamp pcommon.Timestamp, host, source, sourceType, index string, fields map[string]any) *Event {
+	return &Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(timestamp),
 		Host:       host,
 		Source:     source,
 		SourceType: sourceType,
 		Index:      index,
-		Event:      splunk.HecEventMetricType,
+		Event:      hecEventMetricType,
 		Fields:     fields,
 	}
 }
 
-func copyEventWithoutValues(event *splunk.Event) *splunk.Event {
-	return &splunk.Event{
+func copyEventWithoutValues(event *Event) *Event {
+	return &Event{
 		Time:       event.Time,
 		Host:       event.Host,
 		Source:     event.Source,
@@ -277,10 +270,10 @@ func float64ToDimValue(f float64) string {
 }
 
 // merge metric events to adhere to the multimetric format event.
-func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, error) {
-	hashes := map[uint32]*splunk.Event{}
+func MergeEventsToMultiMetricFormat(events []*Event) ([]*Event, error) {
+	hashes := map[uint32]*Event{}
 	hasher := fnv.New32a()
-	var merged []*splunk.Event
+	var merged []*Event
 
 	for _, e := range events {
 		cloned := copyEventWithoutValues(e)
