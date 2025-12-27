@@ -7,6 +7,7 @@
 package proxy
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -15,10 +16,7 @@ import (
 	"testing"
 	"time"
 
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/aws"
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -159,9 +157,9 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
-	assert.Contains(t, lastEntry.Message, "Unable to sign request", "expected log message")
+	assert.Contains(t, lastEntry.Message, "Unable to retrieve credentials", "expected log message")
 	assert.Contains(t, lastEntry.Context[0].Interface.(error).Error(),
-		"NoCredentialProviders", "expected error")
+		"no EC2 IMDS role found", "expected error")
 }
 
 func TestTCPEndpointInvalid(t *testing.T) {
@@ -184,14 +182,14 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
 
-	origSession := newAWSSession
+	origConfig := newAWSConfig
 	defer func() {
-		newAWSSession = origSession
+		newAWSConfig = origConfig
 	}()
 
-	expectedErr := errors.New("expected newAWSSessionError")
-	newAWSSession = func(string, string, *zap.Logger) (*session.Session, error) {
-		return nil, expectedErr
+	expectedErr := errors.New("expected newAWSConfigError")
+	newAWSConfig = func(_ context.Context, _, _ string, _ *zap.Logger) (aws.Config, error) {
+		return aws.Config{}, expectedErr
 	}
 	_, err := NewServer(cfg, logger)
 	assert.EqualError(t, err, expectedErr.Error())
@@ -241,9 +239,17 @@ func TestCanCreateTransport(t *testing.T) {
 	assert.ErrorContains(t, err, "failed to parse proxy URL")
 }
 
-func TestGetServiceEndpointInvalidAWSConfig(t *testing.T) {
-	_, err := getServiceEndpoint(&aws.Config{}, "")
-	assert.EqualError(t, err, "unable to generate endpoint from region with nil value")
+func TestGetServiceEndpoint(t *testing.T) {
+	_, err := getServiceEndpoint("", "xray")
+	assert.EqualError(t, err, "invalid region: ")
+
+	endpoint, err := getServiceEndpoint("us-west-2", "xray")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://xray.us-west-2.amazonaws.com", endpoint)
+
+	endpoint, err = getServiceEndpoint("cn-north-1", "xray")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://xray.cn-north-1.amazonaws.com.cn", endpoint)
 }
 
 type mockReadCloser struct {
