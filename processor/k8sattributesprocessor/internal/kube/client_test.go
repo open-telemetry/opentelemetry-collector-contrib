@@ -1080,8 +1080,7 @@ func TestExtractionRules(t *testing.T) {
 			maps.Copy(podCopy.Annotations, tc.additionalAnnotations)
 			maps.Copy(podCopy.Labels, tc.additionalLabels)
 			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
-			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
-			c.handleReplicaSetAdd(transformedReplicaset)
+			c.handleReplicaSetAdd(replicaset)
 			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", podCopy.Status.PodIP))
 			require.True(t, ok)
@@ -1097,48 +1096,6 @@ func TestExtractionRules(t *testing.T) {
 }
 
 func TestReplicaSetExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
-	// Disable saving ip into k8s.pod.ip
-	c.Associations[0].Sources[0].Name = ""
-
-	pod := &api_v1.Pod{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:              "auth-service-abc12-xyz3",
-			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-			Namespace:         "ns1",
-			CreationTimestamp: meta_v1.Now(),
-			Labels: map[string]string{
-				"label1": "lv1",
-				"label2": "k1=v1 k5=v5 extra!",
-			},
-			Annotations: map[string]string{
-				"annotation1": "av1",
-			},
-			OwnerReferences: []meta_v1.OwnerReference{
-				{
-					APIVersion: "apps/v1",
-					Kind:       "ReplicaSet",
-					Name:       "auth-service-66f5996c7c",
-					UID:        "207ea729-c779-401d-8347-008ecbc137e3",
-				},
-			},
-		},
-		Spec: api_v1.PodSpec{
-			NodeName: "node1",
-		},
-		Status: api_v1.PodStatus{
-			PodIP: "1.1.1.1",
-		},
-	}
-
-	replicaset := &apps_v1.ReplicaSet{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      "auth-service-66f5996c7c",
-			Namespace: "ns1",
-			UID:       "207ea729-c779-401d-8347-008ecbc137e3",
-		},
-	}
-
 	isController := true
 	isNotController := false
 	testCases := []struct {
@@ -1230,14 +1187,56 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c.Rules = tc.rules
-			replicaset.OwnerReferences = tc.ownerReferences
+			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+			// Disable saving ip into k8s.pod.ip
+			c.Associations[0].Sources[0].Name = ""
 
-			// manually call the data removal functions here
-			// normally the informer does this, but fully emulating the informer in this test is annoying
+			// fresh pod and replicaset per test
+			pod := &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:              "auth-service-abc12-xyz3",
+					UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+					Namespace:         "ns1",
+					CreationTimestamp: meta_v1.Now(),
+					Labels: map[string]string{
+						"label1": "lv1",
+						"label2": "k1=v1 k5=v5 extra!",
+					},
+					Annotations: map[string]string{
+						"annotation1": "av1",
+					},
+					OwnerReferences: []meta_v1.OwnerReference{
+						{
+							APIVersion: "apps/v1",
+							Kind:       "ReplicaSet",
+							Name:       "auth-service-66f5996c7c",
+							UID:        "207ea729-c779-401d-8347-008ecbc137e3",
+						},
+					},
+				},
+				Spec: api_v1.PodSpec{
+					NodeName: "node1",
+				},
+				Status: api_v1.PodStatus{
+					PodIP: "1.1.1.1",
+				},
+			}
+
+			rs := &apps_v1.ReplicaSet{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "auth-service-66f5996c7c",
+					Namespace: "ns1",
+					UID:       "207ea729-c779-401d-8347-008ecbc137e3",
+				},
+			}
+
+			// apply per-case rules and RS owner refs
+			c.Rules = tc.rules
+			rs.OwnerReferences = tc.ownerReferences
+
+			// transform and feed events
 			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
-			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
-			c.handleReplicaSetAdd(transformedReplicaset)
+			c.handleReplicaSetAdd(rs)
 			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
@@ -3812,4 +3811,34 @@ func TestDeploymentHashSuffixPattern(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestResolveReplicaSetDeploymentLinkage_ReuseCache(t *testing.T) {
+	c := &WatchClient{
+		ReplicaSets: make(map[string]*ReplicaSet),
+		m:           sync.RWMutex{},
+		Rules: ExtractionRules{
+			DeploymentUID:  true,
+			DeploymentName: true,
+		},
+	}
+
+	rsUID := "test-replicaset-uid"
+	cachedDeployment := Deployment{
+		Name: "test-deployment",
+		UID:  "test-deployment-uid",
+	}
+	c.ReplicaSets[rsUID] = &ReplicaSet{
+		UID:        rsUID,
+		Deployment: cachedDeployment,
+	}
+
+	rsView := replicasetView{
+		UID: rsUID,
+	}
+
+	c.resolveReplicaSetDeploymentLinkage(&rsView)
+
+	assert.Equal(t, "test-deployment", rsView.DeploymentName)
+	assert.Equal(t, "test-deployment-uid", rsView.DeploymentUID)
 }

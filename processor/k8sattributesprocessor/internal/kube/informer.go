@@ -13,9 +13,13 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const kubeSystemNamespace = "kube-system"
@@ -88,11 +92,11 @@ func newKubeSystemSharedInformer(
 ) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
-			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(_ context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace).String()
 				return client.CoreV1().Namespaces().List(context.Background(), opts)
 			},
-			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(_ context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 				opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace).String()
 				return client.CoreV1().Namespaces().Watch(context.Background(), opts)
 			},
@@ -126,33 +130,6 @@ func namespaceInformerListFunc(client kubernetes.Interface) cache.ListWithContex
 func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFuncWithContext {
 	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 		return client.CoreV1().Namespaces().Watch(ctx, opts)
-	}
-}
-
-func newReplicaSetSharedInformer(
-	client kubernetes.Interface,
-	namespace string,
-) cache.SharedInformer {
-	informer := cache.NewSharedInformer(
-		&cache.ListWatch{
-			ListWithContextFunc:  replicasetListFuncWithSelectors(client, namespace),
-			WatchFuncWithContext: replicasetWatchFuncWithSelectors(client, namespace),
-		},
-		&apps_v1.ReplicaSet{},
-		watchSyncPeriod,
-	)
-	return informer
-}
-
-func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListWithContextFunc {
-	return func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-		return client.AppsV1().ReplicaSets(namespace).List(ctx, opts)
-	}
-}
-
-func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFuncWithContext {
-	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-		return client.AppsV1().ReplicaSets(namespace).Watch(ctx, opts)
 	}
 }
 
@@ -207,6 +184,37 @@ func statefulsetListFuncWithSelectors(client kubernetes.Interface, namespace str
 func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFuncWithContext {
 	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().StatefulSets(namespace).Watch(ctx, opts)
+	}
+}
+
+func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
+	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
+		restCfg, _ := k8sconfig.CreateRestConfig(apiCfg)
+		mc, _ := metadata.NewForConfig(restCfg)
+		gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
+
+		lw := &cache.ListWatch{
+			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
+				// Populate selectors here if you mirror your existing helpers
+				if namespace == "" {
+					return mc.Resource(gvr).List(ctx, opts)
+				}
+				return mc.Resource(gvr).Namespace(namespace).List(ctx, opts)
+			},
+			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+				if namespace == "" {
+					return mc.Resource(gvr).Watch(ctx, opts)
+				}
+				return mc.Resource(gvr).Namespace(namespace).Watch(ctx, opts)
+			},
+		}
+
+		return cache.NewSharedIndexInformer(
+			lw,
+			&metav1.PartialObjectMetadata{},
+			watchSyncPeriod,
+			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+		)
 	}
 }
 
