@@ -28,14 +28,14 @@ type histogramMetrics struct {
 	count          int
 }
 
-func (h *histogramMetrics) insert(ctx context.Context, db driver.Conn) error {
+func (h *histogramMetrics) insert(ctx context.Context, db driver.Conn, batchOptions []driver.PrepareBatchOption) error {
 	if h.count == 0 {
 		return nil
 	}
 
 	processStart := time.Now()
 
-	batch, err := db.PrepareBatch(ctx, h.insertSQL)
+	batch, err := db.PrepareBatch(ctx, h.insertSQL, batchOptions...)
 	if err != nil {
 		return err
 	}

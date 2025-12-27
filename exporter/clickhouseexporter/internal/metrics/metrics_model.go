@@ -45,7 +45,7 @@ type MetricsModel interface {
 	Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics pmetric.Metric)
 
 	// insert is used to insert metric data to clickhouse
-	insert(ctx context.Context, db driver.Conn) error
+	insert(ctx context.Context, db driver.Conn, batchOptions []driver.PrepareBatchOption) error
 }
 
 // MetricsMetaData contain specific metric data
@@ -94,13 +94,13 @@ func NewMetricsModel(tablesConfig MetricTablesConfigMapper, database string) map
 }
 
 // InsertMetrics insert metric data into clickhouse concurrently
-func InsertMetrics(ctx context.Context, db driver.Conn, metricsMap map[pmetric.MetricType]MetricsModel) error {
+func InsertMetrics(ctx context.Context, db driver.Conn, metricsMap map[pmetric.MetricType]MetricsModel, options []driver.PrepareBatchOption) error {
 	errsChan := make(chan error, len(supportedMetricTypes))
 	wg := &sync.WaitGroup{}
 	for _, m := range metricsMap {
 		wg.Add(1)
 		go func(m MetricsModel, wg *sync.WaitGroup) {
-			errsChan <- m.insert(ctx, db)
+			errsChan <- m.insert(ctx, db, options)
 			wg.Done()
 		}(m, wg)
 	}

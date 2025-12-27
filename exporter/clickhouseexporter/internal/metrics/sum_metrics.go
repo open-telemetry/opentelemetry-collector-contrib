@@ -28,14 +28,14 @@ type sumMetrics struct {
 	count     int
 }
 
-func (s *sumMetrics) insert(ctx context.Context, db driver.Conn) error {
+func (s *sumMetrics) insert(ctx context.Context, db driver.Conn, batchOptions []driver.PrepareBatchOption) error {
 	if s.count == 0 {
 		return nil
 	}
 
 	processStart := time.Now()
 
-	batch, err := db.PrepareBatch(ctx, s.insertSQL)
+	batch, err := db.PrepareBatch(ctx, s.insertSQL, batchOptions...)
 	if err != nil {
 		return err
 	}
