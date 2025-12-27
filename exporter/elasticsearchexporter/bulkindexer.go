@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/go-docappender/v2"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -72,7 +72,7 @@ const (
 var otelDatasetSuffixRegex = regexp.MustCompile(`^[^-]+?-[^-]+?\.otel-`)
 
 func newBulkIndexer(
-	client esapi.Transport,
+	client elastictransport.Interface,
 	config *Config,
 	requireDataStream bool,
 	tb *metadata.TelemetryBuilder,
@@ -81,7 +81,7 @@ func newBulkIndexer(
 	return newSyncBulkIndexer(client, config, requireDataStream, tb, logger)
 }
 
-func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream bool, logger *zap.Logger) docappender.BulkIndexerConfig {
+func bulkIndexerConfig(client elastictransport.Interface, config *Config, requireDataStream bool, logger *zap.Logger) docappender.BulkIndexerConfig {
 	var maxDocRetries int
 	if config.Retry.Enabled {
 		maxDocRetries = defaultMaxRetries
@@ -138,7 +138,7 @@ func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Val
 }
 
 func newSyncBulkIndexer(
-	client esapi.Transport,
+	client elastictransport.Interface,
 	config *Config,
 	requireDataStream bool,
 	tb *metadata.TelemetryBuilder,
