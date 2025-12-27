@@ -319,6 +319,190 @@ service:
 	}
 }
 
+func TestCollectorCrashLogSnippet(t *testing.T) {
+	s := &Supervisor{
+		config: config.Supervisor{
+			Storage: config.Storage{Directory: t.TempDir()},
+		},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	require.Empty(t, s.collectorCrashLogSnippet())
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	logContent := "collector failed to start"
+	require.NoError(t, os.WriteFile(logPath, []byte(logContent+"\n"), 0o600))
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t, logContent, snippet)
+}
+
+func TestCollectorCrashLogSnippetFiltersErrors(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	logContent := "INFO collector starting\nlevel=error msg=\"boom\" component=receiver\nDEBUG tear down"
+	require.NoError(t, os.WriteFile(logPath, []byte(logContent), 0o600))
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t, "level=error msg=\"boom\" component=receiver", snippet)
+}
+
+func TestAppendCollectorCrashDetails(t *testing.T) {
+	t.Run("no snippet", func(t *testing.T) {
+		s := &Supervisor{
+			config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+			telemetrySettings: newNopTelemetrySettings(),
+		}
+		const base = "collector crashed"
+		require.Equal(t, base, s.appendCollectorCrashDetails(base))
+	})
+
+	t.Run("with snippet", func(t *testing.T) {
+		s := &Supervisor{
+			config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+			telemetrySettings: newNopTelemetrySettings(),
+		}
+		logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+		require.NoError(t, os.WriteFile(logPath, []byte("oops\nstacktrace"), 0o600))
+
+		msg := s.appendCollectorCrashDetails("collector crashed")
+		require.Contains(t, msg, "Collector log tail:")
+		require.Contains(t, msg, "oops\nstacktrace")
+	})
+}
+
+func TestReadFileTailDropsPartialLine(t *testing.T) {
+	logPath := filepath.Join(t.TempDir(), "agent.log")
+	require.NoError(t, os.WriteFile(logPath, []byte("first\nsecond\n"), 0o600))
+
+	data, err := readFileTail(logPath, 8)
+	require.NoError(t, err)
+	require.Equal(t, "second\n", string(data))
+}
+
+func TestCollectorCrashLogSnippetPrefersJSON(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	payload := `{"level":"error","component":"receiver","msg":"invalid config","stacktrace":"panic: bad config"}`
+	require.NoError(t, os.WriteFile(logPath, []byte(payload+"\nINFO done"), 0o600))
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t, "level=error component=receiver msg=invalid config stacktrace=panic: bad config", snippet)
+}
+
+func TestCollectorCrashLogSnippetCapturesStacktrace(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	content := "info\npanic: boom\nstack line 1\nstack line 2"
+	require.NoError(t, os.WriteFile(logPath, []byte(content), 0o600))
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t, "panic: boom\nstack line 1\nstack line 2", snippet)
+}
+
+func TestCollectorCrashLogSnippetIncludesConfigErrors(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	content := strings.Join([]string{
+		"INFO collector started",
+		"2024-05-01T00:00:00Z ERROR builder failed: unknown extension",
+		"2024-05-01T00:00:00Z Error: cannot load configuration: duplicate receivers",
+		"DEBUG shutting down",
+	}, "\n")
+	require.NoError(t, os.WriteFile(logPath, []byte(content), 0o600))
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t,
+		"2024-05-01T00:00:00Z ERROR builder failed: unknown extension\n2024-05-01T00:00:00Z Error: cannot load configuration: duplicate receivers",
+		snippet)
+}
+
+func TestCollectorCrashLogSnippetKeyValueFormat(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	line := `ts=2024-05-01T00:00:00Z severity=error component=exporter msg="failed to dial" err="connection refused"`
+	require.NoError(t, os.WriteFile(logPath, []byte("INFO start\n"+line+"\n"), 0o600))
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t, line, snippet)
+}
+
+func TestCollectorCrashLogSnippetNilPointerPanic(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	content := strings.Join([]string{
+		"panic: runtime error: invalid memory address or nil pointer dereference",
+		"[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x123456]",
+		"goroutine 21 [running]:",
+		"github.com/example/pkg.(*Thing).Do(0x0?)",
+	}, "\n")
+	require.NoError(t, os.WriteFile(logPath, []byte(content), 0o600))
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t, content, snippet)
+}
+
+func TestCollectorCrashLogSnippetJSONAndStacktrace(t *testing.T) {
+	s := &Supervisor{
+		config:            config.Supervisor{Storage: config.Storage{Directory: t.TempDir()}},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	logPath := filepath.Join(s.config.Storage.Directory, agentLogFileName)
+	lines := []string{
+		`{"level":"error","component":"builder","msg":"invalid pipelines"}`,
+		"panic: runtime error: index out of range",
+		"goroutine 1 [running]:",
+		"...",
+	}
+	require.NoError(t, os.WriteFile(logPath, []byte(strings.Join(lines, "\n")), 0o600))
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t,
+		"level=error component=builder msg=invalid pipelines\n\npanic: runtime error: index out of range\ngoroutine 1 [running]:\n...",
+		snippet)
+}
+
+func TestCollectorCrashLogSnippetPassthroughLogs(t *testing.T) {
+	s := &Supervisor{
+		config: config.Supervisor{
+			Storage: config.Storage{Directory: t.TempDir()},
+			Agent:   config.Agent{PassthroughLogs: true},
+		},
+		telemetrySettings: newNopTelemetrySettings(),
+	}
+
+	s.appendPassthroughLogLine(`{"level":"error","msg":"boom"}`)
+	s.appendPassthroughLogLine("panic: boom")
+
+	snippet := s.collectorCrashLogSnippet()
+	require.Equal(t, "level=error msg=boom\n\npanic: boom", snippet)
+}
+
 func Test_onMessage(t *testing.T) {
 	t.Run("AgentIdentification - New instance ID is valid", func(t *testing.T) {
 		agentDesc := &atomic.Value{}

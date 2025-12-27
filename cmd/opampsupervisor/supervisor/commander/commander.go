@@ -29,11 +29,16 @@ type Commander struct {
 	logger  *zap.Logger
 	cfg     config.Agent
 	logsDir string
-	args    []string
-	cmd     *exec.Cmd
-	doneCh  chan struct{}
-	exitCh  chan struct{}
-	running *atomic.Int64
+	// logFilePath represents the current stdout/stderr capture location. It will be empty
+	// when passthrough logging is enabled.
+	logFilePath string
+	// passthroughLogHook receives Collector log lines when passthrough logging is enabled.
+	passthroughLogHook func(string)
+	args               []string
+	cmd                *exec.Cmd
+	doneCh             chan struct{}
+	exitCh             chan struct{}
+	running            *atomic.Int64
 }
 
 func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
@@ -111,10 +116,10 @@ func (c *Commander) ReloadConfigFile() error {
 }
 
 func (c *Commander) startNormal() error {
-	logFilePath := filepath.Join(c.logsDir, "agent.log")
-	stdoutFile, err := os.Create(logFilePath)
+	c.logFilePath = filepath.Join(c.logsDir, "agent.log")
+	stdoutFile, err := os.Create(c.logFilePath)
 	if err != nil {
-		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
+		return fmt.Errorf("cannot create %s: %w", c.logFilePath, err)
 	}
 
 	// Capture standard output and standard error.
@@ -139,6 +144,7 @@ func (c *Commander) startNormal() error {
 }
 
 func (c *Commander) startWithPassthroughLogging() error {
+	c.logFilePath = ""
 	// grab cmd pipes
 	stdoutPipe, err := c.cmd.StdoutPipe()
 	if err != nil {
@@ -170,11 +176,13 @@ func (c *Commander) startWithPassthroughLogging() error {
 				if line != "" {
 					line = strings.TrimRight(line, "\r\n")
 					colLogger.Info(line)
+					c.onPassthroughLogLine(line)
 				}
 				break
 			}
 			line = strings.TrimRight(line, "\r\n")
 			colLogger.Info(line)
+			c.onPassthroughLogLine(line)
 		}
 	}()
 	go func() {
@@ -189,11 +197,13 @@ func (c *Commander) startWithPassthroughLogging() error {
 				if line != "" {
 					line = strings.TrimRight(line, "\r\n")
 					colLogger.Error(line)
+					c.onPassthroughLogLine(line)
 				}
 				break
 			}
 			line = strings.TrimRight(line, "\r\n")
 			colLogger.Error(line)
+			c.onPassthroughLogLine(line)
 		}
 	}()
 
@@ -217,6 +227,24 @@ func (c *Commander) watch() {
 	c.running.Store(0)
 	c.doneCh <- struct{}{}
 	c.exitCh <- struct{}{}
+}
+
+// LogFilePath returns the path where the agent stdout/stderr are captured,
+// or an empty string when passthrough logging is enabled.
+func (c *Commander) LogFilePath() string {
+	return c.logFilePath
+}
+
+// SetPassthroughLogHook configures a callback invoked for each Collector log line
+// when passthrough logging is enabled.
+func (c *Commander) SetPassthroughLogHook(h func(string)) {
+	c.passthroughLogHook = h
+}
+
+func (c *Commander) onPassthroughLogLine(line string) {
+	if c.passthroughLogHook != nil {
+		c.passthroughLogHook(line)
+	}
 }
 
 // StartOneShot starts the Collector with the expectation that it will immediately
