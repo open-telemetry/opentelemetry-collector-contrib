@@ -223,7 +223,8 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 func (r *pReceiver) initScrapeOptions() *scrape.Options {
 	opts := &scrape.Options{
 		PassMetadataInContext: true,
-		ExtraMetrics:          enableReportExtraScrapeMetricsGate.IsEnabled() || r.cfg.ReportExtraScrapeMetrics,
+		// We're slowly switching to the feature gate, so we need to check both the feature gate and the config option for a few releases.
+		ExtraMetrics: enableReportExtraScrapeMetricsGate.IsEnabled() || (r.cfg.ReportExtraScrapeMetrics && !removeReportExtraScrapeMetricsConfigGate.IsEnabled()),
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},

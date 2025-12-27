@@ -50,6 +50,12 @@ var enableReportExtraScrapeMetricsGate = featuregate.GlobalRegistry().MustRegist
 		" Extra scrape metrics are metrics that are not scraped by Prometheus but are reported by the Prometheus server."),
 )
 
+var removeReportExtraScrapeMetricsConfigGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Removes the report_extra_scrape_metrics configuration option."),
+)
+
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
