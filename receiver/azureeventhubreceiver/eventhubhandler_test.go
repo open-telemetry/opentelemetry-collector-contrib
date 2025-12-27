@@ -145,17 +145,24 @@ func TestShouldInitializeStorageClient(t *testing.T) {
 	}
 }
 
-type mockStorageClient struct{}
+type mockStorageClient struct {
+	storage map[string][]byte
+}
 
-func (*mockStorageClient) Get(_ context.Context, _ string) ([]byte, error) {
+func (m *mockStorageClient) Get(_ context.Context, key string) ([]byte, error) {
+	if len(m.storage[key]) > 0 {
+		return m.storage[key], nil
+	}
 	return nil, nil
 }
 
-func (*mockStorageClient) Set(_ context.Context, _ string, _ []byte) error {
+func (m *mockStorageClient) Set(_ context.Context, key string, val []byte) error {
+	m.storage[key] = val
 	return nil
 }
 
-func (*mockStorageClient) Delete(_ context.Context, _ string) error {
+func (m *mockStorageClient) Delete(_ context.Context, key string) error {
+	m.storage[key] = []byte{}
 	return nil
 }
 
