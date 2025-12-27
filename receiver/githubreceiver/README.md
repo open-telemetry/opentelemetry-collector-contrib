@@ -22,6 +22,8 @@
   - [Scraping](#scraping)
 - [Traces - Getting Started](#traces---getting-started)
   - [Receiver Configuration](#receiver-configuration)
+  - [ID Generation](#id-generation)
+  - [Attaching Custom Spans to Steps](#attaching-custom-spans-to-steps)
   - [Configuring Service Name](#configuring-service-name)
   - [Configuration a GitHub App](#configuration-a-github-app)
   - [Custom Properties as Resource Attributes](#custom-properties-as-resource-attributes)
@@ -166,6 +168,7 @@ The WebHook configuration exposes the following settings:
 [Configuring Service Name](#configuring-service-name) section for more
 information.
 * `include_span_events`: (default = `false`) - When set to `true`, attaches the raw webhook event JSON as a span event. The workflow run event is attached to the workflow run span, and the workflow job event is attached to the job span.
+* `id_generation`: (default = `"legacy"`) - Controls how deterministic span IDs are generated for job and step spans. Valid values are `"legacy"` or `"simplified"`. See the [ID Generation](#id-generation) section for more information.
 
 The WebHook configuration block also accepts all the [confighttp][cfghttp]
 settings.
@@ -183,6 +186,7 @@ receivers:
             service_name: github-actions  # single logical CI service (See Configuring Service Name section below)
             required_headers:
                 WAF-Header: "value"
+            id_generation: legacy  # or "check_run_id"
         scrapers: # The validation expects at least a dummy scraper config
             scraper:
                 github_org: open-telemetry
@@ -190,6 +194,80 @@ receivers:
 
 For tracing, all configuration is set under the `webhook` key. The full set
 of exposed configuration values can be found in [`config.go`](./config.go).
+
+### ID Generation
+
+The `id_generation` setting controls how deterministic span IDs are generated. Two modes are available:
+
+**Legacy (default)**: Uses job/step names + GitHub's step numbering. Span IDs break when names change or steps are reordered. Job display names must be unique to avoid collisions.
+
+**Simplified (recommended)**: Uses check run ID + deduped step names. Span IDs remain stable across name changes and step reordering. No uniqueness constraints required.
+
+| Mode | Job Span ID | Step Span ID | Benefits | Limitations |
+|------|-------------|--------------|----------|-------------|
+| `legacy` | run_id + attempt + job_name | run_id + attempt + job_name + step_name + step_number | Backward compatible | Breaks on renames; requires unique job names |
+| `simplified` | check_run_id + attempt | check_run_id + attempt + deduped_step_name | Stable across renames; no naming constraints | Must use deduped names to attach custom spans |
+
+**Migration note**: Changing modes alters all job and step span IDs. Plan during a maintenance window.
+
+```yaml
+receivers:
+    github:
+        webhook:
+            id_generation: simplified  # Recommended for new deployments
+```
+
+### Attaching Custom Spans to Steps
+
+When using `id_generation: simplified`, you can attach custom spans (from [otel-cli][otcli] or [run-with-telemetry][run]) to step spans by computing a `TRACEPARENT` header with the receiver's deterministic IDs.
+
+#### Step Name Deduplication
+
+The receiver deduplicates step names by appending suffixes:
+- 1st occurrence: "Build"
+- 2nd occurrence: "Build-1"
+- 3rd occurrence: "Build-2"
+
+To attach custom spans, you must use the deduped name. **Best practice**: Use unique step names to avoid tracking suffixes.
+
+**Reordering stability**: Step span IDs are stable across step reordering when step names are unique. If step names are duplicated, the receiver deduplicates by order (Build, Build-1, …); reordering duplicated steps can change suffix assignment and therefore which step a given ID refers to.
+
+#### Computing TRACEPARENT
+
+Add this bash function to your workflow:
+
+```bash
+# Usage: export TRACEPARENT=$(otel_github_traceparent "Step Name")
+otel_github_traceparent() {
+  trace_id=$(printf '%s' "${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}t" | sha256sum | cut -c1-32)
+  span_id=$(printf '%s' "${{ job.check_run_id }}:${GITHUB_RUN_ATTEMPT}:$1" | sha256sum | cut -c17-32)
+  printf '00-%s-%s-01\n' "$trace_id" "$span_id"
+}
+```
+
+#### Example: Attaching with otel-cli
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: &build_step Build Application
+        run: |
+          # Define the function (or source from a shared script)
+          otel_github_traceparent() {
+            trace_id=$(printf '%s' "${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}t" | sha256sum | cut -c1-32)
+            span_id=$(printf '%s' "${{ job.check_run_id }}:${GITHUB_RUN_ATTEMPT}:$1" | sha256sum | cut -c17-32)
+            printf '00-%s-%s-01\n' "$trace_id" "$span_id"
+          }
+
+          export TRACEPARENT=$(otel_github_traceparent "${{ env.STEP_NAME }}")
+          otel-cli exec --name "compile" -- make build
+        env:
+          STEP_NAME: *build_step
+```
+
+**Note**: `${{ job.check_run_id }}` is available in the GitHub Actions job context.
 
 ### Configuring Service Name
 
