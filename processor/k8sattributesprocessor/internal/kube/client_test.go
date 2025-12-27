@@ -714,7 +714,7 @@ func TestExtractionRules(t *testing.T) {
 		additionalAnnotations map[string]string
 		additionalLabels      map[string]string
 		attributes            map[string]string
-		singularFeatureGate   bool
+		singularFeatureGate   *bool // nil = default (enabled in beta), false = explicitly disabled, true = explicitly enabled
 	}{
 		{
 			name:       "no-rules",
@@ -918,12 +918,13 @@ func TestExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.pod.labels.label1": "lv1",
-				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+				"k8s.pod.label.label1": "lv1",
+				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
 			},
+			// singularFeatureGate: nil means use default (enabled in beta)
 		},
 		{
-			name: "all-labels singular",
+			name: "all-labels plural",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{
 					{
@@ -933,10 +934,10 @@ func TestExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.pod.label.label1": "lv1",
-				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
+				"k8s.pod.labels.label1": "lv1",
+				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
 			},
-			singularFeatureGate: true,
+			singularFeatureGate: func() *bool { b := false; return &b }(),
 		},
 		{
 			name: "all-annotations",
@@ -949,11 +950,11 @@ func TestExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.pod.annotations.annotation1": "av1",
+				"k8s.pod.annotation.annotation1": "av1",
 			},
 		},
 		{
-			name: "all-annotations singular",
+			name: "all-annotations plural",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{
 					{
@@ -963,9 +964,9 @@ func TestExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.pod.annotation.annotation1": "av1",
+				"k8s.pod.annotations.annotation1": "av1",
 			},
-			singularFeatureGate: true,
+			singularFeatureGate: func() *bool { b := false; return &b }(),
 		},
 		{
 			name: "all-annotations-not-match",
@@ -1065,10 +1066,11 @@ func TestExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+			if tc.singularFeatureGate != nil {
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), *tc.singularFeatureGate))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					// Restore to default (enabled in beta)
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				}()
 			}
 
@@ -1273,7 +1275,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 		name                string
 		rules               ExtractionRules
 		attributes          map[string]string
-		singularFeatureGate bool
+		singularFeatureGate *bool
 	}{
 		{
 			name:       "no-rules",
@@ -1314,11 +1316,11 @@ func TestNamespaceExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.namespace.labels.label1": "lv1",
+				"k8s.namespace.label.label1": "lv1",
 			},
 		},
 		{
-			name: "all-labels singular",
+			name: "all-labels plural",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{
 					{
@@ -1328,9 +1330,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.namespace.label.label1": "lv1",
+				"k8s.namespace.labels.label1": "lv1",
 			},
-			singularFeatureGate: true,
+			singularFeatureGate: func() *bool { b := false; return &b }(),
 		},
 		{
 			name: "all-annotations",
@@ -1343,11 +1345,11 @@ func TestNamespaceExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.namespace.annotations.annotation1": "av1",
+				"k8s.namespace.annotation.annotation1": "av1",
 			},
 		},
 		{
-			name: "all-annotations singular",
+			name: "all-annotations plural",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{
 					{
@@ -1357,17 +1359,17 @@ func TestNamespaceExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.namespace.annotation.annotation1": "av1",
+				"k8s.namespace.annotations.annotation1": "av1",
 			},
-			singularFeatureGate: true,
+			singularFeatureGate: func() *bool { b := false; return &b }(),
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+			if tc.singularFeatureGate != nil {
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), *tc.singularFeatureGate))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				}()
 			}
 
@@ -1531,7 +1533,7 @@ func TestNodeExtractionRules(t *testing.T) {
 		name                string
 		rules               ExtractionRules
 		attributes          map[string]string
-		singularFeatureGate bool
+		singularFeatureGate *bool
 	}{
 		{
 			name:       "no-rules",
@@ -1572,11 +1574,11 @@ func TestNodeExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.node.labels.label1": "lv1",
+				"k8s.node.label.label1": "lv1",
 			},
 		},
 		{
-			name: "all-labels singular",
+			name: "all-labels plural",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{
 					{
@@ -1586,9 +1588,9 @@ func TestNodeExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.node.label.label1": "lv1",
+				"k8s.node.labels.label1": "lv1",
 			},
-			singularFeatureGate: true,
+			singularFeatureGate: func() *bool { b := false; return &b }(),
 		},
 		{
 			name: "all-annotations",
@@ -1601,11 +1603,11 @@ func TestNodeExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.node.annotations.annotation1": "av1",
+				"k8s.node.annotation.annotation1": "av1",
 			},
 		},
 		{
-			name: "all-annotations singular",
+			name: "all-annotations plural",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{
 					{
@@ -1615,17 +1617,17 @@ func TestNodeExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.node.annotation.annotation1": "av1",
+				"k8s.node.annotations.annotation1": "av1",
 			},
-			singularFeatureGate: true,
+			singularFeatureGate: func() *bool { b := false; return &b }(),
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+			if tc.singularFeatureGate != nil {
+				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), *tc.singularFeatureGate))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				}()
 			}
 
