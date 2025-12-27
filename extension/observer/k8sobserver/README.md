@@ -73,6 +73,9 @@ All fields are optional.
 | auth_type         | string    | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
 | node              | string    | <no value>       | The node name to limit the discovery of pod, port, and node endpoints. Providing no value (the default) results in discovering endpoints for all available nodes. |
 | observe_pods      | bool      | `true`           | Whether to report observer pod and port endpoints. If `true` and `node` is specified it will only discover pod and port endpoints whose `spec.nodeName` matches the provided node name. If `true` and `node` isn't specified, it will discover all available pod and port endpoints. Please note that Collector connectivity to pods from other nodes is dependent on your cluster configuration and isn't guaranteed. | 
+| observe_pending_pods | bool   | `false`          | Whether to report endpoints for pods in `Pending` phase. When `false` (default), only pods in `Running` phase are observed. Enable this to observe running init containers. |
+| observe_init_containers | bool | `false`          | Whether to report init container endpoints when `observe_pods` is enabled. To observe running init containers, `observe_pending_pods` must also be enabled. Terminated init containers in running pods are observed for a limited time (see `init_container_terminated_ttl`). |
+| init_container_terminated_ttl | duration | `15m` | How long after termination an init container endpoint remains observable. Running init containers are always observed regardless of this setting. After this TTL expires, terminated init container endpoints are removed, allowing receivers to shut down. |
 | observe_nodes     | bool      | `false`          | Whether to report observer k8s.node endpoints. If `true` and `node` is specified it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and `node` isn't specified, it will discover all available node endpoints. Please note that Collector connectivity to nodes is dependent on your cluster configuration and isn't guaranteed.| 
 | observe_services  | bool      | `false`          | Whether to report observer k8s.service endpoints.|
 | observe_ingresses | bool      | `false`          | Whether to report observer k8s.ingress endpoints.|
@@ -80,6 +83,25 @@ All fields are optional.
 
 More complete configuration examples on how to use this observer along with the `receiver_creator`,
 can be found at the [Receiver Creator](../../../receiver/receivercreator/README.md)'s documentation.
+
+### Init containers
+
+To observe init containers, it is generally recommended to enable both `observe_init_containers` and `observe_pending_pods`:
+
+```yaml
+extensions:
+  k8s_observer:
+    observe_pending_pods: true
+    observe_init_containers: true
+```
+
+- **Running init containers** require `observe_pending_pods: true` since init containers run while the pod is in `Pending` phase.
+- **Terminated init containers** in running pods are included only if they terminated within `init_container_terminated_ttl` (default 15 minutes). After the TTL expires, the endpoint is removed, allowing receivers to shut down.
+- Each init container exposes `is_init_container` in the endpoint environment for receiver_creator rules:
+
+```yaml
+rule: type == "pod.container" && is_init_container == true
+```
 
 ### Setting up RBAC permissions
 

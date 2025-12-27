@@ -64,6 +64,11 @@ var container2 = v1.Container{
 	},
 }
 
+var initContainer1 = v1.Container{
+	Name:  "init-1",
+	Image: "init-image-1",
+}
+
 var container1StatusWaiting = v1.ContainerStatus{
 	Name: "container-1",
 	State: v1.ContainerState{
@@ -88,6 +93,22 @@ var container2StatusRunning = v1.ContainerStatus{
 	ContainerID: "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
 }
 
+var initContainerStatusRunning = v1.ContainerStatus{
+	Name: "init-1",
+	State: v1.ContainerState{
+		Running: &v1.ContainerStateRunning{StartedAt: metav1.Now()},
+	},
+	ContainerID: "containerd://init-running-id",
+}
+
+var initContainerStatusTerminated = v1.ContainerStatus{
+	Name: "init-1",
+	State: v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{ExitCode: 0, FinishedAt: metav1.Now()},
+	},
+	ContainerID: "containerd://init-terminated-id",
+}
+
 var podWithNamedPorts = func() *v1.Pod {
 	pod := newPod("pod-2", "localhost")
 	pod.Labels = map[string]string{
@@ -100,6 +121,30 @@ var podWithNamedPorts = func() *v1.Pod {
 	pod.Spec.Containers = []v1.Container{
 		container1,
 		container2,
+	}
+	return pod
+}()
+
+var podPendingWithRunningInit = func() *v1.Pod {
+	pod := newPod("pod-init-pending", "localhost")
+	pod.Status.Phase = v1.PodPending
+	pod.Status.PodIP = ""
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
+		initContainerStatusRunning,
+	}
+	pod.Spec.InitContainers = []v1.Container{
+		initContainer1,
+	}
+	return pod
+}()
+
+var podRunningWithTerminatedInit = func() *v1.Pod {
+	pod := newPod("pod-init-running", "localhost")
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
+		initContainerStatusTerminated,
+	}
+	pod.Spec.InitContainers = []v1.Container{
+		initContainer1,
 	}
 	return pod
 }()
