@@ -1,0 +1,56 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.operation.name
+                value:
+                  stringValue: AppLog
+              - key: azure.category
+                value:
+                  stringValue: AppServiceAppLogs
+              - key: container.id
+                value:
+                  stringValue: CONTAINER_ID
+              - key: log.record.severity.original
+                value:
+                  stringValue: CUSTOM_LEVEL
+              - key: exception.type
+                value:
+                  stringValue: EXCEPTION_CLASS
+              - key: host.name
+                value:
+                  stringValue: HOST
+              - key: log.record.logger
+                value:
+                  stringValue: LOGGER
+              - key: code.function.name
+                value:
+                  stringValue: METHOD
+              - key: log.file.path
+                value:
+                  stringValue: FILEPATH
+              - key: exception.stacktrace
+                value:
+                  stringValue: STACKTRACE
+              - key: azure.app_service.instance.id
+                value:
+                  stringValue: WEBSITE_INSTANCE_ID
+            body:
+              stringValue: MESSAGE
+            severityNumber: 21
+            severityText: Critical
+            timeUnixNano: "1713960372000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

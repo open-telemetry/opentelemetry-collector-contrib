@@ -17,6 +17,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
 
+// List of supported Azure Resource Log Categories
+const (
+	categoryAppServiceAppLogs                  = "AppServiceAppLogs"
+	categoryAppServiceAuditLogs                = "AppServiceAuditLogs"
+	categoryAppServiceAuthenticationLogs       = "AppServiceAuthenticationLogs"
+	categoryAppServiceConsoleLogs              = "AppServiceConsoleLogs"
+	categoryAppServiceFileAuditLogs            = "AppServiceFileAuditLogs"
+	categoryAppServiceHTTPLogs                 = "AppServiceHTTPLogs"
+	categoryAppServiceIPSecAuditLogs           = "AppServiceIPSecAuditLogs"
+	categoryAppServicePlatformLogs             = "AppServicePlatformLogs"
+	categoryAzureCdnAccessLog                  = "AzureCdnAccessLog"
+	categoryFrontDoorAccessLog                 = "FrontDoorAccessLog"
+	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
+	categoryFrontdoorWebApplicationFirewallLog = "FrontDoorWebApplicationFirewallLog"
+	categoryRecommendation                     = "Recommendation"
+)
+
 // Non-SemConv attributes that are used for common Azure Log Record fields
 const (
 	// OpenTelemetry attribute name for Azure Correlation ID,
@@ -27,9 +44,9 @@ const (
 	// from `operationVersion` field in Azure Log Record
 	attributeAzureOperationVersion = "azure.operation.version"
 
-	// OpenTelemetry attribute name for Azure Duration,
+	// OpenTelemetry attribute name for generic Azure Operation Duration,
 	// from `durationMs` field in Azure Log Record
-	attributeAzureDuration = "azure.duration"
+	attributeAzureOperationDuration = "azure.operation.duration"
 
 	// OpenTelemetry attribute name for Azure Identity,
 	// from `identity` field in Azure Log Record
@@ -52,6 +69,20 @@ const (
 	// OpenTelemetry attribute name for Azure Result Description,
 	// from `resultDescription` field in Azure Log Record
 	attributesAzureResultDescription = "azure.result.description"
+)
+
+// Common Non-SemConv attributes that are used in "properties" fields across multiple
+// Azure Log Record Categories
+const (
+	// OpenTelemetry attribute name for "Host" HTTP Header value
+	attributeHTTPHeaderHost = "http.request.header.host"
+
+	// OpenTelemetry attribute name for "Referer" HTTP Header value
+	attributeHTTPHeaderReferer = "http.request.header.referer"
+
+	// OpenTelemetry attribute name for Azure HTTP Request Duration,
+	// from `durationMs` field in Azure Log Record
+	attributeAzureRequestDuration = "azure.request.duration"
 )
 
 var errNoTimestamp = errors.New("no valid time fields are set on Log record ('time' or 'timestamp')")
@@ -143,7 +174,7 @@ func (r *azureLogRecordBase) PutCommonAttributes(attrs pcommon.Map, _ pcommon.Va
 	unmarshaler.AttrPutStrPtrIf(attrs, attributesAzureResultDescription, r.ResultDescription)
 	unmarshaler.AttrPutStrPtrIf(attrs, string(conventions.NetworkPeerAddressKey), r.CallerIPAddress)
 	unmarshaler.AttrPutStrPtrIf(attrs, attributeAzureCorrelationID, r.CorrelationID)
-	unmarshaler.AttrPutIntNumberPtrIf(attrs, attributeAzureDuration, r.DurationMs)
+	unmarshaler.AttrPutIntNumberPtrIf(attrs, attributeAzureOperationDuration, r.DurationMs)
 	if r.Identity != nil {
 		unmarshaler.AttrPutMapIf(attrs, attributeAzureIdentity, *r.Identity)
 	}
@@ -196,7 +227,7 @@ func (r *azureLogRecordGeneric) PutProperties(attrs pcommon.Map, body pcommon.Va
 				value.SetStr(fmt.Sprintf("%v", v))
 			}
 		case "duration":
-			value := attrs.PutEmpty(attributeAzureDuration)
+			value := attrs.PutEmpty(attributeAzureOperationDuration)
 			if err := value.FromRaw(v); err != nil {
 				value.SetStr(fmt.Sprintf("%v", v))
 			}
@@ -213,8 +244,39 @@ func (r *azureLogRecordGeneric) PutProperties(attrs pcommon.Map, body pcommon.Va
 }
 
 // processLogRecord tries to parse incoming record based of provided logCategory
-func processLogRecord(_ string, record []byte) (azureLogRecord, error) {
-	parsed := new(azureLogRecordGeneric)
+func processLogRecord(logCategory string, record []byte) (azureLogRecord, error) {
+	var parsed azureLogRecord
+
+	switch logCategory {
+	case categoryAppServiceAppLogs:
+		parsed = new(azureAppServiceAppLog)
+	case categoryAppServiceAuditLogs:
+		parsed = new(azureAppServiceAuditLog)
+	case categoryAppServiceAuthenticationLogs:
+		parsed = new(azureAppServiceAuthenticationLog)
+	case categoryAppServiceConsoleLogs:
+		parsed = new(azureAppServiceConsoleLog)
+	case categoryAppServiceHTTPLogs:
+		parsed = new(azureAppServiceHTTPLog)
+	case categoryAppServiceIPSecAuditLogs:
+		parsed = new(azureAppServiceIPSecAuditLog)
+	case categoryAppServicePlatformLogs:
+		parsed = new(azureAppServicePlatformLog)
+	case categoryAppServiceFileAuditLogs:
+		parsed = new(azureAppServiceFileAuditLog)
+	case categoryAzureCdnAccessLog:
+		parsed = new(azureHTTPAccessLog)
+	case categoryFrontDoorAccessLog:
+		parsed = new(azureHTTPAccessLog)
+	case categoryFrontDoorHealthProbeLog:
+		parsed = new(frontDoorHealthProbeLog)
+	case categoryFrontdoorWebApplicationFirewallLog:
+		parsed = new(frontDoorWAFLog)
+	case categoryRecommendation:
+		parsed = new(azureRecommendationLog)
+	default:
+		parsed = new(azureLogRecordGeneric)
+	}
 
 	// Unfortunately, "goccy/go-json" has a bug with case-insensitive key matching
 	// for nested structures, so we have to use jsoniter here
