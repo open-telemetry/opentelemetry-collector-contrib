@@ -1,0 +1,45 @@
+# Example Supervisor configuration with fallback support
+#
+# This configuration demonstrates how to set up the Supervisor with a fallback
+# configuration that will be used when the OpAMP server is unreachable.
+#
+# The fallback configuration provides resilience during:
+# - Initial startup when the server is unavailable
+# - Runtime disconnections that exceed the configured timeout
+
+server:
+  endpoint: wss://opamp.example.com/v1/opamp
+  tls:
+    # Configure TLS settings as needed for your environment
+    # insecure_skip_verify: true  # Don't do this in production
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_own_logs: true
+  reports_own_traces: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+
+agent:
+  # Path to the Collector executable
+  executable: /opt/otelcol/bin/otelcol
+
+  # Fallback configuration file to use when OpAMP server is unreachable.
+  # This must be a complete, standalone Collector configuration.
+  # Note: This is NOT merged with config_files - it's used as-is when fallback is triggered.
+  fallback_config: /etc/otelcol/fallback.yaml
+
+  # How long to wait for initial connection before using fallback config.
+  # Set to 0 or omit to disable startup fallback.
+  fallback_startup_timeout: 30s
+
+  # How long to wait after disconnection before switching to fallback config.
+  # Set to 0 or omit to disable runtime fallback.
+  fallback_runtime_timeout: 60s
+
+storage:
+  directory: /var/lib/otelcol/supervisor
+
