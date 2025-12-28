@@ -318,11 +318,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			attrs := rm.Resource().Attributes()
 
 			// Add the remaining labels as resource attributes
-			for labelName, labelValue := range ls.Map() {
-				if labelName != "job" && labelName != "instance" && !schema.IsMetadataLabel(labelName) {
-					attrs.PutStr(labelName, labelValue)
+			ls.Range(func(l labels.Label) {
+				if l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
+					attrs.PutStr(l.Name, l.Value)
 				}
-			}
+			})
 
 			snapshot := pmetric.NewResourceMetrics()
 			attrs.CopyTo(snapshot.Resource().Attributes())
@@ -739,17 +739,15 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 // extractAttributes return all attributes different from job, instance, metric name and scope name/version
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	labelMap := ls.Map()
 	// job, instance and metric name will always become labels
-	attrs.EnsureCapacity(len(labelMap) - 3)
-	for labelName, labelValue := range labelMap {
-		if labelName == "instance" || labelName == "job" || // Become resource attributes
-			labelName == string(model.MetricNameLabel) || // Becomes metric name
-			labelName == "otel_scope_name" || labelName == "otel_scope_version" { // Becomes scope name and version
-			continue
+	attrs.EnsureCapacity(ls.Len() - 3)
+	ls.Range(func(l labels.Label) {
+		if l.Name != "instance" && l.Name != "job" && // Become resource attributes
+			l.Name != model.MetricNameLabel && // Becomes metric name
+			l.Name != "otel_scope_name" && l.Name != "otel_scope_version" { // Becomes scope name and version
+			attrs.PutStr(l.Name, l.Value)
 		}
-		attrs.PutStr(labelName, labelValue)
-	}
+	})
 	return attrs
 }
 
