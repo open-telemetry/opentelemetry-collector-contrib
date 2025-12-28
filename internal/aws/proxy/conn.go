@@ -53,9 +53,8 @@ const (
 
 // partitionConfig holds partition information similar to awsrulesfn.PartitionConfig
 type partitionConfig struct {
-	name                 string
-	dnsSuffix            string
-	implicitGlobalRegion string
+	name      string
+	dnsSuffix string
 }
 
 // partition definitions matching aws-sdk-go-v2/internal/endpoints/awsrulesfn
@@ -68,27 +67,24 @@ var partitions = []struct {
 		id:          awsPartitionID,
 		regionRegex: regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af|il|mx)\-\w+\-\d+$`),
 		config: partitionConfig{
-			name:                 awsPartitionID,
-			dnsSuffix:            "amazonaws.com",
-			implicitGlobalRegion: usEast1RegionID,
+			name:      awsPartitionID,
+			dnsSuffix: "amazonaws.com",
 		},
 	},
 	{
 		id:          awsCnPartitionID,
 		regionRegex: regexp.MustCompile(`^cn\-\w+\-\d+$`),
 		config: partitionConfig{
-			name:                 awsCnPartitionID,
-			dnsSuffix:            "amazonaws.com.cn",
-			implicitGlobalRegion: cnNorth1RegionID,
+			name:      awsCnPartitionID,
+			dnsSuffix: "amazonaws.com.cn",
 		},
 	},
 	{
 		id:          awsUsGovPartitionID,
 		regionRegex: regexp.MustCompile(`^us\-gov\-\w+\-\d+$`),
 		config: partitionConfig{
-			name:                 awsUsGovPartitionID,
-			dnsSuffix:            "amazonaws.com",
-			implicitGlobalRegion: usGovWest1RegionID,
+			name:      awsUsGovPartitionID,
+			dnsSuffix: "amazonaws.com",
 		},
 	},
 }
@@ -206,7 +202,7 @@ func getRegionFromMetadata(ctx context.Context, logger *zap.Logger) (string, err
 	logger.Debug("Unable to fetch region from EC2 metadata", zap.Error(ec2Err))
 
 	// Return combined error
-	return "", fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: ECS: %v; EC2: %w", err, ec2Err)
+	return "", fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: ECS: %w; EC2: %w", err, ec2Err)
 }
 
 // getRegionFromEC2Metadata fetches region from EC2 Instance Metadata Service.
@@ -321,7 +317,7 @@ func (s *stsCallsV2) getCreds(ctx context.Context, cfg aws.Config, region, roleA
 // getSTSCredsFromRegionEndpointV2 fetches STS credentials for provided roleARN from regional endpoint.
 // AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
 // Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
-var getSTSCredsFromRegionEndpointV2 = func(ctx context.Context, log *zap.Logger, cfg aws.Config, region, roleArn string) aws.CredentialsProvider {
+var getSTSCredsFromRegionEndpointV2 = func(_ context.Context, log *zap.Logger, cfg aws.Config, region, roleArn string) aws.CredentialsProvider {
 	regionalEndpoint := getSTSRegionalEndpoint(region)
 	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
 	// for other opt-in regions, region value will create STS regional endpoint.
