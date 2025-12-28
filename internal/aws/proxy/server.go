@@ -9,7 +9,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -18,7 +17,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"go.uber.org/zap"
 
@@ -135,18 +133,6 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		Handler:           handler,
 		ReadHeaderTimeout: 20 * time.Second,
 	}, nil
-}
-
-// getServiceEndpointFromConfig returns AWS service endpoint.
-// If cfg has BaseEndpoint set, it returns that, otherwise it generates from region.
-func getServiceEndpointFromConfig(cfg aws.Config, serviceName string) (string, error) {
-	if cfg.BaseEndpoint != nil && *cfg.BaseEndpoint != "" {
-		return *cfg.BaseEndpoint, nil
-	}
-	if cfg.Region == "" {
-		return "", errors.New("unable to generate endpoint from region with nil value")
-	}
-	return getServiceEndpoint(cfg.Region, serviceName)
 }
 
 // consumeBody reads the body, calculates SHA-256 hash, and returns the body bytes and hash.
