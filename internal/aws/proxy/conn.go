@@ -132,61 +132,91 @@ var newAWSConfig = func(ctx context.Context, roleArn, region string, log *zap.Lo
 }
 
 func getAWSConfigSession(ctx context.Context, c *Config, logger *zap.Logger) (aws.Config, error) {
-	var (
-		awsRegion string
-		err       error
-	)
-	regionEnv := os.Getenv(awsDefaultRegionEnvVar)
-	if regionEnv == "" {
-		regionEnv = os.Getenv(awsRegionEnvVar)
-	}
-
-	switch {
-	case c.Region == "" && regionEnv != "":
-		awsRegion = regionEnv
-		logger.Debug("Fetched region from environment variables", zap.String("region", awsRegion))
-	case c.Region != "":
-		awsRegion = c.Region
-		logger.Debug("Fetched region from config file", zap.String("region", awsRegion))
-	case !c.LocalMode:
-		// Try ECS metadata first (proxy-specific feature not in awsutil)
-		awsRegion, err = getRegionFromECSMetadata()
-		if err != nil {
-			logger.Debug("Unable to fetch region from ECS metadata", zap.Error(err))
-			// Fall back to EC2 IMDS via awsutil
-			tempSettings := &awsutil.AWSSessionSettings{}
-			tempCfg, configErr := awsutil.GetAWSConfig(ctx, logger, tempSettings)
-			if configErr == nil {
-				awsRegion, err = getEC2Region(ctx, tempCfg)
-				if err != nil {
-					logger.Debug("Unable to fetch region from EC2 metadata", zap.Error(err))
-				} else {
-					logger.Debug("Fetched region from EC2 metadata", zap.String("region", awsRegion))
-				}
-			} else {
-				err = configErr
-			}
-		} else {
-			logger.Debug("Fetched region from ECS metadata file", zap.String("region", awsRegion))
-		}
-	}
-
-	if awsRegion == "" && err != nil {
-		return aws.Config{}, fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: %w", err)
-	}
-
-	cfg, err := newAWSConfig(ctx, c.RoleARN, awsRegion, logger)
+	region, err := resolveRegion(ctx, c, logger)
 	if err != nil {
 		return aws.Config{}, err
 	}
 
-	cfg.Region = awsRegion
+	cfg, err := newAWSConfig(ctx, c.RoleARN, region, logger)
+	if err != nil {
+		return aws.Config{}, err
+	}
+
+	cfg.Region = region
 	cfg.RetryMaxAttempts = 2
 	if c.AWSEndpoint != "" {
 		cfg.BaseEndpoint = aws.String(c.AWSEndpoint)
 	}
 
 	return cfg, nil
+}
+
+// resolveRegion determines the AWS region using the following priority:
+//  1. Config file (c.Region)
+//  2. Environment variables (AWS_DEFAULT_REGION, AWS_REGION)
+//  3. ECS container metadata file (proxy-specific, not in awsutil)
+//  4. EC2 instance metadata service (IMDS)
+func resolveRegion(ctx context.Context, c *Config, logger *zap.Logger) (string, error) {
+	// 1. Config file takes highest priority
+	if c.Region != "" {
+		logger.Debug("Fetched region from config file", zap.String("region", c.Region))
+		return c.Region, nil
+	}
+
+	// 2. Environment variables
+	if region := getRegionFromEnv(); region != "" {
+		logger.Debug("Fetched region from environment variables", zap.String("region", region))
+		return region, nil
+	}
+
+	// 3 & 4. Metadata services (only if not in local mode)
+	if c.LocalMode {
+		return "", errors.New("region not specified and local mode enabled; cannot fetch from metadata services")
+	}
+
+	return getRegionFromMetadata(ctx, logger)
+}
+
+// getRegionFromEnv returns the region from environment variables.
+// AWS_DEFAULT_REGION takes precedence over AWS_REGION.
+func getRegionFromEnv() string {
+	if region := os.Getenv(awsDefaultRegionEnvVar); region != "" {
+		return region
+	}
+	return os.Getenv(awsRegionEnvVar)
+}
+
+// getRegionFromMetadata attempts to get region from ECS metadata first,
+// then falls back to EC2 IMDS.
+func getRegionFromMetadata(ctx context.Context, logger *zap.Logger) (string, error) {
+	// Try ECS metadata first (proxy-specific feature not in awsutil)
+	region, err := getRegionFromECSMetadata()
+	if err == nil {
+		logger.Debug("Fetched region from ECS metadata file", zap.String("region", region))
+		return region, nil
+	}
+	logger.Debug("Unable to fetch region from ECS metadata", zap.Error(err))
+
+	// Fall back to EC2 IMDS
+	region, ec2Err := getRegionFromEC2Metadata(ctx, logger)
+	if ec2Err == nil {
+		logger.Debug("Fetched region from EC2 metadata", zap.String("region", region))
+		return region, nil
+	}
+	logger.Debug("Unable to fetch region from EC2 metadata", zap.Error(ec2Err))
+
+	// Return combined error
+	return "", fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: ECS: %v; EC2: %w", err, ec2Err)
+}
+
+// getRegionFromEC2Metadata fetches region from EC2 Instance Metadata Service.
+func getRegionFromEC2Metadata(ctx context.Context, logger *zap.Logger) (string, error) {
+	tempSettings := &awsutil.AWSSessionSettings{}
+	tempCfg, err := awsutil.GetAWSConfig(ctx, logger, tempSettings)
+	if err != nil {
+		return "", err
+	}
+	return getEC2Region(ctx, tempCfg)
 }
 
 func getProxyAddress(proxyAddress string) string {
