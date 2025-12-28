@@ -5,14 +5,13 @@ package prometheusremotewritereceiver
 
 import (
 	"bytes"
-	"context"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -20,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 )
 
 // makeLabels builds a labels.Labels with the given total number of labels.
@@ -59,7 +60,7 @@ func setupMetricsReceiverBench(tb testing.TB) *prometheusRemoteWriteReceiver {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	prwReceiverIfc, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	prwReceiverIfc, err := factory.CreateMetrics(tb.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	if err != nil {
 		tb.Fatalf("failed to create metrics receiver: %v", err)
 	}
@@ -89,14 +90,14 @@ func makeWriteV2Request(numSeries, samplesPerSeries, extraLabels int) *writev2.R
 	symbols := []string{"", "__name__", "job", "my_job", "instance", "my_instance"}
 	// extra labels
 	extraLabelIndexStart := len(symbols)
-	for j := 0; j < extraLabels; j++ {
-		k := fmt.Sprintf("k%d", j)
-		v := fmt.Sprintf("v%d", j)
+	for i := range extraLabels {
+		k := fmt.Sprintf("k%d", i)
+		v := fmt.Sprintf("v%d", i)
 		symbols = append(symbols, k, v)
 	}
 
 	ts := make([]writev2.TimeSeries, 0, numSeries)
-	for i := 0; i < numSeries; i++ {
+	for i := range numSeries {
 		labelRefs := []uint32{1} // __name__
 		// Add a metric name symbol per series to avoid all series being identical
 		metricName := fmt.Sprintf("metric_%d", i)
@@ -105,13 +106,13 @@ func makeWriteV2Request(numSeries, samplesPerSeries, extraLabels int) *writev2.R
 		// job & instance
 		labelRefs = append(labelRefs, 2, 3, 4, 5)
 		// extra labels
-		for j := 0; j < extraLabels; j++ {
+		for j := range extraLabels {
 			// add refs to key and value
 			labelRefs = append(labelRefs, uint32(extraLabelIndexStart+2*j), uint32(extraLabelIndexStart+2*j+1))
 		}
 
 		samples := make([]writev2.Sample, 0, samplesPerSeries)
-		for s := 0; s < samplesPerSeries; s++ {
+		for s := range samplesPerSeries {
 			samples = append(samples, writev2.Sample{Value: float64(1), Timestamp: int64(s + 1), StartTimestamp: int64(s + 1)})
 		}
 
@@ -130,6 +131,11 @@ func encodeProto(req *writev2.Request) []byte {
 	return b
 }
 
+const (
+	extraLabelsSize = 10
+	warmUpSize      = 20
+)
+
 func BenchmarkRemoteWrite(b *testing.B) {
 	seriesSizes := []int{10, 100, 1000}
 	samplesList := []int{1, 5}
@@ -144,12 +150,12 @@ func BenchmarkRemoteWrite(b *testing.B) {
 					prw := setupMetricsReceiverBench(b)
 
 					// Precompute payload (raw proto) to focus on receiver translation cost.
-					req := makeWriteV2Request(sz, samples, 10)
+					req := makeWriteV2Request(sz, samples, extraLabelsSize)
 					payload := encodeProto(req)
 
 					// Warmup
-					for i := 0; i < 20; i++ {
-						r := httptest.NewRequest("POST", "/api/v1/write", bytes.NewReader(payload))
+					for range warmUpSize {
+						r := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(payload))
 						r.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
 						w := httptest.NewRecorder()
 						prw.handlePRW(w, r)
@@ -162,7 +168,7 @@ func BenchmarkRemoteWrite(b *testing.B) {
 					b.RunParallel(func(pb *testing.PB) {
 						for pb.Next() {
 							atomic.AddInt64(&counter, 1)
-							r := httptest.NewRequest("POST", "/api/v1/write", bytes.NewReader(payload))
+							r := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(payload))
 							r.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
 							w := httptest.NewRecorder()
 							prw.handlePRW(w, r)
