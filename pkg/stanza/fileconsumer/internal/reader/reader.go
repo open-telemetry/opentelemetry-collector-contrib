@@ -32,6 +32,7 @@ type Metadata struct {
 	Offset          int64
 	RecordNum       int64
 	FileAttributes  map[string]any
+	OriginalPath    string
 	HeaderFinalized bool
 	FlushState      flush.State
 	TokenLenState   tokenlen.State
