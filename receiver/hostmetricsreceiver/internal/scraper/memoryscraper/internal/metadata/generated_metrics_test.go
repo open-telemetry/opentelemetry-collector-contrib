@@ -60,13 +60,13 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordSystemDarwinMemoryPressureDataPoint(ts, 1)
-
-			allMetricsCount++
 			mb.RecordSystemLinuxMemoryAvailableDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSystemLinuxMemoryDirtyDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryDarwinPressureDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSystemMemoryLimitDataPoint(ts, 1)
@@ -103,20 +103,6 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "system.darwin.memory.pressure":
-					assert.False(t, validatedMetrics["system.darwin.memory.pressure"], "Found a duplicate in the metrics slice: system.darwin.memory.pressure")
-					validatedMetrics["system.darwin.memory.pressure"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Percentage of memory pressure on Darwin system.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.linux.memory.available":
 					assert.False(t, validatedMetrics["system.linux.memory.available"], "Found a duplicate in the metrics slice: system.linux.memory.available")
 					validatedMetrics["system.linux.memory.available"] = true
@@ -141,6 +127,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.darwin.pressure":
+					assert.False(t, validatedMetrics["system.memory.darwin.pressure"], "Found a duplicate in the metrics slice: system.memory.darwin.pressure")
+					validatedMetrics["system.memory.darwin.pressure"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of memory pressure on Darwin system. This is a more accurate alternative than system.memory.usage with state=used.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
