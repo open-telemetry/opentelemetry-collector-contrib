@@ -33,6 +33,6 @@ func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, _ *me
 		return fmt.Errorf("error retrieving vm.memory_pressure: %w", err)
 	}
 	result := uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24
-	s.mb.RecordSystemDarwinMemoryPressureDataPoint(now, int64(result))
+	s.mb.RecordSystemMemoryDarwinPressureDataPoint(now, int64(result))
 	return nil
 }
