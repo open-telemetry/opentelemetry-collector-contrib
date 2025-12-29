@@ -15,3 +15,7 @@ k8s_observer/invalid_no_observing:
   observe_pods: false
   observe_services: false
   observe_ingresses: false
+k8s_observer/invalid_pod_phase:
+  observe_pods: true
+  observe_pod_phases:
+    - Rnning

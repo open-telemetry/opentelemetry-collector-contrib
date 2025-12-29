@@ -5,10 +5,21 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
+
+// isValidPodPhase returns true if the phase is a valid Kubernetes pod phase.
+func isValidPodPhase(phase string) bool {
+	switch phase {
+	case "Pending", "Running", "Succeeded", "Failed", "Unknown":
+		return true
+	default:
+		return false
+	}
+}
 
 // DefaultContainerTerminatedTTL is the default time-to-live for terminated container endpoints.
 // 15m should be enough to collect logs from crashed containers and terminated containers (like init containers).
@@ -68,6 +79,11 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices && !cfg.ObserveIngresses {
 		return errors.New("one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true")
+	}
+	for _, phase := range cfg.ObservePodPhases {
+		if !isValidPodPhase(phase) {
+			return fmt.Errorf("invalid pod phase %q in observe_pod_phases: valid values are Pending, Running, Succeeded, Failed, Unknown", phase)
+		}
 	}
 	return nil
 }

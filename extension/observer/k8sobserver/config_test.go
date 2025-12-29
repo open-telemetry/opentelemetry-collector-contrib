@@ -60,6 +60,10 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalid_no_observing"),
 			expectedErr: "one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true",
 		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_pod_phase"),
+			expectedErr: `invalid pod phase "Rnning" in observe_pod_phases`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
