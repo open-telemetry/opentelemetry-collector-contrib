@@ -9,6 +9,8 @@ all_set:
       enabled: true
     system.memory.page_size:
       enabled: true
+    system.memory.shared:
+      enabled: true
     system.memory.usage:
       enabled: true
     system.memory.utilization:
@@ -22,6 +24,8 @@ none_set:
     system.memory.limit:
       enabled: false
     system.memory.page_size:
+      enabled: false
+    system.memory.shared:
       enabled: false
     system.memory.usage:
       enabled: false

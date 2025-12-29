@@ -68,6 +68,14 @@ A constant value for the system's configured page size.
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+### system.memory.shared
+
+Shared memory used (mostly by tmpfs).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
 ### system.memory.utilization
 
 Percentage of memory bytes in use.
