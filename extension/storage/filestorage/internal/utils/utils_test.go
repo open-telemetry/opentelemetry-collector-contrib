@@ -28,7 +28,7 @@ func TestTruncat(t *testing.T) {
 		},
 		{
 			name:        "exceeds max length",
-			input:       strings.Repeat("b", 300),
+			input:       strings.Repeat("b", 1000),
 			expectedErr: "file name too long",
 		},
 	}
