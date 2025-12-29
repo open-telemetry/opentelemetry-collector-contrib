@@ -25,6 +25,10 @@ func isValidPodPhase(phase string) bool {
 // 15m should be enough to collect logs from crashed containers and terminated containers (like init containers).
 const DefaultContainerTerminatedTTL = 15 * time.Minute
 
+// DefaultObservePodPhases is the default set of pod phases to observe.
+// Only Running pods are observed by default to maintain backward compatibility.
+var DefaultObservePodPhases = []string{"Running"}
+
 // Config defines configuration for k8s attributes processor.
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
