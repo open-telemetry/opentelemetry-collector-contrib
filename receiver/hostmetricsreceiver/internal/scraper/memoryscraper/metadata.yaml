@@ -38,6 +38,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+
   system.memory.limit:
     enabled: false
     description: Total bytes of memory available.
@@ -56,6 +57,17 @@ metrics:
     stability:
       level: development
     gauge:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  system.memory.shared:
+    enabled: false
+    description: Shared memory used (mostly by tmpfs). 
+    unit: By
+    stability:
+      level: development
+    sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
