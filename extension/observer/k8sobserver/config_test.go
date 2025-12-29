@@ -20,6 +20,9 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
+	// Get defaults from the factory to use in test expectations
+	defaults := createDefaultConfig().(*Config)
+
 	tests := []struct {
 		id          component.ID
 		expected    component.Config
@@ -35,8 +38,8 @@ func TestLoadConfig(t *testing.T) {
 				Node:                   "node-1",
 				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 				ObservePods:            true,
-				ObservePodPhases:       DefaultObservePodPhases,
-				ContainerTerminatedTTL: DefaultContainerTerminatedTTL,
+				ObservePodPhases:       defaults.ObservePodPhases,
+				ContainerTerminatedTTL: defaults.ContainerTerminatedTTL,
 			},
 		},
 		{
@@ -48,8 +51,8 @@ func TestLoadConfig(t *testing.T) {
 				ObserveNodes:           true,
 				ObserveServices:        true,
 				ObserveIngresses:       true,
-				ObservePodPhases:       DefaultObservePodPhases,
-				ContainerTerminatedTTL: DefaultContainerTerminatedTTL,
+				ObservePodPhases:       defaults.ObservePodPhases,
+				ContainerTerminatedTTL: defaults.ContainerTerminatedTTL,
 			},
 		},
 		{

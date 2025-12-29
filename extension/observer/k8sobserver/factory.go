@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 		APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		ObservePods:            true,
 		ObserveNodes:           false,
-		ObservePodPhases:       DefaultObservePodPhases,
+		ObservePodPhases:       []string{"Running"},
 		ObserveInitContainers:  false,
 		ContainerTerminatedTTL: DefaultContainerTerminatedTTL,
 	}
