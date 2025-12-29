@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !windows
+//go:build windows
 
 package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/utils"
 
@@ -31,7 +31,7 @@ func TestTruncate(t *testing.T) {
 		{
 			name:        "exceeds max length",
 			input:       strings.Repeat("b", 1000),
-			expectedErr: "file name too long",
+			expectedErr: "The filename, directory name, or volume label syntax is incorrect",
 		},
 	}
 
