@@ -12,7 +12,6 @@ import (
 
 // DefaultContainerTerminatedTTL is the default time-to-live for terminated container endpoints.
 // 15m should be enough to collect logs from crashed containers and terminated containers (like init containers).
-// This is useful for collecting logs where you want to keep a receiver open even after the resource is gone.
 const DefaultContainerTerminatedTTL = 15 * time.Minute
 
 // Config defines configuration for k8s attributes processor.
@@ -49,7 +48,8 @@ type Config struct {
 	// ObservePodPhases specifies which pod phases to observe. Only pods in the listed phases
 	// will have endpoints created. Valid values are: Pending, Running, Succeeded, Failed, Unknown.
 	// Default is ["Running"] to maintain backward compatibility.
-	// To observe init containers, include "Pending" since init containers run during that phase.
+	// Note: Terminated init containers are visible in Running pods (within ContainerTerminatedTTL).
+	// Include "Pending" only if you need to observe init containers while they're still running.
 	ObservePodPhases []string `mapstructure:"observe_pod_phases"`
 	// ObserveInitContainers determines whether to report init container endpoints.
 	// Only effective when ObservePods is true. To observe running init containers,

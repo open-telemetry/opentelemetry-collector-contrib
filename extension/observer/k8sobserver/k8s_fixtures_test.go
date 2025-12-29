@@ -11,7 +11,8 @@ import (
 )
 
 // newPod is a helper function for creating Pods for testing.
-func newPod(name, host string) *v1.Pod {
+func newPod(name string) *v1.Pod {
+	host := "localhost"
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
@@ -40,7 +41,7 @@ func newPod(name, host string) *v1.Pod {
 }
 
 var (
-	pod1V1 = newPod("pod1", "localhost")
+	pod1V1 = newPod("pod1")
 	pod1V2 = func() *v1.Pod {
 		pod := pod1V1.DeepCopy()
 		pod.Labels["pod-version"] = "2"
@@ -121,7 +122,7 @@ var initContainerStatusTerminated = v1.ContainerStatus{
 }
 
 var podWithNamedPorts = func() *v1.Pod {
-	pod := newPod("pod-2", "localhost")
+	pod := newPod("pod-2")
 	pod.Labels = map[string]string{
 		"env": "prod",
 	}
@@ -137,7 +138,7 @@ var podWithNamedPorts = func() *v1.Pod {
 }()
 
 var podPendingWithRunningInit = func() *v1.Pod {
-	pod := newPod("pod-init-pending", "localhost")
+	pod := newPod("pod-init-pending")
 	pod.Status.Phase = v1.PodPending
 	pod.Status.PodIP = ""
 	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
@@ -150,7 +151,7 @@ var podPendingWithRunningInit = func() *v1.Pod {
 }()
 
 var podRunningWithTerminatedInit = func() *v1.Pod {
-	pod := newPod("pod-init-running", "localhost")
+	pod := newPod("pod-init-running")
 	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
 		initContainerStatusTerminated,
 	}
@@ -161,7 +162,7 @@ var podRunningWithTerminatedInit = func() *v1.Pod {
 }()
 
 var podRunningWithTerminatedContainer = func() *v1.Pod {
-	pod := newPod("pod-terminated-container", "localhost")
+	pod := newPod("pod-terminated-container")
 	pod.Status.ContainerStatuses = []v1.ContainerStatus{
 		container2StatusTerminated,
 	}
