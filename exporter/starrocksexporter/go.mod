@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/starro
 go 1.24.0
 
 require (
+	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
 	github.com/stretchr/testify v1.11.1
@@ -13,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.48.1-0.20251223191316-a9aaa99a1214
 	go.opentelemetry.io/collector/config/configtls v1.48.1-0.20251223191316-a9aaa99a1214
 	go.opentelemetry.io/collector/confmap v1.48.1-0.20251223191316-a9aaa99a1214
+	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251223191316-a9aaa99a1214
 	go.opentelemetry.io/collector/exporter v1.48.1-0.20251223191316-a9aaa99a1214
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.142.1-0.20251223191316-a9aaa99a1214
 	go.opentelemetry.io/collector/exporter/exportertest v0.142.1-0.20251223191316-a9aaa99a1214
@@ -23,7 +25,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d // indirect
@@ -46,7 +47,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.48.1-0.20251223191316-a9aaa99a1214 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251223191316-a9aaa99a1214 // indirect
 	go.opentelemetry.io/collector/consumer v1.48.1-0.20251223191316-a9aaa99a1214 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.142.1-0.20251223191316-a9aaa99a1214 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.142.1-0.20251223191316-a9aaa99a1214 // indirect
