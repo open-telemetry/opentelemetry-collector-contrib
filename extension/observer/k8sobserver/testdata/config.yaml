@@ -19,3 +19,6 @@ k8s_observer/invalid_pod_phase:
   observe_pods: true
   observe_pod_phases:
     - Rnning
+k8s_observer/invalid_empty_pod_phases:
+  observe_pods: true
+  observe_pod_phases: []

@@ -80,6 +80,9 @@ func (cfg *Config) Validate() error {
 	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices && !cfg.ObserveIngresses {
 		return errors.New("one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true")
 	}
+	if cfg.ObservePods && len(cfg.ObservePodPhases) == 0 {
+		return errors.New("observe_pod_phases must specify at least one phase when observe_pods is true")
+	}
 	for _, phase := range cfg.ObservePodPhases {
 		if !isValidPodPhase(phase) {
 			return fmt.Errorf("invalid pod phase %q in observe_pod_phases: valid values are Pending, Running, Succeeded, Failed, Unknown", phase)

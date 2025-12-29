@@ -67,6 +67,10 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalid_pod_phase"),
 			expectedErr: `invalid pod phase "Rnning" in observe_pod_phases`,
 		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_empty_pod_phases"),
+			expectedErr: "observe_pod_phases must specify at least one phase when observe_pods is true",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
