@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/utils"
+package truncate // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/truncate"
 
 import (
 	"crypto/sha256"

@@ -3,7 +3,7 @@
 
 //go:build !windows
 
-package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/utils"
+package truncate // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/truncate"
 
 import (
 	"os"
@@ -38,14 +38,14 @@ func TestTruncate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			file, err := os.OpenFile(filepath.Join(tempDir, tt.input), os.O_RDWR|os.O_CREATE, 0644)
+			file, err := os.OpenFile(filepath.Join(tempDir, tt.input), os.O_RDWR|os.O_CREATE, 0o644)
 			if tt.expectedErr != "" {
 				if !strings.Contains(err.Error(), tt.expectedErr) {
 					require.ErrorContains(t, err, tt.expectedErr)
 				}
 				require.Nil(t, file)
 				truncated := Truncate(tt.input)
-				file, err = os.OpenFile(filepath.Join(tempDir, truncated), os.O_RDWR|os.O_CREATE, 0644)
+				file, err = os.OpenFile(filepath.Join(tempDir, truncated), os.O_RDWR|os.O_CREATE, 0o644)
 				require.NoError(t, err)
 				require.NotNil(t, file)
 				require.NoError(t, file.Close())
