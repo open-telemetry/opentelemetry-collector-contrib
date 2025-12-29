@@ -54,7 +54,6 @@ func TestTruncate(t *testing.T) {
 				require.NotNil(t, file)
 				require.NoError(t, file.Close())
 			}
-
 		})
 	}
 }
