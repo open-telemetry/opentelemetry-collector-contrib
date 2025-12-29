@@ -186,7 +186,7 @@ receivers:
             service_name: github-actions  # single logical CI service (See Configuring Service Name section below)
             required_headers:
                 WAF-Header: "value"
-            id_generation: legacy  # or "check_run_id"
+            id_generation: legacy  # or "simplified"
         scrapers: # The validation expects at least a dummy scraper config
             scraper:
                 github_org: open-telemetry

@@ -47,7 +47,7 @@ type WebHook struct {
 	Secret                  string                         `mapstructure:"secret"`           // secret for webhook
 	ServiceName             string                         `mapstructure:"service_name"`
 	IncludeSpanEvents       bool                           `mapstructure:"include_span_events"` // attach raw webhook event JSON as span events
-	IDGeneration            string                         `mapstructure:"id_generation"`       // ID generation mode: "legacy" (default) or "check_run_id"
+	IDGeneration            string                         `mapstructure:"id_generation"`       // ID generation mode: "legacy" (default) or "simplified"
 }
 
 type GitHubHeaders struct {
