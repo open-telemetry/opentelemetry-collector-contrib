@@ -291,7 +291,7 @@ service:
 
 ### Example with `default_pipelines`
 
-The following example demonstrates strategies for migrating froom `match_once: true` while using `default_pipelines`.
+The following example demonstrates strategies for migrating from `match_once: true` while using `default_pipelines`.
 
 ```yaml
 routing:
