@@ -10,8 +10,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-// DefaultInitContainerTerminatedTTL is the default time-to-live for terminated init container endpoints.
-const DefaultInitContainerTerminatedTTL = 15 * time.Minute
+// DefaultContainerTerminatedTTL is the default time-to-live for terminated container endpoints.
+// 15m should be enough to collect logs from crashed containers and terminated containers (like init containers).
+// This is useful for collecting logs where you want to keep a receiver open even after the resource is gone.
+const DefaultContainerTerminatedTTL = 15 * time.Minute
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
@@ -53,12 +55,13 @@ type Config struct {
 	// Only effective when ObservePods is true. To observe running init containers,
 	// "Pending" must be included in ObservePodPhases. `false` by default.
 	ObserveInitContainers bool `mapstructure:"observe_init_containers"`
-	// InitContainerTerminatedTTL controls how long after termination an init container
-	// endpoint remains observable. Running init containers are always observed.
-	// Terminated init containers are only observed if they terminated within this duration.
-	// This prevents keeping receivers open indefinitely for completed init containers.
-	// Default is 15 minutes.
-	InitContainerTerminatedTTL time.Duration `mapstructure:"init_container_terminated_ttl"`
+	// ContainerTerminatedTTL controls how long after termination a container
+	// endpoint remains observable. Running containers are always observed.
+	// Terminated containers (both init and regular) are only observed if they
+	// terminated within this duration. This prevents keeping receivers open
+	// indefinitely for completed or crashed containers, while still allowing
+	// time for log collection. Default is 15 minutes.
+	ContainerTerminatedTTL time.Duration `mapstructure:"container_terminated_ttl"`
 }
 
 // Validate checks if the extension configuration is valid

@@ -93,6 +93,17 @@ var container2StatusRunning = v1.ContainerStatus{
 	ContainerID: "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
 }
 
+var container2StatusTerminated = v1.ContainerStatus{
+	Name: "container-2",
+	State: v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Reason: "Error", FinishedAt: metav1.Now()},
+	},
+	Ready:       false,
+	Image:       "container-image-2",
+	Started:     pointerBool(false),
+	ContainerID: "containerd://container-2-terminated-id",
+}
+
 var initContainerStatusRunning = v1.ContainerStatus{
 	Name: "init-1",
 	State: v1.ContainerState{
@@ -145,6 +156,17 @@ var podRunningWithTerminatedInit = func() *v1.Pod {
 	}
 	pod.Spec.InitContainers = []v1.Container{
 		initContainer1,
+	}
+	return pod
+}()
+
+var podRunningWithTerminatedContainer = func() *v1.Pod {
+	pod := newPod("pod-terminated-container", "localhost")
+	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+		container2StatusTerminated,
+	}
+	pod.Spec.Containers = []v1.Container{
+		container2,
 	}
 	return pod
 }()

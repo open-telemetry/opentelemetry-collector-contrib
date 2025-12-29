@@ -66,7 +66,7 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 	}
 
 	// Running pod with default phases (Running only)
-	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts, runningOnly, true, DefaultInitContainerTerminatedTTL)
+	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts, runningOnly, true, DefaultContainerTerminatedTTL)
 	require.Equal(t, expectedEndpoints, endpoints)
 }
 
@@ -96,13 +96,13 @@ func TestPodObjectWithRunningInitContainerInPendingPod(t *testing.T) {
 	}
 
 	// Pending pod requires Pending in observe_pod_phases
-	endpoints := convertPodToEndpoints("namespace", podPendingWithRunningInit, runningAndPending, true, DefaultInitContainerTerminatedTTL)
+	endpoints := convertPodToEndpoints("namespace", podPendingWithRunningInit, runningAndPending, true, DefaultContainerTerminatedTTL)
 	require.Equal(t, expectedEndpoints, endpoints)
 }
 
 func TestPodObjectPendingPodNotObservedByDefault(t *testing.T) {
 	// Pending pods should not be observed when only Running is in observe_pod_phases (default)
-	endpoints := convertPodToEndpoints("namespace", podPendingWithRunningInit, runningOnly, true, DefaultInitContainerTerminatedTTL)
+	endpoints := convertPodToEndpoints("namespace", podPendingWithRunningInit, runningOnly, true, DefaultContainerTerminatedTTL)
 	require.Nil(t, endpoints)
 }
 
@@ -137,12 +137,12 @@ func TestPodObjectWithTerminatedInitContainerInRunningPod(t *testing.T) {
 	}
 
 	// Running pod - observe_pod_phases just needs Running
-	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, true, DefaultInitContainerTerminatedTTL)
+	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, true, DefaultContainerTerminatedTTL)
 	require.Equal(t, expectedEndpoints, endpoints)
 }
 
 func TestPodObjectInitContainersDisabled(t *testing.T) {
-	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, false, DefaultInitContainerTerminatedTTL)
+	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, false, DefaultContainerTerminatedTTL)
 	require.Len(t, endpoints, 1)
 	require.Equal(t, observer.EndpointID("namespace/pod-init-running-UID"), endpoints[0].ID)
 }
@@ -158,4 +158,63 @@ func TestPodObjectTerminatedInitContainerWithinTTL(t *testing.T) {
 	// Test that terminated init containers are included within TTL
 	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, true, time.Hour)
 	require.Len(t, endpoints, 2)
+}
+
+func TestPodObjectTerminatedContainerWithinTTL(t *testing.T) {
+	// Test that terminated regular containers are included within TTL
+	expectedEndpoints := []observer.Endpoint{
+		{
+			ID:     "namespace/pod-terminated-container-UID",
+			Target: "1.2.3.4",
+			Details: &observer.Pod{
+				Name:      "pod-terminated-container",
+				Namespace: "default",
+				UID:       "pod-terminated-container-UID",
+				Labels:    map[string]string{"env": "prod"},
+			},
+		},
+		{
+			ID:     "namespace/pod-terminated-container-UID/container-2",
+			Target: "1.2.3.4",
+			Details: &observer.PodContainer{
+				Name:            "container-2",
+				Image:           "container-image-2",
+				ContainerID:     "container-2-terminated-id",
+				IsInitContainer: false,
+				Pod: observer.Pod{
+					Name:      "pod-terminated-container",
+					Namespace: "default",
+					UID:       "pod-terminated-container-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+			},
+		},
+		{
+			ID:     "namespace/pod-terminated-container-UID/https(443)",
+			Target: "1.2.3.4:443",
+			Details: &observer.Port{
+				Name: "https",
+				Pod: observer.Pod{
+					Name:      "pod-terminated-container",
+					Namespace: "default",
+					UID:       "pod-terminated-container-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+				Port:           443,
+				Transport:      observer.ProtocolTCP,
+				ContainerName:  "container-2",
+				ContainerID:    "container-2-terminated-id",
+				ContainerImage: "container-image-2",
+			},
+		},
+	}
+	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedContainer, runningOnly, false, time.Hour)
+	require.Equal(t, expectedEndpoints, endpoints)
+}
+
+func TestPodObjectTerminatedContainerExpiredTTL(t *testing.T) {
+	// Test that terminated regular containers are excluded after TTL expires
+	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedContainer, runningOnly, false, 0)
+	require.Len(t, endpoints, 1)
+	require.Equal(t, observer.EndpointID("namespace/pod-terminated-container-UID"), endpoints[0].ID)
 }

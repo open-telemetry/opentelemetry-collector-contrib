@@ -16,12 +16,12 @@ import (
 
 func newTestHandler() *handler {
 	h := &handler{
-		idNamespace:                "test-1",
-		endpoints:                  &sync.Map{},
-		logger:                     zap.NewNop(),
-		observePodPhases:           map[string]bool{"Running": true},
-		observeInitContainers:      false,
-		initContainerTerminatedTTL: DefaultInitContainerTerminatedTTL,
+		idNamespace:            "test-1",
+		endpoints:              &sync.Map{},
+		logger:                 zap.NewNop(),
+		observePodPhases:       map[string]bool{"Running": true},
+		observeInitContainers:  false,
+		containerTerminatedTTL: DefaultContainerTerminatedTTL,
 	}
 	return h
 }

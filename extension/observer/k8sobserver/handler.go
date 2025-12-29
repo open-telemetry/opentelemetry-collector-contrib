@@ -32,8 +32,8 @@ type handler struct {
 	observePodPhases map[string]bool
 	// observeInitContainers controls whether init containers are observed
 	observeInitContainers bool
-	// initContainerTerminatedTTL is how long after termination an init container endpoint remains observable
-	initContainerTerminatedTTL time.Duration
+	// containerTerminatedTTL is how long after termination a container endpoint remains observable
+	containerTerminatedTTL time.Duration
 
 	logger *zap.Logger
 }
@@ -57,7 +57,7 @@ func (h *handler) OnAdd(objectInterface any, _ bool) {
 
 	switch object := objectInterface.(type) {
 	case *v1.Pod:
-		endpoints = convertPodToEndpoints(h.idNamespace, object, h.observePodPhases, h.observeInitContainers, h.initContainerTerminatedTTL)
+		endpoints = convertPodToEndpoints(h.idNamespace, object, h.observePodPhases, h.observeInitContainers, h.containerTerminatedTTL)
 	case *v1.Service:
 		endpoints = convertServiceToEndpoints(h.idNamespace, object)
 	case *networkingv1.Ingress:
@@ -85,10 +85,10 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 			h.logger.Warn("skip updating endpoint for pod as the update is of different type", zap.Any("oldPod", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
-		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject, h.observePodPhases, h.observeInitContainers, h.initContainerTerminatedTTL) {
+		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject, h.observePodPhases, h.observeInitContainers, h.containerTerminatedTTL) {
 			oldEndpoints[e.ID] = e
 		}
-		for _, e := range convertPodToEndpoints(h.idNamespace, newPod, h.observePodPhases, h.observeInitContainers, h.initContainerTerminatedTTL) {
+		for _, e := range convertPodToEndpoints(h.idNamespace, newPod, h.observePodPhases, h.observeInitContainers, h.containerTerminatedTTL) {
 			newEndpoints[e.ID] = e
 		}
 
@@ -185,7 +185,7 @@ func (h *handler) OnDelete(objectInterface any) {
 		return
 	case *v1.Pod:
 		if object != nil {
-			endpoints = convertPodToEndpoints(h.idNamespace, object, h.observePodPhases, h.observeInitContainers, h.initContainerTerminatedTTL)
+			endpoints = convertPodToEndpoints(h.idNamespace, object, h.observePodPhases, h.observeInitContainers, h.containerTerminatedTTL)
 		}
 	case *v1.Service:
 		if object != nil {

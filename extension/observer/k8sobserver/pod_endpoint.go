@@ -15,9 +15,10 @@ import (
 
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
 // include the pod itself as well as an endpoint for each container port that is mapped
-// to a container that is in a running state. Init containers are included when configured,
-// with terminated init containers only included if they terminated within the TTL.
-func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map[string]bool, observeInitContainers bool, initContainerTerminatedTTL time.Duration) []observer.Endpoint {
+// to a container that is in a running state or has recently terminated (within the TTL).
+// Init containers are included when configured. The TTL applies to all terminated containers
+// (both regular and init), allowing time for log collection from crashed or completed containers.
+func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map[string]bool, observeInitContainers bool, containerTerminatedTTL time.Duration) []observer.Endpoint {
 	podID := observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
 
@@ -40,14 +41,20 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map
 		Details: &podDetails,
 	}}
 
-	// Map of running containers by name.
-	runningContainers := map[string]runningContainer{}
+	// Map of observable containers by name (running or recently terminated).
+	observableContainers := map[string]runningContainer{}
 	initContainers := map[string]runningContainer{}
 
 	for i := range pod.Status.ContainerStatuses {
 		container := &pod.Status.ContainerStatuses[i]
 		if container.State.Running != nil {
-			runningContainers[container.Name] = containerIDWithRuntime(container)
+			// Always include running containers
+			observableContainers[container.Name] = containerIDWithRuntime(container)
+		} else if container.State.Terminated != nil {
+			// Include terminated containers if they terminated within the TTL
+			if time.Since(container.State.Terminated.FinishedAt.Time) <= containerTerminatedTTL {
+				observableContainers[container.Name] = containerIDWithRuntime(container)
+			}
 		}
 	}
 
@@ -58,8 +65,8 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map
 				// Always include running init containers
 				initContainers[container.Name] = containerIDWithRuntime(container)
 			} else if container.State.Terminated != nil {
-				// Only include terminated init containers if they terminated recently
-				if time.Since(container.State.Terminated.FinishedAt.Time) <= initContainerTerminatedTTL {
+				// Include terminated init containers if they terminated within the TTL
+				if time.Since(container.State.Terminated.FinishedAt.Time) <= containerTerminatedTTL {
 					initContainers[container.Name] = containerIDWithRuntime(container)
 				}
 			}
@@ -71,7 +78,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map
 		container := &pod.Spec.Containers[i]
 		var rc runningContainer
 		var ok bool
-		if rc, ok = runningContainers[container.Name]; !ok {
+		if rc, ok = observableContainers[container.Name]; !ok {
 			continue
 		}
 
