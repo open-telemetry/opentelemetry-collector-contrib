@@ -1,0 +1,19 @@
+type: starrocks
+
+status:
+  class: exporter
+  stability:
+    alpha: [metrics]
+    beta: [traces, logs]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+tests:
+  config:
+    endpoint: localhost:9030
+    username: root
+    password: password
+    database: otel
+  skip_lifecycle: true
+
