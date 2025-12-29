@@ -85,6 +85,7 @@ exporter/sematextexporter/                                       @open-telemetry
 exporter/sentryexporter/                                         @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                                       @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
 exporter/splunkhecexporter/                                      @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
+exporter/starrocksexporter/                                      @open-telemetry/collector-contrib-approvers
 exporter/stefexporter/                                           @open-telemetry/collector-contrib-approvers @tigrannajaryan @dmitryax
 exporter/sumologicexporter/                                      @open-telemetry/collector-contrib-approvers @rnishtala-sumo @pankaj101A @jagan2221
 exporter/syslogexporter/                                         @open-telemetry/collector-contrib-approvers @kasia-kujawa @rnishtala-sumo @andrzej-stencel
