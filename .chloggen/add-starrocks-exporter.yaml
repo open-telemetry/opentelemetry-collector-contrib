@@ -10,7 +10,7 @@ component: exporter/starrocks
 note: Add new StarRocks exporter that supports sending OpenTelemetry data (logs, traces, and metrics) to StarRocks database using MySQL protocol.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [45169]
+issues: [45172]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

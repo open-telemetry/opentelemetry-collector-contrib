@@ -63,6 +63,3 @@ func GenerateTTLExpr(ttl time.Duration, timeField string) string {
 	// This can be configured separately in StarRocks
 	return ""
 }
-
-
-

@@ -51,6 +51,3 @@ var MetricsSummaryCreateTable string
 
 //go:embed metrics_summary_insert.sql
 var MetricsSummaryInsert string
-
-
-

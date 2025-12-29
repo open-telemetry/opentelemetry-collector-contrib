@@ -20,8 +20,8 @@ type summaryModel struct {
 	metricName        string
 	metricDescription string
 	metricUnit        string
-	metadata           *MetricsMetaData
-	summary            pmetric.Summary
+	metadata          *MetricsMetaData
+	summary           pmetric.Summary
 }
 
 type summaryMetrics struct {
@@ -106,6 +106,3 @@ func (s *summaryMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcom
 		summary: summary,
 	})
 }
-
-
-

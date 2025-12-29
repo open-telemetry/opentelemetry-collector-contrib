@@ -102,6 +102,3 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 
 	return metrics.InsertMetrics(ctx, e.db, metricsMap)
 }
-
-
-
