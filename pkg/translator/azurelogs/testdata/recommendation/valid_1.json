@@ -1,0 +1,33 @@
+{
+  "records": [
+    {
+      "correlationId": "91e76397-5361-49bc-b814-a346a1761bb3",
+      "time": "2025-04-24T14:11:46.4216690Z",
+      "eventDataId": "d2ecfbc7-151b-48fd-ab16-4db80d087e7b",
+      "resourceId": "/SUBSCRIPTIONS/441fcba2-0b42-4269-b8b8-52f7c1cfb5d7/RESOURCEGROUPS/FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/FRONTDOOR-PROFILE",
+      "operationName": "Microsoft.Advisor/recommendations/available/action",
+      "resultType": "Active",
+      "properties": {
+        "recommendationSchemaVersion": "1.0",
+        "recommendationCategory": "HighAvailability",
+        "recommendationImpact": "High",
+        "recommendationName": "Consider having at least two origins",
+        "recommendationResourceLink": "https://portal.azure.com/#blade/Microsoft_Azure_Expert/RecommendationListBlade/source/ActivityLog/recommendationTypeId/589ab0b0-1362-44fd-8551-0e7847767600/resourceId/%2Fsubscriptions%2F441fcba2-0b42-4269-b8b8-52f7c1cfb5d7%2Fresourcegroups%2Fjohn-doe-frontdoor%2Fproviders%2FMicrosoft.Cdn%2Fprofiles%2Fjohn-doe-frontdoor-profile",
+        "recommendationType": "589ab0b0-1362-44fd-8551-0e7847767600"
+      },
+      "location": "global",
+      "level": "Informational",
+      "category": "Recommendation",
+      "operationVersion": "2017-03-31",
+      "resultSignature": "Succeeded",
+      "resultDescription": "A new recommendation is available.",
+      "durationMs": 10,
+      "callerIpAddress": "0.0.0.0",
+      "identity": {
+        "claims": {
+          "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress": "Microsoft.Advisor"
+        }
+      }
+    }
+  ]
+}

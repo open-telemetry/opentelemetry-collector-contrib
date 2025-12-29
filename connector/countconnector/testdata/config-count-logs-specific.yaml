@@ -1,0 +1,21 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+connectors:
+  count:
+    logs:
+      log.file.name:
+        conditions:
+          - attributes["log.file.name"] == "test.in.log"
+
+service:
+  pipelines:
+    logs/in:
+      receivers: [nop]
+      exporters: [count]
+    metrics/out:
+      receivers: [count]
+      exporters: [nop]
