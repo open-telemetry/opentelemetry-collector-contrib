@@ -12,6 +12,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
+// Helper phase maps for tests
+var (
+	runningOnly       = map[string]bool{"Running": true}
+	runningAndPending = map[string]bool{"Running": true, "Pending": true}
+)
+
 func TestPodObjectToPortEndpoint(t *testing.T) {
 	expectedEndpoints := []observer.Endpoint{
 		{
@@ -59,8 +65,8 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 		},
 	}
 
-	// Running pod with observePendingPods=false (default behavior)
-	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts, false, true, DefaultInitContainerTerminatedTTL)
+	// Running pod with default phases (Running only)
+	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts, runningOnly, true, DefaultInitContainerTerminatedTTL)
 	require.Equal(t, expectedEndpoints, endpoints)
 }
 
@@ -89,14 +95,14 @@ func TestPodObjectWithRunningInitContainerInPendingPod(t *testing.T) {
 		},
 	}
 
-	// Pending pod requires observePendingPods=true
-	endpoints := convertPodToEndpoints("namespace", podPendingWithRunningInit, true, true, DefaultInitContainerTerminatedTTL)
+	// Pending pod requires Pending in observe_pod_phases
+	endpoints := convertPodToEndpoints("namespace", podPendingWithRunningInit, runningAndPending, true, DefaultInitContainerTerminatedTTL)
 	require.Equal(t, expectedEndpoints, endpoints)
 }
 
 func TestPodObjectPendingPodNotObservedByDefault(t *testing.T) {
-	// Pending pods should not be observed when observePendingPods=false (default)
-	endpoints := convertPodToEndpoints("namespace", podPendingWithRunningInit, false, true, DefaultInitContainerTerminatedTTL)
+	// Pending pods should not be observed when only Running is in observe_pod_phases (default)
+	endpoints := convertPodToEndpoints("namespace", podPendingWithRunningInit, runningOnly, true, DefaultInitContainerTerminatedTTL)
 	require.Nil(t, endpoints)
 }
 
@@ -130,26 +136,26 @@ func TestPodObjectWithTerminatedInitContainerInRunningPod(t *testing.T) {
 		},
 	}
 
-	// Running pod - observePendingPods doesn't matter
-	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, false, true, DefaultInitContainerTerminatedTTL)
+	// Running pod - observe_pod_phases just needs Running
+	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, true, DefaultInitContainerTerminatedTTL)
 	require.Equal(t, expectedEndpoints, endpoints)
 }
 
 func TestPodObjectInitContainersDisabled(t *testing.T) {
-	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, false, false, DefaultInitContainerTerminatedTTL)
+	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, false, DefaultInitContainerTerminatedTTL)
 	require.Len(t, endpoints, 1)
 	require.Equal(t, observer.EndpointID("namespace/pod-init-running-UID"), endpoints[0].ID)
 }
 
 func TestPodObjectTerminatedInitContainerExpiredTTL(t *testing.T) {
 	// Test that terminated init containers are excluded after TTL expires
-	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, false, true, 0)
+	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, true, 0)
 	require.Len(t, endpoints, 1)
 	require.Equal(t, observer.EndpointID("namespace/pod-init-running-UID"), endpoints[0].ID)
 }
 
 func TestPodObjectTerminatedInitContainerWithinTTL(t *testing.T) {
 	// Test that terminated init containers are included within TTL
-	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, false, true, time.Hour)
+	endpoints := convertPodToEndpoints("namespace", podRunningWithTerminatedInit, runningOnly, true, time.Hour)
 	require.Len(t, endpoints, 2)
 }

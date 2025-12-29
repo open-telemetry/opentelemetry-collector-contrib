@@ -167,11 +167,17 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 			}
 		}
 	}
+	// Build a set of phases to observe for efficient lookup
+	observePodPhases := make(map[string]bool)
+	for _, phase := range config.ObservePodPhases {
+		observePodPhases[phase] = true
+	}
+
 	h := &handler{
 		idNamespace:                set.ID.String(),
 		endpoints:                  &sync.Map{},
 		logger:                     set.Logger,
-		observePendingPods:         config.ObservePendingPods,
+		observePodPhases:           observePodPhases,
 		observeInitContainers:      config.ObserveInitContainers,
 		initContainerTerminatedTTL: config.InitContainerTerminatedTTL,
 	}

@@ -44,14 +44,14 @@ type Config struct {
 	ObserveIngresses bool `mapstructure:"observe_ingresses"`
 	// Namespaces limits the namespaces for the observed resources. By default, all namespaces will be observed.
 	Namespaces []string `mapstructure:"namespaces"`
-	// ObservePendingPods determines whether to report endpoints for pods in Pending phase.
-	// When false, only pods in Running phase are observed. When true, pods in both Pending
-	// and Running phases are observed. This is required to observe running init containers.
-	// `false` by default to maintain backward compatibility.
-	ObservePendingPods bool `mapstructure:"observe_pending_pods"`
+	// ObservePodPhases specifies which pod phases to observe. Only pods in the listed phases
+	// will have endpoints created. Valid values are: Pending, Running, Succeeded, Failed, Unknown.
+	// Default is ["Running"] to maintain backward compatibility.
+	// To observe init containers, include "Pending" since init containers run during that phase.
+	ObservePodPhases []string `mapstructure:"observe_pod_phases"`
 	// ObserveInitContainers determines whether to report init container endpoints.
 	// Only effective when ObservePods is true. To observe running init containers,
-	// ObservePendingPods must also be enabled. `false` by default.
+	// "Pending" must be included in ObservePodPhases. `false` by default.
 	ObserveInitContainers bool `mapstructure:"observe_init_containers"`
 	// InitContainerTerminatedTTL controls how long after termination an init container
 	// endpoint remains observable. Running init containers are always observed.

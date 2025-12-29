@@ -19,7 +19,7 @@ func newTestHandler() *handler {
 		idNamespace:                "test-1",
 		endpoints:                  &sync.Map{},
 		logger:                     zap.NewNop(),
-		observePendingPods:         false,
+		observePodPhases:           map[string]bool{"Running": true},
 		observeInitContainers:      false,
 		initContainerTerminatedTTL: DefaultInitContainerTerminatedTTL,
 	}

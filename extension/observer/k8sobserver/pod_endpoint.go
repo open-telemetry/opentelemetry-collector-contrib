@@ -17,7 +17,7 @@ import (
 // include the pod itself as well as an endpoint for each container port that is mapped
 // to a container that is in a running state. Init containers are included when configured,
 // with terminated init containers only included if they terminated within the TTL.
-func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePendingPods bool, observeInitContainers bool, initContainerTerminatedTTL time.Duration) []observer.Endpoint {
+func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map[string]bool, observeInitContainers bool, initContainerTerminatedTTL time.Duration) []observer.Endpoint {
 	podID := observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
 
@@ -30,10 +30,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePendingPods b
 	}
 
 	// Return no endpoints if the Pod is not in an observable phase
-	if pod.Status.Phase == v1.PodPending && !observePendingPods {
-		return nil
-	}
-	if pod.Status.Phase != v1.PodRunning && pod.Status.Phase != v1.PodPending {
+	if !observePodPhases[string(pod.Status.Phase)] {
 		return nil
 	}
 
