@@ -951,3 +951,71 @@ func TestCreateDirectoryOption(t *testing.T) {
 		require.NoError(t, statErr)
 	})
 }
+
+func TestFileAppendLogsExporter(t *testing.T) {
+	type args struct {
+		conf        *Config
+		unmarshaler plog.Unmarshaler
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "json: compression and append configuration",
+			args: args{
+				conf: &Config{
+					Path:          tempFileName(t),
+					FormatType:    "json",
+					Compression:   compressionZSTD,
+					Append:        true,
+					FlushInterval: 100 * time.Millisecond,
+				},
+				unmarshaler: &plog.JSONUnmarshaler{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := tt.args.conf
+			fe := &fileExporter{
+				conf: conf,
+			}
+			require.NotNil(t, fe)
+
+			assert.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, fe.Shutdown(t.Context()))
+			}()
+
+			batches := []plog.Logs{testdata.GenerateLogsTwoLogRecordsSameResource(), testdata.GenerateLogsOneLogRecord()}
+			for i := 0; i < len(batches); i++ {
+				assert.NoError(t, fe.consumeLogs(t.Context(), batches[i]))
+				time.Sleep(2 * time.Second)
+
+				fi, err := os.Open(fe.writer.path)
+				assert.NoError(t, err)
+				defer fi.Close()
+				br := bufio.NewReader(fi)
+
+				for j := 0; j < i+1; j++ {
+					assert.NoError(t, err)
+					buf, _, err := func() ([]byte, bool, error) {
+						if fe.marshaller.formatType == formatTypeJSON && fe.marshaller.compression == "" {
+							return readJSONMessage(br)
+						}
+						return readMessageFromStream(br)
+					}()
+					assert.NoError(t, err)
+
+					decoder := buildUnCompressor(fe.marshaller.compression)
+					buf, err = decoder(buf)
+					assert.NoError(t, err)
+					got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
+					assert.NoError(t, err)
+					assert.Equal(t, batches[j], got)
+				}
+			}
+		})
+	}
+}
