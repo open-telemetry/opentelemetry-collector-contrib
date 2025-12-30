@@ -1,13 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !windows
-
 package truncate // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/truncate"
 
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -15,6 +14,10 @@ import (
 )
 
 func TestTruncate(t *testing.T) {
+	longNameErr := "file name too long"
+	if runtime.GOOS == "windows" {
+		longNameErr = "The filename, directory name, or volume label syntax is incorrect"
+	}
 	tests := []struct {
 		name        string
 		input       string
@@ -31,7 +34,7 @@ func TestTruncate(t *testing.T) {
 		{
 			name:        "exceeds max length",
 			input:       strings.Repeat("b", 1000),
-			expectedErr: "file name too long",
+			expectedErr: longNameErr,
 		},
 	}
 
