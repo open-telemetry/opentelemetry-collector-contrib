@@ -44,11 +44,17 @@ func jobSyncCheckerOption(checker initialSyncChecker) jobClientOption {
 	}
 }
 
-type jobClient struct {
-	stopChan chan struct{}
-	stopped  bool
+func disableJobInformers() jobClientOption {
+	return func(j *jobClient) {
+		j.disableInformers = true
+	}
+}
 
-	store *ObjStore
+type jobClient struct {
+	stopChan         chan struct{}
+	stopped          bool
+	disableInformers bool
+	store            *ObjStore
 
 	syncChecker initialSyncChecker
 
@@ -121,7 +127,9 @@ func newJobClient(clientSet kubernetes.Interface, logger *zap.Logger, options ..
 	lw := createJobListWatch(clientSet, metav1.NamespaceAll)
 	reflector := cache.NewReflector(lw, &batchv1.Job{}, c.store, 0)
 
-	go reflector.Run(c.stopChan)
+	if !c.disableInformers {
+		go reflector.Run(c.stopChan)
+	}
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue
