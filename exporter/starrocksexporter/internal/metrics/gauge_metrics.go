@@ -38,6 +38,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 	}
 
 	processStart := time.Now()
+	var batchValues []string
 
 	for _, model := range g.gaugeModels {
 		resAttrJSON, _ := internal.AttributesToJSON(model.metadata.ResAttr)
@@ -69,12 +70,21 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 				exemplarsJSON,
 			}
 
-			// Build complete INSERT statement with formatted values
-			insertSQL := strings.Replace(g.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
-			_, execErr := db.ExecContext(ctx, insertSQL)
-			if execErr != nil {
-				return fmt.Errorf("failed to execute gauge metric insert: %w", execErr)
-			}
+			batchValues = append(batchValues, internal.BuildValuesClause(values))
+		}
+	}
+
+	if len(batchValues) > 0 {
+		// Build complete INSERT statement with formatted values
+		// Replace the VALUES (?, ?, ...) part with actual values
+		valuesStart := strings.Index(g.insertSQL, "VALUES (")
+		if valuesStart == -1 {
+			return fmt.Errorf("failed to find VALUES clause in insert SQL")
+		}
+		insertSQL := g.insertSQL[:valuesStart] + "VALUES " + strings.Join(batchValues, ",")
+		_, execErr := db.ExecContext(ctx, insertSQL)
+		if execErr != nil {
+			return fmt.Errorf("failed to execute gauge metric insert: %w", execErr)
 		}
 	}
 

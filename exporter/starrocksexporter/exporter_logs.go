@@ -95,6 +95,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	processStart := time.Now()
 
 	var logCount int
+	var values []string
 	rsLogs := ld.ResourceLogs()
 	rsLen := rsLogs.Len()
 
@@ -158,21 +159,24 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					columnValues = append(columnValues, r.EventName())
 				}
 
-				// Build VALUES clause - replace the VALUES (?, ?, ...) part with actual values
-				// Find the VALUES clause in the SQL
-				valuesStart := strings.Index(e.insertSQL, "VALUES (")
-				if valuesStart == -1 {
-					return fmt.Errorf("failed to find VALUES clause in insert SQL")
-				}
-				// Replace from "VALUES (" onwards with the new VALUES clause
-				insertSQL := e.insertSQL[:valuesStart] + "VALUES " + internal.BuildValuesClause(columnValues)
-				_, execErr := e.db.ExecContext(ctx, insertSQL)
-				if execErr != nil {
-					return fmt.Errorf("failed to execute log insert: %w", execErr)
-				}
-
+				values = append(values, internal.BuildValuesClause(columnValues))
 				logCount++
 			}
+		}
+	}
+
+	if len(values) > 0 {
+		// Build VALUES clause - replace the VALUES (?, ?, ...) part with actual values
+		// Find the VALUES clause in the SQL
+		valuesStart := strings.Index(e.insertSQL, "VALUES (")
+		if valuesStart == -1 {
+			return fmt.Errorf("failed to find VALUES clause in insert SQL")
+		}
+		// Replace from "VALUES (" onwards with the new VALUES clause
+		insertSQL := e.insertSQL[:valuesStart] + "VALUES " + strings.Join(values, ",")
+		_, execErr := e.db.ExecContext(ctx, insertSQL)
+		if execErr != nil {
+			return fmt.Errorf("failed to execute log insert: %w", execErr)
 		}
 	}
 

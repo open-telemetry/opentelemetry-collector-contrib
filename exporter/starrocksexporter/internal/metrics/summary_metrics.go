@@ -36,6 +36,8 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
+	var batchValues []string
+
 	for _, model := range s.summaryModels {
 		resAttrJSON, _ := internal.AttributesToJSON(model.metadata.ResAttr)
 		scopeAttrJSON, _ := internal.AttributesToJSON(model.metadata.ScopeInstr.Attributes())
@@ -76,12 +78,21 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 				uint32(dp.Flags()),
 			}
 
-			// Build complete INSERT statement with formatted values
-			insertSQL := strings.Replace(s.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
-			_, execErr := db.ExecContext(ctx, insertSQL)
-			if execErr != nil {
-				return fmt.Errorf("failed to execute summary metric insert: %w", execErr)
-			}
+			batchValues = append(batchValues, internal.BuildValuesClause(values))
+		}
+	}
+
+	if len(batchValues) > 0 {
+		// Build complete INSERT statement with formatted values
+		// Replace the VALUES (?, ?, ...) part with actual values
+		valuesStart := strings.Index(s.insertSQL, "VALUES (")
+		if valuesStart == -1 {
+			return fmt.Errorf("failed to find VALUES clause in insert SQL")
+		}
+		insertSQL := s.insertSQL[:valuesStart] + "VALUES " + strings.Join(batchValues, ",")
+		_, execErr := db.ExecContext(ctx, insertSQL)
+		if execErr != nil {
+			return fmt.Errorf("failed to execute summary metric insert: %w", execErr)
 		}
 	}
 

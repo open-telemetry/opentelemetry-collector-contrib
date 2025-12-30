@@ -68,6 +68,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 	processStart := time.Now()
 
 	var spanCount int
+	var batchValues []string
 	rsSpans := td.ResourceSpans()
 	rsLen := rsSpans.Len()
 	for i := range rsLen {
@@ -127,16 +128,23 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					linksJSON,
 				}
 
-				// Build complete INSERT statement with formatted values
-				// Replace the VALUES (?, ?, ...) part with actual values
-				insertSQL := strings.Replace(e.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
-				_, execErr := e.db.ExecContext(ctx, insertSQL)
-				if execErr != nil {
-					return fmt.Errorf("failed to execute trace insert: %w", execErr)
-				}
-
+				batchValues = append(batchValues, internal.BuildValuesClause(values))
 				spanCount++
 			}
+		}
+	}
+
+	if len(batchValues) > 0 {
+		// Build complete INSERT statement with formatted values
+		// Replace the VALUES (?, ?, ...) part with actual values
+		valuesStart := strings.Index(e.insertSQL, "VALUES (")
+		if valuesStart == -1 {
+			return fmt.Errorf("failed to find VALUES clause in insert SQL")
+		}
+		insertSQL := e.insertSQL[:valuesStart] + "VALUES " + strings.Join(batchValues, ",")
+		_, execErr := e.db.ExecContext(ctx, insertSQL)
+		if execErr != nil {
+			return fmt.Errorf("failed to execute trace insert: %w", execErr)
 		}
 	}
 
