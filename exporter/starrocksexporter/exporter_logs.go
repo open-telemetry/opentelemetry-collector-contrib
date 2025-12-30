@@ -38,7 +38,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
-	db, err := e.cfg.buildStarRocksDB()
+	db, err := GetDBClient(e.cfg)
 	if err != nil {
 		return err
 	}
@@ -46,13 +46,13 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 
 	if e.cfg.shouldCreateSchema() {
 		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database()); createDBErr != nil {
-			e.db.Close()
+			ReleaseDBClient(e.cfg)
 			e.db = nil
 			return createDBErr
 		}
 
 		if createTableErr := createLogsTable(ctx, e.cfg, e.db); createTableErr != nil {
-			e.db.Close()
+			ReleaseDBClient(e.cfg)
 			e.db = nil
 			return createTableErr
 		}
@@ -60,7 +60,7 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 
 	err = e.detectSchemaFeatures(ctx)
 	if err != nil {
-		e.db.Close()
+		ReleaseDBClient(e.cfg)
 		e.db = nil
 		return fmt.Errorf("schema detection: %w", err)
 	}
@@ -91,7 +91,9 @@ func (e *logsExporter) detectSchemaFeatures(ctx context.Context) error {
 
 func (e *logsExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
-		return e.db.Close()
+		err := ReleaseDBClient(e.cfg)
+		e.db = nil
+		return err
 	}
 
 	return nil

@@ -37,7 +37,7 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	metrics.SetLogger(e.logger)
 
-	db, err := e.cfg.buildStarRocksDB()
+	db, err := GetDBClient(e.cfg)
 	if err != nil {
 		return err
 	}
@@ -46,14 +46,14 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	if e.cfg.shouldCreateSchema() {
 		database := e.cfg.database()
 		if err := internal.CreateDatabase(ctx, e.db, database); err != nil {
-			e.db.Close()
+			ReleaseDBClient(e.cfg)
 			e.db = nil
 			return err
 		}
 
 		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, e.db)
 		if err != nil {
-			e.db.Close()
+			ReleaseDBClient(e.cfg)
 			e.db = nil
 			return err
 		}
@@ -75,7 +75,9 @@ func generateMetricTablesConfigMapper(cfg *Config) metrics.MetricTablesConfigMap
 // shutdown will shut down the exporter.
 func (e *metricsExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
-		return e.db.Close()
+		err := ReleaseDBClient(e.cfg)
+		e.db = nil
+		return err
 	}
 
 	return nil
