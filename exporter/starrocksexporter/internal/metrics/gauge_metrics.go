@@ -147,7 +147,7 @@ func convertExemplarsJSON(exemplars pmetric.ExemplarSlice) (string, error) {
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
 		exemplarMap := map[string]interface{}{
-			"time_unix": exemplar.Timestamp().AsTime(),
+			"time_unix": exemplar.Timestamp().AsTime().UTC().Format("2006-01-02 15:04:05"),
 			"value":     getValue(exemplar.IntValue(), exemplar.DoubleValue(), exemplar.ValueType()),
 		}
 		if exemplar.TraceID().IsEmpty() {

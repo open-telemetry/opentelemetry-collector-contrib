@@ -125,7 +125,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					scopeName,
 					scopeVersion,
 					spanAttrJSON,
-					spanDurationNanos,
+					int64(spanDurationNanos),
 					spanStatus.Code().String(),
 					spanStatus.Message(),
 					eventsJSON,
@@ -165,7 +165,7 @@ func convertEventsJSON(events ptrace.SpanEventSlice) (string, error) {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		eventMap := map[string]interface{}{
-			"timestamp": event.Timestamp().AsTime(),
+			"timestamp": event.Timestamp().AsTime().UTC().Format("2006-01-02 15:04:05"),
 			"name":      event.Name(),
 		}
 		attrs, err := internal.AttributesToJSON(event.Attributes())

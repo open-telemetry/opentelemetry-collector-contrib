@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -158,6 +159,15 @@ func FormatSQLValue(v interface{}) string {
 				utcTime.Year(), utcTime.Month(), utcTime.Day(),
 				utcTime.Hour(), utcTime.Minute(), utcTime.Second())
 			return "'" + formatted + "'"
+		}
+		// Check if it's a pcommon.Timestamp (int64 alias) or similar by using reflection
+		// to get the underlying int64 value
+		rv := reflect.ValueOf(val)
+		if rv.Kind() == reflect.Int64 {
+			return fmt.Sprintf("%d", rv.Int())
+		}
+		if rv.Kind() == reflect.Uint64 {
+			return fmt.Sprintf("%d", rv.Uint())
 		}
 		// For unknown types, convert to string and escape
 		str := fmt.Sprintf("%v", val)
