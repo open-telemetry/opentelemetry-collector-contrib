@@ -143,25 +143,20 @@ func FormatSQLValue(v interface{}) string {
 		return fmt.Sprintf("%g", val)
 	case time.Time:
 		// Format as MySQL/StarRocks datetime without timezone
-		// StarRocks requires format: YYYY-MM-DD HH:MM:SS.microseconds (exactly 6 digits)
+		// StarRocks requires format: YYYY-MM-DD HH:MM:SS
 		// Convert to UTC and format without timezone info
 		utcTime := val.UTC()
-		// Format with microseconds (6 digits, padded with zeros)
-		microseconds := utcTime.Nanosecond() / 1000
-		formatted := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d.%06d",
+		formatted := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d",
 			utcTime.Year(), utcTime.Month(), utcTime.Day(),
-			utcTime.Hour(), utcTime.Minute(), utcTime.Second(),
-			microseconds)
+			utcTime.Hour(), utcTime.Minute(), utcTime.Second())
 		return "'" + formatted + "'"
 	default:
 		// Check if it's a *time.Time pointer
 		if t, ok := val.(*time.Time); ok && t != nil {
 			utcTime := t.UTC()
-			microseconds := utcTime.Nanosecond() / 1000
-			formatted := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d.%06d",
+			formatted := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d",
 				utcTime.Year(), utcTime.Month(), utcTime.Day(),
-				utcTime.Hour(), utcTime.Minute(), utcTime.Second(),
-				microseconds)
+				utcTime.Hour(), utcTime.Minute(), utcTime.Second())
 			return "'" + formatted + "'"
 		}
 		// For unknown types, convert to string and escape
