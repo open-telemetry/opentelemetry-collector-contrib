@@ -35,7 +35,7 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
-	// Password is the authentication password.
+	// Password is the authentication password. Empty password is supported.
 	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
@@ -151,9 +151,13 @@ func (cfg *Config) Validate() (err error) {
 func (cfg *Config) buildDSN() (string, error) {
 	// StarRocks uses MySQL protocol, so we build a MySQL DSN
 	// Format: username:password@tcp(host:port)/database?params
+	// MySQL driver handles special characters in password without URL encoding
+	password := string(cfg.Password)
+	// Empty password is supported: format will be username:@tcp(...)
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s",
 		cfg.Username,
-		string(cfg.Password),
+		password,
 		cfg.Endpoint,
 		cfg.Database)
 
