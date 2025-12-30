@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 const (
@@ -32,14 +32,6 @@ const (
 	maxContentLengthTracesLimit      = 800 * 1024 * 1024
 	maxMaxEventSize                  = 800 * 1024 * 1024
 )
-
-// OtelToHecFields defines the mapping of attributes to HEC fields
-type OtelToHecFields struct {
-	// SeverityText informs the exporter to map the severity text field to a specific HEC field.
-	SeverityText string `mapstructure:"severity_text"`
-	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
-	SeverityNumber string `mapstructure:"severity_number"`
-}
 
 // HecHeartbeat defines the heartbeat information for the exporter
 type HecHeartbeat struct {
@@ -126,10 +118,10 @@ type Config struct {
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
 
 	// OtelAttrsToHec creates a mapping from attributes to HEC specific metadata: source, sourcetype, index and host.
-	OtelAttrsToHec splunk.HecToOtelAttrs `mapstructure:"otel_attrs_to_hec_metadata"`
+	OtelAttrsToHec translator.HecToOtelAttrs `mapstructure:"otel_attrs_to_hec_metadata"`
 
 	// HecFields creates a mapping from attributes to HEC fields.
-	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
+	HecFields translator.OtelToHecFields `mapstructure:"otel_to_hec_fields"`
 
 	// HealthPath for health API, default is '/services/collector/health'
 	HealthPath string `mapstructure:"health_path"`

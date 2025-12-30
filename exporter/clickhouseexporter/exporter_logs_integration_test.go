@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -141,7 +140,7 @@ func simpleLogs(count int, mapBody bool) plog.Logs {
 			r.Body().SetStr("error message")
 		}
 
-		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
+		r.Attributes().PutStr("service.namespace", "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		r.SetSpanID([8]byte{1, 2, 3, byte(i)})

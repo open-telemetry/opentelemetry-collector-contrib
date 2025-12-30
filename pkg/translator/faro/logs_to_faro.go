@@ -20,7 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 )
 
@@ -382,7 +383,7 @@ func extractAppFromKeyVal(kv map[string]string, rl pcommon.Resource) faroTypes.A
 		if key == string(conventions.ServiceVersionKey) {
 			app.Version = val.Str()
 		}
-		if key == string(conventions.DeploymentEnvironmentKey) {
+		if key == string(conventionsv126.DeploymentEnvironmentKey) {
 			app.Environment = val.Str()
 		}
 		// force the app name stored in resource attribute service.name

@@ -31,9 +31,18 @@ kafka/invalid_compression:
   compression: brotli
 kafka/invalid_required_acks:
   required_acks: 3
+kafka/flush_max_messages_zero:
+  flush_max_messages: 0
+kafka/flush_max_messages_negative:
+  flush_max_messages: -1
+kafka/max_message_bytes_negative:
+  max_message_bytes: -1000
 
 kafka/producer_linger:
   linger: 100ms
 
 kafka/producer_linger_1s:
   linger: 1s
+
+kafka/custom_flush_max_messages:
+  flush_max_messages: 5000

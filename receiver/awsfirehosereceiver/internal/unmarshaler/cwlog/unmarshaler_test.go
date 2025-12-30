@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
@@ -75,13 +74,13 @@ func TestUnmarshal(t *testing.T) {
 					rm := got.ResourceLogs().At(i)
 					require.Equal(t, 1, rm.ScopeLogs().Len())
 					attrs := rm.Resource().Attributes()
-					assertString(t, attrs, string(conventions.CloudProviderKey), "aws")
-					assertString(t, attrs, string(conventions.CloudAccountIDKey), "123")
+					assertString(t, attrs, "cloud.provider", "aws")
+					assertString(t, attrs, "cloud.account.id", "123")
 					if testCase.wantResourceLogGroups != nil {
-						assertStringArray(t, attrs, string(conventions.AWSLogGroupNamesKey), testCase.wantResourceLogGroups[i])
+						assertStringArray(t, attrs, "aws.log.group.names", testCase.wantResourceLogGroups[i])
 					}
 					if testCase.wantResourceLogStreams != nil {
-						assertStringArray(t, attrs, string(conventions.AWSLogStreamNamesKey), testCase.wantResourceLogStreams[i])
+						assertStringArray(t, attrs, "aws.log.stream.names", testCase.wantResourceLogStreams[i])
 					}
 					ilm := rm.ScopeLogs().At(0)
 					assert.Equal(t, metadata.ScopeName, ilm.Scope().Name())

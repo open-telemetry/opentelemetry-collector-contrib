@@ -1,0 +1,17 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
+title: AliasSimpleTypeConfig
+$defs:
+  Double:
+    type: number
+  StringsArray:
+    items:
+      type: string
+    type: array
+type: object
+properties:
+  list_of_strings:
+    $ref: '#/$defs/StringsArray'
+  num:
+    $ref: '#/$defs/Double'
+

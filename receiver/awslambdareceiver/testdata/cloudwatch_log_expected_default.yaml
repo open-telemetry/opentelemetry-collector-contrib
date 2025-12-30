@@ -1,0 +1,28 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+        - key: aws.log.group.names
+          value:
+            stringValue: /aws/cloudtrail/management
+        - key: aws.log.stream.names
+          value:
+            stringValue: 123456789012_CloudTrail_us-east-1
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: '{"eventName":"ConsoleLogin","userIdentity":{"type":"Root"},"sourceIPAddress":"99.84.22.14","awsRegion":"us-east-1"}'
+            timeUnixNano: "1732638456000000000"
+          - body:
+              stringValue: '{"eventName":"StartInstances","userIdentity":{"type":"IAMUser","userName":"devops"},"awsRegion":"us-east-1"}'
+            timeUnixNano: "1732638469000000000"
+          - body:
+              stringValue: '{"eventName":"PutObject","userIdentity":{"type":"AssumedRole"},"awsRegion":"us-east-1","requestParameters":{"bucket":"app-logs"}}'
+            timeUnixNano: "1732638478000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver

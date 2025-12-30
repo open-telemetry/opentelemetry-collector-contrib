@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -444,8 +443,8 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics().AppendEmpty()
 	rms0 := md.ResourceMetrics().At(0)
-	rms0.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), job)
-	rms0.Resource().Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instance)
+	rms0.Resource().Attributes().PutStr("service.name", job)
+	rms0.Resource().Attributes().PutStr("service.instance.id", instance)
 
 	ms := rms.ScopeMetrics().AppendEmpty().Metrics()
 

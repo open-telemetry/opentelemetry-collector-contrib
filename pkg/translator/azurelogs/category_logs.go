@@ -13,7 +13,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 const (
@@ -360,9 +360,9 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 	putStr(attributeCacheStatus, properties.CacheStatus, record)
 
 	if properties.IsReceivedFromClient {
-		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "receive")
+		record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "receive")
 	} else {
-		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "transmit")
+		record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "transmit")
 	}
 
 	return nil

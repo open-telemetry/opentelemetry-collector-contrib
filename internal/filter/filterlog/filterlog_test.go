@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -1296,7 +1295,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rLogs := plog.NewResourceLogs()
-			rLogs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
+			rLogs.Resource().Attributes().PutStr("service.name", "svcA")
 			log := rLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 			log.Body().SetStr("body")
 			log.Attributes().PutStr("keyString", "arithmetic")

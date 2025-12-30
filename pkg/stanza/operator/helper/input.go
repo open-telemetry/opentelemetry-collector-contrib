@@ -5,6 +5,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -67,11 +68,11 @@ func (i *InputOperator) NewEntry(value any) (*entry.Entry, error) {
 	entry.Body = value
 
 	if err := i.Attribute(entry); err != nil {
-		return nil, errors.Wrap(err, "add attributes to entry")
+		return nil, fmt.Errorf("add attributes to entry: %w", err)
 	}
 
 	if err := i.Identify(entry); err != nil {
-		return nil, errors.Wrap(err, "add resource keys to entry")
+		return nil, fmt.Errorf("add resource keys to entry: %w", err)
 	}
 
 	return entry, nil

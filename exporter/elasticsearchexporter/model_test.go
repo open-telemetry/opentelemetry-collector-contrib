@@ -21,8 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv22 "go.opentelemetry.io/otel/semconv/v1.22.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -214,7 +212,7 @@ func mockResourceSpans() ptrace.Traces {
 	attr.PutStr("service.instance.id", "23")
 	attr.PutStr("service.version", "env-version-1234")
 
-	resourceSpans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "some-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-service")
 
 	tStart := time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)
@@ -410,19 +408,19 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		string(conventions.ServiceNameKey):    "foo.bar",
-		string(conventions.HostNameKey):       "localhost",
-		string(conventions.ServiceVersionKey): "1.1.0",
-		string(conventions.OSTypeKey):         "darwin",
-		string(conventions.OSDescriptionKey):  "Mac OS Mojave",
-		string(conventions.OSNameKey):         "Mac OS X",
-		string(conventions.OSVersionKey):      "10.14.1",
+		"service.name":    "foo.bar",
+		"host.name":       "localhost",
+		"service.version": "1.1.0",
+		"os.type":         "darwin",
+		"os.description":  "Mac OS Mojave",
+		"os.name":         "Mac OS X",
+		"os.version":      "10.14.1",
 	})
 	require.NoError(t, err)
 
 	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 
-	resourceContainerImageTags := resource.Attributes().PutEmptySlice(string(conventions.ContainerImageTagsKey))
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
 	require.NoError(t, err)
 
@@ -453,24 +451,24 @@ func TestEncodeSpanECSMode(t *testing.T) {
 
 	resource := pcommon.NewResource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		string(conventions.CloudProviderKey):             "aws",
-		string(conventions.CloudPlatformKey):             "aws_elastic_beanstalk",
-		string(semconv22.DeploymentEnvironmentKey):       "BETA",
-		string(conventions.DeploymentEnvironmentNameKey): "BETA",
-		string(conventions.ServiceInstanceIDKey):         "23",
-		string(conventions.ServiceNameKey):               "some-service",
-		string(conventions.ServiceVersionKey):            "env-version-1234",
-		string(conventions.ProcessParentPIDKey):          "42",
-		string(conventions.ProcessExecutableNameKey):     "node",
-		string(conventions.ClientAddressKey):             "12.53.12.1",
-		string(conventions.SourceAddressKey):             "12.53.12.1",
-		string(conventions.FaaSInstanceKey):              "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
-		string(conventions.FaaSTriggerKey):               "api-gateway",
+		"cloud.provider":              "aws",
+		"cloud.platform":              "aws_elastic_beanstalk",
+		"deployment.environment":      "BETA",
+		"deployment.environment.name": "BETA",
+		"service.instance.id":         "23",
+		"service.name":                "some-service",
+		"service.version":             "env-version-1234",
+		"process.parent_pid":          "42",
+		"process.executable.name":     "node",
+		"client.address":              "12.53.12.1",
+		"source.address":              "12.53.12.1",
+		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"faas.trigger":                "api-gateway",
 	})
 	require.NoError(t, err)
 
 	// add slice attributes
-	processCommandLineSlice := resource.Attributes().PutEmptySlice(string(conventions.ProcessCommandLineKey))
+	processCommandLineSlice := resource.Attributes().PutEmptySlice("process.command_line")
 	err = processCommandLineSlice.FromRaw([]any{"node", "app.js"})
 	require.NoError(t, err)
 
@@ -484,12 +482,12 @@ func TestEncodeSpanECSMode(t *testing.T) {
 
 	span := scopeSpans.Spans().AppendEmpty()
 	err = span.Attributes().FromRaw(map[string]any{
-		string(conventions.MessagingDestinationNameKey): "users_queue",
-		"messaging.operation.name":                      "receive",
-		string(semconv22.DBSystemKey):                   "sql",
-		"db.namespace":                                  "users",
-		"db.query.text":                                 "SELECT * FROM users WHERE user_id=?",
-		string(conventions.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
+		"messaging.destination.name": "users_queue",
+		"messaging.operation.name":   "receive",
+		"db.system":                  "sql",
+		"db.namespace":               "users",
+		"db.query.text":              "SELECT * FROM users WHERE user_id=?",
+		"http.response.body.size":    "http.response.encoded_body_size",
 	})
 	require.NoError(t, err)
 
@@ -626,8 +624,8 @@ func TestEncodeSpanECSModeMessageQueueName(t *testing.T) {
 			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 			span := scopeSpans.Spans().AppendEmpty()
 			err := span.Attributes().FromRaw(map[string]any{
-				"processor.event": test.processorEvent,
-				string(conventions.MessagingDestinationNameKey): "orders_queue",
+				"processor.event":            test.processorEvent,
+				"messaging.destination.name": "orders_queue",
 			})
 			require.NoError(t, err)
 
@@ -661,63 +659,63 @@ func TestEncodeLogECSMode(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		string(conventions.ServiceNameKey):               "foo.bar",
-		string(semconv22.DeploymentEnvironmentKey):       "BETA",
-		string(conventions.DeploymentEnvironmentNameKey): "BETA",
-		string(conventions.ServiceVersionKey):            "1.1.0",
-		string(conventions.ServiceInstanceIDKey):         "i-103de39e0a",
-		string(conventions.TelemetrySDKNameKey):          "opentelemetry",
-		string(conventions.TelemetrySDKVersionKey):       "7.9.12",
-		string(conventions.TelemetrySDKLanguageKey):      "perl",
-		string(conventions.CloudProviderKey):             "gcp",
-		string(conventions.CloudAccountIDKey):            "19347013",
-		string(conventions.CloudRegionKey):               "us-west-1",
-		string(conventions.CloudAvailabilityZoneKey):     "us-west-1b",
-		string(conventions.CloudPlatformKey):             "gke",
-		string(conventions.ContainerNameKey):             "happy-seger",
-		string(conventions.ContainerIDKey):               "e69cc5d3dda",
-		string(conventions.ContainerImageNameKey):        "my-app",
-		string(semconv22.ContainerRuntimeKey):            "docker",
-		string(conventions.HostNameKey):                  "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		"host.hostname":                                  "hostname.example.com",
-		string(conventions.HostIDKey):                    "i-103de39e0a",
-		string(conventions.HostTypeKey):                  "t2.medium",
-		string(conventions.HostArchKey):                  "x86_64",
-		string(conventions.ProcessPIDKey):                9833,
-		string(conventions.ProcessCommandLineKey):        "/usr/bin/ssh -l user 10.0.0.16",
-		string(conventions.ProcessExecutablePathKey):     "/usr/bin/ssh",
-		string(conventions.ProcessRuntimeNameKey):        "OpenJDK Runtime Environment",
-		string(conventions.ProcessRuntimeVersionKey):     "14.0.2",
-		string(conventions.OSTypeKey):                    "darwin",
-		string(conventions.OSDescriptionKey):             "Mac OS Mojave",
-		string(conventions.OSNameKey):                    "Mac OS X",
-		string(conventions.OSVersionKey):                 "10.14.1",
-		string(conventions.DeviceIDKey):                  "00000000-54b3-e7c7-0000-000046bffd97",
-		string(conventions.DeviceModelIdentifierKey):     "SM-G920F",
-		string(conventions.DeviceModelNameKey):           "Samsung Galaxy S6",
-		string(conventions.DeviceManufacturerKey):        "Samsung",
-		"k8s.namespace.name":                             "default",
-		"k8s.node.name":                                  "node-1",
-		"k8s.pod.name":                                   "opentelemetry-pod-autoconf",
-		"k8s.pod.uid":                                    "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"k8s.deployment.name":                            "coredns",
-		string(conventions.K8SJobNameKey):                "job.name",
-		string(conventions.K8SCronJobNameKey):            "cronjob.name",
-		string(conventions.K8SStatefulSetNameKey):        "statefulset.name",
-		string(conventions.K8SReplicaSetNameKey):         "replicaset.name",
-		string(conventions.K8SDaemonSetNameKey):          "daemonset.name",
-		string(conventions.K8SContainerNameKey):          "container.name",
-		string(conventions.K8SClusterNameKey):            "cluster.name",
-		string(conventions.ProcessParentPIDKey):          "42",
-		string(conventions.ProcessExecutableNameKey):     "node",
-		string(conventions.ClientAddressKey):             "12.53.12.1",
-		string(conventions.SourceAddressKey):             "12.53.12.1",
-		string(conventions.FaaSInstanceKey):              "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
-		string(conventions.FaaSTriggerKey):               "api-gateway",
+		"service.name":                "foo.bar",
+		"deployment.environment":      "BETA",
+		"deployment.environment.name": "BETA",
+		"service.version":             "1.1.0",
+		"service.instance.id":         "i-103de39e0a",
+		"telemetry.sdk.name":          "opentelemetry",
+		"telemetry.sdk.version":       "7.9.12",
+		"telemetry.sdk.language":      "perl",
+		"cloud.provider":              "gcp",
+		"cloud.account.id":            "19347013",
+		"cloud.region":                "us-west-1",
+		"cloud.availability_zone":     "us-west-1b",
+		"cloud.platform":              "gke",
+		"container.name":              "happy-seger",
+		"container.id":                "e69cc5d3dda",
+		"container.image.name":        "my-app",
+		"container.runtime":           "docker",
+		"host.name":                   "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.hostname":               "hostname.example.com",
+		"host.id":                     "i-103de39e0a",
+		"host.type":                   "t2.medium",
+		"host.arch":                   "x86_64",
+		"process.pid":                 9833,
+		"process.command_line":        "/usr/bin/ssh -l user 10.0.0.16",
+		"process.executable.path":     "/usr/bin/ssh",
+		"process.runtime.name":        "OpenJDK Runtime Environment",
+		"process.runtime.version":     "14.0.2",
+		"os.type":                     "darwin",
+		"os.description":              "Mac OS Mojave",
+		"os.name":                     "Mac OS X",
+		"os.version":                  "10.14.1",
+		"device.id":                   "00000000-54b3-e7c7-0000-000046bffd97",
+		"device.model.identifier":     "SM-G920F",
+		"device.model.name":           "Samsung Galaxy S6",
+		"device.manufacturer":         "Samsung",
+		"k8s.namespace.name":          "default",
+		"k8s.node.name":               "node-1",
+		"k8s.pod.name":                "opentelemetry-pod-autoconf",
+		"k8s.pod.uid":                 "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"k8s.deployment.name":         "coredns",
+		"k8s.job.name":                "job.name",
+		"k8s.cronjob.name":            "cronjob.name",
+		"k8s.statefulset.name":        "statefulset.name",
+		"k8s.replicaset.name":         "replicaset.name",
+		"k8s.daemonset.name":          "daemonset.name",
+		"k8s.container.name":          "container.name",
+		"k8s.cluster.name":            "cluster.name",
+		"process.parent_pid":          "42",
+		"process.executable.name":     "node",
+		"client.address":              "12.53.12.1",
+		"source.address":              "12.53.12.1",
+		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"faas.trigger":                "api-gateway",
 	})
 	require.NoError(t, err)
 
-	resourceContainerImageTags := resource.Attributes().PutEmptySlice(string(conventions.ContainerImageTagsKey))
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
 	require.NoError(t, err)
 
@@ -725,8 +723,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	record := plog.NewLogRecord()
 	err = record.Attributes().FromRaw(map[string]any{
-		"event.name": "user-password-change",
-		string(conventions.HTTPResponseBodySizeKey): 1024,
+		"event.name":              "user-password-change",
+		"http.response.body.size": 1024,
 	})
 	require.NoError(t, err)
 	observedTimestamp := pcommon.Timestamp(1710273641123456789)
@@ -896,13 +894,13 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 			record := plog.NewLogRecord()
 
 			if test.telemetrySdkName != "" {
-				resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), test.telemetrySdkName)
+				resource.Attributes().PutStr("telemetry.sdk.name", test.telemetrySdkName)
 			}
 			if test.telemetrySdkLanguage != "" {
-				resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), test.telemetrySdkLanguage)
+				resource.Attributes().PutStr("telemetry.sdk.language", test.telemetrySdkLanguage)
 			}
 			if test.telemetryDistroName != "" {
-				resource.Attributes().PutStr(string(conventions.TelemetryDistroNameKey), test.telemetryDistroName)
+				resource.Attributes().PutStr("telemetry.distro.name", test.telemetryDistroName)
 			}
 
 			timestamp := pcommon.Timestamp(1710373859123456789)
@@ -956,10 +954,10 @@ func TestEncodeLogECSModeAgentVersion(t *testing.T) {
 			record := plog.NewLogRecord()
 
 			if test.telemetryDistroVersion != "" {
-				resource.Attributes().PutStr(string(conventions.TelemetryDistroVersionKey), test.telemetryDistroVersion)
+				resource.Attributes().PutStr("telemetry.distro.version", test.telemetryDistroVersion)
 			}
 			if test.telemetrySdkVersion != "" {
-				resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), test.telemetrySdkVersion)
+				resource.Attributes().PutStr("telemetry.sdk.version", test.telemetrySdkVersion)
 			}
 
 			timestamp := pcommon.Timestamp(1710373859123456789)
@@ -1067,10 +1065,10 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 			record := plog.NewLogRecord()
 
 			if test.osType != "" {
-				resource.Attributes().PutStr(string(conventions.OSTypeKey), test.osType)
+				resource.Attributes().PutStr("os.type", test.osType)
 			}
 			if test.osName != "" {
-				resource.Attributes().PutStr(string(conventions.OSNameKey), test.osName)
+				resource.Attributes().PutStr("os.name", test.osName)
 			}
 
 			timestamp := pcommon.Timestamp(1710373859123456789)

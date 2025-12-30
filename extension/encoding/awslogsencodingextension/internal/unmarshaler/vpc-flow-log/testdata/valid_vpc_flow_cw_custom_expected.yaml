@@ -1,0 +1,48 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: aws.log.group.names
+          value:
+            stringValue: /aws/vpc/flowlogs
+        - key: aws.log.stream.names
+          value:
+            stringValue: eni-1234567890abcdef
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "2"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-1235b8ca123456789
+              - key: source.address
+                value:
+                  stringValue: 172.31.16.139
+              - key: destination.address
+                value:
+                  stringValue: 172.31.16.21
+            body: {}
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "2"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-1235b8ca123456789
+              - key: source.address
+                value:
+                  stringValue: 172.31.9.69
+              - key: destination.address
+                value:
+                  stringValue: 172.31.9.12
+            body: {}
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.vpcflow
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

@@ -57,7 +57,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 	for _, scenario := range logScenarios {
 		b.Run("logs/"+scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				parsed, err := logParser.ParseStatements(scenario.statements)
 				if err != nil {
 					b.Fatalf("failed to parse log statements: %v", err)
@@ -79,7 +79,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 	for _, scenario := range spanScenarios {
 		b.Run("spans/"+scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				parsed, err := spanParser.ParseStatements(scenario.statements)
 				if err != nil {
 					b.Fatalf("failed to parse span statements: %v", err)
@@ -101,7 +101,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 	for _, scenario := range metricScenarios {
 		b.Run("metrics/"+scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				parsed, err := metricParser.ParseStatements(scenario.statements)
 				if err != nil {
 					b.Fatalf("failed to parse metric statements: %v", err)
@@ -145,7 +145,7 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
 					b.Fatalf("failed to execute log statements: %v", err)
 				}
@@ -191,7 +191,7 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
 					b.Fatalf("failed to execute span statements: %v", err)
 				}
@@ -236,7 +236,7 @@ func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
 					b.Fatalf("failed to execute metric statements: %v", err)
 				}
@@ -282,7 +282,7 @@ func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				result, err := sequence.Eval(ctx, contexts[i%len(contexts)])
 				if err != nil {
 					b.Fatalf("failed to evaluate log conditions: %v", err)
@@ -329,7 +329,7 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				result, err := sequence.Eval(ctx, contexts[i%len(contexts)])
 				if err != nil {
 					b.Fatalf("failed to evaluate metric conditions: %v", err)
@@ -588,7 +588,7 @@ func BenchmarkSliceToMap(b *testing.B) {
 
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				if err := seqNoPaths.Execute(ctx, tc); err != nil {
 					b.Fatalf("execute failed: %v", err)
 				}
@@ -603,7 +603,7 @@ func BenchmarkSliceToMap(b *testing.B) {
 
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				if err := seqKeyOnly.Execute(ctx, tc); err != nil {
 					b.Fatalf("execute failed: %v", err)
 				}
@@ -618,7 +618,7 @@ func BenchmarkSliceToMap(b *testing.B) {
 
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				if err := seqKeyAndValue.Execute(ctx, tc); err != nil {
 					b.Fatalf("execute failed: %v", err)
 				}

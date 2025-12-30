@@ -1,0 +1,21 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+id: http://example.com/schema/cmd/schemagen/internal/config.schema.yaml
+title: EmbeddedStructConfig
+type: object
+$defs:
+  databaseConfig:
+    properties:
+      host:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+      username:
+        type: string
+    type: object
+allOf:
+  - $ref: '#/$defs/databaseConfig'
+properties:
+  app_name:
+    type: string

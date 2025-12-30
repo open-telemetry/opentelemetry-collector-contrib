@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 func int64ptr(i int64) *int64 { return &i }
@@ -38,7 +37,7 @@ func TestHandleRequestMetadata(t *testing.T) {
 				CacheDecision:              []string{"CACHE_HIT", "CACHE_MISS"},
 			},
 			expected: map[string]any{
-				string(conventions.NetworkPeerAddressKey):  "192.168.1.100",
+				"network.peer.address":                     "192.168.1.100",
 				gcpLoadBalancingStatusDetails:              "ok",
 				gcpLoadBalancingBackendTargetProjectNumber: "projects/12345",
 				gcpLoadBalancingProxyStatus:                "proxy_ok",
@@ -58,8 +57,8 @@ func TestHandleRequestMetadata(t *testing.T) {
 				CacheDecision: []string{},
 			},
 			expected: map[string]any{
-				string(conventions.NetworkPeerAddressKey): "172.16.0.1",
-				gcpLoadBalancingStatusDetails:             "ok",
+				"network.peer.address":        "172.16.0.1",
+				gcpLoadBalancingStatusDetails: "ok",
 			},
 		},
 		{
@@ -70,8 +69,8 @@ func TestHandleRequestMetadata(t *testing.T) {
 				OverrideResponseCode: nil,
 			},
 			expected: map[string]any{
-				string(conventions.NetworkPeerAddressKey): "1.2.3.4",
-				gcpLoadBalancingStatusDetails:             "ok",
+				"network.peer.address":        "1.2.3.4",
+				gcpLoadBalancingStatusDetails: "ok",
 			},
 		},
 		{
@@ -91,7 +90,7 @@ func TestHandleRequestMetadata(t *testing.T) {
 
 			// For the conflicting IP test, pre-populate with a different IP
 			if tt.name == "conflicting remote IP" {
-				attr.PutStr(string(conventions.NetworkPeerAddressKey), "different-ip")
+				attr.PutStr("network.peer.address", "different-ip")
 			}
 
 			err := handleRequestMetadata(tt.log, attr)
@@ -215,9 +214,9 @@ func TestHandleTLSInfo(t *testing.T) {
 			},
 			expected: map[string]any{
 				gcpLoadBalancingTLSInfo: map[string]any{
-					gcpLoadBalancingTLSEarlyDataRequest:    true,
-					string(conventions.TLSProtocolNameKey): "TLSv1.3",
-					string(conventions.TLSCipherKey):       "TLS_AES_128_GCM_SHA256",
+					gcpLoadBalancingTLSEarlyDataRequest: true,
+					"tls.protocol.name":                 "TLSv1.3",
+					"tls.cipher":                        "TLS_AES_128_GCM_SHA256",
 				},
 			},
 		},
@@ -230,9 +229,9 @@ func TestHandleTLSInfo(t *testing.T) {
 			},
 			expected: map[string]any{
 				gcpLoadBalancingTLSInfo: map[string]any{
-					gcpLoadBalancingTLSEarlyDataRequest:    false,
-					string(conventions.TLSProtocolNameKey): "TLSv1.2",
-					string(conventions.TLSCipherKey):       "ECDHE-RSA-AES128-GCM-SHA256",
+					gcpLoadBalancingTLSEarlyDataRequest: false,
+					"tls.protocol.name":                 "TLSv1.2",
+					"tls.cipher":                        "ECDHE-RSA-AES128-GCM-SHA256",
 				},
 			},
 		},
@@ -289,19 +288,19 @@ func TestHandleMtlsInfo(t *testing.T) {
 			},
 			expected: map[string]any{
 				gcpLoadBalancingMtlsInfo: map[string]any{
-					gcpLoadBalancingMtlsClientCertPresent:            true,
-					gcpLoadBalancingMtlsClientCertChainVerified:      true,
-					string(conventions.TLSClientHashSha256Key):       "abc123",
-					gcpLoadBalancingMtlsClientCertSerialNumber:       "12345",
-					string(conventions.TLSClientNotBeforeKey):        "2024-01-01T00:00:00Z",
-					string(conventions.TLSClientNotAfterKey):         "2025-01-01T00:00:00Z",
-					gcpLoadBalancingMtlsClientCertSpiffeID:           "spiffe://example.com/service",
-					gcpLoadBalancingMtlsClientCertURISans:            "uri:example.com",
-					gcpLoadBalancingMtlsClientCertDnsnameSans:        "dns:example.com",
-					string(conventions.TLSClientIssuerKey):           "CN=CA",
-					string(conventions.TLSClientSubjectKey):          "CN=client",
-					gcpLoadBalancingMtlsClientCertLeaf:               "-----BEGIN CERTIFICATE-----",
-					string(conventions.TLSClientCertificateChainKey): "-----BEGIN CERTIFICATE----- chain",
+					gcpLoadBalancingMtlsClientCertPresent:       true,
+					gcpLoadBalancingMtlsClientCertChainVerified: true,
+					"tls.client.hash.sha256":                    "abc123",
+					gcpLoadBalancingMtlsClientCertSerialNumber:  "12345",
+					"tls.client.not_before":                     "2024-01-01T00:00:00Z",
+					"tls.client.not_after":                      "2025-01-01T00:00:00Z",
+					gcpLoadBalancingMtlsClientCertSpiffeID:      "spiffe://example.com/service",
+					gcpLoadBalancingMtlsClientCertURISans:       "uri:example.com",
+					gcpLoadBalancingMtlsClientCertDnsnameSans:   "dns:example.com",
+					"tls.client.issuer":                         "CN=CA",
+					"tls.client.subject":                        "CN=client",
+					gcpLoadBalancingMtlsClientCertLeaf:          "-----BEGIN CERTIFICATE-----",
+					"tls.client.certificate_chain":              "-----BEGIN CERTIFICATE----- chain",
 				},
 			},
 		},
@@ -338,7 +337,7 @@ func TestHandleMtlsInfo(t *testing.T) {
 			},
 			expected: map[string]any{
 				gcpLoadBalancingMtlsInfo: map[string]any{
-					string(conventions.TLSClientHashSha256Key): "fingerprint",
+					"tls.client.hash.sha256": "fingerprint",
 				},
 			},
 		},
@@ -430,8 +429,8 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"remoteIp": "192.168.1.1"
 			}`,
 			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:             "ok",
-				string(conventions.NetworkPeerAddressKey): "192.168.1.1",
+				gcpLoadBalancingStatusDetails: "ok",
+				"network.peer.address":        "192.168.1.1",
 			},
 		},
 		{
@@ -450,7 +449,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			}`,
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:              "ok",
-				string(conventions.NetworkPeerAddressKey):  "10.0.0.1",
+				"network.peer.address":                     "10.0.0.1",
 				gcpLoadBalancingBackendTargetProjectNumber: "projects/12345",
 				gcpLoadBalancingProxyStatus:                "proxy_ok",
 				gcpLoadBalancingOverrideResponseCode:       int64(301),
@@ -478,9 +477,9 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				}
 			}`,
 			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:             "ok",
-				string(conventions.NetworkPeerAddressKey): "172.16.0.1",
-				gcpLoadBalancingAuthPolicyInfoResult:      "DENY",
+				gcpLoadBalancingStatusDetails:        "ok",
+				"network.peer.address":               "172.16.0.1",
+				gcpLoadBalancingAuthPolicyInfoResult: "DENY",
 				gcpLoadBalancingAuthPolicyInfoPolicies: []any{
 					map[string]any{
 						gcpLoadBalancingAuthPolicyName:    "policy-1",
@@ -503,12 +502,12 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				}
 			}`,
 			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:             "ok",
-				string(conventions.NetworkPeerAddressKey): "1.2.3.4",
+				gcpLoadBalancingStatusDetails: "ok",
+				"network.peer.address":        "1.2.3.4",
 				gcpLoadBalancingTLSInfo: map[string]any{
-					gcpLoadBalancingTLSEarlyDataRequest:    true,
-					string(conventions.TLSProtocolNameKey): "TLSv1.3",
-					string(conventions.TLSCipherKey):       "TLS_AES_128_GCM_SHA256",
+					gcpLoadBalancingTLSEarlyDataRequest: true,
+					"tls.protocol.name":                 "TLSv1.3",
+					"tls.cipher":                        "TLS_AES_128_GCM_SHA256",
 				},
 			},
 		},
@@ -526,12 +525,12 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				}
 			}`,
 			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:             "ok",
-				string(conventions.NetworkPeerAddressKey): "5.6.7.8",
+				gcpLoadBalancingStatusDetails: "ok",
+				"network.peer.address":        "5.6.7.8",
 				gcpLoadBalancingMtlsInfo: map[string]any{
 					gcpLoadBalancingMtlsClientCertPresent:       true,
 					gcpLoadBalancingMtlsClientCertChainVerified: true,
-					string(conventions.TLSClientHashSha256Key):  "abc123",
+					"tls.client.hash.sha256":                    "abc123",
 					gcpLoadBalancingMtlsClientCertSerialNumber:  "12345",
 				},
 			},
@@ -570,8 +569,8 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				}
 			}`,
 			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:             "denied_by_security_policy",
-				string(conventions.NetworkPeerAddressKey): "1.1.1.1",
+				gcpLoadBalancingStatusDetails: "denied_by_security_policy",
+				"network.peer.address":        "1.1.1.1",
 				gcpArmorSecurityPolicyPreviewEdge: map[string]any{
 					gcpArmorSecurityPolicyName:             "edge-policy",
 					gcpArmorSecurityPolicyPriority:         int64(5),
@@ -594,8 +593,8 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				}
 			}`,
 			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:             "denied_by_security_policy",
-				string(conventions.NetworkPeerAddressKey): "2.2.2.2",
+				gcpLoadBalancingStatusDetails: "denied_by_security_policy",
+				"network.peer.address":        "2.2.2.2",
 				gcpArmorSecurityPolicyEnforcedEdge: map[string]any{
 					gcpArmorSecurityPolicyName:             "edge-policy-enforced",
 					gcpArmorSecurityPolicyPriority:         int64(10),
@@ -622,8 +621,8 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				}
 			}`,
 			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:             "denied_by_security_policy",
-				string(conventions.NetworkPeerAddressKey): "3.3.3.3",
+				gcpLoadBalancingStatusDetails: "denied_by_security_policy",
+				"network.peer.address":        "3.3.3.3",
 				gcpArmorSecurityPolicyPreview: map[string]any{
 					gcpArmorSecurityPolicyName:             "preview-policy",
 					gcpArmorSecurityPolicyPriority:         int64(20),
@@ -662,8 +661,8 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				}
 			}`,
 			expected: map[string]any{
-				gcpLoadBalancingStatusDetails:             "denied_by_security_policy",
-				string(conventions.NetworkPeerAddressKey): "4.4.4.4",
+				gcpLoadBalancingStatusDetails: "denied_by_security_policy",
+				"network.peer.address":        "4.4.4.4",
 				gcpArmorSecurityPolicyEnforced: map[string]any{
 					gcpArmorSecurityPolicyName:                  "enforced-policy",
 					gcpArmorSecurityPolicyPriority:              int64(30),
@@ -707,20 +706,20 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			}`,
 			expected: map[string]any{
 				gcpLoadBalancingStatusDetails:              "denied_by_security_policy",
-				string(conventions.NetworkPeerAddressKey):  "1.2.3.4",
+				"network.peer.address":                     "1.2.3.4",
 				gcpLoadBalancingBackendTargetProjectNumber: "projects/987654",
 				gcpLoadBalancingScheme:                     "EXTERNAL",
 				gcpLoadBalancingCacheDecision:              []any{"CACHE_MISS"},
 				gcpLoadBalancingTLSInfo: map[string]any{
-					gcpLoadBalancingTLSEarlyDataRequest:    false,
-					string(conventions.TLSProtocolNameKey): "TLSv1.2",
-					string(conventions.TLSCipherKey):       "ECDHE-RSA-AES128-GCM-SHA256",
+					gcpLoadBalancingTLSEarlyDataRequest: false,
+					"tls.protocol.name":                 "TLSv1.2",
+					"tls.cipher":                        "ECDHE-RSA-AES128-GCM-SHA256",
 				},
-				gcpArmorRecaptchaActionTokenScore:    float64(0.9),
-				gcpArmorUserIPInfoSource:             "X-Forwarded-For",
-				string(conventions.ClientAddressKey): "5.6.7.8",
-				string(conventions.TLSClientJa3Key):  "ja3-fingerprint",
-				gcpArmorTLSJa4Fingerprint:            "ja4-fingerprint",
+				gcpArmorRecaptchaActionTokenScore: float64(0.9),
+				gcpArmorUserIPInfoSource:          "X-Forwarded-For",
+				"client.address":                  "5.6.7.8",
+				"tls.client.ja3":                  "ja3-fingerprint",
+				gcpArmorTLSJa4Fingerprint:         "ja4-fingerprint",
 				gcpArmorSecurityPolicyEnforced: map[string]any{
 					gcpArmorSecurityPolicyName:             "complete-policy",
 					gcpArmorSecurityPolicyPriority:         int64(100),

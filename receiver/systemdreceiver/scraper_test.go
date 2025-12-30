@@ -113,6 +113,7 @@ func (s *testDbusConnection) Object(dest string, path dbus.ObjectPath) dbus.BusO
 				path:        path,
 				properties: map[string]dbus.Variant{
 					"org.freedesktop.systemd1.Service.ControlGroup": dbus.MakeVariant("/system.slice/nginx.service"),
+					"org.freedesktop.systemd1.Service.NRestarts":    dbus.MakeVariant(3),
 				},
 			}
 		}
@@ -128,6 +129,18 @@ func newTestScraper(conf *Config, units []unitTuple) *systemdScraper {
 }
 
 func TestScraperScrape(t *testing.T) {
+	nginxService := unitTuple{
+		Name:        "nginx.service",
+		Description: "A high performance web server and a reverse proxy server",
+		LoadState:   "loaded",
+		ActiveState: "active",
+		SubState:    "plugged",
+		Following:   "",
+		Path:        "/org/freedesktop/systemd1/unit/nginx_2eservice",
+		JobID:       uint32(0),
+		JobType:     "",
+		JobPath:     "/",
+	}
 	testCases := []struct {
 		desc        string
 		config      func() *Config
@@ -143,18 +156,7 @@ func TestScraperScrape(t *testing.T) {
 				return cfg
 			},
 			units: []unitTuple{
-				{
-					Name:        "nginx.service",
-					Description: "A high performance web server and a reverse proxy server",
-					LoadState:   "loaded",
-					ActiveState: "active",
-					SubState:    "plugged",
-					Following:   "",
-					Path:        "/org/freedesktop/systemd1/unit/nginx_2eservice",
-					JobID:       uint32(0),
-					JobType:     "",
-					JobPath:     "/",
-				},
+				nginxService,
 				{
 					Name:        "rsyslog.service",
 					Description: "Advanced key-value store",
@@ -175,24 +177,36 @@ func TestScraperScrape(t *testing.T) {
 			desc: "With cgroups",
 			config: func() *Config {
 				cfg := createDefaultDisabledConfig()
-				cfg.Metrics.SystemdUnitCPUTime.Enabled = true
+				cfg.Metrics.SystemdServiceCPUTime.Enabled = true
 				return cfg
 			},
 			units: []unitTuple{
+				nginxService,
 				{
-					Name:        "nginx.service",
-					Description: "A high performance web server and a reverse proxy server",
+					Name:        "dbus.socket",
+					Description: "D-Bus System Message Bus Socket",
 					LoadState:   "loaded",
 					ActiveState: "active",
 					SubState:    "plugged",
 					Following:   "",
-					Path:        "/org/freedesktop/systemd1/unit/nginx_2eservice",
+					Path:        "/org/freedesktop/systemd1/unit/dbus_2esocket",
 					JobID:       uint32(0),
 					JobType:     "",
 					JobPath:     "/",
 				},
 			},
 			goldenName:  "cgroups",
+			expectedErr: nil,
+		},
+		{
+			desc: "Service restarts",
+			config: func() *Config {
+				cfg := createDefaultDisabledConfig()
+				cfg.Metrics.SystemdServiceRestarts.Enabled = true
+				return cfg
+			},
+			units:       []unitTuple{nginxService},
+			goldenName:  "restarts",
 			expectedErr: nil,
 		},
 	}
@@ -228,6 +242,6 @@ func TestScraperScrape(t *testing.T) {
 func createDefaultDisabledConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.SystemdUnitState.Enabled = false
-	cfg.Metrics.SystemdUnitCPUTime.Enabled = false
+	cfg.Metrics.SystemdServiceCPUTime.Enabled = false
 	return cfg
 }

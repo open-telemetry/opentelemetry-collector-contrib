@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
@@ -47,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				Splitting:  SplittingStrategyLine,
 				HealthPath: "/bar",
 				Ack:        Ack{Path: "/services/collector/ack"},
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
+				HecToOtelAttrs: translator.HecToOtelAttrs{
 					Source:     "file.name",
 					SourceType: "foobar",
 					Index:      "myindex",
@@ -74,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				Splitting:  SplittingStrategyLine,
 				HealthPath: "/services/collector/health",
 				Ack:        Ack{Path: "/services/collector/ack"},
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
+				HecToOtelAttrs: translator.HecToOtelAttrs{
 					Source:     "com.splunk.source",
 					SourceType: "com.splunk.sourcetype",
 					Index:      "com.splunk.index",

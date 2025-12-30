@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -268,7 +267,7 @@ func TestSpan_Matching_True(t *testing.T) {
 	}
 
 	rs := ptrace.NewResourceSpans()
-	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
+	rs.Resource().Attributes().PutStr("service.name", "svcA")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("spanName")
 
@@ -1199,7 +1198,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rs := ptrace.NewResourceSpans()
-			rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
+			rs.Resource().Attributes().PutStr("service.name", "svcA")
 			span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			span.SetName("spanName")
 			span.Attributes().PutStr("attr1", "val1")
@@ -1264,7 +1263,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 		assert.NoError(b, err)
 
 		rs := ptrace.NewResourceSpans()
-		rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
+		rs.Resource().Attributes().PutStr("service.name", "svcA")
 		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("spanName")
 		span.Attributes().PutStr("keyString", "arithmetic")

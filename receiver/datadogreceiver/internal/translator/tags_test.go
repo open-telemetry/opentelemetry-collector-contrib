@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 func TestGetMetricAttributes(t *testing.T) {
@@ -35,7 +34,7 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(conventions.HostNameKey): "host",
+				"host.name": "host",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -45,10 +44,10 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "service:my-service", "version:1.0"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(conventions.HostNameKey):                  "host",
-				string(conventions.DeploymentEnvironmentNameKey): "prod",
-				string(conventions.ServiceNameKey):               "my-service",
-				string(conventions.ServiceVersionKey):            "1.0",
+				"host.name":                   "host",
+				"deployment.environment.name": "prod",
+				"service.name":                "my-service",
+				"service.version":             "1.0",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -58,8 +57,8 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "foo"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(conventions.HostNameKey):                  "host",
-				string(conventions.DeploymentEnvironmentNameKey): "prod",
+				"host.name":                   "host",
+				"deployment.environment.name": "prod",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs: newMapFromKV(t, map[string]any{
@@ -166,7 +165,7 @@ func TestImageTags(t *testing.T) {
 	pool := newStringPool()
 
 	attrs := tagsToAttributes(tags, host, pool)
-	imageTags, _ := attrs.resource.Get(string(conventions.ContainerImageTagsKey))
+	imageTags, _ := attrs.resource.Get("container.image.tags")
 	assert.Equal(t, expected, imageTags.AsString())
 }
 

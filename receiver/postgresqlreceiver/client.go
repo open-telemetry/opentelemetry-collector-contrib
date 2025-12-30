@@ -20,13 +20,19 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
-const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
+const (
+	lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
+	querySampleTraceContextKey       = "_otel_trace_context"
+)
 
 var preciseLagMetricsFg = featuregate.GlobalRegistry().MustRegister(
 	lagMetricsInSecondsFeatureGateID,
@@ -880,47 +886,63 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 
 	errs := make([]error, 0)
 	finalAttributes := make([]map[string]any, 0)
-	dbPrefix := "postgresql."
+	propagator := propagation.TraceContext{}
 	for _, row := range rows {
-		if row["query"] == "<insufficient privilege>" {
+		if row[querySampleColumnQuery] == insufficientPrivilegeQuerySampleText {
 			logger.Warn("skipping query sample due to insufficient privileges")
 			errs = append(errs, errors.New("skipping query sample due to insufficient privileges"))
 			continue
 		}
 		currentAttributes := make(map[string]any)
-		simpleColumns := []string{
-			"client_hostname",
-			"query_start",
-			"wait_event_type",
-			"wait_event",
-			"query_id",
-			"state",
-			"application_name",
+		var traceCtx context.Context
+		querySampleSimpleColumns := []string{
+			querySampleColumnClientHostname,
+			querySampleColumnQueryStart,
+			querySampleColumnWaitEventType,
+			querySampleColumnWaitEvent,
+			querySampleColumnQueryID,
+			querySampleColumnState,
+			querySampleColumnApplicationName,
 		}
 
-		for _, col := range simpleColumns {
-			currentAttributes[dbPrefix+col] = row[col]
+		for _, col := range querySampleSimpleColumns {
+			currentAttributes[dbAttributePrefix+col] = row[col]
+			if col == querySampleColumnApplicationName && row[col] != "" {
+				// Use a background context so we don't accidentally inherit cancellation or span context
+				// from the scrape context; the only trace linkage should come from the extracted traceparent.
+				ctxFromQuery := propagator.Extract(context.Background(), propagation.MapCarrier{
+					traceparentCarrierKey: row[col],
+				})
+
+				if trace.SpanContextFromContext(ctxFromQuery).IsValid() {
+					traceCtx = ctxFromQuery
+				}
+			}
+		}
+
+		if traceCtx != nil {
+			currentAttributes[querySampleTraceContextKey] = traceCtx
 		}
 
 		clientPort := int64(0)
-		if row["client_port"] != "" {
-			clientPort, err = strconv.ParseInt(row["client_port"], 10, 64)
+		if row[querySampleColumnClientPort] != "" {
+			clientPort, err = strconv.ParseInt(row[querySampleColumnClientPort], 10, 64)
 			if err != nil {
 				logger.Warn("failed to convert client_port to int", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
 		pid := int64(0)
-		if row["pid"] != "" {
-			pid, err = strconv.ParseInt(row["pid"], 10, 64)
+		if row[querySampleColumnPID] != "" {
+			pid, err = strconv.ParseInt(row[querySampleColumnPID], 10, 64)
 			if err != nil {
 				logger.Warn("failed to convert pid to int64", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
 		_queryStartTimestamp := float64(0)
-		if row["_query_start_timestamp"] != "" {
-			_queryStartTimestamp, err = strconv.ParseFloat(row["_query_start_timestamp"], 64)
+		if row[querySampleColumnQueryStartTimestamp] != "" {
+			_queryStartTimestamp, err = strconv.ParseFloat(row[querySampleColumnQueryStartTimestamp], 64)
 			if err != nil {
 				logger.Warn("failed to convert _query_start_timestamp", zap.Error(err))
 				errs = append(errs, err)
@@ -929,8 +951,8 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		newestQueryTimestamp = math.Max(newestQueryTimestamp, _queryStartTimestamp)
 
 		duration := float64(0)
-		if row["_query_start_timestamp"] != "" {
-			duration, err = strconv.ParseFloat(row["duration_ms"], 64)
+		if row[querySampleColumnDurationMilliseconds] != "" {
+			duration, err = strconv.ParseFloat(row[querySampleColumnDurationMilliseconds], 64)
 			if err != nil {
 				logger.Warn("failed to convert duration", zap.Error(err))
 				errs = append(errs, err)
@@ -938,19 +960,18 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		}
 
 		// TODO: check if the query is truncated.
-		obfuscated, err := obfuscateSQL(row["query"])
+		obfuscated, err := obfuscateSQL(row[querySampleColumnQuery])
 		if err != nil {
-			logger.Warn("failed to obfuscate query", zap.String("query", row["query"]))
+			logger.Warn("failed to obfuscate query", zap.String("query", row[querySampleColumnQuery]))
 			obfuscated = ""
 		}
-		currentAttributes[dbPrefix+"pid"] = pid
-		currentAttributes["network.peer.port"] = clientPort
-		currentAttributes["network.peer.address"] = row["client_addr"]
-		currentAttributes["db.query.text"] = obfuscated
-		currentAttributes["db.namespace"] = row["datname"]
-		currentAttributes["user.name"] = row["usename"]
-		currentAttributes["duration"] = duration
-		currentAttributes["db.system.name"] = "postgresql"
+		currentAttributes[dbAttributePrefix+querySampleColumnPID] = pid
+		currentAttributes[string(semconv.NetworkPeerPortKey)] = clientPort
+		currentAttributes[string(semconv.NetworkPeerAddressKey)] = row[querySampleColumnClientAddr]
+		currentAttributes[string(semconv.DBQueryTextKey)] = obfuscated
+		currentAttributes[string(semconv.DBNamespaceKey)] = row[querySampleColumnDatname]
+		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
+		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 
@@ -1016,8 +1037,8 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 
 	for _, row := range rows {
 		hasConvention := map[string]string{
-			"datname": "db.namespace",
-			"query":   QueryTextAttributeName,
+			"datname": string(semconv.DBNamespaceKey),
+			"query":   string(semconv.DBQueryTextKey),
 		}
 
 		needConversion := map[string]func(string, string, *zap.Logger) (any, error){
