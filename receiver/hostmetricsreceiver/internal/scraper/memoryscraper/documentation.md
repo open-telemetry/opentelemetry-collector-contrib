@@ -70,7 +70,7 @@ A constant value for the system's configured page size.
 
 ### system.memory.shared
 
-Shared memory used (mostly by tmpfs).
+Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

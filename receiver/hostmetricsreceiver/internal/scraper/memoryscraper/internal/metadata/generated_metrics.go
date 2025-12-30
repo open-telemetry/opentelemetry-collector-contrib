@@ -307,7 +307,7 @@ type metricSystemMemoryShared struct {
 // init fills system.memory.shared metric with initial data.
 func (m *metricSystemMemoryShared) init() {
 	m.data.SetName("system.memory.shared")
-	m.data.SetDescription("Shared memory used (mostly by tmpfs).")
+	m.data.SetDescription("Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

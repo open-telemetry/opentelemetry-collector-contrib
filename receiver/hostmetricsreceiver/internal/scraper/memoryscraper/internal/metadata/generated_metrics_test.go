@@ -162,7 +162,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.memory.shared"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Shared memory used (mostly by tmpfs).", ms.At(i).Description())
+					assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

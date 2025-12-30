@@ -216,7 +216,7 @@ func assertMemorySharedMetricValid(t *testing.T, metric pmetric.Metric, expected
 	assert.Equal(t, expectedName, metric.Name())
 	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 	assert.Equal(t, "By", metric.Unit())
-	assert.Equal(t, "Shared memory used (mostly by tmpfs).", metric.Description())
+	assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.", metric.Description())
 	assert.False(t, metric.Sum().IsMonotonic(), "shared memory is not monotonic")
 	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
 	dataPoints := metric.Sum().DataPoints()
