@@ -36,6 +36,8 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
+	var batchValues []string
+
 	for _, model := range h.histogramModels {
 		resAttrJSON, _ := internal.AttributesToJSON(model.metadata.ResAttr)
 		scopeAttrJSON, _ := internal.AttributesToJSON(model.metadata.ScopeInstr.Attributes())
@@ -75,12 +77,21 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 				int32(model.histogram.AggregationTemporality()),
 			}
 
-			// Build complete INSERT statement with formatted values
-			insertSQL := strings.Replace(h.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
-			_, execErr := db.ExecContext(ctx, insertSQL)
-			if execErr != nil {
-				return fmt.Errorf("failed to execute histogram metric insert: %w", execErr)
-			}
+			batchValues = append(batchValues, internal.BuildValuesClause(values))
+		}
+	}
+
+	if len(batchValues) > 0 {
+		// Build complete INSERT statement with formatted values
+		// Replace the VALUES (?, ?, ...) part with actual values
+		valuesStart := strings.Index(h.insertSQL, "VALUES (")
+		if valuesStart == -1 {
+			return fmt.Errorf("failed to find VALUES clause in insert SQL")
+		}
+		insertSQL := h.insertSQL[:valuesStart] + "VALUES " + strings.Join(batchValues, ",")
+		_, execErr := db.ExecContext(ctx, insertSQL)
+		if execErr != nil {
+			return fmt.Errorf("failed to execute histogram metric insert: %w", execErr)
 		}
 	}
 
