@@ -7,16 +7,16 @@ CREATE TABLE IF NOT EXISTS `%s`.`%s` (
     `ScopeName` VARCHAR(255),
     `ScopeVersion` VARCHAR(50),
     `ScopeAttributes` JSON,
-    `ScopeDroppedAttrCount` INT UNSIGNED,
+    `ScopeDroppedAttrCount` INT,
     `ScopeSchemaUrl` VARCHAR(500),
     `MetricDescription` VARCHAR(500),
     `MetricUnit` VARCHAR(50),
     `Attributes` JSON,
     `StartTimeUnix` DATETIME,
-    `Count` BIGINT UNSIGNED,
+    `Count` BIGINT,
     `Sum` DOUBLE,
     `ValueAtQuantiles` JSON,
-    `Flags` INT UNSIGNED
+    `Flags` INT
 ) ENGINE=OLAP
 DUPLICATE KEY(`ServiceName`, `MetricName`, `TimeUnix`)
 PARTITION BY RANGE(`TimeUnix`) (
