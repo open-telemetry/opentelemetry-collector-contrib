@@ -259,8 +259,8 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 
 - `receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig`: When enabled, the
   `report_extra_scrape_metrics` configuration option is ignored, and extra scrape metrics are
-  controlled solely by the `EnableReportExtraScrapeMetrics` feature gate. This mimics 
-  Prometheus behavior where extra scrape metrics are controlled by a feature flag:
+  controlled solely by the `EnableReportExtraScrapeMetrics` feature gate. The intention is
+  to have extra scrape metrics all the time in the future:
 
 ```shell
 "--feature-gates=receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig"
