@@ -98,13 +98,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	rsLogs := ld.ResourceLogs()
 	rsLen := rsLogs.Len()
 
-	// Prepare statement
-	stmt, err := e.db.PrepareContext(ctx, e.insertSQL)
-	if err != nil {
-		return fmt.Errorf("failed to prepare insert statement: %w", err)
-	}
-	defer stmt.Close()
-
 	for i := range rsLen {
 		logs := rsLogs.At(i)
 		res := logs.Resource()
@@ -142,7 +135,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					timestamp = r.ObservedTimestamp()
 				}
 
-				columnValues := make([]any, 0, 16)
+				columnValues := make([]interface{}, 0, 16)
 				columnValues = append(columnValues,
 					serviceName,
 					timestamp.AsTime(),
@@ -165,7 +158,15 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					columnValues = append(columnValues, r.EventName())
 				}
 
-				_, execErr := stmt.ExecContext(ctx, columnValues...)
+				// Build VALUES clause - replace the VALUES (?, ?, ...) part with actual values
+				// Find the VALUES clause in the SQL
+				valuesStart := strings.Index(e.insertSQL, "VALUES (")
+				if valuesStart == -1 {
+					return fmt.Errorf("failed to find VALUES clause in insert SQL")
+				}
+				// Replace from "VALUES (" onwards with the new VALUES clause
+				insertSQL := e.insertSQL[:valuesStart] + "VALUES " + internal.BuildValuesClause(columnValues)
+				_, execErr := e.db.ExecContext(ctx, insertSQL)
 				if execErr != nil {
 					return fmt.Errorf("failed to execute log insert: %w", execErr)
 				}

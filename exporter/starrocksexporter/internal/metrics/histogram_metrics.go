@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,12 +36,6 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	stmt, err := db.PrepareContext(ctx, h.insertSQL)
-	if err != nil {
-		return fmt.Errorf("failed to prepare histogram insert statement: %w", err)
-	}
-	defer stmt.Close()
-
 	for _, model := range h.histogramModels {
 		resAttrJSON, _ := internal.AttributesToJSON(model.metadata.ResAttr)
 		scopeAttrJSON, _ := internal.AttributesToJSON(model.metadata.ScopeInstr.Attributes())
@@ -54,7 +49,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 			bucketCounts, _ := json.Marshal(dp.BucketCounts().AsRaw())
 			explicitBounds, _ := json.Marshal(dp.ExplicitBounds().AsRaw())
 
-			_, execErr := stmt.ExecContext(ctx,
+			values := []interface{}{
 				serviceName,
 				model.metricName,
 				dp.Timestamp().AsTime(),
@@ -78,7 +73,11 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 				dp.Min(),
 				dp.Max(),
 				int32(model.histogram.AggregationTemporality()),
-			)
+			}
+
+			// Build complete INSERT statement with formatted values
+			insertSQL := strings.Replace(h.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
+			_, execErr := db.ExecContext(ctx, insertSQL)
 			if execErr != nil {
 				return fmt.Errorf("failed to execute histogram metric insert: %w", execErr)
 			}

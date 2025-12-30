@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,12 +36,6 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	stmt, err := db.PrepareContext(ctx, e.insertSQL)
-	if err != nil {
-		return fmt.Errorf("failed to prepare exponential histogram insert statement: %w", err)
-	}
-	defer stmt.Close()
-
 	for _, model := range e.expHistogramModels {
 		resAttrJSON, _ := internal.AttributesToJSON(model.metadata.ResAttr)
 		scopeAttrJSON, _ := internal.AttributesToJSON(model.metadata.ScopeInstr.Attributes())
@@ -54,7 +49,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 			positiveBuckets, _ := json.Marshal(dp.Positive().BucketCounts().AsRaw())
 			negativeBuckets, _ := json.Marshal(dp.Negative().BucketCounts().AsRaw())
 
-			_, execErr := stmt.ExecContext(ctx,
+			values := []interface{}{
 				serviceName,
 				model.metricName,
 				dp.Timestamp().AsTime(),
@@ -82,7 +77,11 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 				dp.Min(),
 				dp.Max(),
 				int32(model.expHistogram.AggregationTemporality()),
-			)
+			}
+
+			// Build complete INSERT statement with formatted values
+			insertSQL := strings.Replace(e.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
+			_, execErr := db.ExecContext(ctx, insertSQL)
 			if execErr != nil {
 				return fmt.Errorf("failed to execute exponential histogram metric insert: %w", execErr)
 			}
