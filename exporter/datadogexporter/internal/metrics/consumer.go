@@ -153,7 +153,7 @@ func (c *Consumer) ConsumeTag(tag string) {
 
 // ConsumeExplicitBoundHistogram implements the metrics.ExplicitBoundHistogramConsumer interface.
 // This is a no-op implementation as we use sketch-based histograms.
-func (c *Consumer) ConsumeExplicitBoundHistogram(
+func (*Consumer) ConsumeExplicitBoundHistogram(
 	_ context.Context,
 	_ *metrics.Dimensions,
 	_ pmetric.HistogramDataPointSlice,
@@ -163,7 +163,7 @@ func (c *Consumer) ConsumeExplicitBoundHistogram(
 
 // ConsumeExponentialHistogram implements the metrics.ExponentialHistogramConsumer interface.
 // This is a no-op implementation as we use sketch-based histograms.
-func (c *Consumer) ConsumeExponentialHistogram(
+func (*Consumer) ConsumeExponentialHistogram(
 	_ context.Context,
 	_ *metrics.Dimensions,
 	_ pmetric.ExponentialHistogramDataPointSlice,
