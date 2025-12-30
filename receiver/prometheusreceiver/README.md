@@ -257,6 +257,15 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 "--feature-gates=receiver.prometheusreceiver.EnableReportExtraScrapeMetrics"
 ```
 
+- `receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig`: When enabled, the
+  `report_extra_scrape_metrics` configuration option is ignored, and extra scrape metrics are
+  controlled solely by the `EnableReportExtraScrapeMetrics` feature gate. The intention is
+  to have extra scrape metrics all the time in the future:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig"
+```
+
 - `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
   and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
   is disabled by default. To enable it, use the following feature gate option:
