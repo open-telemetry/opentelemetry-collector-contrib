@@ -215,8 +215,8 @@ github.com/DataDog/datadog-agent/pkg/util/json v0.76.0-devel h1:SPg44O7veJV5Cq3n
 github.com/DataDog/datadog-agent/pkg/util/json v0.76.0-devel/go.mod h1:f6PEPYJMUcGPqKK6tebCcDxozX5FDNNtL1lJZ2VnCzA=
 github.com/DataDog/datadog-agent/pkg/util/log v0.76.0-devel h1:228x0gYY60MEU++h95sRnbUKWScGBpgHMIfkmwnqKOs=
 github.com/DataDog/datadog-agent/pkg/util/log v0.76.0-devel/go.mod h1:zAlEPBf4UlDMcgKHy7+SZB3J8LEzQxggeqRg6/X2iaI=
-github.com/DataDog/datadog-agent/pkg/util/log/setup v0.73.2 h1:Vu3EilVq73KDl35BOHBTkurSTHpJuYqpkrWE54Cwkt8=
-github.com/DataDog/datadog-agent/pkg/util/log/setup v0.73.2/go.mod h1:G5ZkwaFjeeazIwfDjTyBY8WeRnD4hzFw69RDuzGnDXU=
+github.com/DataDog/datadog-agent/pkg/util/log/setup v0.76.0-devel h1:mG5+HeNEj0pgdOqdO6mYDNvysh/jx9hni+EqBtlqwZk=
+github.com/DataDog/datadog-agent/pkg/util/log/setup v0.76.0-devel/go.mod h1:zwKP6T8sa+jhZLz1msUYKhmX8Eb3Zx17giztwxOPAgE=
 github.com/DataDog/datadog-agent/pkg/util/option v0.76.0-devel h1:gL7K2WyCK5TVa6mjjrtMVtluaJMwGAdOT1JQcK6eG8w=
 github.com/DataDog/datadog-agent/pkg/util/option v0.76.0-devel/go.mod h1:JLnYCbOJcyN5YGL6xlfyYhJVC19BdVb2E/5q9cMW9DU=
 github.com/DataDog/datadog-agent/pkg/util/otel v0.76.0-devel h1:hu+ZuNATr2m6ITHCr5+dQczMOu7fcCSZAy100vsZbTU=
