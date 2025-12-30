@@ -46,16 +46,22 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 
 	if e.cfg.shouldCreateSchema() {
 		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database()); createDBErr != nil {
+			e.db.Close()
+			e.db = nil
 			return createDBErr
 		}
 
 		if createTableErr := createLogsTable(ctx, e.cfg, e.db); createTableErr != nil {
+			e.db.Close()
+			e.db = nil
 			return createTableErr
 		}
 	}
 
 	err = e.detectSchemaFeatures(ctx)
 	if err != nil {
+		e.db.Close()
+		e.db = nil
 		return fmt.Errorf("schema detection: %w", err)
 	}
 
