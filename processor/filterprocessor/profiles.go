@@ -43,6 +43,7 @@ func newFilterProfilesProcessor(set processor.Settings, cfg *Config) (*filterPro
 		if err != nil {
 			return nil, err
 		}
+		fpp.skipResourceExpr = applyActionToExpr(fpp.skipResourceExpr, cfg.Profiles.Action)
 	}
 
 	if cfg.Profiles.ProfileConditions != nil {
@@ -50,6 +51,8 @@ func newFilterProfilesProcessor(set processor.Settings, cfg *Config) (*filterPro
 		if err != nil {
 			return nil, err
 		}
+		fpp.skipProfileExpr = applyActionToExpr(fpp.skipProfileExpr, cfg.Profiles.Action)
+		return fpp, nil
 	}
 
 	return fpp, nil
