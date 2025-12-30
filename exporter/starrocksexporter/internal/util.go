@@ -142,9 +142,28 @@ func FormatSQLValue(v interface{}) string {
 	case float32, float64:
 		return fmt.Sprintf("%g", val)
 	case time.Time:
-		// Format as MySQL datetime
-		return "'" + val.Format("2006-01-02 15:04:05.000000") + "'"
+		// Format as MySQL/StarRocks datetime without timezone
+		// StarRocks requires format: YYYY-MM-DD HH:MM:SS.microseconds (exactly 6 digits)
+		// Convert to UTC and format without timezone info
+		utcTime := val.UTC()
+		// Format with microseconds (6 digits, padded with zeros)
+		microseconds := utcTime.Nanosecond() / 1000
+		formatted := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d.%06d",
+			utcTime.Year(), utcTime.Month(), utcTime.Day(),
+			utcTime.Hour(), utcTime.Minute(), utcTime.Second(),
+			microseconds)
+		return "'" + formatted + "'"
 	default:
+		// Check if it's a *time.Time pointer
+		if t, ok := val.(*time.Time); ok && t != nil {
+			utcTime := t.UTC()
+			microseconds := utcTime.Nanosecond() / 1000
+			formatted := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d.%06d",
+				utcTime.Year(), utcTime.Month(), utcTime.Day(),
+				utcTime.Hour(), utcTime.Minute(), utcTime.Second(),
+				microseconds)
+			return "'" + formatted + "'"
+		}
 		// For unknown types, convert to string and escape
 		str := fmt.Sprintf("%v", val)
 		escaped := strings.ReplaceAll(str, "\\", "\\\\")
