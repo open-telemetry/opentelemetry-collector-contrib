@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -38,12 +39,6 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 
 	processStart := time.Now()
 
-	stmt, err := db.PrepareContext(ctx, g.insertSQL)
-	if err != nil {
-		return fmt.Errorf("failed to prepare gauge insert statement: %w", err)
-	}
-	defer stmt.Close()
-
 	for _, model := range g.gaugeModels {
 		resAttrJSON, _ := internal.AttributesToJSON(model.metadata.ResAttr)
 		scopeAttrJSON, _ := internal.AttributesToJSON(model.metadata.ScopeInstr.Attributes())
@@ -54,7 +49,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 			attrsJSON, _ := internal.AttributesToJSON(dp.Attributes())
 			exemplarsJSON, _ := convertExemplarsJSON(dp.Exemplars())
 
-			_, execErr := stmt.ExecContext(ctx,
+			values := []interface{}{
 				serviceName,
 				model.metricName,
 				dp.Timestamp().AsTime(),
@@ -72,7 +67,11 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 				getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()),
 				uint32(dp.Flags()),
 				exemplarsJSON,
-			)
+			}
+
+			// Build complete INSERT statement with formatted values
+			insertSQL := strings.Replace(g.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
+			_, execErr := db.ExecContext(ctx, insertSQL)
 			if execErr != nil {
 				return fmt.Errorf("failed to execute gauge metric insert: %w", execErr)
 			}

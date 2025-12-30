@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -34,12 +35,6 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	stmt, err := db.PrepareContext(ctx, s.insertSQL)
-	if err != nil {
-		return fmt.Errorf("failed to prepare sum insert statement: %w", err)
-	}
-	defer stmt.Close()
-
 	for _, model := range s.sumModels {
 		resAttrJSON, _ := internal.AttributesToJSON(model.metadata.ResAttr)
 		scopeAttrJSON, _ := internal.AttributesToJSON(model.metadata.ScopeInstr.Attributes())
@@ -50,7 +45,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 			attrsJSON, _ := internal.AttributesToJSON(dp.Attributes())
 			exemplarsJSON, _ := convertExemplarsJSON(dp.Exemplars())
 
-			_, execErr := stmt.ExecContext(ctx,
+			values := []interface{}{
 				serviceName,
 				model.metricName,
 				dp.Timestamp().AsTime(),
@@ -70,7 +65,11 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 				exemplarsJSON,
 				int32(model.sum.AggregationTemporality()),
 				model.sum.IsMonotonic(),
-			)
+			}
+
+			// Build complete INSERT statement with formatted values
+			insertSQL := strings.Replace(s.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
+			_, execErr := db.ExecContext(ctx, insertSQL)
 			if execErr != nil {
 				return fmt.Errorf("failed to execute sum metric insert: %w", execErr)
 			}

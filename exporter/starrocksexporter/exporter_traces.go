@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -66,13 +67,6 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	processStart := time.Now()
 
-	// Prepare statement
-	stmt, err := e.db.PrepareContext(ctx, e.insertSQL)
-	if err != nil {
-		return fmt.Errorf("failed to prepare insert statement: %w", err)
-	}
-	defer stmt.Close()
-
 	var spanCount int
 	rsSpans := td.ResourceSpans()
 	rsLen := rsSpans.Len()
@@ -113,7 +107,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					return fmt.Errorf("failed to convert links: %w", err)
 				}
 
-				_, execErr := stmt.ExecContext(ctx,
+				values := []interface{}{
 					serviceName,
 					span.Name(),
 					span.StartTimestamp().AsTime(),
@@ -131,7 +125,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					spanStatus.Message(),
 					eventsJSON,
 					linksJSON,
-				)
+				}
+
+				// Build complete INSERT statement with formatted values
+				// Replace the VALUES (?, ?, ...) part with actual values
+				insertSQL := strings.Replace(e.insertSQL, "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", "VALUES "+internal.BuildValuesClause(values), 1)
+				_, execErr := e.db.ExecContext(ctx, insertSQL)
 				if execErr != nil {
 					return fmt.Errorf("failed to execute trace insert: %w", execErr)
 				}
