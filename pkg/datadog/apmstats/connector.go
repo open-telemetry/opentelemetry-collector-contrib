@@ -52,6 +52,7 @@ type traceToMetricConnector struct {
 	// from the agent to OTLP Metrics.
 	// We use the deprecated Translator type because it's the only one that provides
 	// the StatsToMetrics method needed for APM stats conversion.
+	//nolint:staticcheck // SA1019: Using deprecated Translator type for StatsToMetrics functionality
 	translator *metrics.Translator
 
 	// statsout specifies the channel through which the agent will output Stats Payloads

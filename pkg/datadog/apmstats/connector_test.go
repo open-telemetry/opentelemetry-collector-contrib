@@ -144,6 +144,7 @@ func fillSpanOne(span ptrace.Span) {
 	status.SetMessage("status-cancelled")
 }
 
+//nolint:staticcheck // SA1019: Using deprecated Translator type for StatsToMetrics functionality
 func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithHistogramMode(otlpmetrics.HistogramModeDistributions),
