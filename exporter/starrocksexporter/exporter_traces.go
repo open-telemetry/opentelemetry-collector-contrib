@@ -37,7 +37,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
-	db, err := e.cfg.buildStarRocksDB()
+	db, err := GetDBClient(e.cfg)
 	if err != nil {
 		return err
 	}
@@ -45,13 +45,13 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 
 	if e.cfg.shouldCreateSchema() {
 		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database()); err != nil {
-			e.db.Close()
+			ReleaseDBClient(e.cfg)
 			e.db = nil
 			return err
 		}
 
 		if err := createTraceTables(ctx, e.cfg, e.db); err != nil {
-			e.db.Close()
+			ReleaseDBClient(e.cfg)
 			e.db = nil
 			return err
 		}
@@ -62,7 +62,9 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 
 func (e *tracesExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
-		return e.db.Close()
+		err := ReleaseDBClient(e.cfg)
+		e.db = nil
+		return err
 	}
 
 	return nil
