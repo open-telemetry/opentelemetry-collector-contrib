@@ -45,10 +45,14 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 
 	if e.cfg.shouldCreateSchema() {
 		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database()); err != nil {
+			e.db.Close()
+			e.db = nil
 			return err
 		}
 
 		if err := createTraceTables(ctx, e.cfg, e.db); err != nil {
+			e.db.Close()
+			e.db = nil
 			return err
 		}
 	}

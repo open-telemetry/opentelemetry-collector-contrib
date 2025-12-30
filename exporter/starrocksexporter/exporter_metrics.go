@@ -46,11 +46,15 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	if e.cfg.shouldCreateSchema() {
 		database := e.cfg.database()
 		if err := internal.CreateDatabase(ctx, e.db, database); err != nil {
+			e.db.Close()
+			e.db = nil
 			return err
 		}
 
 		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, e.db)
 		if err != nil {
+			e.db.Close()
+			e.db = nil
 			return err
 		}
 	}
