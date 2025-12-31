@@ -58,9 +58,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 
 	cms := new(consumertest.MetricsSink)
 	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   false,
-		StartTimeMetricRegex: "",
+		PrometheusConfig: cfg,
 	}, cms)
 	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 

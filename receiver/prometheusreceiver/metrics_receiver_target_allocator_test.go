@@ -65,8 +65,7 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &Config{
-		PrometheusConfig:     (*PromConfig)(pCfg),
-		StartTimeMetricRegex: "",
+		PrometheusConfig: (*PromConfig)(pCfg),
 		TargetAllocator: configoptional.Some(targetallocator.Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: tas.srv.URL,
