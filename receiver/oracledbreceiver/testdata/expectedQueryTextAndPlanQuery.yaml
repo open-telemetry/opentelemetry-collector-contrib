@@ -82,6 +82,15 @@ resourceLogs:
               - key: oracledb.user_io_wait_time
                 value:
                   doubleValue: 2e-05
+              - key: oracledb.procedure_id
+                value:
+                  intValue: "98765"
+              - key: oracledb.procedure_name
+                value:
+                  stringValue: ADMIN.MY_PROCEDURE
+              - key: oracledb.procedure_type
+                value:
+                  stringValue: PROCEDURE
             body: {}
             eventName: db.server.top_query
             timeUnixNano: "1759142512777891000"
