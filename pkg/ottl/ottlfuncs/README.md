@@ -454,6 +454,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 
 - [Base64Decode](#base64decode)
+- [Bool](#bool)
 - [Decode](#decode)
 - [CommunityID](#communityid)
 - [Concat](#concat)
@@ -559,6 +560,36 @@ Examples:
 
 
 - `Base64Decode(resource.attributes["encoded field"])`
+
+### Bool
+
+`Bool(value)`
+
+The `Bool` Converter converts the `value` to a bool type.
+
+The returned type is `bool`.
+
+The accepted input `value` types are:
+
+- `bool`: Returns the value without changes.
+- `float64`: Returns `true` if non-zero, otherwise `false`.
+- `int64`: Returns `true` if non-zero, otherwise `false`.
+- `string`: Tries to parse a boolean from the string. It returns `true` for "1", "t", "T", "true", "TRUE", or "True"; returns `false` for "0", "f", "F", "false", "FALSE" or "False".
+- `nil`: Returns `nil`.
+
+If `value` is another type or parsing failed, `nil` is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Bool(log.attributes["truthy_attribute"])`
+
+
+- `Bool("true")`
+
+
+- `Bool("0")`
 
 ### Decode
 
