@@ -57,7 +57,18 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 
 	_ = v.OnKey("attributes")
 	_ = v.OnObjectStart(-1, structform.AnyType)
+
+	// Deduplicate keys to workaround non-compliant SDKs.
+	// It is better to drop duplicate keys than to produce invalid JSON which may cause the entire document to be rejected.
+	seenKeys := make(map[string]struct{})
+
 	for k, val := range attributes.All() {
+		// Skip duplicate keys
+		if _, exists := seenKeys[k]; exists {
+			continue
+		}
+		seenKeys[k] = struct{}{}
+
 		// Exclude well-known, Elastic-specific attributes
 		// from the document. These are handled elsewhere.
 		switch k {
