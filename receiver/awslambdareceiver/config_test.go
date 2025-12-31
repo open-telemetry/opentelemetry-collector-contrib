@@ -57,6 +57,15 @@ func TestLoadConfig(t *testing.T) {
 				CloudWatch: sharedConfig{},
 			},
 		},
+		{
+			name:              "Config with failure bucket ARN",
+			componentIDToLoad: component.NewIDWithName(metadata.Type, "with_failure_arn"),
+			expected: &Config{
+				S3:               sharedConfig{},
+				CloudWatch:       sharedConfig{},
+				FailureBucketARN: "arn:aws:s3:::example",
+			},
+		},
 	}
 
 	for _, tt := range tests {
