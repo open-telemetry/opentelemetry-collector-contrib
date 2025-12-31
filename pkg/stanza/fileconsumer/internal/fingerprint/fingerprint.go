@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"unsafe"
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
@@ -35,6 +36,7 @@ var DecompressedFingerprintFeatureGate = featuregate.GlobalRegistry().MustRegist
 // A file's fingerprint is the first N bytes of the file
 type Fingerprint struct {
 	firstBytes []byte
+	key        string
 }
 
 func New(first []byte) *Fingerprint {
@@ -75,11 +77,24 @@ func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logge
 func (f Fingerprint) Copy() *Fingerprint {
 	buf := make([]byte, len(f.firstBytes), cap(f.firstBytes))
 	n := copy(buf, f.firstBytes)
-	return New(buf[:n])
+	return &Fingerprint{
+		firstBytes: buf[:n],
+	}
 }
 
 func (f *Fingerprint) Len() int {
 	return len(f.firstBytes)
+}
+
+// Key returns a string representation of the fingerprint bytes.
+func (f *Fingerprint) Key() string {
+	if f == nil || len(f.firstBytes) == 0 {
+		return ""
+	}
+	if f.key == "" {
+		f.key = bytesToString(f.firstBytes)
+	}
+	return f.key
 }
 
 // Equal returns true if the fingerprints have the same FirstBytes,
@@ -134,4 +149,12 @@ func (f *Fingerprint) UnmarshalJSON(data []byte) error {
 
 type marshal struct {
 	FirstBytes []byte `json:"first_bytes"`
+}
+
+// bytesToString converts bytes to string without copying.
+func bytesToString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.SliceData(b), len(b))
 }
