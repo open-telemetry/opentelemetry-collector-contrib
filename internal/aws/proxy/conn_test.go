@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -23,8 +22,9 @@ import (
 var ec2Region = "us-west-2"
 
 type mock struct {
-	getEC2RegionErr error
-	cfg             aws.Config
+	getEC2RegionErr             error
+	getRegionFromEC2MetadataErr error
+	cfg                         aws.Config
 }
 
 func (m *mock) getEC2Region(_ context.Context, _ aws.Config) (string, error) {
@@ -38,6 +38,13 @@ func (m *mock) newAWSConfig(_ context.Context, _, _ string, _ *zap.Logger) (aws.
 	return m.cfg, nil
 }
 
+func (m *mock) getRegionFromEC2Metadata(_ context.Context, _ *zap.Logger) (string, error) {
+	if m.getRegionFromEC2MetadataErr != nil {
+		return "", m.getRegionFromEC2MetadataErr
+	}
+	return ec2Region, nil
+}
+
 func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 	core, recorded := observer.New(zapcore.DebugLevel)
 	return zap.New(core), recorded
@@ -46,21 +53,26 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 func setupMock(cfg aws.Config) (
 	f1 func(ctx context.Context, cfg aws.Config) (string, error),
 	f2 func(ctx context.Context, roleArn, region string, logger *zap.Logger) (aws.Config, error),
+	f3 func(ctx context.Context, logger *zap.Logger) (string, error),
 ) {
 	f1 = getEC2Region
 	f2 = newAWSConfig
+	f3 = getRegionFromEC2Metadata
 	m := mock{cfg: cfg}
 	getEC2Region = m.getEC2Region
 	newAWSConfig = m.newAWSConfig
-	return f1, f2
+	getRegionFromEC2Metadata = m.getRegionFromEC2Metadata
+	return f1, f2, f3
 }
 
 func tearDownMock(
 	f1 func(ctx context.Context, cfg aws.Config) (string, error),
 	f2 func(ctx context.Context, roleArn, region string, logger *zap.Logger) (aws.Config, error),
+	f3 func(ctx context.Context, logger *zap.Logger) (string, error),
 ) {
 	getEC2Region = f1
 	newAWSConfig = f2
+	getRegionFromEC2Metadata = f3
 }
 
 // fetch region value from environment variable
@@ -71,8 +83,8 @@ func TestRegionFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", region)
 
 	expectedCfg := aws.Config{Region: region}
-	f1, f2 := setupMock(expectedCfg)
-	defer tearDownMock(f1, f2)
+	f1, f2, f3 := setupMock(expectedCfg)
+	defer tearDownMock(f1, f2, f3)
 
 	awsCfg, err := getAWSConfigSession(t.Context(), DefaultConfig(), logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
@@ -90,8 +102,8 @@ func TestRegionFromConfig(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
 	expectedCfg := aws.Config{}
-	f1, f2 := setupMock(expectedCfg)
-	defer tearDownMock(f1, f2)
+	f1, f2, f3 := setupMock(expectedCfg)
+	defer tearDownMock(f1, f2, f3)
 
 	cfgWithRegion := DefaultConfig()
 	cfgWithRegion.Region = "ap-northeast-1"
@@ -117,8 +129,8 @@ func TestRegionFromECS(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
 	expectedCfg := aws.Config{}
-	f1, f2 := setupMock(expectedCfg)
-	defer tearDownMock(f1, f2)
+	f1, f2, f3 := setupMock(expectedCfg)
+	defer tearDownMock(f1, f2, f3)
 
 	awsCfg, err := getAWSConfigSession(t.Context(), DefaultConfig(), logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
@@ -141,8 +153,8 @@ func TestRegionFromECSInvalidArn(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
 	expectedCfg := aws.Config{}
-	f1, f2 := setupMock(expectedCfg)
-	defer tearDownMock(f1, f2)
+	f1, f2, f3 := setupMock(expectedCfg)
+	defer tearDownMock(f1, f2, f3)
 
 	_, err := getAWSConfigSession(t.Context(), DefaultConfig(), logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
@@ -173,8 +185,8 @@ func TestRegionFromEC2(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
 	expectedCfg := aws.Config{}
-	f1, f2 := setupMock(expectedCfg)
-	defer tearDownMock(f1, f2)
+	f1, f2, f3 := setupMock(expectedCfg)
+	defer tearDownMock(f1, f2, f3)
 
 	awsCfg, err := getAWSConfigSession(t.Context(), DefaultConfig(), logger)
 	assert.NoError(t, err, "getAWSConfigSession should not error out")
@@ -194,12 +206,12 @@ func TestNoRegion(t *testing.T) {
 
 	logger, recordedLogs := logSetup()
 	m := mock{
-		getEC2RegionErr: errors.New("expected getEC2Region error"),
+		getRegionFromEC2MetadataErr: errors.New("expected getEC2Region error"),
 	}
-	f1 := getEC2Region
-	getEC2Region = m.getEC2Region
+	f1 := getRegionFromEC2Metadata
+	getRegionFromEC2Metadata = m.getRegionFromEC2Metadata
 	defer func() {
-		getEC2Region = f1
+		getRegionFromEC2Metadata = f1
 	}()
 
 	_, err := getAWSConfigSession(t.Context(), DefaultConfig(), logger)
@@ -210,7 +222,7 @@ func TestNoRegion(t *testing.T) {
 	assert.Contains(t, lastEntry.Message, "Unable to fetch region from EC2 metadata", "expected log message")
 	assert.EqualError(t,
 		lastEntry.Context[0].Interface.(error),
-		m.getEC2RegionErr.Error(), "expected error")
+		m.getRegionFromEC2MetadataErr.Error(), "expected error")
 }
 
 // getRegionFromECSMetadata() returns an error if ECS metadata related env is not set
@@ -251,6 +263,7 @@ func TestLoadEnvConfigCreds(t *testing.T) {
 			"AWS_ACCESS_KEY_ID":     "AKID",
 			"AWS_SECRET_ACCESS_KEY": "SECRET",
 			"AWS_SESSION_TOKEN":     "TOKEN",
+			"AWS_REGION":            "us-east-1",
 		},
 		Val: aws.Credentials{
 			AccessKeyID: "AKID", SecretAccessKey: "SECRET", SessionToken: "TOKEN",
@@ -273,36 +286,6 @@ func TestLoadEnvConfigCreds(t *testing.T) {
 
 	_, err = newAWSConfig(t.Context(), "ROLEARN", "TEST", zap.NewNop())
 	assert.ErrorContains(t, err, "unable to handle AWS error", "expected error message")
-}
-
-func TestGetProxyUrlProxyAddressNotValid(t *testing.T) {
-	errorAddress := [3]string{"http://[%10::1]", "http://%41:8080/", "http://a b.com/"}
-	for _, address := range errorAddress {
-		_, err := getProxyURL(address)
-		assert.Error(t, err, "expected error")
-	}
-}
-
-func TestGetProxyAddressFromEnvVariable(t *testing.T) {
-	t.Setenv(httpsProxyEnvVar, "https://127.0.0.1:8888")
-
-	assert.Equal(t, os.Getenv(httpsProxyEnvVar), getProxyAddress(""), "Expect function return value should be same with Environment value")
-}
-
-func TestGetProxyAddressFromConfigFile(t *testing.T) {
-	const expectedAddr = "https://127.0.0.1:8888"
-
-	assert.Equal(t, expectedAddr, getProxyAddress("https://127.0.0.1:8888"), "Expect function return value should be same with input value")
-}
-
-func TestGetProxyAddressWhenNotExist(t *testing.T) {
-	assert.Empty(t, getProxyAddress(""), "Expect function return value to be empty")
-}
-
-func TestGetProxyAddressPriority(t *testing.T) {
-	t.Setenv(httpsProxyEnvVar, "https://127.0.0.1:8888")
-
-	assert.Equal(t, "https://127.0.0.1:9999", getProxyAddress("https://127.0.0.1:9999"), "Expect function return value to be same with input")
 }
 
 func TestGetPartition(t *testing.T) {

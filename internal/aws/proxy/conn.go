@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -35,8 +34,6 @@ const (
 	awsDefaultRegionEnvVar            = "AWS_DEFAULT_REGION"
 	ecsContainerMetadataEnabledEnvVar = "ECS_ENABLE_CONTAINER_METADATA"
 	ecsMetadataFileEnvVar             = "ECS_CONTAINER_METADATA_FILE"
-
-	httpsProxyEnvVar = "HTTPS_PROXY"
 
 	stsEndpointPrefix = "https://sts."
 
@@ -206,36 +203,13 @@ func getRegionFromMetadata(ctx context.Context, logger *zap.Logger) (string, err
 }
 
 // getRegionFromEC2Metadata fetches region from EC2 Instance Metadata Service.
-func getRegionFromEC2Metadata(ctx context.Context, logger *zap.Logger) (string, error) {
+var getRegionFromEC2Metadata = func(ctx context.Context, logger *zap.Logger) (string, error) {
 	tempSettings := &awsutil.AWSSessionSettings{}
 	tempCfg, err := awsutil.GetAWSConfig(ctx, logger, tempSettings)
 	if err != nil {
 		return "", err
 	}
 	return getEC2Region(ctx, tempCfg)
-}
-
-func getProxyAddress(proxyAddress string) string {
-	if proxyAddress != "" {
-		return proxyAddress
-	}
-	if os.Getenv(httpsProxyEnvVar) != "" {
-		return os.Getenv(httpsProxyEnvVar)
-	}
-	return ""
-}
-
-func getProxyURL(proxyAddress string) (*url.URL, error) {
-	var proxyURL *url.URL
-	var err error
-	if proxyAddress != "" {
-		proxyURL, err = url.Parse(proxyAddress)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse proxy URL: %w", err)
-		}
-		return proxyURL, nil
-	}
-	return nil, nil
 }
 
 func getRegionFromECSMetadata() (string, error) {
@@ -270,8 +244,8 @@ func proxyServerTransport(cfg *Config) (*http.Transport, error) {
 		InsecureSkipVerify: cfg.TLS.Insecure,
 	}
 
-	proxyAddr := getProxyAddress(cfg.ProxyAddress)
-	proxyURL, err := getProxyURL(proxyAddr)
+	proxyAddr := awsutil.GetProxyAddress(cfg.ProxyAddress)
+	proxyURL, err := awsutil.GetProxyURL(proxyAddr)
 	if err != nil {
 		return nil, err
 	}
