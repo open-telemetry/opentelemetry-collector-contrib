@@ -25,12 +25,12 @@ func (t testProvider) Source(context.Context) (source.Source, error) {
 	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
 }
 
-func newTranslator(t *testing.T, logger *zap.Logger) *metrics.Translator {
+func newTranslator(t *testing.T, logger *zap.Logger) metrics.Provider {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = logger
 	attributesTranslator, err := attributes.NewTranslator(set)
 	require.NoError(t, err)
-	tr, err := metrics.NewTranslator(set,
+	tr, err := metrics.NewDefaultTranslator(set,
 		attributesTranslator,
 		metrics.WithHistogramMode(metrics.HistogramModeDistributions),
 		metrics.WithNumberMode(metrics.NumberModeCumulativeToDelta),

@@ -1,0 +1,81 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/441fcba2-0b42-4269-b8b8-52f7c1cfb5d7/RESOURCEGROUPS/FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/FRONTDOOR-PROFILE
+        - key: cloud.region
+          value:
+            stringValue: global
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: Recommendation
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Advisor/recommendations/available/action
+              - key: azure.operation.version
+                value:
+                  stringValue: "2017-03-31"
+              - key: azure.result.type
+                value:
+                  stringValue: Active
+              - key: azure.result.signature
+                value:
+                  stringValue: Succeeded
+              - key: azure.result.description
+                value:
+                  stringValue: A new recommendation is available.
+              - key: network.peer.address
+                value:
+                  stringValue: 0.0.0.0
+              - key: azure.correlation_id
+                value:
+                  stringValue: 91e76397-5361-49bc-b814-a346a1761bb3
+              - key: azure.operation.duration
+                value:
+                  intValue: "10"
+              - key: azure.identity
+                value:
+                  kvlistValue:
+                    values:
+                      - key: claims
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress
+                                value:
+                                  stringValue: Microsoft.Advisor
+              - key: azure.recommendation.category
+                value:
+                  stringValue: HighAvailability
+              - key: azure.recommendation.impact
+                value:
+                  stringValue: High
+              - key: azure.recommendation.name
+                value:
+                  stringValue: Consider having at least two origins
+              - key: azure.recommendation.type
+                value:
+                  stringValue: 589ab0b0-1362-44fd-8551-0e7847767600
+              - key: azure.recommendation.schema_version
+                value:
+                  stringValue: "1.0"
+              - key: azure.recommendation.link
+                value:
+                  stringValue: https://portal.azure.com/#blade/Microsoft_Azure_Expert/RecommendationListBlade/source/ActivityLog/recommendationTypeId/589ab0b0-1362-44fd-8551-0e7847767600/resourceId/%2Fsubscriptions%2F441fcba2-0b42-4269-b8b8-52f7c1cfb5d7%2Fresourcegroups%2Fjohn-doe-frontdoor%2Fproviders%2FMicrosoft.Cdn%2Fprofiles%2Fjohn-doe-frontdoor-profile
+            body: {}
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1745503906421669000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
