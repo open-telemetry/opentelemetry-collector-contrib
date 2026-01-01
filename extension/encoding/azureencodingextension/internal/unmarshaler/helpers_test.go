@@ -176,6 +176,15 @@ func TestAttrPutStrIf(t *testing.T) {
 			wantRaw: map[string]any{},
 		},
 		{
+			name:  "Dash string",
+			attrs: pcommon.NewMap(),
+			args: args{
+				key:   "attr1",
+				value: unknownField,
+			},
+			wantRaw: map[string]any{},
+		},
+		{
 			name:  "Value string",
 			attrs: pcommon.NewMap(),
 			args: args{
@@ -198,6 +207,7 @@ func TestAttrPutStrIf(t *testing.T) {
 
 func TestAttrPutStrPtrIf(t *testing.T) {
 	emptyStr := ""
+	dashStr := unknownField
 	valueStr := "value"
 
 	type args struct {
@@ -222,6 +232,14 @@ func TestAttrPutStrPtrIf(t *testing.T) {
 			args: args{
 				key:   "attr2",
 				value: &emptyStr,
+			},
+			wantRaw: map[string]any{},
+		},
+		{
+			name: "Dash string",
+			args: args{
+				key:   "attr2",
+				value: &dashStr,
 			},
 			wantRaw: map[string]any{},
 		},
@@ -354,6 +372,132 @@ func TestAttrPutIntNumberPtrIf(t *testing.T) {
 	}
 }
 
+func TestAttrPutFloatNumberIf(t *testing.T) {
+	t.Parallel()
+
+	type testNumStruct struct {
+		Value json.Number `json:"value"`
+	}
+
+	tests := []struct {
+		name      string
+		inputJSON string
+		wantRaw   map[string]any
+	}{
+		{
+			name:      "string int value",
+			inputJSON: `{"value": "3"}`,
+			wantRaw: map[string]any{
+				"value": float64(3),
+			},
+		},
+		{
+			name:      "int value",
+			inputJSON: `{"value": 10}`,
+			wantRaw: map[string]any{
+				"value": float64(10),
+			},
+		},
+		{
+			name:      "string float value",
+			inputJSON: `{"value": "3.14"}`,
+			wantRaw: map[string]any{
+				"value": float64(3.14),
+			},
+		},
+		{
+			name:      "float value",
+			inputJSON: `{"value": 2.71}`,
+			wantRaw: map[string]any{
+				"value": float64(2.71),
+			},
+		},
+		{
+			name:      "nil value",
+			inputJSON: `{"novalue": 15}`,
+			wantRaw:   map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ts testNumStruct
+			err := json.Unmarshal([]byte(tt.inputJSON), &ts)
+			require.NoError(t, err)
+
+			got := pcommon.NewMap()
+			AttrPutFloatNumberIf(got, "value", ts.Value)
+			want := pcommon.NewMap()
+			err = want.FromRaw(tt.wantRaw)
+			require.NoError(t, err)
+			assert.Equal(t, want.AsRaw(), got.AsRaw())
+		})
+	}
+}
+
+func TestAttrPutFloatNumberPtrIf(t *testing.T) {
+	t.Parallel()
+
+	type testNumStruct struct {
+		Value *json.Number `json:"value"`
+	}
+
+	tests := []struct {
+		name      string
+		inputJSON string
+		wantRaw   map[string]any
+	}{
+		{
+			name:      "string int value",
+			inputJSON: `{"value": "3"}`,
+			wantRaw: map[string]any{
+				"value": float64(3),
+			},
+		},
+		{
+			name:      "int value",
+			inputJSON: `{"value": 10}`,
+			wantRaw: map[string]any{
+				"value": float64(10),
+			},
+		},
+		{
+			name:      "string float value",
+			inputJSON: `{"value": "3.14"}`,
+			wantRaw: map[string]any{
+				"value": float64(3.14),
+			},
+		},
+		{
+			name:      "float value",
+			inputJSON: `{"value": 2.71}`,
+			wantRaw: map[string]any{
+				"value": float64(2.71),
+			},
+		},
+		{
+			name:      "nil value",
+			inputJSON: `{"novalue": 15}`,
+			wantRaw:   map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ts testNumStruct
+			err := json.Unmarshal([]byte(tt.inputJSON), &ts)
+			require.NoError(t, err)
+
+			got := pcommon.NewMap()
+			AttrPutFloatNumberPtrIf(got, "value", ts.Value)
+			want := pcommon.NewMap()
+			err = want.FromRaw(tt.wantRaw)
+			require.NoError(t, err)
+			assert.Equal(t, want.AsRaw(), got.AsRaw())
+		})
+	}
+}
+
 func TestAttrPutMapIf(t *testing.T) {
 	t.Parallel()
 
@@ -403,7 +547,7 @@ func TestAttrPutMapIf(t *testing.T) {
 				},
 			},
 			wantRaw: map[string]any{
-				"map.original": "map[struct:{test}]",
+				"map_original": "map[struct:{test}]",
 			},
 		},
 	}
@@ -412,6 +556,194 @@ func TestAttrPutMapIf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := pcommon.NewMap()
 			AttrPutMapIf(got, tt.args.attrKey, tt.args.attrValue)
+			want := pcommon.NewMap()
+			err := want.FromRaw(tt.wantRaw)
+			require.NoError(t, err)
+			assert.Equal(t, want.AsRaw(), got.AsRaw())
+		})
+	}
+}
+
+func TestAttrPutURLParsed(t *testing.T) {
+	tests := []struct {
+		name      string
+		uri       string
+		wantAttrs map[string]any
+	}{
+		{
+			name:      "empty uri",
+			uri:       "",
+			wantAttrs: map[string]any{},
+		},
+		{
+			name: "invalid url",
+			uri:  "://bad-url",
+			wantAttrs: map[string]any{
+				"url.original": "://bad-url",
+			},
+		},
+		{
+			name: "url with invalid port",
+			uri:  "http://example.com:abc/path",
+			wantAttrs: map[string]any{
+				"url.original": "http://example.com:abc/path",
+			},
+		},
+		{
+			name: "simple http url",
+			uri:  "http://example.com/path?query=1#frag",
+			wantAttrs: map[string]any{
+				"url.full":     "http://example.com/path?query=1#frag",
+				"url.scheme":   "http",
+				"url.domain":   "example.com",
+				"url.path":     "/path",
+				"url.query":    "query=1",
+				"url.fragment": "frag",
+			},
+		},
+		{
+			name: "url with port",
+			uri:  "https://example.com:8080/path",
+			wantAttrs: map[string]any{
+				"url.full":   "https://example.com:8080/path",
+				"url.scheme": "https",
+				"url.domain": "example.com",
+				"url.path":   "/path",
+				"url.port":   int64(8080),
+			},
+		},
+		{
+			name: "url with credentials",
+			uri:  "ftp://user:pass@example.com/resource",
+			wantAttrs: map[string]any{
+				"url.full":   "ftp://REDACTED:REDACTED@example.com/resource",
+				"url.scheme": "ftp",
+				"url.domain": "example.com",
+				"url.path":   "/resource",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := pcommon.NewMap()
+			AttrPutURLParsed(got, tt.uri)
+			want := pcommon.NewMap()
+			err := want.FromRaw(tt.wantAttrs)
+			require.NoError(t, err)
+			assert.Equal(t, want.AsRaw(), got.AsRaw())
+		})
+	}
+}
+
+func TestAttrPutHostPortIf(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		addrKey string
+		portKey string
+		value   string
+		wantRaw map[string]any
+	}{
+		{
+			name:    "empty value",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "",
+			wantRaw: map[string]any{},
+		},
+		{
+			name:    "host only",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "example.com",
+			wantRaw: map[string]any{
+				"network.peer.address": "example.com",
+			},
+		},
+		{
+			name:    "host with valid port",
+			addrKey: "destination.address",
+			portKey: "destination.port",
+			value:   "example.com:443",
+			wantRaw: map[string]any{
+				"destination.address": "example.com",
+				"destination.port":    int64(443),
+			},
+		},
+		{
+			name:    "custom attribute names",
+			addrKey: "address",
+			portKey: "port",
+			value:   "example.com:443",
+			wantRaw: map[string]any{
+				"address": "example.com",
+				"port":    int64(443),
+			},
+		},
+		{
+			name:    "host with invalid port",
+			addrKey: "client.address",
+			portKey: "client.port",
+			value:   "example.com:invalid",
+			wantRaw: map[string]any{
+				attributeClientAddressOriginal: "example.com:invalid",
+			},
+		},
+		{
+			name:    "IPv6 with port",
+			addrKey: "server.address",
+			portKey: "server.port",
+			value:   "[2001:db8::1]:8080",
+			wantRaw: map[string]any{
+				"server.address": "2001:db8::1",
+				"server.port":    int64(8080),
+			},
+		},
+		{
+			name:    "IPv6 without port",
+			addrKey: "network.local.address",
+			portKey: "network.local.port",
+			value:   "[2001:db8::1]",
+			wantRaw: map[string]any{
+				"network.local.address": "[2001:db8::1]",
+			},
+		},
+		{
+			name:    "IPv6 without port and brackets",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "2001:1c00:3280:6700:fbfa:bf04:1296:ebfc",
+			wantRaw: map[string]any{
+				"network.peer.address": "2001:1c00:3280:6700:fbfa:bf04:1296:ebfc",
+			},
+		},
+		{
+			name:    "host with empty port",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "example.com:",
+			wantRaw: map[string]any{
+				attributeNetworkPeerAddressOriginal: "example.com:",
+			},
+		},
+		{
+			name:    "host with negative port",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "example.com:-1",
+			wantRaw: map[string]any{
+				"network.peer.address": "example.com",
+				"network.peer.port":    int64(-1),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := pcommon.NewMap()
+			AttrPutHostPortIf(got, tt.addrKey, tt.portKey, tt.value)
 			want := pcommon.NewMap()
 			err := want.FromRaw(tt.wantRaw)
 			require.NoError(t, err)

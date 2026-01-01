@@ -6,7 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
-	github.com/jackc/pgx/v5 v5.7.6
+	github.com/jackc/pgx/v5 v5.8.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	go.opentelemetry.io/collector/component v1.48.1-0.20251223191316-a9aaa99a1214
@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.142.1-0.20251223191316-a9aaa99a1214
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
-	modernc.org/sqlite v1.41.0
+	modernc.org/sqlite v1.42.2
 )
 
 require (

@@ -144,6 +144,7 @@ func fillSpanOne(span ptrace.Span) {
 	status.SetMessage("status-cancelled")
 }
 
+//nolint:staticcheck // SA1019: Using deprecated Translator type for StatsToMetrics functionality
 func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithHistogramMode(otlpmetrics.HistogramModeDistributions),
@@ -158,6 +159,9 @@ func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []b
 
 	attributesTranslator, err := attributes.NewTranslator(set)
 	require.NoError(t, err)
+	// We use the deprecated NewTranslator because the new NewDefaultTranslator
+	// doesn't provide the StatsToMetrics method which is required for APM stats conversion.
+	//nolint:staticcheck // SA1019: Using deprecated NewTranslator for StatsToMetrics functionality
 	tr, err := otlpmetrics.NewTranslator(
 		set,
 		attributesTranslator,
