@@ -1,0 +1,23 @@
+{
+  "records": [
+    {
+      "time": "2024-04-24T12:06:12.0000000Z",
+      "resourceId": "/SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP",
+      "category": "AppServiceAppLogs",
+      "operationName": "AppLog",
+      "Level": "Critical",
+      "properties": {
+        "ContainerId": "CONTAINER_ID",
+        "CustomLevel": "CUSTOM_LEVEL",
+        "ExceptionClass": "EXCEPTION_CLASS",
+        "Host": "HOST",
+        "Logger": "LOGGER",
+        "Message": "MESSAGE",
+        "Method": "METHOD",
+        "Source": "FILEPATH",
+        "Stacktrace": "STACKTRACE",
+        "WebSiteInstanceId": "WEBSITE_INSTANCE_ID"
+      }
+    }
+  ]
+}
