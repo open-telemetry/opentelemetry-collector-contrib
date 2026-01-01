@@ -227,6 +227,8 @@ func (m *mockProfilesServer) Export(ctx context.Context, req pprofileotlp.Export
 		return pprofileotlp.NewExportResponse(), errors.New("invalid authorization header")
 	}
 
+	assertAcceptEncodingGzip(m.t, md)
+
 	// Count individual profiles instead of resource profiles
 	for _, rp := range req.Profiles().ResourceProfiles().All() {
 		for _, sp := range rp.ScopeProfiles().All() {
