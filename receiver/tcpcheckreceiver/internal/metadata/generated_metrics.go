@@ -132,7 +132,7 @@ type metricTcpcheckError struct {
 func (m *metricTcpcheckError) init() {
 	m.data.SetName("tcpcheck.error")
 	m.data.SetDescription("Records errors occurring during TCP check.")
-	m.data.SetUnit("{error}")
+	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
