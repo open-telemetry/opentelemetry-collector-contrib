@@ -139,6 +139,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 
 				if insertLogError != nil {
 					e.logger.Error("insert log error", zap.Error(insertLogError))
+					return insertLogError
 				}
 			}
 		}
