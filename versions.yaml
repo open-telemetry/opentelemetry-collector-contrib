@@ -10,6 +10,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
@@ -178,11 +179,11 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
-      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
