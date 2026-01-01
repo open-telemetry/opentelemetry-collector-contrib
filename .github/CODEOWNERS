@@ -184,7 +184,6 @@ pkg/translator/azurelogs/                                        @open-telemetry
 pkg/translator/faro/                                             @open-telemetry/collector-contrib-approvers @mar4uk @rlankfo
 pkg/translator/jaeger/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
 pkg/translator/loki/                                             @open-telemetry/collector-contrib-approvers @gouthamve @mar4uk
-pkg/translator/opencensus/                                       @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/pprof/                                            @open-telemetry/collector-contrib-approvers @florianl
 pkg/translator/prometheus/                                       @open-telemetry/collector-contrib-approvers @dashpole @bertysentry @ArthurSens
 pkg/translator/prometheusremotewrite/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
