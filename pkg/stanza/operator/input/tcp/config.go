@@ -14,6 +14,7 @@ import (
 	"github.com/jpillora/backoff"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/otel/metric"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
@@ -72,6 +73,11 @@ type BaseConfig struct {
 	SplitConfig      split.Config            `mapstructure:"multiline,omitempty"`
 	TrimConfig       trim.Config             `mapstructure:",squash"`
 	SplitFuncBuilder SplitFuncBuilder        `mapstructure:"-"`
+	Metrics          MetricsConfig           `mapstructure:"metrics,omitempty"`
+}
+
+type MetricsConfig struct {
+	Enabled bool `mapstructure:"enabled,omitempty"`
 }
 
 type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
@@ -122,8 +128,41 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	splitFunc = trim.WithFunc(splitFunc, c.TrimConfig.Func())
 
 	var resolver *helper.IPResolver
-	if c.AddAttributes {
+	if c.AddAttributes || c.Metrics.Enabled {
 		resolver = helper.NewIPResolver()
+	}
+
+	var (
+		metricPayloadSize        metric.Int64Histogram
+		metricConnectionsCreated metric.Int64Counter
+		metricConnectionsClosed  metric.Int64Counter
+	)
+
+	if c.Metrics.Enabled {
+		meter := set.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp")
+		if metricPayloadSize, err = meter.Int64Histogram(
+			"otelcol_tcplog_receiver_payload_size_bytes",
+			metric.WithDescription("Size of the payload size received by the tcp log receiver"),
+			metric.WithUnit("bytes"),
+			metric.WithExplicitBucketBoundaries(64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
+				524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728), // 64 bytes to 128MB
+		); err != nil {
+			return nil, err
+		}
+
+		if metricConnectionsCreated, err = meter.Int64Counter(
+			"otelcol_tcplog_receiver_connections_created_total",
+			metric.WithDescription("Total number of connections created by the tcp log receiver"),
+		); err != nil {
+			return nil, err
+		}
+
+		if metricConnectionsClosed, err = meter.Int64Counter(
+			"otelcol_tcplog_receiver_connections_closed_total",
+			metric.WithDescription("Total number of connections closed by the tcp log receiver"),
+		); err != nil {
+			return nil, err
+		}
 	}
 
 	tcpInput := &Input{
@@ -138,6 +177,10 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 			Max: 3 * time.Second,
 		},
 		resolver: resolver,
+
+		metricPayloadSize:        metricPayloadSize,
+		metricConnectionsCreated: metricConnectionsCreated,
+		metricConnectionsClosed:  metricConnectionsClosed,
 	}
 
 	if c.TLS != nil {

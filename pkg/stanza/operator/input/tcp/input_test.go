@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -88,6 +90,10 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*Input)
 		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+		require.Nil(t, tcpInput.metricConnectionsCreated, "metricConnectionsCreated should be nil when metrics are disabled")
+		require.Nil(t, tcpInput.metricConnectionsClosed, "metricConnectionsClosed should be nil when metrics are disabled")
+		require.Nil(t, tcpInput.metricPayloadSize, "metricPayloadSize should be nil when metrics are disabled")
 
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -163,18 +169,12 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 				expectedAttributes := map[string]any{
 					"net.transport": "IP.TCP",
 				}
-				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-					ip := addr.IP.String()
-					expectedAttributes["net.host.ip"] = addr.IP.String()
-					expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.host.name"] = tcpInput.resolver.GetHostFromIP(ip)
-				}
-				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-					ip := addr.IP.String()
-					expectedAttributes["net.peer.ip"] = ip
-					expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.peer.name"] = tcpInput.resolver.GetHostFromIP(ip)
-				}
+				expectedAttributes["net.host.ip"],
+					expectedAttributes["net.host.port"],
+					expectedAttributes["net.host.name"] = tcpInput.getAddrAttributes(conn.RemoteAddr())
+				expectedAttributes["net.peer.ip"],
+					expectedAttributes["net.peer.port"],
+					expectedAttributes["net.peer.name"] = tcpInput.getAddrAttributes(conn.LocalAddr())
 				require.Equal(t, expectedMessage, entry.Body)
 				require.Equal(t, expectedAttributes, entry.Attributes)
 			case <-time.After(time.Second):
@@ -259,6 +259,84 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
+	}
+}
+
+func tcpInputMetricsTest(input []byte, expected []string) func(t *testing.T) {
+	return func(t *testing.T) {
+		cfg := NewConfigWithID("test_id")
+		cfg.ListenAddress = ":0"
+		cfg.Metrics.Enabled = true
+
+		tt := componenttest.NewTelemetry()
+		set := tt.NewTelemetrySettings()
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		mockOutput := testutil.Operator{}
+		tcpInput := op.(*Input)
+		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+		entryChan := make(chan *entry.Entry, 1)
+		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			entryChan <- args.Get(1).(*entry.Entry)
+		}).Return(nil)
+
+		checkCounterMetricValue := func(metricName string, expectedValue int64) {
+			metricObj, errM := tt.GetMetric(metricName)
+			require.NoError(t, errM)
+			require.NotNil(t, metricObj)
+
+			data := metricObj.Data.(metricdata.Sum[int64])
+			require.Equal(t, expectedValue, data.DataPoints[0].Value, "metric %s has unexpected value", metricName)
+		}
+
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+		require.NoError(t, err)
+		defer func() {
+			require.NoError(t, tcpInput.Stop(), "expected to stop tcp input operator without error")
+			checkCounterMetricValue("otelcol_tcplog_receiver_connections_closed_total", 1)
+		}()
+
+		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		require.NotNil(t, tcpInput.metricConnectionsCreated, "metricConnectionsCreated should be initialized")
+		require.NotNil(t, tcpInput.metricConnectionsClosed, "metricConnectionsClosed should be initialized")
+		require.NotNil(t, tcpInput.metricPayloadSize, "metricPayloadSize should be initialized")
+
+		_, err = conn.Write(input)
+		require.NoError(t, err)
+
+		for _, expectedMessage := range expected {
+			select {
+			case entry := <-entryChan:
+				require.Equal(t, expectedMessage, entry.Body)
+			case <-time.After(time.Second):
+				require.FailNow(t, "Timed out waiting for message to be written")
+			}
+		}
+
+		select {
+		case entry := <-entryChan:
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
+		case <-time.After(100 * time.Millisecond):
+			break
+		}
+
+		// Check payload size metric value
+		{
+			metricObj, err := tt.GetMetric("otelcol_tcplog_receiver_payload_size_bytes")
+			require.NoError(t, err)
+			require.NotNil(t, metricObj)
+
+			data := metricObj.Data.(metricdata.Histogram[int64])
+			require.Equal(t, uint64(1), data.DataPoints[0].Count, "metric otelcol_tcplog_receiver_payload_size_bytes has unexpected count")
+			require.Equal(t, int64(len(strings.TrimSpace(string(input)))), data.DataPoints[0].Sum, "metric otelcol_tcplog_receiver_payload_size_bytes has unexpected sum")
+		}
+
+		checkCounterMetricValue("otelcol_tcplog_receiver_connections_created_total", 1)
 	}
 }
 
@@ -373,6 +451,11 @@ func TestTCPInputAattributes(t *testing.T) {
 func TestTLSTCPInput(t *testing.T) {
 	t.Run("Simple", tlsInputTest([]byte("message\n"), []string{"message"}))
 	t.Run("CarriageReturn", tlsInputTest([]byte("message\r\n"), []string{"message"}))
+}
+
+func TestTCPInputMetrics(t *testing.T) {
+	t.Run("Simple", tcpInputMetricsTest([]byte("message\n"), []string{"message"}))
+	t.Run("CarriageReturn", tcpInputMetricsTest([]byte("message\r\n"), []string{"message"}))
 }
 
 func TestFailToBind(t *testing.T) {

@@ -17,6 +17,8 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -42,6 +44,10 @@ type Input struct {
 	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
+
+	metricPayloadSize        metric.Int64Histogram
+	metricConnectionsCreated metric.Int64Counter
+	metricConnectionsClosed  metric.Int64Counter
 }
 
 // Start will start listening for log entries over tcp.
@@ -78,7 +84,7 @@ func (i *Input) configureListener() error {
 	return nil
 }
 
-// goListenn will listen for tcp connections.
+// goListen will listen for tcp connections.
 func (i *Input) goListen(ctx context.Context) {
 	i.wg.Add(1)
 
@@ -100,6 +106,13 @@ func (i *Input) goListen(ctx context.Context) {
 			i.backoff.Reset()
 
 			i.Logger().Debug("Received connection", zap.String("address", conn.RemoteAddr().String()))
+
+			if i.metricConnectionsCreated != nil {
+				_, _, remoteHostname := i.getAddrAttributes(conn.RemoteAddr())
+				hostAttr := attribute.KeyValue{Key: "client.address", Value: attribute.StringValue(remoteHostname)}
+				i.metricConnectionsCreated.Add(ctx, 1, metric.WithAttributes(hostAttr))
+			}
+
 			subctx, cancel := context.WithCancel(ctx)
 			i.goHandleClose(subctx, conn)
 			i.goHandleMessages(subctx, conn, cancel)
@@ -117,11 +130,17 @@ func (i *Input) goHandleClose(ctx context.Context, conn net.Conn) {
 		i.Logger().Debug("Closing connection", zap.String("address", conn.RemoteAddr().String()))
 		if err := conn.Close(); err != nil {
 			i.Logger().Error("Failed to close connection", zap.Error(err))
+			return
+		}
+		if i.metricConnectionsClosed != nil {
+			_, _, remoteHostname := i.getAddrAttributes(conn.RemoteAddr())
+			hostAttr := attribute.KeyValue{Key: "client.address", Value: attribute.StringValue(remoteHostname)}
+			i.metricConnectionsClosed.Add(ctx, 1, metric.WithAttributes(hostAttr))
 		}
 	}()
 }
 
-// goHandleMessages will handles messages from a tcp connection.
+// goHandleMessages will handle messages from a tcp connection.
 func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel context.CancelFunc) {
 	i.wg.Add(1)
 
@@ -159,6 +178,9 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 }
 
 func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.Decoder, log []byte) {
+	if i.metricPayloadSize != nil {
+		i.metricPayloadSize.Record(ctx, int64(len(log)))
+	}
 	decoded, err := textutils.DecodeAsString(dec, log)
 	if err != nil {
 		i.Logger().Error("Failed to decode data", zap.Error(err))
@@ -173,18 +195,16 @@ func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.
 
 	if i.addAttributes {
 		entry.AddAttribute("net.transport", "IP.TCP")
-		if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-			ip := addr.IP.String()
+		if ip, port, name := i.getAddrAttributes(conn.RemoteAddr()); ip != "" {
 			entry.AddAttribute("net.peer.ip", ip)
-			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
+			entry.AddAttribute("net.peer.port", port)
+			entry.AddAttribute("net.peer.name", name)
 		}
 
-		if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.host.ip", addr.IP.String())
-			entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
+		if ip, port, name := i.getAddrAttributes(conn.LocalAddr()); ip != "" {
+			entry.AddAttribute("net.host.ip", ip)
+			entry.AddAttribute("net.host.port", port)
+			entry.AddAttribute("net.host.name", name)
 		}
 	}
 
@@ -192,6 +212,16 @@ func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.
 	if err != nil {
 		i.Logger().Error("Failed to write entry", zap.Error(err))
 	}
+}
+
+func (i *Input) getAddrAttributes(addr net.Addr) (ip, port, name string) {
+	if tcpAddr, ok := addr.(*net.TCPAddr); ok {
+		ip = tcpAddr.IP.String()
+		port = strconv.FormatInt(int64(tcpAddr.Port), 10)
+		name = i.resolver.GetHostFromIP(tcpAddr.IP.String())
+		return ip, port, name
+	}
+	return "", "", ""
 }
 
 func truncateMaxLog(data []byte, maxLogSize int) (token []byte) {
