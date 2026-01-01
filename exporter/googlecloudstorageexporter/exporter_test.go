@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/googleapi"
 )
@@ -83,7 +84,7 @@ func TestNewStorageExporter(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			gcsExporter, err := newStorageExporter(t.Context(), test.cfg, test.getZone, test.getProjectID, zap.NewNop())
+			gcsExporter, err := newStorageExporter(t.Context(), test.cfg, test.getZone, test.getProjectID, zap.NewNop(), signalTypeLogs)
 			if test.expectsErr != "" {
 				require.ErrorContains(t, err, test.expectsErr)
 				return
@@ -102,10 +103,12 @@ func TestStart(t *testing.T) {
 
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
+	encodingLogsOnlyID := "id_logs_only"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
 			component.MustNewID(encodingFailsID):    nil,
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
+			component.MustNewID(encodingLogsOnlyID): &mockLogMarshaler{},
 		},
 	}
 
@@ -120,20 +123,32 @@ func TestStart(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
 		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
+		require.Equal(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
 	})
 
 	gcsExporter.cfg.Encoding = &id
-	t.Run("encoding id not present", func(t *testing.T) {
+	t.Run("encoding id not present - falls back to JSON", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
-		require.ErrorContains(t, err, "unknown extension")
+		require.NoError(t, err)
+		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
 	})
 
 	id = component.MustNewID(encodingFailsID)
 
 	gcsExporter.cfg.Encoding = &id
-	t.Run("encoding id not a logs marshaler", func(t *testing.T) {
+	t.Run("encoding id not a logs marshaler - falls back to JSON", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
-		require.ErrorContains(t, err, "is not a logs marshaler")
+		require.NoError(t, err)
+		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
+	})
+
+	id = component.MustNewID(encodingLogsOnlyID)
+	gcsExporter.cfg.Encoding = &id
+	t.Run("encoding id only logs marshaler", func(t *testing.T) {
+		err := gcsExporter.Start(t.Context(), mHost)
+		require.NoError(t, err)
+		require.IsType(t, &mockLogMarshaler{}, gcsExporter.logsMarshaler)
+		require.IsType(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
 	})
 
 	id = component.MustNewID(encodingSucceedsID)
@@ -166,7 +181,7 @@ func TestUploadFile(t *testing.T) {
 	encodingSucceedsID := "id_success"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
 		},
 	}
 	id := component.MustNewID(encodingSucceedsID)
@@ -197,7 +212,7 @@ func TestConsumeLogs(t *testing.T) {
 	encodingSucceedsID := "id_success"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
 		},
 	}
 	id := component.MustNewID(encodingSucceedsID)
@@ -215,6 +230,71 @@ func TestConsumeLogs(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestConsumeTraces(t *testing.T) {
+	uploadBucketName := "upload-bucket"
+	newTestStorageEmulator(t, "", uploadBucketName)
+
+	encodingSucceedsID := "id_success"
+	mHost := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
+		},
+	}
+	id := component.MustNewID(encodingSucceedsID)
+	gcsExporter := newTestGCSExporter(t, &Config{
+		Bucket: bucketConfig{
+			Name: uploadBucketName,
+		},
+		Encoding: &id,
+	})
+
+	errStart := gcsExporter.Start(t.Context(), mHost)
+	require.NoError(t, errStart)
+
+	err := gcsExporter.ConsumeTraces(t.Context(), ptrace.NewTraces())
+	require.NoError(t, err)
+}
+
+func TestConsumeTracesWithLogsOnlyEncoding(t *testing.T) {
+	uploadBucketName := "upload-bucket"
+	newTestStorageEmulator(t, "", uploadBucketName)
+
+	encodingLogsOnlyID := "id_logs_only"
+	mHost := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.MustNewID(encodingLogsOnlyID): &mockLogMarshaler{},
+		},
+	}
+	id := component.MustNewID(encodingLogsOnlyID)
+	// Create a traces exporter with logs-only encoding
+	exp, err := newStorageExporter(
+		t.Context(),
+		&Config{
+			Bucket: bucketConfig{
+				Name: uploadBucketName,
+			},
+			Encoding: &id,
+		},
+		func(_ context.Context) (string, error) {
+			return "test", nil
+		},
+		func(_ context.Context) (string, error) {
+			return "test", nil
+		},
+		zap.NewNop(),
+		signalTypeTraces,
+	)
+	require.NoError(t, err)
+
+	errStart := exp.Start(t.Context(), mHost)
+	require.NoError(t, errStart)
+	// Should fall back to JSON marshaler for traces
+	require.IsType(t, &ptrace.JSONMarshaler{}, exp.tracesMarshaler)
+
+	err = exp.ConsumeTraces(t.Context(), ptrace.NewTraces())
+	require.NoError(t, err)
+}
+
 func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
 	exp, err := newStorageExporter(
 		t.Context(),
@@ -226,6 +306,7 @@ func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
 			return "test", nil
 		},
 		zap.NewNop(),
+		signalTypeLogs,
 	)
 	require.NoError(t, err)
 	return exp
@@ -287,3 +368,30 @@ func (*mockLogMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
 }
 
 var _ plog.Marshaler = (*mockLogMarshaler)(nil)
+
+type mockTraceMarshaler struct {
+	extension.Extension
+}
+
+func (*mockTraceMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return nil, nil
+}
+
+var _ ptrace.Marshaler = (*mockTraceMarshaler)(nil)
+
+type mockBothMarshaler struct {
+	extension.Extension
+}
+
+func (*mockBothMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	return nil, nil
+}
+
+func (*mockBothMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return nil, nil
+}
+
+var (
+	_ plog.Marshaler   = (*mockBothMarshaler)(nil)
+	_ ptrace.Marshaler = (*mockBothMarshaler)(nil)
+)

@@ -16,24 +16,38 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/googleapi"
 )
 
 type storageExporter struct {
-	cfg           *Config
-	logsMarshaler plog.Marshaler
-	storageClient *storage.Client
-	bucketHandle  *storage.BucketHandle
-	logger        *zap.Logger
+	cfg             *Config
+	logsMarshaler   plog.Marshaler
+	tracesMarshaler ptrace.Marshaler
+	storageClient   *storage.Client
+	bucketHandle    *storage.BucketHandle
+	logger          *zap.Logger
+	signal          signalType
 }
 
-var _ exporter.Logs = (*storageExporter)(nil)
+var (
+	_ exporter.Logs   = (*storageExporter)(nil)
+	_ exporter.Traces = (*storageExporter)(nil)
+)
+
+type signalType string
+
+const (
+	signalTypeLogs   signalType = "logs"
+	signalTypeTraces signalType = "traces"
+)
 
 func newGCSExporter(
 	ctx context.Context,
 	cfg *Config,
 	logger *zap.Logger,
+	signal signalType,
 ) (*storageExporter, error) {
 	return newStorageExporter(
 		ctx,
@@ -41,6 +55,7 @@ func newGCSExporter(
 		metadata.ZoneWithContext,
 		metadata.ProjectIDWithContext,
 		logger,
+		signal,
 	)
 }
 
@@ -50,6 +65,7 @@ func newStorageExporter(
 	getZone func(context.Context) (string, error),
 	getProjectID func(context.Context) (string, error),
 	logger *zap.Logger,
+	signal signalType,
 ) (*storageExporter, error) {
 	errMsg := "failed to determine %s: not set in exporter config '%s' and unable to retrieve from metadata: %w"
 
@@ -70,6 +86,7 @@ func newStorageExporter(
 	return &storageExporter{
 		cfg:    cfg,
 		logger: logger,
+		signal: signal,
 	}, nil
 }
 
@@ -83,12 +100,25 @@ func isBucketConflictError(err error) bool {
 
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
 	s.logsMarshaler = &plog.JSONMarshaler{}
+	s.tracesMarshaler = &ptrace.JSONMarshaler{}
+
 	if s.cfg.Encoding != nil {
-		encoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
-		if err != nil {
-			return fmt.Errorf("failed to load logs extension: %w", err)
+		switch s.signal {
+		case signalTypeLogs:
+			logsEncoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
+			if err != nil {
+				s.logger.Warn("Failed to load logs encoding extension, using default JSON marshaler", zap.Error(err))
+			} else {
+				s.logsMarshaler = logsEncoding
+			}
+		case signalTypeTraces:
+			tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler")
+			if err != nil {
+				s.logger.Warn("Failed to load traces encoding extension, using default JSON marshaler", zap.Error(err))
+			} else {
+				s.tracesMarshaler = tracesEncoding
+			}
 		}
-		s.logsMarshaler = encoding
 	}
 
 	// TODO Add option for authenticator
@@ -135,6 +165,18 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	if err = s.uploadFile(ctx, buf); err != nil {
 		return fmt.Errorf("failed to upload logs: %w", err)
+	}
+	return nil
+}
+
+func (s *storageExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	buf, err := s.tracesMarshaler.MarshalTraces(td)
+	if err != nil {
+		return fmt.Errorf("failed to marshal traces: %w", err)
+	}
+
+	if err = s.uploadFile(ctx, buf); err != nil {
+		return fmt.Errorf("failed to upload traces: %w", err)
 	}
 	return nil
 }
