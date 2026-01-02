@@ -215,9 +215,7 @@ func parseLEEFAttributes(attributes, delimiter string) map[string]any {
 	result := make(map[string]any)
 
 	// Split by delimiter to get key=value pairs
-	pairs := strings.Split(attributes, delimiter)
-
-	for _, pair := range pairs {
+	for pair := range strings.SplitSeq(attributes, delimiter) {
 		pair = strings.TrimSpace(pair)
 		if pair == "" {
 			continue
