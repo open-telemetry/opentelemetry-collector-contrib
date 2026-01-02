@@ -1538,7 +1538,6 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 		}
 	}
 
-	// The merged final result is our new merged config.
 	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
 	if err != nil {
 		return false, err
