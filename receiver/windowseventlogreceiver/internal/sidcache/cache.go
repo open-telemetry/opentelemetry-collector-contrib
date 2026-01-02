@@ -161,7 +161,6 @@ func isSIDFormat(sid string) bool {
 // Used by the receiver to identify which fields need resolution
 func IsSIDField(fieldName string) bool {
 	// Common SID field patterns in Windows events
-	return len(fieldName) >= 3 && (
-		fieldName[len(fieldName)-3:] == "Sid" || // ends with "Sid"
+	return len(fieldName) >= 3 && (fieldName[len(fieldName)-3:] == "Sid" || // ends with "Sid"
 		fieldName == "UserID") // exact match for security.user_id
 }

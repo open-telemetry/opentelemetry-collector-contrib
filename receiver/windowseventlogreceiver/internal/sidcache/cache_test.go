@@ -84,13 +84,13 @@ func TestWellKnownSIDs(t *testing.T) {
 	defer cache.Close()
 
 	tests := []struct {
-		name            string
-		sid             string
-		expectName      string
-		expectDomain    string
-		expectUsername  string
-		expectType      string
-		expectError     bool
+		name           string
+		sid            string
+		expectName     string
+		expectDomain   string
+		expectUsername string
+		expectType     string
+		expectError    bool
 	}{
 		{
 			name:           "SYSTEM",

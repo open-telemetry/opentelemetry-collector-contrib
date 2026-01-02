@@ -28,12 +28,12 @@ import (
 var (
 	modadvapi32 = windows.NewLazySystemDLL("advapi32.dll")
 	// LsaLookupSids2 is more efficient than LsaLookupSids and returns better format
-	procLsaLookupSids2       = modadvapi32.NewProc("LsaLookupSids2")
-	procLsaFreeMemory        = modadvapi32.NewProc("LsaFreeMemory")
-	procLsaClose             = modadvapi32.NewProc("LsaClose")
-	procLsaOpenPolicy        = modadvapi32.NewProc("LsaOpenPolicy")
+	procLsaLookupSids2        = modadvapi32.NewProc("LsaLookupSids2")
+	procLsaFreeMemory         = modadvapi32.NewProc("LsaFreeMemory")
+	procLsaClose              = modadvapi32.NewProc("LsaClose")
+	procLsaOpenPolicy         = modadvapi32.NewProc("LsaOpenPolicy")
 	procConvertStringSidToSid = modadvapi32.NewProc("ConvertStringSidToSidW")
-	procLocalFree            = windows.NewLazySystemDLL("kernel32.dll").NewProc("LocalFree")
+	procLocalFree             = windows.NewLazySystemDLL("kernel32.dll").NewProc("LocalFree")
 )
 
 // LSA constants
@@ -86,9 +86,9 @@ type lsaTrustInformation struct {
 
 // LSA_TRANSLATED_NAME structure
 type lsaTranslatedName struct {
-	Use          uint32
-	Name         lsaUnicodeString
-	DomainIndex  int32
+	Use         uint32
+	Name        lsaUnicodeString
+	DomainIndex int32
 }
 
 // lookupSID performs a Windows LSA lookup for the given SID string
