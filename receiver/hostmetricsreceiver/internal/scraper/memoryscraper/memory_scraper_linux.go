@@ -63,7 +63,33 @@ func (s *memoryScraper) recordLinuxMemoryDirtyMetric(now pcommon.Timestamp, memI
 	s.mb.RecordSystemLinuxMemoryDirtyDataPoint(now, int64(memInfo.Dirty))
 }
 
+func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
+	// Record page size in bytes
+	s.mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(now, int64(memInfo.HugePageSize*1024)) // convert from kB to bytes
+
+	// Record limit (total huge pages available) in number of pages
+	s.mb.RecordSystemMemoryLinuxHugepagesLimitDataPoint(now, int64(memInfo.HugePagesTotal))
+
+	// Calculate used pages
+	hugePagesUsed := int64(memInfo.HugePagesTotal - memInfo.HugePagesFree)
+
+	// Record usage with state attributes in number of pages
+	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesFree), metadata.AttributeSystemMemoryLinuxHugepagesStateFree)
+	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, hugePagesUsed, metadata.AttributeSystemMemoryLinuxHugepagesStateUsed)
+	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesRsvd), metadata.AttributeSystemMemoryLinuxHugepagesStateReserved)
+	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesSurp), metadata.AttributeSystemMemoryLinuxHugepagesStateSurplus)
+
+	// Record utilization with state attributes as percentage
+	if memInfo.HugePagesTotal != 0 {
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesFree)/float64(memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateFree)
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(hugePagesUsed)/float64(memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateUsed)
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesRsvd)/float64(memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateReserved)
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesSurp)/float64(memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateSurplus)
+	}
+}
+
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
 	s.recordLinuxMemoryAvailableMetric(now, memInfo)
 	s.recordLinuxMemoryDirtyMetric(now, memInfo)
+	s.recordLinuxHugePagesMetrics(now, memInfo)
 }
