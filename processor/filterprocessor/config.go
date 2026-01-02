@@ -426,7 +426,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 	var errors error
 
 	if len(cfg.TraceConditions) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()), common.WithTraceErrorMode(cfg.ErrorMode))
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(cfg.spanFunctions), common.WithSpanEventParser(cfg.spanEventFunctions), common.WithTraceErrorMode(cfg.ErrorMode))
 		if err != nil {
 			return err
 		}
