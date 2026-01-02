@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
@@ -212,7 +214,7 @@ func TestHubWrapperAzeventhubImpl_Namespace(t *testing.T) {
 			config: &Config{
 				Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=abc+AEhE+b8yI=;EntityPath=main",
 			},
-			expectedNS: "test.servicebus.windows.net",
+			expectedNS: "test",
 		},
 		{
 			name: "invalid connection string",
@@ -233,9 +235,13 @@ func TestHubWrapperAzeventhubImpl_Namespace(t *testing.T) {
 		},
 	}
 
-	namespace, err := mockHubWrapper.namespace()
-	require.NoError(t, err)
-	assert.Equal(t, "test", namespace)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockHubWrapper := &hubWrapperAzeventhubImpl{
+				hub:     &mockAzeventHub{},
+				config:  tc.config,
+				storage: nil,
+			}
 
 			namespace, err := mockHubWrapper.namespace()
 			if tc.expectedErrContains != "" {
@@ -420,4 +426,90 @@ func TestStartPos(t *testing.T) {
 			require.Equal(t, *test.expectedOffset, *startPos.Offset)
 		}
 	}
+}
+
+func TestCreateConsumerClient(t *testing.T) {
+	authID := component.MustNewID("azureauth")
+	logger := zap.NewNop()
+
+	testCases := []struct {
+		name                string
+		config              *Config
+		host                component.Host
+		expectedErrContains string
+	}{
+		{
+			name: "success with auth",
+			config: &Config{
+				Auth: &authID,
+				EventHub: EventHubConfig{
+					Namespace: "test.servicebus.windows.net",
+					Name:      "hub",
+				},
+			},
+			host: &mockHost{
+				ext: map[component.ID]component.Component{
+					authID: &mockTokenCredential{},
+				},
+			},
+		},
+		{
+			name: "missing auth extension",
+			config: &Config{
+				Auth: &authID,
+			},
+			host: &mockHost{
+				ext: map[component.ID]component.Component{},
+			},
+			expectedErrContains: "failed to resolve auth extension",
+		},
+		{
+			name: "invalid auth extension type",
+			config: &Config{
+				Auth: &authID,
+			},
+			host: &mockHost{
+				ext: map[component.ID]component.Component{
+					authID: &mockHost{}, // not a TokenCredential
+				},
+			},
+			expectedErrContains: "does not implement azcore.TokenCredential",
+		},
+		{
+			name: "connection string path",
+			config: &Config{
+				Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub",
+			},
+			host: componenttest.NewNopHost(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := createConsumerClient(tc.config, tc.host, "group", logger)
+			if tc.expectedErrContains != "" {
+				require.ErrorContains(t, err, tc.expectedErrContains)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+type mockTokenCredential struct {
+	component.Component
+}
+
+func (*mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	return azcore.AccessToken{Token: "test", ExpiresOn: time.Now().Add(time.Hour)}, nil
+}
+
+type mockHost struct {
+	component.Component
+	ext map[component.ID]component.Component
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return m.ext
 }
