@@ -10,6 +10,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -75,7 +76,7 @@ func TestScraper(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -128,7 +129,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 		cfg.Metrics.PostgresqlWalDelay.Enabled = false
@@ -153,7 +154,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err = golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -206,7 +207,7 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -259,7 +260,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 		fmt.Println(actualMetrics.ResourceMetrics())
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -313,7 +314,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -366,7 +367,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -394,7 +395,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -481,7 +482,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 }
 
@@ -614,7 +615,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
 	// golden.WriteLogs(t, expectedFile, actualLogs)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 
 	// Verify the cache has updated with latest counter
@@ -967,4 +968,32 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}
 		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
 	}
+}
+
+func TestGetInstanceId(t *testing.T) {
+	localhostName, _ := os.Hostname()
+
+	instanceString := "example.com:5432"
+	instanceID := getInstanceID(instanceString, zap.NewNop())
+	assert.Equal(t, "example.com:5432", instanceID)
+
+	localHostStringUppercase := "Localhost:5432"
+	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	localHostString := "127.0.0.1:5432"
+	localInstanceID = getInstanceID(localHostString, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	localHostStringIPV6 := "[::1]:5432"
+	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	hostNameErrorSample := ""
+	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, "unknown:5432", localInstanceID)
 }
