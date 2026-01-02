@@ -47,9 +47,17 @@ func epSyncCheckerOption(checker initialSyncChecker) epClientOption {
 	}
 }
 
+func disableEndpointInformers() epClientOption {
+	return func(e *epClient) {
+		e.disableInformers = true
+	}
+}
+
 type epClient struct {
 	stopChan chan struct{}
 	store    *ObjStore
+
+	disableInformers bool
 
 	stopped bool
 
@@ -135,7 +143,9 @@ func newEpClient(clientSet kubernetes.Interface, logger *zap.Logger, options ...
 	lw := c.createEndpointListWatch(clientSet, metav1.NamespaceAll)
 	reflector := cache.NewReflector(lw, &discoveryv1.EndpointSlice{}, c.store, 0)
 
-	go reflector.Run(c.stopChan)
+	if !c.disableInformers {
+		go reflector.Run(c.stopChan)
+	}
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue

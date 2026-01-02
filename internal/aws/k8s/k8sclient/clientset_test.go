@@ -12,14 +12,19 @@ import (
 )
 
 func TestGetShutdown(t *testing.T) {
-	t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43918")
+	// Reset singleton cache to ensure clean test state
+	optionsToK8sClient = map[string]*K8sClient{}
+
 	tmpConfigPath := setKubeConfigPath(t)
+
 	k8sClient := Get(
 		zap.NewNop(),
 		KubeConfigPath(tmpConfigPath),
 		InitSyncPollInterval(10*time.Nanosecond),
 		InitSyncPollTimeout(20*time.Nanosecond),
+		DisableInformers(), 
 	)
+
 	assert.Len(t, optionsToK8sClient, 1)
 	assert.NotNil(t, k8sClient.GetClientSet())
 	assert.NotNil(t, k8sClient.GetEpClient())
@@ -27,12 +32,15 @@ func TestGetShutdown(t *testing.T) {
 	assert.NotNil(t, k8sClient.GetNodeClient())
 	assert.NotNil(t, k8sClient.GetPodClient())
 	assert.NotNil(t, k8sClient.GetReplicaSetClient())
+
 	k8sClient.Shutdown()
+
 	assert.Nil(t, k8sClient.ep)
 	assert.Nil(t, k8sClient.job)
 	assert.Nil(t, k8sClient.node)
 	assert.Nil(t, k8sClient.pod)
 	assert.Nil(t, k8sClient.replicaSet)
 	assert.Empty(t, optionsToK8sClient)
+
 	removeTempKubeConfig()
 }

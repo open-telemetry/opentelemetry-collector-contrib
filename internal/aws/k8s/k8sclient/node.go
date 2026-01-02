@@ -40,9 +40,18 @@ func nodeSyncCheckerOption(checker initialSyncChecker) nodeClientOption {
 	}
 }
 
+func disableNodeInformers() nodeClientOption {
+	return func(n *nodeClient) {
+		n.disableInformers = true
+	}
+}
+
 type nodeClient struct {
 	stopChan chan struct{}
 	store    *ObjStore
+
+	// disableInformers prevents starting informers (used by tests)
+	disableInformers bool
 
 	stopped     bool
 	syncChecker initialSyncChecker
@@ -118,7 +127,9 @@ func newNodeClient(clientSet kubernetes.Interface, logger *zap.Logger, options .
 
 	lw := createNodeListWatch(clientSet)
 	reflector := cache.NewReflector(lw, &v1.Node{}, c.store, 0)
-	go reflector.Run(c.stopChan)
+	if !c.disableInformers {
+		go reflector.Run(c.stopChan)
+	}
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue

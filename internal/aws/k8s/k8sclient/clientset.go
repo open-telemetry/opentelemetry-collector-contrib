@@ -135,6 +135,17 @@ func Get(logger *zap.Logger, options ...Option) *K8sClient {
 	return optionsToK8sClient[strOptions]
 }
 
+// DisableInformers prevents starting Kubernetes informers.
+// Intended for unit tests that only validate client lifecycle.
+func DisableInformers() Option {
+	return Option{
+		name: "disableInformers",
+		set: func(kc *K8sClient) {
+			kc.disableInformers = true
+		},
+	}
+}
+
 type epClientWithStopper interface {
 	EpClient
 	stopper
@@ -164,6 +175,8 @@ type K8sClient struct {
 	kubeConfigPath       string
 	initSyncPollInterval time.Duration
 	initSyncPollTimeout  time.Duration
+
+	disableInformers bool
 
 	clientSet kubernetes.Interface
 
@@ -233,10 +246,20 @@ func (c *K8sClient) init(logger *zap.Logger, options ...Option) error {
 
 func (c *K8sClient) GetEpClient() EpClient {
 	c.epMu.Lock()
+	defer c.epMu.Unlock()
+
 	if c.ep == nil {
-		c.ep = newEpClient(c.clientSet, c.logger, epSyncCheckerOption(c.syncChecker))
+		opts := []epClientOption{
+			epSyncCheckerOption(c.syncChecker),
+		}
+
+		if c.disableInformers {
+			opts = append(opts, disableEndpointInformers())
+		}
+
+		c.ep = newEpClient(c.clientSet, c.logger, opts...)
 	}
-	c.epMu.Unlock()
+
 	return c.ep
 }
 
@@ -248,10 +271,24 @@ func (c *K8sClient) ShutdownEpClient() {
 
 func (c *K8sClient) GetPodClient() PodClient {
 	c.podMu.Lock()
+	defer c.podMu.Unlock()
+
 	if c.pod == nil {
-		c.pod = newPodClient(c.clientSet, c.logger, podSyncCheckerOption(c.syncChecker))
+		opts := []podClientOption{
+			podSyncCheckerOption(c.syncChecker),
+		}
+
+		if c.disableInformers {
+			opts = append(opts, disablePodInformers())
+		}
+
+		c.pod = newPodClient(
+			c.clientSet,
+			c.logger,
+			opts...,
+		)
 	}
-	c.podMu.Unlock()
+
 	return c.pod
 }
 
@@ -263,10 +300,16 @@ func (c *K8sClient) ShutdownPodClient() {
 
 func (c *K8sClient) GetNodeClient() NodeClient {
 	c.nodeMu.Lock()
+	defer c.nodeMu.Unlock()
 	if c.node == nil {
-		c.node = newNodeClient(c.clientSet, c.logger, nodeSyncCheckerOption(c.syncChecker))
+		opts := []nodeClientOption{
+			nodeSyncCheckerOption(c.syncChecker),
+		}
+		if c.disableInformers {
+			opts = append(opts, disableNodeInformers())
+		}
+		c.node = newNodeClient(c.clientSet, c.logger, opts...)
 	}
-	c.nodeMu.Unlock()
 	return c.node
 }
 
@@ -279,14 +322,20 @@ func (c *K8sClient) ShutdownNodeClient() {
 func (c *K8sClient) GetJobClient() JobClient {
 	var err error
 	c.jobMu.Lock()
+	defer c.jobMu.Unlock()
 	if c.job == nil {
-		c.job, err = newJobClient(c.clientSet, c.logger, jobSyncCheckerOption(c.syncChecker))
+		opts := []jobClientOption{
+			jobSyncCheckerOption(c.syncChecker),
+		}
+		if c.disableInformers {
+			opts = append(opts, disableJobInformers())
+		}
+		c.job, err = newJobClient(c.clientSet, c.logger, opts...)
 		if err != nil {
 			c.logger.Error("use an no-op job client instead because of error", zap.Error(err))
 			c.job = &noOpJobClient{}
 		}
 	}
-	c.jobMu.Unlock()
 	return c.job
 }
 
@@ -299,14 +348,20 @@ func (c *K8sClient) ShutdownJobClient() {
 func (c *K8sClient) GetReplicaSetClient() ReplicaSetClient {
 	var err error
 	c.rsMu.Lock()
+	defer c.rsMu.Unlock()
 	if c.replicaSet == nil || reflect.ValueOf(c.replicaSet).IsNil() {
-		c.replicaSet, err = newReplicaSetClient(c.clientSet, c.logger, replicaSetSyncCheckerOption(c.syncChecker))
+		opts := []replicaSetClientOption{
+			replicaSetSyncCheckerOption(c.syncChecker),
+		}
+		if c.disableInformers {
+			opts = append(opts, disableReplicaSetInformers())
+		}
+		c.replicaSet, err = newReplicaSetClient(c.clientSet, c.logger, opts...)
 		if err != nil {
 			c.logger.Error("use an no-op replica set client instead because of error", zap.Error(err))
 			c.replicaSet = &noOpReplicaSetClient{}
 		}
 	}
-	c.rsMu.Unlock()
 	return c.replicaSet
 }
 
