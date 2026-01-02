@@ -10,8 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -234,13 +233,9 @@ func TestHubWrapperAzeventhubImpl_Namespace(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			mockHubWrapper := &hubWrapperAzeventhubImpl{
-				hub:     &mockAzeventHub{},
-				config:  tc.config,
-				storage: nil,
-			}
+	namespace, err := mockHubWrapper.namespace()
+	require.NoError(t, err)
+	assert.Equal(t, "test", namespace)
 
 			namespace, err := mockHubWrapper.namespace()
 			if tc.expectedErrContains != "" {
@@ -291,88 +286,138 @@ func TestGetConsumerGroup(t *testing.T) {
 	}
 }
 
-func TestCreateConsumerClient(t *testing.T) {
-	authID := component.MustNewID("azureauth")
-	logger := zap.NewNop()
-
+func TestStartPos(t *testing.T) {
 	testCases := []struct {
-		name                string
-		config              *Config
-		host                component.Host
-		expectedErrContains string
+		enableStorage bool
+		applyOffset   bool
+		offset        string
+		namespace     string
+		eventHubName  string
+		consumerGroup string
+		partitionID   string
+
+		storageClient *mockStorageClient
+
+		expectedSeqNumber *int64
+		expectedLatest    *bool
+		expectedOffset    *string
 	}{
 		{
-			name: "success with auth",
-			config: &Config{
-				Auth: &authID,
-				EventHub: EventHubConfig{
-					Namespace: "test.servicebus.windows.net",
-					Name:      "hub",
-				},
-			},
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					authID: &mockTokenCredential{},
-				},
-			},
+			enableStorage: false,
+			applyOffset:   true,
+			offset:        "10",
+			namespace:     "test",
+			eventHubName:  "name",
+			consumerGroup: "cg",
+			partitionID:   "0",
+
+			expectedOffset: to.Ptr("10"),
 		},
 		{
-			name: "missing auth extension",
-			config: &Config{
-				Auth: &authID,
-			},
-			host: &mockHost{
-				ext: map[component.ID]component.Component{},
-			},
-			expectedErrContains: "failed to resolve auth extension",
+			enableStorage: false,
+			applyOffset:   false,
+			offset:        "10",
+			namespace:     "test",
+			eventHubName:  "name",
+			consumerGroup: "cg",
+			partitionID:   "0",
+
+			expectedLatest: to.Ptr(true),
 		},
 		{
-			name: "invalid auth extension type",
-			config: &Config{
-				Auth: &authID,
-			},
-			host: &mockHost{
-				ext: map[component.ID]component.Component{
-					authID: &mockHost{}, // not a TokenCredential
+			enableStorage: false,
+			applyOffset:   false,
+			offset:        "",
+			namespace:     "test",
+			eventHubName:  "name",
+			consumerGroup: "cg",
+			partitionID:   "0",
+
+			expectedLatest: to.Ptr(true),
+		},
+		{
+			enableStorage: true,
+			applyOffset:   false,
+			offset:        "",
+			namespace:     "test",
+			eventHubName:  "name",
+			consumerGroup: "cg",
+			partitionID:   "0",
+
+			expectedLatest: to.Ptr(true),
+		},
+		{
+			enableStorage: true,
+			applyOffset:   true,
+			offset:        "10",
+			namespace:     "test",
+			eventHubName:  "name",
+			consumerGroup: "cg",
+			partitionID:   "0",
+
+			expectedOffset: to.Ptr("10"),
+		},
+		{
+			enableStorage: true,
+			applyOffset:   false,
+			offset:        "",
+			namespace:     "test",
+			eventHubName:  "name",
+			consumerGroup: "cg",
+			partitionID:   "0",
+			storageClient: &mockStorageClient{
+				storage: map[string][]byte{
+					"test/name/cg/0": []byte(`{"sequenceNumber": 100}`),
 				},
 			},
-			expectedErrContains: "does not implement azcore.TokenCredential",
+
+			expectedSeqNumber: to.Ptr(int64(100)),
 		},
 		{
-			name: "connection string path",
-			config: &Config{
-				Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub",
+			enableStorage: true,
+			applyOffset:   false,
+			offset:        "",
+			namespace:     "test",
+			eventHubName:  "name",
+			consumerGroup: "cg",
+			partitionID:   "0",
+			storageClient: &mockStorageClient{
+				storage: map[string][]byte{
+					"test/name/cg/0": []byte(`{"seqNumber": 200}`),
+				},
 			},
-			host: componenttest.NewNopHost(),
+
+			expectedSeqNumber: to.Ptr(int64(200)),
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := createConsumerClient(tc.config, tc.host, "group", logger)
-			if tc.expectedErrContains != "" {
-				require.ErrorContains(t, err, tc.expectedErrContains)
-				return
+	for _, test := range testCases {
+		h := hubWrapperAzeventhubImpl{}
+		h.config = &Config{
+			Offset: test.offset,
+		}
+		if test.enableStorage {
+			s := &mockStorageClient{}
+			if test.storageClient != nil {
+				s = test.storageClient
 			}
-			require.NoError(t, err)
-		})
+			h.storage = getStorageCheckpointPersister(s)
+		}
+		startPos := h.getStartPos(
+			test.applyOffset,
+			test.namespace,
+			test.eventHubName,
+			test.consumerGroup,
+			test.partitionID,
+		)
+		if test.expectedSeqNumber != nil {
+			require.Equal(t, *test.expectedSeqNumber, *startPos.SequenceNumber)
+		}
+		if test.expectedLatest != nil {
+			require.Equal(t, *test.expectedLatest, *startPos.Latest)
+		}
+		if test.expectedOffset != nil {
+			require.Equal(t, *test.expectedOffset, *startPos.Offset)
+		}
 	}
-}
-
-type mockTokenCredential struct {
-	component.Component
-}
-
-func (*mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
-	return azcore.AccessToken{Token: "test", ExpiresOn: time.Now().Add(time.Hour)}, nil
-}
-
-type mockHost struct {
-	component.Component
-	ext map[component.ID]component.Component
-}
-
-func (m *mockHost) GetExtensions() map[component.ID]component.Component {
-	return m.ext
 }

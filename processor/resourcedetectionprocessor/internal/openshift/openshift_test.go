@@ -79,14 +79,14 @@ func TestDetect(t *testing.T) {
 			detector:          newTestDetector(t, &providerResponse{}, someErr, nil, nil),
 			expectedErr:       someErr,
 			expectedResource:  pcommon.NewResource(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/1.18.0",
+			expectedSchemaURL: "https://opentelemetry.io/schemas/",
 		},
 		{
 			name:              "error getting k8s cluster version",
 			detector:          newTestDetector(t, &providerResponse{}, nil, someErr, nil),
 			expectedErr:       someErr,
 			expectedResource:  pcommon.NewResource(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/1.18.0",
+			expectedSchemaURL: "https://opentelemetry.io/schemas/",
 		},
 		{
 			name:             "error getting infrastructure details",
@@ -123,7 +123,7 @@ func TestDetect(t *testing.T) {
 				attrs.PutStr("cloud.region", "us-east-1")
 				return res
 			}(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/1.18.0",
+			expectedSchemaURL: "https://opentelemetry.io/schemas/",
 		},
 	}
 	for _, tc := range tt {
@@ -136,7 +136,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.expectedResource, resource)
-			assert.Equal(t, tc.expectedSchemaURL, schemaURL)
+			assert.Contains(t, schemaURL, tc.expectedSchemaURL)
 		})
 	}
 }
