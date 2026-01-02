@@ -16,13 +16,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -82,9 +83,9 @@ func TestSyncBulkIndexer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var reqCnt atomic.Int64
 			cfg := Config{
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
 					NumConsumers: 1,
-				},
+				}),
 				MetadataKeys: []string{"x-test"},
 			}
 			esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
@@ -126,7 +127,7 @@ func TestSyncBulkIndexer(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"), // bulk request itself is successful
 						attribute.StringSlice("x-test", []string{"test"}),
-						semconv.HTTPResponseStatusCode(http.StatusOK),
+						attribute.Key("http.response.status_code").Int(http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -184,6 +185,18 @@ func TestSyncBulkIndexer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQueryParamsParsedFromEndpoints(t *testing.T) {
+	client, err := elasticsearch.NewDefaultClient()
+	require.NoError(t, err)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
+
+	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
+	require.Equal(t, map[string][]string{
+		"pipeline": {"test-pipeline"},
+	}, bi.QueryParams)
 }
 
 func TestNewBulkIndexer(t *testing.T) {

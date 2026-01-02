@@ -167,6 +167,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.PostgresqlTableName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["postgresql.table.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlTableName.EventsExclude)
 	}
+	if lbc.ResourceAttributes.ServiceInstanceID.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
+	}
 
 	return lb
 }

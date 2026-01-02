@@ -12,4 +12,5 @@ tests:
   # TODO Fix this
   skip_lifecycle: true
   config:
-    s3_encoding: awslogs
+    s3:
+      encoding: awslogs
