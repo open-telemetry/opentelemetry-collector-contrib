@@ -1,0 +1,38 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.operation.name
+                value:
+                  stringValue: Authorization
+              - key: azure.category
+                value:
+                  stringValue: AppServiceAuditLogs
+              - key: user.id
+                value:
+                  stringValue: $my-demo-app
+              - key: user.name
+                value:
+                  stringValue: $my-demo-app
+              - key: source.address
+                value:
+                  stringValue: 24.19.191.170
+              - key: network.protocol.name
+                value:
+                  stringValue: ftp
+            body: {}
+            timeUnixNano: "1697478152932252800"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

@@ -32,6 +32,7 @@ type BlobNameFormat struct {
 	Timezone                 string            `mapstructure:"timezone"`
 	TemplateEnabled          bool              `mapstructure:"template_enabled"`
 	TimeParserEnabled        bool              `mapstructure:"time_parser_enabled"`
+	TimeParserRanges         []string          `mapstructure:"time_parser_ranges"`
 	Params                   map[string]string `mapstructure:"params"`
 }
 
