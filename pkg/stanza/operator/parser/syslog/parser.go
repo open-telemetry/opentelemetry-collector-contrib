@@ -90,6 +90,10 @@ func (p *Parser) parse(value any) (any, error) {
 func (p *Parser) buildParseFunc() (parseFunc, error) {
 	switch p.protocol {
 	case RFC3164:
+		// Octet Counting Parsing RFC6587 with RFC3164 message format
+		if p.enableOctetCounting {
+			return newOctetCountingRFC3164ParseFunc(p.location, p.maxOctets), nil
+		}
 		return func(input []byte) (sl.Message, error) {
 			if p.allowSkipPriHeader && !priRegex.Match(input) {
 				input = append([]byte("<0>"), input...)
@@ -329,5 +333,30 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
 		return message, err
+	}
+}
+
+// newOctetCountingRFC3164ParseFunc returns a parse function that handles
+// RFC6587 octet counting framing with RFC3164 message format.
+// The input format is "length message" where length is the byte count of the message.
+func newOctetCountingRFC3164ParseFunc(location *time.Location, maxOctets int) parseFunc {
+	return func(input []byte) (sl.Message, error) {
+		// Strip the octet counting prefix (length + space)
+		// Format: "length message" e.g., "39 <34>Oct 11 22:14:15 mymachine su: su root"
+		spaceIdx := bytes.IndexByte(input, ' ')
+		if spaceIdx == -1 {
+			return nil, errors.New("invalid octet counting format: no space separator found")
+		}
+
+		// Extract the message (everything after the space)
+		msgBytes := input[spaceIdx+1:]
+
+		// Check max octets if configured
+		if maxOctets > 0 && len(msgBytes) > maxOctets {
+			msgBytes = msgBytes[:maxOctets]
+		}
+
+		// Parse as RFC3164
+		return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(location)).Parse(msgBytes)
 	}
 }

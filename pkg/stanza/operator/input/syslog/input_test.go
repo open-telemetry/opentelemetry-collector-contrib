@@ -68,6 +68,39 @@ var (
 		},
 		ValidForTCP: true,
 	}
+	// RFC3164 with octet counting - tests RFC6587 framing with RFC3164 message format
+	OctetCaseRFC3164 = func() syslogtest.Case {
+		// Build the RFC3164 message without the length prefix
+		rfc3164Msg := fmt.Sprintf("<34>%s 1.2.3.4 app: test msg", ts.Format("Jan _2 15:04:05"))
+		// Build the full octet-counted message with correct length
+		octetCountedMsg := fmt.Sprintf("%d %s", len(rfc3164Msg), rfc3164Msg)
+		return syslogtest.Case{
+			Name: "RFC6587 Octet Counting RFC3164",
+			Config: func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.RFC3164
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			Input: &entry.Entry{
+				Body: octetCountedMsg,
+			},
+			Expect: &entry.Entry{
+				Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 0, time.UTC),
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"appname":  "app",
+					"facility": 4,
+					"hostname": "1.2.3.4",
+					"message":  "test msg",
+					"priority": 34,
+				},
+				Body: octetCountedMsg,
+			},
+			ValidForTCP: true,
+		}
+	}()
 	WithMetadata = syslogtest.Case{
 		Name: "RFC3164",
 		Config: func() *syslog.Config {
@@ -103,7 +136,7 @@ var (
 func TestInput(t *testing.T) {
 	cases, err := syslogtest.CreateCases(basicConfig)
 	require.NoError(t, err)
-	cases = append(cases, OctetCase)
+	cases = append(cases, OctetCase, OctetCaseRFC3164)
 
 	for _, tc := range cases {
 		cfg := tc.Config.BaseConfig
