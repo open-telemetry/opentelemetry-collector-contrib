@@ -4,11 +4,7 @@
 package internal
 
 import (
-	"errors"
 	"go/ast"
-	"net/url"
-	"os/exec"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -74,70 +70,22 @@ func ExtractDescriptionFromComment(group *ast.CommentGroup) (string, bool) {
 	return strings.Join(comments, " "), true
 }
 
-func goPrimitiveToSchemaType(typeName string) SchemaType {
+func goPrimitiveToSchemaType(typeName string) (SchemaType, bool) {
 	switch typeName {
 	case "string":
-		return SchemaTypeString
+		return SchemaTypeString, false
+	case "rune", "byte":
+		return SchemaTypeString, true
 	case "int", "int8", "int16", "int32", "int64":
-		return SchemaTypeInteger
+		return SchemaTypeInteger, typeName != "int"
 	case "float32", "float64":
 
-		return SchemaTypeNumber
+		return SchemaTypeNumber, true
 	case "bool":
-		return SchemaTypeBoolean
+		return SchemaTypeBoolean, false
 	case "any":
-		return ""
+		return SchemaTypeAny, true
 	default:
-		return SchemaTypeNull
+		return SchemaTypeUnknown, false
 	}
-}
-
-func GetSchemaID(file *ast.File, cfg *Config) (string, error) {
-	absolutePath, _ := filepath.Abs(cfg.DirPath)
-	basePath, err := getBasePath(absolutePath)
-	relPath := ""
-	if err == nil {
-		relPath, _ = filepath.Rel(basePath, absolutePath)
-	}
-
-	if cfg.SchemaIDPrefix != "" {
-		id, e := url.JoinPath(cfg.SchemaIDPrefix, relPath, filepath.Base(cfg.SchemaPath))
-		if e != nil {
-			return "", e
-		}
-		return filepath.ToSlash(id), nil
-	}
-
-	packageImportPath, err := getPackageImportPath(file)
-	if err == nil {
-		rootURL := strings.TrimSuffix(packageImportPath, filepath.ToSlash(relPath))
-		id, e := url.JoinPath("https://", rootURL, "blob/main", relPath, filepath.Base(cfg.SchemaPath))
-		if e != nil {
-			return "", e
-		}
-		return filepath.ToSlash(id), nil
-	}
-
-	return "", err
-}
-
-func getBasePath(path string) (string, error) {
-	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-toplevel")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.Trim(filepath.ToSlash(string(output)), "\n"), nil
-}
-
-func getPackageImportPath(file *ast.File) (string, error) {
-	for _, commentGroup := range file.Comments {
-		for _, comment := range commentGroup.List {
-			importPrefix := "// import "
-			if len(comment.Text) > len(importPrefix) && comment.Text[:len(importPrefix)] == importPrefix {
-				return comment.Text[len(importPrefix)+1 : len(comment.Text)-1], nil
-			}
-		}
-	}
-	return "", errors.New("could not find import path, please provide SchemaIDPrefix with the flag")
 }
