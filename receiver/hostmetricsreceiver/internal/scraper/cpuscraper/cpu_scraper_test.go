@@ -121,6 +121,54 @@ func TestScrape(t *testing.T) {
 	}
 }
 
+func TestScrape_CpuPhysicalCount(t *testing.T) {
+	type testCase struct {
+		name                string
+		metricsConfig       metadata.MetricsBuilderConfig
+		expectedMetricCount int
+	}
+
+	testCases := []testCase{
+		{
+			name: "System CPU Physical count enabled",
+			metricsConfig: metadata.MetricsBuilderConfig{
+				Metrics: metadata.MetricsConfig{
+					SystemCPUTime: metadata.MetricConfig{
+						Enabled: false,
+					},
+					SystemCPUPhysicalCount: metadata.MetricConfig{
+						Enabled: true,
+					},
+				},
+			},
+			expectedMetricCount: 1,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: test.metricsConfig})
+
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize CPU scraper: %v", err)
+
+			md, err := scraper.scrape(t.Context())
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
+
+			if md.MetricCount() > 0 {
+				metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				metric := metrics.At(0)
+
+				assertCPUPysicalCountMetricValid(t, metric)
+			}
+		})
+	}
+}
+
 // TestScrape_CpuUtilization to test utilization we need to execute scrape at least twice to have
 // data to calculate the difference, so assertions will be done after the second scraping
 func TestScrape_CpuUtilization(t *testing.T) {
@@ -362,6 +410,18 @@ func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Met
 		pcommon.NewValueStr(metadata.AttributeStateSteal.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 7, "state",
 		pcommon.NewValueStr(metadata.AttributeStateWait.String()))
+}
+
+func assertCPUPysicalCountMetricValid(t *testing.T, metric pmetric.Metric) {
+	assert.Equal(t, "system.cpu.physical.count", metric.Name())
+	assert.Equal(t, "Number of available physical CPUs.", metric.Description())
+	assert.Equal(t, "{cpu}", metric.Unit())
+	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+	assert.False(t, metric.Sum().IsMonotonic())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+	assert.Equal(t, 1, metric.Sum().DataPoints().Len())
+	dataPoint := metric.Sum().DataPoints().At(0)
+	assert.Greater(t, dataPoint.IntValue(), int64(0), "Pyhsical CPU count should be greater than 0")
 }
 
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
