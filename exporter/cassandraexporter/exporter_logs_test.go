@@ -4,11 +4,15 @@
 package cassandraexporter
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	gocql "github.com/apache/cassandra-gocql-driver/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 )
 
 func TestNewCluster(t *testing.T) {
@@ -63,4 +67,19 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 		fn(cfg)
 	}
 	return cfg
+}
+
+// TestPushLogsData_EmptyLogs verifies behavior with valid but empty logs
+func TestPushLogsData_EmptyLogs(t *testing.T) {
+	exporter := &logsExporter{
+		logger: zap.NewNop(),
+		cfg:    createDefaultConfig().(*Config),
+		client: nil, // no client needed for empty logs
+	}
+
+	// empty logs should succeed without trying to insert
+	logs := plog.NewLogs()
+	err := exporter.pushLogsData(context.Background(), logs)
+
+	assert.NoError(t, err, "empty logs should not cause errors")
 }
