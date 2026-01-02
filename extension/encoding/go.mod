@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	go.opentelemetry.io/collector/extension v1.48.1-0.20251231114627-ad49dc64648d
 	go.opentelemetry.io/collector/pdata v1.48.1-0.20251231114627-ad49dc64648d
-	go.opentelemetry.io/collector/pdata/pprofile v0.142.1-0.20251223191316-a9aaa99a1214
+	go.opentelemetry.io/collector/pdata/pprofile v0.142.1-0.20251231114627-ad49dc64648d
 )
 
 require (

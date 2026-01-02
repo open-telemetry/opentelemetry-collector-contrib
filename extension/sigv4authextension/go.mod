@@ -9,12 +9,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.5
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.48.1-0.20251231114627-ad49dc64648d
-	go.opentelemetry.io/collector/component/componenttest v0.142.1-0.20251223191316-a9aaa99a1214
+	go.opentelemetry.io/collector/component/componenttest v0.142.1-0.20251231114627-ad49dc64648d
 	go.opentelemetry.io/collector/confmap v1.48.1-0.20251231114627-ad49dc64648d
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251223191316-a9aaa99a1214
+	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251231114627-ad49dc64648d
 	go.opentelemetry.io/collector/extension v1.48.1-0.20251231114627-ad49dc64648d
 	go.opentelemetry.io/collector/extension/extensionauth v1.48.1-0.20251231114627-ad49dc64648d
-	go.opentelemetry.io/collector/extension/extensiontest v0.142.1-0.20251223191316-a9aaa99a1214
+	go.opentelemetry.io/collector/extension/extensiontest v0.142.1-0.20251231114627-ad49dc64648d
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
