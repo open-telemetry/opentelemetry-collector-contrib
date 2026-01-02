@@ -1,0 +1,14 @@
+{
+  "records": [
+    {
+      "time": "2023-10-16T17:42:32.9322528Z",
+      "ResourceId": "/SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP",
+      "Category": "AppServiceFileAuditLogs",
+      "OperationName": "Write",
+      "Properties": {
+        "Path": "/path/to/file",
+        "Process": "$my-demo-app"
+      }
+    }
+  ]
+}

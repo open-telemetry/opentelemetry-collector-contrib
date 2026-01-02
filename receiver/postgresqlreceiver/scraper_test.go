@@ -6,9 +6,11 @@ package postgresqlreceiver
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	_ "embed"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -74,7 +76,7 @@ func TestScraper(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -127,7 +129,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 		cfg.Metrics.PostgresqlWalDelay.Enabled = false
@@ -152,7 +154,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err = golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -205,7 +207,7 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -258,7 +260,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 		fmt.Println(actualMetrics.ResourceMetrics())
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -312,7 +314,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -365,7 +367,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -393,7 +395,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -403,6 +405,39 @@ func TestScraperExcludeDatabase(t *testing.T) {
 
 //go:embed testdata/scraper/query-sample/expectedSql.sql
 var expectedScrapeSampleQuery string
+
+var querySampleColumns = []string{
+	querySampleColumnDatname,
+	querySampleColumnUsename,
+	querySampleColumnClientAddr,
+	querySampleColumnClientHostname,
+	querySampleColumnClientPort,
+	querySampleColumnQueryStart,
+	querySampleColumnWaitEventType,
+	querySampleColumnWaitEvent,
+	querySampleColumnQueryID,
+	querySampleColumnPID,
+	querySampleColumnApplicationName,
+	querySampleColumnQueryStartTimestamp,
+	querySampleColumnState,
+	querySampleColumnQuery,
+	querySampleColumnDurationMilliseconds,
+}
+
+func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
+	t.Helper()
+
+	rowValues := make([]driver.Value, len(querySampleColumns))
+	for i, col := range querySampleColumns {
+		if v, ok := values[col]; ok {
+			rowValues[i] = v
+			continue
+		}
+		rowValues[i] = ""
+	}
+
+	return sqlmock.NewRows(querySampleColumns).AddRow(rowValues...)
+}
 
 func TestScrapeQuerySample(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
@@ -425,9 +460,21 @@ func TestScrapeQuerySample(t *testing.T) {
 	}
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 	scraper.newestQueryTimestamp = 123440.111
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
-		[]string{"datname", "usename", "client_addr", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query", "duration_ms"},
-	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,123445.123,idle,select * from pg_stat_activity where id = 32,1.2"))
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "otelu",
+		querySampleColumnClientAddr:           "11.4.5.14",
+		querySampleColumnClientHostname:       "otel",
+		querySampleColumnClientPort:           "114514",
+		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnQueryID:              "123131231231",
+		querySampleColumnPID:                  "1450",
+		querySampleColumnApplicationName:      "receiver",
+		querySampleColumnQueryStartTimestamp:  "123445.123",
+		querySampleColumnState:                "idle",
+		querySampleColumnQuery:                "select * from pg_stat_activity where id = 32",
+		querySampleColumnDurationMilliseconds: "1.2",
+	}))
 	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "query-sample", "expected.yaml")
@@ -435,8 +482,65 @@ func TestScrapeQuerySample(t *testing.T) {
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
+}
+
+func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{
+		db: db,
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{
+		Logger: logger,
+	}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	traceparent := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "otelu",
+		querySampleColumnClientAddr:           "11.4.5.14",
+		querySampleColumnClientHostname:       "otel",
+		querySampleColumnClientPort:           "114514",
+		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnQueryID:              "123131231231",
+		querySampleColumnPID:                  "1450",
+		querySampleColumnApplicationName:      traceparent,
+		querySampleColumnQueryStartTimestamp:  "123445.123",
+		querySampleColumnState:                "idle",
+		querySampleColumnQuery:                "select * from pg_stat_activity where id = 32",
+		querySampleColumnDurationMilliseconds: "1.2",
+	}))
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, actualLogs.ResourceLogs().Len())
+	rl := actualLogs.ResourceLogs().At(0)
+	require.Equal(t, 1, rl.ScopeLogs().Len())
+	sl := rl.ScopeLogs().At(0)
+	require.Equal(t, 1, sl.LogRecords().Len())
+	lr := sl.LogRecords().At(0)
+
+	require.Equal(t, "4bf92f3577b34da6a3ce929d0e0e4736", lr.TraceID().String())
+	require.Equal(t, "00f067aa0ba902b7", lr.SpanID().String())
+
+	applicationName, ok := lr.Attributes().Get("postgresql.application_name")
+	require.True(t, ok)
+	require.Equal(t, traceparent, applicationName.Str())
 }
 
 //go:embed testdata/scraper/top-query/expectedSql.sql
@@ -511,7 +615,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
 	// golden.WriteLogs(t, expectedFile, actualLogs)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 
 	// Verify the cache has updated with latest counter
@@ -864,4 +968,32 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		}
 		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
 	}
+}
+
+func TestGetInstanceId(t *testing.T) {
+	localhostName, _ := os.Hostname()
+
+	instanceString := "example.com:5432"
+	instanceID := getInstanceID(instanceString, zap.NewNop())
+	assert.Equal(t, "example.com:5432", instanceID)
+
+	localHostStringUppercase := "Localhost:5432"
+	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	localHostString := "127.0.0.1:5432"
+	localInstanceID = getInstanceID(localHostString, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	localHostStringIPV6 := "[::1]:5432"
+	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":5432", localInstanceID)
+
+	hostNameErrorSample := ""
+	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, "unknown:5432", localInstanceID)
 }

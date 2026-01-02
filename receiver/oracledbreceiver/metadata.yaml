@@ -94,12 +94,6 @@ attributes:
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
     type: string
-  oracledb.object_name:
-    description: Name of the database object that a query is accessing.
-    type: string
-  oracledb.object_type:
-    description: Type of the database object that a query is accessing.
-    type: string
   oracledb.osuser:
     description: Name of the operating system user that initiated or is running the Oracle database session.
     type: string
@@ -117,6 +111,15 @@ attributes:
     type: int
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
+    type: string
+  oracledb.procedure_id:
+    description: The identifier of the stored procedure or function being executed by the query.
+    type: int
+  oracledb.procedure_name:
+    description: Name of the database object that a query is accessing.
+    type: string
+  oracledb.procedure_type:
+    description: Type of the database object that a query is accessing.
     type: string
   oracledb.process:
     description: The operating system process ID (PID) associated with a session.
@@ -196,8 +199,9 @@ events:
       - oracledb.state
       - oracledb.wait_class
       - oracledb.event
-      - oracledb.object_name
-      - oracledb.object_type
+      - oracledb.procedure_id
+      - oracledb.procedure_name
+      - oracledb.procedure_type
       - oracledb.osuser
       - oracledb.duration_sec
   db.server.top_query:
@@ -227,6 +231,9 @@ events:
       - oracledb.physical_write_requests
       - oracledb.rows_processed
       - oracledb.user_io_wait_time
+      - oracledb.procedure_id
+      - oracledb.procedure_name
+      - oracledb.procedure_type
 metrics:
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
