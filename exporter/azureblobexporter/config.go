@@ -31,6 +31,7 @@ type BlobNameFormat struct {
 	SerialNumBeforeExtension bool              `mapstructure:"serial_num_before_extension"`
 	TemplateEnabled          bool              `mapstructure:"template_enabled"`
 	TimeParserEnabled        bool              `mapstructure:"time_parser_enabled"`
+	TimeParserRanges         []string          `mapstructure:"time_parser_ranges"`
 	Params                   map[string]string `mapstructure:"params"`
 }
 
