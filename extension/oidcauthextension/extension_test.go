@@ -543,6 +543,54 @@ func TestProviderNotReachable(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestStartSucceedsWithPartialProviderFailure(t *testing.T) {
+	// prepare - one reachable provider and one unreachable
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: oidcServer.URL,
+				Audience:  "unit-test",
+			},
+			{
+				IssuerURL: "http://unreachable-oidc-provider.example.com",
+				Audience:  "unit-test-2",
+			},
+		},
+	}
+	p := newTestExtension(t, config)
+
+	// test - should succeed even though one provider is unreachable
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+
+	// verify - no error because at least one provider is reachable
+	assert.NoError(t, err)
+
+	// verify authentication still works with the reachable provider
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	payload, _ := json.Marshal(map[string]any{
+		"sub": "jdoe@example.com",
+		"iss": oidcServer.URL,
+		"aud": "unit-test",
+		"exp": time.Now().Add(time.Minute).Unix(),
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
+	err = p.Shutdown(t.Context())
+	assert.NoError(t, err)
+}
+
 func TestFailedToVerifyToken(t *testing.T) {
 	// prepare
 	oidcServer, err := newOIDCServer()

@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -72,12 +71,18 @@ func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 }
 
 func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
-	var errs error
-	for _, providerCfg := range e.cfg.getProviderConfigs() {
-		errs = multierr.Append(errs, e.processProviderConfig(ctx, providerCfg))
+	providerConfigs := e.cfg.getProviderConfigs()
+	var errs []error
+	for _, providerCfg := range providerConfigs {
+		if err := e.processProviderConfig(ctx, providerCfg); err != nil {
+			errs = append(errs, err)
+			e.logger.Warn("failed to get configuration from OIDC provider, authentication against this provider will fail until the collector is restarted",
+				zap.String("issuer_url", providerCfg.IssuerURL),
+				zap.Error(err))
+		}
 	}
-	if errs != nil {
-		return fmt.Errorf("failed to get configuration from at least one configured auth server: %w", errs)
+	if len(errs) == len(providerConfigs) {
+		return fmt.Errorf("failed to get configuration from any configured OIDC provider: %w", errors.Join(errs...))
 	}
 
 	return nil
