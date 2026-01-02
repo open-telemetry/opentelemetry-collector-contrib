@@ -465,7 +465,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 	}
 
 	if len(cfg.ProfileConditions) > 0 {
-		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(filterottl.StandardProfileFuncs()), common.WithProfileErrorMode(cfg.ErrorMode))
+		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(cfg.profileFunctions), common.WithProfileErrorMode(cfg.ErrorMode))
 		if err != nil {
 			return err
 		}
