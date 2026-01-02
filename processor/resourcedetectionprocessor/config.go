@@ -99,7 +99,7 @@ type DetectorConfig struct {
 	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 
-	// OpenStackNova contains user-specified configurations for the OpenStackNova detector
+	// OpenStackNovaConfig contains user-specified configurations for the OpenStackNova detector
 	OpenStackNovaConfig nova.Config `mapstructure:"nova"`
 
 	// OracleCloud contains user-specified configurations for the OracleCloud detector
