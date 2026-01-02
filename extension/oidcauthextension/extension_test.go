@@ -244,9 +244,9 @@ func TestOIDCAuthenticationFailedNoMatchingIssuers(t *testing.T) {
 // of the issuer in the token. In that case, the issuer provided in the extension
 // config doesn't necessarily have to match the issuer in the token since it's
 // only used for discovery.
-// This code path doesn't actually work (for now) since Start() will fail when the issuer
-// in the config doesn't match the issuer returned by the discovery server, but this test
-// remains out of an abundance of caution.
+// This code path doesn't actually work (for now) since the configured provider won't be
+// usable when the issuer in the config doesn't match the issuer returned by the discovery
+// server, but this test remains out of an abundance of caution.
 func TestOIDCAuthenticationSucceededSingleIssuerMismatch(t *testing.T) {
 	oidcServer, err := newOIDCServer()
 	require.NoError(t, err)
@@ -269,7 +269,7 @@ func TestOIDCAuthenticationSucceededSingleIssuerMismatch(t *testing.T) {
 	p := newTestExtension(t, config)
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
-	require.ErrorContains(t, err, "issuer did not match")
+	require.NoError(t, err)
 
 	srvAuth, ok := p.(extensionauth.Server)
 	require.True(t, ok)
@@ -537,7 +537,7 @@ func TestProviderNotReachable(t *testing.T) {
 	err := p.Start(t.Context(), componenttest.NewNopHost())
 
 	// verify
-	assert.Error(t, err)
+	assert.NoError(t, err)
 
 	err = p.Shutdown(t.Context())
 	assert.NoError(t, err)

@@ -71,18 +71,14 @@ func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 }
 
 func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
-	providerConfigs := e.cfg.getProviderConfigs()
-	var errs []error
-	for _, providerCfg := range providerConfigs {
+	for _, providerCfg := range e.cfg.getProviderConfigs() {
 		if err := e.processProviderConfig(ctx, providerCfg); err != nil {
-			errs = append(errs, err)
-			e.logger.Warn("failed to get configuration from OIDC provider, authentication against this provider will fail until the collector is restarted",
+			e.logger.Warn(
+				"failed to get configuration from the configured auth server",
 				zap.String("issuer_url", providerCfg.IssuerURL),
-				zap.Error(err))
+				zap.Error(err),
+			)
 		}
-	}
-	if len(errs) == len(providerConfigs) {
-		return fmt.Errorf("failed to get configuration from any configured OIDC provider: %w", errors.Join(errs...))
 	}
 
 	return nil
