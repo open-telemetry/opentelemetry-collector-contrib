@@ -343,7 +343,7 @@ func (r *Reader) GetOffset() int64 {
 
 func (r *Reader) GetFileSize() (int64, error) {
 	if r.file == nil {
-		return 0, nil
+		return 0, errors.New("file has been closed")
 	}
 	info, err := r.file.Stat()
 	if err != nil {

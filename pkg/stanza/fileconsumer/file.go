@@ -321,7 +321,7 @@ func (m *Manager) reportFileMetrics(ctx context.Context) {
 
 		fileSize, err := r.GetFileSize()
 		if err != nil {
-			m.set.Logger.Debug("Failed to get file size for metrics", zap.String("path", filePath), zap.Error(err))
+			m.set.Logger.Warn("Failed to get file size for metrics", zap.String("path", filePath), zap.Error(err))
 			continue
 		}
 
