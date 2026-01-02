@@ -73,6 +73,12 @@ type Config struct {
 	// indefinitely for completed or crashed containers, while still allowing
 	// time for log collection. Default is 15 minutes.
 	ContainerTerminatedTTL time.Duration `mapstructure:"container_terminated_ttl"`
+	// ObserveAllContainers is a convenience option that enables comprehensive container
+	// log collection. When true, it automatically enables ObserveInitContainers and
+	// adds "Pending" to ObservePodPhases (if not already present). This simplifies
+	// configuration for users who want to collect logs from all containers including
+	// init containers and crashed containers. Default is false.
+	ObserveAllContainers bool `mapstructure:"observe_all_containers"`
 }
 
 // Validate checks if the extension configuration is valid
@@ -86,6 +92,14 @@ func (cfg *Config) Validate() error {
 	for _, phase := range cfg.ObservePodPhases {
 		if !isValidPodPhase(phase) {
 			return fmt.Errorf("invalid pod phase %q in observe_pod_phases: valid values are Pending, Running, Succeeded, Failed, Unknown", phase)
+		}
+	}
+	// observe_all_containers is a convenience option that automatically adds Pending
+	// to observe_pod_phases. If the user also customizes observe_pod_phases, we cannot
+	// determine their intent (e.g., did they want only Failed pods, or Failed + Pending?).
+	if cfg.ObserveAllContainers {
+		if len(cfg.ObservePodPhases) != 1 || cfg.ObservePodPhases[0] != "Running" {
+			return errors.New("observe_all_containers cannot be used with observe_pod_phases; use observe_init_containers and observe_pod_phases for fine-grained control")
 		}
 	}
 	return nil

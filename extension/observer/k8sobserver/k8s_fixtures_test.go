@@ -137,6 +137,35 @@ var initContainerStatusTerminated = v1.ContainerStatus{
 	ContainerID: "containerd://init-terminated-id",
 }
 
+var containerStatusCrashLoopBackOff = v1.ContainerStatus{
+	Name: "crashloop-container",
+	State: v1.ContainerState{
+		Waiting: &v1.ContainerStateWaiting{
+			Reason:  "CrashLoopBackOff",
+			Message: "back-off 5m0s restarting failed container",
+		},
+	},
+	LastTerminationState: v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{
+			ExitCode:   1,
+			Reason:     "Error",
+			FinishedAt: metav1.Now(),
+		},
+	},
+	Ready:        false,
+	RestartCount: 5,
+	Image:        "crashloop-image",
+	ContainerID:  "containerd://crashloop-container-id",
+}
+
+var containerCrashLoop = v1.Container{
+	Name:  "crashloop-container",
+	Image: "crashloop-image",
+	Ports: []v1.ContainerPort{
+		{Name: "http", ContainerPort: 8080, Protocol: v1.ProtocolTCP},
+	},
+}
+
 var podWithNamedPorts = func() *v1.Pod {
 	pod := newPod("pod-2")
 	pod.Labels = map[string]string{
@@ -195,6 +224,17 @@ var podRunningWithInitContainerWithPort = func() *v1.Pod {
 	}
 	pod.Spec.InitContainers = []v1.Container{
 		initContainerWithPort,
+	}
+	return pod
+}()
+
+var podWithCrashLoopBackOff = func() *v1.Pod {
+	pod := newPod("pod-crashloop")
+	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+		containerStatusCrashLoopBackOff,
+	}
+	pod.Spec.Containers = []v1.Container{
+		containerCrashLoop,
 	}
 	return pod
 }()

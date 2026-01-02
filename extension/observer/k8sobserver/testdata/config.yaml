@@ -22,3 +22,13 @@ k8s_observer/invalid_pod_phase:
 k8s_observer/invalid_empty_pod_phases:
   observe_pods: true
   observe_pod_phases: []
+k8s_observer/all-containers:
+  observe_all_containers: true
+k8s_observer/all-containers-explicit-init:
+  observe_all_containers: true
+  observe_init_containers: true
+k8s_observer/invalid_all_containers_with_phases:
+  observe_all_containers: true
+  observe_pod_phases:
+    - Running
+    - Pending

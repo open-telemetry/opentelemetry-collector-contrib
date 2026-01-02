@@ -100,6 +100,22 @@ func (k *k8sObserver) Shutdown(_ context.Context) error {
 
 // newObserver creates a new k8s observer extension.
 func newObserver(config *Config, set extension.Settings) (extension.Extension, error) {
+	// Apply observe_all_containers convenience option
+	if config.ObserveAllContainers {
+		config.ObserveInitContainers = true
+		// Add Pending phase if not already present
+		hasPending := false
+		for _, phase := range config.ObservePodPhases {
+			if phase == "Pending" {
+				hasPending = true
+				break
+			}
+		}
+		if !hasPending {
+			config.ObservePodPhases = append(config.ObservePodPhases, "Pending")
+		}
+	}
+
 	client, err := k8sconfig.MakeClient(config.APIConfig)
 	if err != nil {
 		return nil, err

@@ -71,6 +71,32 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalid_empty_pod_phases"),
 			expectedErr: "observe_pod_phases must specify at least one phase when observe_pods is true",
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "all-containers"),
+			expected: &Config{
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ObservePods:            true,
+				ObservePodPhases:       defaults.ObservePodPhases,
+				ContainerTerminatedTTL: defaults.ContainerTerminatedTTL,
+				ObserveAllContainers:   true,
+			},
+		},
+		{
+			// It's valid to explicitly set observe_init_containers with observe_all_containers (redundant but not conflicting)
+			id: component.NewIDWithName(metadata.Type, "all-containers-explicit-init"),
+			expected: &Config{
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ObservePods:            true,
+				ObservePodPhases:       defaults.ObservePodPhases,
+				ContainerTerminatedTTL: defaults.ContainerTerminatedTTL,
+				ObserveAllContainers:   true,
+				ObserveInitContainers:  true,
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_all_containers_with_phases"),
+			expectedErr: "observe_all_containers cannot be used with observe_pod_phases",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {

@@ -32,6 +32,7 @@ func createDefaultConfig() component.Config {
 		ObservePodPhases:       []string{"Running"},
 		ObserveInitContainers:  false,
 		ContainerTerminatedTTL: DefaultContainerTerminatedTTL,
+		ObserveAllContainers:   false,
 	}
 }
 

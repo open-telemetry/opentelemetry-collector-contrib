@@ -270,3 +270,62 @@ func TestPodObjectInitContainerWithPort(t *testing.T) {
 	endpoints := convertPodToEndpoints("namespace", podRunningWithInitContainerWithPort, runningOnly, true, time.Hour)
 	require.Equal(t, expectedEndpoints, endpoints)
 }
+
+func TestPodObjectCrashLoopBackOffWithinTTL(t *testing.T) {
+	// Test that containers in CrashLoopBackOff are observable within TTL
+	expectedEndpoints := []observer.Endpoint{
+		{
+			ID:     "namespace/pod-crashloop-UID",
+			Target: "1.2.3.4",
+			Details: &observer.Pod{
+				Name:      "pod-crashloop",
+				Namespace: "default",
+				UID:       "pod-crashloop-UID",
+				Labels:    map[string]string{"env": "prod"},
+			},
+		},
+		{
+			ID:     "namespace/pod-crashloop-UID/crashloop-container",
+			Target: "1.2.3.4",
+			Details: &observer.PodContainer{
+				Name:            "crashloop-container",
+				Image:           "crashloop-image",
+				ContainerID:     "crashloop-container-id",
+				IsInitContainer: false,
+				Pod: observer.Pod{
+					Name:      "pod-crashloop",
+					Namespace: "default",
+					UID:       "pod-crashloop-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+			},
+		},
+		{
+			ID:     "namespace/pod-crashloop-UID/http(8080)",
+			Target: "1.2.3.4:8080",
+			Details: &observer.Port{
+				Name: "http",
+				Pod: observer.Pod{
+					Name:      "pod-crashloop",
+					Namespace: "default",
+					UID:       "pod-crashloop-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+				Port:           8080,
+				Transport:      observer.ProtocolTCP,
+				ContainerName:  "crashloop-container",
+				ContainerID:    "crashloop-container-id",
+				ContainerImage: "crashloop-image",
+			},
+		},
+	}
+	endpoints := convertPodToEndpoints("namespace", podWithCrashLoopBackOff, runningOnly, false, time.Hour)
+	require.Equal(t, expectedEndpoints, endpoints)
+}
+
+func TestPodObjectCrashLoopBackOffExpiredTTL(t *testing.T) {
+	// Test that containers in CrashLoopBackOff are excluded after TTL expires
+	endpoints := convertPodToEndpoints("namespace", podWithCrashLoopBackOff, runningOnly, false, 0)
+	require.Len(t, endpoints, 1)
+	require.Equal(t, observer.EndpointID("namespace/pod-crashloop-UID"), endpoints[0].ID)
+}
