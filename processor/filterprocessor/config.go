@@ -439,7 +439,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 	}
 
 	if len(cfg.MetricConditions) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()), common.WithMetricErrorMode(cfg.ErrorMode))
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(cfg.metricFunctions), common.WithDataPointParser(cfg.dataPointFunctions), common.WithMetricErrorMode(cfg.ErrorMode))
 		if err != nil {
 			return err
 		}
