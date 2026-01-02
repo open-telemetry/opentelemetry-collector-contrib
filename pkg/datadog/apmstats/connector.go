@@ -50,6 +50,9 @@ type traceToMetricConnector struct {
 
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
+	// We use the deprecated Translator type because it's the only one that provides
+	// the StatsToMetrics method needed for APM stats conversion.
+	//nolint:staticcheck // SA1019: Using deprecated Translator type for StatsToMetrics functionality
 	translator *metrics.Translator
 
 	// statsout specifies the channel through which the agent will output Stats Payloads
@@ -76,6 +79,9 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	if err != nil {
 		return nil, fmt.Errorf("failed to create attributes translator: %w", err)
 	}
+	// We use the deprecated NewTranslator because the new NewDefaultTranslator
+	// doesn't provide the StatsToMetrics method which is required for APM stats conversion.
+	//nolint:staticcheck // SA1019: Using deprecated NewTranslator for StatsToMetrics functionality
 	trans, err := metrics.NewTranslator(set, attributesTranslator)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metrics translator: %w", err)
