@@ -218,3 +218,55 @@ func TestPodObjectTerminatedContainerExpiredTTL(t *testing.T) {
 	require.Len(t, endpoints, 1)
 	require.Equal(t, observer.EndpointID("namespace/pod-terminated-container-UID"), endpoints[0].ID)
 }
+
+func TestPodObjectInitContainerWithPort(t *testing.T) {
+	// Test that init containers with ports get port endpoints just like regular containers
+	expectedEndpoints := []observer.Endpoint{
+		{
+			ID:     "namespace/pod-init-with-port-UID",
+			Target: "1.2.3.4",
+			Details: &observer.Pod{
+				Name:      "pod-init-with-port",
+				Namespace: "default",
+				UID:       "pod-init-with-port-UID",
+				Labels:    map[string]string{"env": "prod"},
+			},
+		},
+		{
+			ID:     "namespace/pod-init-with-port-UID/init-with-port",
+			Target: "1.2.3.4",
+			Details: &observer.PodContainer{
+				Name:            "init-with-port",
+				Image:           "init-image-with-port",
+				ContainerID:     "init-with-port-id",
+				IsInitContainer: true,
+				Pod: observer.Pod{
+					Name:      "pod-init-with-port",
+					Namespace: "default",
+					UID:       "pod-init-with-port-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+			},
+		},
+		{
+			ID:     "namespace/pod-init-with-port-UID/init-http(8080)",
+			Target: "1.2.3.4:8080",
+			Details: &observer.Port{
+				Name: "init-http",
+				Pod: observer.Pod{
+					Name:      "pod-init-with-port",
+					Namespace: "default",
+					UID:       "pod-init-with-port-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+				Port:           8080,
+				Transport:      observer.ProtocolTCP,
+				ContainerName:  "init-with-port",
+				ContainerID:    "init-with-port-id",
+				ContainerImage: "init-image-with-port",
+			},
+		},
+	}
+	endpoints := convertPodToEndpoints("namespace", podRunningWithInitContainerWithPort, runningOnly, true, time.Hour)
+	require.Equal(t, expectedEndpoints, endpoints)
+}

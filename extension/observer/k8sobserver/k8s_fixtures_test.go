@@ -70,6 +70,22 @@ var initContainer1 = v1.Container{
 	Image: "init-image-1",
 }
 
+var initContainerWithPort = v1.Container{
+	Name:  "init-with-port",
+	Image: "init-image-with-port",
+	Ports: []v1.ContainerPort{
+		{Name: "init-http", ContainerPort: 8080, Protocol: v1.ProtocolTCP},
+	},
+}
+
+var initContainerWithPortStatus = v1.ContainerStatus{
+	Name: "init-with-port",
+	State: v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{ExitCode: 0, FinishedAt: metav1.Now()},
+	},
+	ContainerID: "containerd://init-with-port-id",
+}
+
 var container1StatusWaiting = v1.ContainerStatus{
 	Name: "container-1",
 	State: v1.ContainerState{
@@ -168,6 +184,17 @@ var podRunningWithTerminatedContainer = func() *v1.Pod {
 	}
 	pod.Spec.Containers = []v1.Container{
 		container2,
+	}
+	return pod
+}()
+
+var podRunningWithInitContainerWithPort = func() *v1.Pod {
+	pod := newPod("pod-init-with-port")
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
+		initContainerWithPortStatus,
+	}
+	pod.Spec.InitContainers = []v1.Container{
+		initContainerWithPort,
 	}
 	return pod
 }()

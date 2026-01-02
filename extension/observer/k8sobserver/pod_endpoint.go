@@ -41,52 +41,54 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map
 		Details: &podDetails,
 	}}
 
-	// Map of observable containers by name (running or recently terminated).
-	observableContainers := map[string]runningContainer{}
-	initContainers := map[string]runningContainer{}
+	// Process regular containers
+	observableContainers := getObservableContainers(pod.Status.ContainerStatuses, containerTerminatedTTL)
+	endpoints = append(endpoints, createContainerEndpoints(podID, podIP, podDetails, pod.Spec.Containers, observableContainers, false)...)
 
-	for i := range pod.Status.ContainerStatuses {
-		container := &pod.Status.ContainerStatuses[i]
-		if container.State.Running != nil {
-			// Always include running containers
-			observableContainers[container.Name] = containerIDWithRuntime(container)
-		} else if container.State.Terminated != nil {
-			// Include terminated containers if they terminated within the TTL
-			if time.Since(container.State.Terminated.FinishedAt.Time) <= containerTerminatedTTL {
-				observableContainers[container.Name] = containerIDWithRuntime(container)
-			}
-		}
-	}
-
+	// Process init containers if enabled
 	if observeInitContainers {
-		for i := range pod.Status.InitContainerStatuses {
-			container := &pod.Status.InitContainerStatuses[i]
-			if container.State.Running != nil {
-				// Always include running init containers
-				initContainers[container.Name] = containerIDWithRuntime(container)
-			} else if container.State.Terminated != nil {
-				// Include terminated init containers if they terminated within the TTL
-				if time.Since(container.State.Terminated.FinishedAt.Time) <= containerTerminatedTTL {
-					initContainers[container.Name] = containerIDWithRuntime(container)
-				}
+		initContainers := getObservableContainers(pod.Status.InitContainerStatuses, containerTerminatedTTL)
+		endpoints = append(endpoints, createContainerEndpoints(podID, podIP, podDetails, pod.Spec.InitContainers, initContainers, true)...)
+	}
+
+	return endpoints
+}
+
+// getObservableContainers returns a map of container names to their runtime info
+// for containers that are either running or recently terminated (within the TTL).
+func getObservableContainers(statuses []v1.ContainerStatus, ttl time.Duration) map[string]runningContainer {
+	result := map[string]runningContainer{}
+	for i := range statuses {
+		container := &statuses[i]
+		if container.State.Running != nil {
+			result[container.Name] = containerIDWithRuntime(container)
+		} else if container.State.Terminated != nil {
+			if time.Since(container.State.Terminated.FinishedAt.Time) <= ttl {
+				result[container.Name] = containerIDWithRuntime(container)
 			}
 		}
 	}
+	return result
+}
 
-	// Create endpoint for each named container port.
-	for i := range pod.Spec.Containers {
-		container := &pod.Spec.Containers[i]
-		var rc runningContainer
-		var ok bool
-		if rc, ok = observableContainers[container.Name]; !ok {
+// createContainerEndpoints creates PodContainer and Port endpoints for the given containers.
+func createContainerEndpoints(
+	podID observer.EndpointID,
+	podIP string,
+	podDetails observer.Pod,
+	containers []v1.Container,
+	observableContainers map[string]runningContainer,
+	isInitContainer bool,
+) []observer.Endpoint {
+	var endpoints []observer.Endpoint
+	for i := range containers {
+		container := &containers[i]
+		rc, ok := observableContainers[container.Name]
+		if !ok {
 			continue
 		}
 
-		endpointID := observer.EndpointID(
-			fmt.Sprintf(
-				"%s/%s", podID, container.Name,
-			),
-		)
+		endpointID := observer.EndpointID(fmt.Sprintf("%s/%s", podID, container.Name))
 		endpoints = append(endpoints, observer.Endpoint{
 			ID:     endpointID,
 			Target: podIP,
@@ -94,20 +96,16 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map
 				Name:            container.Name,
 				ContainerID:     rc.ID,
 				Image:           container.Image,
-				IsInitContainer: false,
+				IsInitContainer: isInitContainer,
 				Pod:             podDetails,
 			},
 		})
 
 		// Create endpoint for each named container port.
 		for _, port := range container.Ports {
-			endpointID = observer.EndpointID(
-				fmt.Sprintf(
-					"%s/%s(%d)", podID, port.Name, port.ContainerPort,
-				),
-			)
+			portEndpointID := observer.EndpointID(fmt.Sprintf("%s/%s(%d)", podID, port.Name, port.ContainerPort))
 			endpoints = append(endpoints, observer.Endpoint{
-				ID:     endpointID,
+				ID:     portEndpointID,
 				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
 				Details: &observer.Port{
 					Pod:            podDetails,
@@ -121,34 +119,6 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map
 			})
 		}
 	}
-
-	if observeInitContainers {
-		for i := range pod.Spec.InitContainers {
-			container := &pod.Spec.InitContainers[i]
-			rc, ok := initContainers[container.Name]
-			if !ok {
-				continue
-			}
-
-			endpointID := observer.EndpointID(
-				fmt.Sprintf(
-					"%s/%s", podID, container.Name,
-				),
-			)
-			endpoints = append(endpoints, observer.Endpoint{
-				ID:     endpointID,
-				Target: podIP,
-				Details: &observer.PodContainer{
-					Name:            container.Name,
-					ContainerID:     rc.ID,
-					Image:           container.Image,
-					IsInitContainer: true,
-					Pod:             podDetails,
-				},
-			})
-		}
-	}
-
 	return endpoints
 }
 
