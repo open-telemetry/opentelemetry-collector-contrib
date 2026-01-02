@@ -452,7 +452,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 	}
 
 	if len(cfg.LogConditions) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(filterottl.StandardLogFuncs()), common.WithLogErrorMode(cfg.ErrorMode))
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(cfg.logFunctions), common.WithLogErrorMode(cfg.ErrorMode))
 		if err != nil {
 			return err
 		}
