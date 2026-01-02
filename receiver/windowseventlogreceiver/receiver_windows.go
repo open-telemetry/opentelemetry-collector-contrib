@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
 	"github.com/observiq/bindplane-otel-collector/receiver/windowseventlogreceiver/internal/metadata"
 	"github.com/observiq/bindplane-otel-collector/receiver/windowseventlogreceiver/internal/sidcache"
@@ -51,8 +52,8 @@ func createLogsReceiver(
 		}
 
 		set.Logger.Info("SID resolution enabled",
-			"cache_size", cacheConfig.Size,
-			"cache_ttl", cacheConfig.TTL)
+			zap.Int("cache_size", cacheConfig.Size),
+			zap.Duration("cache_ttl", cacheConfig.TTL))
 	}
 
 	// Wrap the consumer with SID enrichment
