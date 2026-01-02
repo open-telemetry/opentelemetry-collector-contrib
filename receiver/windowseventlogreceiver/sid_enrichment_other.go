@@ -25,7 +25,7 @@ import (
 
 // newSIDEnrichingConsumer is a stub for non-Windows platforms
 // This allows the code to compile on macOS/Linux during development
-func newSIDEnrichingConsumer(next consumer.Logs, cache sidcache.Cache, logger *zap.Logger) consumer.Logs {
+func newSIDEnrichingConsumer(next consumer.Logs, _ sidcache.Cache, _ *zap.Logger) consumer.Logs {
 	// SID enrichment is only supported on Windows
 	// Return the next consumer unchanged
 	return next

@@ -20,6 +20,6 @@ import "fmt"
 
 // lookupSID is a stub for non-Windows platforms
 // This allows the code to compile on macOS/Linux during development
-func lookupSID(sidString string) (*ResolvedSID, error) {
+func lookupSID(_ string) (*ResolvedSID, error) {
 	return nil, fmt.Errorf("SID lookup is only supported on Windows")
 }

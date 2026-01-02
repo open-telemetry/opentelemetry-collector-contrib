@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package sidcache provides a high-performance LRU cache for Windows SID-to-name resolution.
+// It uses the Windows Local Security Authority (LSA) API to resolve Security Identifiers (SIDs)
+// to human-readable user and group names, with support for well-known SIDs and TTL-based expiration.
 package sidcache
 
 import (
@@ -68,7 +71,7 @@ func New(config Config) (Cache, error) {
 	}
 
 	// Create LRU cache with eviction callback
-	lruCache, err := lru.NewWithEvict(config.Size, func(key string, value *cacheEntry) {
+	lruCache, err := lru.NewWithEvict(config.Size, func(_ string, _ *cacheEntry) {
 		c.evictions.Add(1)
 	})
 	if err != nil {
