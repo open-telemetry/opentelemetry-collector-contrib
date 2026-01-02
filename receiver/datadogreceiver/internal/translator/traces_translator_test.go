@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -208,7 +207,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req1.Header.Set(header.TracerVersion, "1.2.3")
 	attrs1 := pcommon.NewMap()
 	upsertHeadersAttributes(req1, attrs1)
-	val, ok := attrs1.Get(string(semconv.TelemetrySDKVersionKey))
+	val, ok := attrs1.Get("telemetry.sdk.version")
 	assert.True(t, ok)
 	assert.Equal(t, "Datadog-1.2.3", val.Str())
 
@@ -217,7 +216,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req2.Header.Set(header.Lang, ".NET")
 	attrs2 := pcommon.NewMap()
 	upsertHeadersAttributes(req2, attrs2)
-	val, ok = attrs2.Get(string(semconv.TelemetrySDKLanguageKey))
+	val, ok = attrs2.Get("telemetry.sdk.language")
 	assert.True(t, ok)
 	assert.Equal(t, "dotnet", val.Str())
 }
@@ -333,7 +332,7 @@ func TestToTracesServiceName(t *testing.T) {
 
 			traces, _ := ToTraces(zap.NewNop(), payload, req, nil)
 			for _, rs := range traces.ResourceSpans().All() {
-				actualServiceName, _ := rs.Resource().Attributes().Get(string(semconv.ServiceNameKey))
+				actualServiceName, _ := rs.Resource().Attributes().Get("service.name")
 				assert.Equal(t, tt.expectedServiceName, actualServiceName.AsString())
 				for _, ss := range rs.ScopeSpans().All() {
 					for _, span := range ss.Spans().All() {
@@ -368,11 +367,11 @@ func TestToTraces(t *testing.T) {
 			},
 			"select customers",
 			map[string]string{
-				string(semconv.DBQuerySummaryKey):   "select customers",
-				string(semconv.DBQueryTextKey):      "select * from customers",
-				string(semconv.DBOperationNameKey):  "select",
-				string(semconv.DBCollectionNameKey): "customers",
-				string(semconv.DBNamespaceKey):      "pg_customers",
+				"db.query.summary":   "select customers",
+				"db.query.text":      "select * from customers",
+				"db.operation.name":  "select",
+				"db.collection.name": "customers",
+				"db.namespace":       "pg_customers",
 			},
 		},
 		{
@@ -474,8 +473,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"POST /api/order",
 			map[string]string{
-				string(semconv.HTTPRequestMethodKey): "POST",
-				string(semconv.HTTPRouteKey):         "/api/order",
+				"http.request.method": "POST",
+				"http.route":          "/api/order",
 			},
 		},
 		{
@@ -488,7 +487,7 @@ func TestToTraces(t *testing.T) {
 			},
 			"POST",
 			map[string]string{
-				string(semconv.HTTPRequestMethodKey): "POST",
+				"http.request.method": "POST",
 			},
 		},
 		{
@@ -501,7 +500,7 @@ func TestToTraces(t *testing.T) {
 			},
 			"POST",
 			map[string]string{
-				string(semconv.HTTPRequestMethodKey): "POST",
+				"http.request.method": "POST",
 			},
 		},
 		{
@@ -515,8 +514,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"POST /route",
 			map[string]string{
-				string(semconv.HTTPRequestMethodKey): "POST",
-				string(semconv.HTTPRouteKey):         "/route",
+				"http.request.method": "POST",
+				"http.route":          "/route",
 			},
 		},
 		{
@@ -532,9 +531,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
-				string(semconv.RPCMethodKey):         "MyMethod",
-				string(semconv.RPCGRPCStatusCodeKey): "0",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
 			},
 		},
 		{
@@ -549,10 +548,10 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
-				string(semconv.RPCMethodKey):         "MyMethod",
-				string(semconv.RPCGRPCStatusCodeKey): "0",
-				string(semconv.RPCSystemKey):         semconv.RPCSystemGRPC.Value.AsString(),
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
+				"rpc.system":           "grpc",
 			},
 		},
 		{
@@ -568,9 +567,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
-				string(semconv.RPCMethodKey):         "MyMethod",
-				string(semconv.RPCGRPCStatusCodeKey): "2",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "2",
 			},
 		},
 		{
@@ -586,8 +585,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService",
 			map[string]string{
-				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
-				string(semconv.RPCGRPCStatusCodeKey): "0",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.grpc.status_code": "0",
 			},
 		},
 		{
@@ -603,9 +602,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
-				string(semconv.RPCMethodKey):         "MyMethod",
-				string(semconv.RPCGRPCStatusCodeKey): "0",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
 			},
 		},
 		{
@@ -621,9 +620,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				string(semconv.RPCServiceKey):        "mydomain.MyDomainService",
-				string(semconv.RPCMethodKey):         "MyMethod",
-				string(semconv.RPCGRPCStatusCodeKey): "0",
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
 			},
 		},
 		{
@@ -639,11 +638,11 @@ func TestToTraces(t *testing.T) {
 			},
 			"S3/headObject",
 			map[string]string{
-				string(semconv.RPCSystemKey):    "aws-api",
-				string(semconv.RPCServiceKey):   "S3",
-				string(semconv.RPCMethodKey):    "headObject",
-				string(semconv.AWSS3BucketKey):  "my-bucket",
-				string(semconv.AWSRequestIDKey): "1234567890",
+				"rpc.system":     "aws-api",
+				"rpc.service":    "S3",
+				"rpc.method":     "headObject",
+				"aws.s3.bucket":  "my-bucket",
+				"aws.request_id": "1234567890",
 			},
 		},
 	}
