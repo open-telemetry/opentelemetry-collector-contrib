@@ -65,7 +65,7 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 
 	if h.hub == nil { // set manually for testing.
 		if azEventHubFeatureGate.IsEnabled() {
-			newHub, err := newAzeventhubWrapper(h)
+			newHub, err := newAzeventhubWrapper(h, host)
 			if err != nil {
 				return err
 			}

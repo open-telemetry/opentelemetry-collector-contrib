@@ -7,12 +7,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
@@ -54,16 +57,48 @@ func getConsumerGroup(config *Config) string {
 	return config.ConsumerGroup
 }
 
-func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
-	consumerGroup := getConsumerGroup(h.config)
+// createConsumerClient creates a new Azure Event Hub consumer client.
+// If auth is configured, it uses the auth extension to create the client.
+// Otherwise, it uses the connection string.
+func createConsumerClient(
+	config *Config,
+	host component.Host,
+	consumerGroup string,
+	logger *zap.Logger,
+) (*azeventhubs.ConsumerClient, error) {
+	if config.Auth != nil {
+		if config.Connection != "" {
+			logger.Warn("both 'auth' and 'connection' are specified, 'connection' will be ignored.")
+		}
+		ext, ok := host.GetExtensions()[*config.Auth]
+		if !ok {
+			return nil, fmt.Errorf("failed to resolve auth extension %q", *config.Auth)
+		}
+		credential, ok := ext.(azcore.TokenCredential)
+		if !ok {
+			return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", *config.Auth)
+		}
 
-	hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
-		h.config.Connection,
+		return azeventhubs.NewConsumerClient(
+			config.EventHub.Namespace,
+			config.EventHub.Name,
+			consumerGroup,
+			credential,
+			&azeventhubs.ConsumerClientOptions{},
+		)
+	}
+	return azeventhubs.NewConsumerClientFromConnectionString(
+		config.Connection,
 		"",
 		consumerGroup,
 		&azeventhubs.ConsumerClientOptions{},
 	)
+}
 
+func newAzeventhubWrapper(h *eventhubHandler, host component.Host) (*hubWrapperAzeventhubImpl, error) {
+	consumerGroup := getConsumerGroup(h.config)
+
+	hub, newHubErr := createConsumerClient(h.config, host, consumerGroup, h.settings.Logger)
 	if newHubErr != nil {
 		h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
 		return nil, newHubErr
@@ -261,6 +296,9 @@ func (h *hubWrapperAzeventhubImpl) getStartPos(
 }
 
 func (h *hubWrapperAzeventhubImpl) namespace() (string, error) {
+	if h.config.Auth != nil {
+		return h.config.EventHub.Namespace, nil
+	}
 	parsed, err := azeventhubs.ParseConnectionString(h.config.Connection)
 	if err != nil {
 		return "", err
