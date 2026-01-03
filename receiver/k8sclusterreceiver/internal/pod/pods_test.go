@@ -88,6 +88,137 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 }
 
+func TestSidecarMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("main-container"),
+		testutils.NewPodStatusWithContainer("main-container", containerIDWithPrefix("main-id")),
+	)
+
+	// Add a regular init container (should NOT be collected)
+	pod.Spec.InitContainers = append(pod.Spec.InitContainers, corev1.Container{
+		Name: "regular-init",
+		Resources: corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU: *resource.NewQuantity(1, resource.DecimalSI),
+			},
+		},
+	})
+	pod.Status.InitContainerStatuses = append(pod.Status.InitContainerStatuses, corev1.ContainerStatus{
+		Name:        "regular-init",
+		ContainerID: containerIDWithPrefix("regular-init-id"),
+	})
+
+	// Add a sidecar container (should be collected)
+	restartPolicyAlways := corev1.ContainerRestartPolicyAlways
+	pod.Spec.InitContainers = append(pod.Spec.InitContainers, corev1.Container{
+		Name:          "sidecar",
+		RestartPolicy: &restartPolicyAlways,
+		Resources: corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU: *resource.NewQuantity(2, resource.DecimalSI),
+			},
+		},
+	})
+	pod.Status.InitContainerStatuses = append(pod.Status.InitContainerStatuses, corev1.ContainerStatus{
+		Name:        "sidecar",
+		ContainerID: containerIDWithPrefix("sidecar-id"),
+	})
+
+	// Transform the pod to ensure RestartPolicy is preserved
+	transformedPod := Transform(pod)
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, transformedPod, ts)
+	m := mb.Emit()
+
+	// Verify that we have metrics for "main-container" and "sidecar", but not "regular-init"
+	foundMain := false
+	foundSidecar := false
+	foundRegularInit := false
+
+	rms := m.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		attrs := rm.Resource().Attributes()
+		containerName, ok := attrs.Get("k8s.container.name")
+		if !ok {
+			continue
+		}
+
+		if containerName.Str() == "main-container" {
+			foundMain = true
+		}
+		if containerName.Str() == "sidecar" {
+			foundSidecar = true
+		}
+		if containerName.Str() == "regular-init" {
+			foundRegularInit = true
+		}
+	}
+
+	assert.True(t, foundMain, "Should collect metrics for main container")
+	assert.True(t, foundSidecar, "Should collect metrics for sidecar container")
+	assert.False(t, foundRegularInit, "Should NOT collect metrics for regular init container")
+}
+
+func TestEphemeralContainerMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("main-container"),
+		testutils.NewPodStatusWithContainer("main-container", containerIDWithPrefix("main-id")),
+	)
+
+	// Add an ephemeral container
+	pod.Spec.EphemeralContainers = append(pod.Spec.EphemeralContainers, corev1.EphemeralContainer{
+		EphemeralContainerCommon: corev1.EphemeralContainerCommon{
+			Name: "debug-container",
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU: *resource.NewQuantity(1, resource.DecimalSI),
+				},
+			},
+		},
+	})
+	pod.Status.EphemeralContainerStatuses = append(pod.Status.EphemeralContainerStatuses, corev1.ContainerStatus{
+		Name:        "debug-container",
+		ContainerID: containerIDWithPrefix("debug-id"),
+	})
+
+	// Transform the pod
+	transformedPod := Transform(pod)
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, transformedPod, ts)
+	m := mb.Emit()
+
+	// Verify that we have metrics for "main-container" and "debug-container"
+	foundMain := false
+	foundEphemeral := false
+
+	rms := m.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		attrs := rm.Resource().Attributes()
+		containerName, ok := attrs.Get("k8s.container.name")
+		if !ok {
+			continue
+		}
+
+		if containerName.Str() == "main-container" {
+			foundMain = true
+		}
+		if containerName.Str() == "debug-container" {
+			foundEphemeral = true
+		}
+	}
+
+	assert.True(t, foundMain, "Should collect metrics for main container")
+	assert.True(t, foundEphemeral, "Should collect metrics for ephemeral container")
+}
+
 var containerIDWithPrefix = func(containerID string) string {
 	return "docker://" + containerID
 }
@@ -446,6 +577,30 @@ func TestTransform(t *testing.T) {
 					},
 				},
 			},
+			InitContainers: []corev1.Container{
+				{
+					Name:  "my-init-container",
+					Image: "busybox:latest",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
+						},
+					},
+				},
+				{
+					Name:  "my-sidecar-container",
+					Image: "sidecar:latest",
+					RestartPolicy: func() *corev1.ContainerRestartPolicy {
+						p := corev1.ContainerRestartPolicyAlways
+						return &p
+					}(),
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
+						},
+					},
+				},
+			},
 		},
 		Status: corev1.PodStatus{
 			Phase:     corev1.PodRunning,
@@ -507,6 +662,28 @@ func TestTransform(t *testing.T) {
 						Limits: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("1"),
 							corev1.ResourceMemory: resource.MustParse("2Gi"),
+						},
+					},
+				},
+			},
+			InitContainers: []corev1.Container{
+				{
+					Name: "my-init-container",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
+						},
+					},
+				},
+				{
+					Name: "my-sidecar-container",
+					RestartPolicy: func() *corev1.ContainerRestartPolicy {
+						p := corev1.ContainerRestartPolicyAlways
+						return &p
+					}(),
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
 						},
 					},
 				},
