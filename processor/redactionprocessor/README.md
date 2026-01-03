@@ -108,6 +108,10 @@ processors:
       enabled: true
       # attributes is a list of attribute keys that contain URLs to be sanitized
       attributes: ["http.url", "url"]
+      # sanitize_span_name controls whether span names should be sanitized for URLs (default: true)
+      # When enabled, span names containing "/" will be sanitized to reduce cardinality
+      # Set to false to disable span name sanitization while keeping attribute sanitization active
+      sanitize_span_name: true
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
@@ -138,7 +142,15 @@ are `md5`, `sha1` and `sha3` (SHA-256).
 
 The `url_sanitizer` configuration enables sanitization of URLs in specified attributes by removing potentially sensitive information like UUIDs, timestamps, and other non-essential path segments. This is particularly useful for reducing cardinality in telemetry data while preserving the essential parts of URLs for troubleshooting.
 
-Additionally, URL sanitization automatically applies to span names for client and server span types that contain "/" characters. This helps reduce cardinality issues caused by high-variability URL paths in span names while preserving the essential routing information needed for observability.
+### Span Name Sanitization
+
+By default, when URL sanitization is enabled, span names for client and server span types that contain "/" characters are automatically sanitized. This helps reduce cardinality issues caused by high-variability URL paths in span names while preserving essential routing information.
+
+You can control this behavior using the `sanitize_span_name` option:
+- `true` (default): Span names will be sanitized along with attributes
+- `false`: Only attributes are sanitized, span names remain unchanged
+
+This option is available independently for both URL and database sanitization, allowing fine-grained control over which span names should be redacted.
 
 For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card
@@ -165,6 +177,10 @@ processors:
     
     # Database sanitization configuration
     db_sanitizer:
+      # sanitize_span_name controls whether span names should be sanitized for database queries (default: true)
+      # When enabled, span names will be obfuscated to remove sensitive query details
+      # Set to false to disable span name sanitization while keeping attribute sanitization active
+      sanitize_span_name: true
       sql:
         enabled: true
         attributes: ["db.statement", "db.query"]
@@ -191,5 +207,8 @@ The database sanitizer will:
 - Sanitize MongoDB queries and JSON payloads
 - Process only specified attributes if provided
 - Preserve query structure while removing sensitive data
+- Sanitize span names containing database queries (can be controlled with `sanitize_span_name`)
+
+By default, database query sanitization also applies to span names for client span types. You can disable this behavior by setting `sanitize_span_name: false` in the `db_sanitizer` configuration, which allows you to keep original database query span names while still sanitizing the query values in attributes.
 
 This provides an additional layer of protection when collecting telemetry that includes database operations.
