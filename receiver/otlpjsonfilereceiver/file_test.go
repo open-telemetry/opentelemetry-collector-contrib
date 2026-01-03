@@ -209,6 +209,7 @@ func testdataConfigYamlAsMap() *Config {
 			MaxLogSize:         1024 * 1024,
 			MaxConcurrentFiles: 1024,
 			FlushPeriod:        500 * time.Millisecond,
+			OnTruncate:         "ignore",
 			Criteria: matcher.Criteria{
 				Include: []string{"/var/log/*.log"},
 				Exclude: []string{"/var/log/example.log"},
