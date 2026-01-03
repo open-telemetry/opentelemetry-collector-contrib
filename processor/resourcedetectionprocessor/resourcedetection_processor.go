@@ -27,11 +27,14 @@ type resourceDetectionProcessor struct {
 
 // Start is invoked during service startup.
 func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component.Host) error {
-	client, _ := rdp.httpClientSettings.ToClient(ctx, host.GetExtensions(), rdp.telemetrySettings)
+	client, err := rdp.httpClientSettings.ToClient(ctx, host.GetExtensions(), rdp.telemetrySettings)
+	if err != nil {
+		return err
+	}
 	ctx = internal.ContextWithClient(ctx, client)
 
 	// Perform initial resource detection
-	err := rdp.provider.Refresh(ctx, client)
+	err = rdp.provider.Refresh(ctx, client)
 	if err != nil {
 		return err
 	}

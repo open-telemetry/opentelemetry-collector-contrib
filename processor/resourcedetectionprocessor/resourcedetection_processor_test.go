@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -795,5 +796,70 @@ func TestProcessorCapabilities(t *testing.T) {
 
 		caps := pp.Capabilities()
 		assert.True(t, caps.MutatesData, "processor should mutate data")
+	})
+}
+
+// TestStartFailsGracefullyOnInvalidHTTPClientConfig tests that the processor
+// returns an error instead of panicking when ToClient() fails.
+func TestStartFailsGracefullyOnInvalidHTTPClientConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Detectors = []string{"env"}
+
+	// Configure invalid TLS settings that will cause ToClient() to fail
+	oCfg.ClientConfig = confighttp.ClientConfig{
+		TLS: configtls.ClientConfig{
+			Config: configtls.Config{
+				CAFile:   "/nonexistent/ca.crt",
+				CertFile: "/nonexistent/cert.crt",
+				KeyFile:  "/nonexistent/key.pem",
+			},
+		},
+	}
+
+	ctx := t.Context()
+	host := componenttest.NewNopHost()
+
+	t.Run("traces processor", func(t *testing.T) {
+		tp, err := factory.CreateTraces(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+		require.NotNil(t, tp)
+
+		// Before the fix, this would panic with nil pointer dereference
+		// After the fix, it should return an error gracefully
+		err = tp.Start(ctx, host)
+		require.Error(t, err, "Start should fail when ToClient() fails")
+		require.Contains(t, err.Error(), "failed to load")
+	})
+
+	t.Run("metrics processor", func(t *testing.T) {
+		mp, err := factory.CreateMetrics(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+		require.NotNil(t, mp)
+
+		err = mp.Start(ctx, host)
+		require.Error(t, err, "Start should fail when ToClient() fails")
+		require.Contains(t, err.Error(), "failed to load")
+	})
+
+	t.Run("logs processor", func(t *testing.T) {
+		lp, err := factory.CreateLogs(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+		require.NotNil(t, lp)
+
+		err = lp.Start(ctx, host)
+		require.Error(t, err, "Start should fail when ToClient() fails")
+		require.Contains(t, err.Error(), "failed to load")
+	})
+
+	t.Run("profiles processor", func(t *testing.T) {
+		pp, err := factory.(xprocessor.Factory).CreateProfiles(ctx, processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		require.NoError(t, err)
+		require.NotNil(t, pp)
+
+		err = pp.Start(ctx, host)
+		require.Error(t, err, "Start should fail when ToClient() fails")
+		require.Contains(t, err.Error(), "failed to load")
 	})
 }
