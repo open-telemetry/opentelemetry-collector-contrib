@@ -52,6 +52,14 @@ The amount of dirty memory according to `/proc/meminfo`.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+### system.memory.darwin.pressure
+
+Percentage of memory pressure on Darwin system. This is a more accurate alternative than system.memory.usage with state=used.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Int | Development |
+
 ### system.memory.limit
 
 Total bytes of memory available.

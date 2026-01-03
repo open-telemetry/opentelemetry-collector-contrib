@@ -63,7 +63,8 @@ func (s *memoryScraper) recordLinuxMemoryDirtyMetric(now pcommon.Timestamp, memI
 	s.mb.RecordSystemLinuxMemoryDirtyDataPoint(now, int64(memInfo.Dirty))
 }
 
-func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
+func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) error {
 	s.recordLinuxMemoryAvailableMetric(now, memInfo)
 	s.recordLinuxMemoryDirtyMetric(now, memInfo)
+	return nil
 }
