@@ -495,3 +495,61 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	sink2.ExpectTokens(t, log2, log3)
 	require.NoError(t, operator2.Stop())
 }
+
+// TestRotationPreservesOriginalPath verifies that file path attributes are preserved
+// through rotation (addressing issue #38454)
+func TestRotationPreservesOriginalPath(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Moving files while open is unsupported on Windows")
+	}
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.IncludeFilePath = true
+	cfg.IncludeFileName = true
+
+	operator, sink := testManager(t, cfg)
+	operator.persister = testutil.NewUnscopedMockPersister()
+
+	// Create original log file
+	temp := filetest.OpenTemp(t, tempDir)
+	originalPath := temp.Name()
+	filetest.WriteString(t, temp, "message1\n")
+	temp.Close()
+
+	// Poll to read from original file
+	operator.poll(t.Context())
+	token1, attributes1 := sink.NextCall(t)
+	require.Equal(t, []byte("message1"), token1)
+	// Verify original path is in attributes
+	require.Equal(t, originalPath, attributes1["log.file.path"])
+	require.Equal(t, filepath.Base(originalPath), attributes1["log.file.name"])
+
+	// Wait for all goroutines to finish
+	operator.wg.Wait()
+
+	// Rotate file: rename to .1
+	rotatedPath := fmt.Sprintf("%s.1", originalPath)
+	err := os.Rename(originalPath, rotatedPath)
+	require.NoError(t, err)
+
+	// Append to rotated file
+	rotatedFile, err := os.OpenFile(rotatedPath, os.O_APPEND|os.O_WRONLY, 0o644)
+	require.NoError(t, err)
+	filetest.WriteString(t, rotatedFile, "message2\n")
+	rotatedFile.Close()
+
+	// Poll to read from rotated file
+	operator.poll(t.Context())
+	token2, attributes2 := sink.NextCall(t)
+	require.Equal(t, []byte("message2"), token2)
+	// CRITICAL: Verify the path attribute still shows the ORIGINAL path, not the rotated path
+	require.Equal(t, originalPath, attributes2["log.file.path"],
+		"File path should preserve original path through rotation")
+	require.Equal(t, filepath.Base(originalPath), attributes2["log.file.name"],
+		"File name should preserve original name through rotation")
+	require.NotEqual(t, rotatedPath, attributes2["log.file.path"],
+		"File path should not be the rotated path")
+}

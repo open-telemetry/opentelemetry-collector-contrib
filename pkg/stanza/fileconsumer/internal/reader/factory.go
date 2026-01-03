@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -71,6 +73,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	m := &Metadata{
 		Fingerprint:    fp,
 		FileAttributes: attributes,
+		OriginalPath:   file.Name(),
 		TokenLenState:  tokenlen.State{},
 		FlushState: flush.State{
 			LastDataChange: time.Now(),
@@ -131,12 +134,55 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		}
 	}
 
+	// Preserve original path if metadata is being reused (rotation scenario)
+	// Reset OriginalPath if the file name changed in a way that suggests it's not a rotation
+	if m.OriginalPath == "" {
+		// First time this metadata is used, capture the original path
+		m.OriginalPath = r.fileName
+	} else if !isRotation(m.OriginalPath, r.fileName) {
+		// If the file name changed in a way that doesn't look like rotation,
+		// this is likely a different file recovered from archive, reset the original path
+		m.OriginalPath = r.fileName
+	}
+
 	attributes, err := f.Attributes.Resolve(file)
 	if err != nil {
 		return nil, err
 	}
+
+	// Override file path attributes with original path to preserve them through rotation
+	if f.Attributes.IncludeFilePath {
+		attributes[attrs.LogFilePath] = m.OriginalPath
+	}
+	if f.Attributes.IncludeFileName {
+		attributes[attrs.LogFileName] = filepath.Base(m.OriginalPath)
+	}
+
 	// Copy attributes into existing map to avoid overwriting header attributes
 	maps.Copy(r.FileAttributes, attributes)
 
 	return r, nil
+}
+
+// isRotation checks if newPath appears to be a rotation of originalPath.
+// Rotation typically means the new filename starts with the original filename
+// and adds a suffix (like .1, .20250219-233547, etc.)
+// Returns true if it looks like a rotation, false otherwise.
+func isRotation(originalPath, newPath string) bool {
+	// If paths are identical, definitely not a rotation
+	if originalPath == newPath {
+		return true
+	}
+
+	// Directory must be the same for rotation
+	if filepath.Dir(originalPath) != filepath.Dir(newPath) {
+		return false
+	}
+
+	originalBase := filepath.Base(originalPath)
+	newBase := filepath.Base(newPath)
+
+	// Check if new filename starts with original filename (rotation adds suffix)
+	// e.g., app.log -> app.log.1 or app.log -> app.log.20250219-233547
+	return len(newBase) > len(originalBase) && strings.HasPrefix(newBase, originalBase)
 }
