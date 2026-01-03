@@ -435,9 +435,9 @@ Examples:
 
 The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes.
 
-The map will be mutated such that the number of characters in all string values is less than or equal to the limit. Non-string values are ignored.
+The map will be mutated such that the number of bytes in all string values is less than or equal to the limit. Non-string values are ignored. If the string is valid UTF-8, the truncation will respect UTF-8 character boundaries to avoid producing invalid UTF-8 sequences. This means the resulting string may be slightly shorter than the limit if truncating at exactly the limit would split a multi-byte character.
 
 Examples:
 
