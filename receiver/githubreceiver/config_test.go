@@ -64,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 				"X-Hub-Signature-256": "",
 			},
 		},
+		IDGeneration: "legacy",
 	}
 
 	assert.Equal(t, defaultConfigGitHubReceiver, r0)
@@ -99,6 +100,7 @@ func TestLoadConfig(t *testing.T) {
 					"X-Hub-Signature-256": "",
 				},
 			},
+			IDGeneration: "legacy",
 		},
 	}
 
