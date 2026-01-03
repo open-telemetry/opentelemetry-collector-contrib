@@ -28,14 +28,14 @@ type expHistogramMetrics struct {
 	count              int
 }
 
-func (e *expHistogramMetrics) insert(ctx context.Context, db driver.Conn) error {
+func (e *expHistogramMetrics) insert(ctx context.Context, db driver.Conn, batchOptions []driver.PrepareBatchOption) error {
 	if e.count == 0 {
 		return nil
 	}
 
 	processStart := time.Now()
 
-	batch, err := db.PrepareBatch(ctx, e.insertSQL)
+	batch, err := db.PrepareBatch(ctx, e.insertSQL, batchOptions...)
 	if err != nil {
 		return err
 	}

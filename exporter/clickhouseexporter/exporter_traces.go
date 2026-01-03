@@ -20,8 +20,9 @@ import (
 )
 
 type tracesExporter struct {
-	db        driver.Conn
-	insertSQL string
+	db           driver.Conn
+	insertSQL    string
+	batchOptions []driver.PrepareBatchOption
 
 	logger *zap.Logger
 	cfg    *Config
@@ -56,6 +57,10 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 		}
 	}
 
+	if e.cfg.ReleaseConnection {
+		e.batchOptions = append(e.batchOptions, driver.WithReleaseConnection())
+	}
+
 	return nil
 }
 
@@ -68,7 +73,7 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
-	batch, err := e.db.PrepareBatch(ctx, e.insertSQL)
+	batch, err := e.db.PrepareBatch(ctx, e.insertSQL, e.batchOptions...)
 	if err != nil {
 		return err
 	}
