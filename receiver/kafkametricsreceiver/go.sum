@@ -1,3 +1,5 @@
+cloud.google.com/go/compute/metadata v0.9.0 h1:pDUj4QMoPejqq20dK0Pg2N4yG9zIkYGdBtwLoEkH9Zs=
+cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCBSM6qQI1yTBdEb3C10=
 github.com/IBM/sarama v1.46.3 h1:njRsX6jNlnR+ClJ8XmkO+CM4unbrNr/2vB5KK6UA+IE=
 github.com/IBM/sarama v1.46.3/go.mod h1:GTUYiF9DMOZVe3FwyGT+dtSPceGFIgA+sPc5u6CBwko=
 github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 h1:2jAwFwA0Xgcx94dUId+K24yFabsKYDtAhCgyMit6OqE=
@@ -57,6 +59,8 @@ github.com/go-viper/mapstructure/v2 v2.4.0 h1:EBsztssimR/CONLSZZ04E8qAkxNYq4Qp9L
 github.com/go-viper/mapstructure/v2 v2.4.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/gobwas/glob v0.2.3 h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y=
 github.com/gobwas/glob v0.2.3/go.mod h1:d3Ez4x06l9bZtSvzIay5+Yzi0fmZzPgnTbPcKjJAkT8=
+github.com/golang-jwt/jwt/v5 v5.3.0 h1:pv4AsKCKKZuqlgs5sUmn4x8UlGa0kEVt/puTpKx9vvo=
+github.com/golang-jwt/jwt/v5 v5.3.0/go.mod h1:fxCRLWMO43lRc8nhHWY6LGqRcf+1gQWArsqaEUEa5bE=
 github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/golang/snappy v0.0.4 h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=
@@ -182,6 +186,12 @@ go.opentelemetry.io/collector/consumer/consumertest v0.142.1-0.20251231114627-ad
 go.opentelemetry.io/collector/consumer/consumertest v0.142.1-0.20251231114627-ad49dc64648d/go.mod h1:yq2dhMxFUlCFkRN7LES3fzsTmUDw9VaunyRAka2TEaY=
 go.opentelemetry.io/collector/consumer/xconsumer v0.142.1-0.20251231114627-ad49dc64648d h1:nAaPcDwDaY926JuX+xZykCZoK6ZgwS/Rv8vp2s0RWMs=
 go.opentelemetry.io/collector/consumer/xconsumer v0.142.1-0.20251231114627-ad49dc64648d/go.mod h1:oPN0yJzEpovwlWvmSaiYgtDqGuOmMMLmmg352sqZdsE=
+go.opentelemetry.io/collector/extension v1.48.1-0.20251231114627-ad49dc64648d h1:NX8QGDJuBMeOKUC2DJhdL0VqqE85CpndKi33+jC1LPo=
+go.opentelemetry.io/collector/extension v1.48.1-0.20251231114627-ad49dc64648d/go.mod h1:mKPlW1m7W3s8aRgkZk6ocukkBc4FnIc6GmikteazFXs=
+go.opentelemetry.io/collector/extension/extensionauth v1.48.1-0.20251231114627-ad49dc64648d h1:JtTcuERsn09crS7lBaPHCLSyGZi7CaZDR4Gq9qvP8B4=
+go.opentelemetry.io/collector/extension/extensionauth v1.48.1-0.20251231114627-ad49dc64648d/go.mod h1:b79ltIeOqbHBn4n8IG084APU8dqtB9+NFVL8Ao2wprQ=
+go.opentelemetry.io/collector/extension/extensiontest v0.142.1-0.20251231114627-ad49dc64648d h1:/iegEGNZ9q4jfwK5VGjK2JvsFKF7NiLGf8fc1SB6mr8=
+go.opentelemetry.io/collector/extension/extensiontest v0.142.1-0.20251231114627-ad49dc64648d/go.mod h1:en+IIu8wEHpKeZ5O7FjcG0/vWK+OfPYaLSLLJq3GXYY=
 go.opentelemetry.io/collector/featuregate v1.48.1-0.20251231114627-ad49dc64648d h1:/jTuKc959LzoEhsXlsTGE0XuYw2BxOlzG3/Qdsq6KwQ=
 go.opentelemetry.io/collector/featuregate v1.48.1-0.20251231114627-ad49dc64648d/go.mod h1:/1bclXgP91pISaEeNulRxzzmzMTm4I5Xih2SnI4HRSo=
 go.opentelemetry.io/collector/filter v0.142.1-0.20251231114627-ad49dc64648d h1:dfMzutTP9GNs/LDSKWPzYGZK/CFMaXWx4Fxee/VBZJs=
@@ -251,6 +261,8 @@ golang.org/x/net v0.6.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=
 golang.org/x/net v0.7.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=
 golang.org/x/net v0.47.0 h1:Mx+4dIFzqraBXUugkia1OOvlD6LemFo1ALMHjrXDOhY=
 golang.org/x/net v0.47.0/go.mod h1:/jNxtkgq5yWUGYkaZGqo27cfGZ1c5Nen03aYrrKpVRU=
+golang.org/x/oauth2 v0.32.0 h1:jsCblLleRMDrxMN29H3z/k1KliIvpLgCkE6R8FXXNgY=
+golang.org/x/oauth2 v0.32.0/go.mod h1:lzm5WQJQwKZ3nwavOZ3IS5Aulzxi68dUSgRHujetwEA=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.18.0 h1:kr88TuHDroi+UVf+0hZnirlk8o8T+4MrK6mr60WkH/I=
