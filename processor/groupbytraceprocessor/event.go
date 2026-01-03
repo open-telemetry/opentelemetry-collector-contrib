@@ -314,6 +314,14 @@ type eventMachineWorker struct {
 
 func (w *eventMachineWorker) start() {
 	for {
+		// Prioritize shutdown: check if we should stop before processing next event
+		select {
+		case <-w.machine.close:
+			return
+		default:
+		}
+
+		// Process events or handle shutdown
 		select {
 		case e := <-w.events:
 			w.machine.handleEvent(e, w)
