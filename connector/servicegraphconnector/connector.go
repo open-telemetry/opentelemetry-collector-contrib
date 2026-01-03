@@ -96,10 +96,6 @@ type serviceGraphConnector struct {
 func newConnector(set component.TelemetrySettings, config component.Config, next consumer.Metrics) (*serviceGraphConnector, error) {
 	pConfig := config.(*Config)
 
-	if pConfig.MetricsExporter != "" {
-		set.Logger.Warn("'metrics_exporter' is deprecated and will be removed in a future release. Please remove it from the configuration.")
-	}
-
 	var bounds []float64
 	if pConfig.ExponentialHistogramMaxSize == 0 {
 		bounds = defaultLatencyHistogramBuckets

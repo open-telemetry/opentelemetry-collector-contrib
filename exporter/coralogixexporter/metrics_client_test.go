@@ -242,6 +242,8 @@ func (m *mockMetricsServer) Export(ctx context.Context, req pmetricotlp.ExportRe
 		return pmetricotlp.NewExportResponse(), errors.New("invalid authorization header")
 	}
 
+	assertAcceptEncodingGzip(m.t, md)
+
 	m.recvCount += req.Metrics().DataPointCount()
 	resp := pmetricotlp.NewExportResponse()
 	if m.partialSuccess != nil {

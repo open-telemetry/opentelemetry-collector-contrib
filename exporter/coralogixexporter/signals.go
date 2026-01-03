@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	experimentalgrpc "google.golang.org/grpc/experimental"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -27,6 +28,7 @@ type signalConfig interface {
 	ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error)
 	GetWaitForReady() bool
 	GetEndpoint() string
+	GetAcceptEncoding() string
 }
 
 var _ signalConfig = (*signalConfigWrapper)(nil)
@@ -49,6 +51,10 @@ func (w *signalConfigWrapper) GetWaitForReady() bool {
 
 func (w *signalConfigWrapper) GetEndpoint() string {
 	return w.config.Endpoint
+}
+
+func (w *signalConfigWrapper) GetAcceptEncoding() string {
+	return w.config.GetAcceptEncoding()
 }
 
 func newSignalExporter(oCfg *Config, set exp.Settings, signalEndpoint string, headers configopaque.MapList) (*signalExporter, error) {
@@ -150,9 +156,14 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 		if e.clientConn, err = transportConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
-		e.callOptions = []grpc.CallOption{
+		callOptions := []grpc.CallOption{
 			grpc.WaitForReady(signalConfig.GetWaitForReady()),
 		}
+		// Only add AcceptCompressors if a compression encoding is specified
+		if acceptEncoding := signalConfig.GetAcceptEncoding(); acceptEncoding != "" {
+			callOptions = append(callOptions, experimentalgrpc.AcceptCompressors(acceptEncoding))
+		}
+		e.callOptions = callOptions
 	}
 
 	return nil
