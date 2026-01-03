@@ -19,8 +19,8 @@ var (
 	ErrInvalidBatchChannelSize = errors.New("invalid batch channel size, it must be greater than zero")
 )
 
-// Batch is the type of batches held by the Batcher.
-type Batch []pcommon.TraceID
+// Batch is the type of batches held by the Batcher. It uses a set in order to merge batches efficiently.
+type Batch map[pcommon.TraceID]struct{}
 
 // Batcher behaves like a pipeline of batches that has a fixed number of batches in the pipe
 // and a new batch being built outside of the pipe. Items can be concurrently added to the batch
@@ -84,7 +84,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	batcher := &batcher{
 		pendingIDs:                make(chan pcommon.TraceID, batchChannelSize),
 		batches:                   batches,
-		currentBatch:              make(Batch, 0, newBatchesInitialCapacity),
+		currentBatch:              make(Batch, newBatchesInitialCapacity),
 		newBatchesInitialCapacity: newBatchesInitialCapacity,
 		stopchan:                  make(chan bool),
 	}
@@ -94,7 +94,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	go func() {
 		for id := range batcher.pendingIDs {
 			batcher.cbMutex.Lock()
-			batcher.currentBatch = append(batcher.currentBatch, id)
+			batcher.currentBatch[id] = struct{}{}
 			batcher.cbMutex.Unlock()
 		}
 		batcher.stopchan <- true
@@ -111,7 +111,7 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 	if readBatch, ok := <-b.batches; ok {
 		b.stopLock.RLock()
 		if !b.stopped {
-			nextBatch := make(Batch, 0, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
+			nextBatch := make(Batch, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
 			b.cbMutex.Lock()
 			b.batches <- b.currentBatch
 			b.currentBatch = nextBatch
