@@ -318,11 +318,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			attrs := rm.Resource().Attributes()
 
 			// Add the remaining labels as resource attributes
-			for labelName, labelValue := range ls.Map() {
-				if labelName != "job" && labelName != "instance" && !schema.IsMetadataLabel(labelName) {
-					attrs.PutStr(labelName, labelValue)
+			ls.Range(func(l labels.Label) {
+				if l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
+					attrs.PutStr(l.Name, l.Value)
 				}
-			}
+			})
 
 			snapshot := pmetric.NewResourceMetrics()
 			attrs.CopyTo(snapshot.Resource().Attributes())
@@ -448,6 +448,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
 		return
 	}
+	attrs := extractAttributes(ls)
 
 	var (
 		hashedLabels uint64
@@ -537,9 +538,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 
 		// Process the individual histogram
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, stats)
+			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, stats)
+			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, attrs, ls, stats)
 		}
 	}
 }
@@ -573,6 +574,7 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 // addNumberDatapoints adds the labels to the datapoints attributes.
 func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts *writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	// Add samples from the timeseries
+	attrs := extractAttributes(ls)
 	for i := range ts.Samples {
 		sample := &ts.Samples[i]
 		dp := datapoints.AppendEmpty()
@@ -582,12 +584,12 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 		dp.SetDoubleValue(sample.Value)
 
 		attributes := dp.Attributes()
-		extractAttributes(ls).CopyTo(attributes)
+		attrs.CopyTo(attributes)
 	}
 	stats.Samples += len(ts.Samples)
 }
 
-func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, stats *promremote.WriteResponseStats) {
+func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
 	// Drop Native Histogram with negative counts
 	if hasNegativeCounts(histogram) {
 		prw.settings.Logger.Info("Dropping Native Histogram series with negative counts",
@@ -634,7 +636,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 		}
 	}
 
-	extractAttributes(ls).CopyTo(dp.Attributes())
+	attrs.CopyTo(dp.Attributes())
 	stats.Histograms++
 }
 
@@ -739,17 +741,15 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 // extractAttributes return all attributes different from job, instance, metric name and scope name/version
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	labelMap := ls.Map()
 	// job, instance and metric name will always become labels
-	attrs.EnsureCapacity(len(labelMap) - 3)
-	for labelName, labelValue := range labelMap {
-		if labelName == "instance" || labelName == "job" || // Become resource attributes
-			labelName == string(model.MetricNameLabel) || // Becomes metric name
-			labelName == "otel_scope_name" || labelName == "otel_scope_version" { // Becomes scope name and version
-			continue
+	attrs.EnsureCapacity(ls.Len() - 3)
+	ls.Range(func(l labels.Label) {
+		if l.Name != "instance" && l.Name != "job" && // Become resource attributes
+			l.Name != model.MetricNameLabel && // Becomes metric name
+			l.Name != "otel_scope_name" && l.Name != "otel_scope_version" { // Becomes scope name and version
+			attrs.PutStr(l.Name, l.Value)
 		}
-		attrs.PutStr(labelName, labelValue)
-	}
+	})
 	return attrs
 }
 
@@ -770,7 +770,7 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (st
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, stats *promremote.WriteResponseStats) {
+func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) {
 	if len(histogram.CustomValues) == 0 {
 		return
 	}
@@ -789,7 +789,7 @@ func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Histog
 	bucketCounts := convertNHCBBuckets(histogram)
 	dp.BucketCounts().FromRaw(bucketCounts)
 
-	extractAttributes(ls).CopyTo(dp.Attributes())
+	attrs.CopyTo(dp.Attributes())
 	stats.Histograms++
 }
 
