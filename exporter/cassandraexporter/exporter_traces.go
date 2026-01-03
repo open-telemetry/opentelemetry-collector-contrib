@@ -137,6 +137,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 
 				if insertSpanError != nil {
 					e.logger.Error("insert span error", zap.Error(insertSpanError))
+					return insertSpanError
 				}
 			}
 		}
