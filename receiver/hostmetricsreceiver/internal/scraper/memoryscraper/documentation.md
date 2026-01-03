@@ -68,6 +68,14 @@ A constant value for the system's configured page size.
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+### system.memory.shared
+
+Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
 ### system.memory.utilization
 
 Percentage of memory bytes in use.
